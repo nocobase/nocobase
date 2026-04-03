@@ -208,6 +208,8 @@ export type FlowSurfaceContextResponse = {
 export type FlowSurfaceMutateOp = {
   opId?: string;
   type:
+    | 'createMenu'
+    | 'updateMenu'
     | 'createPage'
     | 'destroyPage'
     | 'addTab'

@@ -429,6 +429,16 @@ const examples = {
       layout: 'vertical',
     },
   },
+  createMenu: {
+    title: 'Employees',
+    type: 'item',
+    parentMenuRouteId: 1001,
+  },
+  updateMenu: {
+    menuRouteId: 1002,
+    title: 'Employees Center',
+    parentMenuRouteId: null,
+  },
   configureAction: {
     target: {
       uid: 'update-record-action-uid',
@@ -627,6 +637,7 @@ const examples = {
     },
   },
   createPage: {
+    menuRouteId: 1002,
     title: 'Employees',
     tabTitle: 'Overview',
     enableTabs: true,
@@ -1063,12 +1074,20 @@ const examples = {
     atomic: true,
     ops: [
       {
+        opId: 'menu',
+        type: 'createMenu',
+        values: {
+          title: 'Employees',
+          type: 'item',
+        },
+      },
+      {
         opId: 'page',
         type: 'createPage',
         values: {
-          pageSchemaUid: 'employee-page',
-          tabSchemaUid: 'employee-main-tab',
-          title: 'Employees',
+          menuRouteId: {
+            $ref: 'menu.routeId',
+          },
           tabTitle: 'Overview',
         },
       },
@@ -1302,11 +1321,29 @@ const actionDocs: Record<string, any> = {
     },
     responses: responses('FlowSurfaceConfigureResult'),
   },
+  createMenu: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Create a group menu or a bindable V2 menu item',
+    description: valuesCompatibilityNote(
+      '创建 FlowSurfaces 菜单节点。`type="group"` 创建菜单分组；`type="item"` 创建可绑定 modern page(v2) 的菜单项，并自动补齐 flowPage route、默认隐藏 tab route 与 RootPageModel anchor。',
+    ),
+    requestBody: requestBody('FlowSurfaceCreateMenuRequest', examples.createMenu),
+    responses: responses('FlowSurfaceCreateMenuResult'),
+  },
+  updateMenu: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Update menu title/icon/tooltip or move it under another group',
+    description: valuesCompatibilityNote(
+      '更新菜单节点展示信息，或把 group / item 移动到顶级或另一个 group 下。仅支持 `group` 与 `flowPage` 两类菜单节点。',
+    ),
+    requestBody: requestBody('FlowSurfaceUpdateMenuRequest', examples.updateMenu),
+    responses: responses('FlowSurfaceUpdateMenuResult'),
+  },
   createPage: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Create a modern top-level page',
+    summary: 'Initialize a modern page for an existing bindable menu item',
     description: valuesCompatibilityNote(
-      '创建 modern page(v2)，同时写入 page route、默认 tab route、RootPageModel anchor 和默认 BlockGridModel。',
+      '优先通过 `menuRouteId` 为已有 bindable 菜单项初始化 modern page(v2)，并补齐默认 BlockGridModel。兼容模式下，如果未传 `menuRouteId`，仍会沿用旧行为自动创建顶级菜单并初始化页面。未初始化前，不要调用 `addTab`、`updateTab`、`moveTab`、`removeTab`、`destroyPage` 等 page/tab 生命周期接口。',
     ),
     requestBody: requestBody('FlowSurfaceCreatePageRequest', examples.createPage),
     responses: responses('FlowSurfaceCreatePageResult'),
@@ -1315,7 +1352,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Destroy a modern page and its anchors',
     description: valuesCompatibilityNote(
-      '删除 page route、tab route 和对应的 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `pageSchemaUid` 或 `routeId`，先调用 `flowSurfaces:get`。',
+      '删除 page route、tab route 和对应的 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `pageSchemaUid` 或 `routeId`，先调用 `flowSurfaces:get`。对于 menu-first 创建的页面，需先完成 `createPage(menuRouteId=...)` 初始化，才能调用本接口。',
     ),
     requestBody: requestBody('FlowSurfaceDestroyPageRequest', {
       uid: 'employees-page-uid',
@@ -1326,7 +1363,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a tab under a page',
     description: valuesCompatibilityNote(
-      '在 page 下新增 route-backed tab，并补齐对应 grid anchor。只接受 `target.uid`，且该 uid 必须是 page 的 canonical uid。',
+      '在 page 下新增 route-backed tab，并补齐对应 grid anchor。只接受 `target.uid`，且该 uid 必须是 page 的 canonical uid。对于 menu-first 创建的页面，需先完成 `createPage(menuRouteId=...)` 初始化。',
     ),
     requestBody: requestBody('FlowSurfaceAddTabRequest', examples.addTab),
     responses: responses('FlowSurfaceAddTabResult'),
@@ -1335,7 +1372,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update tab title, icon, document title and flow registry',
     description: valuesCompatibilityNote(
-      '修改 tab route 与对应 synthetic RootPageTabModel 的 route-backed 字段。只接受 `target.uid`，且该 uid 必须是 tab uid。',
+      '修改 tab route 与对应 synthetic RootPageTabModel 的 route-backed 字段。只接受 `target.uid`，且该 uid 必须是 tab uid。未初始化页面下的预创建 tab 不支持本接口。',
     ),
     requestBody: requestBody('FlowSurfaceUpdateTabRequest', examples.updateTab),
     responses: responses('FlowSurfaceUpdateTabResult'),
@@ -1343,7 +1380,9 @@ const actionDocs: Record<string, any> = {
   moveTab: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Reorder sibling tabs under the same page',
-    description: valuesCompatibilityNote('调整同一 page 下 tab 的排序。只接受根级 `sourceUid` / `targetUid`。'),
+    description: valuesCompatibilityNote(
+      '调整同一 page 下 tab 的排序。只接受根级 `sourceUid` / `targetUid`。未初始化页面下的预创建 tab 不支持本接口。',
+    ),
     requestBody: requestBody('FlowSurfaceMoveTabRequest', {
       sourceUid: 'details-tab',
       targetUid: 'overview-tab',
@@ -1355,7 +1394,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a tab route and its anchor tree',
     description: valuesCompatibilityNote(
-      '删除 tab route 及对应 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `tabSchemaUid`，先调用 `flowSurfaces:get`。',
+      '删除 tab route 及对应 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `tabSchemaUid`，先调用 `flowSurfaces:get`。未初始化页面下的预创建 tab 不支持本接口。',
     ),
     requestBody: requestBody('FlowSurfaceRemoveTabRequest', {
       uid: 'details-tab',
@@ -2790,9 +2829,104 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceCreateMenuRequest: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['group', 'item'],
+        default: 'item',
+      },
+      icon: {
+        type: 'string',
+      },
+      tooltip: {
+        type: 'string',
+      },
+      hideInMenu: {
+        type: 'boolean',
+      },
+      parentMenuRouteId: STRING_OR_INTEGER_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCreateMenuResult: {
+    type: 'object',
+    properties: {
+      routeId: STRING_OR_INTEGER_SCHEMA,
+      type: {
+        type: 'string',
+        enum: ['group', 'flowPage'],
+      },
+      parentMenuRouteId: {
+        ...STRING_OR_INTEGER_SCHEMA,
+        nullable: true,
+      },
+      pageSchemaUid: {
+        type: 'string',
+      },
+      pageUid: {
+        type: 'string',
+      },
+      tabSchemaUid: {
+        type: 'string',
+      },
+      tabRouteId: STRING_OR_INTEGER_SCHEMA,
+      tabSchemaName: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceUpdateMenuRequest: {
+    type: 'object',
+    required: ['menuRouteId'],
+    properties: {
+      menuRouteId: STRING_OR_INTEGER_SCHEMA,
+      title: {
+        type: 'string',
+      },
+      icon: {
+        type: 'string',
+        nullable: true,
+      },
+      tooltip: {
+        type: 'string',
+        nullable: true,
+      },
+      hideInMenu: {
+        type: 'boolean',
+      },
+      parentMenuRouteId: {
+        ...STRING_OR_INTEGER_SCHEMA,
+        nullable: true,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceUpdateMenuResult: {
+    type: 'object',
+    properties: {
+      routeId: STRING_OR_INTEGER_SCHEMA,
+      type: {
+        type: 'string',
+        enum: ['group', 'flowPage'],
+      },
+      parentMenuRouteId: {
+        ...STRING_OR_INTEGER_SCHEMA,
+        nullable: true,
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceCreatePageRequest: {
     type: 'object',
     properties: {
+      menuRouteId: STRING_OR_INTEGER_SCHEMA,
       pageSchemaUid: {
         type: 'string',
       },
@@ -2841,6 +2975,10 @@ const schemas = {
     type: 'object',
     properties: {
       routeId: STRING_OR_INTEGER_SCHEMA,
+      parentMenuRouteId: {
+        ...STRING_OR_INTEGER_SCHEMA,
+        nullable: true,
+      },
       pageSchemaUid: {
         type: 'string',
       },
@@ -4012,6 +4150,38 @@ const schemas = {
       },
     ],
   },
+  FlowSurfaceMutateOpCreateMenu: {
+    allOf: [
+      ref('FlowSurfaceMutateOpBase'),
+      {
+        type: 'object',
+        required: ['type', 'values'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['createMenu'],
+          },
+          values: ref('FlowSurfaceCreateMenuRequest'),
+        },
+      },
+    ],
+  },
+  FlowSurfaceMutateOpUpdateMenu: {
+    allOf: [
+      ref('FlowSurfaceMutateOpBase'),
+      {
+        type: 'object',
+        required: ['type', 'values'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['updateMenu'],
+          },
+          values: ref('FlowSurfaceUpdateMenuRequest'),
+        },
+      },
+    ],
+  },
   FlowSurfaceMutateOpDestroyPage: {
     allOf: [
       ref('FlowSurfaceMutateOpBase'),
@@ -4238,6 +4408,8 @@ const schemas = {
   },
   FlowSurfaceMutateOp: {
     oneOf: [
+      ref('FlowSurfaceMutateOpCreateMenu'),
+      ref('FlowSurfaceMutateOpUpdateMenu'),
       ref('FlowSurfaceMutateOpCreatePage'),
       ref('FlowSurfaceMutateOpDestroyPage'),
       ref('FlowSurfaceMutateOpAddTab'),
@@ -4287,6 +4459,8 @@ const schemas = {
   },
   FlowSurfaceMutationResult: {
     oneOf: [
+      ref('FlowSurfaceCreateMenuResult'),
+      ref('FlowSurfaceUpdateMenuResult'),
       ref('FlowSurfaceCreatePageResult'),
       ref('FlowSurfaceDestroyPageResult'),
       ref('FlowSurfaceAddTabResult'),

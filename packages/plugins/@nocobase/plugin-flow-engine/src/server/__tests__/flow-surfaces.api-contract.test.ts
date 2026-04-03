@@ -9,6 +9,7 @@
 
 import type { Database, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import {
@@ -464,6 +465,253 @@ describe('flowSurfaces API contract', () => {
         includeAsyncNode: true,
       }),
     ).toBeNull();
+  });
+
+  it('should create nested menu nodes and initialize a page from a bindable menu item', async () => {
+    const group = await createMenu(rootAgent, {
+      title: 'Workspace',
+      type: 'group',
+    });
+    const item = await createMenu(rootAgent, {
+      title: 'Employees',
+      type: 'item',
+      parentMenuRouteId: group.routeId,
+    });
+
+    expect(group.type).toBe('group');
+    expect(item.type).toBe('flowPage');
+    expect(item.parentMenuRouteId).toBe(group.routeId);
+
+    const initialized = await createPage(rootAgent, {
+      menuRouteId: item.routeId,
+      tabTitle: 'Overview',
+      enableTabs: true,
+    });
+
+    expect(initialized.routeId).toBe(item.routeId);
+    expect(initialized.pageSchemaUid).toBe(item.pageSchemaUid);
+    expect(initialized.pageUid).toBe(item.pageUid);
+
+    const pageRoute = await routesRepo.findOne({
+      filterByTk: String(item.routeId),
+      appends: ['children'],
+    });
+    expect(pageRoute?.get('parentId')).toBe(group.routeId);
+    expect(pageRoute?.get('enableTabs')).toBe(true);
+
+    const tabRoute = _.castArray(pageRoute?.get('children') || [])[0];
+    expect(tabRoute?.get?.('hidden')).toBe(false);
+    expect(
+      await flowRepo.findModelByParentId(initialized.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toMatchObject({
+      use: 'BlockGridModel',
+    });
+  });
+
+  it('should support updating menu metadata and moving an item back to top level', async () => {
+    const group = await createMenu(rootAgent, {
+      title: 'Workspace',
+      type: 'group',
+    });
+    const item = await createMenu(rootAgent, {
+      title: 'Employees',
+      parentMenuRouteId: group.routeId,
+    });
+
+    const updated = await getData(
+      await rootAgent.resource('flowSurfaces').updateMenu({
+        values: {
+          menuRouteId: item.routeId,
+          title: 'Employees Center',
+          parentMenuRouteId: null,
+        },
+      }),
+    );
+
+    expect(updated.routeId).toBe(item.routeId);
+    expect(updated.parentMenuRouteId).toBeNull();
+
+    const pageRoute = await routesRepo.findOne({
+      filterByTk: String(item.routeId),
+    });
+    expect(pageRoute?.get('title')).toBe('Employees Center');
+    expect(pageRoute?.get('parentId')).toBeNull();
+  });
+
+  it('should reject binding createPage to a group menu route', async () => {
+    const group = await createMenu(rootAgent, {
+      title: 'Workspace',
+      type: 'group',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: group.routeId,
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain('flowPage menu route');
+  });
+
+  it('should reject binding createPage to a legacy flowPage route that was not created by createMenu', async () => {
+    const legacySchemaUid = uid();
+    const legacyRoute = await routesRepo.create({
+      values: {
+        type: 'flowPage',
+        title: 'Legacy employees',
+        schemaUid: legacySchemaUid,
+        hideInMenu: false,
+      },
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: legacyRoute.get('id'),
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain('bindable menu route');
+  });
+
+  it('should reject re-initializing an already initialized menu item', async () => {
+    const item = await createMenu(rootAgent, {
+      title: 'Employees',
+      type: 'item',
+    });
+
+    await createPage(rootAgent, {
+      menuRouteId: item.routeId,
+      tabTitle: 'Overview',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: item.routeId,
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain('does not allow re-initializing');
+  });
+
+  it('should reject createMenu and updateMenu parentMenuRouteId when the parent is not a group', async () => {
+    const item = await createMenu(rootAgent, {
+      title: 'Employees',
+      type: 'item',
+    });
+
+    const createResponse = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: 'Child',
+        type: 'item',
+        parentMenuRouteId: item.routeId,
+      },
+    });
+    expect(createResponse.status).toBe(400);
+    expect(readErrorMessage(createResponse)).toContain('must be a group route');
+
+    const updateResponse = await rootAgent.resource('flowSurfaces').updateMenu({
+      values: {
+        menuRouteId: item.routeId,
+        parentMenuRouteId: item.routeId,
+      },
+    });
+    expect(updateResponse.status).toBe(400);
+    expect(readErrorMessage(updateResponse)).toContain('must be a group route');
+  });
+
+  it('should reject moving a menu group into its descendant', async () => {
+    const rootGroup = await createMenu(rootAgent, {
+      title: 'Root',
+      type: 'group',
+    });
+    const childGroup = await createMenu(rootAgent, {
+      title: 'Child',
+      type: 'group',
+      parentMenuRouteId: rootGroup.routeId,
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').updateMenu({
+      values: {
+        menuRouteId: rootGroup.routeId,
+        parentMenuRouteId: childGroup.routeId,
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain('descendant');
+  });
+
+  it('should keep legacy route-backed pages usable without menu-first initialization markers', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Legacy page',
+      tabTitle: 'Overview',
+    });
+
+    const addTabResult = await getData(
+      await rootAgent.resource('flowSurfaces').addTab({
+        values: {
+          target: {
+            uid: page.pageUid,
+          },
+          title: 'Details',
+        },
+      }),
+    );
+    expect(addTabResult.pageUid).toBe(page.pageUid);
+
+    const removeResponse = await rootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        uid: addTabResult.tabSchemaUid,
+      },
+    });
+    expect(removeResponse.status).toBe(200);
+
+    const destroyResponse = await rootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        uid: page.pageUid,
+      },
+    });
+    expect(destroyResponse.status).toBe(200);
+  });
+
+  it('should reject page lifecycle APIs before a bindable menu item is initialized', async () => {
+    const item = await createMenu(rootAgent, {
+      title: 'Employees',
+      type: 'item',
+    });
+
+    const addTabResponse = await rootAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: item.pageUid,
+        },
+        title: 'Details',
+      },
+    });
+    expect(addTabResponse.status).toBe(400);
+    expect(readErrorMessage(addTabResponse)).toContain('requires an initialized page');
+
+    const destroyPageResponse = await rootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        uid: item.pageUid,
+      },
+    });
+    expect(destroyPageResponse.status).toBe(400);
+    expect(readErrorMessage(destroyPageResponse)).toContain('requires an initialized page');
+
+    const removeTabResponse = await rootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        uid: item.tabSchemaUid,
+      },
+    });
+    expect(removeTabResponse.status).toBe(400);
+    expect(readErrorMessage(removeTabResponse)).toContain('requires an initialized page');
   });
 
   it('should reject legacy write locators and direct callers to flowSurfaces:get first', async () => {
@@ -3843,6 +4091,14 @@ function readErrorMessage(response: any) {
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
+      values,
+    }),
+  );
+}
+
+async function createMenu(rootAgent: any, values: Record<string, any>) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').createMenu({
       values,
     }),
   );

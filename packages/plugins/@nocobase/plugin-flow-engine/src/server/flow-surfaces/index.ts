@@ -73,6 +73,16 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
         service.transaction((transaction) => service.configure(getValues(ctx), { transaction })),
       );
     },
+    createMenu: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.createMenu(getValues(ctx), { transaction })),
+      );
+    },
+    updateMenu: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.updateMenu(getValues(ctx), { transaction })),
+      );
+    },
     createPage: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () =>
         service.transaction((transaction) => service.createPage(getValues(ctx), { transaction })),

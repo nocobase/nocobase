@@ -387,6 +387,8 @@ type FlowSurfaceNormalizedResourceInput =
     }
   | undefined;
 
+const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
+
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
 
@@ -421,6 +423,280 @@ export class FlowSurfacesService {
 
   private allocateRouteSortValue(offset = 0) {
     return Date.now() * 1000 + Math.floor(Math.random() * 1000) + offset;
+  }
+
+  private readRouteField<T = any>(route: any, key: string): T | undefined {
+    return route?.get?.(key) ?? route?.[key];
+  }
+
+  private readRouteOptions(route: any) {
+    const options = this.readRouteField<Record<string, any>>(route, 'options');
+    return _.isPlainObject(options) ? options : {};
+  }
+
+  private async findMenuRouteById(menuRouteId: string | number, transaction?: any) {
+    return this.db.getRepository('desktopRoutes').findOne({
+      filterByTk: String(menuRouteId),
+      appends: ['children'],
+      transaction,
+    });
+  }
+
+  private async assertMenuParentIsGroup(parentMenuRouteId: string | number | null | undefined, transaction?: any) {
+    if (_.isNil(parentMenuRouteId)) {
+      return null;
+    }
+    const route = await this.findMenuRouteById(parentMenuRouteId, transaction);
+    if (!route) {
+      throwBadRequest(`flowSurfaces menu parent route '${parentMenuRouteId}' not found`);
+    }
+    if (this.readRouteField(route, 'type') !== 'group') {
+      throwBadRequest(`flowSurfaces menu parent route '${parentMenuRouteId}' must be a group route`);
+    }
+    return route;
+  }
+
+  private async assertMenuRouteBindable(menuRouteId: string | number, transaction?: any) {
+    const route = await this.findMenuRouteById(menuRouteId, transaction);
+    if (!route) {
+      throwBadRequest(`flowSurfaces menu route '${menuRouteId}' not found`);
+    }
+    if (this.readRouteField(route, 'type') !== 'flowPage') {
+      throwBadRequest(`flowSurfaces createPage only accepts a flowPage menu route`);
+    }
+    return route;
+  }
+
+  private async assertMenuRouteUpdatable(menuRouteId: string | number, transaction?: any) {
+    const route = await this.findMenuRouteById(menuRouteId, transaction);
+    if (!route) {
+      throwBadRequest(`flowSurfaces menu route '${menuRouteId}' not found`);
+    }
+    const type = this.readRouteField(route, 'type');
+    if (type !== 'group' && type !== 'flowPage') {
+      throwBadRequest(`flowSurfaces updateMenu only supports group and flowPage routes`);
+    }
+    return route;
+  }
+
+  private async assertMenuParentNotSelfOrDescendant(
+    route: any,
+    parentMenuRouteId: string | number | null | undefined,
+    transaction?: any,
+  ) {
+    if (_.isNil(parentMenuRouteId)) {
+      return;
+    }
+    const routeId = String(this.readRouteField(route, 'id'));
+    const parentId = String(parentMenuRouteId);
+    if (routeId === parentId) {
+      throwBadRequest(`flowSurfaces updateMenu cannot move a menu route into itself`);
+    }
+
+    let current = await this.findMenuRouteById(parentMenuRouteId, transaction);
+    while (current) {
+      const currentId = String(this.readRouteField(current, 'id'));
+      if (currentId === routeId) {
+        throwBadRequest(`flowSurfaces updateMenu cannot move a menu route into its descendant`);
+      }
+      const nextParentId = this.readRouteField(current, 'parentId');
+      if (_.isNil(nextParentId)) {
+        break;
+      }
+      current = await this.findMenuRouteById(nextParentId, transaction);
+    }
+  }
+
+  private buildMenuResult(route: any, extras: Record<string, any> = {}) {
+    return {
+      routeId: this.readRouteField(route, 'id'),
+      type: this.readRouteField(route, 'type'),
+      parentMenuRouteId: this.readRouteField(route, 'parentId') ?? null,
+      ...extras,
+    };
+  }
+
+  private async createFlowMenuGroup(values: Record<string, any>, transaction?: any) {
+    const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
+    const schemaUid = values.schemaUid || uid();
+    const desktopRoutes = this.db.getRepository('desktopRoutes');
+    await desktopRoutes.create({
+      values: {
+        type: 'group',
+        sort: this.allocateRouteSortValue(),
+        title: values.title,
+        icon: values.icon,
+        tooltip: values.tooltip,
+        schemaUid,
+        hideInMenu: !!values.hideInMenu,
+        parentId: this.readRouteField(parentRoute, 'id') ?? null,
+      },
+      transaction,
+    });
+    const route = await desktopRoutes.findOne({
+      filter: { schemaUid },
+      transaction,
+    });
+    return this.buildMenuResult(route);
+  }
+
+  private async createFlowMenuItem(values: Record<string, any>, transaction?: any) {
+    const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
+    const pageSchemaUid = values.pageSchemaUid || uid();
+    const pageUid = values.pageUid || uid();
+    const tabSchemaUid = values.tabSchemaUid || uid();
+    const tabSchemaName = values.tabSchemaName || uid();
+    const title = values.title || pageSchemaUid;
+    const tabTitle = values.tabTitle || 'Untitled';
+    const desktopRoutes = this.db.getRepository('desktopRoutes');
+
+    await desktopRoutes.create({
+      values: {
+        type: 'flowPage',
+        sort: this.allocateRouteSortValue(),
+        title,
+        icon: values.icon,
+        tooltip: values.tooltip,
+        schemaUid: pageSchemaUid,
+        hideInMenu: !!values.hideInMenu,
+        enableTabs: false,
+        displayTitle: values.displayTitle !== false,
+        parentId: this.readRouteField(parentRoute, 'id') ?? null,
+        options: {
+          [FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]: true,
+        },
+        children: [
+          {
+            type: 'tabs',
+            sort: this.allocateRouteSortValue(1),
+            title: tabTitle,
+            icon: values.tabIcon,
+            schemaUid: tabSchemaUid,
+            tabSchemaName,
+            hidden: true,
+            parentId: null,
+            options: {
+              documentTitle: values.tabDocumentTitle,
+              flowRegistry: values.tabFlowRegistry || {},
+            },
+          },
+        ],
+      },
+      transaction,
+    });
+
+    const route = await desktopRoutes.findOne({
+      filter: { schemaUid: pageSchemaUid },
+      appends: ['children'],
+      transaction,
+    });
+    const tabRoute = _.sortBy(_.castArray(route?.get?.('children') || []), 'sort')[0];
+
+    await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
+    const pageTree = buildPersistedRootPageModel({
+      pageUid,
+      pageTitle: title,
+      routeId: this.readRouteField(route, 'id'),
+      enableTabs: false,
+      displayTitle: values.displayTitle !== false,
+      pageDocumentTitle: values.documentTitle,
+    });
+    await this.repository.upsertModel(
+      {
+        parentId: pageSchemaUid,
+        subKey: 'page',
+        subType: 'object',
+        ...pageTree,
+      },
+      { transaction },
+    );
+
+    return this.buildMenuResult(route, {
+      pageSchemaUid,
+      pageUid,
+      tabRouteId: this.readRouteField(tabRoute, 'id'),
+      tabSchemaUid,
+      tabSchemaName,
+    });
+  }
+
+  private sanitizePublicCreateMenuValues(values: Record<string, any>) {
+    return _.pick(values, ['title', 'type', 'icon', 'tooltip', 'hideInMenu', 'parentMenuRouteId']);
+  }
+
+  private async loadRouteBackedPageStructure(route: any, transaction?: any) {
+    const pageSchemaUid = this.readRouteField(route, 'schemaUid');
+    const pageModel = pageSchemaUid
+      ? await this.repository.findModelByParentId(pageSchemaUid, {
+          transaction,
+          subKey: 'page',
+          includeAsyncNode: true,
+        })
+      : null;
+    const tabRoutes = _.sortBy(
+      _.castArray(this.readRouteField(route, 'children') || []).filter(
+        (item: any) => this.readRouteField(item, 'type') === 'tabs',
+      ),
+      (item: any) => this.readRouteField(item, 'sort') ?? 0,
+    );
+    const tabGrids = await Promise.all(
+      tabRoutes.map(async (tabRoute: any) => {
+        const tabSchemaUid = this.readRouteField(tabRoute, 'schemaUid');
+        const grid = tabSchemaUid
+          ? await this.repository.findModelByParentId(tabSchemaUid, {
+              transaction,
+              subKey: 'grid',
+              includeAsyncNode: true,
+            })
+          : null;
+        return {
+          tabRoute,
+          grid,
+        };
+      }),
+    );
+    return {
+      pageSchemaUid,
+      pageModel,
+      tabRoutes,
+      tabGrids,
+    };
+  }
+
+  private isBindableMenuRoutePendingInitialization(
+    route: any,
+    structure: Awaited<ReturnType<FlowSurfacesService['loadRouteBackedPageStructure']>>,
+  ) {
+    if (this.readRouteField(route, 'type') !== 'flowPage') {
+      return false;
+    }
+    const routeOptions = this.readRouteOptions(route);
+    if (!routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
+      return false;
+    }
+    if (structure.pageModel?.use !== 'RootPageModel') {
+      return false;
+    }
+    if (!structure.tabRoutes.length) {
+      return false;
+    }
+    return structure.tabGrids.every((item) => !item.grid?.uid);
+  }
+
+  private isRouteBackedPageInitialized(
+    route: any,
+    structure: Awaited<ReturnType<FlowSurfacesService['loadRouteBackedPageStructure']>>,
+  ) {
+    if (this.readRouteField(route, 'type') !== 'flowPage') {
+      return false;
+    }
+    if (structure.pageModel?.use !== 'RootPageModel') {
+      return false;
+    }
+    if (!structure.tabRoutes.length) {
+      return false;
+    }
+    return structure.tabGrids.some((item) => !!item.grid?.uid);
   }
 
   async catalog(input: { target?: FlowSurfaceWriteTarget }, options: { transaction?: any } = {}) {
@@ -1715,69 +1991,155 @@ export class FlowSurfacesService {
     throwBadRequest(`flowSurfaces configure does not support configureOptions on '${current?.use || resolved.uid}'`);
   }
 
-  async createPage(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const pageSchemaUid = values.pageSchemaUid || uid();
-    const tabSchemaUid = values.tabSchemaUid || uid();
-    const tabSchemaName = values.tabSchemaName || uid();
-    const title = values.title || pageSchemaUid;
-    const tabTitle = values.tabTitle || 'Untitled';
+  async createMenu(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const publicValues = this.sanitizePublicCreateMenuValues(values || {});
+    const type = publicValues.type === 'group' ? 'group' : 'item';
+    if (!publicValues.title) {
+      throwBadRequest('flowSurfaces createMenu requires title');
+    }
+    if (type === 'group') {
+      return this.createFlowMenuGroup(publicValues, options.transaction);
+    }
+    return this.createFlowMenuItem(publicValues, options.transaction);
+  }
+
+  async updateMenu(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const menuRouteId = values.menuRouteId;
+    if (_.isNil(menuRouteId) || menuRouteId === '') {
+      throwBadRequest('flowSurfaces updateMenu requires menuRouteId');
+    }
+    const route = await this.assertMenuRouteUpdatable(menuRouteId, options.transaction);
+    await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
+    await this.assertMenuParentNotSelfOrDescendant(route, values.parentMenuRouteId, options.transaction);
+
+    const nextOptions = { ...this.readRouteOptions(route) };
+    const updateValues: Record<string, any> = {};
+    if (Object.prototype.hasOwnProperty.call(values, 'title')) {
+      updateValues.title = values.title;
+    }
+    if (Object.prototype.hasOwnProperty.call(values, 'icon')) {
+      updateValues.icon = values.icon;
+    }
+    if (Object.prototype.hasOwnProperty.call(values, 'tooltip')) {
+      updateValues.tooltip = values.tooltip;
+    }
+    if (Object.prototype.hasOwnProperty.call(values, 'hideInMenu')) {
+      updateValues.hideInMenu = !!values.hideInMenu;
+    }
+    if (Object.prototype.hasOwnProperty.call(values, 'parentMenuRouteId')) {
+      updateValues.parentId = values.parentMenuRouteId ?? null;
+      updateValues.sort = this.allocateRouteSortValue();
+    }
+    if (Object.keys(nextOptions).length) {
+      updateValues.options = nextOptions;
+    }
+
+    if (Object.keys(updateValues).length) {
+      await this.db.getRepository('desktopRoutes').update({
+        filterByTk: String(menuRouteId),
+        values: updateValues,
+        transaction: options.transaction,
+      });
+    }
+    const updated = await this.findMenuRouteById(menuRouteId, options.transaction);
+    return this.buildMenuResult(updated);
+  }
+
+  private async initializeFlowPageForRoute(route: any, values: Record<string, any>, transaction?: any) {
+    const routeId = this.readRouteField(route, 'id');
+    const pageSchemaUid = this.readRouteField(route, 'schemaUid');
+    const structure = await this.loadRouteBackedPageStructure(route, transaction);
+    const children = _.sortBy(
+      _.castArray(this.readRouteField(route, 'children') || []),
+      (item: any) => item?.get?.('sort') ?? item?.sort,
+    );
+    let tabRoute = children[0];
+    const routeOptions = this.readRouteOptions(route);
+    if (!routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
+      throwBadRequest(`flowSurfaces createPage only accepts a bindable menu route created by createMenu(type="item")`);
+    }
+    if (!this.isBindableMenuRoutePendingInitialization(route, structure)) {
+      throwBadRequest(`flowSurfaces createPage does not allow re-initializing menu route '${routeId}'`);
+    }
+    const existingPage = structure.pageModel;
     const enableTabs = !!values.enableTabs;
     const displayTitle = values.displayTitle !== false;
-    const pageSort = this.allocateRouteSortValue();
-    const initialTabSort = this.allocateRouteSortValue(1);
+    const title = values.title || this.readRouteField(route, 'title') || pageSchemaUid;
+    const nextRouteOptions = {
+      ...routeOptions,
+      ...(values.routeOptions || {}),
+    };
 
-    const desktopRoutes = this.db.getRepository('desktopRoutes');
-    await desktopRoutes.create({
+    if (!tabRoute) {
+      const tabSchemaUid = values.tabSchemaUid || uid();
+      const tabSchemaName = values.tabSchemaName || uid();
+      const tabTitle = values.tabTitle || 'Untitled';
+      await this.db.getRepository('desktopRoutes').create({
+        values: {
+          type: 'tabs',
+          sort: this.allocateRouteSortValue(1),
+          title: tabTitle,
+          icon: values.tabIcon,
+          schemaUid: tabSchemaUid,
+          tabSchemaName,
+          hidden: !enableTabs,
+          parentId: routeId,
+          options: {
+            documentTitle: values.tabDocumentTitle,
+            flowRegistry: values.tabFlowRegistry || {},
+          },
+        },
+        transaction,
+      });
+      tabRoute = await this.db.getRepository('desktopRoutes').findOne({
+        filter: { schemaUid: tabSchemaUid },
+        transaction,
+      });
+    } else {
+      await this.db.getRepository('desktopRoutes').update({
+        filterByTk: String(this.readRouteField(tabRoute, 'id')),
+        values: {
+          title: values.tabTitle || this.readRouteField(tabRoute, 'title') || 'Untitled',
+          icon: Object.prototype.hasOwnProperty.call(values, 'tabIcon')
+            ? values.tabIcon
+            : this.readRouteField(tabRoute, 'icon'),
+          hidden: !enableTabs,
+          options: {
+            ...this.readRouteOptions(tabRoute),
+            documentTitle: values.tabDocumentTitle ?? this.readRouteOptions(tabRoute).documentTitle,
+            flowRegistry: values.tabFlowRegistry || this.readRouteOptions(tabRoute).flowRegistry || {},
+          },
+        },
+        transaction,
+      });
+      tabRoute = await this.db.getRepository('desktopRoutes').findOne({
+        filterByTk: String(this.readRouteField(tabRoute, 'id')),
+        transaction,
+      });
+    }
+
+    await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
+    await this.db.getRepository('desktopRoutes').update({
+      filterByTk: String(routeId),
       values: {
-        type: 'flowPage',
-        sort: pageSort,
         title,
-        icon: values.icon,
-        schemaUid: pageSchemaUid,
-        hideInMenu: false,
+        icon: Object.prototype.hasOwnProperty.call(values, 'icon') ? values.icon : this.readRouteField(route, 'icon'),
         enableTabs,
         enableHeader: values.enableHeader,
         displayTitle,
-        options: values.routeOptions || {},
-        children: [
-          {
-            type: 'tabs',
-            sort: initialTabSort,
-            title: tabTitle,
-            icon: values.tabIcon,
-            schemaUid: tabSchemaUid,
-            tabSchemaName,
-            hidden: !enableTabs,
-            parentId: null,
-            options: {
-              documentTitle: values.tabDocumentTitle,
-              flowRegistry: values.tabFlowRegistry || {},
-            },
-          },
-        ],
+        options: nextRouteOptions,
       },
-      transaction: options.transaction,
+      transaction,
     });
-
-    const route = await desktopRoutes.findOne({
-      filter: {
-        schemaUid: pageSchemaUid,
-      },
-      appends: ['children'],
-      transaction: options.transaction,
-    });
-    const tabRoute = _.sortBy(_.castArray(route?.get?.('children') || []), 'sort')[0];
-    await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, options.transaction);
 
     const pageTree = buildPersistedRootPageModel({
-      pageUid: values.pageUid || uid(),
+      pageUid: existingPage?.uid || values.pageUid || uid(),
       pageTitle: title,
-      routeId: route.get('id'),
+      routeId,
       enableTabs,
       displayTitle,
       pageDocumentTitle: values.documentTitle,
     });
-
     const pageUid = await this.repository.upsertModel(
       {
         parentId: pageSchemaUid,
@@ -1785,19 +2147,33 @@ export class FlowSurfacesService {
         subType: 'object',
         ...pageTree,
       },
-      { transaction: options.transaction },
+      { transaction },
     );
-    const gridUid = await this.ensureGridChild(tabSchemaUid, 'BlockGridModel', options.transaction);
+    const tabSchemaUid = this.readRouteField(tabRoute, 'schemaUid');
+    const tabSchemaName = this.readRouteField(tabRoute, 'tabSchemaName');
+    const gridUid = await this.ensureGridChild(tabSchemaUid, 'BlockGridModel', transaction);
 
     return {
-      routeId: route.get('id'),
+      routeId,
+      parentMenuRouteId: this.readRouteField(route, 'parentId') ?? null,
       pageSchemaUid,
       pageUid,
       tabSchemaUid,
-      tabRouteId: tabRoute?.get?.('id') || tabRoute?.id,
+      tabRouteId: this.readRouteField(tabRoute, 'id'),
       tabSchemaName,
       gridUid,
     };
+  }
+
+  async createPage(values: Record<string, any>, options: { transaction?: any } = {}) {
+    if (!_.isNil(values.menuRouteId) && values.menuRouteId !== '') {
+      const route = await this.assertMenuRouteBindable(values.menuRouteId, options.transaction);
+      return this.initializeFlowPageForRoute(route, values, options.transaction);
+    }
+
+    const createdMenu = await this.createFlowMenuItem(values, options.transaction);
+    const route = await this.assertMenuRouteBindable(createdMenu.routeId, options.transaction);
+    return this.initializeFlowPageForRoute(route, values, options.transaction);
   }
 
   async destroyPage(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -3287,6 +3663,12 @@ export class FlowSurfacesService {
     const options = { transaction: ctx.transaction };
     let result: any;
     switch (op.type) {
+      case 'createMenu':
+        result = await this.createMenu(resolvedValues, options);
+        break;
+      case 'updateMenu':
+        result = await this.updateMenu(resolvedValues, options);
+        break;
       case 'createPage':
         result = await this.createPage(resolvedValues, options);
         break;
@@ -3454,6 +3836,12 @@ export class FlowSurfacesService {
         `flowSurfaces destroyPage only accepts a route-backed page uid; popup child pages are internal popup subtrees and cannot be destroyed via destroyPage. If you only have pageSchemaUid or routeId, call flowSurfaces:get first`,
       );
     }
+    const structure = await this.loadRouteBackedPageStructure(resolved.pageRoute, transaction);
+    if (!this.isRouteBackedPageInitialized(resolved.pageRoute, structure)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} requires an initialized page; call createPage(menuRouteId=...) before using page lifecycle APIs`,
+      );
+    }
     return {
       pageSchemaUid,
       node: pageModel,
@@ -3485,6 +3873,14 @@ export class FlowSurfacesService {
         actionName === 'updateTab' ? 'updatePopupTab' : actionName === 'moveTab' ? 'movePopupTab' : 'removePopupTab';
       throwBadRequest(
         `flowSurfaces ${actionName} only accepts a route-backed tab uid; popup child tabs use ${recommendedAction}`,
+      );
+    }
+    const parentRouteId = route?.get?.('parentId') ?? route?.parentId;
+    const parentRoute = parentRouteId ? await this.findMenuRouteById(parentRouteId, transaction) : null;
+    const structure = parentRoute ? await this.loadRouteBackedPageStructure(parentRoute, transaction) : null;
+    if (!parentRoute || !structure || !this.isRouteBackedPageInitialized(parentRoute, structure)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} requires an initialized page; call createPage(menuRouteId=...) before using tab lifecycle APIs`,
       );
     }
     return {

@@ -139,7 +139,9 @@ describe('flowSurfaces swagger', () => {
     );
 
     const mutateOpRefs = (schemas.FlowSurfaceMutateOp.oneOf || []).map((item: any) => item.$ref);
-    expect(mutateOpRefs).toHaveLength(15);
+    expect(mutateOpRefs).toHaveLength(17);
+    expect(mutateOpRefs).toContain('#/components/schemas/FlowSurfaceMutateOpCreateMenu');
+    expect(mutateOpRefs).toContain('#/components/schemas/FlowSurfaceMutateOpUpdateMenu');
     expect(mutateOpRefs).toEqual(
       expect.arrayContaining([
         '#/components/schemas/FlowSurfaceMutateOpCreatePage',
@@ -613,7 +615,21 @@ describe('flowSurfaces swagger', () => {
 
     const mutateRequest = swaggerDocument.paths['/flowSurfaces:mutate'].post.requestBody.content['application/json'];
     expect(mutateRequest.example.atomic).toBe(true);
-    expect(mutateRequest.example.ops[1].values.target.uid.$ref).toBe('page.tabSchemaUid');
+    expect(mutateRequest.example.ops[1].values.menuRouteId.$ref).toBe('menu.routeId');
+    expect(mutateRequest.example.ops[2].values.target.uid.$ref).toBe('page.tabSchemaUid');
+
+    const createMenuRequest =
+      swaggerDocument.paths['/flowSurfaces:createMenu'].post.requestBody.content['application/json'];
+    expect(createMenuRequest.example.type).toBe('item');
+    expect(createMenuRequest.example.parentMenuRouteId).toBe(1001);
+
+    const updateMenuRequest =
+      swaggerDocument.paths['/flowSurfaces:updateMenu'].post.requestBody.content['application/json'];
+    expect(updateMenuRequest.example.menuRouteId).toBe(1002);
+
+    const createPageRequest =
+      swaggerDocument.paths['/flowSurfaces:createPage'].post.requestBody.content['application/json'];
+    expect(createPageRequest.example.menuRouteId).toBe(1002);
 
     const addTabRequest = swaggerDocument.paths['/flowSurfaces:addTab'].post.requestBody.content['application/json'];
     expect(addTabRequest.example.target.uid).toBe('employees-page-uid');
@@ -658,6 +674,8 @@ describe('flowSurfaces swagger', () => {
       'context',
       'compose',
       'configure',
+      'createMenu',
+      'updateMenu',
       'createPage',
       'destroyPage',
       'addTab',
@@ -708,5 +726,9 @@ describe('flowSurfaces swagger', () => {
       'sourceUid',
       'targetUid',
     ]);
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.required).toEqual(['title']);
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceUpdateMenuRequest.required).toEqual(['menuRouteId']);
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.properties.pageUid).toBeUndefined();
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
   });
 });

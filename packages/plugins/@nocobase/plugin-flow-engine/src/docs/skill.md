@@ -6,13 +6,14 @@
 
 1. 先用 `flowSurfaces:get` 读取已有 surface。
 2. 再用 `flowSurfaces:catalog` 看当前 target 的 `configureOptions`，它是主要的高频配置发现入口。
-3. 再用 `flowSurfaces:createPage` 创建页面。
-4. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
-5. 再用 `flowSurfaces:configure` 修改高频配置。
-6. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
-7. 外层 route-backed page/tab 继续用 `createPage`、`destroyPage`、`addTab`、`updateTab`、`moveTab`、`removeTab`；popup child tab 用 `addPopupTab`、`updatePopupTab`、`movePopupTab`、`removePopupTab`。
-8. 删除与排序时，普通节点继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`；page 请用 `destroyPage`，外层 tab 请用 `removeTab`，popup child tab 请用 `removePopupTab`。
-9. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
+3. 先用 `flowSurfaces:createMenu` 创建菜单节点。
+4. 再用 `flowSurfaces:createPage` 为菜单项初始化 modern page(v2)。
+5. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
+6. 再用 `flowSurfaces:configure` 修改高频配置。
+7. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
+8. 外层 route-backed page/tab 继续用 `createPage`、`destroyPage`、`addTab`、`updateTab`、`moveTab`、`removeTab`；popup child tab 用 `addPopupTab`、`updatePopupTab`、`movePopupTab`、`removePopupTab`。
+9. 删除与排序时，普通节点继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`；page 请用 `destroyPage`，外层 tab 请用 `removeTab`，popup child tab 请用 `removePopupTab`。
+10. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
 
 ## 读取接口约定
 
@@ -32,6 +33,14 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 - `addAction` 只用于非 record action：block / form / filter-form / action-panel
 - `addRecordAction` 只用于 record action：table / details / list / gridCard
+- 菜单层优先使用：
+  - `createMenu`
+  - `updateMenu`
+- `createMenu(type="group")` 创建 group；`createMenu(type="item")` 创建可绑定 V2 页面菜单项
+- `createPage(menuRouteId=...)` 优先用于把已有菜单项初始化成 modern page(v2)
+- `createPage` 兼容模式下如果不传 `menuRouteId`，仍会自动创建顶级菜单并初始化页面
+- 当前 `createMenu(type="item")` 会预创建 flowPage route、默认 hidden tab route 和 RootPageModel anchor；真正补齐首个 grid 并把页面标记为已初始化，仍由 `createPage` 完成
+- 在 `createPage(menuRouteId=...)` 之前，不要使用 `addTab`、`updateTab`、`moveTab`、`removeTab`、`destroyPage` 这类 page/tab 生命周期 API；这些接口现在要求页面已初始化
 - 外层 route-backed page/tab API 只接受外层 canonical uid：
   - page：`destroyPage`、`addTab`
   - tab：`updateTab`、`moveTab`、`removeTab`
@@ -104,16 +113,25 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - 非绑定 JS 列：`{ "type": "jsColumn" }`
 - 非绑定 JS 项：`{ "type": "jsItem" }`
 
-## 示例 1：创建页面
+## 示例 1：创建菜单并初始化页面
 
 ```json
 {
   "title": "Users workspace",
+  "type": "item"
+}
+```
+
+随后再调用：
+
+```json
+{
+  "menuRouteId": 1001,
   "tabTitle": "Overview"
 }
 ```
 
-创建成功后：
+页面初始化成功后：
 - page 级写操作使用返回的 `pageUid`
 - 外层 tab 当前的 canonical uid 就是返回的 `tabSchemaUid`
 - `pageSchemaUid / routeId` 主要保留给 `flowSurfaces:get`
