@@ -221,6 +221,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       return;
     }
     const toolsLoader = new ToolsLoader(this.ai, {
+      pluginName: this.getName(),
       scan: {
         basePath,
         pattern: ['**/tools/**/*.ts', '**/tools/**/*.js', '!**/tools/**/*.d.ts', '**/tools/**/*/description.md'],
@@ -229,6 +230,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     });
     await toolsLoader.load();
     const mcpLoader = new MCPLoader(this.ai, {
+      pluginName: this.getName(),
       scan: {
         basePath,
         pattern: ['mcp/*.ts', 'mcp/*.js', '!mcp/*.d.ts'],
@@ -237,11 +239,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
     });
     await mcpLoader.load();
     const skillsLoader = new SkillsLoader(this.ai, {
+      pluginName: this.getName(),
       scan: { basePath, pattern: ['**/skills/**/SKILLS.md'] },
       log: this.log,
     });
     await skillsLoader.load();
     const employeeLoader = new AIEmployeeLoader(this.ai, {
+      pluginName: this.getName(),
       scan: {
         basePath,
         pattern: [

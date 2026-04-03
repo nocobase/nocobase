@@ -18,7 +18,7 @@ import { LoadAndRegister } from './types';
 import { Logger } from '@nocobase/logger';
 import { isNonEmptyObject } from './utils';
 
-export type ToolsLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
+export type ToolsLoaderOptions = { pluginName: string; scan: DirectoryScannerOptions; log?: Logger };
 export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
   protected readonly scanner: DirectoryScanner;
 
@@ -118,6 +118,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
       }
       try {
         toolsManager.registerTools(toolsOptions);
+        this.log?.info(`tools [${toolsOptions.definition.name}] registered from plugin [${this.options.pluginName}]`);
       } catch (e) {
         this.log?.error(`tools [${descriptor.name}] register ignored: error occur when invoke registerTools`, e);
         continue;
