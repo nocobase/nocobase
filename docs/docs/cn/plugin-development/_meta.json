@@ -138,8 +138,12 @@
       {
         "type": "custom-link",
         "label": "Component 组件开发",
-        "link": "/plugin-development/client/component",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/component"
+          },
           {
             "type": "custom-link",
             "label": "Styles & Themes 样式与主题",
@@ -149,13 +153,12 @@
       },
       {
         "type": "custom-link",
-        "label": "CTX 上下文",
-        "link": "/plugin-development/client/ctx",
+        "label": "Context 上下文",
         "items": [
           {
             "type": "custom-link",
-            "label": "上下文是什么",
-            "link": "/plugin-development/client/ctx/what-is-context"
+            "label": "概述",
+            "link": "/plugin-development/client/ctx"
           },
           {
             "type": "custom-link",
@@ -167,8 +170,12 @@
       {
         "type": "custom-link",
         "label": "FlowEngine",
-        "link": "/plugin-development/client/flow-engine",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/flow-engine"
+          },
           {
             "type": "custom-link",
             "label": "区块扩展",
@@ -194,8 +201,12 @@
       {
         "type": "custom-link",
         "label": "插件实战示例",
-        "link": "/plugin-development/client/examples",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/examples"
+          },
           {
             "type": "custom-link",
             "label": "做一个插件设置页",
