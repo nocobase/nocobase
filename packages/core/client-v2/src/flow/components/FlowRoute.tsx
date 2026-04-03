@@ -11,6 +11,7 @@ import { useFlowEngine } from '@nocobase/flow-engine';
 import React, { useEffect, useRef } from 'react';
 import { deviceType } from 'react-device-detect';
 import { useAdminLayoutRoutePage } from '../admin-shell/useAdminLayoutRoutePage';
+import { useParams } from 'react-router-dom';
 
 /**
  * 管理后台动态页面路由组件。
@@ -28,15 +29,14 @@ import { useAdminLayoutRoutePage } from '../admin-shell/useAdminLayoutRoutePage'
  */
 const FlowRoute = () => {
   const flowEngine = useFlowEngine();
-  const route = flowEngine.context.route || {};
   const routeRepository = flowEngine.context.routeRepository;
   const refreshDesktopRoutes = React.useMemo(
     () => routeRepository?.refreshAccessible.bind(routeRepository),
     [routeRepository],
   );
-  const pageUidRef = useRef(route?.params?.name);
+  const params = useParams();
+  const pageUid = params?.name;
   const layoutContentRef = useRef<HTMLDivElement>(null);
-  const pageUid = pageUidRef.current;
 
   if (!pageUid) {
     throw new Error('[NocoBase] FlowRoute requires route.params.name.');
