@@ -32,8 +32,12 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       ctx.action.mergeParams({
         filter: {
-          ...filter,
-          'users.id': userId,
+          $and: [
+            filter,
+            {
+              'users.id': userId,
+            },
+          ],
         },
         appends,
       });
@@ -47,16 +51,12 @@ export const aiWorkflowTasks: ResourceOptions = {
             String(user?.id) === String(userId),
         );
         return {
-          ...record,
+          ...(record?.toJSON() ?? {}),
           read: currentUser?.usersAiWorkflowTasks?.read ?? false,
         };
       };
 
-      if (Array.isArray(ctx.body?.data)) {
-        ctx.body.data = ctx.body.data.map(parseRead);
-      } else if (Array.isArray(ctx.body)) {
-        ctx.body = ctx.body.map(parseRead);
-      }
+      ctx.body.rows = ctx.body.rows.map(parseRead);
 
       await next();
     },
