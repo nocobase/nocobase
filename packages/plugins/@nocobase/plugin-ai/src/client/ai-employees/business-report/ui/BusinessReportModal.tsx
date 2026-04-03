@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Result, Space, Spin, Tabs, Typography } from 'antd';
 import { FileMarkdownOutlined, FilePdfOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design/icons';
-import { ToolCall } from '@nocobase/client';
+import { ToolCall, useToken } from '@nocobase/client';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useT } from '../../../locale';
 import { Markdown } from '../../chatbox/markdown/Markdown';
@@ -26,10 +26,21 @@ import {
 const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> = ({ tool }) => {
   const t = useT();
   const { message } = App.useApp();
-  const report = tool?.args as BusinessReport;
+  const { token } = useToken();
+  const report = useMemo(
+    () =>
+      ({
+        ...(tool?.args as BusinessReport),
+        generatedAt: (tool?.args as BusinessReport)?.generatedAt || tool?.invokeEndTime,
+      }) as BusinessReport,
+    [tool?.args, tool?.invokeEndTime],
+  );
   const isGenerating = !['done', 'confirmed'].includes(tool.invokeStatus);
   const hasRenderableContent = !!(report?.title || report?.summary || report?.markdown);
   const [snapshot, setSnapshot] = useState<BusinessReport | null>(null);
+  const [htmlPreview, setHtmlPreview] = useState('');
+  const [printableHtml, setPrintableHtml] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     setSnapshot(null);
@@ -45,8 +56,6 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
   const title = displayReport?.title || t('Business analysis report');
 
   const markdown = useMemo(() => buildReportMarkdown(displayReport), [displayReport]);
-  const htmlPreview = useMemo(() => buildReportHtml(displayReport), [displayReport]);
-  const printableHtml = useMemo(() => buildReportHtml(displayReport, { printMode: true }), [displayReport]);
   const fileName = useMemo(() => getReportFileName(displayReport), [displayReport]);
   const previewMessage = useMemo(
     () => ({
@@ -58,6 +67,42 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
     }),
     [displayReport?.markdown, displayReport?.summary, markdown, t, title, tool.id],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!displayReport?.markdown) {
+        setHtmlPreview('');
+        setPrintableHtml('');
+        return;
+      }
+
+      try {
+        const [previewHtml, printable] = await Promise.all([
+          buildReportHtml(displayReport),
+          buildReportHtml(displayReport, { printMode: true }),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setHtmlPreview(previewHtml);
+        setPrintableHtml(printable);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to build business report HTML:', error);
+          setHtmlPreview('');
+          setPrintableHtml('');
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [displayReport]);
 
   if (!hasRenderableContent && isGenerating) {
     return (
@@ -99,11 +144,11 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
             disabled={isGenerating || !displayReport?.markdown}
             onClick={() => downloadTextFile(`${fileName}.md`, markdown, 'text/markdown;charset=utf-8')}
           >
-            {t('Download MD')}
+            {t('Download Markdown')}
           </Button>
           <Button
             icon={<FileTextOutlined />}
-            disabled={isGenerating || !displayReport?.markdown}
+            disabled={isGenerating || !displayReport?.markdown || !printableHtml || exporting}
             onClick={() => downloadTextFile(`${fileName}.html`, printableHtml, 'text/html;charset=utf-8')}
           >
             {t('Download HTML')}
@@ -111,10 +156,19 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
           <Button
             type="primary"
             icon={<FilePdfOutlined />}
-            disabled={isGenerating || !displayReport?.markdown}
-            onClick={() => {
-              if (!printReport(displayReport)) {
+            loading={exporting}
+            disabled={isGenerating || !displayReport?.markdown || exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                if (!(await printReport(displayReport))) {
+                  message.error(t('Popup blocked. Please allow popups and try again.'));
+                }
+              } catch (error) {
+                console.error('Failed to print business report:', error);
                 message.error(t('Popup blocked. Please allow popups and try again.'));
+              } finally {
+                setExporting(false);
               }
             }}
           >
@@ -133,9 +187,11 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
                   maxHeight: '70vh',
                   overflow: 'auto',
                   padding: 16,
-                  border: '1px solid rgba(5, 5, 5, 0.06)',
-                  borderRadius: 12,
-                  background: '#fff',
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: token.borderRadiusLG,
+                  background: token.colorBgContainer,
+                  color: token.colorText,
+                  boxShadow: `inset 0 1px 0 ${token.colorFillQuaternary}`,
                 }}
               >
                 <Markdown message={previewMessage} />
@@ -165,18 +221,20 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
           {
             key: 'html',
             label: t('HTML'),
-            children: (
+            children: htmlPreview ? (
               <iframe
                 title={title}
                 srcDoc={htmlPreview}
                 style={{
                   width: '100%',
                   height: '70vh',
-                  border: '1px solid rgba(5, 5, 5, 0.06)',
-                  borderRadius: 12,
-                  background: '#fff',
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: token.borderRadiusLG,
+                  background: token.colorBgContainer,
                 }}
               />
+            ) : (
+              <Result icon={<LoadingOutlined spin />} title={t('Generating business analysis report...')} />
             ),
           },
         ]}

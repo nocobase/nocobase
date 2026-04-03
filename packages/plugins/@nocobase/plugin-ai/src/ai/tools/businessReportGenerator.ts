@@ -36,7 +36,6 @@ export default defineTools({
         .describe('Main report body in markdown. Use sections for findings, risks, and recommendations.'),
       charts: z.array(chartSchema).optional().describe('Charts included in the report.'),
       fileName: z.string().optional().describe('Optional export file name without extension.'),
-      generatedAt: z.string().optional().describe('Optional date or timestamp displayed in the report.'),
     }),
   },
   invoke: async (_ctx, args) => {

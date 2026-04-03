@@ -124,7 +124,7 @@ export const Echarts = (props: any) => {
               },
             },
           }}
-          theme={!isDarkTheme ? 'light' : 'defaultDark'}
+          theme={isDarkTheme ? 'dark' : 'default'}
         />
       </div>
     </>

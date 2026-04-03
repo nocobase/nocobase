@@ -743,6 +743,8 @@ export class AIEmployee {
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale() || 'en-US',
+        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale(), getCurrentTimezone(this.ctx)),
+        timezone: getCurrentTimezone(this.ctx),
       },
       knowledgeBase,
       availableSkills,
@@ -1567,6 +1569,37 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private get aiFilesModel() {
     return this.ctx.db.getModel('aiFiles');
+  }
+}
+
+function getCurrentTimezone(ctx: Context) {
+  return (
+    ctx.get?.('x-timezone') ||
+    ctx.request?.get?.('x-timezone') ||
+    ctx.request?.header?.['x-timezone'] ||
+    ctx.req?.headers?.['x-timezone'] ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  );
+}
+
+function getCurrentDateTimeForPrompt(locale: string | undefined, timezone?: string) {
+  const now = new Date();
+  const normalizedLocale = locale || 'en-US';
+
+  try {
+    const formatter = new Intl.DateTimeFormat(normalizedLocale, {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    return `${formatter.format(now)}${timezone ? ` (${timezone})` : ''}`;
+  } catch (error) {
+    return `${now.toISOString()}${timezone ? ` (${timezone})` : ''}`;
   }
 }
 

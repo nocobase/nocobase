@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { i18n } from '@nocobase/client';
+import * as echarts from 'echarts';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -37,9 +38,10 @@ export function getReportFileName(report: BusinessReport) {
 
 export function buildReportMarkdown(report: BusinessReport) {
   const parts: string[] = [`# ${report.title}`];
+  const generatedAt = formatReportGeneratedAt(report.generatedAt);
 
-  if (report.generatedAt) {
-    parts.push(`_Generated at: ${report.generatedAt}_`);
+  if (generatedAt) {
+    parts.push(`_${i18n.t('Generated at')}: ${generatedAt}_`);
   }
 
   if (report.summary) {
@@ -101,11 +103,10 @@ function buildReportBodyHtml(markdown: string) {
   return { body, charts };
 }
 
-export function buildReportHtml(report: BusinessReport, options?: { autoPrint?: boolean; printMode?: boolean }) {
+export async function buildReportHtml(report: BusinessReport, options?: { autoPrint?: boolean; printMode?: boolean }) {
   const markdown = buildReportMarkdown(report);
   const { body, charts } = buildReportBodyHtml(markdown);
   const printMode = options?.printMode === true;
-  const renderer = 'canvas';
   const htmlLang = getReportHtmlLang(report);
   const fontFamily = getReportFontFamily(htmlLang);
   const bodyBackground = printMode ? '#ffffff' : '#f5f7fb';
@@ -116,6 +117,12 @@ export function buildReportHtml(report: BusinessReport, options?: { autoPrint?: 
     ? 'background: #fff; border: 0; border-radius: 0; padding: 0; box-shadow: none; width: 100%;'
     : 'background: #fff; border: 1px solid #d0d5dd; border-radius: 20px; padding: 40px 48px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);';
   const chartHeight = printMode ? 320 : 360;
+  const chartImages = await renderChartsToImages(charts, {
+    chartHeight,
+    fontFamily,
+    printMode,
+  });
+  const bodyWithCharts = replaceChartPlaceholders(body, chartImages);
 
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(htmlLang)}">
@@ -123,7 +130,6 @@ export function buildReportHtml(report: BusinessReport, options?: { autoPrint?: 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(report.title)}</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <style>
       * { box-sizing: border-box; }
       html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -159,25 +165,12 @@ export function buildReportHtml(report: BusinessReport, options?: { autoPrint?: 
   </head>
   <body>
     <div class="report-shell">
-      <article class="report-paper">${body}</article>
+      <article class="report-paper">${bodyWithCharts}</article>
     </div>
-    <script>
-      const reportFontFamily = ${JSON.stringify(fontFamily)};
-      const charts = ${JSON.stringify(charts)};
-      const chartInstances = [];
-      charts.forEach(({ id, options }) => {
-        const el = document.getElementById(id);
-        if (!el || !window.echarts) return;
-        const chart = window.echarts.init(el, null, { renderer: '${renderer}' });
-        chart.setOption({ textStyle: { fontFamily: reportFontFamily } });
-        chart.setOption(options);
-        chartInstances.push({ id, chart, el });
-      });
-      ${
-        options?.autoPrint
-          ? `
-      async function waitForPrintableReady() {
-        await renderChartsForPrint();
+    ${
+      options?.autoPrint
+        ? `<script>
+      window.addEventListener('load', async () => {
         if (document.fonts?.ready) {
           try {
             await document.fonts.ready;
@@ -185,95 +178,15 @@ export function buildReportHtml(report: BusinessReport, options?: { autoPrint?: 
             console.error('Failed to wait for fonts before printing:', error);
           }
         }
-        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-      }
-
-      window.addEventListener('load', async () => {
-        try {
-          await waitForPrintableReady();
-        } finally {
-          setTimeout(() => window.print(), 150);
-        }
-      });
-      `
-          : printMode
-            ? `
-      window.addEventListener('load', async () => {
-        try {
-          await renderChartsForPrint();
-        } catch (error) {
-          console.error('Failed to render report charts for print:', error);
-        }
-      });
-      `
-            : ''
-      }
-
-      function waitForChartFinished(chart) {
-        return new Promise((resolve) => {
-          let settled = false;
-          const finish = () => {
-            if (settled) return;
-            settled = true;
-            chart.off('finished', finish);
-            resolve();
-          };
-          chart.on('finished', finish);
-          setTimeout(finish, 300);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.print();
+          });
         });
-      }
-
-      function normalizeChartOptionsForPrint(options) {
-        const normalized = {
-          ...options,
-          animation: false,
-          toolbox: { show: false },
-        };
-        if (options.grid) {
-          normalized.grid = Array.isArray(options.grid)
-            ? options.grid.map((grid) => ({ containLabel: true, ...grid }))
-            : { containLabel: true, ...options.grid };
-        }
-        return normalized;
-      }
-
-      function waitForNextFrame() {
-        return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-      }
-
-      async function renderChartsForPrint() {
-        if (!${printMode ? 'true' : 'false'}) {
-          return;
-        }
-        for (const { chart, el } of chartInstances) {
-          try {
-            const width = el.clientWidth || ${printMode ? 718 : 960};
-            const height = ${chartHeight};
-            chart.setOption(normalizeChartOptionsForPrint(chart.getOption()), true);
-            chart.resize({ width, height, silent: true });
-            await waitForNextFrame();
-            await waitForNextFrame();
-            await waitForChartFinished(chart);
-            const dataUrl = chart.getDataURL({
-              type: 'png',
-              pixelRatio: 3,
-              backgroundColor: '#ffffff',
-              excludeComponents: ['toolbox'],
-            });
-            const img = document.createElement('img');
-            img.className = 'report-chart-image';
-            img.src = dataUrl;
-            img.alt = '';
-            el.replaceWith(img);
-            chart.dispose();
-          } catch (error) {
-            console.error('Failed to rasterize report chart:', error);
-          }
-        }
-        chartInstances.length = 0;
-      }
-    </script>
+      });
+    </script>`
+        : ''
+    }
   </body>
 </html>`;
 }
@@ -288,12 +201,12 @@ export function downloadTextFile(filename: string, content: string, mimeType: st
   URL.revokeObjectURL(url);
 }
 
-export function printReport(report: BusinessReport) {
+export async function printReport(report: BusinessReport) {
   if (typeof window === 'undefined') {
     return false;
   }
 
-  const html = buildReportHtml(report, { autoPrint: true, printMode: true });
+  const html = await buildReportHtml(report, { autoPrint: true, printMode: true });
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -305,6 +218,122 @@ export function printReport(report: BusinessReport) {
     URL.revokeObjectURL(url);
   }, 60_000);
   return true;
+}
+
+async function renderChartsToImages(
+  charts: Array<{ id: string; options: Record<string, any> }>,
+  options: { chartHeight: number; fontFamily: string; printMode: boolean },
+) {
+  if (typeof document === 'undefined' || !charts.length) {
+    return new Map<string, string>();
+  }
+
+  const result = new Map<string, string>();
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.left = '-100000px';
+  host.style.top = '0';
+  host.style.width = `${options.printMode ? 718 : 960}px`;
+  host.style.pointerEvents = 'none';
+  host.style.opacity = '0';
+  host.style.zIndex = '-1';
+  document.body.appendChild(host);
+
+  try {
+    for (const chartItem of charts) {
+      const container = document.createElement('div');
+      container.style.width = host.style.width;
+      container.style.height = `${options.chartHeight}px`;
+      host.appendChild(container);
+
+      try {
+        const chart = echarts.init(container, 'default', { renderer: 'canvas' });
+        chart.setOption(
+          {
+            ...normalizeChartOptionsForExport(chartItem.options),
+            textStyle: {
+              ...(chartItem.options?.textStyle || {}),
+              fontFamily: options.fontFamily,
+            },
+          },
+          true,
+        );
+        chart.resize({
+          width: container.clientWidth || parseInt(host.style.width, 10),
+          height: options.chartHeight,
+          silent: true,
+        });
+        await waitForNextFrame();
+        await waitForNextFrame();
+        await waitForChartFinished(chart);
+        result.set(
+          chartItem.id,
+          chart.getDataURL({
+            type: 'png',
+            pixelRatio: 3,
+            backgroundColor: '#ffffff',
+            excludeComponents: ['toolbox'],
+          }),
+        );
+        chart.dispose();
+      } catch (error) {
+        console.error('Failed to render business report chart image:', error);
+      } finally {
+        container.remove();
+      }
+    }
+  } finally {
+    host.remove();
+  }
+
+  return result;
+}
+
+function replaceChartPlaceholders(body: string, chartImages: Map<string, string>) {
+  return body.replace(/<div id="([^"]+)" class="report-chart"><\/div>/g, (match, id) => {
+    const src = chartImages.get(id);
+    if (!src) {
+      return match;
+    }
+    return `<img class="report-chart-image" src="${src}" alt="" />`;
+  });
+}
+
+function normalizeChartOptionsForExport(options: Record<string, any>) {
+  const normalized = {
+    ...options,
+    animation: false,
+    toolbox: { show: false },
+  };
+
+  if (options.grid) {
+    normalized.grid = Array.isArray(options.grid)
+      ? options.grid.map((grid) => ({ containLabel: true, ...grid }))
+      : { containLabel: true, ...options.grid };
+  }
+
+  return normalized;
+}
+
+function waitForChartFinished(chart: echarts.ECharts) {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      chart.off('finished', finish);
+      resolve();
+    };
+
+    chart.on('finished', finish);
+    window.setTimeout(finish, 400);
+  });
+}
+
+function waitForNextFrame() {
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
 function escapeHtml(value: string) {
@@ -345,6 +374,33 @@ function getReportHtmlLang(report: BusinessReport) {
     return 'zh-CN';
   }
   return 'en-US';
+}
+
+function formatReportGeneratedAt(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    const locale = normalizeLanguageTag(i18n.language) || 'en-US';
+    try {
+      return new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }).format(parsed);
+    } catch (error) {
+      console.error('Failed to format business report generatedAt:', error);
+      return parsed.toLocaleString();
+    }
+  }
+
+  return value;
 }
 
 function getReportFontFamily(lang: string) {
