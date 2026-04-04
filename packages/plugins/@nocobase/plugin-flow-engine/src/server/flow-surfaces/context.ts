@@ -25,11 +25,18 @@ type FlowSurfacePopupContextLevel = {
 
 type FlowSurfaceChartQueryOutput = {
   alias: string;
+  source?: 'builder' | 'sql';
   type?: string;
   kind?: 'dimension' | 'measure';
   field?: string | string[];
   aggregation?: string;
   format?: string;
+};
+
+type FlowSurfaceChartCapabilityHint = {
+  key: string;
+  title: string;
+  description: string;
 };
 
 type FlowSurfaceChartMappingSupport = {
@@ -42,6 +49,9 @@ type FlowSurfaceChartContext = {
   aliases?: string[];
   supportedMappings?: Record<string, FlowSurfaceChartMappingSupport>;
   supportedVisualTypes?: string[];
+  safeDefaults?: FlowSurfaceChartCapabilityHint[];
+  riskyPatterns?: FlowSurfaceChartCapabilityHint[];
+  unsupportedPatterns?: FlowSurfaceChartCapabilityHint[];
 };
 
 export type FlowSurfaceContextSemantic = {
@@ -320,7 +330,13 @@ function buildChartQueryOutputsSpec(outputs: FlowSurfaceChartQueryOutput[]): Flo
         outputs.map((output) => {
           const fieldValue = Array.isArray(output.field) ? output.field.join('.') : output.field;
           const descSegments = [
-            output.kind === 'measure' ? 'Measure output' : output.kind === 'dimension' ? 'Dimension output' : '',
+            output.source === 'sql'
+              ? 'SQL preview output'
+              : output.kind === 'measure'
+                ? 'Measure output'
+                : output.kind === 'dimension'
+                  ? 'Dimension output'
+                  : '',
             fieldValue ? `field=${fieldValue}` : '',
             output.aggregation ? `aggregation=${output.aggregation}` : '',
             output.format ? `format=${output.format}` : '',
@@ -418,6 +434,31 @@ function buildChartSupportedVisualTypesSpec(types: string[]): FlowSurfaceContext
   };
 }
 
+function buildChartHintListSpec(
+  title: string,
+  hints: FlowSurfaceChartCapabilityHint[],
+): FlowSurfaceContextSpecNode | null {
+  if (!hints.length) {
+    return null;
+  }
+
+  return {
+    title,
+    type: 'object',
+    properties: () =>
+      Object.fromEntries(
+        hints.map((hint) => [
+          hint.key,
+          {
+            title: hint.title,
+            type: 'string',
+            description: hint.description,
+          } satisfies FlowSurfaceContextSpecNode,
+        ]),
+      ),
+  };
+}
+
 function createChartSpec(chart?: FlowSurfaceChartContext | null): FlowSurfaceContextSpecNode | null {
   if (!chart) {
     return null;
@@ -443,6 +484,18 @@ function createChartSpec(chart?: FlowSurfaceChartContext | null): FlowSurfaceCon
       const supportedVisualTypesSpec = buildChartSupportedVisualTypesSpec(chart.supportedVisualTypes || []);
       if (supportedVisualTypesSpec) {
         properties.supportedVisualTypes = supportedVisualTypesSpec;
+      }
+      const safeDefaultsSpec = buildChartHintListSpec('Safe defaults', chart.safeDefaults || []);
+      if (safeDefaultsSpec) {
+        properties.safeDefaults = safeDefaultsSpec;
+      }
+      const riskyPatternsSpec = buildChartHintListSpec('Risky patterns', chart.riskyPatterns || []);
+      if (riskyPatternsSpec) {
+        properties.riskyPatterns = riskyPatternsSpec;
+      }
+      const unsupportedPatternsSpec = buildChartHintListSpec('Unsupported patterns', chart.unsupportedPatterns || []);
+      if (unsupportedPatternsSpec) {
+        properties.unsupportedPatterns = unsupportedPatternsSpec;
       }
       return properties;
     },

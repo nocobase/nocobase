@@ -210,6 +210,9 @@ describe('flowSurfaces context', () => {
     expect(chartContext.vars.chart.properties.supportedMappings.properties.bar.properties.x.description).toContain(
       'Required',
     );
+    expect(chartContext.vars.chart.properties.safeDefaults.properties.builder_basic_minimal).toBeTruthy();
+    expect(chartContext.vars.chart.properties.riskyPatterns.properties.custom_visual_raw).toBeTruthy();
+    expect(chartContext.vars.chart.properties.unsupportedPatterns.properties.builder_measure_sorting).toBeTruthy();
 
     const configureSqlRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -246,8 +249,9 @@ describe('flowSurfaces context', () => {
     const sqlChartContext = getData(sqlChartContextRes);
     expect(sqlChartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
     expect(sqlChartContext.vars.chart.properties.supportedMappings.properties.pie.properties.category).toBeTruthy();
-    expect(sqlChartContext.vars.chart.properties.queryOutputs).toBeUndefined();
+    expect(sqlChartContext.vars.chart.properties.queryOutputs.properties.total.type).toBe('number');
     expect(sqlChartContext.vars.chart.properties.aliases).toBeUndefined();
+    expect(sqlChartContext.vars.chart.properties.safeDefaults.properties.block_outer_props_only).toBeTruthy();
   });
 
   it('should expose formValues on edit form, keep record hidden there, and expose item chain on nested association surfaces', async () => {

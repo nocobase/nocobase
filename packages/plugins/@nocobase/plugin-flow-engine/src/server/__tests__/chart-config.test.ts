@@ -64,7 +64,7 @@ describe('chart-config semantic helpers', () => {
   it('should persist sorting as query.orders[].order', () => {
     const next = buildChartConfigureFromSemanticChanges(baseConfigure, {
       query: {
-        sorting: [{ field: 'totalAmount', direction: 'desc' }],
+        sorting: [{ field: 'customerName', direction: 'desc' }],
       },
     });
 
@@ -72,27 +72,36 @@ describe('chart-config semantic helpers', () => {
       query: {
         mode: 'builder',
         collectionPath: ['main', 'demo_orders'],
-        orders: [{ field: 'totalAmount', order: 'DESC' }],
+        orders: [{ field: 'customerName', order: 'DESC' }],
       },
     });
     expect(next.query.orders[0].direction).toBeUndefined();
   });
 
-  it('should accept sorting by aggregated measure alias but reject the raw field', () => {
-    expect(
+  it('should reject sorting by aggregated measure outputs in builder mode', () => {
+    expect(() =>
       buildChartConfigureFromSemanticChanges(baseConfigure, {
         query: {
           sorting: [{ field: 'totalAmount', direction: 'desc' }],
         },
       }),
-    ).toBeTruthy();
+    ).toThrowError(FlowSurfaceBadRequestError);
 
     expect(() =>
-      buildChartConfigureFromSemanticChanges(baseConfigure, {
-        query: {
-          sorting: [{ field: 'amount', direction: 'desc' }],
+      buildChartConfigureFromSemanticChanges(
+        {
+          query: {
+            mode: 'builder',
+            collectionPath: ['main', 'demo_orders'],
+            measures: [{ field: 'amount', aggregation: 'sum' }],
+          },
         },
-      }),
+        {
+          query: {
+            sorting: [{ field: 'amount', direction: 'desc' }],
+          },
+        },
+      ),
     ).toThrowError(FlowSurfaceBadRequestError);
   });
 
@@ -288,6 +297,28 @@ describe('chart-config semantic helpers', () => {
     });
   });
 
+  it('should clear stale basic visual mappings when query mode switches to sql without an explicit visual patch', () => {
+    const next = buildChartConfigureFromSemanticChanges(baseConfigure, {
+      query: {
+        mode: 'sql',
+        sql: 'select 1 as total',
+        sqlDatasource: 'main',
+      },
+    });
+
+    expect(next.query).toMatchObject({
+      mode: 'sql',
+      sql: 'select 1 as total',
+      sqlDatasource: 'main',
+    });
+    expect(next.chart.option.builder).toMatchObject({
+      type: 'bar',
+      legend: true,
+    });
+    expect(next.chart.option.builder.xField).toBeUndefined();
+    expect(next.chart.option.builder.yField).toBeUndefined();
+  });
+
   it('should reject mixing legacy configure with semantic changes', () => {
     expect(() =>
       buildChartConfigureFromSemanticChanges(baseConfigure, {
@@ -313,15 +344,15 @@ describe('chart-config semantic helpers', () => {
           collectionName: 'sales_report',
         },
         measures: [{ field: 'amount', aggregation: 'sum', alias: 'totalAmount' }],
-        dimensions: [{ field: 'region', alias: 'salesRegion' }],
-        orders: [{ field: 'totalAmount', order: 'DESC' }],
+        dimensions: [{ field: 'region' }],
+        orders: [{ field: 'region', order: 'DESC' }],
       },
       chart: {
         option: {
           mode: 'basic',
           builder: {
             type: 'bar',
-            xField: 'salesRegion',
+            xField: 'region',
             yField: 'totalAmount',
           },
         },
@@ -333,15 +364,15 @@ describe('chart-config semantic helpers', () => {
         mode: 'builder',
         collectionPath: ['analytics', 'sales_report'],
         measures: [{ field: 'amount', aggregation: 'sum', alias: 'totalAmount' }],
-        dimensions: [{ field: 'region', alias: 'salesRegion' }],
-        orders: [{ field: 'totalAmount', order: 'DESC' }],
+        dimensions: [{ field: 'region' }],
+        orders: [{ field: 'region', order: 'DESC' }],
       },
       chart: {
         option: {
           mode: 'basic',
           builder: {
             type: 'bar',
-            xField: 'salesRegion',
+            xField: 'region',
             yField: 'totalAmount',
           },
         },

@@ -8,7 +8,7 @@
  */
 
 import type { Plugin } from '@nocobase/server';
-import { uid } from '@nocobase/utils';
+import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import {
@@ -43,11 +43,16 @@ import {
 import {
   buildChartConfigureFromSemanticChanges,
   canonicalizeChartConfigure,
+  deriveChartSemanticState,
   getChartBuilderQueryAliases,
   getChartBuilderQueryOutputs,
   getChartBuilderResourceInit,
+  getChartRiskyPatternHints,
+  getChartSafeDefaultHints,
   getChartSupportedMappingsByType,
   getChartSupportedVisualTypes,
+  getChartUnsupportedPatternHints,
+  getChartVisualMappingAliases,
 } from './chart-config';
 import { SurfaceLocator } from './locator';
 import { isPopupHostUse } from './placement';
@@ -3456,6 +3461,7 @@ export class FlowSurfacesService {
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
     this.syncChartCardDecoratorPropsForUpdateSettings(current, nextPayload);
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
+    await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
     this.syncChartCardRuntimeStepParamsForUpdateSettings(current, nextPayload);
 
     const effectiveNode = {
@@ -3582,6 +3588,228 @@ export class FlowSurfacesService {
       return;
     }
     _.set(nextPayload, ['stepParams', 'chartSettings', 'configure'], canonicalizeChartConfigure(nextConfigure));
+  }
+
+  private async validateChartConfigureForUpdateSettings(
+    current: any,
+    nextPayload: Record<string, any>,
+    transaction?: any,
+  ) {
+    if (current?.use !== 'ChartBlockModel') {
+      return;
+    }
+
+    const configure = _.get(nextPayload, ['stepParams', 'chartSettings', 'configure']);
+    if (!_.isPlainObject(configure)) {
+      return;
+    }
+
+    const state = deriveChartSemanticState(configure);
+    if (state.query?.mode !== 'sql') {
+      return;
+    }
+
+    const sqlPreview = await this.resolveSqlChartPreview(state.query, transaction);
+    if (state.visual?.mode !== 'basic' || !sqlPreview.queryOutputs?.length) {
+      return;
+    }
+
+    const supportedOutputs = new Set(
+      sqlPreview.queryOutputs.map((output) => String(output?.alias || '').trim()).filter(Boolean),
+    );
+
+    for (const mappingField of getChartVisualMappingAliases(state.visual)) {
+      if (!supportedOutputs.has(mappingField)) {
+        throw new FlowSurfaceBadRequestError(
+          `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
+        );
+      }
+    }
+  }
+
+  private stripChartSqlForInspection(sql: string) {
+    return sql
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/--[^\r\n]*/g, ' ')
+      .replace(/'(?:''|[^'])*'/g, "''")
+      .replace(/"(?:[""]|[^"])*"/g, '""');
+  }
+
+  private normalizeReadOnlyChartSql(sql: string) {
+    const normalized = (typeof sql === 'string' ? sql : '').trim();
+    const inspected = this.stripChartSqlForInspection(normalized)
+      .replace(/;+\s*$/, '')
+      .trim();
+    if (!inspected) {
+      throw new FlowSurfaceBadRequestError('chart query.sql cannot be empty');
+    }
+    if (inspected.includes(';')) {
+      throw new FlowSurfaceBadRequestError('chart query.sql must be a single read-only SELECT statement');
+    }
+    if (!/^(with|select)\b/i.test(inspected)) {
+      throw new FlowSurfaceBadRequestError('chart query.sql must start with SELECT or WITH');
+    }
+    if (
+      /\b(insert|update|delete|drop|alter|truncate|create|replace|grant|revoke|merge|call|execute)\b/i.test(inspected)
+    ) {
+      throw new FlowSurfaceBadRequestError('chart query.sql must be read-only');
+    }
+    return normalized.replace(/;+\s*$/, '').trim();
+  }
+
+  private buildChartSqlPreviewQuery(sql: string) {
+    return `SELECT * FROM (${sql}) AS __flow_surfaces_chart_preview LIMIT 1`;
+  }
+
+  private buildChartSqlPreviewMetadataQuery(sql: string) {
+    return `SELECT * FROM (${sql}) AS __flow_surfaces_chart_preview LIMIT 0`;
+  }
+
+  private async runChartSqlPreviewRaw(db: any, sql: string, bind: any, transaction?: any) {
+    if (typeof db?.runSQLWithSchema === 'function') {
+      return db.runSQLWithSchema(sql, bind, transaction);
+    }
+    if (db?.sequelize?.query) {
+      return db.sequelize.query(sql, { bind, transaction });
+    }
+    throw new FlowSurfaceBadRequestError('chart SQL preview is unavailable for the target data source');
+  }
+
+  private extractSqlChartPreviewAliases(metadata: any) {
+    const pickName = (field: any) =>
+      [field?.name, field?.columnName, field?.fieldName].find((value) => typeof value === 'string' && value.trim());
+
+    if (Array.isArray(metadata)) {
+      return _.uniq(
+        metadata
+          .map((field) => pickName(field))
+          .map((value) => (typeof value === 'string' ? value.trim() : ''))
+          .filter(Boolean),
+      );
+    }
+
+    if (Array.isArray(metadata?.fields)) {
+      return _.uniq(
+        metadata.fields
+          .map((field: any) => pickName(field))
+          .map((value: any) => (typeof value === 'string' ? value.trim() : ''))
+          .filter(Boolean),
+      );
+    }
+
+    return [];
+  }
+
+  private inferSqlChartOutputType(value: any) {
+    if (Array.isArray(value)) {
+      return 'array';
+    }
+    if (_.isBoolean(value)) {
+      return 'boolean';
+    }
+    if (_.isFinite(value)) {
+      return 'number';
+    }
+    if (_.isPlainObject(value)) {
+      return 'object';
+    }
+    return 'string';
+  }
+
+  private mergeChartHintLists(
+    base: Array<{ key: string; title: string; description: string }>,
+    extra: Array<{
+      key: string;
+      title: string;
+      description: string;
+    }>,
+  ) {
+    return _.uniqBy([...(base || []), ...(extra || [])], 'key');
+  }
+
+  private async resolveSqlChartPreview(query: any, _transaction?: any) {
+    const normalizedSql = this.normalizeReadOnlyChartSql(query?.sql);
+    const transformed = await transformSQL(normalizedSql);
+    const riskyHints: Array<{ key: string; title: string; description: string }> = [];
+    const hasRuntimeContext =
+      Object.keys(transformed?.bind || {}).length > 0 || Object.keys(transformed?.liquidContext || {}).length > 0;
+
+    if (hasRuntimeContext) {
+      riskyHints.push({
+        key: 'sql_runtime_context',
+        title: 'SQL depends on runtime context',
+        description:
+          'This SQL uses template variables or ctx placeholders, so FlowSurfaces cannot preview its outputs before runtime.',
+      });
+      return { riskyHints };
+    }
+
+    const db = (this.plugin as any).getDatabaseByDataSourceKey?.(query?.sqlDatasource || 'main');
+    if (!db?.runSQL) {
+      riskyHints.push({
+        key: 'sql_preview_unavailable',
+        title: 'SQL preview unavailable',
+        description: 'FlowSurfaces could not access the target data source to preview SQL outputs.',
+      });
+      return { riskyHints };
+    }
+
+    try {
+      const previewMetadataResult = await this.runChartSqlPreviewRaw(
+        db,
+        this.buildChartSqlPreviewMetadataQuery(transformed.sql),
+        transformed.bind,
+        _transaction,
+      );
+      const previewAliases = this.extractSqlChartPreviewAliases(previewMetadataResult?.[1]);
+      const rows = await db.runSQL(this.buildChartSqlPreviewQuery(transformed.sql), {
+        type: 'selectRows',
+        bind: transformed.bind,
+        transaction: _transaction,
+      });
+      const firstRow = Array.isArray(rows) ? rows[0] : undefined;
+
+      if (previewAliases.length) {
+        return {
+          queryOutputs: previewAliases.map((alias) => ({
+            alias,
+            source: 'sql' as const,
+            type:
+              _.isPlainObject(firstRow) && Object.prototype.hasOwnProperty.call(firstRow, alias)
+                ? this.inferSqlChartOutputType(firstRow[alias])
+                : undefined,
+          })),
+          riskyHints,
+        };
+      }
+
+      if (!_.isPlainObject(firstRow)) {
+        riskyHints.push({
+          key: 'sql_outputs_unavailable',
+          title: 'SQL outputs could not be inferred',
+          description:
+            'The SQL preview returned no sample row, so FlowSurfaces could not cross-validate visual.mappings against concrete output fields.',
+        });
+        return { riskyHints };
+      }
+
+      const outputAliases = Object.keys(firstRow);
+      if (!outputAliases.length) {
+        throw new FlowSurfaceBadRequestError('chart query.sql must expose at least one output column');
+      }
+
+      return {
+        queryOutputs: outputAliases.map((alias) => ({
+          alias,
+          source: 'sql' as const,
+          type: this.inferSqlChartOutputType(firstRow[alias]),
+        })),
+        riskyHints,
+      };
+    } catch (error: any) {
+      const message = error?.message || String(error);
+      throw new FlowSurfaceBadRequestError(`chart query.sql is invalid: ${message}`);
+    }
   }
 
   private syncChartCardRuntimeStepParamsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
@@ -7036,7 +7264,7 @@ export class FlowSurfacesService {
       itemCollections,
       itemRootCollection: itemCollections.length ? formValuesCollection || recordCollection || undefined : undefined,
       popupLevels,
-      chart: this.buildChartContextSemantic(chartNode),
+      chart: await this.buildChartContextSemantic(chartNode, transaction),
     };
   }
 
@@ -7084,7 +7312,10 @@ export class FlowSurfacesService {
     return this.getCollection(resourceInit.dataSourceKey || 'main', resourceInit.collectionName);
   }
 
-  private buildChartContextSemantic(chartNode?: any): NonNullable<FlowSurfaceContextSemantic['chart']> | undefined {
+  private async buildChartContextSemantic(
+    chartNode?: any,
+    transaction?: any,
+  ): Promise<NonNullable<FlowSurfaceContextSemantic['chart']> | undefined> {
     if (chartNode?.use !== 'ChartBlockModel') {
       return undefined;
     }
@@ -7093,20 +7324,31 @@ export class FlowSurfacesService {
     const chart: NonNullable<FlowSurfaceContextSemantic['chart']> = {
       supportedMappings: getChartSupportedMappingsByType(),
       supportedVisualTypes: getChartSupportedVisualTypes(),
+      safeDefaults: getChartSafeDefaultHints(),
+      riskyPatterns: getChartRiskyPatternHints(),
+      unsupportedPatterns: getChartUnsupportedPatternHints(),
     };
+    const semanticState = deriveChartSemanticState(configure);
     const resourceInit = getChartBuilderResourceInit(configure);
-    if (!resourceInit) {
+    if (resourceInit) {
+      const collection = this.resolveCollectionFromInit(resourceInit);
+      const queryOutputs = getChartBuilderQueryOutputs(configure).map((output) => ({
+        ...output,
+        type: this.resolveChartQueryOutputType(collection, resourceInit.dataSourceKey, output),
+      }));
+      if (queryOutputs.length) {
+        chart.queryOutputs = queryOutputs;
+        chart.aliases = getChartBuilderQueryAliases(configure);
+      }
       return chart;
     }
 
-    const collection = this.resolveCollectionFromInit(resourceInit);
-    const queryOutputs = getChartBuilderQueryOutputs(configure).map((output) => ({
-      ...output,
-      type: this.resolveChartQueryOutputType(collection, resourceInit.dataSourceKey, output),
-    }));
-    if (queryOutputs.length) {
-      chart.queryOutputs = queryOutputs;
-      chart.aliases = getChartBuilderQueryAliases(configure);
+    if (semanticState.query?.mode === 'sql') {
+      const sqlPreview = await this.resolveSqlChartPreview(semanticState.query, transaction);
+      if (sqlPreview.queryOutputs?.length) {
+        chart.queryOutputs = sqlPreview.queryOutputs;
+      }
+      chart.riskyPatterns = this.mergeChartHintLists(chart.riskyPatterns || [], sqlPreview.riskyHints || []);
     }
     return chart;
   }

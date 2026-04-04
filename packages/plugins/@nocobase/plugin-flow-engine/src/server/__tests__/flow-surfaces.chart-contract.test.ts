@@ -79,6 +79,13 @@ describe('flowSurfaces chart contract helpers', () => {
             },
           },
           supportedVisualTypes: ['bar', 'pie'],
+          safeDefaults: [
+            {
+              key: 'builder_basic_minimal',
+              title: 'Use builder + basic first',
+              description: 'Prefer builder/basic for the first attempt.',
+            },
+          ],
         },
       },
       path: 'chart',
@@ -91,6 +98,7 @@ describe('flowSurfaces chart contract helpers', () => {
       'Required',
     );
     expect(response.vars.chart.properties?.supportedVisualTypes?.properties?.bar?.title).toBe('bar');
+    expect(response.vars.chart.properties?.safeDefaults?.properties?.builder_basic_minimal).toBeTruthy();
   });
 
   it('should collect chart uids from a removed subtree before deleting flowSql bindings', async () => {

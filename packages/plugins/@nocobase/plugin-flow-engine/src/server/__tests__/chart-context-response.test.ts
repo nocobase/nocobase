@@ -62,6 +62,27 @@ describe('chart context response helpers', () => {
             },
           },
           supportedVisualTypes: ['bar', 'pie', 'scatter'],
+          safeDefaults: [
+            {
+              key: 'builder_basic_minimal',
+              title: 'Use builder + basic first',
+              description: 'Prefer builder/basic for the first attempt.',
+            },
+          ],
+          riskyPatterns: [
+            {
+              key: 'custom_visual_raw',
+              title: 'Custom visual raw option',
+              description: 'Raw custom chart options should be browser-verified.',
+            },
+          ],
+          unsupportedPatterns: [
+            {
+              key: 'builder_measure_sorting',
+              title: 'Builder sorting on derived measure outputs',
+              description: 'Aggregated measure sorting is rejected.',
+            },
+          ],
         },
       },
       maxDepth: 4,
@@ -88,12 +109,24 @@ describe('chart context response helpers', () => {
       'Optional',
     );
     expect(response.vars.chart.properties.supportedVisualTypes.properties.scatter).toBeTruthy();
+    expect(response.vars.chart.properties.safeDefaults.properties.builder_basic_minimal.description).toContain(
+      'builder/basic',
+    );
+    expect(response.vars.chart.properties.riskyPatterns.properties.custom_visual_raw).toBeTruthy();
+    expect(response.vars.chart.properties.unsupportedPatterns.properties.builder_measure_sorting).toBeTruthy();
   });
 
-  it('should keep sql-style chart helper metadata without query outputs', () => {
+  it('should keep sql-style chart helper metadata and support sql preview outputs', () => {
     const response = buildFlowSurfaceContextResponse({
       semantic: {
         chart: {
+          queryOutputs: [
+            {
+              alias: 'total',
+              source: 'sql',
+              type: 'number',
+            },
+          ],
           supportedMappings: {
             bar: {
               allowed: ['x', 'y'],
@@ -101,6 +134,13 @@ describe('chart context response helpers', () => {
             },
           },
           supportedVisualTypes: ['bar', 'line'],
+          safeDefaults: [
+            {
+              key: 'block_outer_props_only',
+              title: 'Keep outer props minimal',
+              description: 'Only expose block-level card props by default.',
+            },
+          ],
         },
       },
       path: 'chart',
@@ -109,7 +149,8 @@ describe('chart context response helpers', () => {
 
     expect(response.vars.chart.properties.supportedMappings.properties.bar.properties.x).toBeTruthy();
     expect(response.vars.chart.properties.supportedVisualTypes.properties.line).toBeTruthy();
-    expect(response.vars.chart.properties.queryOutputs).toBeUndefined();
+    expect(response.vars.chart.properties.queryOutputs.properties.total.description).toContain('SQL preview output');
     expect(response.vars.chart.properties.aliases).toBeUndefined();
+    expect(response.vars.chart.properties.safeDefaults.properties.block_outer_props_only).toBeTruthy();
   });
 });

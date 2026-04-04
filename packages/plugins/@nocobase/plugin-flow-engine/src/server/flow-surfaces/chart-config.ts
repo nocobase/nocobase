@@ -31,17 +31,66 @@ export const CHART_FUNNEL_SORTS = ['descending', 'ascending'] as const;
 
 export type ChartBuilderQueryOutput = {
   alias: string;
-  kind: 'dimension' | 'measure';
-  field: string | string[];
+  source?: 'builder' | 'sql';
+  kind?: 'dimension' | 'measure';
+  field?: string | string[];
   aggregation?: (typeof CHART_QUERY_AGGREGATIONS)[number];
   distinct?: boolean;
   format?: string;
+};
+
+export type ChartCapabilityHint = {
+  key: string;
+  title: string;
+  description: string;
 };
 
 const EMPTY_FILTER_GROUP = {
   logic: '$and',
   items: [],
 } as const;
+
+const CHART_SAFE_DEFAULT_HINTS: ChartCapabilityHint[] = [
+  {
+    key: 'builder_basic_minimal',
+    title: 'Use builder + basic first',
+    description:
+      "Prefer query.mode='builder' with visual.mode='basic', a single measure, explicit mappings, and no sorting on the first attempt.",
+  },
+  {
+    key: 'block_outer_props_only',
+    title: 'Keep outer props minimal',
+    description:
+      'Expose only title, displayTitle, height, and heightMode at the chart block level unless a richer chart contract is required.',
+  },
+];
+
+const CHART_RISKY_PATTERN_HINTS: ChartCapabilityHint[] = [
+  {
+    key: 'basic_multi_measure',
+    title: 'Basic visual with multiple measures',
+    description: 'Basic visual mappings with multiple measures often need manual tuning and browser verification.',
+  },
+  {
+    key: 'custom_visual_raw',
+    title: 'Custom visual raw option',
+    description: "visual.mode='custom' relies on raw ECharts option code and is not schema-validated by FlowSurfaces.",
+  },
+  {
+    key: 'events_raw',
+    title: 'Raw chart events',
+    description: 'events.raw executes custom JS against the chart instance and should always be browser-verified.',
+  },
+];
+
+const CHART_UNSUPPORTED_PATTERN_HINTS: ChartCapabilityHint[] = [
+  {
+    key: 'builder_measure_sorting',
+    title: 'Builder sorting on derived measure outputs',
+    description:
+      'Builder query.sorting cannot target aggregated measure outputs or custom measure aliases because the current runtime rejects that shape.',
+  },
+];
 
 const CHART_QUERY_MODE_SET = new Set<string>(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set<string>(CHART_VISUAL_MODES);
@@ -650,6 +699,20 @@ function sanitizeBasicVisualForBuilderQuery(visual: any, query: any) {
   });
 }
 
+function sanitizeBasicVisualForSqlQuery(visual: any) {
+  if (!_.isPlainObject(visual) || inferVisualMode(visual) !== 'basic') {
+    return visual;
+  }
+
+  return buildDefinedObject({
+    mode: 'basic',
+    type: inferBasicVisualType(visual),
+    ...(Object.keys(ensurePlainObject(visual.style || {}, 'chart visual.style')).length
+      ? { style: _.cloneDeep(visual.style) }
+      : {}),
+  });
+}
+
 function mergeChartVisualSection(current: any, patch: any) {
   if (_.isUndefined(patch)) {
     return _.isUndefined(current) ? undefined : _.cloneDeep(current);
@@ -715,6 +778,7 @@ function buildBuilderQueryOutputs(query: any): ChartBuilderQueryOutput[] {
     }
     outputs.push({
       alias,
+      source: 'builder',
       kind: 'dimension',
       field: _.cloneDeep(dimension.field),
       format: dimension.format,
@@ -727,6 +791,7 @@ function buildBuilderQueryOutputs(query: any): ChartBuilderQueryOutput[] {
     }
     outputs.push({
       alias,
+      source: 'builder',
       kind: 'measure',
       field: _.cloneDeep(measure.field),
       aggregation: measure.aggregation,
@@ -746,6 +811,33 @@ function assertBuilderSortingFields(query: any, sorting: any[]) {
     const alias = aliasOfFieldValue(item.field);
     if (!alias || !allowedFields.has(alias)) {
       throw new FlowSurfaceBadRequestError('chart query.sorting only supports selected dimension/measure fields');
+    }
+  }
+}
+
+function assertBuilderRuntimeCompatibleSorting(query: any, sorting: any[]) {
+  if (!sorting?.length) {
+    return;
+  }
+
+  const unsupportedMeasureOutputs = new Set<string>();
+  for (const measure of _.castArray(query?.measures || [])) {
+    const outputAlias = aliasOfSelection(measure);
+    const rawFieldAlias = aliasOfFieldValue(measure?.field);
+    if (!outputAlias) {
+      continue;
+    }
+    if (measure?.aggregation || (rawFieldAlias && outputAlias !== rawFieldAlias)) {
+      unsupportedMeasureOutputs.add(outputAlias);
+    }
+  }
+
+  for (const item of sorting) {
+    const sortingField = aliasOfFieldValue(item?.field);
+    if (sortingField && unsupportedMeasureOutputs.has(sortingField)) {
+      throw new FlowSurfaceBadRequestError(
+        'chart query.sorting does not support aggregated measure outputs or custom measure aliases in builder mode',
+      );
     }
   }
 }
@@ -777,6 +869,7 @@ function normalizeBuilderQuery(query: Record<string, any>) {
         })();
   const filter = normalizeFilterGroupValue(query.filter, 'chart query.filter');
   assertBuilderSortingFields({ measures, dimensions }, sorting || []);
+  assertBuilderRuntimeCompatibleSorting({ measures, dimensions }, sorting || []);
 
   return buildDefinedObject({
     mode: 'builder',
@@ -1199,6 +1292,37 @@ export function getChartSupportedMappingsByType() {
   );
 }
 
+export function getChartSafeDefaultHints() {
+  return _.cloneDeep(CHART_SAFE_DEFAULT_HINTS);
+}
+
+export function getChartRiskyPatternHints() {
+  return _.cloneDeep(CHART_RISKY_PATTERN_HINTS);
+}
+
+export function getChartUnsupportedPatternHints() {
+  return _.cloneDeep(CHART_UNSUPPORTED_PATTERN_HINTS);
+}
+
+export function getChartVisualMappingAliases(input: any) {
+  const visual = input?.visual ? input.visual : input;
+  if (!_.isPlainObject(visual)) {
+    return [];
+  }
+
+  const semanticVisual =
+    visual?.mode || visual?.mappings || visual?.type ? visual : deriveChartVisual({ chart: { option: visual } });
+  if (!semanticVisual || semanticVisual.mode !== 'basic' || !_.isPlainObject(semanticVisual.mappings)) {
+    return [];
+  }
+
+  return _.uniq(
+    Object.values(semanticVisual.mappings)
+      .map((value) => aliasOfFieldValue(value))
+      .filter(Boolean),
+  );
+}
+
 export function canonicalizeChartConfigure(configure: any) {
   if (_.isUndefined(configure) || _.isNull(configure)) {
     return configure;
@@ -1287,6 +1411,15 @@ export function buildChartConfigureFromSemanticChanges(currentConfigure: any, ch
     nextState.visual?.mode === 'basic'
   ) {
     nextState.visual = sanitizeBasicVisualForBuilderQuery(nextState.visual, nextState.query);
+  }
+
+  if (
+    hasMeaningfulSemanticPatch(changes, 'query') &&
+    !hasMeaningfulSemanticPatch(changes, 'visual') &&
+    nextState.query?.mode === 'sql' &&
+    nextState.visual?.mode === 'basic'
+  ) {
+    nextState.visual = sanitizeBasicVisualForSqlQuery(nextState.visual);
   }
 
   return rebuildChartConfigureFromSemanticState(nextState);

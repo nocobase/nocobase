@@ -71,7 +71,7 @@ describe('flowSurfaces chart write paths', () => {
                   },
                 ],
                 dimensions: [{ field: 'department.title' }],
-                sorting: [{ field: 'employeeCount', direction: 'desc' }],
+                sorting: [{ field: 'department.title', direction: 'desc' }],
               },
               chart: {
                 option: {
@@ -100,7 +100,7 @@ describe('flowSurfaces chart write paths', () => {
       collectionPath: ['main', 'employees'],
       measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
       dimensions: [{ field: 'department.title' }],
-      orders: [{ field: 'employeeCount', order: 'DESC' }],
+      orders: [{ field: 'department.title', order: 'DESC' }],
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.query?.resource).toBeUndefined();
 
@@ -176,7 +176,7 @@ describe('flowSurfaces chart write paths', () => {
               },
             ],
             dimensions: [{ field: 'department.title' }],
-            sorting: [{ field: 'employeeCount', direction: 'desc' }],
+            sorting: [{ field: 'department.title', direction: 'desc' }],
           },
           visual: {
             mode: 'basic',
@@ -222,6 +222,122 @@ describe('flowSurfaces chart write paths', () => {
       }),
     );
     expect(surface.tree.stepParams?.chartSettings?.configure?.query?.orders).toEqual([]);
+  });
+
+  it('should reject builder sorting on aggregated measure outputs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart invalid builder sorting page',
+      tabTitle: 'Chart invalid builder sorting tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'department.title' }],
+            sorting: [{ field: 'employeeCount', direction: 'desc' }],
+          },
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'department.title',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+    });
+
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('does not support aggregated measure outputs');
+  });
+
+  it('should reject invalid sql preview and sql mappings outside inferred outputs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart invalid sql page',
+      tabTitle: 'Chart invalid sql tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const invalidSqlRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: 'select * from missing_flow_surfaces_chart_table',
+            sqlDatasource: 'main',
+          },
+        },
+      },
+    });
+    expect(invalidSqlRes.status).toBe(400);
+    expect(readErrorMessage(invalidSqlRes)).toContain('chart query.sql is invalid');
+
+    const zeroOutputRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: 'select from (values (1)) as sample(x)',
+            sqlDatasource: 'main',
+          },
+        },
+      },
+    });
+    expect(zeroOutputRes.status).toBe(400);
+    expect(readErrorMessage(zeroOutputRes)).toContain('chart query.sql must expose at least one output column');
+
+    const invalidMappingRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: 'select nickname, count(*) as employeeCount from employees group by nickname',
+            sqlDatasource: 'main',
+          },
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'missingField',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidMappingRes.status).toBe(400);
+    expect(readErrorMessage(invalidMappingRes)).toContain('chart visual mappings only support SQL query output fields');
   });
 
   it('should keep legacy partial configure writes during compose for backward compatibility', async () => {
