@@ -49,7 +49,7 @@ function simplifyCollectionsListResult(result: any) {
     meta: result?.meta,
     nextActions: [
       'Use collections:get with filterByTk=<collectionName> to inspect one collection in detail.',
-      'Use collections:verify after apply to confirm the normalized field set.',
+      'Use collections:apply with --verify when you need normalized verification in the same response.',
     ],
   };
 }

@@ -127,7 +127,13 @@ export function buildTemplateBaseline(input: PlainObject) {
             targetTitleField: 'title',
             title: 'Storage',
           }),
-          { name: 'meta', type: 'jsonb', defaultValue: {} },
+          normalizeFieldInput({
+            name: 'meta',
+            interface: 'json',
+            type: 'jsonb',
+            defaultValue: {},
+            title: 'Meta',
+          }),
           ...buildPresetFields({
             includeId: true,
             includeCreatedAt: true,
@@ -165,7 +171,12 @@ export function buildTemplateBaseline(input: PlainObject) {
               ],
             },
           }),
-          { name: 'exclude', type: 'json' },
+          normalizeFieldInput({
+            name: 'exclude',
+            interface: 'json',
+            type: 'json',
+            title: 'Exclude',
+          }),
         ],
       };
     case 'view':

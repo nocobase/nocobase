@@ -120,5 +120,5 @@ export function normalizeChoiceEnum(enumValues: any[] = []) {
 }
 
 export function uniqueByName(fields: PlainObject[]) {
-  return _.uniqBy(fields.filter(Boolean), 'name');
+  return _.uniqBy(fields.filter(Boolean).reverse(), 'name').reverse();
 }

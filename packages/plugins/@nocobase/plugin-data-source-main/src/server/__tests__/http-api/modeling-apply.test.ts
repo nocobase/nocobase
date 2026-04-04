@@ -47,7 +47,7 @@ describe('modeling apply actions', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.body.verify.valid).toBe(true);
+    expect(response.body.data.verify.valid).toBe(true);
 
     const collection = app.db.getCollection('orders');
     expect(collection).toBeDefined();
@@ -120,9 +120,56 @@ describe('modeling apply actions', () => {
       },
     });
     expect(response.statusCode).toBe(200);
-    expect(response.body.verify.valid).toBe(true);
+    expect(response.body.data.verify.valid).toBe(true);
 
     const categories = app.db.getCollection('categories');
     expect([...categories.fields.keys()]).toEqual(expect.arrayContaining(['parentId', 'parent', 'children', 'title']));
+  });
+
+  it('should apply a file collection with template defaults', async () => {
+    await app.destroy();
+    app = await createApp({
+      plugins: ['file-manager'],
+    });
+    agent = app.agent();
+
+    const response = await agent.resource('collections').apply({
+      values: {
+        name: 'files',
+        title: '文件',
+        template: 'file',
+        fields: [{ name: 'title', title: '文件标题', interface: 'input' }],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.verify.valid).toBe(true);
+
+    const files = app.db.getCollection('files');
+    expect(files).toBeDefined();
+    expect(files.hasField('meta')).toBe(true);
+    expect(files.getField('meta').options.interface).toBe('json');
+    expect(files.getField('meta').options.type).toBe('jsonb');
+    expect(files.getField('title').options.uiSchema.title).toBe('文件标题');
+  });
+
+  it('should apply a calendar collection with template defaults', async () => {
+    const response = await agent.resource('collections').apply({
+      values: {
+        name: 'events',
+        title: 'Events',
+        template: 'calendar',
+        fields: [{ name: 'subject', title: 'Subject', interface: 'input' }],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.verify.valid).toBe(true);
+
+    const events = app.db.getCollection('events');
+    expect(events).toBeDefined();
+    expect(events.hasField('exclude')).toBe(true);
+    expect(events.getField('exclude').options.interface).toBe('json');
+    expect(events.getField('exclude').options.type).toBe('json');
   });
 });

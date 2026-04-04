@@ -109,6 +109,13 @@ export function verifyCollectionDefinition(app: any, collectionName: string) {
   const issues: string[] = [];
   const fields = [...collection.fields.values()].map((field: any) => field.options);
   const fieldNames = new Set(fields.map((field) => field.name));
+  const relationBackingFieldNames = new Set(
+    fields.flatMap((field) => [field.foreignKey, field.otherKey].filter(Boolean) as string[]),
+  );
+  const shouldSkipPresentationChecks = (field: PlainObject) =>
+    field.isForeignKey === true ||
+    relationBackingFieldNames.has(field.name) ||
+    ['exclude', 'meta', 'sort'].includes(field.name);
 
   if (!collection.options?.template) {
     issues.push('Collection template is missing.');
@@ -119,13 +126,13 @@ export function verifyCollectionDefinition(app: any, collectionName: string) {
   }
 
   for (const field of fields) {
-    if (!field.interface && !['exclude', 'meta'].includes(field.name)) {
+    if (!field.interface && !shouldSkipPresentationChecks(field)) {
       issues.push(`Field ${field.name} is missing interface.`);
     }
     if (!field.type) {
       issues.push(`Field ${field.name} is missing type.`);
     }
-    if (!field.uiSchema?.title && !['exclude', 'meta'].includes(field.name)) {
+    if (!field.uiSchema?.title && !shouldSkipPresentationChecks(field)) {
       issues.push(`Field ${field.name} is missing uiSchema.title.`);
     }
   }
