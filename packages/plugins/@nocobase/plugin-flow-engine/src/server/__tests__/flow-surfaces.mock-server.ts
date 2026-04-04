@@ -29,5 +29,50 @@ export async function loginFlowSurfacesRootAgent(app: MockServer) {
     },
   });
 
-  return app.agent().login(rootUser);
+  const login = async () => app.agent().login(rootUser);
+  let currentAgent = await login();
+
+  return new Proxy(currentAgent, {
+    get(target, prop, receiver) {
+      if (prop !== 'resource') {
+        return Reflect.get(target, prop, receiver);
+      }
+
+      return (resourceName: string, ...resourceArgs: any[]) =>
+        new Proxy(
+          {},
+          {
+            get(_resourceTarget, action) {
+              return async (...callArgs: any[]) => {
+                let lastError: any;
+                for (let attempt = 0; attempt < 2; attempt += 1) {
+                  if (attempt > 0) {
+                    currentAgent = await login();
+                  }
+                  try {
+                    const resource = currentAgent.resource(resourceName, ...resourceArgs);
+                    const method = resource?.[action as keyof typeof resource];
+                    if (typeof method !== 'function') {
+                      return method;
+                    }
+                    return await method.apply(resource, callArgs);
+                  } catch (error: any) {
+                    lastError = error;
+                    if (!isRetriableAgentError(error) || attempt > 0) {
+                      throw error;
+                    }
+                  }
+                }
+                throw lastError;
+              };
+            },
+          },
+        );
+    },
+  });
+}
+
+function isRetriableAgentError(error: any) {
+  const message = String(error?.message || '');
+  return error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT' || /socket hang up|timed out/i.test(message);
 }

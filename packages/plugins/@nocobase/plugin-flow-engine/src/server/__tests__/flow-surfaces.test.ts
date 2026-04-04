@@ -7909,11 +7909,23 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 }
 
 async function getSurface(rootAgent: any, target: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').get({
-      ...target,
-    }),
-  );
+  let lastError: any;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return getData(
+        await rootAgent.resource('flowSurfaces').get({
+          ...target,
+        }),
+      );
+    } catch (error: any) {
+      lastError = error;
+      const isSocketHangUp = error?.code === 'ECONNRESET' || /socket hang up/i.test(String(error?.message || ''));
+      if (!isSocketHangUp || attempt > 0) {
+        throw error;
+      }
+    }
+  }
+  throw lastError;
 }
 
 async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
