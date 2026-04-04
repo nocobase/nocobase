@@ -276,7 +276,7 @@ describe('flowSurfaces API contract', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'page.tabSchemaUid',
+                  ref: 'page.tabSchemaUid',
                 },
               },
               type: 'details',
@@ -291,7 +291,7 @@ describe('flowSurfaces API contract', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'block.uid',
+                  ref: 'block.uid',
                 },
               },
               fieldPath: 'not_exists',
@@ -341,6 +341,55 @@ describe('flowSurfaces API contract', () => {
         }),
       ).toBeNull();
     }
+
+    const legacyRefRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        ops: [
+          {
+            opId: 'page',
+            type: 'createPage',
+            values: {
+              pageSchemaUid: 'legacy_ref_contract_page_schema_uid',
+              tabSchemaUid: 'legacy_ref_contract_tab_schema_uid',
+              title: 'Legacy ref contract page',
+              tabTitle: 'Legacy ref contract tab',
+            },
+          },
+          {
+            type: 'addBlock',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'page.tabSchemaUid',
+                },
+              },
+              type: 'details',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(legacyRefRes.status).toBe(400);
+    expect(readErrorMessage(legacyRefRes)).toContain('"$ref"');
+    expect(readErrorMessage(legacyRefRes)).toContain('ref');
+
+    const invalidTypeRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        ops: [
+          {
+            type: 'notSupported',
+            values: {},
+          },
+        ],
+      },
+    });
+    expect(invalidTypeRes.status).toBe(400);
+    expect(readErrorMessage(invalidTypeRes)).toContain(`notSupported`);
+    expect(readErrorMessage(invalidTypeRes)).toContain('not supported');
   });
 
   it('should keep createPage addTab get removeTab destroyPage behavior unchanged', async () => {

@@ -8,7 +8,11 @@
  */
 
 import swaggerDocument from '../../swagger';
-import { FLOW_SURFACES_ACTION_METHODS, FLOW_SURFACES_ACTION_NAMES } from '../flow-surfaces/constants';
+import {
+  FLOW_SURFACE_MUTATE_OP_TYPES,
+  FLOW_SURFACES_ACTION_METHODS,
+  FLOW_SURFACES_ACTION_NAMES,
+} from '../flow-surfaces/constants';
 
 const DOC_ONLY_ACTION_NAMES = ['addRecordAction', 'addBlocks', 'addFields', 'addActions', 'addRecordActions'] as const;
 
@@ -22,6 +26,7 @@ describe('flowSurfaces swagger', () => {
 
     expect(swaggerDocument.openapi).toBe('3.0.2');
     expect(swaggerDocument.info?.title).toBe('NocoBase API - Flow engine plugin');
+    expect(swaggerDocument.info?.version).toBe('1.0.0');
     expect(actualPaths).toEqual(expect.arrayContaining(expectedPaths));
     expect(new Set(actualPaths).size).toBe(actualPaths.length);
 
@@ -45,7 +50,7 @@ describe('flowSurfaces swagger', () => {
     }
   });
 
-  it('should expose recursive tree schemas, mutate op union and representative request examples', () => {
+  it('should expose recursive tree schemas, flattened mutate schema and representative request examples', () => {
     const schemas = swaggerDocument.components?.schemas || {};
     const parameters = swaggerDocument.components?.parameters || {};
 
@@ -89,7 +94,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeRecordActionSpec).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureRequest).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureResult).toBeTruthy();
-    expect(schemas.FlowSurfaceMutateOp).toBeTruthy();
+    expect(schemas.FlowSurfaceMutateOpItem).toBeTruthy();
+    expect(schemas.FlowSurfaceMutateRef).toBeTruthy();
     expect(schemas.FlowSurfaceMutationResponse).toBeTruthy();
     expect(schemas.FlowSurfaceErrorResponse).toBeTruthy();
     expect(schemas.FlowSurfaceErrorResponse.example).toMatchObject({
@@ -138,21 +144,15 @@ describe('flowSurfaces swagger', () => {
       ]),
     );
 
-    const mutateOpRefs = (schemas.FlowSurfaceMutateOp.oneOf || []).map((item: any) => item.$ref);
-    expect(mutateOpRefs).toHaveLength(17);
-    expect(mutateOpRefs).toContain('#/components/schemas/FlowSurfaceMutateOpCreateMenu');
-    expect(mutateOpRefs).toContain('#/components/schemas/FlowSurfaceMutateOpUpdateMenu');
-    expect(mutateOpRefs).toEqual(
-      expect.arrayContaining([
-        '#/components/schemas/FlowSurfaceMutateOpCreatePage',
-        '#/components/schemas/FlowSurfaceMutateOpAddBlock',
-        '#/components/schemas/FlowSurfaceMutateOpAddField',
-        '#/components/schemas/FlowSurfaceMutateOpAddAction',
-        '#/components/schemas/FlowSurfaceMutateOpAddRecordAction',
-        '#/components/schemas/FlowSurfaceMutateOpUpdateSettings',
-        '#/components/schemas/FlowSurfaceMutateOpSetLayout',
-        '#/components/schemas/FlowSurfaceMutateOpRemoveNode',
-      ]),
+    expect(schemas.FlowSurfaceMutateRef.required).toEqual(['ref']);
+    expect(schemas.FlowSurfaceMutateRef.properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceMutateRef.properties.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceMutateOpItem.required).toEqual(['type']);
+    expect(schemas.FlowSurfaceMutateOpItem.properties.type.enum).toEqual([...FLOW_SURFACE_MUTATE_OP_TYPES]);
+    expect(schemas.FlowSurfaceMutateOpItem.properties.values.additionalProperties).toBe(true);
+    expect(schemas.FlowSurfaceMutateOpItem.properties.values.description).toContain('{ ref:');
+    expect(schemas.FlowSurfaceMutateOpItem.properties.type.enum).toEqual(
+      expect.arrayContaining(['addPopupTab', 'updatePopupTab', 'movePopupTab', 'removePopupTab']),
     );
 
     expect(parameters.flowSurfaceTargetUid.example).toBe('view-action-uid');
@@ -615,8 +615,14 @@ describe('flowSurfaces swagger', () => {
 
     const mutateRequest = swaggerDocument.paths['/flowSurfaces:mutate'].post.requestBody.content['application/json'];
     expect(mutateRequest.example.atomic).toBe(true);
-    expect(mutateRequest.example.ops[1].values.menuRouteId.$ref).toBe('menu.routeId');
-    expect(mutateRequest.example.ops[2].values.target.uid.$ref).toBe('page.tabSchemaUid');
+    expect(mutateRequest.example.ops[1].values.menuRouteId.ref).toBe('menu.routeId');
+    expect(mutateRequest.example.ops[2].values.target.uid.ref).toBe('page.tabSchemaUid');
+    expect(JSON.stringify(mutateRequest.example)).not.toContain('"$ref"');
+    expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceMutateOpItem',
+    );
+    expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.allOf).toBeUndefined();
+    expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.oneOf).toBeUndefined();
 
     const createMenuRequest =
       swaggerDocument.paths['/flowSurfaces:createMenu'].post.requestBody.content['application/json'];

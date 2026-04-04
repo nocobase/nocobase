@@ -13,6 +13,7 @@ export default {
   openapi: '3.0.2',
   info: {
     title: 'NocoBase API - Flow engine plugin',
+    version: '1.0.0',
   },
   ...flowSurfacesSwagger,
 };

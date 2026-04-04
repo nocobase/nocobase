@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FLOW_SURFACE_MUTATE_OP_TYPES } from './constants';
+
 export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
 export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
 export type FlowSurfaceActionScope = 'block' | 'record' | 'form' | 'filterForm' | 'actionPanel';
@@ -205,30 +207,11 @@ export type FlowSurfaceContextResponse = {
   vars: Record<string, FlowSurfaceContextVarInfo>;
 };
 
+export type FlowSurfaceMutateOpType = (typeof FLOW_SURFACE_MUTATE_OP_TYPES)[number];
+
 export type FlowSurfaceMutateOp = {
   opId?: string;
-  type:
-    | 'createMenu'
-    | 'updateMenu'
-    | 'createPage'
-    | 'destroyPage'
-    | 'addTab'
-    | 'updateTab'
-    | 'moveTab'
-    | 'removeTab'
-    | 'addPopupTab'
-    | 'updatePopupTab'
-    | 'movePopupTab'
-    | 'removePopupTab'
-    | 'addBlock'
-    | 'addField'
-    | 'addAction'
-    | 'addRecordAction'
-    | 'updateSettings'
-    | 'setEventFlows'
-    | 'setLayout'
-    | 'moveNode'
-    | 'removeNode';
+  type: FlowSurfaceMutateOpType;
   target?: FlowSurfaceWriteTarget;
   values?: Record<string, any>;
 };

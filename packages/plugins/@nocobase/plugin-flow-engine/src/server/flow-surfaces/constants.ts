@@ -44,6 +44,30 @@ export const FLOW_SURFACES_ACTION_NAMES = [
 
 export type FlowSurfacesActionName = (typeof FLOW_SURFACES_ACTION_NAMES)[number];
 
+export const FLOW_SURFACE_MUTATE_OP_TYPES = [
+  'createMenu',
+  'updateMenu',
+  'createPage',
+  'destroyPage',
+  'addTab',
+  'updateTab',
+  'moveTab',
+  'removeTab',
+  'addPopupTab',
+  'updatePopupTab',
+  'movePopupTab',
+  'removePopupTab',
+  'addBlock',
+  'addField',
+  'addAction',
+  'addRecordAction',
+  'updateSettings',
+  'setEventFlows',
+  'setLayout',
+  'moveNode',
+  'removeNode',
+] as const;
+
 export const FLOW_SURFACES_ACTION_METHODS: Record<FlowSurfacesActionName, 'get' | 'post'> = {
   catalog: 'post',
   context: 'post',

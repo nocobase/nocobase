@@ -656,7 +656,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'page.tabSchemaUid',
+                  ref: 'page.tabSchemaUid',
                 },
               },
               type: 'details',
@@ -671,7 +671,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'block.uid',
+                  ref: 'block.uid',
                 },
               },
               fieldPath: 'not_exists',
@@ -716,6 +716,41 @@ describe('flowSurfaces resource', () => {
         },
       }),
     ).toBeNull();
+
+    const legacyRefRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        ops: [
+          {
+            opId: 'page',
+            type: 'createPage',
+            values: {
+              pageSchemaUid: 'legacy_ref_page_schema_uid',
+              tabSchemaUid: 'legacy_ref_tab_schema_uid',
+              title: 'Legacy ref page',
+              tabTitle: 'Legacy ref tab',
+            },
+          },
+          {
+            type: 'addBlock',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'page.tabSchemaUid',
+                },
+              },
+              type: 'details',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(legacyRefRes.status).toBe(400);
+    expect(legacyRefRes.body.errors?.[0]?.message).toContain('"$ref"');
+    expect(legacyRefRes.body.errors?.[0]?.message).toContain('ref');
 
     const page = await createPage(rootAgent, {
       title: 'Contract page',
@@ -5845,7 +5880,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'page.tabSchemaUid',
+                  ref: 'page.tabSchemaUid',
                 },
               },
               type: 'details',
@@ -5860,7 +5895,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'block.uid',
+                  ref: 'block.uid',
                 },
               },
               fieldPath: 'not_exists',

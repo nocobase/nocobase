@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FLOW_SURFACES_ACTION_METHODS, FLOW_SURFACES_ACTION_NAMES } from '../server/flow-surfaces/constants';
+import {
+  FLOW_SURFACE_MUTATE_OP_TYPES,
+  FLOW_SURFACES_ACTION_METHODS,
+  FLOW_SURFACES_ACTION_NAMES,
+} from '../server/flow-surfaces/constants';
 
 const FLOW_SURFACES_TAG = 'flowSurfaces';
 const ANY_OBJECT_SCHEMA = {
@@ -1086,7 +1090,7 @@ const examples = {
         type: 'createPage',
         values: {
           menuRouteId: {
-            $ref: 'menu.routeId',
+            ref: 'menu.routeId',
           },
           tabTitle: 'Overview',
         },
@@ -1097,7 +1101,7 @@ const examples = {
         values: {
           target: {
             uid: {
-              $ref: 'page.tabSchemaUid',
+              ref: 'page.tabSchemaUid',
             },
           },
           type: 'table',
@@ -1112,7 +1116,7 @@ const examples = {
         values: {
           target: {
             uid: {
-              $ref: 'table.uid',
+              ref: 'table.uid',
             },
           },
           fieldPath: 'nickname',
@@ -1642,7 +1646,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute multiple operations atomically',
     description: valuesCompatibilityNote(
-      '按顺序执行 `ops[]`，支持 `opId` 和 `{$ref:"<opId>.<field>"}` 引用前一步结果。V1 仅支持 `atomic=true`。',
+      '按顺序执行 `ops[]`，支持 `opId` 和 `{ref:"<opId>.<field>"}` 引用前一步结果。V1 仅支持 `atomic=true`。',
     ),
     requestBody: requestBody('FlowSurfaceMutateRequest', examples.mutate),
     responses: responses('FlowSurfaceMutationResponse'),
@@ -1711,11 +1715,11 @@ const parameters = {
 };
 
 const schemas = {
-  FlowSurfaceOpReference: {
+  FlowSurfaceMutateRef: {
     type: 'object',
-    required: ['$ref'],
+    required: ['ref'],
     properties: {
-      $ref: {
+      ref: {
         type: 'string',
         description: 'Reference to a previous mutate op result field, for example `page.tabSchemaUid`.',
       },
@@ -1723,10 +1727,10 @@ const schemas = {
     additionalProperties: false,
   },
   FlowSurfaceResolvableString: {
-    oneOf: [{ type: 'string' }, ref('FlowSurfaceOpReference')],
+    oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateRef')],
   },
   FlowSurfaceResolvableIdentifier: {
-    oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceOpReference')],
+    oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceMutateRef')],
   },
   FlowSurfaceWriteTarget: {
     type: 'object',
@@ -4125,307 +4129,25 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceMutateOpBase: {
+  FlowSurfaceMutateOpItem: {
     type: 'object',
+    required: ['type'],
     properties: {
       opId: {
         type: 'string',
       },
+      type: {
+        type: 'string',
+        enum: [...FLOW_SURFACE_MUTATE_OP_TYPES],
+      },
       target: ref('FlowSurfaceMutateWriteTarget'),
+      values: {
+        ...ANY_OBJECT_SCHEMA,
+        description:
+          'Business payload for the corresponding `/flowSurfaces:<type>` action. Nested refs must use `{ ref: "<opId>.<path>" }`.',
+      },
     },
-  },
-  FlowSurfaceMutateOpCreatePage: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['createPage'],
-          },
-          values: ref('FlowSurfaceCreatePageRequest'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpCreateMenu: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['createMenu'],
-          },
-          values: ref('FlowSurfaceCreateMenuRequest'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpUpdateMenu: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['updateMenu'],
-          },
-          values: ref('FlowSurfaceUpdateMenuRequest'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpDestroyPage: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['destroyPage'],
-          },
-          values: ref('FlowSurfaceDestroyPageRequest'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpAddTab: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['addTab'],
-          },
-          values: ref('FlowSurfaceMutateAddTabValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpUpdateTab: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['updateTab'],
-          },
-          values: ref('FlowSurfaceMutateUpdateTabValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpMoveTab: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['moveTab'],
-          },
-          values: ref('FlowSurfaceMutateMoveTabValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpRemoveTab: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['removeTab'],
-          },
-          values: ref('FlowSurfaceMutateRemoveTabValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpAddBlock: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['addBlock'],
-          },
-          values: ref('FlowSurfaceMutateAddBlockValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpAddField: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['addField'],
-          },
-          values: ref('FlowSurfaceMutateAddFieldValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpAddAction: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['addAction'],
-          },
-          values: ref('FlowSurfaceMutateAddActionValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpAddRecordAction: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['addRecordAction'],
-          },
-          values: ref('FlowSurfaceMutateAddRecordActionValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpUpdateSettings: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['updateSettings'],
-          },
-          values: ref('FlowSurfaceMutateUpdateSettingsValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpSetEventFlows: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['setEventFlows'],
-          },
-          values: ref('FlowSurfaceMutateSetEventFlowsValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpSetLayout: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['setLayout'],
-          },
-          values: ref('FlowSurfaceMutateSetLayoutValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpMoveNode: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['moveNode'],
-          },
-          values: ref('FlowSurfaceMutateMoveNodeValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOpRemoveNode: {
-    allOf: [
-      ref('FlowSurfaceMutateOpBase'),
-      {
-        type: 'object',
-        required: ['type', 'values'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['removeNode'],
-          },
-          values: ref('FlowSurfaceMutateRemoveNodeValues'),
-        },
-      },
-    ],
-  },
-  FlowSurfaceMutateOp: {
-    oneOf: [
-      ref('FlowSurfaceMutateOpCreateMenu'),
-      ref('FlowSurfaceMutateOpUpdateMenu'),
-      ref('FlowSurfaceMutateOpCreatePage'),
-      ref('FlowSurfaceMutateOpDestroyPage'),
-      ref('FlowSurfaceMutateOpAddTab'),
-      ref('FlowSurfaceMutateOpUpdateTab'),
-      ref('FlowSurfaceMutateOpMoveTab'),
-      ref('FlowSurfaceMutateOpRemoveTab'),
-      ref('FlowSurfaceMutateOpAddBlock'),
-      ref('FlowSurfaceMutateOpAddField'),
-      ref('FlowSurfaceMutateOpAddAction'),
-      ref('FlowSurfaceMutateOpAddRecordAction'),
-      ref('FlowSurfaceMutateOpUpdateSettings'),
-      ref('FlowSurfaceMutateOpSetEventFlows'),
-      ref('FlowSurfaceMutateOpSetLayout'),
-      ref('FlowSurfaceMutateOpMoveNode'),
-      ref('FlowSurfaceMutateOpRemoveNode'),
-    ],
+    additionalProperties: false,
   },
   FlowSurfaceMutateRequest: {
     type: 'object',
@@ -4438,7 +4160,7 @@ const schemas = {
       },
       ops: {
         type: 'array',
-        items: ref('FlowSurfaceMutateOp'),
+        items: ref('FlowSurfaceMutateOpItem'),
       },
     },
     additionalProperties: false,

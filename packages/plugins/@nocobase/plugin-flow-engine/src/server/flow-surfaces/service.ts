@@ -3942,7 +3942,7 @@ export class FlowSurfacesService {
         result = await this.removeNode(resolvedValues, options);
         break;
       default:
-        throw new Error(`flowSurfaces mutate op '${op.type}' is not supported`);
+        throwBadRequest(`flowSurfaces mutate op '${op.type}' is not supported`);
     }
     if (resolvedValues.clientKey) {
       ctx.clientKeyToUid[resolvedValues.clientKey] =

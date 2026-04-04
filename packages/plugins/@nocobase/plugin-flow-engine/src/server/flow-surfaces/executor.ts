@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { FlowSurfaceBadRequestError } from './errors';
 import type { FlowSurfaceExecutorContext, FlowSurfaceMutateOp } from './types';
 
 export async function executeMutateOps(
@@ -38,8 +39,16 @@ function resolveRefs(input: any, refs: Map<string, any>): any {
     return input.map((item) => resolveRefs(item, refs));
   }
   if (_.isPlainObject(input)) {
-    if (typeof input.$ref === 'string') {
-      return readRef(input.$ref, refs);
+    if (Object.prototype.hasOwnProperty.call(input, '$ref')) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces mutate refs must use { ref: "op.path" }; "$ref" is no longer supported`,
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'ref')) {
+      if (typeof input.ref !== 'string') {
+        throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref must be a string`);
+      }
+      return readRef(input.ref, refs);
     }
     return Object.fromEntries(Object.entries(input).map(([key, value]) => [key, resolveRefs(value, refs)]));
   }
@@ -47,9 +56,13 @@ function resolveRefs(input: any, refs: Map<string, any>): any {
 }
 
 function readRef(path: string, refs: Map<string, any>) {
-  const [opId, ...segments] = String(path).split('.');
+  const trimmedPath = String(path || '').trim();
+  if (!trimmedPath) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref cannot be empty`);
+  }
+  const [opId, ...segments] = trimmedPath.split('.');
   if (!refs.has(opId)) {
-    throw new Error(`flowSurfaces mutate ref '${opId}' not found`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref '${opId}' not found`);
   }
   const value = refs.get(opId);
   return segments.length ? _.get(value, segments.join('.')) : value;
