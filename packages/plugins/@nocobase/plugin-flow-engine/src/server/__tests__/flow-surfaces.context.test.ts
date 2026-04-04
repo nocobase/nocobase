@@ -137,6 +137,119 @@ describe('flowSurfaces context', () => {
     expect(tableContext.vars.record).toBeUndefined();
   });
 
+  it('should expose builder chart collection context but hide it for sql charts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Context chart page',
+      tabTitle: 'Context chart tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const configureBuilderRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'department.title' }],
+          },
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'department.title',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+    });
+    expect(configureBuilderRes.status).toBe(200);
+
+    const builderContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: chartBlock.uid },
+        path: 'collection',
+        maxDepth: 3,
+      },
+    });
+    expect(builderContextRes.status).toBe(200);
+    const builderContext = getData(builderContextRes);
+    expect(builderContext.vars.collection.properties.nickname).toBeTruthy();
+    expect(builderContext.vars.collection.properties.department.properties.title).toBeTruthy();
+
+    const chartContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: chartBlock.uid },
+        path: 'chart',
+        maxDepth: 4,
+      },
+    });
+    expect(chartContextRes.status).toBe(200);
+    const chartContext = getData(chartContextRes);
+    expect(chartContext.vars.chart.properties.queryOutputs.properties.employeeCount.type).toBe('number');
+    expect(chartContext.vars.chart.properties.queryOutputs.properties['department.title'].type).toBe('string');
+    expect(chartContext.vars.chart.properties.aliases.properties.employeeCount).toBeTruthy();
+    expect(chartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
+    expect(chartContext.vars.chart.properties.supportedMappings.properties.bar.properties.x.description).toContain(
+      'Required',
+    );
+
+    const configureSqlRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: 'select 1 as total',
+            sqlDatasource: 'main',
+          },
+        },
+      },
+    });
+    expect(configureSqlRes.status).toBe(200);
+
+    const sqlContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: chartBlock.uid },
+        path: 'collection',
+        maxDepth: 3,
+      },
+    });
+    expect(sqlContextRes.status).toBe(200);
+    expect(getData(sqlContextRes).vars.collection).toBeUndefined();
+
+    const sqlChartContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: chartBlock.uid },
+        path: 'chart',
+        maxDepth: 4,
+      },
+    });
+    expect(sqlChartContextRes.status).toBe(200);
+    const sqlChartContext = getData(sqlChartContextRes);
+    expect(sqlChartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
+    expect(sqlChartContext.vars.chart.properties.supportedMappings.properties.pie.properties.category).toBeTruthy();
+    expect(sqlChartContext.vars.chart.properties.queryOutputs).toBeUndefined();
+    expect(sqlChartContext.vars.chart.properties.aliases).toBeUndefined();
+  });
+
   it('should expose formValues on edit form, keep record hidden there, and expose item chain on nested association surfaces', async () => {
     const page = await createPage(rootAgent, {
       title: 'Context form page',

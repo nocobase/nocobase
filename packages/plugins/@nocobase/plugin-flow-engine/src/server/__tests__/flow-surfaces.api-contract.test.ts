@@ -2851,16 +2851,27 @@ describe('flowSurfaces API contract', () => {
             key: 'chart',
             type: 'chart',
             settings: {
-              configure: {
-                query: {
-                  mode: 'builder',
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
                 },
-                chart: {
-                  option: {
-                    legend: {
-                      show: true,
-                    },
+                measures: [
+                  {
+                    field: 'id',
+                    aggregation: 'count',
+                    alias: 'employeeCount',
                   },
+                ],
+                dimensions: [{ field: 'department' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'department',
+                  y: 'employeeCount',
                 },
               },
             },
@@ -3095,6 +3106,18 @@ describe('flowSurfaces API contract', () => {
               configure: {
                 query: {
                   mode: 'sql',
+                  sql: 'select department, count(*) as employeeCount from employees group by department',
+                  sqlDatasource: 'main',
+                },
+                chart: {
+                  option: {
+                    mode: 'basic',
+                    builder: {
+                      type: 'bar',
+                      xField: 'department',
+                      yField: 'employeeCount',
+                    },
+                  },
                 },
               },
             },

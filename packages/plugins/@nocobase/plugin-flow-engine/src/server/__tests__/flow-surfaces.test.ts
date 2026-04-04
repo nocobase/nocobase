@@ -2774,7 +2774,8 @@ describe('flowSurfaces resource', () => {
           chartSettings: {
             configure: {
               query: {
-                mode: 'builder',
+                mode: 'sql',
+                sql: 'select 1 as value',
               },
               chart: {
                 option: {
@@ -4414,6 +4415,170 @@ describe('flowSurfaces resource', () => {
     expect(
       _.castArray(pageGridAfterRemove?.filterManager || []).some(
         (item: any) => item.filterId === departmentField.wrapperUid,
+      ),
+    ).toBe(false);
+  });
+
+  it('should persist sql chart bindings and resync filter-form target bindings when chart mode changes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart filter target page',
+      tabTitle: 'Chart filter target tab',
+    });
+
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const chartUid = await addBlock(rootAgent, page.tabSchemaUid, 'chart', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const configureBuilderRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'department.title' }],
+          },
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'department.title',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+    });
+    expect(configureBuilderRes.status).toBe(200);
+
+    const filterCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: { uid: filterFormUid },
+        },
+      }),
+    );
+    expect(filterCatalog.fields.some((item: any) => item.key === 'nickname' && item.targetBlockUid === chartUid)).toBe(
+      true,
+    );
+
+    const nicknameFilterField = await addField(rootAgent, filterFormUid, 'nickname', {
+      defaultTargetUid: chartUid,
+    });
+    const pageGrid = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGrid?.filterManager || []).find((item: any) => item.filterId === nicknameFilterField.wrapperUid),
+    ).toMatchObject({
+      targetId: chartUid,
+      filterPaths: ['nickname'],
+    });
+
+    const configureSqlRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: 'select nickname, count(*) as employeeCount from employees group by nickname',
+            sqlDatasource: 'main',
+          },
+        },
+      },
+    });
+    expect(configureSqlRes.status).toBe(200);
+
+    const flowSqlRecord = await db.getRepository('flowSql').findOne({
+      filter: { uid: chartUid },
+    });
+    expect(flowSqlRecord?.get?.('sql')).toContain('group by nickname');
+
+    const pageGridAfterSql = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterSql?.filterManager || []).some(
+        (item: any) => item.filterId === nicknameFilterField.wrapperUid,
+      ),
+    ).toBe(false);
+
+    const configureBackToBuilderRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'department.title' }],
+          },
+        },
+      },
+    });
+    expect(configureBackToBuilderRes.status).toBe(200);
+    const staleFlowSqlRecord = await db.getRepository('flowSql').findOne({
+      filter: { uid: chartUid },
+    });
+    expect(staleFlowSqlRecord).toBeNull();
+
+    const pageGridAfterBuilder = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterBuilder?.filterManager || []).find(
+        (item: any) => item.filterId === nicknameFilterField.wrapperUid,
+      ),
+    ).toMatchObject({
+      targetId: chartUid,
+      filterPaths: ['nickname'],
+    });
+
+    const configureOtherCollectionRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'departments',
+            },
+            measures: [
+              {
+                field: 'title',
+                aggregation: 'count',
+                alias: 'departmentCount',
+              },
+            ],
+            dimensions: [{ field: 'location' }],
+          },
+        },
+      },
+    });
+    expect(configureOtherCollectionRes.status).toBe(200);
+
+    const pageGridAfterCollectionChange = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterCollectionChange?.filterManager || []).some(
+        (item: any) => item.filterId === nicknameFilterField.wrapperUid,
       ),
     ).toBe(false);
   });

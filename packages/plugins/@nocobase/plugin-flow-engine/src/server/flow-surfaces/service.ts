@@ -40,6 +40,15 @@ import {
   normalizeFieldContainerKind,
   shouldUseAssociationTitleTextDisplay,
 } from './field-semantics';
+import {
+  buildChartConfigureFromSemanticChanges,
+  canonicalizeChartConfigure,
+  getChartBuilderQueryAliases,
+  getChartBuilderQueryOutputs,
+  getChartBuilderResourceInit,
+  getChartSupportedMappingsByType,
+  getChartSupportedVisualTypes,
+} from './chart-config';
 import { SurfaceLocator } from './locator';
 import { isPopupHostUse } from './placement';
 import { FlowSurfaceRouteSync } from './route-sync';
@@ -2231,10 +2240,24 @@ export class FlowSurfacesService {
       subKey: 'page',
       includeAsyncNode: true,
     });
+    const chartUids = [...this.collectChartBlockUidsFromTree(pageModel)];
+    const tabRoutes = _.castArray(pageRoute?.get?.('children') || pageRoute?.children || []);
+    for (const tabRoute of tabRoutes) {
+      const tabSchemaUid = tabRoute?.get?.('schemaUid') || tabRoute?.schemaUid;
+      if (!tabSchemaUid) {
+        continue;
+      }
+      const tabGrid = await this.repository.findModelByParentId(tabSchemaUid, {
+        transaction: options.transaction,
+        subKey: 'grid',
+        includeAsyncNode: true,
+      });
+      chartUids.push(...this.collectChartBlockUidsFromTree(tabGrid));
+    }
+    await this.removeFlowSqlBindingsForChartUids(chartUids, options.transaction);
     if (pageModel?.uid) {
       await this.repository.remove(pageModel.uid, { transaction: options.transaction });
     }
-    const tabRoutes = _.castArray(pageRoute?.get?.('children') || pageRoute?.children || []);
     for (const tabRoute of tabRoutes) {
       await this.routeSync.removeTabAnchorTree(
         tabRoute?.get?.('schemaUid') || tabRoute?.schemaUid,
@@ -2410,6 +2433,7 @@ export class FlowSurfacesService {
   async removeTab(values: Record<string, any>, options: { transaction?: any } = {}) {
     const uid = this.normalizeRootUidValue('removeTab', values);
     const resolved = await this.assertRouteBackedTabUidTarget('removeTab', uid, options.transaction);
+    await this.removeNodeTreeWithBindings(resolved.uid, options.transaction);
     await this.routeSync.removeTabAnchorTree(resolved.uid, options.transaction);
     await this.db.getRepository('desktopRoutes').destroy({
       filter: {
@@ -2536,7 +2560,7 @@ export class FlowSurfacesService {
       this.normalizeWriteTarget('removePopupTab', values?.target, values).uid,
       options.transaction,
     );
-    await this.repository.remove(popupTab.uid, { transaction: options.transaction });
+    await this.removeNodeTreeWithBindings(popupTab.uid, options.transaction);
     return { uid: popupTab.uid };
   }
 
@@ -3401,16 +3425,22 @@ export class FlowSurfacesService {
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const contract = getNodeContract(current.use);
+    const editableDomains =
+      current?.use === 'ChartBlockModel'
+        ? _.uniq([...contract.editableDomains, 'props', 'decoratorProps'])
+        : contract.editableDomains;
     const nextPayload: Record<string, any> = { uid: current.uid };
 
     (['props', 'decoratorProps', 'stepParams', 'flowRegistry'] as FlowSurfaceNodeDomain[]).forEach((domain) => {
       if (typeof values[domain] === 'undefined') {
         return;
       }
-      if (!contract.editableDomains.includes(domain)) {
+      if (!editableDomains.includes(domain)) {
         throw new Error(`flowSurfaces updateSettings domain '${domain}' is not editable`);
       }
-      const domainContract = contract.domains[domain];
+      const domainContract =
+        contract.domains[domain] ||
+        (current?.use === 'ChartBlockModel' && domain === 'props' ? contract.domains.decoratorProps : undefined);
       if (!domainContract) {
         throw new Error(`flowSurfaces updateSettings domain '${domain}' is not supported by '${current.use}'`);
       }
@@ -3424,6 +3454,9 @@ export class FlowSurfacesService {
     });
 
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
+    this.syncChartCardDecoratorPropsForUpdateSettings(current, nextPayload);
+    this.syncChartConfigureForUpdateSettings(current, nextPayload);
+    this.syncChartCardRuntimeStepParamsForUpdateSettings(current, nextPayload);
 
     const effectiveNode = {
       ...current,
@@ -3468,6 +3501,8 @@ export class FlowSurfacesService {
       await this.syncFieldBindingSettingsForNode(current, effectiveNode, options.transaction);
     } else if (current.use === 'FilterFormItemModel') {
       await this.syncFilterFormConnectConfigForNode(effectiveNode, options.transaction);
+    } else if (current.use === 'ChartBlockModel' && !_.isUndefined(nextPayload.stepParams?.chartSettings)) {
+      await this.syncChartDataBindingsForNode(effectiveNode, options.transaction);
     }
     return {
       uid: current.uid,
@@ -3504,6 +3539,147 @@ export class FlowSurfacesService {
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
     }
+  }
+
+  private syncChartCardDecoratorPropsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (current?.use !== 'ChartBlockModel') {
+      return;
+    }
+
+    const nextProps = _.isPlainObject(nextPayload.props) ? _.cloneDeep(nextPayload.props) : null;
+    const nextDecoratorProps = _.isPlainObject(nextPayload.decoratorProps)
+      ? _.cloneDeep(nextPayload.decoratorProps)
+      : null;
+
+    if (nextProps && Object.prototype.hasOwnProperty.call(nextProps, 'heightMode')) {
+      nextProps.heightMode = normalizePublicBlockHeightMode(nextProps.heightMode);
+      nextPayload.props = nextProps;
+    }
+    if (nextDecoratorProps && Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode')) {
+      nextDecoratorProps.heightMode = normalizePublicBlockHeightMode(nextDecoratorProps.heightMode);
+    }
+
+    const mirroredCardProps = nextProps
+      ? _.pick(nextProps, ['title', 'displayTitle', 'height', 'heightMode'])
+      : undefined;
+    if (!nextDecoratorProps && (!mirroredCardProps || !Object.keys(mirroredCardProps).length)) {
+      return;
+    }
+
+    nextPayload.decoratorProps = buildDefinedPayload({
+      ...(current?.decoratorProps || {}),
+      ...(nextDecoratorProps || {}),
+      ...(mirroredCardProps || {}),
+    });
+  }
+
+  private syncChartConfigureForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (current?.use !== 'ChartBlockModel') {
+      return;
+    }
+    const nextConfigure = _.get(nextPayload, ['stepParams', 'chartSettings', 'configure']);
+    if (_.isUndefined(nextConfigure)) {
+      return;
+    }
+    _.set(nextPayload, ['stepParams', 'chartSettings', 'configure'], canonicalizeChartConfigure(nextConfigure));
+  }
+
+  private syncChartCardRuntimeStepParamsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (current?.use !== 'ChartBlockModel') {
+      return;
+    }
+
+    const currentDecoratorProps = _.isPlainObject(current?.decoratorProps) ? current.decoratorProps : {};
+    const currentProps = _.isPlainObject(current?.props) ? current.props : {};
+    const nextDecoratorProps = _.isPlainObject(nextPayload.decoratorProps) ? nextPayload.decoratorProps : {};
+    const nextProps = _.isPlainObject(nextPayload.props) ? nextPayload.props : {};
+    const currentCardSettings = _.cloneDeep(_.get(current, ['stepParams', 'cardSettings']) || {});
+
+    const effectiveTitle =
+      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'title') ? nextDecoratorProps.title : undefined) ??
+      (Object.prototype.hasOwnProperty.call(nextProps, 'title') ? nextProps.title : undefined) ??
+      currentDecoratorProps.title ??
+      currentProps.title;
+    const effectiveDisplayTitle =
+      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'displayTitle')
+        ? nextDecoratorProps.displayTitle
+        : undefined) ??
+      (Object.prototype.hasOwnProperty.call(nextProps, 'displayTitle') ? nextProps.displayTitle : undefined) ??
+      currentDecoratorProps.displayTitle ??
+      currentProps.displayTitle;
+    const titleTouched =
+      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'title') ||
+      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'displayTitle') ||
+      Object.prototype.hasOwnProperty.call(nextProps, 'title') ||
+      Object.prototype.hasOwnProperty.call(nextProps, 'displayTitle');
+    const normalizedTitle = typeof effectiveTitle === 'string' ? effectiveTitle.trim() : effectiveTitle;
+    const shouldShowTitle = !!normalizedTitle && effectiveDisplayTitle !== false;
+    const needsTitleRepair = shouldShowTitle && !_.get(currentCardSettings, ['titleDescription', 'title']);
+
+    const heightTouched =
+      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'height') ||
+      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode') ||
+      Object.prototype.hasOwnProperty.call(nextProps, 'height') ||
+      Object.prototype.hasOwnProperty.call(nextProps, 'heightMode');
+    const rawHeightModeCandidate =
+      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode')
+        ? nextDecoratorProps.heightMode
+        : undefined) ??
+      (Object.prototype.hasOwnProperty.call(nextProps, 'heightMode') ? nextProps.heightMode : undefined) ??
+      _.get(currentCardSettings, ['blockHeight', 'heightMode']) ??
+      currentDecoratorProps.heightMode ??
+      currentProps.heightMode;
+    const effectiveHeight =
+      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'height') ? nextDecoratorProps.height : undefined) ??
+      (Object.prototype.hasOwnProperty.call(nextProps, 'height') ? nextProps.height : undefined) ??
+      _.get(currentCardSettings, ['blockHeight', 'height']) ??
+      currentDecoratorProps.height ??
+      currentProps.height;
+    const normalizedHeightMode = !_.isUndefined(rawHeightModeCandidate)
+      ? normalizePublicBlockHeightMode(rawHeightModeCandidate)
+      : !_.isUndefined(effectiveHeight)
+        ? 'specifyValue'
+        : undefined;
+    const needsHeightRepair =
+      (!!normalizedHeightMode || !_.isUndefined(effectiveHeight)) &&
+      _.isEmpty(_.get(currentCardSettings, ['blockHeight']));
+
+    if (!titleTouched && !needsTitleRepair && !heightTouched && !needsHeightRepair) {
+      return;
+    }
+
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    const nextCardSettings = _.cloneDeep(_.get(nextStepParams, ['cardSettings']) || currentCardSettings || {});
+
+    if (titleTouched || needsTitleRepair) {
+      if (shouldShowTitle) {
+        _.set(nextCardSettings, ['titleDescription', 'title'], normalizedTitle);
+      } else {
+        _.unset(nextCardSettings, ['titleDescription']);
+      }
+    }
+
+    if (heightTouched || needsHeightRepair) {
+      if (!_.isUndefined(normalizedHeightMode)) {
+        _.set(nextCardSettings, ['blockHeight', 'heightMode'], normalizedHeightMode);
+      }
+      if (normalizedHeightMode === 'specifyValue' && !_.isUndefined(effectiveHeight)) {
+        _.set(nextCardSettings, ['blockHeight', 'height'], effectiveHeight);
+      } else {
+        _.unset(nextCardSettings, ['blockHeight', 'height']);
+      }
+      if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
+        _.unset(nextCardSettings, ['blockHeight']);
+      }
+    }
+
+    if (_.isEmpty(nextCardSettings)) {
+      _.unset(nextStepParams, ['cardSettings']);
+    } else {
+      _.set(nextStepParams, ['cardSettings'], nextCardSettings);
+    }
+
+    nextPayload.stepParams = nextStepParams;
   }
 
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -3645,7 +3821,7 @@ export class FlowSurfacesService {
     if (FILTER_TARGET_BLOCK_USES.has(node?.use || '')) {
       await this.removeFilterFormTargetBindings(resolved.uid, options.transaction);
     }
-    await this.repository.remove(resolved.uid, { transaction: options.transaction });
+    await this.removeNodeTreeWithBindings(resolved.uid, options.transaction);
     return { uid: resolved.uid };
   }
 
@@ -4725,6 +4901,7 @@ export class FlowSurfacesService {
     if (!node?.uid) {
       return;
     }
+    await this.removeFlowSqlBindingsForNodeTree(node, transaction);
     await this.cleanupNodeBindings(node, transaction);
     await this.repository.remove(uid, { transaction });
   }
@@ -4839,7 +5016,7 @@ export class FlowSurfacesService {
         }),
         decoratorProps: buildDefinedPayload({
           height: changes.height,
-          heightMode: changes.heightMode,
+          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
           ...(changes.resource
@@ -5090,7 +5267,7 @@ export class FlowSurfacesService {
         }),
         decoratorProps: buildDefinedPayload({
           height: changes.height,
-          heightMode: changes.heightMode,
+          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
           ...(changes.resource
@@ -5134,7 +5311,7 @@ export class FlowSurfacesService {
         }),
         decoratorProps: buildDefinedPayload({
           height: changes.height,
-          heightMode: changes.heightMode,
+          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
           ...(changes.resource
@@ -5240,19 +5417,29 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('ChartBlockModel');
     assertSupportedSimpleChanges('chart', changes, allowedKeys);
+    const shouldUpdateConfigure = ['configure', 'query', 'visual', 'events'].some((key) =>
+      Object.prototype.hasOwnProperty.call(changes, key),
+    );
+    const resolved = shouldUpdateConfigure ? await this.locator.resolve(target, options) : null;
+    const current = shouldUpdateConfigure ? await this.loadResolvedNode(resolved!, options.transaction) : null;
+    const nextConfigure = shouldUpdateConfigure
+      ? buildChartConfigureFromSemanticChanges(_.get(current, ['stepParams', 'chartSettings', 'configure']), changes)
+      : undefined;
+    const normalizedHeightMode = normalizePublicBlockHeightMode(changes.heightMode);
+    const cardDecoratorPayload = buildDefinedPayload({
+      title: changes.title,
+      displayTitle: changes.displayTitle,
+      height: changes.height,
+      heightMode: normalizedHeightMode,
+    });
     return this.updateSettings(
       {
         target,
-        props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
-          height: changes.height,
-          heightMode: changes.heightMode,
-        }),
-        stepParams: hasOwnDefined(changes, 'configure')
+        decoratorProps: cardDecoratorPayload,
+        stepParams: shouldUpdateConfigure
           ? {
               chartSettings: {
-                configure: changes.configure,
+                configure: nextConfigure,
               },
             }
           : undefined,
@@ -6482,6 +6669,21 @@ export class FlowSurfacesService {
     return null;
   }
 
+  private isFilterFormFieldPathAvailableForResource(
+    resourceInit: Record<string, any> | undefined,
+    fieldPath?: string,
+    associationPathName?: string,
+  ) {
+    if (!resourceInit?.dataSourceKey || !resourceInit?.collectionName || !fieldPath) {
+      return false;
+    }
+    const collection = this.getCollection(resourceInit.dataSourceKey, resourceInit.collectionName);
+    if (!collection) {
+      return false;
+    }
+    return !!resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath, associationPathName));
+  }
+
   private async persistFilterFormConnectConfig(
     input: {
       filterModelUid: string;
@@ -6551,7 +6753,98 @@ export class FlowSurfacesService {
     );
   }
 
-  private async syncFilterFormConnectConfigForNode(node: any, transaction?: any) {
+  private collectChartBlockUidsFromTree(node: any) {
+    if (!node?.uid) {
+      return [];
+    }
+    return Object.values(flattenModel(node))
+      .filter((item: any) => item?.use === 'ChartBlockModel' && item?.uid)
+      .map((item: any) => item.uid);
+  }
+
+  private async removeFlowSqlBindingsForChartUids(uids: string[], transaction?: any) {
+    const uniqueUids = _.uniq(uids.filter(Boolean));
+    if (!uniqueUids.length) {
+      return;
+    }
+    const repo = this.db.getRepository('flowSql');
+    for (const uid of uniqueUids) {
+      await repo.destroy({
+        filterByTk: uid,
+        transaction,
+      });
+    }
+  }
+
+  private async removeFlowSqlBindingsForNodeTree(node: any, transaction?: any) {
+    await this.removeFlowSqlBindingsForChartUids(this.collectChartBlockUidsFromTree(node), transaction);
+  }
+
+  private async persistChartSqlBinding(node: any, transaction?: any) {
+    if (node?.use !== 'ChartBlockModel' || !node?.uid) {
+      return;
+    }
+    const repo = this.db.getRepository('flowSql');
+    const configure = _.get(node, ['stepParams', 'chartSettings', 'configure']);
+    const query = _.get(configure, ['query']);
+    if (query?.mode !== 'sql') {
+      await repo.destroy({
+        filterByTk: node.uid,
+        transaction,
+      });
+      return;
+    }
+    const sql = typeof query?.sql === 'string' ? query.sql.trim() : '';
+    if (!sql) {
+      await repo.destroy({
+        filterByTk: node.uid,
+        transaction,
+      });
+      return;
+    }
+    await repo.updateOrCreate({
+      filterKeys: ['uid'],
+      values: {
+        uid: node.uid,
+        sql,
+        dataSourceKey: query?.sqlDatasource,
+      },
+      transaction,
+    });
+  }
+
+  private async syncChartDataBindingsForNode(node: any, transaction?: any) {
+    if (node?.use !== 'ChartBlockModel' || !node?.uid) {
+      return;
+    }
+
+    await this.persistChartSqlBinding(node, transaction);
+
+    const blockGrid = await this.findOwningBlockGrid(node.uid, transaction);
+    if (!blockGrid?.uid) {
+      return;
+    }
+
+    const nodeMap = flattenModel(blockGrid);
+    const targetFilterNodes = Object.values(nodeMap).filter((item: any) => {
+      if (item?.use !== 'FilterFormItemModel') {
+        return false;
+      }
+      return _.get(item, ['stepParams', 'filterFormItemSettings', 'init', 'defaultTargetUid']) === node.uid;
+    });
+
+    for (const filterNode of targetFilterNodes) {
+      await this.syncFilterFormConnectConfigForNode(filterNode, transaction, {
+        skipIfTargetUnavailable: true,
+      });
+    }
+  }
+
+  private async syncFilterFormConnectConfigForNode(
+    node: any,
+    transaction?: any,
+    options: { skipIfTargetUnavailable?: boolean } = {},
+  ) {
     if (node?.use !== 'FilterFormItemModel' || !node?.uid) {
       return;
     }
@@ -6572,7 +6865,28 @@ export class FlowSurfacesService {
       return;
     }
 
-    const target = await this.surfaceContext.resolveFilterFormTarget(container.ownerUid, defaultTargetUid, transaction);
+    const target = await this.surfaceContext
+      .resolveFilterFormTarget(container.ownerUid, defaultTargetUid, transaction)
+      .catch(async (error) => {
+        if (!options.skipIfTargetUnavailable) {
+          throw error;
+        }
+        await this.removeFilterFormConnectConfig(node.uid, transaction);
+        return null;
+      });
+    if (!target) {
+      return;
+    }
+    if (
+      !this.isFilterFormFieldPathAvailableForResource(
+        target.resourceInit,
+        fieldInit.fieldPath,
+        fieldInit.associationPathName,
+      )
+    ) {
+      await this.removeFilterFormConnectConfig(node.uid, transaction);
+      return;
+    }
     await this.persistFilterFormConnectConfig(
       {
         filterModelUid: node.uid,
@@ -6677,6 +6991,7 @@ export class FlowSurfacesService {
     resolved: FlowSurfaceResolvedTarget,
     transaction?: any,
   ): Promise<FlowSurfaceContextSemantic> {
+    const collection = await this.resolveContextOwnerCollection(uid, transaction).catch(() => null);
     const ancestors = await this.loadContextAncestorChain(uid, resolved, transaction);
     const recordContextOwner = ancestors.find((node) => RECORD_CONTEXT_OWNER_USES.has(node?.use));
     const recordCollection = recordContextOwner
@@ -6712,13 +7027,16 @@ export class FlowSurfacesService {
     if (parentPopupLevel?.recordCollection) {
       popupLevels.push(parentPopupLevel);
     }
+    const chartNode = ancestors.find((node) => node?.use === 'ChartBlockModel');
 
     return {
+      collection,
       recordCollection,
       formValuesCollection,
       itemCollections,
       itemRootCollection: itemCollections.length ? formValuesCollection || recordCollection || undefined : undefined,
       popupLevels,
+      chart: this.buildChartContextSemantic(chartNode),
     };
   }
 
@@ -6764,6 +7082,46 @@ export class FlowSurfacesService {
       return null;
     }
     return this.getCollection(resourceInit.dataSourceKey || 'main', resourceInit.collectionName);
+  }
+
+  private buildChartContextSemantic(chartNode?: any): NonNullable<FlowSurfaceContextSemantic['chart']> | undefined {
+    if (chartNode?.use !== 'ChartBlockModel') {
+      return undefined;
+    }
+
+    const configure = _.get(chartNode, ['stepParams', 'chartSettings', 'configure']);
+    const chart: NonNullable<FlowSurfaceContextSemantic['chart']> = {
+      supportedMappings: getChartSupportedMappingsByType(),
+      supportedVisualTypes: getChartSupportedVisualTypes(),
+    };
+    const resourceInit = getChartBuilderResourceInit(configure);
+    if (!resourceInit) {
+      return chart;
+    }
+
+    const collection = this.resolveCollectionFromInit(resourceInit);
+    const queryOutputs = getChartBuilderQueryOutputs(configure).map((output) => ({
+      ...output,
+      type: this.resolveChartQueryOutputType(collection, resourceInit.dataSourceKey, output),
+    }));
+    if (queryOutputs.length) {
+      chart.queryOutputs = queryOutputs;
+      chart.aliases = getChartBuilderQueryAliases(configure);
+    }
+    return chart;
+  }
+
+  private resolveChartQueryOutputType(collection: any, dataSourceKey: string, output: { kind?: string; field?: any }) {
+    if (output.kind === 'measure') {
+      return 'number';
+    }
+    const fieldPath = Array.isArray(output.field) ? output.field.join('.') : String(output.field || '').trim();
+    if (!collection || !fieldPath) {
+      return 'string';
+    }
+    const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collection?.name);
+    const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+    return inferFlowContextTypeFromField(field);
   }
 
   private async resolveContextOwnerCollection(uid: string, transaction?: any) {
@@ -7772,6 +8130,26 @@ function normalizeRowSpans(spans?: Array<number | undefined>) {
   return base;
 }
 
+function normalizePublicBlockHeightMode(input: any) {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  if (_.isNull(input)) {
+    throw new FlowSurfaceBadRequestError('flowSurfaces configure heightMode cannot be null');
+  }
+  const normalized = String(input || '').trim();
+  if (!normalized) {
+    throw new FlowSurfaceBadRequestError('flowSurfaces configure heightMode cannot be empty');
+  }
+  const aliased = normalized === 'fixed' ? 'specifyValue' : normalized;
+  if (!['defaultHeight', 'specifyValue', 'fullHeight'].includes(aliased)) {
+    throw new FlowSurfaceBadRequestError(
+      'flowSurfaces configure heightMode must be one of: defaultHeight, specifyValue, fullHeight',
+    );
+  }
+  return aliased;
+}
+
 function isFieldNodeUse(use?: string) {
   return !!use && use.endsWith('FieldModel');
 }
@@ -7896,6 +8274,24 @@ function getFieldInterface(field: any) {
 
 function getFieldType(field: any) {
   return field?.type || field?.options?.type;
+}
+
+function inferFlowContextTypeFromField(field: any) {
+  switch (getFieldType(field)) {
+    case 'boolean':
+      return 'boolean';
+    case 'integer':
+    case 'float':
+    case 'double':
+    case 'decimal':
+      return 'number';
+    case 'json':
+      return 'object';
+    case 'array':
+      return 'array';
+    default:
+      return 'string';
+  }
 }
 
 function getFieldTarget(field: any) {

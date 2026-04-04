@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import type FlowModelRepository from '../repository';
+import { getChartBuilderResourceInit } from './chart-config';
 import type { FlowSurfaceReadLocator, FlowSurfaceResolveTarget, FlowSurfaceResolvedTarget } from './types';
 
 export class SurfaceLocator {
@@ -74,7 +75,11 @@ export class SurfaceLocator {
     let cursor = uid;
     while (cursor) {
       const model = await this.repository.findModelById(cursor, { transaction, includeAsyncNode: true });
-      const resourceInit = _.get(model, ['stepParams', 'resourceSettings', 'init']);
+      const resourceInit =
+        _.get(model, ['stepParams', 'resourceSettings', 'init']) ||
+        (model?.use === 'ChartBlockModel'
+          ? getChartBuilderResourceInit(_.get(model, ['stepParams', 'chartSettings', 'configure']))
+          : null);
       if (resourceInit?.dataSourceKey && resourceInit?.collectionName) {
         return {
           ownerUid: cursor,

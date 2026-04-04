@@ -11,6 +11,7 @@ import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import type { FlowSurfaceCatalogItem, FlowSurfaceNodeDefaults, FlowSurfaceNodeSpec } from './types';
 import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } from './catalog';
+import { CHART_DEFAULT_DATA_SOURCE_KEY } from './chart-config';
 
 type BuildFieldParams = {
   wrapperUse: string;
@@ -119,6 +120,43 @@ const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   JSActionModel: "ctx.message.info('Hello JS action.');",
 };
 
+function normalizeChartCardHeightMode(input: any) {
+  if (_.isUndefined(input) || _.isNull(input) || String(input).trim() === '') {
+    return undefined;
+  }
+  const normalized = String(input).trim();
+  return normalized === 'fixed' ? 'specifyValue' : normalized;
+}
+
+function buildChartRuntimeCardSettings(options: {
+  props?: Record<string, any>;
+  decoratorProps?: Record<string, any>;
+  current?: Record<string, any>;
+}) {
+  const current = _.cloneDeep(options.current || {});
+  const props = _.cloneDeep(options.props || {});
+  const decoratorProps = _.cloneDeep(options.decoratorProps || {});
+  const title = decoratorProps.title ?? props.title;
+  const displayTitle = decoratorProps.displayTitle ?? props.displayTitle;
+  const rawHeightMode = normalizeChartCardHeightMode(decoratorProps.heightMode ?? props.heightMode);
+  const height = decoratorProps.height ?? props.height;
+  const heightMode = rawHeightMode || (!_.isUndefined(height) ? 'specifyValue' : undefined);
+
+  if (title && displayTitle !== false) {
+    _.set(current, ['titleDescription', 'title'], title);
+  }
+  if (heightMode) {
+    _.set(current, ['blockHeight', 'heightMode'], heightMode);
+    if (heightMode === 'specifyValue' && !_.isUndefined(height)) {
+      _.set(current, ['blockHeight', 'height'], height);
+    } else {
+      _.unset(current, ['blockHeight', 'height']);
+    }
+  }
+
+  return current;
+}
+
 function buildRunJsStepParams(code: string) {
   return {
     runJs: {
@@ -226,7 +264,33 @@ export function buildBlockTree(options: {
   const defaults = buildBlockDefaults(use);
   const baseStepParams = _.merge({}, _.cloneDeep(defaults.stepParams || {}), _.cloneDeep(options.stepParams || {}));
   const normalizedResourceInit = _.pickBy(_.cloneDeep(options.resourceInit || {}), (value) => !_.isUndefined(value));
-  if (Object.keys(normalizedResourceInit).length) {
+  if (use === 'ChartBlockModel') {
+    _.unset(baseStepParams, 'resourceSettings');
+    const currentConfigure = _.get(baseStepParams, ['chartSettings', 'configure']) || {};
+    const nextConfigure = _.merge(
+      {
+        query: {
+          mode: 'builder',
+        },
+        chart: {
+          option: {
+            mode: 'basic',
+          },
+        },
+      },
+      _.cloneDeep(currentConfigure),
+    );
+    if (Object.keys(normalizedResourceInit).length) {
+      _.set(nextConfigure, ['query', 'mode'], 'builder');
+      _.set(
+        nextConfigure,
+        ['query', 'collectionPath'],
+        [normalizedResourceInit.dataSourceKey || CHART_DEFAULT_DATA_SOURCE_KEY, normalizedResourceInit.collectionName],
+      );
+      _.unset(nextConfigure, ['query', 'resource']);
+    }
+    _.set(baseStepParams, ['chartSettings', 'configure'], nextConfigure);
+  } else if (Object.keys(normalizedResourceInit).length) {
     _.set(baseStepParams, ['resourceSettings', 'init'], normalizedResourceInit);
   }
 
@@ -236,6 +300,17 @@ export function buildBlockTree(options: {
     decoratorProps: _.merge({}, _.cloneDeep(defaults.decoratorProps || {}), _.cloneDeep(options.decoratorProps || {})),
     stepParams: baseStepParams,
   };
+
+  if (use === 'ChartBlockModel') {
+    const runtimeCardSettings = buildChartRuntimeCardSettings({
+      props: model.props,
+      decoratorProps: model.decoratorProps,
+      current: _.get(model, ['stepParams', 'cardSettings']),
+    });
+    if (!_.isEmpty(runtimeCardSettings)) {
+      _.set(model, ['stepParams', 'cardSettings'], runtimeCardSettings);
+    }
+  }
 
   if (use === 'TableBlockModel') {
     model.subModels = {
@@ -812,6 +887,24 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
     return {
       stepParams: {
         jsSettings: buildRunJsStepParams(JS_BLOCK_DEFAULT_CODE),
+      },
+    };
+  }
+  if (use === 'ChartBlockModel') {
+    return {
+      stepParams: {
+        chartSettings: {
+          configure: {
+            query: {
+              mode: 'builder',
+            },
+            chart: {
+              option: {
+                mode: 'basic',
+              },
+            },
+          },
+        },
       },
     };
   }

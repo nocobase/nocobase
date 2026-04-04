@@ -23,12 +23,35 @@ type FlowSurfacePopupContextLevel = {
   sourceRecordCollection?: CollectionLike | null;
 };
 
+type FlowSurfaceChartQueryOutput = {
+  alias: string;
+  type?: string;
+  kind?: 'dimension' | 'measure';
+  field?: string | string[];
+  aggregation?: string;
+  format?: string;
+};
+
+type FlowSurfaceChartMappingSupport = {
+  allowed: string[];
+  required?: string[];
+};
+
+type FlowSurfaceChartContext = {
+  queryOutputs?: FlowSurfaceChartQueryOutput[];
+  aliases?: string[];
+  supportedMappings?: Record<string, FlowSurfaceChartMappingSupport>;
+  supportedVisualTypes?: string[];
+};
+
 export type FlowSurfaceContextSemantic = {
+  collection?: CollectionLike | null;
   recordCollection?: CollectionLike | null;
   formValuesCollection?: CollectionLike | null;
   itemCollections?: Array<CollectionLike | null>;
   itemRootCollection?: CollectionLike | null;
   popupLevels?: FlowSurfacePopupContextLevel[];
+  chart?: FlowSurfaceChartContext | null;
 };
 
 type FlowSurfaceContextSpecNode = {
@@ -97,7 +120,8 @@ function getFieldType(field: any) {
 }
 
 function getFieldTargetCollection(field: any) {
-  const targetCollection = typeof field?.targetCollection === 'function' ? field.targetCollection() : field?.targetCollection;
+  const targetCollection =
+    typeof field?.targetCollection === 'function' ? field.targetCollection() : field?.targetCollection;
   return targetCollection && typeof targetCollection === 'object' ? targetCollection : null;
 }
 
@@ -134,7 +158,10 @@ function buildCollectionProperties(collection?: CollectionLike | null) {
   return properties;
 }
 
-function createCollectionSpec(collection: CollectionLike | null | undefined, title: string): FlowSurfaceContextSpecNode | null {
+function createCollectionSpec(
+  collection: CollectionLike | null | undefined,
+  title: string,
+): FlowSurfaceContextSpecNode | null {
   if (!collection) {
     return null;
   }
@@ -280,8 +307,155 @@ function buildPopupChainSpec(levels: FlowSurfacePopupContextLevel[]): FlowSurfac
   };
 }
 
+function buildChartQueryOutputsSpec(outputs: FlowSurfaceChartQueryOutput[]): FlowSurfaceContextSpecNode | null {
+  if (!outputs.length) {
+    return null;
+  }
+
+  return {
+    title: 'Builder query outputs',
+    type: 'object',
+    properties: () =>
+      Object.fromEntries(
+        outputs.map((output) => {
+          const fieldValue = Array.isArray(output.field) ? output.field.join('.') : output.field;
+          const descSegments = [
+            output.kind === 'measure' ? 'Measure output' : output.kind === 'dimension' ? 'Dimension output' : '',
+            fieldValue ? `field=${fieldValue}` : '',
+            output.aggregation ? `aggregation=${output.aggregation}` : '',
+            output.format ? `format=${output.format}` : '',
+          ].filter(Boolean);
+          return [
+            output.alias,
+            {
+              title: output.alias,
+              type: output.type || 'string',
+              ...(descSegments.length ? { description: descSegments.join('; ') } : {}),
+            } satisfies FlowSurfaceContextSpecNode,
+          ];
+        }),
+      ),
+  };
+}
+
+function buildChartAliasesSpec(aliases: string[]): FlowSurfaceContextSpecNode | null {
+  if (!aliases.length) {
+    return null;
+  }
+
+  return {
+    title: 'Builder query aliases',
+    type: 'object',
+    properties: () =>
+      Object.fromEntries(
+        aliases.map((alias) => [
+          alias,
+          {
+            title: alias,
+            type: 'string',
+            description: 'Alias that can be used by visual.mappings.* and query.sorting.field',
+          } satisfies FlowSurfaceContextSpecNode,
+        ]),
+      ),
+  };
+}
+
+function buildChartSupportedMappingsSpec(
+  supportedMappings?: Record<string, FlowSurfaceChartMappingSupport>,
+): FlowSurfaceContextSpecNode | null {
+  if (!supportedMappings || !Object.keys(supportedMappings).length) {
+    return null;
+  }
+
+  return {
+    title: 'Supported mappings by visual type',
+    type: 'object',
+    properties: () =>
+      Object.fromEntries(
+        Object.entries(supportedMappings).map(([visualType, support]) => [
+          visualType,
+          {
+            title: visualType,
+            type: 'object',
+            properties: () =>
+              Object.fromEntries(
+                (support.allowed || []).map((mappingKey) => [
+                  mappingKey,
+                  {
+                    title: mappingKey,
+                    type: 'string',
+                    description: (support.required || []).includes(mappingKey)
+                      ? 'Required mapping key'
+                      : 'Optional mapping key',
+                  } satisfies FlowSurfaceContextSpecNode,
+                ]),
+              ),
+          } satisfies FlowSurfaceContextSpecNode,
+        ]),
+      ),
+  };
+}
+
+function buildChartSupportedVisualTypesSpec(types: string[]): FlowSurfaceContextSpecNode | null {
+  if (!types.length) {
+    return null;
+  }
+
+  return {
+    title: 'Supported visual types',
+    type: 'object',
+    properties: () =>
+      Object.fromEntries(
+        types.map((type) => [
+          type,
+          {
+            title: type,
+            type: 'string',
+            description: 'Supported chart visual.type value',
+          } satisfies FlowSurfaceContextSpecNode,
+        ]),
+      ),
+  };
+}
+
+function createChartSpec(chart?: FlowSurfaceChartContext | null): FlowSurfaceContextSpecNode | null {
+  if (!chart) {
+    return null;
+  }
+
+  return {
+    title: 'Chart helpers',
+    type: 'object',
+    properties: () => {
+      const properties: Record<string, FlowSurfaceContextSpecNode> = {};
+      const queryOutputsSpec = buildChartQueryOutputsSpec(chart.queryOutputs || []);
+      if (queryOutputsSpec) {
+        properties.queryOutputs = queryOutputsSpec;
+      }
+      const aliasesSpec = buildChartAliasesSpec(chart.aliases || []);
+      if (aliasesSpec) {
+        properties.aliases = aliasesSpec;
+      }
+      const supportedMappingsSpec = buildChartSupportedMappingsSpec(chart.supportedMappings);
+      if (supportedMappingsSpec) {
+        properties.supportedMappings = supportedMappingsSpec;
+      }
+      const supportedVisualTypesSpec = buildChartSupportedVisualTypesSpec(chart.supportedVisualTypes || []);
+      if (supportedVisualTypesSpec) {
+        properties.supportedVisualTypes = supportedVisualTypesSpec;
+      }
+      return properties;
+    },
+  };
+}
+
 function createSpecMap(input: FlowSurfaceContextSemantic) {
   const specs: Record<string, FlowSurfaceContextSpecNode> = {};
+
+  const collectionSpec = createCollectionSpec(input.collection, 'Current collection');
+  if (collectionSpec) {
+    specs.collection = collectionSpec;
+  }
 
   const recordSpec = createCollectionSpec(input.recordCollection, 'Current record');
   if (recordSpec) {
@@ -301,6 +475,11 @@ function createSpecMap(input: FlowSurfaceContextSemantic) {
   const popupSpec = buildPopupChainSpec(input.popupLevels || []);
   if (popupSpec) {
     specs.popup = popupSpec;
+  }
+
+  const chartSpec = createChartSpec(input.chart);
+  if (chartSpec) {
+    specs.chart = chartSpec;
   }
 
   return specs;

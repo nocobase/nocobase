@@ -831,8 +831,8 @@ IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const CHART_BLOCK_CONTRACT = createContract({
-  editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'height', 'heightMode'],
+  editableDomains: ['decoratorProps', 'stepParams', 'flowRegistry'],
+  decoratorProps: ['title', 'displayTitle', 'height', 'heightMode'],
   stepParams: ['chartSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -843,6 +843,7 @@ CHART_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   chartSettings: {
     allowedPaths: ['configure', 'configure.*'],
     clearable: true,
+    mergeStrategy: 'replace',
     eventBindingSteps: [],
     pathSchemas: {
       configure: OBJECT_SCHEMA,

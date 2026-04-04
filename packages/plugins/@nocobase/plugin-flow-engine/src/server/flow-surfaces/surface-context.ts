@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { blockCatalog } from './catalog';
+import { getChartBuilderResourceInit } from './chart-config';
 import { SurfaceLocator } from './locator';
 import {
   canCatalogAddBlock,
@@ -89,14 +90,18 @@ export class FlowSurfaceContextResolver {
     return _.castArray(blockGrid.subModels?.items || [])
       .filter((item: any) => FILTER_TARGET_BLOCK_USES.has(item?.use) && item?.uid)
       .map((item: any) => {
-        const resourceInit = _.get(item, ['stepParams', 'resourceSettings', 'init']);
+        const resourceInit =
+          _.get(item, ['stepParams', 'resourceSettings', 'init']) ||
+          (item?.use === 'ChartBlockModel'
+            ? getChartBuilderResourceInit(_.get(item, ['stepParams', 'chartSettings', 'configure']))
+            : null);
         if (!resourceInit?.dataSourceKey || !resourceInit?.collectionName) {
           return null;
         }
         const collection = this.options.getCollection(resourceInit.dataSourceKey, resourceInit.collectionName);
         return {
           ownerUid: item.uid,
-          label: item?.props?.title || collection?.title || collection?.name || item.uid,
+          label: item?.decoratorProps?.title || item?.props?.title || collection?.title || collection?.name || item.uid,
           resourceInit,
         };
       })

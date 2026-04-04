@@ -113,7 +113,10 @@ const COMMON_BLOCK_TITLE_OPTIONS: FlowSurfaceConfigureOptions = {
 
 const COMMON_HEIGHT_OPTIONS: FlowSurfaceConfigureOptions = {
   height: numberOption('高度', { example: 520 }),
-  heightMode: stringOption('高度模式', { example: 'fixed' }),
+  heightMode: stringOption('高度模式', {
+    enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
+    example: 'specifyValue',
+  }),
 };
 
 const PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -235,10 +238,54 @@ const IFRAME_OPTIONS: FlowSurfaceConfigureOptions = {
 const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
-  configure: objectOption('图表配置对象', {
+  query: objectOption('图表查询 DSL；默认推荐 builder 模式', {
+    example: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      ],
+      dimensions: [{ field: 'department.title' }],
+    },
+  }),
+  visual: objectOption('图表展示 DSL；默认推荐 basic 模式', {
+    example: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: 'department.title',
+        y: 'employeeCount',
+      },
+    },
+  }),
+  events: objectOption('图表事件 DSL；仅暴露 raw JS 代码', {
+    example: {
+      raw: 'chart.on("click", () => console.log("clicked"));',
+    },
+  }),
+  configure: objectOption('图表配置对象；会经过同一套 chart contract 规范化，不要与 query/visual/events 混用', {
     example: {
       query: {
-        mode: 'builder',
+        mode: 'sql',
+        sql: 'select department, count(*) as employeeCount from employees group by department',
+        sqlDatasource: 'main',
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'bar',
+            xField: 'department',
+            yField: 'employeeCount',
+          },
+        },
       },
     },
   }),
