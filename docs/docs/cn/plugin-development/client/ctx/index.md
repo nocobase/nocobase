@@ -109,4 +109,4 @@ ctx.router.navigate('/hello'); // -> /v2/hello
 
 - [常用能力](./common-capabilities) — ctx.api、ctx.t、ctx.logger 等详细用法
 - [Plugin 插件](../plugin) — 插件入口和快捷属性
-- [Component 组件开发](../component) — useFlowContext 在组件中的基本用法
+- [Component 组件开发](../component/index.md) — useFlowContext 在组件中的基本用法

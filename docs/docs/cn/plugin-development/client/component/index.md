@@ -70,7 +70,7 @@ export default DemoPage;
 ```tsx file="./_demos/observable-basic.tsx" preview
 ```
 
-更多用法见 [Observable 响应式机制](/flow-engine/observable)。
+更多用法见 [Observable 响应式机制](../../../flow-engine/observable)。
 
 ## 使用 useFlowContext
 
@@ -244,14 +244,14 @@ export default PostListPage;
 
 ## 接下来
 
-- `useFlowContext` 提供的完整能力——见 [Context 上下文](../ctx)
+- `useFlowContext` 提供的完整能力——见 [Context 上下文](../ctx/index.md)
 - 组件样式和主题定制——见 [Styles & Themes 样式与主题](./styles-themes)
-- 如果你的组件需要出现在 NocoBase 的「添加区块 / 字段 / 操作」菜单里、支持用户可视化配置，需要用 FlowModel 来包装——见 [FlowEngine](../flow-engine)
+- 如果你的组件需要出现在 NocoBase 的「添加区块 / 字段 / 操作」菜单里、支持用户可视化配置，需要用 FlowModel 来包装——见 [FlowEngine](../flow-engine/index.md)
 - 不确定该用 Component 还是 FlowModel？——见 [Component vs FlowModel](../component-vs-flow-model)
 
 ## 相关链接
 
 - [Router 路由](../router) — 注册页面路由，把组件挂载到 URL
-- [Context 上下文](../ctx) — useFlowContext 的完整能力介绍
+- [Context 上下文](../ctx/index.md) — useFlowContext 的完整能力介绍
 - [Styles & Themes 样式与主题](./styles-themes) — createStyles、主题 token 等
-- [FlowEngine](../flow-engine) — 需要可视化配置时使用 FlowModel
+- [FlowEngine](../flow-engine/index.md) — 需要可视化配置时使用 FlowModel

@@ -88,7 +88,7 @@ async load() {
 }
 ```
 
-详细用法见 [FlowEngine](./flow-engine)。
+详细用法见 [FlowEngine](./flow-engine/index.md)。
 
 ## 插件常用属性
 
@@ -110,11 +110,11 @@ async load() {
 }
 ```
 
-更多上下文能力见 [Context 上下文](./ctx)。
+更多上下文能力见 [Context 上下文](./ctx/index.md)。
 
 ## 相关链接
 
 - [Router 路由](./router) — 注册页面路由和插件设置页
-- [Component 组件开发](./component) — 路由挂载的 React 组件怎么写
-- [Context 上下文](./ctx) — 通过上下文使用 NocoBase 内置能力
-- [FlowEngine](./flow-engine) — 注册区块、字段、操作等可视化配置组件
+- [Component 组件开发](./component/index.md) — 路由挂载的 React 组件怎么写
+- [Context 上下文](./ctx/index.md) — 通过上下文使用 NocoBase 内置能力
+- [FlowEngine](./flow-engine/index.md) — 注册区块、字段、操作等可视化配置组件

@@ -195,5 +195,5 @@ class HelloPlugin extends Plugin {
 ## 相关链接
 
 - [Plugin 插件](./plugin) — 路由在 `load()` 中注册
-- [Component 组件开发](./component) — 路由挂载的页面组件怎么写
+- [Component 组件开发](./component/index.md) — 路由挂载的页面组件怎么写
 - [插件实战示例：做一个插件设置页](./examples/settings-page) — 完整的设置页示例

@@ -1,9 +1,78 @@
 ---
 title: "字段扩展"
-description: "NocoBase 字段扩展开发：FieldModel 基类、字段渲染逻辑、注册方式、配置化。"
-keywords: "字段扩展,Field,FieldModel,字段组件,NocoBase"
+description: "NocoBase 字段扩展开发：FieldModel、ClickableFieldModel 基类、字段渲染、绑定字段接口。"
+keywords: "字段扩展,Field,FieldModel,ClickableFieldModel,renderComponent,bindModelToInterface,NocoBase"
 ---
 
 # 字段扩展
 
-<!-- TODO: 从 @nocobase-example/plugin-field-simple 提炼 -->
+在 NocoBase 中，**字段组件（Field）** 用于表格和表单中展示和编辑数据。通过继承 FieldModel 相关基类，你可以自定义字段的渲染方式——比如用特殊格式展示某种数据，或者用自定义组件来编辑。
+
+## 示例：自定义展示字段
+
+以下示例创建了一个简单的展示字段——在字段值两侧加上方括号 `[]`：
+
+```tsx
+// models/SimpleFieldModel.tsx
+import React from 'react';
+import { ClickableFieldModel } from '@nocobase/client-v2';
+import { DisplayItemModel } from '@nocobase/flow-engine';
+
+export class DisplaySimpleFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
+    // this.context.record 可以拿到当前行的完整记录
+    console.log('当前记录：', this.context.record);
+    console.log('当前记录 index：', this.context.recordIndex);
+    return <span>[{value}]</span>;
+  }
+}
+
+// 绑定到 'input' 类型的字段接口
+DisplayItemModel.bindModelToInterface('DisplaySimpleFieldModel', ['input']);
+```
+
+几个关键点：
+
+- **`renderComponent(value)`** — 接收当前字段的值作为参数，返回渲染的 JSX
+- **`this.context.record`** — 获取当前行的完整数据记录
+- **`this.context.recordIndex`** — 获取当前行的索引
+- **`ClickableFieldModel`** — 继承自 `FieldModel`，带有点击交互能力
+- **`DisplayItemModel.bindModelToInterface()`** — 把字段模型绑定到指定的字段接口类型（比如 `input` 表示文本输入类字段），这样在对应类型的字段上就能选择这个展示组件
+
+## 注册字段
+
+在 Plugin 的 `load()` 中注册：
+
+```ts
+// plugin.tsx
+import { Plugin } from '@nocobase/client-v2';
+import models from './models';
+
+export class PluginFieldSimpleClient extends Plugin {
+  async load() {
+    this.flowEngine.registerModels(models);
+  }
+}
+```
+
+```ts
+// models/index.ts
+import { DisplaySimpleFieldModel } from './SimpleFieldModel';
+
+export default {
+  DisplaySimpleFieldModel,
+};
+```
+
+注册完成后，在表格的字段配置中就能选择这个自定义展示组件了。
+
+## 完整源码
+
+- [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-field-simple) — 自定义字段组件示例
+
+## 相关链接
+
+- [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
+- [区块扩展](./block) — 自定义区块
+- [操作扩展](./action) — 自定义操作按钮
+- [FlowEngine 完整文档](../../../flow-engine/index.md) — 完整参考

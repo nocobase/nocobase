@@ -21,7 +21,7 @@ keywords: "FlowEngine,FlowModel,BlockModel,registerFlow,uiSchema,renderComponent
 
 跟普通 React 组件不同，FlowModel 除了负责渲染 UI，还管理着 props 的来源、配置面板的定义、以及配置持久化。简单来说：普通组件的 props 是写死的，FlowModel 的 props 是通过 Flow 动态生成的。
 
-想深入了解 FlowEngine 的整体架构，可以看 [FlowEngine 文档](/flow-engine)。下面从插件开发者的角度，介绍怎么用。
+想深入了解 FlowEngine 的整体架构，可以看 [FlowEngine 完整文档](../../../flow-engine/index.md)。下面从插件开发者的角度，介绍怎么用。
 
 ## 最小示例
 
@@ -180,7 +180,7 @@ uiSchema: {
 }
 ```
 
-每个字段都用 `'x-decorator': 'FormItem'` 包裹，这样会自动带上标题和布局。完整的 uiSchema 参考见 [FlowEngine 文档 → uiSchema](/flow-engine/uischema)。
+每个字段都用 `'x-decorator': 'FormItem'` 包裹，这样会自动带上标题和布局。完整的 uiSchema 参考见 [FlowEngine 文档 → uiSchema](../../../flow-engine/uischema)。
 
 ## FlowModel 基类选择
 
@@ -202,5 +202,5 @@ NocoBase 提供了多个 FlowModel 基类，根据你要扩展的类型选择：
 - [字段扩展](./field) — 用 FieldModel 开发自定义字段
 - [操作扩展](./action) — 用 ActionModel 开发操作按钮
 - [Component vs FlowModel](../component-vs-flow-model) — 不确定该用哪种方式？
-- [FlowEngine 文档](/flow-engine) — FlowModel、Flow、Context 的完整参考
-- [FlowEngine 快速开始](/flow-engine/quickstart) — 从零构建一个可编排的按钮组件
+- [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考
+- [FlowEngine 快速开始](../../../flow-engine/quickstart) — 从零构建一个可编排的按钮组件

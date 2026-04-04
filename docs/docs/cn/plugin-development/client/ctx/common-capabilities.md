@@ -437,7 +437,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-FlowModel 是 NocoBase 可视化配置体系的核心——如果你的组件需要出现在「添加区块 / 字段 / 操作」菜单里，就需要通过 FlowModel 来包装。详细用法见 [FlowEngine](../flow-engine)。
+FlowModel 是 NocoBase 可视化配置体系的核心——如果你的组件需要出现在「添加区块 / 字段 / 操作」菜单里，就需要通过 FlowModel 来包装。详细用法见 [FlowEngine](../flow-engine/index.md)。
 
 ## 更多能力
 
@@ -453,12 +453,12 @@ FlowModel 是 NocoBase 可视化配置体系的核心——如果你的组件需
 | `ctx.useResource()`     | 获取数据资源操作接口                            |
 | `ctx.dataSourceManager` | 数据源管理                                      |
 
-这些能力的详细用法可以参考 [FlowEngine 文档](/flow-engine)。
+这些能力的详细用法可以参考 [FlowEngine 完整文档](../../../flow-engine/index.md)。
 
 ## 相关链接
 
-- [Context 上下文概述](../ctx) — 两种上下文入口的异同
+- [Context 上下文概述](../ctx/index.md) — 两种上下文入口的异同
 - [Plugin 插件](../plugin) — Plugin 快捷属性
-- [Component 组件开发](../component) — useFlowContext 在组件中的用法
+- [Component 组件开发](../component/index.md) — useFlowContext 在组件中的用法
 - [Router 路由](../router) — 路由注册和导航
-- [FlowEngine 文档](/flow-engine) — 完整的 FlowEngine 参考
+- [FlowEngine 完整文档](../../../flow-engine/index.md) — 完整的 FlowEngine 参考
