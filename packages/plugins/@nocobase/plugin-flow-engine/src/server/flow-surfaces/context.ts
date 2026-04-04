@@ -44,10 +44,19 @@ type FlowSurfaceChartMappingSupport = {
   required?: string[];
 };
 
+type FlowSurfaceChartStyleSupport = {
+  type: 'boolean' | 'number' | 'string';
+  enumValues?: string[];
+  min?: number;
+  max?: number;
+  description?: string;
+};
+
 type FlowSurfaceChartContext = {
   queryOutputs?: FlowSurfaceChartQueryOutput[];
   aliases?: string[];
   supportedMappings?: Record<string, FlowSurfaceChartMappingSupport>;
+  supportedStyles?: Record<string, Record<string, FlowSurfaceChartStyleSupport>>;
   supportedVisualTypes?: string[];
   safeDefaults?: FlowSurfaceChartCapabilityHint[];
   riskyPatterns?: FlowSurfaceChartCapabilityHint[];
@@ -69,6 +78,9 @@ type FlowSurfaceContextSpecNode = {
   type?: string;
   interface?: string;
   description?: string;
+  enumValues?: string[];
+  min?: number;
+  max?: number;
   disabled?: boolean;
   disabledReason?: string;
   cycleKey?: string;
@@ -369,7 +381,8 @@ function buildChartAliasesSpec(aliases: string[]): FlowSurfaceContextSpecNode | 
           {
             title: alias,
             type: 'string',
-            description: 'Alias that can be used by visual.mappings.* and query.sorting.field',
+            description:
+              'Builder query output alias that can be used by visual.mappings.*. Do not assume it is valid for query.sorting.field; aggregated measure outputs and custom measure aliases remain unsupported there.',
           } satisfies FlowSurfaceContextSpecNode,
         ]),
       ),
@@ -403,6 +416,43 @@ function buildChartSupportedMappingsSpec(
                     description: (support.required || []).includes(mappingKey)
                       ? 'Required mapping key'
                       : 'Optional mapping key',
+                  } satisfies FlowSurfaceContextSpecNode,
+                ]),
+              ),
+          } satisfies FlowSurfaceContextSpecNode,
+        ]),
+      ),
+  };
+}
+
+function buildChartSupportedStylesSpec(
+  supportedStyles?: Record<string, Record<string, FlowSurfaceChartStyleSupport>>,
+): FlowSurfaceContextSpecNode | null {
+  if (!supportedStyles || !Object.keys(supportedStyles).length) {
+    return null;
+  }
+
+  return {
+    title: 'Supported style keys by visual type',
+    type: 'object',
+    properties: () =>
+      Object.fromEntries(
+        Object.entries(supportedStyles).map(([visualType, styles]) => [
+          visualType,
+          {
+            title: visualType,
+            type: 'object',
+            properties: () =>
+              Object.fromEntries(
+                Object.entries(styles || {}).map(([styleKey, support]) => [
+                  styleKey,
+                  {
+                    title: styleKey,
+                    type: support.type,
+                    ...(support.description ? { description: support.description } : {}),
+                    ...(support.enumValues?.length ? { enumValues: [...support.enumValues] } : {}),
+                    ...(typeof support.min !== 'undefined' ? { min: support.min } : {}),
+                    ...(typeof support.max !== 'undefined' ? { max: support.max } : {}),
                   } satisfies FlowSurfaceContextSpecNode,
                 ]),
               ),
@@ -481,6 +531,10 @@ function createChartSpec(chart?: FlowSurfaceChartContext | null): FlowSurfaceCon
       if (supportedMappingsSpec) {
         properties.supportedMappings = supportedMappingsSpec;
       }
+      const supportedStylesSpec = buildChartSupportedStylesSpec(chart.supportedStyles);
+      if (supportedStylesSpec) {
+        properties.supportedStyles = supportedStylesSpec;
+      }
       const supportedVisualTypesSpec = buildChartSupportedVisualTypesSpec(chart.supportedVisualTypes || []);
       if (supportedVisualTypesSpec) {
         properties.supportedVisualTypes = supportedVisualTypesSpec;
@@ -556,6 +610,15 @@ function materializeSpecNode(
   }
   if (typeof node.description !== 'undefined') {
     output.description = node.description;
+  }
+  if (Array.isArray(node.enumValues) && node.enumValues.length) {
+    output.enumValues = [...node.enumValues];
+  }
+  if (typeof node.min !== 'undefined') {
+    output.min = node.min;
+  }
+  if (typeof node.max !== 'undefined') {
+    output.max = node.max;
   }
   if (typeof node.disabled !== 'undefined') {
     output.disabled = node.disabled;

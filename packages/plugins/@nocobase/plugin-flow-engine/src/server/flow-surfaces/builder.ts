@@ -120,43 +120,6 @@ const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   JSActionModel: "ctx.message.info('Hello JS action.');",
 };
 
-function normalizeChartCardHeightMode(input: any) {
-  if (_.isUndefined(input) || _.isNull(input) || String(input).trim() === '') {
-    return undefined;
-  }
-  const normalized = String(input).trim();
-  return normalized === 'fixed' ? 'specifyValue' : normalized;
-}
-
-function buildChartRuntimeCardSettings(options: {
-  props?: Record<string, any>;
-  decoratorProps?: Record<string, any>;
-  current?: Record<string, any>;
-}) {
-  const current = _.cloneDeep(options.current || {});
-  const props = _.cloneDeep(options.props || {});
-  const decoratorProps = _.cloneDeep(options.decoratorProps || {});
-  const title = decoratorProps.title ?? props.title;
-  const displayTitle = decoratorProps.displayTitle ?? props.displayTitle;
-  const rawHeightMode = normalizeChartCardHeightMode(decoratorProps.heightMode ?? props.heightMode);
-  const height = decoratorProps.height ?? props.height;
-  const heightMode = rawHeightMode || (!_.isUndefined(height) ? 'specifyValue' : undefined);
-
-  if (title && displayTitle !== false) {
-    _.set(current, ['titleDescription', 'title'], title);
-  }
-  if (heightMode) {
-    _.set(current, ['blockHeight', 'heightMode'], heightMode);
-    if (heightMode === 'specifyValue' && !_.isUndefined(height)) {
-      _.set(current, ['blockHeight', 'height'], height);
-    } else {
-      _.unset(current, ['blockHeight', 'height']);
-    }
-  }
-
-  return current;
-}
-
 function buildRunJsStepParams(code: string) {
   return {
     runJs: {
@@ -300,17 +263,6 @@ export function buildBlockTree(options: {
     decoratorProps: _.merge({}, _.cloneDeep(defaults.decoratorProps || {}), _.cloneDeep(options.decoratorProps || {})),
     stepParams: baseStepParams,
   };
-
-  if (use === 'ChartBlockModel') {
-    const runtimeCardSettings = buildChartRuntimeCardSettings({
-      props: model.props,
-      decoratorProps: model.decoratorProps,
-      current: _.get(model, ['stepParams', 'cardSettings']),
-    });
-    if (!_.isEmpty(runtimeCardSettings)) {
-      _.set(model, ['stepParams', 'cardSettings'], runtimeCardSettings);
-    }
-  }
 
   if (use === 'TableBlockModel') {
     model.subModels = {

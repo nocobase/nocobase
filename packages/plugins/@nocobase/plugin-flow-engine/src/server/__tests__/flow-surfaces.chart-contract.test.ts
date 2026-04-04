@@ -15,12 +15,13 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { buildBlockTree } from '../flow-surfaces/builder';
 
 describe('flowSurfaces chart contract helpers', () => {
-  it('should expose chart card chrome on decoratorProps only', () => {
+  it('should expose chart editable contract on stepParams only', () => {
     const contract = getNodeContract('ChartBlockModel');
-    expect(contract.editableDomains).toContain('decoratorProps');
+    expect(contract.editableDomains).toContain('stepParams');
+    expect(contract.editableDomains).not.toContain('decoratorProps');
     expect(contract.editableDomains).not.toContain('props');
-    expect(contract.domains.decoratorProps?.allowedKeys).toEqual(
-      expect.arrayContaining(['title', 'displayTitle', 'height', 'heightMode']),
+    expect(contract.domains.stepParams?.groups?.cardSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height']),
     );
   });
 
@@ -30,14 +31,19 @@ describe('flowSurfaces chart contract helpers', () => {
     expect(options.heightMode.example).toBe('specifyValue');
   });
 
-  it('should seed runtime cardSettings when chart block is created with title or height chrome', () => {
+  it('should preserve explicit chart cardSettings when the block tree is created', () => {
     const node = buildBlockTree({
       type: 'chart',
-      decoratorProps: {
-        title: 'Created chart title',
-        displayTitle: true,
-        height: 360,
-        heightMode: 'fixed',
+      stepParams: {
+        cardSettings: {
+          titleDescription: {
+            title: 'Created chart title',
+          },
+          blockHeight: {
+            heightMode: 'specifyValue',
+            height: 360,
+          },
+        },
       },
     });
 
@@ -50,6 +56,20 @@ describe('flowSurfaces chart contract helpers', () => {
         height: 360,
       },
     });
+  });
+
+  it('should not synthesize chart cardSettings from decoratorProps when chart block tree is created', () => {
+    const node = buildBlockTree({
+      type: 'chart',
+      decoratorProps: {
+        title: 'Legacy title',
+        displayTitle: true,
+        height: 360,
+        heightMode: 'fixed',
+      },
+    });
+
+    expect(node.stepParams?.cardSettings).toBeUndefined();
   });
 
   it('should materialize chart helper context metadata', () => {
@@ -78,6 +98,20 @@ describe('flowSurfaces chart contract helpers', () => {
               required: ['x', 'y'],
             },
           },
+          supportedStyles: {
+            bar: {
+              boundaryGap: {
+                type: 'boolean',
+                description: 'Whether the category axis keeps boundary gap',
+              },
+              xAxisLabelRotate: {
+                type: 'number',
+                min: 0,
+                max: 90,
+                description: 'Rotate x-axis labels in degrees',
+              },
+            },
+          },
           supportedVisualTypes: ['bar', 'pie'],
           safeDefaults: [
             {
@@ -93,10 +127,22 @@ describe('flowSurfaces chart contract helpers', () => {
     });
 
     expect(response.vars.chart.properties?.queryOutputs?.properties?.employeeCount?.type).toBe('number');
-    expect(response.vars.chart.properties?.aliases?.properties?.employeeCount?.description).toContain('Alias');
+    expect(response.vars.chart.properties?.aliases?.properties?.employeeCount?.description).toContain(
+      'visual.mappings',
+    );
     expect(response.vars.chart.properties?.supportedMappings?.properties?.bar?.properties?.x?.description).toContain(
       'Required',
     );
+    expect(response.vars.chart.properties?.supportedStyles?.properties?.bar?.properties?.boundaryGap?.type).toBe(
+      'boolean',
+    );
+    expect(
+      response.vars.chart.properties?.supportedStyles?.properties?.bar?.properties?.xAxisLabelRotate,
+    ).toMatchObject({
+      type: 'number',
+      min: 0,
+      max: 90,
+    });
     expect(response.vars.chart.properties?.supportedVisualTypes?.properties?.bar?.title).toBe('bar');
     expect(response.vars.chart.properties?.safeDefaults?.properties?.builder_basic_minimal).toBeTruthy();
   });

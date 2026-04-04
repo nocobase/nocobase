@@ -340,6 +340,202 @@ describe('flowSurfaces chart write paths', () => {
     expect(readErrorMessage(invalidMappingRes)).toContain('chart visual mappings only support SQL query output fields');
   });
 
+  it('should reject basic visual writes when sql preview outputs are unavailable', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart risky sql page',
+      tabTitle: 'Chart risky sql tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const response = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+            sqlDatasource: 'main',
+          },
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'viewer_id',
+              y: 'total_count',
+            },
+          },
+        },
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain("chart visual.mode='basic' requires previewable SQL query outputs");
+  });
+
+  it('should clear stale basic visual when query switches to risky sql without an explicit visual patch', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart risky sql query-only page',
+      tabTitle: 'Chart risky sql query-only tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const seededRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'department.title' }],
+          },
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'department.title',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+    });
+    expect(seededRes.status).toBe(200);
+
+    const riskySqlRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+            sqlDatasource: 'main',
+          },
+        },
+      },
+    });
+    expect(riskySqlRes.status).toBe(200);
+
+    const surface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: chartBlock.uid,
+      }),
+    );
+    expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
+      mode: 'sql',
+      sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+      sqlDatasource: 'main',
+    });
+    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option).toBeUndefined();
+
+    const flowSqlRecord = await db.getRepository('flowSql').findOne({
+      filter: { uid: chartBlock.uid },
+    });
+    expect(flowSqlRecord?.get?.('sql')).toContain('{{ ctx.user.id }}');
+  });
+
+  it('should persist custom visual raw and events raw without semantic loss', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart custom raw page',
+      tabTitle: 'Chart custom raw tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const customOptionRaw = `
+return {
+  dataset: { source: ctx.data.objects || [] },
+  xAxis: { type: 'category' },
+  yAxis: {},
+  series: [{ type: 'bar', encode: { x: 'department.title', y: 'employeeCount' } }],
+};
+    `.trim();
+    const customEventsRaw = `
+chart.off('click');
+chart.on('click', 'series', function(params) {
+  console.log('chart-click', params && params.name);
+});
+    `.trim();
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'department.title' }],
+          },
+          visual: {
+            mode: 'custom',
+            raw: customOptionRaw,
+          },
+          events: {
+            raw: customEventsRaw,
+          },
+        },
+      },
+    });
+    expect(configureRes.status).toBe(200);
+
+    const surface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: chartBlock.uid,
+      }),
+    );
+    expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
+      mode: 'builder',
+      collectionPath: ['main', 'employees'],
+      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      dimensions: [{ field: 'department.title' }],
+    });
+    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option).toMatchObject({
+      mode: 'custom',
+      raw: customOptionRaw,
+    });
+    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.events).toMatchObject({
+      mode: 'custom',
+      raw: customEventsRaw,
+    });
+  });
+
   it('should keep legacy partial configure writes during compose for backward compatibility', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart legacy compose page',
@@ -395,7 +591,7 @@ describe('flowSurfaces chart write paths', () => {
     });
   });
 
-  it('should mirror chart title and height into runtime cardSettings when configuring block chrome', async () => {
+  it('should persist chart block chrome into stepParams.cardSettings only when configuring block chrome', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart card settings page',
       tabTitle: 'Chart card settings tab',
@@ -427,12 +623,10 @@ describe('flowSurfaces chart write paths', () => {
         uid: chartBlock.uid,
       }),
     );
-    expect(visibleSurface.tree.decoratorProps).toMatchObject({
-      title: 'Revenue by status',
-      displayTitle: true,
-      height: 420,
-      heightMode: 'specifyValue',
-    });
+    expect(visibleSurface.tree.decoratorProps || {}).not.toHaveProperty('title');
+    expect(visibleSurface.tree.decoratorProps || {}).not.toHaveProperty('displayTitle');
+    expect(visibleSurface.tree.decoratorProps || {}).not.toHaveProperty('height');
+    expect(visibleSurface.tree.decoratorProps || {}).not.toHaveProperty('heightMode');
     expect(visibleSurface.tree.stepParams?.cardSettings?.titleDescription).toMatchObject({
       title: 'Revenue by status',
     });
@@ -457,17 +651,91 @@ describe('flowSurfaces chart write paths', () => {
         uid: chartBlock.uid,
       }),
     );
-    expect(hiddenSurface.tree.decoratorProps).toMatchObject({
-      title: 'Revenue by status',
-      displayTitle: false,
-      height: 420,
-      heightMode: 'defaultHeight',
-    });
+    expect(hiddenSurface.tree.decoratorProps || {}).not.toHaveProperty('title');
+    expect(hiddenSurface.tree.decoratorProps || {}).not.toHaveProperty('displayTitle');
+    expect(hiddenSurface.tree.decoratorProps || {}).not.toHaveProperty('height');
+    expect(hiddenSurface.tree.decoratorProps || {}).not.toHaveProperty('heightMode');
     expect(hiddenSurface.tree.stepParams?.cardSettings?.titleDescription).toBeUndefined();
     expect(hiddenSurface.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
       heightMode: 'defaultHeight',
     });
     expect(hiddenSurface.tree.stepParams?.cardSettings?.blockHeight?.height).toBeUndefined();
+  });
+
+  it('should reject invalid chart card heightMode in raw stepParams writes with a clear error', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart invalid cardSettings page',
+      tabTitle: 'Chart invalid cardSettings tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          cardSettings: {
+            blockHeight: {
+              heightMode: 'auto',
+            },
+          },
+        },
+      },
+    });
+
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain(
+      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode must be one of',
+    );
+  });
+
+  it('should use chart cardSettings title for multi-target filter catalog labels', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart filter label page',
+      tabTitle: 'Chart filter label tab',
+    });
+    const filterFormUid = await addBlock(rootAgent, page.gridUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    await addBlock(rootAgent, page.gridUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const chartUid = await addBlock(rootAgent, page.gridUid, 'chart', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          title: 'Revenue by status',
+          displayTitle: true,
+        },
+      },
+    });
+    expect(configureRes.status).toBe(200);
+
+    const filterCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: { uid: filterFormUid },
+        },
+      }),
+    );
+    const chartNicknameField = filterCatalog.fields.find(
+      (item: any) => item.key === 'nickname' && item.targetBlockUid === chartUid,
+    );
+    expect(chartNicknameField).toBeTruthy();
+    expect(String(chartNicknameField.label || '')).toContain('Revenue by status / ');
   });
 
   it('should persist sql chart bindings, cleanup stale flowSql and resync filter targets when chart mode changes', async () => {

@@ -955,6 +955,10 @@ describe('flowSurfaces resource', () => {
     ).not.toContain('dataScope.*');
     expect(
       tabCatalog.blocks.find((item: any) => item.use === 'ChartBlockModel')?.settingsContract?.stepParams?.groups
+        ?.cardSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'ChartBlockModel')?.settingsContract?.stepParams?.groups
         ?.chartSettings?.allowedPaths,
     ).toEqual(expect.arrayContaining(['configure', 'configure.*']));
 

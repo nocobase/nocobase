@@ -50,6 +50,7 @@ import {
   getChartRiskyPatternHints,
   getChartSafeDefaultHints,
   getChartSupportedMappingsByType,
+  getChartSupportedStylesByType,
   getChartSupportedVisualTypes,
   getChartUnsupportedPatternHints,
   getChartVisualMappingAliases,
@@ -3425,27 +3426,24 @@ export class FlowSurfacesService {
     }
   }
 
-  async updateSettings(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async updateSettings(
+    values: Record<string, any>,
+    options: { transaction?: any; replaceChartCardSettings?: boolean } = {},
+  ) {
     const writeTarget = this.normalizeWriteTarget('updateSettings', values?.target, values);
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const contract = getNodeContract(current.use);
-    const editableDomains =
-      current?.use === 'ChartBlockModel'
-        ? _.uniq([...contract.editableDomains, 'props', 'decoratorProps'])
-        : contract.editableDomains;
     const nextPayload: Record<string, any> = { uid: current.uid };
 
     (['props', 'decoratorProps', 'stepParams', 'flowRegistry'] as FlowSurfaceNodeDomain[]).forEach((domain) => {
       if (typeof values[domain] === 'undefined') {
         return;
       }
-      if (!editableDomains.includes(domain)) {
+      if (!contract.editableDomains.includes(domain)) {
         throw new Error(`flowSurfaces updateSettings domain '${domain}' is not editable`);
       }
-      const domainContract =
-        contract.domains[domain] ||
-        (current?.use === 'ChartBlockModel' && domain === 'props' ? contract.domains.decoratorProps : undefined);
+      const domainContract = contract.domains[domain];
       if (!domainContract) {
         throw new Error(`flowSurfaces updateSettings domain '${domain}' is not supported by '${current.use}'`);
       }
@@ -3459,10 +3457,14 @@ export class FlowSurfacesService {
     });
 
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
-    this.syncChartCardDecoratorPropsForUpdateSettings(current, nextPayload);
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
     await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
-    this.syncChartCardRuntimeStepParamsForUpdateSettings(current, nextPayload);
+    this.syncChartCardRuntimeStepParamsForUpdateSettings(
+      current,
+      nextPayload,
+      options.replaceChartCardSettings ? _.get(values, ['stepParams', 'cardSettings']) : undefined,
+    );
+    this.stripLegacyChartCardChromeForUpdateSettings(current, nextPayload);
 
     const effectiveNode = {
       ...current,
@@ -3547,38 +3549,6 @@ export class FlowSurfacesService {
     }
   }
 
-  private syncChartCardDecoratorPropsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
-    if (current?.use !== 'ChartBlockModel') {
-      return;
-    }
-
-    const nextProps = _.isPlainObject(nextPayload.props) ? _.cloneDeep(nextPayload.props) : null;
-    const nextDecoratorProps = _.isPlainObject(nextPayload.decoratorProps)
-      ? _.cloneDeep(nextPayload.decoratorProps)
-      : null;
-
-    if (nextProps && Object.prototype.hasOwnProperty.call(nextProps, 'heightMode')) {
-      nextProps.heightMode = normalizePublicBlockHeightMode(nextProps.heightMode);
-      nextPayload.props = nextProps;
-    }
-    if (nextDecoratorProps && Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode')) {
-      nextDecoratorProps.heightMode = normalizePublicBlockHeightMode(nextDecoratorProps.heightMode);
-    }
-
-    const mirroredCardProps = nextProps
-      ? _.pick(nextProps, ['title', 'displayTitle', 'height', 'heightMode'])
-      : undefined;
-    if (!nextDecoratorProps && (!mirroredCardProps || !Object.keys(mirroredCardProps).length)) {
-      return;
-    }
-
-    nextPayload.decoratorProps = buildDefinedPayload({
-      ...(current?.decoratorProps || {}),
-      ...(nextDecoratorProps || {}),
-      ...(mirroredCardProps || {}),
-    });
-  }
-
   private syncChartConfigureForUpdateSettings(current: any, nextPayload: Record<string, any>) {
     if (current?.use !== 'ChartBlockModel') {
       return;
@@ -3610,8 +3580,14 @@ export class FlowSurfacesService {
     }
 
     const sqlPreview = await this.resolveSqlChartPreview(state.query, transaction);
-    if (state.visual?.mode !== 'basic' || !sqlPreview.queryOutputs?.length) {
+    if (state.visual?.mode !== 'basic') {
       return;
+    }
+
+    if (!sqlPreview.queryOutputs?.length) {
+      throw new FlowSurfaceBadRequestError(
+        "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
+      );
     }
 
     const supportedOutputs = new Set(
@@ -3812,94 +3788,23 @@ export class FlowSurfacesService {
     }
   }
 
-  private syncChartCardRuntimeStepParamsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+  private syncChartCardRuntimeStepParamsForUpdateSettings(
+    current: any,
+    nextPayload: Record<string, any>,
+    replacementCardSettings?: any,
+  ) {
     if (current?.use !== 'ChartBlockModel') {
       return;
     }
 
-    const currentDecoratorProps = _.isPlainObject(current?.decoratorProps) ? current.decoratorProps : {};
-    const currentProps = _.isPlainObject(current?.props) ? current.props : {};
-    const nextDecoratorProps = _.isPlainObject(nextPayload.decoratorProps) ? nextPayload.decoratorProps : {};
-    const nextProps = _.isPlainObject(nextPayload.props) ? nextPayload.props : {};
-    const currentCardSettings = _.cloneDeep(_.get(current, ['stepParams', 'cardSettings']) || {});
-
-    const effectiveTitle =
-      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'title') ? nextDecoratorProps.title : undefined) ??
-      (Object.prototype.hasOwnProperty.call(nextProps, 'title') ? nextProps.title : undefined) ??
-      currentDecoratorProps.title ??
-      currentProps.title;
-    const effectiveDisplayTitle =
-      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'displayTitle')
-        ? nextDecoratorProps.displayTitle
-        : undefined) ??
-      (Object.prototype.hasOwnProperty.call(nextProps, 'displayTitle') ? nextProps.displayTitle : undefined) ??
-      currentDecoratorProps.displayTitle ??
-      currentProps.displayTitle;
-    const titleTouched =
-      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'title') ||
-      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'displayTitle') ||
-      Object.prototype.hasOwnProperty.call(nextProps, 'title') ||
-      Object.prototype.hasOwnProperty.call(nextProps, 'displayTitle');
-    const normalizedTitle = typeof effectiveTitle === 'string' ? effectiveTitle.trim() : effectiveTitle;
-    const shouldShowTitle = !!normalizedTitle && effectiveDisplayTitle !== false;
-    const needsTitleRepair = shouldShowTitle && !_.get(currentCardSettings, ['titleDescription', 'title']);
-
-    const heightTouched =
-      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'height') ||
-      Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode') ||
-      Object.prototype.hasOwnProperty.call(nextProps, 'height') ||
-      Object.prototype.hasOwnProperty.call(nextProps, 'heightMode');
-    const rawHeightModeCandidate =
-      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode')
-        ? nextDecoratorProps.heightMode
-        : undefined) ??
-      (Object.prototype.hasOwnProperty.call(nextProps, 'heightMode') ? nextProps.heightMode : undefined) ??
-      _.get(currentCardSettings, ['blockHeight', 'heightMode']) ??
-      currentDecoratorProps.heightMode ??
-      currentProps.heightMode;
-    const effectiveHeight =
-      (Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'height') ? nextDecoratorProps.height : undefined) ??
-      (Object.prototype.hasOwnProperty.call(nextProps, 'height') ? nextProps.height : undefined) ??
-      _.get(currentCardSettings, ['blockHeight', 'height']) ??
-      currentDecoratorProps.height ??
-      currentProps.height;
-    const normalizedHeightMode = !_.isUndefined(rawHeightModeCandidate)
-      ? normalizePublicBlockHeightMode(rawHeightModeCandidate)
-      : !_.isUndefined(effectiveHeight)
-        ? 'specifyValue'
-        : undefined;
-    const needsHeightRepair =
-      (!!normalizedHeightMode || !_.isUndefined(effectiveHeight)) &&
-      _.isEmpty(_.get(currentCardSettings, ['blockHeight']));
-
-    if (!titleTouched && !needsTitleRepair && !heightTouched && !needsHeightRepair) {
+    if (_.isUndefined(_.get(nextPayload, ['stepParams', 'cardSettings']))) {
       return;
     }
 
     const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
-    const nextCardSettings = _.cloneDeep(_.get(nextStepParams, ['cardSettings']) || currentCardSettings || {});
-
-    if (titleTouched || needsTitleRepair) {
-      if (shouldShowTitle) {
-        _.set(nextCardSettings, ['titleDescription', 'title'], normalizedTitle);
-      } else {
-        _.unset(nextCardSettings, ['titleDescription']);
-      }
-    }
-
-    if (heightTouched || needsHeightRepair) {
-      if (!_.isUndefined(normalizedHeightMode)) {
-        _.set(nextCardSettings, ['blockHeight', 'heightMode'], normalizedHeightMode);
-      }
-      if (normalizedHeightMode === 'specifyValue' && !_.isUndefined(effectiveHeight)) {
-        _.set(nextCardSettings, ['blockHeight', 'height'], effectiveHeight);
-      } else {
-        _.unset(nextCardSettings, ['blockHeight', 'height']);
-      }
-      if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
-        _.unset(nextCardSettings, ['blockHeight']);
-      }
-    }
+    const nextCardSettings = normalizeChartCardSettings(
+      _.isUndefined(replacementCardSettings) ? _.get(nextStepParams, ['cardSettings']) : replacementCardSettings,
+    );
 
     if (_.isEmpty(nextCardSettings)) {
       _.unset(nextStepParams, ['cardSettings']);
@@ -3908,6 +3813,30 @@ export class FlowSurfacesService {
     }
 
     nextPayload.stepParams = nextStepParams;
+  }
+
+  private stripLegacyChartCardChromeForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (current?.use !== 'ChartBlockModel') {
+      return;
+    }
+
+    const legacyChromeKeys = ['title', 'displayTitle', 'height', 'heightMode'];
+    const currentProps = _.isPlainObject(current?.props) ? current.props : {};
+    const currentDecoratorProps = _.isPlainObject(current?.decoratorProps) ? current.decoratorProps : {};
+    const hasLegacyProps = legacyChromeKeys.some((key) => Object.prototype.hasOwnProperty.call(currentProps, key));
+    const hasLegacyDecoratorProps = legacyChromeKeys.some((key) =>
+      Object.prototype.hasOwnProperty.call(currentDecoratorProps, key),
+    );
+
+    if (!hasLegacyProps && !hasLegacyDecoratorProps) {
+      return;
+    }
+
+    nextPayload.props = _.omit(_.cloneDeep(nextPayload.props ?? currentProps), legacyChromeKeys);
+    nextPayload.decoratorProps = _.omit(
+      _.cloneDeep(nextPayload.decoratorProps ?? currentDecoratorProps),
+      legacyChromeKeys,
+    );
   }
 
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -5645,35 +5574,77 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('ChartBlockModel');
     assertSupportedSimpleChanges('chart', changes, allowedKeys);
+    const shouldUpdateCardSettings = ['title', 'displayTitle', 'height', 'heightMode'].some((key) =>
+      Object.prototype.hasOwnProperty.call(changes, key),
+    );
     const shouldUpdateConfigure = ['configure', 'query', 'visual', 'events'].some((key) =>
       Object.prototype.hasOwnProperty.call(changes, key),
     );
-    const resolved = shouldUpdateConfigure ? await this.locator.resolve(target, options) : null;
-    const current = shouldUpdateConfigure ? await this.loadResolvedNode(resolved!, options.transaction) : null;
-    const nextConfigure = shouldUpdateConfigure
+    const shouldLoadCurrent = shouldUpdateConfigure || shouldUpdateCardSettings;
+    const resolved = shouldLoadCurrent ? await this.locator.resolve(target, options) : null;
+    const current = shouldLoadCurrent ? await this.loadResolvedNode(resolved!, options.transaction) : null;
+    let nextConfigure = shouldUpdateConfigure
       ? buildChartConfigureFromSemanticChanges(_.get(current, ['stepParams', 'chartSettings', 'configure']), changes)
       : undefined;
-    const normalizedHeightMode = normalizePublicBlockHeightMode(changes.heightMode);
-    const cardDecoratorPayload = buildDefinedPayload({
-      title: changes.title,
-      displayTitle: changes.displayTitle,
-      height: changes.height,
-      heightMode: normalizedHeightMode,
-    });
+    if (shouldUpdateConfigure) {
+      nextConfigure = await this.stripBasicSqlVisualWhenPreviewUnavailable(nextConfigure, changes, options.transaction);
+    }
+    const nextCardSettings = shouldUpdateCardSettings
+      ? buildChartCardSettingsFromSemanticChanges(_.get(current, ['stepParams', 'cardSettings']), changes)
+      : undefined;
     return this.updateSettings(
       {
         target,
-        decoratorProps: cardDecoratorPayload,
-        stepParams: shouldUpdateConfigure
-          ? {
-              chartSettings: {
-                configure: nextConfigure,
-              },
-            }
-          : undefined,
+        stepParams:
+          shouldUpdateConfigure || shouldUpdateCardSettings
+            ? buildDefinedPayload({
+                ...(shouldUpdateCardSettings ? { cardSettings: nextCardSettings } : {}),
+                ...(shouldUpdateConfigure
+                  ? {
+                      chartSettings: {
+                        configure: nextConfigure,
+                      },
+                    }
+                  : {}),
+              })
+            : undefined,
       },
-      options,
+      {
+        ...options,
+        replaceChartCardSettings: shouldUpdateCardSettings,
+      },
     );
+  }
+
+  private async stripBasicSqlVisualWhenPreviewUnavailable(
+    nextConfigure: any,
+    changes: Record<string, any>,
+    transaction?: any,
+  ) {
+    if (!_.isPlainObject(nextConfigure) || !hasMeaningfulChartSemanticPatch(changes, 'query')) {
+      return nextConfigure;
+    }
+
+    if (hasMeaningfulChartSemanticPatch(changes, 'visual')) {
+      return nextConfigure;
+    }
+
+    const state = deriveChartSemanticState(nextConfigure);
+    if (state.query?.mode !== 'sql' || state.visual?.mode !== 'basic') {
+      return nextConfigure;
+    }
+
+    const sqlPreview = await this.resolveSqlChartPreview(state.query, transaction);
+    if (sqlPreview.queryOutputs?.length) {
+      return nextConfigure;
+    }
+
+    const strippedConfigure = _.cloneDeep(nextConfigure);
+    _.unset(strippedConfigure, ['chart', 'option']);
+    if (_.isEmpty(_.get(strippedConfigure, ['chart']))) {
+      _.unset(strippedConfigure, ['chart']);
+    }
+    return strippedConfigure;
   }
 
   private async configureActionPanelBlock(
@@ -7323,6 +7294,7 @@ export class FlowSurfacesService {
     const configure = _.get(chartNode, ['stepParams', 'chartSettings', 'configure']);
     const chart: NonNullable<FlowSurfaceContextSemantic['chart']> = {
       supportedMappings: getChartSupportedMappingsByType(),
+      supportedStyles: getChartSupportedStylesByType(),
       supportedVisualTypes: getChartSupportedVisualTypes(),
       safeDefaults: getChartSafeDefaultHints(),
       riskyPatterns: getChartRiskyPatternHints(),
@@ -7925,6 +7897,98 @@ function buildDefinedPayload(payload: Record<string, any>) {
   return _.pickBy(payload, (value) => !_.isUndefined(value));
 }
 
+function normalizeChartCardSettings(cardSettings: any) {
+  if (!_.isPlainObject(cardSettings)) {
+    return {};
+  }
+
+  const nextCardSettings = _.cloneDeep(cardSettings);
+  const title =
+    typeof _.get(nextCardSettings, ['titleDescription', 'title']) === 'string'
+      ? _.get(nextCardSettings, ['titleDescription', 'title']).trim()
+      : _.get(nextCardSettings, ['titleDescription', 'title']);
+  if (title) {
+    _.set(nextCardSettings, ['titleDescription', 'title'], title);
+  } else {
+    _.unset(nextCardSettings, ['titleDescription']);
+  }
+
+  const rawHeightMode = _.get(nextCardSettings, ['blockHeight', 'heightMode']);
+  const rawHeight = _.get(nextCardSettings, ['blockHeight', 'height']);
+  const normalizedHeightMode = _.isUndefined(rawHeightMode)
+    ? !_.isUndefined(rawHeight)
+      ? 'specifyValue'
+      : undefined
+    : normalizeChartCardHeightModeForWrite(rawHeightMode);
+  if (normalizedHeightMode) {
+    _.set(nextCardSettings, ['blockHeight', 'heightMode'], normalizedHeightMode);
+    if (normalizedHeightMode === 'specifyValue' && !_.isUndefined(rawHeight)) {
+      _.set(nextCardSettings, ['blockHeight', 'height'], rawHeight);
+    } else {
+      _.unset(nextCardSettings, ['blockHeight', 'height']);
+    }
+  } else {
+    _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
+    _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  return nextCardSettings;
+}
+
+function buildChartCardSettingsFromSemanticChanges(currentCardSettings: any, changes: Record<string, any>) {
+  const nextCardSettings = _.cloneDeep(currentCardSettings || {});
+
+  const currentTitle =
+    typeof _.get(currentCardSettings, ['titleDescription', 'title']) === 'string'
+      ? _.get(currentCardSettings, ['titleDescription', 'title']).trim()
+      : _.get(currentCardSettings, ['titleDescription', 'title']);
+  const nextTitle = hasOwnDefined(changes, 'title')
+    ? typeof changes.title === 'string'
+      ? changes.title.trim()
+      : changes.title
+    : currentTitle;
+  const shouldShowTitle = hasOwnDefined(changes, 'displayTitle') ? changes.displayTitle !== false : !!nextTitle;
+
+  if (nextTitle && shouldShowTitle) {
+    _.set(nextCardSettings, ['titleDescription', 'title'], nextTitle);
+  } else {
+    _.unset(nextCardSettings, ['titleDescription']);
+  }
+
+  const currentHeight = _.get(currentCardSettings, ['blockHeight', 'height']);
+  const nextHeight = hasOwnDefined(changes, 'height') ? changes.height : currentHeight;
+  const currentHeightMode = normalizeStoredChartCardHeightMode(
+    _.get(currentCardSettings, ['blockHeight', 'heightMode']),
+  );
+  const nextHeightMode = hasOwnDefined(changes, 'heightMode')
+    ? normalizePublicBlockHeightMode(changes.heightMode)
+    : hasOwnDefined(changes, 'height')
+      ? !_.isUndefined(nextHeight)
+        ? 'specifyValue'
+        : undefined
+      : currentHeightMode ?? (!_.isUndefined(nextHeight) ? 'specifyValue' : undefined);
+
+  if (nextHeightMode) {
+    _.set(nextCardSettings, ['blockHeight', 'heightMode'], nextHeightMode);
+    if (nextHeightMode === 'specifyValue' && !_.isUndefined(nextHeight)) {
+      _.set(nextCardSettings, ['blockHeight', 'height'], nextHeight);
+    } else {
+      _.unset(nextCardSettings, ['blockHeight', 'height']);
+    }
+  } else {
+    _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
+    _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  return normalizeChartCardSettings(nextCardSettings);
+}
+
 function buildPopupTabTree(options: {
   tabUid?: string;
   gridUid?: string;
@@ -8005,6 +8069,20 @@ function buildDefaultFieldState(containerUse: string, fieldUse: string, field: a
 
 function hasOwnDefined(input: Record<string, any>, key: string) {
   return Object.prototype.hasOwnProperty.call(input, key) && !_.isUndefined(input[key]);
+}
+
+function hasMeaningfulChartSemanticPatch(input: Record<string, any>, key: string) {
+  if (!Object.prototype.hasOwnProperty.call(input, key)) {
+    return false;
+  }
+  const value = input[key];
+  if (_.isNull(value)) {
+    return true;
+  }
+  if (_.isPlainObject(value)) {
+    return Object.keys(value).length > 0;
+  }
+  return !_.isUndefined(value);
 }
 
 function hasDefinedValue(input: Record<string, any>, keys: string[]) {
@@ -8390,6 +8468,41 @@ function normalizePublicBlockHeightMode(input: any) {
     );
   }
   return aliased;
+}
+
+function normalizeStoredChartCardHeightMode(input: any) {
+  if (_.isUndefined(input) || _.isNull(input) || String(input).trim() === '') {
+    return undefined;
+  }
+  try {
+    return normalizePublicBlockHeightMode(input);
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeChartCardHeightModeForWrite(input: any) {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  if (_.isNull(input)) {
+    throw new FlowSurfaceBadRequestError(
+      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be null',
+    );
+  }
+  const normalized = String(input).trim();
+  if (!normalized) {
+    throw new FlowSurfaceBadRequestError(
+      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be empty',
+    );
+  }
+  try {
+    return normalizePublicBlockHeightMode(normalized);
+  } catch {
+    throw new FlowSurfaceBadRequestError(
+      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode must be one of: defaultHeight, specifyValue, fullHeight',
+    );
+  }
 }
 
 function isFieldNodeUse(use?: string) {

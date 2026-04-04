@@ -45,6 +45,14 @@ export type ChartCapabilityHint = {
   description: string;
 };
 
+export type ChartStyleValueSupport = {
+  type: 'boolean' | 'number' | 'string';
+  enumValues?: string[];
+  min?: number;
+  max?: number;
+  description?: string;
+};
+
 const EMPTY_FILTER_GROUP = {
   logic: '$and',
   items: [],
@@ -59,9 +67,9 @@ const CHART_SAFE_DEFAULT_HINTS: ChartCapabilityHint[] = [
   },
   {
     key: 'block_outer_props_only',
-    title: 'Keep outer props minimal',
+    title: 'Keep block chrome minimal',
     description:
-      'Expose only title, displayTitle, height, and heightMode at the chart block level unless a richer chart contract is required.',
+      'Expose only the minimal block chrome settings first, then add richer chart query or visual settings only when the first render is stable.',
   },
 ];
 
@@ -147,6 +155,77 @@ const CHART_REQUIRED_MAPPING_KEYS_BY_TYPE: Record<string, Set<string>> = {
   pie: new Set(['category', 'value']),
   doughnut: new Set(['category', 'value']),
   funnel: new Set(['category', 'value']),
+};
+const CHART_STYLE_SUPPORT_BY_KEY: Record<string, ChartStyleValueSupport> = {
+  legend: {
+    type: 'boolean',
+    description: 'Show or hide legend',
+  },
+  tooltip: {
+    type: 'boolean',
+    description: 'Show or hide tooltip',
+  },
+  label: {
+    type: 'boolean',
+    description: 'Show or hide series labels',
+  },
+  boundaryGap: {
+    type: 'boolean',
+    description: 'Whether the category axis keeps boundary gap',
+  },
+  xAxisLabelRotate: {
+    type: 'number',
+    min: 0,
+    max: 90,
+    description: 'Rotate x-axis labels in degrees',
+  },
+  yAxisSplitLine: {
+    type: 'boolean',
+    description: 'Show or hide y-axis split lines',
+  },
+  smooth: {
+    type: 'boolean',
+    description: 'Render smooth curves for line and area charts',
+  },
+  stack: {
+    type: 'boolean',
+    description: 'Stack compatible series together',
+  },
+  radiusInner: {
+    type: 'number',
+    min: 0,
+    max: 100,
+    description: 'Inner radius percentage; when radiusOuter is also set it must be less than or equal to radiusOuter',
+  },
+  radiusOuter: {
+    type: 'number',
+    min: 0,
+    max: 100,
+    description:
+      'Outer radius percentage; when radiusInner is also set it must be greater than or equal to radiusInner',
+  },
+  labelType: {
+    type: 'string',
+    enumValues: [...CHART_LABEL_TYPES],
+    description: 'Pie or doughnut label content mode',
+  },
+  sort: {
+    type: 'string',
+    enumValues: [...CHART_FUNNEL_SORTS],
+    description: 'Funnel ordering direction',
+  },
+  minSize: {
+    type: 'number',
+    min: 0,
+    max: 100,
+    description: 'Funnel minimum percentage size; when maxSize is also set it must be less than or equal to maxSize',
+  },
+  maxSize: {
+    type: 'number',
+    min: 0,
+    max: 100,
+    description: 'Funnel maximum percentage size; when minSize is also set it must be greater than or equal to minSize',
+  },
 };
 
 function hasOwn(input: any, key: string) {
@@ -1289,6 +1368,19 @@ export function getChartSupportedMappingsByType() {
         required: Array.from(CHART_REQUIRED_MAPPING_KEYS_BY_TYPE[type] || []),
       },
     ]),
+  );
+}
+
+export function getChartSupportedStylesByType() {
+  return _.cloneDeep(
+    Object.fromEntries(
+      Object.entries(CHART_STYLE_KEYS_BY_TYPE).map(([type, styleKeys]) => [
+        type,
+        Object.fromEntries(
+          Array.from(styleKeys).map((styleKey) => [styleKey, _.cloneDeep(CHART_STYLE_SUPPORT_BY_KEY[styleKey])]),
+        ),
+      ]),
+    ),
   );
 }
 

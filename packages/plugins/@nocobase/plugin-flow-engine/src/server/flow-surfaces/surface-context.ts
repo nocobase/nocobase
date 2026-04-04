@@ -101,7 +101,13 @@ export class FlowSurfaceContextResolver {
         const collection = this.options.getCollection(resourceInit.dataSourceKey, resourceInit.collectionName);
         return {
           ownerUid: item.uid,
-          label: item?.decoratorProps?.title || item?.props?.title || collection?.title || collection?.name || item.uid,
+          label:
+            _.get(item, ['stepParams', 'cardSettings', 'titleDescription', 'title']) ||
+            item?.decoratorProps?.title ||
+            item?.props?.title ||
+            collection?.title ||
+            collection?.name ||
+            item.uid,
           resourceInit,
         };
       })

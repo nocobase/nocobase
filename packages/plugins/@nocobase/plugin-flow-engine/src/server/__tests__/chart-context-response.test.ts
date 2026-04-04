@@ -61,6 +61,26 @@ describe('chart context response helpers', () => {
               required: ['category', 'value'],
             },
           },
+          supportedStyles: {
+            bar: {
+              boundaryGap: {
+                type: 'boolean',
+                description: 'Whether the category axis keeps boundary gap',
+              },
+              xAxisLabelRotate: {
+                type: 'number',
+                min: 0,
+                max: 90,
+                description: 'Rotate x-axis labels in degrees',
+              },
+            },
+            pie: {
+              labelType: {
+                type: 'string',
+                enumValues: ['value', 'percent'],
+              },
+            },
+          },
           supportedVisualTypes: ['bar', 'pie', 'scatter'],
           safeDefaults: [
             {
@@ -102,12 +122,27 @@ describe('chart context response helpers', () => {
     });
 
     expect(response.vars.chart.properties.aliases.properties.employeeCount.description).toContain('visual.mappings');
+    expect(response.vars.chart.properties.aliases.properties.employeeCount.description).toContain('Do not assume');
     expect(response.vars.chart.properties.supportedMappings.properties.bar.properties.x.description).toContain(
       'Required',
     );
     expect(response.vars.chart.properties.supportedMappings.properties.bar.properties.series.description).toContain(
       'Optional',
     );
+    expect(response.vars.chart.properties.supportedStyles.properties.bar.properties.boundaryGap.type).toBe('boolean');
+    expect(response.vars.chart.properties.supportedStyles.properties.bar.properties.boundaryGap.description).toContain(
+      'boundary gap',
+    );
+    expect(response.vars.chart.properties.supportedStyles.properties.bar.properties.xAxisLabelRotate).toMatchObject({
+      type: 'number',
+      min: 0,
+      max: 90,
+    });
+    expect(response.vars.chart.properties.supportedStyles.properties.bar.properties.radiusInner).toBeUndefined();
+    expect(response.vars.chart.properties.supportedStyles.properties.pie.properties.labelType.enumValues).toEqual([
+      'value',
+      'percent',
+    ]);
     expect(response.vars.chart.properties.supportedVisualTypes.properties.scatter).toBeTruthy();
     expect(response.vars.chart.properties.safeDefaults.properties.builder_basic_minimal.description).toContain(
       'builder/basic',
@@ -133,6 +168,13 @@ describe('chart context response helpers', () => {
               required: ['x', 'y'],
             },
           },
+          supportedStyles: {
+            bar: {
+              boundaryGap: {
+                type: 'boolean',
+              },
+            },
+          },
           supportedVisualTypes: ['bar', 'line'],
           safeDefaults: [
             {
@@ -148,9 +190,48 @@ describe('chart context response helpers', () => {
     });
 
     expect(response.vars.chart.properties.supportedMappings.properties.bar.properties.x).toBeTruthy();
+    expect(response.vars.chart.properties.supportedStyles.properties.bar.properties.boundaryGap.type).toBe('boolean');
     expect(response.vars.chart.properties.supportedVisualTypes.properties.line).toBeTruthy();
     expect(response.vars.chart.properties.queryOutputs.properties.total.description).toContain('SQL preview output');
     expect(response.vars.chart.properties.aliases).toBeUndefined();
     expect(response.vars.chart.properties.safeDefaults.properties.block_outer_props_only).toBeTruthy();
+  });
+
+  it('should expose risky sql hints without queryOutputs when preview is unavailable', () => {
+    const response = buildFlowSurfaceContextResponse({
+      semantic: {
+        chart: {
+          supportedMappings: {
+            bar: {
+              allowed: ['x', 'y'],
+              required: ['x', 'y'],
+            },
+          },
+          supportedStyles: {
+            bar: {
+              boundaryGap: {
+                type: 'boolean',
+              },
+            },
+          },
+          supportedVisualTypes: ['bar'],
+          riskyPatterns: [
+            {
+              key: 'sql_runtime_context',
+              title: 'SQL depends on runtime context',
+              description: 'Preview is unavailable before runtime.',
+            },
+          ],
+        },
+      },
+      path: 'chart',
+      maxDepth: 4,
+    });
+
+    expect(response.vars.chart.properties.queryOutputs).toBeUndefined();
+    expect(response.vars.chart.properties.riskyPatterns.properties.sql_runtime_context.description).toContain(
+      'runtime',
+    );
+    expect(response.vars.chart.properties.supportedStyles.properties.bar.properties.boundaryGap.type).toBe('boolean');
   });
 });

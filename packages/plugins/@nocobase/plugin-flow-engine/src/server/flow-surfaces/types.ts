@@ -192,6 +192,9 @@ export type FlowSurfaceContextVarInfo = {
   type?: string;
   interface?: string;
   description?: string;
+  enumValues?: string[];
+  min?: number;
+  max?: number;
   disabled?: boolean;
   disabledReason?: string;
   properties?: Record<string, FlowSurfaceContextVarInfo>;

@@ -206,10 +206,18 @@ describe('flowSurfaces context', () => {
     expect(chartContext.vars.chart.properties.queryOutputs.properties.employeeCount.type).toBe('number');
     expect(chartContext.vars.chart.properties.queryOutputs.properties['department.title'].type).toBe('string');
     expect(chartContext.vars.chart.properties.aliases.properties.employeeCount).toBeTruthy();
+    expect(chartContext.vars.chart.properties.aliases.properties.employeeCount.description).toContain('Do not assume');
     expect(chartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
     expect(chartContext.vars.chart.properties.supportedMappings.properties.bar.properties.x.description).toContain(
       'Required',
     );
+    expect(chartContext.vars.chart.properties.supportedStyles.properties.bar.properties.boundaryGap.type).toBe(
+      'boolean',
+    );
+    expect(chartContext.vars.chart.properties.supportedStyles.properties.pie.properties.labelType.enumValues).toEqual([
+      'value',
+      'percent',
+    ]);
     expect(chartContext.vars.chart.properties.safeDefaults.properties.builder_basic_minimal).toBeTruthy();
     expect(chartContext.vars.chart.properties.riskyPatterns.properties.custom_visual_raw).toBeTruthy();
     expect(chartContext.vars.chart.properties.unsupportedPatterns.properties.builder_measure_sorting).toBeTruthy();
@@ -249,9 +257,39 @@ describe('flowSurfaces context', () => {
     const sqlChartContext = getData(sqlChartContextRes);
     expect(sqlChartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
     expect(sqlChartContext.vars.chart.properties.supportedMappings.properties.pie.properties.category).toBeTruthy();
+    expect(sqlChartContext.vars.chart.properties.supportedStyles.properties.funnel.properties.sort.enumValues).toEqual([
+      'descending',
+      'ascending',
+    ]);
     expect(sqlChartContext.vars.chart.properties.queryOutputs.properties.total.type).toBe('number');
     expect(sqlChartContext.vars.chart.properties.aliases).toBeUndefined();
     expect(sqlChartContext.vars.chart.properties.safeDefaults.properties.block_outer_props_only).toBeTruthy();
+
+    const configureRiskySqlRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: {
+            mode: 'sql',
+            sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+            sqlDatasource: 'main',
+          },
+        },
+      },
+    });
+    expect(configureRiskySqlRes.status).toBe(200);
+
+    const riskySqlChartContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: chartBlock.uid },
+        path: 'chart',
+        maxDepth: 4,
+      },
+    });
+    expect(riskySqlChartContextRes.status).toBe(200);
+    const riskySqlChartContext = getData(riskySqlChartContextRes);
+    expect(riskySqlChartContext.vars.chart.properties.queryOutputs).toBeUndefined();
+    expect(riskySqlChartContext.vars.chart.properties.riskyPatterns.properties.sql_runtime_context).toBeTruthy();
   });
 
   it('should expose formValues on edit form, keep record hidden there, and expose item chain on nested association surfaces', async () => {

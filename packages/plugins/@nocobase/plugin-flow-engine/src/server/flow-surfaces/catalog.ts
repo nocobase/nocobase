@@ -830,16 +830,28 @@ IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const CHART_CARD_SETTINGS_GROUP = {
+  allowedPaths: ['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height'],
+  clearable: true,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['titleDescription', 'blockHeight'],
+  pathSchemas: {
+    'titleDescription.title': STRING_SCHEMA,
+    'blockHeight.heightMode': STRING_SCHEMA,
+    'blockHeight.height': NUMBER_SCHEMA,
+  },
+};
+
 const CHART_BLOCK_CONTRACT = createContract({
-  editableDomains: ['decoratorProps', 'stepParams', 'flowRegistry'],
-  decoratorProps: ['title', 'displayTitle', 'height', 'heightMode'],
-  stepParams: ['chartSettings'],
+  editableDomains: ['stepParams', 'flowRegistry'],
+  stepParams: ['cardSettings', 'chartSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
   },
 });
 CHART_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  cardSettings: CHART_CARD_SETTINGS_GROUP,
   chartSettings: {
     allowedPaths: ['configure', 'configure.*'],
     clearable: true,
