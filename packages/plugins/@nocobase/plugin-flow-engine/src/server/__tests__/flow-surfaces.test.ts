@@ -3223,9 +3223,9 @@ describe('flowSurfaces resource', () => {
         target: {
           uid: tableUid,
         },
-        fieldPath: 'username',
+        fieldPath: 'nickname',
         settings: {
-          title: 'User name',
+          title: 'Employee nickname',
         },
         popup: {
           mode: 'replace',
@@ -3236,7 +3236,7 @@ describe('flowSurfaces resource', () => {
               resource: {
                 binding: 'currentRecord',
               },
-              fields: ['username', 'nickname'],
+              fields: ['nickname'],
             },
           ],
         },
@@ -3288,8 +3288,8 @@ describe('flowSurfaces resource', () => {
         },
         fields: [
           {
-            key: 'username',
-            fieldPath: 'username',
+            key: 'nickname',
+            fieldPath: 'nickname',
             popup: {
               mode: 'replace',
               blocks: [
@@ -3299,7 +3299,7 @@ describe('flowSurfaces resource', () => {
                   resource: {
                     binding: 'currentRecord',
                   },
-                  fields: ['username'],
+                  fields: ['nickname'],
                 },
               ],
             },
@@ -7916,7 +7916,8 @@ async function getSurface(rootAgent: any, target: Record<string, any>) {
   );
 }
 
-async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit: Record<string, any>) {
+async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
+  const normalizedResourceInit = resourceInit && Object.keys(resourceInit).length ? resourceInit : undefined;
   const data = getData(
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -7924,7 +7925,7 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
           uid: targetUid,
         },
         type,
-        resourceInit,
+        ...(normalizedResourceInit ? { resourceInit: normalizedResourceInit } : {}),
       },
     }),
   );

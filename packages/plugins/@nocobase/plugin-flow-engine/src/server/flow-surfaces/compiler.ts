@@ -63,6 +63,10 @@ type ArrayChildMatchPlan = {
   matchedCurrentUids: Set<string>;
 };
 
+function makeOpRef(path: string) {
+  return { ref: path };
+}
+
 const FORM_GRID_USES = new Set(['FormGridModel', 'AssignFormGridModel']);
 const ACTION_USES = new Set(Array.from(ACTION_KEY_BY_USE.keys()));
 const BLOCK_USES = new Set(Array.from(BLOCK_KEY_BY_USE.keys()));
@@ -276,7 +280,7 @@ function syncPageNode(
       },
     });
     const createdRef: CompiledNodeRef = {
-      uidRef: { $ref: `${opId}.tabSchemaUid` },
+      uidRef: makeOpRef(`${opId}.tabSchemaUid`),
       use: 'RootPageTabModel',
       sourceOpId: opId,
     };
@@ -597,7 +601,7 @@ function createBlockNode(
   });
 
   const ref: CompiledNodeRef = {
-    uidRef: { $ref: `${opId}.uid` },
+    uidRef: makeOpRef(`${opId}.uid`),
     use: desiredNode.use,
     sourceOpId: opId,
   };
@@ -641,7 +645,7 @@ function createActionNode(
   });
 
   const ref: CompiledNodeRef = {
-    uidRef: { $ref: `${opId}.uid` },
+    uidRef: makeOpRef(`${opId}.uid`),
     use: desiredNode.use,
     sourceOpId: opId,
   };
@@ -672,7 +676,7 @@ function createFieldNode(
     });
 
     const ref: CompiledNodeRef = {
-      uidRef: { $ref: `${opId}.uid` },
+      uidRef: makeOpRef(`${opId}.uid`),
       use: desiredNode.use,
       sourceOpId: opId,
     };
@@ -720,7 +724,7 @@ function createFieldNode(
   });
 
   const ref: CompiledNodeRef = {
-    uidRef: { $ref: `${opId}.wrapperUid` },
+    uidRef: makeOpRef(`${opId}.wrapperUid`),
     use: desiredNode.use,
     sourceOpId: opId,
   };
@@ -801,15 +805,15 @@ function bootstrapPopupShellCreation(
 
   const bindPopupShellRefs = (created: CompiledNodeRef) => {
     result.popupPageRef = {
-      uidRef: { $ref: `${created.sourceOpId}.popupPageUid` },
+      uidRef: makeOpRef(`${created.sourceOpId}.popupPageUid`),
       use: pageSpec.use,
     };
     result.popupTabRef = {
-      uidRef: { $ref: `${created.sourceOpId}.popupTabUid` },
+      uidRef: makeOpRef(`${created.sourceOpId}.popupTabUid`),
       use: tabSpec.use,
       sourceOpId: created.sourceOpId,
     };
-    result.popupGridUidRef = { $ref: `${created.sourceOpId}.popupGridUid` };
+    result.popupGridUidRef = makeOpRef(`${created.sourceOpId}.popupGridUid`);
   };
 
   if (!popupItems.length) {
@@ -931,35 +935,35 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
 
   if (FORM_BLOCK_USES.has(parentRef.use) && subKey === 'grid' && FORM_GRID_USES.has(childUse)) {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.gridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.gridUid`),
       use: childUse,
     };
   }
 
   if (DETAILS_BLOCK_USES.has(parentRef.use) && subKey === 'grid' && childUse === 'DetailsGridModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.gridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.gridUid`),
       use: childUse,
     };
   }
 
   if (FILTER_FORM_BLOCK_USES.has(parentRef.use) && subKey === 'grid' && childUse === 'FilterFormGridModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.gridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.gridUid`),
       use: childUse,
     };
   }
 
   if (parentRef.use === 'ChildPageTabModel' && subKey === 'grid' && childUse === 'BlockGridModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.popupGridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.popupGridUid`),
       use: childUse,
     };
   }
 
   if (parentRef.use === 'TableBlockModel' && subKey === 'columns' && childUse === 'TableActionsColumnModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.actionsColumnUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.actionsColumnUid`),
       use: childUse,
       sourceOpId: parentRef.sourceOpId,
       ownerUidRef: parentRef.uidRef,
@@ -968,7 +972,7 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
 
   if (parentRef.use === 'ListBlockModel' && subKey === 'item' && childUse === 'ListItemModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.itemUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.itemUid`),
       use: childUse,
       sourceOpId: parentRef.sourceOpId,
       ownerUidRef: parentRef.uidRef,
@@ -977,7 +981,7 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
 
   if (parentRef.use === 'GridCardBlockModel' && subKey === 'item' && childUse === 'GridCardItemModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.itemUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.itemUid`),
       use: childUse,
       sourceOpId: parentRef.sourceOpId,
       ownerUidRef: parentRef.uidRef,
@@ -986,28 +990,28 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
 
   if (parentRef.use === 'ListItemModel' && subKey === 'grid' && childUse === 'DetailsGridModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.gridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.gridUid`),
       use: childUse,
     };
   }
 
   if (parentRef.use === 'GridCardItemModel' && subKey === 'grid' && childUse === 'DetailsGridModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.gridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.gridUid`),
       use: childUse,
     };
   }
 
   if (FIELD_WRAPPER_USES.has(parentRef.use) && subKey === 'field') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.fieldUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.fieldUid`),
       use: childUse,
     };
   }
 
   if (parentRef.use === 'RootPageTabModel' && subKey === 'grid' && childUse === 'BlockGridModel') {
     return {
-      uidRef: { $ref: `${parentRef.sourceOpId}.gridUid` },
+      uidRef: makeOpRef(`${parentRef.sourceOpId}.gridUid`),
       use: childUse,
     };
   }
@@ -1274,7 +1278,7 @@ function hasRefValue(value: any): boolean {
     return value.some((item) => hasRefValue(item));
   }
   if (_.isPlainObject(value)) {
-    if (typeof value.$ref === 'string') {
+    if (typeof value.ref === 'string') {
       return true;
     }
     return Object.values(value).some((item) => hasRefValue(item));
@@ -1421,7 +1425,7 @@ function createPopupTabNode(
     },
   });
   const ref: CompiledNodeRef = {
-    uidRef: { $ref: `${opId}.popupTabUid` },
+    uidRef: makeOpRef(`${opId}.popupTabUid`),
     use: 'ChildPageTabModel',
     sourceOpId: opId,
   };

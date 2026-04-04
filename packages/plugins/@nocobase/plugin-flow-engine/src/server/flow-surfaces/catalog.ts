@@ -40,6 +40,10 @@ const STRING_SCHEMA = { type: 'string' };
 const NULLABLE_STRING_SCHEMA = { type: 'string', nullable: true };
 const BOOLEAN_SCHEMA = { type: 'boolean' };
 const OPEN_VIEW_MODE_SCHEMA = { type: 'string', enum: ['drawer', 'dialog', 'embed'] };
+const OPEN_VIEW_SCENE_SCHEMA = {
+  type: 'string',
+  enum: ['new', 'one', 'many', 'select', 'subForm', 'bulkEditForm', 'generic'],
+};
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
@@ -80,14 +84,32 @@ const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
   'openView.size',
   'openView.pageModelClass',
+  'openView.scene',
   'openView.dataSourceKey',
   'openView.collectionName',
   'openView.associationName',
+  'openView.sourceId',
+  'openView.filterByTk',
   'openView.title',
   'openView.uid',
   'openView.subModelKey',
   'openView.navigation',
 ];
+const OPEN_VIEW_PATH_SCHEMAS = {
+  'openView.mode': OPEN_VIEW_MODE_SCHEMA,
+  'openView.size': STRING_SCHEMA,
+  'openView.pageModelClass': STRING_SCHEMA,
+  'openView.scene': OPEN_VIEW_SCENE_SCHEMA,
+  'openView.dataSourceKey': STRING_SCHEMA,
+  'openView.collectionName': STRING_SCHEMA,
+  'openView.associationName': STRING_SCHEMA,
+  'openView.sourceId': STRING_SCHEMA,
+  'openView.filterByTk': STRING_SCHEMA,
+  'openView.title': STRING_SCHEMA,
+  'openView.uid': STRING_SCHEMA,
+  'openView.subModelKey': STRING_SCHEMA,
+  'openView.navigation': BOOLEAN_SCHEMA,
+};
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
 const TABLE_COLUMN_ALLOWED_PATHS = ['title.title'];
 const FILTER_FORM_ITEM_ALLOWED_PATHS = [
@@ -1197,18 +1219,7 @@ JS_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     clearable: true,
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
-    pathSchemas: {
-      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
-      'openView.size': STRING_SCHEMA,
-      'openView.pageModelClass': STRING_SCHEMA,
-      'openView.dataSourceKey': STRING_SCHEMA,
-      'openView.collectionName': STRING_SCHEMA,
-      'openView.associationName': STRING_SCHEMA,
-      'openView.title': STRING_SCHEMA,
-      'openView.uid': STRING_SCHEMA,
-      'openView.subModelKey': STRING_SCHEMA,
-      'openView.navigation': BOOLEAN_SCHEMA,
-    },
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
   jsSettings: RUN_JS_SETTINGS_GROUP,
 });
@@ -1247,18 +1258,7 @@ FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     clearable: true,
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
-    pathSchemas: {
-      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
-      'openView.size': STRING_SCHEMA,
-      'openView.pageModelClass': STRING_SCHEMA,
-      'openView.dataSourceKey': STRING_SCHEMA,
-      'openView.collectionName': STRING_SCHEMA,
-      'openView.associationName': STRING_SCHEMA,
-      'openView.title': STRING_SCHEMA,
-      'openView.uid': STRING_SCHEMA,
-      'openView.subModelKey': STRING_SCHEMA,
-      'openView.navigation': BOOLEAN_SCHEMA,
-    },
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
 });
 
@@ -1288,18 +1288,7 @@ POPUP_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     clearable: true,
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
-    pathSchemas: {
-      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
-      'openView.size': STRING_SCHEMA,
-      'openView.pageModelClass': STRING_SCHEMA,
-      'openView.dataSourceKey': STRING_SCHEMA,
-      'openView.collectionName': STRING_SCHEMA,
-      'openView.associationName': STRING_SCHEMA,
-      'openView.title': STRING_SCHEMA,
-      'openView.uid': STRING_SCHEMA,
-      'openView.subModelKey': STRING_SCHEMA,
-      'openView.navigation': BOOLEAN_SCHEMA,
-    },
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
 });
 
@@ -1649,16 +1638,7 @@ DUPLICATE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'confirm.enable': BOOLEAN_SCHEMA,
       'confirm.title': STRING_SCHEMA,
       'confirm.content': STRING_SCHEMA,
-      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
-      'openView.size': STRING_SCHEMA,
-      'openView.pageModelClass': STRING_SCHEMA,
-      'openView.dataSourceKey': STRING_SCHEMA,
-      'openView.collectionName': STRING_SCHEMA,
-      'openView.associationName': STRING_SCHEMA,
-      'openView.title': STRING_SCHEMA,
-      'openView.uid': STRING_SCHEMA,
-      'openView.subModelKey': STRING_SCHEMA,
-      'openView.navigation': BOOLEAN_SCHEMA,
+      ...OPEN_VIEW_PATH_SCHEMAS,
     },
   },
 });
@@ -1725,18 +1705,7 @@ MAIL_SEND_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     clearable: true,
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
-    pathSchemas: {
-      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
-      'openView.size': STRING_SCHEMA,
-      'openView.pageModelClass': STRING_SCHEMA,
-      'openView.dataSourceKey': STRING_SCHEMA,
-      'openView.collectionName': STRING_SCHEMA,
-      'openView.associationName': STRING_SCHEMA,
-      'openView.title': STRING_SCHEMA,
-      'openView.uid': STRING_SCHEMA,
-      'openView.subModelKey': STRING_SCHEMA,
-      'openView.navigation': BOOLEAN_SCHEMA,
-    },
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
   sendEmailSettings: {
     allowedPaths: ['emailFieldNames.value', 'defaultSelectAllRecords.value'],

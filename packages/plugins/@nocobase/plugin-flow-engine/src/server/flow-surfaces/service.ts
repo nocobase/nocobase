@@ -786,7 +786,7 @@ export class FlowSurfacesService {
   private buildCatalogBlockItem(item: any, popupProfile: FlowSurfacePopupBlockProfile | null) {
     const resourceBindings =
       this.isCollectionBlockUse(item.use) && popupProfile?.isPopupSurface
-        ? this.buildPopupBlockResourceBindings(item.use, popupProfile)
+        ? this.buildPopupBlockResourceBindings(item.use, popupProfile, { forCatalog: true })
         : undefined;
     return {
       ...item,
@@ -811,7 +811,7 @@ export class FlowSurfacesService {
     if (!this.isCollectionBlockUse(use) || !popupProfile?.isPopupSurface) {
       return true;
     }
-    return this.buildPopupBlockResourceBindings(use, popupProfile).length > 0;
+    return this.buildPopupBlockResourceBindings(use, popupProfile, { forCatalog: true }).length > 0;
   }
 
   private getPopupCollectionBlockScenes(blockUse: string): FlowSurfaceCollectionBlockScene[] {
@@ -954,8 +954,18 @@ export class FlowSurfacesService {
   private buildPopupBlockResourceBindings(
     blockUse: string,
     popupProfile: FlowSurfacePopupBlockProfile,
+    options: {
+      forCatalog?: boolean;
+    } = {},
   ): FlowSurfaceResourceBindingOption[] {
-    if (!this.isCollectionBlockUse(blockUse) || !this.isPopupCollectionBlockVisibleForScene(blockUse, popupProfile)) {
+    if (
+      !this.isCollectionBlockUse(blockUse) ||
+      (options.forCatalog && !this.isPopupCollectionBlockVisibleForScene(blockUse, popupProfile))
+    ) {
+      return [];
+    }
+
+    if (this.isPopupCollectionBlockSceneUnsupported(popupProfile.scene)) {
       return [];
     }
 
@@ -964,7 +974,8 @@ export class FlowSurfacesService {
       ? popupProfile.collectionName || getCollectionTitle(popupProfile.currentCollection)
       : undefined;
     const blockScenes = this.getPopupCollectionBlockScenes(blockUse);
-    const isNewSceneBlock = blockScenes.includes('new');
+    const supportsCurrentCollection =
+      blockScenes.includes('new') || (!popupProfile.hasCurrentRecord && blockScenes.includes('many'));
     const supportsCurrentRecord = blockScenes.includes('one');
     const associationFields = this.listPopupAssociatedRecordFields(popupProfile, blockUse);
 
@@ -979,7 +990,7 @@ export class FlowSurfacesService {
       return bindings;
     }
 
-    if (isNewSceneBlock) {
+    if (supportsCurrentCollection) {
       bindings.push({
         key: 'currentCollection',
         label: 'Current collection',
@@ -990,23 +1001,6 @@ export class FlowSurfacesService {
         dataSourceKey: popupProfile.dataSourceKey,
         collectionName: popupProfile.collectionName,
       });
-      if (popupProfile.hasCurrentRecord && associationFields.length) {
-        bindings.push({
-          key: 'associatedRecords',
-          label: 'Associated records',
-          description: 'Bind this block to records associated with the popup current record.',
-          requires: ['associationField'],
-          associationFields,
-        });
-      }
-      bindings.push({
-        key: 'otherRecords',
-        label: 'Other records',
-        description: 'Bind this block to another collection explicitly.',
-        requires: ['collectionName'],
-        dataSourceKey: popupProfile.dataSourceKey || 'main',
-      });
-      return bindings;
     }
 
     if (supportsCurrentRecord && popupProfile.hasCurrentRecord) {
@@ -1021,7 +1015,7 @@ export class FlowSurfacesService {
       });
     }
 
-    if (associationFields.length) {
+    if (popupProfile.hasCurrentRecord && associationFields.length) {
       bindings.push({
         key: 'associatedRecords',
         label: 'Associated records',
@@ -1070,7 +1064,7 @@ export class FlowSurfacesService {
             key: getFieldName(field),
             label: getFieldTitle(field),
             collectionName: getFieldTarget(field) || targetCollection?.name || targetCollection?.options?.name,
-            associationName,
+            associationName: getFieldName(field) || associationName,
           };
         } catch (error) {
           return null;
@@ -1308,15 +1302,22 @@ export class FlowSurfacesService {
         `flowSurfaces ${input.actionName} popup scene '${input.popupProfile.scene}' does not support popup collection block creation`,
       );
     }
-    if (!this.isCatalogBlockVisibleForPopupProfile(input.blockUse, input.popupProfile)) {
+
+    const resourceBindings = this.buildPopupBlockResourceBindings(input.blockUse, input.popupProfile);
+    const requestedBinding =
+      input.semanticResource?.binding ||
+      this.classifyPopupRawResourceInit(input.popupProfile, input.resourceInit || {});
+    if (
+      !this.isCatalogBlockVisibleForPopupProfile(input.blockUse, input.popupProfile) &&
+      requestedBinding &&
+      !['currentCollection', 'otherRecords'].includes(requestedBinding)
+    ) {
       throwBadRequest(
         `flowSurfaces ${input.actionName} block '${blockKey}' is not available in ${this.describePopupKind(
           input.popupProfile,
         )}; inspect catalog.blocks first`,
       );
     }
-
-    const resourceBindings = this.buildPopupBlockResourceBindings(input.blockUse, input.popupProfile);
     if (!input.semanticResource && !input.resourceInit) {
       throwBadRequest(
         `flowSurfaces ${input.actionName} popup collection block '${blockKey}' requires resource or resourceInit; inspect catalog.blocks[].resourceBindings first`,
@@ -1360,12 +1361,14 @@ export class FlowSurfacesService {
         )}; supported bindings: ${this.formatPopupSupportedBindings(input.resourceBindings)}`,
       );
     }
+    const preserveAssociationContext =
+      input.popupProfile.hasAssociationContext && !this.isPopupFieldHostUse(input.popupProfile.popupHostUse);
 
     if (binding === 'currentCollection') {
       return buildDefinedPayload({
         dataSourceKey: input.popupProfile.dataSourceKey || 'main',
         collectionName: input.popupProfile.collectionName,
-        ...(input.popupProfile.hasAssociationContext
+        ...(preserveAssociationContext
           ? {
               associationName: input.popupProfile.associationName,
               sourceId: input.popupProfile.sourceId,
@@ -1379,7 +1382,7 @@ export class FlowSurfacesService {
         dataSourceKey: input.popupProfile.dataSourceKey || 'main',
         collectionName: input.popupProfile.collectionName,
         filterByTk: input.popupProfile.filterByTk,
-        ...(input.popupProfile.hasAssociationContext
+        ...(preserveAssociationContext
           ? {
               associationName: input.popupProfile.associationName,
               sourceId: input.popupProfile.sourceId,
@@ -1605,7 +1608,11 @@ export class FlowSurfacesService {
       return false;
     }
     const normalizedSourceId = this.normalizeFlowContextTemplateValue(sourceId);
-    const sourceKey = associationField?.sourceKey || associationField?.options?.sourceKey;
+    const fieldType = getFieldType(associationField);
+    const sourceKey =
+      fieldType === 'belongsTo'
+        ? associationField?.foreignKey || associationField?.options?.foreignKey
+        : associationField?.sourceKey || associationField?.options?.sourceKey;
     const currentCollectionFilterTargetKey = this.getCollectionFilterTargetKey(popupProfile.currentCollection);
     const allowedValues = new Set<string>();
 
@@ -1688,13 +1695,17 @@ export class FlowSurfacesService {
       );
     }
 
-    const sourceKey = associationField?.sourceKey || associationField?.options?.sourceKey;
+    const fieldType = getFieldType(associationField);
+    const sourceKey =
+      fieldType === 'belongsTo'
+        ? associationField?.foreignKey || associationField?.options?.foreignKey
+        : associationField?.sourceKey || associationField?.options?.sourceKey;
     const currentCollectionFilterTargetKey = this.getCollectionFilterTargetKey(popupProfile.currentCollection);
     const sourceId =
       sourceKey && sourceKey !== currentCollectionFilterTargetKey
         ? `{{ctx.popup.record.${sourceKey}}}`
         : '{{ctx.view.inputArgs.filterByTk}}';
-    const associationName = resolveAssociationNameFromField(associationField, popupProfile.currentCollection);
+    const associationName = getFieldName(associationField) || resolveAssociationNameFromField(associationField);
     if (!associationName) {
       throwBadRequest(
         `flowSurfaces associatedRecords field '${getFieldName(associationField)}' associationName cannot be resolved`,
@@ -3218,7 +3229,17 @@ export class FlowSurfacesService {
     const collection = this.getCollection(dataSourceKey, collectionName);
     const parsed = this.parseFieldPath(collection, fieldPath, associationPathName, dataSourceKey, collectionName);
     const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+    const associationTargetCollection = parsed.associationField
+      ? resolveFieldTargetCollection(
+          parsed.associationField,
+          parsed.dataSourceKey,
+          (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
+        ) ||
+        parsed.associationField?.targetCollection ||
+        null
+      : null;
     const targetCollection =
+      associationTargetCollection ||
       resolveFieldTargetCollection(leafField, parsed.dataSourceKey, (resolvedDsKey, targetCollectionName) =>
         this.getCollection(resolvedDsKey, targetCollectionName),
       ) ||
