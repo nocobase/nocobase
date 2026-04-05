@@ -404,6 +404,7 @@ const examples = {
       openView: {
         dataSourceKey: 'main',
         collectionName: 'roles',
+        associationName: 'users.roles',
         mode: 'drawer',
       },
     },

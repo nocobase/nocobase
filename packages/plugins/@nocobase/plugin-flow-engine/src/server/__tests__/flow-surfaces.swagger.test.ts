@@ -321,6 +321,7 @@ describe('flowSurfaces swagger', () => {
     expect(configureRequest.examples.fieldOpenView.value.changes.clickToOpen).toBe(true);
     expect(configureRequest.examples.fieldOpenView.value.changes.openView.collectionName).toBe('departments');
     expect(configureRequest.examples.relationFieldPopup.value.changes.openView.collectionName).toBe('roles');
+    expect(configureRequest.examples.relationFieldPopup.value.changes.openView.associationName).toBe('users.roles');
     expect(schemas.FlowSurfaceConfigureResult.properties.popupPageUid.type).toBe('string');
     expect(schemas.FlowSurfaceConfigureResult.properties.popupTabUid.type).toBe('string');
     expect(schemas.FlowSurfaceConfigureResult.properties.popupGridUid.type).toBe('string');

@@ -3705,6 +3705,28 @@ describe('flowSurfaces API contract', () => {
     expect(rolesWrapperReadback.tree.props?.titleField).toBe('title');
     expect(rolesInnerReadback.tree.props?.titleField).toBe('title');
 
+    const popupDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: directRolesField.fieldUid,
+          },
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+
+    const initialRolesFieldReadback = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
+    expect(initialRolesFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      mode: 'drawer',
+    });
+
     expect(
       (
         await rootAgent.resource('flowSurfaces').configure({
@@ -3743,20 +3765,6 @@ describe('flowSurfaces API contract', () => {
       expect.arrayContaining(['currentCollection']),
     );
 
-    const popupDetails = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: directRolesField.fieldUid,
-          },
-          type: 'details',
-          resource: {
-            binding: 'currentRecord',
-          },
-        },
-      }),
-    );
-
     const popupTitleField = getData(
       await rootAgent.resource('flowSurfaces').addField({
         values: {
@@ -3774,6 +3782,7 @@ describe('flowSurfaces API contract', () => {
     expect(rolesInnerWithPopup.tree.stepParams?.popupSettings?.openView).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
+      associationName: 'users.roles',
       mode: 'drawer',
     });
 
@@ -3821,6 +3830,9 @@ describe('flowSurfaces API contract', () => {
     expect(popupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
 
     const popupGridDetailsReadback = await getSurface(rootAgent, { uid: popupGridDetails.uid });
@@ -3829,6 +3841,41 @@ describe('flowSurfaces API contract', () => {
       dataSourceKey: 'main',
       collectionName: 'roles',
       filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const popupEditAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: popupDetails.uid,
+          },
+          type: 'edit',
+        },
+      }),
+    );
+    const popupEditForm = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: popupEditAction.uid,
+          },
+          type: 'editForm',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+    const popupEditFormReadback = await getSurface(rootAgent, { uid: popupEditForm.uid });
+    expect(popupEditFormReadback.tree.use).toBe('EditFormModel');
+    expect(popupEditFormReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
 
     const popupTitleReadback = await getSurface(rootAgent, { uid: popupTitleField.wrapperUid });

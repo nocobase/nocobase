@@ -833,6 +833,57 @@ export class FlowSurfacesService {
     return !blockScenes.some((scene) => this.isPopupCollectionBlockSceneUnsupported(scene as FlowSurfacePopupScene));
   }
 
+  private resolveFieldRelationContextFromBinding(input: {
+    collection: any;
+    fieldPath: string;
+    associationPathName?: string;
+    dataSourceKey: string;
+    collectionName: string;
+  }) {
+    const parsed = this.parseFieldPath(
+      input.collection,
+      input.fieldPath,
+      input.associationPathName,
+      input.dataSourceKey,
+      input.collectionName,
+    );
+    const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+    const relationField = isAssociationField(leafField)
+      ? leafField
+      : isAssociationField(parsed.associationField)
+        ? parsed.associationField
+        : null;
+    const resolveTargetCollection = (field: any) =>
+      resolveFieldTargetCollection(field, parsed.dataSourceKey, (resolvedDsKey, targetCollectionName) =>
+        this.getCollection(resolvedDsKey, targetCollectionName),
+      );
+    const targetCollection =
+      (relationField ? resolveTargetCollection(relationField) || relationField?.targetCollection : null) ||
+      resolveTargetCollection(leafField) ||
+      leafField?.targetCollection ||
+      null;
+    const targetCollectionName =
+      getCollectionName(targetCollection) ||
+      (relationField ? getFieldTarget(relationField) : undefined) ||
+      parsed.collectionName ||
+      input.collectionName;
+    const associationName = parsed.associationPathName
+      ? `${parsed.collectionName}.${parsed.associationPathName}`
+      : relationField
+        ? resolveAssociationNameFromField(relationField, input.collection)
+        : undefined;
+
+    return {
+      parsed,
+      leafField,
+      relationField,
+      targetCollection,
+      dataSourceKey: targetCollection?.dataSourceKey || parsed.dataSourceKey || input.dataSourceKey,
+      collectionName: targetCollectionName,
+      associationName,
+    };
+  }
+
   private async resolvePopupHostFieldRelationContext(hostNode: any, transaction?: any) {
     const ancestors = await this.loadContextAncestorChain(
       hostNode?.uid,
@@ -861,37 +912,23 @@ export class FlowSurfacesService {
       return null;
     }
 
-    const parsed = this.parseFieldPath(
+    const relationContext = this.resolveFieldRelationContextFromBinding({
       collection,
-      fieldInit.fieldPath,
-      fieldInit.associationPathName,
+      fieldPath: fieldInit.fieldPath,
+      associationPathName: fieldInit.associationPathName,
       dataSourceKey,
       collectionName,
-    );
-    const associationField = parsed.associationField || resolveFieldFromCollection(collection, parsed.fieldPath);
-    if (!isAssociationField(associationField)) {
-      return null;
-    }
-
-    const targetCollection = resolveFieldTargetCollection(
-      associationField,
-      dataSourceKey,
-      (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
-    );
-    if (!targetCollection) {
-      return null;
-    }
-    const associationName = resolveAssociationNameFromField(associationField, collection);
-    if (!associationName) {
+    });
+    if (!relationContext.relationField || !relationContext.targetCollection || !relationContext.associationName) {
       return null;
     }
 
     return {
-      associationField,
-      targetCollection,
-      dataSourceKey: targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
-      collectionName: getFieldTarget(associationField) || targetCollection?.name || targetCollection?.options?.name,
-      associationName,
+      associationField: relationContext.relationField,
+      targetCollection: relationContext.targetCollection,
+      dataSourceKey: relationContext.dataSourceKey,
+      collectionName: relationContext.collectionName,
+      associationName: relationContext.associationName,
     };
   }
 
@@ -1361,8 +1398,7 @@ export class FlowSurfacesService {
         )}; supported bindings: ${this.formatPopupSupportedBindings(input.resourceBindings)}`,
       );
     }
-    const preserveAssociationContext =
-      input.popupProfile.hasAssociationContext && !this.isPopupFieldHostUse(input.popupProfile.popupHostUse);
+    const preserveAssociationContext = input.popupProfile.hasAssociationContext;
 
     if (binding === 'currentCollection') {
       return buildDefinedPayload({
@@ -3233,58 +3269,68 @@ export class FlowSurfacesService {
     };
   }
 
-  private buildDefaultFieldOpenView(fieldNode: any, wrapperNode: any) {
+  private resolveFieldOpenViewContext(fieldNode: any, wrapperNode: any) {
     const fieldInit = fieldNode?.stepParams?.fieldSettings?.init || wrapperNode?.stepParams?.fieldSettings?.init || {};
     const dataSourceKey = String(fieldInit.dataSourceKey || 'main').trim() || 'main';
     const collectionName = String(fieldInit.collectionName || '').trim() || undefined;
     const fieldPath = String(fieldInit.fieldPath || '').trim();
     const associationPathName = String(fieldInit.associationPathName || '').trim() || undefined;
-    const openViewBase = {
-      mode: 'drawer',
-      size: 'medium',
-      pageModelClass: 'ChildPageModel',
-    };
 
     if (!collectionName) {
-      return openViewBase;
+      return {};
     }
     if (!fieldPath) {
       return {
-        ...openViewBase,
         dataSourceKey,
         collectionName,
       };
     }
 
     const collection = this.getCollection(dataSourceKey, collectionName);
-    const parsed = this.parseFieldPath(collection, fieldPath, associationPathName, dataSourceKey, collectionName);
-    const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
-    const associationTargetCollection = parsed.associationField
-      ? resolveFieldTargetCollection(
-          parsed.associationField,
-          parsed.dataSourceKey,
-          (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
-        ) ||
-        parsed.associationField?.targetCollection ||
-        null
-      : null;
-    const targetCollection =
-      associationTargetCollection ||
-      resolveFieldTargetCollection(leafField, parsed.dataSourceKey, (resolvedDsKey, targetCollectionName) =>
-        this.getCollection(resolvedDsKey, targetCollectionName),
-      ) ||
-      leafField?.targetCollection ||
-      null;
-    const targetCollectionName =
-      targetCollection?.name || targetCollection?.options?.name || parsed.collectionName || collectionName;
+    if (!collection) {
+      return {
+        dataSourceKey,
+        collectionName,
+      };
+    }
+
+    const relationContext = this.resolveFieldRelationContextFromBinding({
+      collection,
+      fieldPath,
+      associationPathName,
+      dataSourceKey,
+      collectionName,
+    });
 
     return buildDefinedPayload({
+      dataSourceKey: relationContext.dataSourceKey,
+      collectionName: relationContext.collectionName,
+      associationName: relationContext.associationName,
+    });
+  }
+
+  private applyFieldOpenViewContext(fieldNode: any, wrapperNode: any, openView: any) {
+    if (!_.isPlainObject(openView)) {
+      return openView;
+    }
+    const fieldOpenViewContext = this.resolveFieldOpenViewContext(fieldNode, wrapperNode);
+    const explicitAssociationName = String(openView.associationName || '').trim() || undefined;
+    return buildDefinedPayload({
+      ...fieldOpenViewContext,
+      ...openView,
+      associationName: explicitAssociationName || fieldOpenViewContext.associationName,
+    });
+  }
+
+  private buildDefaultFieldOpenView(fieldNode: any, wrapperNode: any) {
+    const openViewBase = {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+    };
+    return buildDefinedPayload({
       ...openViewBase,
-      dataSourceKey: targetCollection?.dataSourceKey || parsed.dataSourceKey || dataSourceKey,
-      collectionName: targetCollection ? targetCollectionName : parsed.collectionName || collectionName,
-      associationName: parsed.associationPathName
-        ? `${parsed.collectionName}.${parsed.associationPathName}`
-        : undefined,
+      ...this.resolveFieldOpenViewContext(fieldNode, wrapperNode),
     });
   }
 
@@ -6157,9 +6203,13 @@ export class FlowSurfacesService {
         ? true
         : undefined;
     const normalizedOpenView = hasOwnDefined(changes, 'openView')
-      ? await this.normalizeOpenView('configure field', changes.openView, {
-          transaction: options.transaction,
-        })
+      ? this.applyFieldOpenViewContext(
+          current,
+          parentWrapper,
+          await this.normalizeOpenView('configure field', changes.openView, {
+            transaction: options.transaction,
+          }),
+        )
       : undefined;
     const exactBindingInit =
       bindingChange && normalizedBinding
