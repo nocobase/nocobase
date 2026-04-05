@@ -3556,6 +3556,96 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRes)).toContain('external openView.uid');
   });
 
+  it('should reject openView uid when it points to a popup page node', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Invalid popup uid page',
+      tabTitle: 'Invalid popup uid tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const field = await addField(rootAgent, tableUid, 'department.title');
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
+            uid: viewAction.popupPageUid,
+          },
+        },
+      },
+    });
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('page or tab nodes');
+    expect(readErrorMessage(invalidRes)).toContain('ChildPageModel');
+  });
+
+  it('should reject openView uid when it points to a non-existent node', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing popup uid page',
+      tabTitle: 'Missing popup uid tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const field = await addField(rootAgent, tableUid, 'department.title');
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
+            uid: 'missing-popup-opener',
+          },
+        },
+      },
+    });
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('must reference an existing node');
+  });
+
+  it('should reject invalid openView uid through updateSettings stepParams writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Invalid updateSettings popup uid page',
+      tabTitle: 'Invalid updateSettings popup uid tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const field = await addField(rootAgent, tableUid, 'department.title');
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          popupSettings: {
+            openView: {
+              uid: viewAction.popupPageUid,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('page or tab nodes');
+    expect(readErrorMessage(invalidRes)).toContain('ChildPageModel');
+  });
+
   it('should enforce real wrapper and column props contracts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Wrapper contract page',

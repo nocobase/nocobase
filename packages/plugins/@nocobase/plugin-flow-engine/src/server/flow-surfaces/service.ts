@@ -56,7 +56,7 @@ import {
   getChartVisualMappingAliases,
 } from './chart-config';
 import { SurfaceLocator } from './locator';
-import { isPopupHostUse } from './placement';
+import { isPageModelUse, isPopupHostUse } from './placement';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath, type FlowSurfaceContextSemantic } from './context';
@@ -3155,7 +3155,29 @@ export class FlowSurfacesService {
     return fieldChanges.openView;
   }
 
-  private normalizeOpenView(actionName: string, openView: any) {
+  private async assertOpenViewUidTarget(actionName: string, uid: string, options: { transaction?: any } = {}) {
+    const targetNode = await this.repository.findModelById(uid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (!targetNode?.uid) {
+      throwBadRequest(`flowSurfaces ${actionName} openView.uid must reference an existing node`);
+    }
+    if (isPageModelUse(targetNode.use)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} openView.uid must not reference page or tab nodes, got '${targetNode.use}'`,
+      );
+    }
+
+    const popupHostNode = await this.findPopupHostNode(uid, null, targetNode, options.transaction);
+    if (popupHostNode?.uid && popupHostNode.uid !== targetNode.uid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} openView.uid must not reference popup subtree nodes, got '${targetNode.use}'`,
+      );
+    }
+  }
+
+  private async normalizeOpenView(actionName: string, openView: any, options: { transaction?: any } = {}) {
     if (_.isUndefined(openView) || _.isNull(openView)) {
       return openView;
     }
@@ -3163,6 +3185,14 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} openView must be an object`);
     }
     const normalizedOpenView = _.cloneDeep(openView);
+    if (!_.isUndefined(normalizedOpenView.uid)) {
+      const normalizedUid = String(normalizedOpenView.uid || '').trim();
+      if (!normalizedUid) {
+        throwBadRequest(`flowSurfaces ${actionName} openView.uid cannot be empty`);
+      }
+      normalizedOpenView.uid = normalizedUid;
+      await this.assertOpenViewUidTarget(actionName, normalizedUid, options);
+    }
     if (!_.isUndefined(normalizedOpenView.mode)) {
       const rawMode = String(normalizedOpenView.mode || '').trim();
       if (!rawMode) {
@@ -3478,6 +3508,7 @@ export class FlowSurfacesService {
     });
 
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
+    await this.normalizeOpenViewForUpdateSettings('updateSettings', nextPayload, options);
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
     await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
     this.syncChartCardRuntimeStepParamsForUpdateSettings(
@@ -3567,6 +3598,27 @@ export class FlowSurfacesService {
 
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
+    }
+  }
+
+  private async normalizeOpenViewForUpdateSettings(
+    actionName: string,
+    nextPayload: Record<string, any>,
+    options: { transaction?: any } = {},
+  ) {
+    const openViewPaths: Array<[string, string]> = [
+      ['popupSettings', 'openView'],
+      ['selectExitRecordSettings', 'openView'],
+    ];
+    for (const [flowKey, stepKey] of openViewPaths) {
+      if (!_.has(nextPayload, ['stepParams', flowKey, stepKey])) {
+        continue;
+      }
+      _.set(
+        nextPayload,
+        ['stepParams', flowKey, stepKey],
+        await this.normalizeOpenView(actionName, _.get(nextPayload, ['stepParams', flowKey, stepKey]), options),
+      );
     }
   }
 
@@ -6105,7 +6157,9 @@ export class FlowSurfacesService {
         ? true
         : undefined;
     const normalizedOpenView = hasOwnDefined(changes, 'openView')
-      ? this.normalizeOpenView('configure field', changes.openView)
+      ? await this.normalizeOpenView('configure field', changes.openView, {
+          transaction: options.transaction,
+        })
       : undefined;
     const exactBindingInit =
       bindingChange && normalizedBinding
@@ -6206,7 +6260,9 @@ export class FlowSurfacesService {
       };
     }
     if (!_.isUndefined(changes.openView)) {
-      const normalizedOpenView = this.normalizeOpenView('configure action', changes.openView);
+      const normalizedOpenView = await this.normalizeOpenView('configure action', changes.openView, {
+        transaction: options.transaction,
+      });
       if (use === 'UploadActionModel') {
         stepParams.selectExitRecordSettings = {
           openView: normalizedOpenView,
