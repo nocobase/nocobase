@@ -1531,7 +1531,13 @@ describe('flowSurfaces resource', () => {
       expect.arrayContaining(['currentCollection', 'currentRecord']),
     );
     expect(recordPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
-      expect.arrayContaining([expect.objectContaining({ key: 'skills' })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'skills',
+          collectionName: 'skills',
+          associationName: 'employees.skills',
+        }),
+      ]),
     );
 
     const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');

@@ -1064,7 +1064,7 @@ export class FlowSurfacesService {
             key: getFieldName(field),
             label: getFieldTitle(field),
             collectionName: getFieldTarget(field) || targetCollection?.name || targetCollection?.options?.name,
-            associationName: getFieldName(field) || associationName,
+            associationName,
           };
         } catch (error) {
           return null;
@@ -1705,7 +1705,7 @@ export class FlowSurfacesService {
       sourceKey && sourceKey !== currentCollectionFilterTargetKey
         ? `{{ctx.popup.record.${sourceKey}}}`
         : '{{ctx.view.inputArgs.filterByTk}}';
-    const associationName = getFieldName(associationField) || resolveAssociationNameFromField(associationField);
+    const associationName = resolveAssociationNameFromField(associationField, popupProfile.currentCollection);
     if (!associationName) {
       throwBadRequest(
         `flowSurfaces associatedRecords field '${getFieldName(associationField)}' associationName cannot be resolved`,
