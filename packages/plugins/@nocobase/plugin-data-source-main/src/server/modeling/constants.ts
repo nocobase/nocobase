@@ -58,10 +58,30 @@ export const PLUGIN_REQUIREMENTS: Record<string, { runtimeName: string; packageN
     packageName: '@nocobase/plugin-field-attachment-url',
     capability: 'attachmentURL field',
   },
-  markdownVditor: {
+  vditor: {
     runtimeName: 'field-markdown-vditor',
     packageName: '@nocobase/plugin-field-markdown-vditor',
-    capability: 'markdownVditor field',
+    capability: 'vditor field',
+  },
+  point: {
+    runtimeName: 'map',
+    packageName: '@nocobase/plugin-map',
+    capability: 'point geometry field',
+  },
+  lineString: {
+    runtimeName: 'map',
+    packageName: '@nocobase/plugin-map',
+    capability: 'lineString geometry field',
+  },
+  circle: {
+    runtimeName: 'map',
+    packageName: '@nocobase/plugin-map',
+    capability: 'circle geometry field',
+  },
+  polygon: {
+    runtimeName: 'map',
+    packageName: '@nocobase/plugin-map',
+    capability: 'polygon geometry field',
   },
   chinaRegion: {
     runtimeName: 'field-china-region',

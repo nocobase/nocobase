@@ -116,7 +116,7 @@ export function buildTemplateBaseline(input: PlainObject) {
           normalizeFieldInput({ name: 'extname', interface: 'input', title: 'Extension name' }),
           normalizeFieldInput({ name: 'size', interface: 'integer', type: 'integer', title: 'Size' }),
           normalizeFieldInput({ name: 'mimetype', interface: 'input', title: 'MIME type' }),
-          normalizeFieldInput({ name: 'path', interface: 'input', type: 'text', title: 'Path' }),
+          normalizeFieldInput({ name: 'path', interface: 'textarea', type: 'text', title: 'Path' }),
           normalizeFieldInput({ name: 'url', interface: 'url', type: 'text', title: 'URL' }),
           normalizeFieldInput({ name: 'preview', interface: 'url', type: 'text', field: 'url', title: 'Preview' }),
           normalizeFieldInput({
@@ -205,13 +205,15 @@ export function normalizeCollectionInput(input: PlainObject, options: { mode?: '
 }
 
 export function composeCollectionDefinition(input: PlainObject, options: { mode?: 'create' | 'update' } = {}) {
-  const baseline = options.mode === 'create' ? buildTemplateBaseline(input) : {};
+  const baseline: PlainObject = options.mode === 'create' ? buildTemplateBaseline(input) : {};
+  const baselineFields = Array.isArray(baseline.fields) ? (baseline.fields as PlainObject[]) : [];
+  const inputFields = Array.isArray(input.fields) ? (input.fields as PlainObject[]) : [];
 
   return normalizeCollectionInput(
     {
       ...baseline,
       ...input,
-      fields: uniqueByName([...(baseline.fields || []), ...(input.fields || [])]),
+      fields: uniqueByName([...baselineFields, ...inputFields]),
     },
     options,
   );

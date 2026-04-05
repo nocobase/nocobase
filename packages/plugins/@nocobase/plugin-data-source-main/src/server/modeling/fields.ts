@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { Utils } from 'sequelize';
 import {
   ARRAY_DEFAULT_INTERFACES,
   CHOICE_INTERFACES,
@@ -27,6 +28,116 @@ export function normalizeInterfaceName(value?: string) {
   return INTERFACE_ALIASES[value] || value;
 }
 
+const DEFAULT_FIELD_TYPES: Record<string, string> = {
+  input: 'string',
+  phone: 'string',
+  email: 'string',
+  color: 'string',
+  icon: 'string',
+  url: 'text',
+  textarea: 'text',
+  markdown: 'text',
+  vditor: 'text',
+  richText: 'text',
+  integer: 'bigInt',
+  number: 'double',
+  percent: 'float',
+  password: 'password',
+  checkbox: 'boolean',
+  select: 'string',
+  radioGroup: 'string',
+  multipleSelect: 'array',
+  checkboxGroup: 'array',
+  json: 'json',
+  attachment: 'belongsToMany',
+  attachmentURL: 'string',
+  point: 'point',
+  lineString: 'lineString',
+  circle: 'circle',
+  polygon: 'polygon',
+  datetime: 'date',
+  createdAt: 'date',
+  updatedAt: 'date',
+  datetimeNoTz: 'datetimeNoTz',
+  dateOnly: 'dateOnly',
+  time: 'time',
+  unixTimestamp: 'unixTimestamp',
+  m2o: 'belongsTo',
+  obo: 'belongsTo',
+  createdBy: 'belongsTo',
+  updatedBy: 'belongsTo',
+  o2m: 'hasMany',
+  m2m: 'belongsToMany',
+  oho: 'hasOne',
+  chinaRegion: 'belongsToMany',
+  snowflakeId: 'snowflakeId',
+  id: 'bigInt',
+  uuid: 'uuid',
+  nanoid: 'nanoid',
+  formula: 'formula',
+  sort: 'sort',
+  code: 'code',
+  sequence: 'sequence',
+  encryption: 'string',
+  tableoid: 'virtual',
+  mbm: 'belongsToArray',
+};
+
+const ALLOWED_FIELD_TYPES: Record<string, string[]> = {
+  input: ['string'],
+  phone: ['string'],
+  email: ['string'],
+  color: ['string'],
+  icon: ['string'],
+  url: ['text', 'string'],
+  textarea: ['text', 'string'],
+  markdown: ['text', 'string'],
+  vditor: ['text', 'string'],
+  richText: ['text', 'string'],
+  integer: ['bigInt', 'integer'],
+  number: ['double', 'float', 'decimal', 'integer', 'bigInt'],
+  percent: ['float', 'double', 'decimal'],
+  password: ['password', 'string'],
+  checkbox: ['boolean'],
+  select: ['string'],
+  radioGroup: ['string'],
+  multipleSelect: ['array'],
+  checkboxGroup: ['array'],
+  json: ['json', 'jsonb'],
+  attachment: ['belongsToMany'],
+  attachmentURL: ['string'],
+  point: ['point', 'json'],
+  lineString: ['lineString', 'json'],
+  circle: ['circle', 'json'],
+  polygon: ['polygon', 'json'],
+  datetime: ['date'],
+  createdAt: ['date'],
+  updatedAt: ['date'],
+  datetimeNoTz: ['datetimeNoTz'],
+  dateOnly: ['dateOnly'],
+  time: ['time'],
+  unixTimestamp: ['unixTimestamp'],
+  m2o: ['belongsTo'],
+  obo: ['belongsTo'],
+  createdBy: ['belongsTo'],
+  updatedBy: ['belongsTo'],
+  o2m: ['hasMany'],
+  m2m: ['belongsToMany'],
+  oho: ['hasOne'],
+  chinaRegion: ['belongsToMany'],
+  snowflakeId: ['snowflakeId'],
+  id: ['bigInt'],
+  uuid: ['uuid'],
+  nanoid: ['nanoid'],
+  formula: ['formula'],
+  sort: ['sort'],
+  code: ['code'],
+  sequence: ['sequence'],
+  encryption: ['encryption', 'string'],
+  tableoid: ['virtual'],
+  mbm: ['belongsToArray'],
+};
+
 function buildRelationComponentProps(field: PlainObject) {
   return {
     multiple: MULTI_COMPONENT_INTERFACES.has(field.interface),
@@ -38,95 +149,12 @@ function buildRelationComponentProps(field: PlainObject) {
 }
 
 function getFieldType(field: PlainObject) {
-  if (field.type) {
-    return field.type;
+  const defaultType = DEFAULT_FIELD_TYPES[field.interface];
+  if (!defaultType) {
+    throw new Error(`Unknown field interface ${field.interface}`);
   }
 
-  switch (field.interface) {
-    case 'input':
-    case 'phone':
-    case 'email':
-    case 'color':
-    case 'icon':
-      return 'string';
-    case 'url':
-    case 'textarea':
-    case 'markdown':
-    case 'markdownVditor':
-    case 'richText':
-      return 'text';
-    case 'integer':
-      return 'bigInt';
-    case 'number':
-      return 'double';
-    case 'percent':
-      return 'float';
-    case 'password':
-      return 'password';
-    case 'checkbox':
-      return 'boolean';
-    case 'select':
-    case 'radioGroup':
-      return 'string';
-    case 'multipleSelect':
-    case 'checkboxGroup':
-      return 'array';
-    case 'json':
-      return 'json';
-    case 'attachment':
-      return 'belongsToMany';
-    case 'attachmentURL':
-      return 'string';
-    case 'datetime':
-    case 'createdAt':
-    case 'updatedAt':
-      return 'date';
-    case 'datetimeNoTz':
-      return 'datetimeNoTz';
-    case 'dateOnly':
-      return 'dateOnly';
-    case 'time':
-      return 'time';
-    case 'unixTimestamp':
-      return 'unixTimestamp';
-    case 'm2o':
-    case 'obo':
-    case 'createdBy':
-    case 'updatedBy':
-      return 'belongsTo';
-    case 'o2m':
-      return 'hasMany';
-    case 'm2m':
-      return 'belongsToMany';
-    case 'oho':
-      return 'hasOne';
-    case 'chinaRegion':
-      return 'belongsToMany';
-    case 'snowflakeId':
-      return 'snowflakeId';
-    case 'id':
-      return 'bigInt';
-    case 'uuid':
-      return 'uuid';
-    case 'nanoid':
-      return 'nanoid';
-    case 'formula':
-      return 'formula';
-    case 'sort':
-      return 'sort';
-    case 'code':
-      return 'code';
-    case 'sequence':
-      return 'sequence';
-    case 'encryption':
-      return 'string';
-    case 'tableoid':
-      return 'bigInt';
-    case 'mbm':
-      return 'belongsToArray';
-    default:
-      return 'string';
-  }
+  return field.type || defaultType;
 }
 
 function isPrimaryKeyLikeField(field: PlainObject) {
@@ -207,7 +235,7 @@ function buildUiSchema(field: PlainObject) {
       };
     case 'markdown':
       return { type: 'string', title, 'x-component': 'Markdown' };
-    case 'markdownVditor':
+    case 'vditor':
       return { type: 'string', title, 'x-component': 'MarkdownVditor' };
     case 'richText':
       return { type: 'string', title, 'x-component': 'RichText' };
@@ -219,6 +247,17 @@ function buildUiSchema(field: PlainObject) {
         title,
         'x-component': 'AttachmentUrl',
         'x-use-component-props': 'useAttachmentUrlFieldProps',
+      };
+    case 'point':
+    case 'lineString':
+    case 'circle':
+    case 'polygon':
+      return {
+        type: 'void',
+        title,
+        'x-component': 'Map',
+        'x-component-designer': 'Map.Designer',
+        'x-component-props': {},
       };
     case 'json':
       return { type: 'object', title, 'x-component': 'Input.JSON', 'x-component-props': { autoSize: { minRows: 5 } } };
@@ -281,22 +320,98 @@ function buildUiSchema(field: PlainObject) {
         'x-validator': 'integer',
       };
     case 'id':
-    case 'tableoid':
       return { type: 'number', title, 'x-component': 'InputNumber', 'x-read-pretty': true };
     case 'uuid':
       return { type: 'string', title, 'x-component': 'Input', 'x-validator': 'uuid' };
     case 'nanoid':
       return { type: 'string', title, 'x-component': 'NanoIDInput' };
     case 'formula':
-      return { type: 'string', title, 'x-component': 'Formula.Input' };
+      return {
+        type: 'string',
+        title,
+        'x-component': 'Formula.Result',
+        'x-component-props': { stringMode: true, step: '1' },
+        'x-read-pretty': true,
+      };
     case 'sort':
       return { type: 'number', title, 'x-component': 'InputNumber' };
     case 'code':
       return { type: 'string', title, 'x-component': 'CodeEditor' };
     case 'sequence':
       return { type: 'string', title, 'x-component': 'Sequence' };
+    case 'tableoid':
+      return {
+        type: 'string',
+        title,
+        'x-component': 'CollectionSelect',
+        'x-component-props': {
+          isTableOid: true,
+        },
+        'x-read-pretty': true,
+      };
     default:
       return { type: 'string', title, 'x-component': 'Input' };
+  }
+}
+
+function validateFieldType(field: PlainObject) {
+  const allowedTypes = ALLOWED_FIELD_TYPES[field.interface];
+  if (!allowedTypes) {
+    throw new Error(`Unknown field interface ${field.interface}`);
+  }
+  if (field.type && !allowedTypes.includes(field.type)) {
+    throw new Error(
+      `Field ${field.name || '(unknown)'} type ${field.type} does not match interface ${
+        field.interface
+      }. Allowed types: ${allowedTypes.join(', ')}`,
+    );
+  }
+}
+
+function buildRelationKeyName(name?: string, key = 'id') {
+  return Utils.camelize([Utils.singularize(name || ''), key].join('_'));
+}
+
+const REVERSE_INTERFACE_MAP: Partial<Record<string, string>> = {
+  m2o: 'o2m',
+  o2m: 'm2o',
+  m2m: 'm2m',
+  obo: 'oho',
+  oho: 'obo',
+};
+
+function buildThroughName(source?: string, target?: string) {
+  return Utils.camelize(
+    [source, target]
+      .filter(Boolean)
+      .map((name) => String(name).toLowerCase())
+      .sort()
+      .join('_'),
+  );
+}
+
+function applyReadableRelationDefaults(field: PlainObject) {
+  const sourceKey = field.sourceKey || 'id';
+  const targetKey = field.targetKey || 'id';
+
+  if (field.interface === 'm2o' || field.interface === 'obo') {
+    field.targetKey = field.targetKey || targetKey;
+    field.foreignKey = field.foreignKey || buildRelationKeyName(field.name, field.targetKey);
+    return;
+  }
+
+  if (field.interface === 'o2m' || field.interface === 'oho') {
+    field.sourceKey = field.sourceKey || sourceKey;
+    field.foreignKey = field.foreignKey || buildRelationKeyName(field.collectionName, field.sourceKey);
+    return;
+  }
+
+  if (field.interface === 'm2m' || field.interface === 'mbm') {
+    field.sourceKey = field.sourceKey || sourceKey;
+    field.targetKey = field.targetKey || targetKey;
+    field.foreignKey = field.foreignKey || buildRelationKeyName(field.collectionName, field.sourceKey);
+    field.otherKey = field.otherKey || buildRelationKeyName(field.target, field.targetKey);
+    field.through = field.through || buildThroughName(field.collectionName, field.target);
   }
 }
 
@@ -308,15 +423,7 @@ function buildReverseField(field: PlainObject) {
     return undefined;
   }
 
-  const reverseInterface =
-    field.reverseInterface ||
-    {
-      m2o: 'o2m',
-      o2m: 'm2o',
-      m2m: 'm2m',
-      obo: 'oho',
-      oho: 'obo',
-    }[field.interface];
+  const reverseInterface = field.reverseInterface || REVERSE_INTERFACE_MAP[field.interface];
 
   return normalizeFieldInput(
     {
@@ -345,9 +452,16 @@ export function normalizeFieldInput(input: PlainObject, context: PlainObject = {
     throw new Error(`Field ${field.name || '(unknown)'} is missing interface`);
   }
 
+  validateFieldType(field);
+
   if (RELATION_INTERFACES.has(field.interface) && !field.target) {
     throw new Error(`Relation field ${field.name} requires target`);
   }
+  if (field.interface === 'formula' && !field.expression) {
+    throw new Error(`Formula field ${field.name || '(unknown)'} requires expression`);
+  }
+
+  applyReadableRelationDefaults(field);
 
   const normalized: PlainObject = {
     ...field,
@@ -409,6 +523,12 @@ export function normalizeFieldInput(input: PlainObject, context: PlainObject = {
   if (normalized.interface === 'uuid' || normalized.interface === 'nanoid') {
     normalized.primaryKey = normalized.primaryKey ?? isPrimaryKeyLikeField(normalized);
     normalized.allowNull = normalized.allowNull ?? false;
+  }
+  if (normalized.interface === 'tableoid') {
+    normalized.name = normalized.name || '__collection';
+  }
+  if (normalized.interface === 'formula') {
+    normalized.engine = normalized.engine || 'formula.js';
   }
 
   const reverseField = buildReverseField(normalized);
