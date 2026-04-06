@@ -36,7 +36,7 @@
           "stepParams": {
             "buttonSettings": {
               "general": {
-                "title": "新增宠物",
+                "title": "Add Pet",
                 "type": ""
               }
             },
@@ -70,7 +70,7 @@
                       "stepParams": {
                         "pageTabSettings": {
                           "tab": {
-                            "title": "新增宠物"
+                            "title": "Add Pet"
                           }
                         }
                       },
@@ -114,7 +114,7 @@
                                         "stepParams": {
                                           "buttonSettings": {
                                             "general": {
-                                              "title": "保存",
+                                              "title": "Save",
                                               "type": ""
                                             }
                                           },
@@ -506,7 +506,7 @@
           "stepParams": {
             "buttonSettings": {
               "general": {
-                "title": "刷新",
+                "title": "Refresh",
                 "type": ""
               }
             }
@@ -518,7 +518,7 @@
           "stepParams": {
             "buttonSettings": {
               "general": {
-                "title": "批量删除",
+                "title": "Bulk Delete",
                 "type": ""
               }
             }
@@ -887,7 +887,7 @@
                 "stepParams": {
                   "buttonSettings": {
                     "general": {
-                      "title": "查看",
+                      "title": "View",
                       "type": ""
                     }
                   },
@@ -922,7 +922,7 @@
                             "stepParams": {
                               "pageTabSettings": {
                                 "tab": {
-                                  "title": "宠物详情"
+                                  "title": "Pet Details"
                                 }
                               }
                             },
@@ -1410,7 +1410,7 @@
                 "stepParams": {
                   "buttonSettings": {
                     "general": {
-                      "title": "编辑",
+                      "title": "Edit",
                       "type": ""
                     }
                   },
@@ -1445,7 +1445,7 @@
                             "stepParams": {
                               "pageTabSettings": {
                                 "tab": {
-                                  "title": "编辑宠物"
+                                  "title": "Edit Pet"
                                 }
                               }
                             },
@@ -1497,7 +1497,7 @@
                                               "stepParams": {
                                                 "buttonSettings": {
                                                   "general": {
-                                                    "title": "保存修改",
+                                                    "title": "Save Changes",
                                                     "type": ""
                                                   }
                                                 },
@@ -1889,7 +1889,7 @@
                 "stepParams": {
                   "buttonSettings": {
                     "general": {
-                      "title": "删除",
+                      "title": "Delete",
                       "type": ""
                     }
                   }
@@ -1904,7 +1904,7 @@
   "pageRoute": {
     "alias": "page.route",
     "type": "flowPage",
-    "title": "宠物管理",
+    "title": "Pet Management",
     "icon": null,
     "options": null
   }

@@ -323,8 +323,8 @@ describe('flowSurfaces swagger', () => {
       swaggerDocument.paths['/flowSurfaces:configure'].post.requestBody.content['application/json'];
     expect(configureRequest.examples.fieldOpenView.value.changes.clickToOpen).toBe(true);
     expect(configureRequest.examples.fieldOpenView.value.changes.openView.collectionName).toBe('departments');
-    expect(configureRequest.examples.relationFieldPopup.value.changes.openView.collectionName).toBe('roles');
-    expect(configureRequest.examples.relationFieldPopup.value.changes.openView.associationName).toBe('users.roles');
+    expect(configureRequest.examples.associationFieldPopup.value.changes.openView.collectionName).toBe('roles');
+    expect(configureRequest.examples.associationFieldPopup.value.changes.openView.associationName).toBe('users.roles');
     expect(schemas.FlowSurfaceConfigureResult.properties.popupPageUid.type).toBe('string');
     expect(schemas.FlowSurfaceConfigureResult.properties.popupTabUid.type).toBe('string');
     expect(schemas.FlowSurfaceConfigureResult.properties.popupGridUid.type).toBe('string');
@@ -395,9 +395,9 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldRequest.examples.directField.value.renderer).toBe('js');
     expect(addFieldRequest.examples.directField.value.fieldUse).toBeUndefined();
     expect(addFieldRequest.examples.directField.value.settings.label).toBe('Nickname (JS)');
-    expect(addFieldRequest.examples.relationField.value.associationPathName).toBe('department');
-    expect(addFieldRequest.examples.relationField.value.settings.width).toBe(240);
-    expect(addFieldRequest.examples.relationField.value.popup.blocks[0].type).toBe('details');
+    expect(addFieldRequest.examples.associationField.value.associationPathName).toBe('department');
+    expect(addFieldRequest.examples.associationField.value.settings.width).toBe(240);
+    expect(addFieldRequest.examples.associationField.value.popup.blocks[0].type).toBe('details');
     expect(addFieldRequest.examples.jsColumn.value.type).toBe('jsColumn');
     expect(addFieldRequest.examples.jsColumn.value.settings.code).toContain('ctx.render');
     expect(addFieldRequest.examples.jsColumn.value.settings.code).not.toContain('return record.');
@@ -522,9 +522,7 @@ describe('flowSurfaces swagger', () => {
     expect(addRecordActionRequest.examples.view.value.popup.blocks[0].type).toBe('details');
     expect(addRecordActionRequest.examples.js.value.type).toBe('js');
     expect(addRecordActionRequest.examples.js.value.settings.code).toContain('currentRecord');
-    expect(swaggerDocument.paths['/flowSurfaces:addRecordAction'].post.description).toContain(
-      '不要传 table 内部 actions column',
-    );
+    expect(swaggerDocument.paths['/flowSurfaces:addRecordAction'].post.description).toContain('table actions column');
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionPopup',
@@ -685,7 +683,9 @@ describe('flowSurfaces swagger', () => {
       swaggerDocument.paths['/flowSurfaces:removeTab'].post.requestBody.content['application/json'];
     expect(removeTabRequest.example.uid).toBe('details-tab');
     expect(removeTabRequest.example.tabSchemaUid).toBeUndefined();
-    expect(swaggerDocument.paths['/flowSurfaces:removeTab'].post.description).toContain('不能删除最后一个外层 tab');
+    expect(swaggerDocument.paths['/flowSurfaces:removeTab'].post.description).toContain(
+      'The last outer tab cannot be removed',
+    );
     expect(swaggerDocument.paths['/flowSurfaces:removeTab'].post.description).toContain('destroyPage');
 
     const destroyPageRequest =
@@ -694,7 +694,7 @@ describe('flowSurfaces swagger', () => {
     expect(destroyPageRequest.example.pageSchemaUid).toBeUndefined();
 
     const removeNodeOperation = swaggerDocument.paths['/flowSurfaces:removeNode'].post;
-    expect(removeNodeOperation.description).toContain('只接受 `target.uid`');
+    expect(removeNodeOperation.description).toContain('Only `target.uid` is accepted');
     expect(removeNodeOperation.description).toContain('flowSurfaces:get');
 
     const applyRequest = swaggerDocument.paths['/flowSurfaces:apply'].post.requestBody.content['application/json'];
@@ -713,14 +713,14 @@ describe('flowSurfaces swagger', () => {
       '#/components/parameters/flowSurfaceTargetTabSchemaUid',
       '#/components/parameters/flowSurfaceTargetRouteId',
     ]);
-    expect(getPath.description).toContain('只接受根级定位字段');
-    expect(getPath.description).toContain('四选一');
-    expect(getPath.description).toContain('不要使用 `{ target: { ... } }` 包裹');
-    expect(getPath.description).toContain('不要使用 `{ values: { ... } }` 包裹');
+    expect(getPath.description).toContain('Only root-level locator fields are accepted');
+    expect(getPath.description).toContain('Exactly one of the following four fields');
+    expect(getPath.description).toContain('Do not wrap the payload with `{ target: { ... } }`');
+    expect(getPath.description).toContain('Do not wrap the payload with `{ values: { ... } }`');
     expect(getPath.description).toContain('`loggedIn`');
 
     const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
-    expect(catalogPath.description).toContain('真实可用的公开能力');
+    expect(catalogPath.description).toContain('truly available public capabilities');
     expect(catalogPath.description).toContain('`loggedIn`');
 
     for (const actionName of [

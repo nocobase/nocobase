@@ -1471,7 +1471,7 @@ describe('flowSurfaces resource', () => {
     ).toEqual(expect.arrayContaining(['title', 'tooltip', 'width', 'fixed', 'editable', 'sorter']));
   });
 
-  it('should expose popup collection block resourceBindings for plain, record and relation popup surfaces', async () => {
+  it('should expose popup collection block resourceBindings for plain, record and association popup surfaces', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup resource catalog page',
       tabTitle: 'Popup resource catalog tab',
@@ -1560,11 +1560,11 @@ describe('flowSurfaces resource', () => {
       expect.arrayContaining(['currentCollection']),
     );
 
-    const relationPopupAction = await addAction(rootAgent, tableUid, 'popup');
-    const relationPopupConfig = await rootAgent.resource('flowSurfaces').configure({
+    const associationPopupAction = await addAction(rootAgent, tableUid, 'popup');
+    const associationPopupConfig = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
-          uid: relationPopupAction.uid,
+          uid: associationPopupAction.uid,
         },
         changes: {
           openView: {
@@ -1577,28 +1577,28 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(relationPopupConfig.status).toBe(200);
+    expect(associationPopupConfig.status).toBe(200);
 
-    const relationPopupCatalog = await getData(
+    const associationPopupCatalog = await getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
           target: {
-            uid: relationPopupAction.uid,
+            uid: associationPopupAction.uid,
           },
         },
       }),
     );
-    const relationPopupTableBindings =
-      relationPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')?.resourceBindings || [];
-    expect(relationPopupTableBindings.map((item: any) => item.key)).toEqual(
+    const associationPopupTableBindings =
+      associationPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')?.resourceBindings || [];
+    expect(associationPopupTableBindings.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['associatedRecords', 'otherRecords']),
     );
-    expect(relationPopupTableBindings.map((item: any) => item.key)).not.toEqual(
+    expect(associationPopupTableBindings.map((item: any) => item.key)).not.toEqual(
       expect.arrayContaining(['currentCollection', 'currentRecord']),
     );
-    expect(relationPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
-      expect.arrayContaining([expect.objectContaining({ key: 'employee' })]),
-    );
+    expect(
+      associationPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields,
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ key: 'employee' })]));
   });
 
   it('should compose meaningful popup blocks and reject current-record blocks on plain popup surfaces', async () => {
@@ -1699,7 +1699,7 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(plainPopupCompose.status).toBe(400);
-    expect(readErrorMessage(plainPopupCompose)).toContain('普通弹窗');
+    expect(readErrorMessage(plainPopupCompose)).toContain('plain popup');
     expect(readErrorMessage(plainPopupCompose)).toContain('inspect catalog.blocks first');
   });
 
@@ -1713,11 +1713,11 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
 
-    const relationPopupAction = await addAction(rootAgent, tableUid, 'popup');
-    const relationPopupConfig = await rootAgent.resource('flowSurfaces').configure({
+    const associationPopupAction = await addAction(rootAgent, tableUid, 'popup');
+    const associationPopupConfig = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
-          uid: relationPopupAction.uid,
+          uid: associationPopupAction.uid,
         },
         changes: {
           openView: {
@@ -1730,12 +1730,12 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(relationPopupConfig.status).toBe(200);
+    expect(associationPopupConfig.status).toBe(200);
 
     const semanticAdd = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: relationPopupAction.uid,
+          uid: associationPopupAction.uid,
         },
         type: 'table',
         resource: {
@@ -1749,7 +1749,7 @@ describe('flowSurfaces resource', () => {
     const semanticListAdd = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: relationPopupAction.uid,
+          uid: associationPopupAction.uid,
         },
         type: 'list',
         resource: {
@@ -1760,10 +1760,10 @@ describe('flowSurfaces resource', () => {
     });
     expect(semanticListAdd.status).toBe(200);
 
-    const invalidRelationCurrentCollectionRaw = await rootAgent.resource('flowSurfaces').addBlock({
+    const invalidAssociationCurrentCollectionRaw = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: relationPopupAction.uid,
+          uid: associationPopupAction.uid,
         },
         type: 'createForm',
         resourceInit: {
@@ -1774,15 +1774,15 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidRelationCurrentCollectionRaw.status).toBe(400);
-    expect(readErrorMessage(invalidRelationCurrentCollectionRaw)).toContain(
+    expect(invalidAssociationCurrentCollectionRaw.status).toBe(400);
+    expect(readErrorMessage(invalidAssociationCurrentCollectionRaw)).toContain(
       `resourceInit does not match popup binding 'currentCollection'`,
     );
 
-    const invalidRelationCurrentRecordRaw = await rootAgent.resource('flowSurfaces').addBlock({
+    const invalidAssociationCurrentRecordRaw = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: relationPopupAction.uid,
+          uid: associationPopupAction.uid,
         },
         type: 'details',
         resourceInit: {
@@ -1794,28 +1794,28 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidRelationCurrentRecordRaw.status).toBe(400);
-    expect(readErrorMessage(invalidRelationCurrentRecordRaw)).toContain(
+    expect(invalidAssociationCurrentRecordRaw.status).toBe(400);
+    expect(readErrorMessage(invalidAssociationCurrentRecordRaw)).toContain(
       `resourceInit does not match popup binding 'currentRecord'`,
     );
 
-    const relationPopupSurface = await getSurface(rootAgent, {
-      uid: relationPopupAction.uid,
+    const associationPopupSurface = await getSurface(rootAgent, {
+      uid: associationPopupAction.uid,
     });
-    const relationPopupBlocks = _.castArray(
-      relationPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    const associationPopupBlocks = _.castArray(
+      associationPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
     );
-    const relationPopupBlock = relationPopupBlocks[0];
-    const semanticRelationPopupBlock = relationPopupBlocks[1];
-    expect(relationPopupBlock.use).toBe('TableBlockModel');
-    expect(relationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
+    const associationPopupBlock = associationPopupBlocks[0];
+    const semanticAssociationPopupBlock = associationPopupBlocks[1];
+    expect(associationPopupBlock.use).toBe('TableBlockModel');
+    expect(associationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
       associationName: 'tasks.employee',
       sourceId: '{{ctx.popup.record.employeeId}}',
     });
-    expect(semanticRelationPopupBlock.use).toBe('ListBlockModel');
-    expect(semanticRelationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
+    expect(semanticAssociationPopupBlock.use).toBe('ListBlockModel');
+    expect(semanticAssociationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
       associationName: 'tasks.employee',
@@ -3805,7 +3805,7 @@ describe('flowSurfaces resource', () => {
     });
   });
 
-  it('should build simple table surface with create action row actions and relation columns', async () => {
+  it('should build simple table surface with create action row actions and association columns', async () => {
     const page = await createPage(rootAgent, {
       title: 'Table page',
       tabTitle: 'Table tab',
@@ -3835,7 +3835,7 @@ describe('flowSurfaces resource', () => {
 
     const nicknameField = await addField(rootAgent, tableBlockUid, 'nickname');
     const statusField = await addField(rootAgent, tableBlockUid, 'status');
-    const relationField = await addField(rootAgent, tableBlockUid, 'department.title');
+    const associationField = await addField(rootAgent, tableBlockUid, 'department.title');
 
     const readback = await getSurface(rootAgent, {
       uid: tableBlockUid,
@@ -3856,16 +3856,16 @@ describe('flowSurfaces resource', () => {
       expect.arrayContaining(['ViewActionModel', 'EditActionModel', 'PopupCollectionActionModel', 'DeleteActionModel']),
     );
 
-    const relationColumn = _.castArray(block.subModels?.columns || []).find(
-      (column: any) => column.uid === relationField.wrapperUid,
+    const associationColumn = _.castArray(block.subModels?.columns || []).find(
+      (column: any) => column.uid === associationField.wrapperUid,
     );
-    expect(relationColumn?.stepParams?.fieldSettings?.init).toMatchObject({
+    expect(associationColumn?.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
       associationPathName: 'department',
       fieldPath: 'department.title',
     });
-    expect(relationColumn?.subModels?.field?.uid).toBe(relationField.fieldUid);
+    expect(associationColumn?.subModels?.field?.uid).toBe(associationField.fieldUid);
     const nicknameColumn = _.castArray(block.subModels?.columns || []).find(
       (column: any) => column.uid === nicknameField.wrapperUid,
     );

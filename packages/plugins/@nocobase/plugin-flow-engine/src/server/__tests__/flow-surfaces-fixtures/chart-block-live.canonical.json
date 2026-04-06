@@ -5,7 +5,21 @@
   },
   "tree": {
     "alias": "block.chart1",
-    "use": "ChartBlockModel"
+    "use": "ChartBlockModel",
+    "stepParams": {
+      "chartSettings": {
+        "configure": {
+          "query": {
+            "mode": "builder"
+          },
+          "chart": {
+            "option": {
+              "mode": "basic"
+            }
+          }
+        }
+      }
+    }
   },
   "pageRoute": {
     "alias": "page.route",

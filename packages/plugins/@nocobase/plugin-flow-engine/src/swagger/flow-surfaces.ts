@@ -162,8 +162,8 @@ function valuesCompatibilityNote(description: string) {
   return [
     description,
     '',
-    'SDK 兼容说明：`resource("flowSurfaces").action({ values: payload })` 仍可用。',
-    '本 Swagger 文档中的 request schema 描述的是最终业务 payload，而不是 SDK 外层的 `values` 包装。',
+    'SDK compatibility note: `resource("flowSurfaces").action({ values: payload })` is still supported.',
+    'The request schema in this Swagger document describes the final business payload, not the outer SDK `values` wrapper.',
   ].join('\n');
 }
 
@@ -396,7 +396,7 @@ const examples = {
       },
     },
   },
-  configureRelationPopup: {
+  configureAssociationPopup: {
     target: {
       uid: 'roles-field-wrapper-uid',
     },
@@ -610,7 +610,7 @@ const examples = {
   },
   composePopupAssociatedRecords: {
     target: {
-      uid: 'relation-popup-action-uid',
+      uid: 'association-popup-action-uid',
     },
     mode: 'replace',
     blocks: [
@@ -729,7 +729,7 @@ const examples = {
   },
   addPopupAssociatedBlock: {
     target: {
-      uid: 'relation-popup-action-uid',
+      uid: 'association-popup-action-uid',
     },
     type: 'table',
     resource: {
@@ -772,7 +772,7 @@ const examples = {
       version: '1.0.0',
     },
   },
-  addRelationField: {
+  addAssociationField: {
     target: {
       uid: 'table-block-uid',
     },
@@ -1188,14 +1188,14 @@ const examples = {
   },
 };
 const FLOW_SURFACES_READ_ACL_NOTE =
-  '读接口（`get` / `catalog` / `context`）默认对 `loggedIn` 开放；写接口仍需要 `ui.flowSurfaces` snippet。';
+  'Read actions (`get` / `catalog` / `context`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const actionDocs: Record<string, any> = {
   catalog: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      `返回当前 target 上下文下可创建的 block / field / action 能力，以及当前节点推荐使用的 \`configureOptions\`、底层 settings contract、事件能力和布局能力。返回的 \`blocks[] / actions[] / recordActions[]\` 只代表当前实例已启用插件下真实可用的公开能力。${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended \`configureOptions\`, the underlying settings contract, event capabilities, and layout capabilities for the current node. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -1204,7 +1204,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read ctx variable tree available under the current target',
     description: valuesCompatibilityNote(
-      `返回当前 target 下可用的 \`ctx\` 变量树。\`path\` 只接受裸路径，如 \`record\`、\`popup.record\`、\`item.parentItem.value\`；不接受 \`ctx.record\` 或 \`{{ ctx.record }}\`。${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the \`ctx\` variable tree available under the current target. \`path\` only accepts bare paths such as \`record\`, \`popup.record\`, and \`item.parentItem.value\`. Do not pass \`ctx.record\` or \`{{ ctx.record }}\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceContextRequest', examples.context),
     responses: responses('FlowSurfaceContextResponse'),
@@ -1213,17 +1213,17 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read normalized surface tree and route metadata',
     description: [
-      '读取标准化后的 Flow surface 读回结果，作为 CLI / 编排工具的稳定读口。',
+      'Reads the normalized Flow surface readback result as the stable read endpoint for CLI and orchestration tools.',
       '',
-      '只接受根级定位字段；以下 4 个字段四选一组成定位器。',
-      '不要使用 `{ target: { ... } }` 包裹。',
-      '不要使用 `{ values: { ... } }` 包裹。',
+      'Only root-level locator fields are accepted. Exactly one of the following four fields must be used as the locator.',
+      'Do not wrap the payload with `{ target: { ... } }`.',
+      'Do not wrap the payload with `{ values: { ... } }`.',
       FLOW_SURFACES_READ_ACL_NOTE,
-      '响应里的 `target` 只保留轻量定位信息；完整节点树请看 `tree`。',
-      'route-backed page 的 tabs 统一从 `tree.subModels.tabs` 读取，不再单独返回顶层 `tabs` / `tabTrees`。',
+      'The `target` in the response only keeps lightweight locator information. Read the full node tree from `tree`.',
+      'Tabs for route-backed pages are always read from `tree.subModels.tabs`. Top-level `tabs` / `tabTrees` are no longer returned separately.',
       '',
-      `示例：GET /api/flowSurfaces:get?uid=${examples.getPopupQuery.uid}`,
-      `示例：GET /api/flowSurfaces:get?pageSchemaUid=${examples.getPageQuery.pageSchemaUid}`,
+      `Example: GET /api/flowSurfaces:get?uid=${examples.getPopupQuery.uid}`,
+      `Example: GET /api/flowSurfaces:get?pageSchemaUid=${examples.getPageQuery.pageSchemaUid}`,
     ].join('\n'),
     parameters: [
       parameterRef('flowSurfaceTargetUid'),
@@ -1237,7 +1237,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      '在已有 page/tab/grid/popup 下按公开 block/action/field 语义组织内容。适合作为 AI 的首选创建入口，不需要调用方传 raw `use`、`fieldUse` 或 `stepParams`。popup 下的 collection block 建议先看 `catalog.blocks[].resourceBindings`；`select / subForm / bulkEditForm` scene 目前只识别，但当前 scene 下不支持 popup collection block 创建。',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics. This is the preferred creation entry for AI callers. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
     ),
     requestBody: {
       required: true,
@@ -1254,7 +1254,7 @@ const actionDocs: Record<string, any> = {
               value: examples.composePopupCurrentRecord,
             },
             popupAssociatedRecords: {
-              summary: 'Compose an associated-records table under a relation popup surface',
+              summary: 'Compose an associated-records table under an association-field popup surface',
               value: examples.composePopupAssociatedRecords,
             },
             staticBlocks: {
@@ -1283,7 +1283,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      '用简单 `changes` 修改高频配置，例如 page/tab 标题、table pageSize、字段 clickToOpen、action openView/confirm，而不要求调用方知道内部 path。推荐先看 `catalog(target).configureOptions` 再调用本接口。',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. Check `catalog(target).configureOptions` before calling this action.',
     ),
     requestBody: {
       required: true,
@@ -1295,9 +1295,9 @@ const actionDocs: Record<string, any> = {
               summary: 'Configure a field to click and open a popup view',
               value: examples.configure,
             },
-            relationFieldPopup: {
-              summary: 'Configure a to-many relation display field to open the clicked related record in a popup',
-              value: examples.configureRelationPopup,
+            associationFieldPopup: {
+              summary: 'Configure a to-many association display field to open the clicked associated record in a popup',
+              value: examples.configureAssociationPopup,
             },
             blockSettings: {
               summary: 'Configure a list block with simple pageSize/dataScope/sorting/layout changes',
@@ -1362,7 +1362,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Create a group menu or a bindable V2 menu item',
     description: valuesCompatibilityNote(
-      '创建 FlowSurfaces 菜单节点。`type="group"` 创建菜单分组；`type="item"` 创建可绑定 modern page(v2) 的菜单项，并自动补齐 flowPage route、默认隐藏 tab route 与 RootPageModel anchor。',
+      'Creates a FlowSurfaces menu node. `type="group"` creates a menu group. `type="item"` creates a menu item that can be bound to a modern page (v2), and automatically fills in the flowPage route, the default hidden tab route, and the RootPageModel anchor.',
     ),
     requestBody: requestBody('FlowSurfaceCreateMenuRequest', examples.createMenu),
     responses: responses('FlowSurfaceCreateMenuResult'),
@@ -1371,7 +1371,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update menu title/icon/tooltip or move it under another group',
     description: valuesCompatibilityNote(
-      '更新菜单节点展示信息，或把 group / item 移动到顶级或另一个 group 下。仅支持 `group` 与 `flowPage` 两类菜单节点。',
+      'Updates menu display information, or moves a group / item to the top level or under another group. Only `group` and `flowPage` menu nodes are supported.',
     ),
     requestBody: requestBody('FlowSurfaceUpdateMenuRequest', examples.updateMenu),
     responses: responses('FlowSurfaceUpdateMenuResult'),
@@ -1380,7 +1380,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Initialize a modern page for an existing bindable menu item',
     description: valuesCompatibilityNote(
-      '优先通过 `menuRouteId` 为已有 bindable 菜单项初始化 modern page(v2)，并补齐默认 BlockGridModel。兼容模式下，如果未传 `menuRouteId`，仍会沿用旧行为自动创建顶级菜单并初始化页面。未初始化前，不要调用 `addTab`、`updateTab`、`moveTab`、`removeTab`、`destroyPage` 等 page/tab 生命周期接口。',
+      'Initializes a modern page (v2) for an existing bindable menu item through `menuRouteId` first, and fills in the default BlockGridModel. In compatibility mode, if `menuRouteId` is omitted, the old behavior still applies and a top-level menu plus page will be created automatically. Before initialization, do not call page/tab lifecycle actions such as `addTab`, `updateTab`, `moveTab`, `removeTab`, or `destroyPage`.',
     ),
     requestBody: requestBody('FlowSurfaceCreatePageRequest', examples.createPage),
     responses: responses('FlowSurfaceCreatePageResult'),
@@ -1389,7 +1389,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Destroy a modern page and its anchors',
     description: valuesCompatibilityNote(
-      '删除 page route、tab route 和对应的 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `pageSchemaUid` 或 `routeId`，先调用 `flowSurfaces:get`。对于 menu-first 创建的页面，需先完成 `createPage(menuRouteId=...)` 初始化，才能调用本接口。',
+      'Removes the page route, tab route, and the corresponding FlowModel subtree. Only a root-level `uid` is accepted. If you only have `pageSchemaUid` or `routeId`, call `flowSurfaces:get` first. For menu-first pages, `createPage(menuRouteId=...)` must finish initialization before this action can be called.',
     ),
     requestBody: requestBody('FlowSurfaceDestroyPageRequest', {
       uid: 'employees-page-uid',
@@ -1400,7 +1400,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a tab under a page',
     description: valuesCompatibilityNote(
-      '在 page 下新增 route-backed tab，并补齐对应 grid anchor。只接受 `target.uid`，且该 uid 必须是 page 的 canonical uid。对于 menu-first 创建的页面，需先完成 `createPage(menuRouteId=...)` 初始化。',
+      'Adds a route-backed tab under a page and fills in the corresponding grid anchor. Only `target.uid` is accepted, and it must be the canonical uid of the page. For menu-first pages, `createPage(menuRouteId=...)` must finish initialization first.',
     ),
     requestBody: requestBody('FlowSurfaceAddTabRequest', examples.addTab),
     responses: responses('FlowSurfaceAddTabResult'),
@@ -1409,7 +1409,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update tab title, icon, document title and flow registry',
     description: valuesCompatibilityNote(
-      '修改 tab route 与对应 synthetic RootPageTabModel 的 route-backed 字段。只接受 `target.uid`，且该 uid 必须是 tab uid。未初始化页面下的预创建 tab 不支持本接口。',
+      'Updates the route-backed fields on the tab route and its matching synthetic RootPageTabModel. Only `target.uid` is accepted, and it must be a tab uid. Pre-created tabs under uninitialized pages are not supported by this action.',
     ),
     requestBody: requestBody('FlowSurfaceUpdateTabRequest', examples.updateTab),
     responses: responses('FlowSurfaceUpdateTabResult'),
@@ -1418,7 +1418,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Reorder sibling tabs under the same page',
     description: valuesCompatibilityNote(
-      '调整同一 page 下 tab 的排序。只接受根级 `sourceUid` / `targetUid`。未初始化页面下的预创建 tab 不支持本接口。',
+      'Reorders sibling tabs under the same page. Only root-level `sourceUid` / `targetUid` are accepted. Pre-created tabs under uninitialized pages are not supported by this action.',
     ),
     requestBody: requestBody('FlowSurfaceMoveTabRequest', {
       sourceUid: 'details-tab',
@@ -1431,7 +1431,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a tab route and its anchor tree',
     description: valuesCompatibilityNote(
-      '删除 tab route 及对应 FlowModel subtree。只接受根级 `uid`；当前外层 route-backed tab 的 canonical uid 就是返回结果里的 `tabSchemaUid`。不能删除最后一个外层 tab；如果要删除整页，请改用 `destroyPage`。未初始化页面下的预创建 tab 不支持本接口。',
+      'Removes the tab route and its matching FlowModel subtree. Only a root-level `uid` is accepted. The canonical uid of the current outer route-backed tab is the `tabSchemaUid` in the response. The last outer tab cannot be removed. Use `destroyPage` to remove the whole page. Pre-created tabs under uninitialized pages are not supported by this action.',
     ),
     requestBody: requestBody('FlowSurfaceRemoveTabRequest', {
       uid: 'details-tab',
@@ -1442,7 +1442,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a popup child tab under an existing popup page',
     description: valuesCompatibilityNote(
-      '在已有 popup page(`ChildPageModel`) 下新增一个持久化 child tab subtree，只操作 `ChildPageModel / ChildPageTabModel`，不读写 `desktopRoutes`，也不会自动补建 popup page。',
+      'Adds a persisted child-tab subtree under an existing popup page (`ChildPageModel`). It only works on `ChildPageModel / ChildPageTabModel`, does not read or write `desktopRoutes`, and does not auto-create a popup page.',
     ),
     requestBody: requestBody('FlowSurfaceAddPopupTabRequest', examples.addPopupTab),
     responses: responses('FlowSurfaceAddPopupTabResult'),
@@ -1451,7 +1451,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update popup child tab title, icon, document title and flow registry',
     description: valuesCompatibilityNote(
-      '修改 popup child tab(`ChildPageTabModel`) 自身的 props / stepParams / flowRegistry，不涉及 route-backed tab 语义。',
+      'Updates the props / stepParams / flowRegistry of a popup child tab (`ChildPageTabModel`) itself. Route-backed tab semantics are not involved.',
     ),
     requestBody: requestBody('FlowSurfaceUpdatePopupTabRequest', examples.updatePopupTab),
     responses: responses('FlowSurfaceUpdatePopupTabResult'),
@@ -1460,7 +1460,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Reorder sibling popup child tabs under the same popup page',
     description: valuesCompatibilityNote(
-      '调整同一个 popup page 下 `subModels.tabs` 的顺序。只接受根级 `sourceUid` / `targetUid`，且两者都必须是 sibling popup tab uid。',
+      'Reorders `subModels.tabs` under the same popup page. Only root-level `sourceUid` / `targetUid` are accepted, and both must be sibling popup-tab uids.',
     ),
     requestBody: requestBody('FlowSurfaceMovePopupTabRequest', examples.movePopupTab),
     responses: responses('FlowSurfaceMovePopupTabResult'),
@@ -1469,7 +1469,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a popup child tab subtree',
     description: valuesCompatibilityNote(
-      '删除指定 popup child tab subtree。允许删到 0 个 tab；这轮不提供 `removePopup`，也不要求 popup page 至少保留一个 tab。',
+      'Removes the specified popup child-tab subtree. It is valid for the popup to end with 0 tabs. `removePopup` is not provided in this iteration, and the popup page is not required to keep at least one tab.',
     ),
     requestBody: requestBody('FlowSurfaceRemovePopupTabRequest', examples.removePopupTab),
     responses: responses('FlowSurfaceRemovePopupTabResult'),
@@ -1478,7 +1478,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。popup 下的 collection block 建议先看 `catalog.blocks[].resourceBindings`，再传语义化 `resource.binding`；仍可兼容传底层 `resourceInit`，但服务端会按 popup 语义校验。`resource` 与 `resourceInit` 互斥。`select / subForm / bulkEditForm` scene 目前只识别，但当前 scene 下不支持 popup collection block 创建。direct add 不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义完成基础改配。',
+      'Creates a block by catalog key or an explicitly supported block use. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`.',
     ),
     requestBody: {
       required: true,
@@ -1491,7 +1491,7 @@ const actionDocs: Record<string, any> = {
               value: examples.addBlock,
             },
             popupAssociatedRecords: {
-              summary: 'Create an associated-records table block under a relation popup host node',
+              summary: 'Create an associated-records table block under an association-field popup host node',
               value: examples.addPopupAssociatedBlock,
             },
             popupOtherRecords: {
@@ -1512,7 +1512,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。direct add 不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义。popup-capable 字段还可直接传 `popup` 追加 popup subtree；若已开启本地 openView 但未提供 popup 内容，服务端会自动补齐 popup page/tab/grid shell。',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`. Popup-capable fields can also pass `popup` directly to append a popup subtree. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
     ),
     requestBody: {
       required: true,
@@ -1524,9 +1524,9 @@ const actionDocs: Record<string, any> = {
               summary: 'Create a JS renderer bound field under a create form',
               value: examples.addField,
             },
-            relationField: {
-              summary: 'Create a relation-path field under a table block',
-              value: examples.addRelationField,
+            associationField: {
+              summary: 'Create an association-path field under a table block',
+              value: examples.addAssociationField,
             },
             jsColumn: {
               summary: 'Create a standalone JS column under a table field container',
@@ -1546,7 +1546,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的非 record action。典型场景包括 table block action、form submit、filter-form reset、action-panel action。record action 请改用 `addRecordAction`。direct add 不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree.',
     ),
     requestBody: {
       required: true,
@@ -1580,7 +1580,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的 record action。公开 target 统一使用 record-capable owner target，例如 table/details/list/gridCard；不要传 table 内部 actions column 或 list/gridCard item 这类内部容器 uid。direct add 不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
+      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree.',
     ),
     requestBody: {
       required: true,
@@ -1606,7 +1606,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 block。每项都可带 `settings`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`，其中 `error` 固定包含 `message/type/code/status`。',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1615,7 +1615,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 field。每项都可带 `settings`，popup-capable 字段还可带 `popup`，但不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`，其中 `error` 固定包含 `message/type/code/status`。',
+      'Creates multiple fields sequentially under the same target. Each item may include `settings`, and popup-capable fields may also include `popup`, but raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -1624,7 +1624,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple non-record actions sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建非 record action。每项都可带 `settings`，popup-capable action 还可带 `popup`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义；record action 不属于这个入口，请改用 `addRecordActions`。失败项的 `error` 固定包含 `message/type/code/status`。',
+      'Creates multiple non-record actions sequentially under the same target. Each item may include `settings`, and popup-capable actions may also include `popup`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply. Record actions do not belong to this entry and should use `addRecordActions` instead. Each failed item always returns an `error` with `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddActionsRequest', examples.addActions),
     responses: responses('FlowSurfaceAddActionsResult'),
@@ -1633,7 +1633,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple record actions sequentially under the same record-capable owner target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 record action。target 使用 record-capable owner target，服务端会自动解析 canonical record action container。不要传 table 内部 actions column 或 list/gridCard item 这类内部容器 uid。每项都可带 `settings`，popup-capable action 还可带 `popup`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，失败项的 `error` 固定包含 `message/type/code/status`。',
+      'Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. Each item may include `settings`, and popup-capable actions may also include `popup`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an `error` with `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddRecordActionsRequest', examples.addRecordActions),
     responses: responses('FlowSurfaceAddRecordActionsResult'),
@@ -1642,7 +1642,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update controlled props, decoratorProps, stepParams or flowRegistry',
     description: valuesCompatibilityNote(
-      '按 catalog 暴露的 path-level contract 修改指定 domain；不会接受任意原始树字段 patch。',
+      'Updates the specified domain according to the path-level contract exposed by the catalog. Arbitrary raw tree-field patches are not accepted.',
     ),
     requestBody: requestBody('FlowSurfaceUpdateSettingsRequest', examples.updateSettings),
     responses: responses('FlowSurfaceUpdateSettingsResult'),
@@ -1651,7 +1651,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace instance-level event flow definitions on a node',
     description: valuesCompatibilityNote(
-      '全量替换当前节点的实例级 event flow；服务端会校验 eventName、flowKey、stepKey 与节点上下文是否合法。',
+      'Fully replaces the instance-level event flows on the current node. The server validates whether eventName, flowKey, stepKey, and the node context are all valid.',
     ),
     requestBody: requestBody('FlowSurfaceSetEventFlowsRequest', examples.setEventFlows),
     responses: responses('FlowSurfaceSetEventFlowsResult'),
@@ -1659,14 +1659,16 @@ const actionDocs: Record<string, any> = {
   setLayout: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Write rows, sizes and rowOrder for a grid',
-    description: valuesCompatibilityNote('全量写入 grid 布局，服务端会严格校验所有 child 是否被完整且唯一覆盖。'),
+    description: valuesCompatibilityNote(
+      'Fully writes the grid layout. The server strictly validates that every child is covered completely and exactly once.',
+    ),
     requestBody: requestBody('FlowSurfaceSetLayoutRequest', examples.setLayout),
     responses: responses('FlowSurfaceSetLayoutResult'),
   },
   moveNode: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Move a node before or after a sibling under the same parent',
-    description: valuesCompatibilityNote('只支持同一 parent/subKey 下的兄弟节点排序调整。'),
+    description: valuesCompatibilityNote('Only sibling-node reordering under the same parent/subKey is supported.'),
     requestBody: requestBody('FlowSurfaceMoveNodeRequest', examples.moveNode),
     responses: responses('FlowSurfaceMoveNodeResult'),
   },
@@ -1674,7 +1676,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a block, field wrapper, action or nested popup node',
     description: valuesCompatibilityNote(
-      '删除指定普通节点及其 subtree。只接受 `target.uid`；如果你手上只有 `pageSchemaUid / tabSchemaUid / routeId`，先调用 `flowSurfaces:get`。`removeNode` 不用于 page/tab 删除；page 请改用 `destroyPage`，tab 请改用 `removeTab`。',
+      'Removes the specified normal node and its subtree. Only `target.uid` is accepted. If you only have `pageSchemaUid / tabSchemaUid / routeId`, call `flowSurfaces:get` first. `removeNode` is not used for page/tab deletion. Use `destroyPage` for pages and `removeTab` for tabs.',
     ),
     requestBody: requestBody('FlowSurfaceRemoveNodeRequest', examples.removeNode),
     responses: responses('FlowSurfaceRemoveNodeResult'),
@@ -1683,7 +1685,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute multiple operations atomically',
     description: valuesCompatibilityNote(
-      '按顺序执行 `ops[]`，支持 `opId` 和 `{ref:"<opId>.<field>"}` 引用前一步结果。V1 仅支持 `atomic=true`。',
+      'Executes `ops[]` in order and supports `opId` plus `{ref:"<opId>.<field>"}` references to earlier results. V1 only supports `atomic=true`.',
     ),
     requestBody: requestBody('FlowSurfaceMutateRequest', examples.mutate),
     responses: responses('FlowSurfaceMutationResponse'),
@@ -1692,7 +1694,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace the target subtree from a complete spec',
     description: valuesCompatibilityNote(
-      '接收完整 subtree spec，并编译成与 `mutate` 同构的操作序列。V1 仅支持 `mode="replace"`。',
+      'Accepts a complete subtree spec and compiles it into an operation sequence isomorphic to `mutate`. V1 only supports `mode="replace"`.',
     ),
     requestBody: requestBody('FlowSurfaceApplyRequest', examples.apply),
     responses: responses('FlowSurfaceMutationResponse'),

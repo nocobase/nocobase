@@ -100,9 +100,9 @@ const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   JSCollectionActionModel: [
     'const rows = ctx.resource?.getSelectedRows?.() || [];',
     'if (!rows.length) {',
-    "  ctx.message.warning('请选择数据');",
+    "  ctx.message.warning('Please select data first.');",
     '} else {',
-    "  ctx.message.success('已选择 ' + rows.length + ' 条');",
+    "  ctx.message.success('Selected ' + rows.length + ' row(s).');",
     '}',
   ].join('\n'),
   JSRecordActionModel: [

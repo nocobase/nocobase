@@ -12,7 +12,20 @@
     "parentId": "d28a57cb7e9",
     "subKey": "items",
     "subType": "array",
-    "stepParams": {},
+    "stepParams": {
+      "chartSettings": {
+        "configure": {
+          "query": {
+            "mode": "builder"
+          },
+          "chart": {
+            "option": {
+              "mode": "basic"
+            }
+          }
+        }
+      }
+    },
     "sortIndex": 4,
     "flowRegistry": {}
   },

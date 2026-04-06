@@ -59,21 +59,21 @@ const arrayOption = (
   ...extra,
 });
 
-const COMMON_RESOURCE = objectOption('资源绑定', {
+const COMMON_RESOURCE = objectOption('Resource binding', {
   example: {
     dataSourceKey: 'main',
     collectionName: 'users',
   },
 });
 
-const FILTER_GROUP = objectOption('FilterGroup 结构；空筛选可传 null 或 {}', {
+const FILTER_GROUP = objectOption('FilterGroup shape. Use null or {} for an empty filter.', {
   example: {
     logic: '$and',
     items: [],
   },
 });
 
-const SORTING = arrayOption('排序规则数组', {
+const SORTING = arrayOption('Sorting rule array', {
   example: [
     {
       field: 'createdAt',
@@ -82,7 +82,7 @@ const SORTING = arrayOption('排序规则数组', {
   ],
 });
 
-const OPEN_VIEW = objectOption('弹窗/抽屉打开配置', {
+const OPEN_VIEW = objectOption('Popup or drawer open configuration', {
   example: {
     dataSourceKey: 'main',
     collectionName: 'roles',
@@ -90,75 +90,75 @@ const OPEN_VIEW = objectOption('弹窗/抽屉打开配置', {
   },
 });
 
-const CONFIRM = objectOption('确认弹窗配置，也可直接传 boolean', {
+const CONFIRM = objectOption('Confirmation dialog configuration. You can also pass a boolean directly.', {
   example: {
     enable: true,
-    title: '确认执行',
-    content: '确定继续吗？',
+    title: 'Confirm action',
+    content: 'Do you want to continue?',
   },
 });
 
-const JS_CODE = stringOption('JS 代码', {
+const JS_CODE = stringOption('JS code', {
   example: 'return value?.toUpperCase?.() || value;',
 });
 
-const JS_VERSION = stringOption('JS 代码版本', {
+const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
 
 const COMMON_BLOCK_TITLE_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('标题', { example: '用户表' }),
-  displayTitle: booleanOption('是否显示标题', { example: true }),
+  title: stringOption('Title', { example: 'User Table' }),
+  displayTitle: booleanOption('Whether to display the title', { example: true }),
 };
 
 const COMMON_HEIGHT_OPTIONS: FlowSurfaceConfigureOptions = {
-  height: numberOption('高度', { example: 520 }),
-  heightMode: stringOption('高度模式', {
+  height: numberOption('Height', { example: 520 }),
+  heightMode: stringOption('Height mode', {
     enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
     example: 'specifyValue',
   }),
 };
 
 const PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('页面标题', { example: '用户工作台' }),
-  documentTitle: stringOption('浏览器文档标题', { example: '用户工作台' }),
-  displayTitle: booleanOption('是否显示页面标题', { example: true }),
-  enableTabs: booleanOption('是否启用顶层 tabs', { example: true }),
-  icon: stringOption('图标', { example: 'UserOutlined' }),
-  enableHeader: booleanOption('是否显示页面 header', { example: true }),
+  title: stringOption('Page title', { example: 'User Workspace' }),
+  documentTitle: stringOption('Browser document title', { example: 'User Workspace' }),
+  displayTitle: booleanOption('Whether to display the page title', { example: true }),
+  enableTabs: booleanOption('Whether to enable top-level tabs', { example: true }),
+  icon: stringOption('Icon', { example: 'UserOutlined' }),
+  enableHeader: booleanOption('Whether to display the page header', { example: true }),
 };
 
 const TAB_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('Tab 标题', { example: '概览' }),
-  icon: stringOption('图标', { example: 'TableOutlined' }),
-  documentTitle: stringOption('浏览器文档标题', { example: '用户概览' }),
+  title: stringOption('Tab title', { example: 'Overview' }),
+  icon: stringOption('Icon', { example: 'TableOutlined' }),
+  documentTitle: stringOption('Browser document title', { example: 'User Overview' }),
 };
 
 const TABLE_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
-  pageSize: numberOption('分页大小', { example: 20 }),
-  density: stringOption('表格密度', { enum: ['large', 'middle', 'small'], example: 'middle' }),
-  showRowNumbers: booleanOption('是否显示行号', { example: true }),
+  pageSize: numberOption('Page size', { example: 20 }),
+  density: stringOption('Table density', { enum: ['large', 'middle', 'small'], example: 'middle' }),
+  showRowNumbers: booleanOption('Whether to display row numbers', { example: true }),
   sorting: SORTING,
   dataScope: FILTER_GROUP,
-  quickEdit: booleanOption('是否启用快捷编辑', { example: true }),
-  treeTable: booleanOption('是否树表', { example: false }),
-  defaultExpandAllRows: booleanOption('是否默认展开全部树节点', { example: false }),
-  dragSort: booleanOption('是否启用拖拽排序', { example: false }),
-  dragSortBy: stringOption('拖拽排序字段', { example: 'sort' }),
+  quickEdit: booleanOption('Whether to enable quick edit', { example: true }),
+  treeTable: booleanOption('Whether this is a tree table', { example: false }),
+  defaultExpandAllRows: booleanOption('Whether to expand all tree nodes by default', { example: false }),
+  dragSort: booleanOption('Whether to enable drag sorting', { example: false }),
+  dragSortBy: stringOption('Drag-sort field', { example: 'sort' }),
 };
 
 const FORM_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   resource: COMMON_RESOURCE,
-  layout: stringOption('布局 key', { example: 'vertical' }),
-  labelAlign: stringOption('标签对齐方式', { example: 'left' }),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
-  assignRules: objectOption('赋值规则', { example: {} }),
-  colon: booleanOption('标签后是否显示冒号', { example: true }),
+  layout: stringOption('Layout key', { example: 'vertical' }),
+  labelAlign: stringOption('Label alignment', { example: 'left' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  assignRules: objectOption('Assignment rules', { example: {} }),
+  colon: booleanOption('Whether to display a colon after the label', { example: true }),
 };
 
 const EDIT_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -169,41 +169,41 @@ const EDIT_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
 const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   resource: COMMON_RESOURCE,
-  layout: stringOption('布局 key', { example: 'vertical' }),
-  labelAlign: stringOption('标签对齐方式', { example: 'left' }),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
-  colon: booleanOption('标签后是否显示冒号', { example: true }),
+  layout: stringOption('Layout key', { example: 'vertical' }),
+  labelAlign: stringOption('Label alignment', { example: 'left' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  colon: booleanOption('Whether to display a colon after the label', { example: true }),
   sorting: SORTING,
   dataScope: FILTER_GROUP,
-  linkageRules: arrayOption('联动规则', { example: [] }),
+  linkageRules: arrayOption('Linkage rules', { example: [] }),
 };
 
 const FILTER_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   resource: COMMON_RESOURCE,
-  layout: stringOption('布局 key', { example: 'vertical' }),
-  labelAlign: stringOption('标签对齐方式', { example: 'left' }),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
-  defaultValues: objectOption('默认筛选值', { example: { status: 'draft' } }),
+  layout: stringOption('Layout key', { example: 'vertical' }),
+  labelAlign: stringOption('Label alignment', { example: 'left' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  defaultValues: objectOption('Default filter values', { example: { status: 'draft' } }),
 };
 
 const LIST_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
-  pageSize: numberOption('分页大小', { example: 20 }),
+  pageSize: numberOption('Page size', { example: 20 }),
   dataScope: FILTER_GROUP,
   sorting: SORTING,
-  layout: stringOption('列表布局', { example: 'vertical' }),
+  layout: stringOption('List layout', { example: 'vertical' }),
 };
 
 const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
-  columns: objectOption('列数；可传数字或完整响应式对象（必须包含 xs/sm/md/lg/xl/xxl）', {
+  columns: objectOption('Column count. Pass a number or a full responsive object that includes xs/sm/md/lg/xl/xxl.', {
     example: {
       xs: 1,
       sm: 1,
@@ -213,32 +213,32 @@ const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
       xxl: 4,
     },
   }),
-  rowCount: numberOption('每行条目数', { example: 3 }),
+  rowCount: numberOption('Items per row', { example: 3 }),
   dataScope: FILTER_GROUP,
   sorting: SORTING,
-  layout: stringOption('卡片布局', { example: 'vertical' }),
+  layout: stringOption('Card layout', { example: 'vertical' }),
 };
 
 const MARKDOWN_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
-  content: stringOption('Markdown 内容', { example: '# Team handbook' }),
+  content: stringOption('Markdown content', { example: '# Team handbook' }),
 };
 
 const IFRAME_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
-  mode: stringOption('iframe 模式', { example: 'url' }),
+  mode: stringOption('iframe mode', { example: 'url' }),
   url: stringOption('URL', { example: 'https://example.com/embed' }),
-  html: stringOption('HTML 内容'),
-  params: objectOption('URL 参数', { example: { id: '1' } }),
-  allow: stringOption('allow 属性'),
-  htmlId: stringOption('内嵌 html 节点 ID'),
+  html: stringOption('HTML content'),
+  params: objectOption('URL parameters', { example: { id: '1' } }),
+  allow: stringOption('allow attribute'),
+  htmlId: stringOption('Embedded HTML node ID'),
 };
 
 const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
-  query: objectOption('图表查询 DSL；默认推荐 builder 模式', {
+  query: objectOption('Chart query DSL. Builder mode is recommended by default.', {
     example: {
       mode: 'builder',
       resource: {
@@ -255,7 +255,7 @@ const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
       dimensions: [{ field: 'department.title' }],
     },
   }),
-  visual: objectOption('图表展示 DSL；默认推荐 basic 模式', {
+  visual: objectOption('Chart visual DSL. Basic mode is recommended by default.', {
     example: {
       mode: 'basic',
       type: 'bar',
@@ -265,148 +265,151 @@ const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
       },
     },
   }),
-  events: objectOption('图表事件 DSL；仅暴露 raw JS 代码', {
+  events: objectOption('Chart event DSL. Only raw JS code is exposed.', {
     example: {
       raw: 'chart.on("click", () => console.log("clicked"));',
     },
   }),
-  configure: objectOption('图表配置对象；会经过同一套 chart contract 规范化，不要与 query/visual/events 混用', {
-    example: {
-      query: {
-        mode: 'sql',
-        sql: 'select department, count(*) as employeeCount from employees group by department',
-        sqlDatasource: 'main',
-      },
-      chart: {
-        option: {
-          mode: 'basic',
-          builder: {
-            type: 'bar',
-            xField: 'department',
-            yField: 'employeeCount',
+  configure: objectOption(
+    'Chart configuration object. It is normalized by the same chart contract. Do not mix it with query/visual/events.',
+    {
+      example: {
+        query: {
+          mode: 'sql',
+          sql: 'select department, count(*) as employeeCount from employees group by department',
+          sqlDatasource: 'main',
+        },
+        chart: {
+          option: {
+            mode: 'basic',
+            builder: {
+              type: 'bar',
+              xField: 'department',
+              yField: 'employeeCount',
+            },
           },
         },
       },
     },
-  }),
+  ),
 };
 
 const ACTION_PANEL_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
-  layout: stringOption('布局 key', { example: 'list' }),
-  ellipsis: booleanOption('是否折叠过长按钮', { example: false }),
+  layout: stringOption('Layout key', { example: 'list' }),
+  ellipsis: booleanOption('Whether to collapse overly long buttons', { example: false }),
 };
 
 const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('标题', { example: '运行时横幅' }),
-  description: stringOption('描述', { example: '自定义 JS 区块' }),
+  title: stringOption('Title', { example: 'Runtime Banner' }),
+  description: stringOption('Description', { example: 'Custom JS block' }),
   className: stringOption('className', { example: 'users-banner' }),
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('列标题', { example: '操作' }),
-  tooltip: stringOption('列提示'),
-  width: numberOption('列宽', { example: 220 }),
-  fixed: stringOption('固定位置', { example: 'right' }),
+  title: stringOption('Column title', { example: 'Actions' }),
+  tooltip: stringOption('Column tooltip'),
+  width: numberOption('Column width', { example: 220 }),
+  fixed: stringOption('Fixed position', { example: 'right' }),
 };
 
 const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
-  label: stringOption('列标题别名；table 下会映射到 title', { example: '昵称' }),
-  title: stringOption('列标题', { example: '昵称' }),
-  tooltip: stringOption('提示'),
-  width: numberOption('列宽', { example: 240 }),
-  fixed: stringOption('固定位置', { example: 'left' }),
-  sorter: booleanOption('是否可排序', { example: true }),
-  fieldPath: stringOption('字段路径', { example: 'nickname' }),
-  associationPathName: stringOption('关联路径', { example: 'roles' }),
-  editable: booleanOption('是否可编辑', { example: false }),
-  dataIndex: stringOption('数据索引'),
-  titleField: stringOption('关系展示标题字段', { example: 'title' }),
-  clickToOpen: booleanOption('是否可点击打开详情', { example: true }),
+  label: stringOption('Column title alias. It maps to title under table.', { example: 'Nickname' }),
+  title: stringOption('Column title', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  width: numberOption('Column width', { example: 240 }),
+  fixed: stringOption('Fixed position', { example: 'left' }),
+  sorter: booleanOption('Whether sortable', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'roles' }),
+  editable: booleanOption('Whether editable', { example: false }),
+  dataIndex: stringOption('Data index'),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
-  label: stringOption('标签', { example: '昵称' }),
-  tooltip: stringOption('提示'),
-  extra: stringOption('额外说明'),
-  showLabel: booleanOption('是否显示标签', { example: true }),
-  fieldPath: stringOption('字段路径', { example: 'nickname' }),
-  associationPathName: stringOption('关联路径', { example: 'roles' }),
-  disabled: booleanOption('是否禁用', { example: false }),
-  pattern: stringOption('显示模式'),
-  titleField: stringOption('关系展示标题字段', { example: 'title' }),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
-  clickToOpen: booleanOption('是否可点击打开详情', { example: true }),
+  label: stringOption('Label', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'roles' }),
+  disabled: booleanOption('Whether disabled', { example: false }),
+  pattern: stringOption('Display mode'),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
-  label: stringOption('标签', { example: '昵称' }),
-  tooltip: stringOption('提示'),
-  extra: stringOption('额外说明'),
-  showLabel: booleanOption('是否显示标签', { example: true }),
-  fieldPath: stringOption('字段路径', { example: 'nickname' }),
-  associationPathName: stringOption('关联路径', { example: 'department' }),
-  initialValue: objectOption('初始值'),
-  multiple: booleanOption('是否多选', { example: false }),
-  allowMultiple: booleanOption('是否允许多选', { example: false }),
-  maxCount: numberOption('最多数量', { example: 5 }),
-  name: stringOption('字段名覆盖'),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
-  clickToOpen: booleanOption('是否可点击打开详情', { example: false }),
+  label: stringOption('Label', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'department' }),
+  initialValue: objectOption('Initial value'),
+  multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
+  allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
+  maxCount: numberOption('Maximum count', { example: 5 }),
+  name: stringOption('Field name override'),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
-  label: stringOption('标签', { example: '昵称' }),
-  tooltip: stringOption('提示'),
-  extra: stringOption('额外说明'),
-  showLabel: booleanOption('是否显示标签', { example: true }),
-  fieldPath: stringOption('字段路径', { example: 'nickname' }),
-  associationPathName: stringOption('关联路径', { example: 'department' }),
-  initialValue: objectOption('初始值'),
-  required: booleanOption('是否必填', { example: false }),
-  disabled: booleanOption('是否禁用', { example: false }),
-  multiple: booleanOption('是否多选', { example: false }),
-  allowMultiple: booleanOption('是否允许多选', { example: false }),
-  maxCount: numberOption('最多数量', { example: 5 }),
-  pattern: stringOption('输入模式'),
-  titleField: stringOption('关系展示标题字段', { example: 'title' }),
-  name: stringOption('字段名覆盖'),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
-  clickToOpen: booleanOption('是否可点击打开详情', { example: false }),
+  label: stringOption('Label', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'department' }),
+  initialValue: objectOption('Initial value'),
+  required: booleanOption('Whether required', { example: false }),
+  disabled: booleanOption('Whether disabled', { example: false }),
+  multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
+  allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
+  maxCount: numberOption('Maximum count', { example: 5 }),
+  pattern: stringOption('Input mode'),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  name: stringOption('Field name override'),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
-  fieldPath: stringOption('字段路径', { example: 'nickname' }),
-  associationPathName: stringOption('关联路径', { example: 'roles' }),
-  titleField: stringOption('关系展示标题字段', { example: 'title' }),
-  clickToOpen: booleanOption('是否可点击打开详情', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'roles' }),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
   openView: OPEN_VIEW,
-  title: stringOption('标题'),
-  icon: stringOption('图标'),
-  autoSize: booleanOption('是否自动尺寸', { example: true }),
-  allowClear: booleanOption('是否允许清空', { example: true }),
-  multiple: booleanOption('是否多选', { example: false }),
-  allowMultiple: booleanOption('是否允许多选', { example: false }),
-  quickCreate: booleanOption('是否允许快捷创建', { example: false }),
-  mode: stringOption('组件模式'),
-  options: objectOption('组件选项'),
+  title: stringOption('Title'),
+  icon: stringOption('Icon'),
+  autoSize: booleanOption('Whether to size automatically', { example: true }),
+  allowClear: booleanOption('Whether clearing is allowed', { example: true }),
+  multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
+  allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
+  quickCreate: booleanOption('Whether quick create is allowed', { example: false }),
+  mode: stringOption('Component mode'),
+  options: objectOption('Component options'),
 };
 
 const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -416,34 +419,34 @@ const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('列标题', { example: '运行时列' }),
-  tooltip: stringOption('提示'),
-  width: numberOption('列宽', { example: 240 }),
-  fixed: stringOption('固定位置', { example: 'right' }),
+  title: stringOption('Column title', { example: 'Runtime Column' }),
+  tooltip: stringOption('Tooltip'),
+  width: numberOption('Column width', { example: 240 }),
+  fixed: stringOption('Fixed position', { example: 'right' }),
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
-  label: stringOption('标签', { example: '运行时项' }),
-  tooltip: stringOption('提示'),
-  extra: stringOption('额外说明'),
-  showLabel: booleanOption('是否显示标签', { example: true }),
-  labelWidth: stringOption('标签宽度', { example: '120px' }),
-  labelWrap: booleanOption('标签是否换行', { example: false }),
+  label: stringOption('Label', { example: 'Runtime Item' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   code: JS_CODE,
   version: JS_VERSION,
 };
 
 const ACTION_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
-  title: stringOption('按钮标题', { example: '执行' }),
-  tooltip: stringOption('提示'),
-  icon: stringOption('图标', { example: 'PlusOutlined' }),
-  type: stringOption('按钮类型', { example: 'primary' }),
-  color: stringOption('颜色'),
-  htmlType: stringOption('HTML 按钮类型', { example: 'submit' }),
-  position: stringOption('位置'),
-  danger: booleanOption('是否危险按钮', { example: false }),
+  title: stringOption('Button title', { example: 'Run' }),
+  tooltip: stringOption('Tooltip'),
+  icon: stringOption('Icon', { example: 'PlusOutlined' }),
+  type: stringOption('Button type', { example: 'primary' }),
+  color: stringOption('Color'),
+  htmlType: stringOption('HTML button type', { example: 'submit' }),
+  position: stringOption('Position'),
+  danger: booleanOption('Whether this is a danger button', { example: false }),
 };
 
 const ACTION_OPEN_VIEW_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -455,12 +458,12 @@ const ACTION_CONFIRM_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
-  assignValues: objectOption('批量/单条赋值内容', { example: { status: 'published' } }),
-  updateMode: stringOption('更新模式', { example: 'overwrite' }),
+  assignValues: objectOption('Bulk or single-record assigned values', { example: { status: 'published' } }),
+  updateMode: stringOption('Update mode', { example: 'overwrite' }),
 };
 
 const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
-  linkageRules: arrayOption('联动规则', { example: [] }),
+  linkageRules: arrayOption('Linkage rules', { example: [] }),
 };
 
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -469,21 +472,21 @@ const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const ACTION_EDIT_MODE_OPTIONS: FlowSurfaceConfigureOptions = {
-  editMode: stringOption('批量编辑模式', { example: 'drawer' }),
+  editMode: stringOption('Bulk edit mode', { example: 'drawer' }),
 };
 
 const ACTION_DUPLICATE_MODE_OPTIONS: FlowSurfaceConfigureOptions = {
-  duplicateMode: stringOption('复制模式', { example: 'popup' }),
+  duplicateMode: stringOption('Duplicate mode', { example: 'popup' }),
 };
 
 const ACTION_COLLAPSE_OPTIONS: FlowSurfaceConfigureOptions = {
-  collapsedRows: numberOption('默认折叠行数', { example: 2 }),
-  defaultCollapsed: booleanOption('是否默认折叠', { example: true }),
+  collapsedRows: numberOption('Default collapsed row count', { example: 2 }),
+  defaultCollapsed: booleanOption('Whether collapsed by default', { example: true }),
 };
 
 const ACTION_EMAIL_OPTIONS: FlowSurfaceConfigureOptions = {
-  emailFieldNames: arrayOption('邮件字段名列表', { example: ['email'] }),
-  defaultSelectAllRecords: booleanOption('是否默认全选记录', { example: false }),
+  emailFieldNames: arrayOption('Email field name list', { example: ['email'] }),
+  defaultSelectAllRecords: booleanOption('Whether all records are selected by default', { example: false }),
 };
 
 const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([

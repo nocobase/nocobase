@@ -388,7 +388,7 @@ type FlowSurfaceCollectionBlockScene = 'new' | 'one' | 'many' | 'select' | 'filt
 
 type FlowSurfacePopupBlockProfile = {
   isPopupSurface: boolean;
-  popupKind?: 'relationPopup' | 'recordPopup' | 'plainPopup';
+  popupKind?: 'associationPopup' | 'recordPopup' | 'plainPopup';
   hostUid?: string;
   popupHostUse?: string;
   dataSourceKey?: string;
@@ -875,7 +875,7 @@ export class FlowSurfacesService {
     return !blockScenes.some((scene) => this.isPopupCollectionBlockSceneUnsupported(scene as FlowSurfacePopupScene));
   }
 
-  private resolveFieldRelationContextFromBinding(input: {
+  private resolveFieldAssociationContextFromBinding(input: {
     collection: any;
     fieldPath: string;
     associationPathName?: string;
@@ -890,7 +890,7 @@ export class FlowSurfacesService {
       input.collectionName,
     );
     const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
-    const relationField = isAssociationField(leafField)
+    const associationField = isAssociationField(leafField)
       ? leafField
       : isAssociationField(parsed.associationField)
         ? parsed.associationField
@@ -900,23 +900,23 @@ export class FlowSurfacesService {
         this.getCollection(resolvedDsKey, targetCollectionName),
       );
     const targetCollection =
-      (relationField ? resolveTargetCollection(relationField) || relationField?.targetCollection : null) ||
+      (associationField ? resolveTargetCollection(associationField) || associationField?.targetCollection : null) ||
       resolveTargetCollection(leafField) ||
       leafField?.targetCollection ||
       null;
     const targetCollectionName =
       getCollectionName(targetCollection) ||
-      (relationField ? getFieldTarget(relationField) : undefined) ||
+      (associationField ? getFieldTarget(associationField) : undefined) ||
       parsed.collectionName ||
       input.collectionName;
     const associationName = parsed.associationPathName
       ? `${parsed.collectionName}.${parsed.associationPathName}`
-      : relationField
-        ? resolveAssociationNameFromField(relationField, input.collection)
+      : associationField
+        ? resolveAssociationNameFromField(associationField, input.collection)
         : undefined;
 
     return {
-      relationField,
+      associationField,
       targetCollection,
       dataSourceKey:
         targetCollection?.dataSourceKey ||
@@ -928,7 +928,7 @@ export class FlowSurfacesService {
     };
   }
 
-  private async resolvePopupHostFieldRelationContext(hostNode: any, transaction?: any) {
+  private async resolvePopupHostFieldAssociationContext(hostNode: any, transaction?: any) {
     const ancestors = await this.loadContextAncestorChain(
       hostNode?.uid,
       {
@@ -956,23 +956,27 @@ export class FlowSurfacesService {
       return null;
     }
 
-    const relationContext = this.resolveFieldRelationContextFromBinding({
+    const associationContext = this.resolveFieldAssociationContextFromBinding({
       collection,
       fieldPath: fieldInit.fieldPath,
       associationPathName: fieldInit.associationPathName,
       dataSourceKey,
       collectionName,
     });
-    if (!relationContext.relationField || !relationContext.targetCollection || !relationContext.associationName) {
+    if (
+      !associationContext.associationField ||
+      !associationContext.targetCollection ||
+      !associationContext.associationName
+    ) {
       return null;
     }
 
     return {
-      associationField: relationContext.relationField,
-      targetCollection: relationContext.targetCollection,
-      dataSourceKey: relationContext.dataSourceKey,
-      collectionName: relationContext.collectionName,
-      associationName: relationContext.associationName,
+      associationField: associationContext.associationField,
+      targetCollection: associationContext.targetCollection,
+      dataSourceKey: associationContext.dataSourceKey,
+      collectionName: associationContext.collectionName,
+      associationName: associationContext.associationName,
     };
   }
 
@@ -1020,13 +1024,13 @@ export class FlowSurfacesService {
     const resourceContext = hostNode?.uid
       ? await this.locator.resolveCollectionContext(hostNode.uid, transaction).catch(() => null)
       : null;
-    const relationContext = hostNode?.uid
-      ? await this.resolvePopupHostFieldRelationContext(hostNode, transaction).catch(() => null)
+    const associationContext = hostNode?.uid
+      ? await this.resolvePopupHostFieldAssociationContext(hostNode, transaction).catch(() => null)
       : null;
     return {
       parentNode,
       resourceContext,
-      relationContext,
+      associationContext,
       recordActionContainerUse:
         parentNode?.use && POPUP_RECORD_ACTION_CONTAINER_USES.has(parentNode.use) ? parentNode.use : null,
     };
@@ -1076,8 +1080,8 @@ export class FlowSurfacesService {
         key: 'currentCollection',
         label: 'Current collection',
         description:
-          popupProfile.popupKind === 'relationPopup'
-            ? 'Use the popup current collection and keep the current relation context.'
+          popupProfile.popupKind === 'associationPopup'
+            ? 'Use the popup current collection and keep the current association context.'
             : 'Use the popup current collection.',
         dataSourceKey: popupProfile.dataSourceKey,
         collectionName: popupProfile.collectionName,
@@ -1171,12 +1175,12 @@ export class FlowSurfacesService {
     const ownerResourceInit = hostContext.resourceContext?.resourceInit || {};
     const dataSourceKey =
       openView?.dataSourceKey ||
-      hostContext.relationContext?.dataSourceKey ||
+      hostContext.associationContext?.dataSourceKey ||
       ownerResourceInit.dataSourceKey ||
       'main';
     const collectionName =
       String(openView?.collectionName || '').trim() ||
-      String(hostContext.relationContext?.collectionName || '').trim() ||
+      String(hostContext.associationContext?.collectionName || '').trim() ||
       String(ownerResourceInit.collectionName || '').trim() ||
       undefined;
     let filterByTk = openView?.filterByTk;
@@ -1195,13 +1199,13 @@ export class FlowSurfacesService {
     }
     const associationName =
       String(openView?.associationName || '').trim() ||
-      String(hostContext.relationContext?.associationName || '').trim() ||
+      String(hostContext.associationContext?.associationName || '').trim() ||
       String(ownerResourceInit.associationName || '').trim() ||
       undefined;
     let sourceId = openView?.sourceId;
-    // Nested relation popups must keep the runtime source id from popup inputArgs.
+    // Nested association popups must keep the runtime source id from popup inputArgs.
     // Reusing an inherited '{{ctx.view.inputArgs.filterByTk}}' template here would
-    // rebind it to the child popup current record instead of the relation source record.
+    // rebind it to the child popup current record instead of the association source record.
     if (!hasConfiguredFlowContextValue(sourceId) && associationName) {
       sourceId = '{{ctx.view.inputArgs.sourceId}}';
     }
@@ -1218,7 +1222,7 @@ export class FlowSurfacesService {
 
     return {
       isPopupSurface: true,
-      popupKind: hasAssociationContext ? 'relationPopup' : hasCurrentRecord ? 'recordPopup' : 'plainPopup',
+      popupKind: hasAssociationContext ? 'associationPopup' : hasCurrentRecord ? 'recordPopup' : 'plainPopup',
       hostUid: hostNode.uid,
       popupHostUse: hostNode.use,
       dataSourceKey,
@@ -1304,13 +1308,13 @@ export class FlowSurfacesService {
     if (!popupProfile?.isPopupSurface) {
       return 'current surface';
     }
-    if (popupProfile.popupKind === 'relationPopup') {
-      return '关系字段弹窗';
+    if (popupProfile.popupKind === 'associationPopup') {
+      return 'association-field popup';
     }
     if (popupProfile.popupKind === 'recordPopup') {
-      return '非关系字段弹窗';
+      return 'non-association-field popup';
     }
-    return '普通弹窗';
+    return 'plain popup';
   }
 
   private normalizeResourceInput(input: any): FlowSurfaceNormalizedResourceInput {
@@ -3380,7 +3384,7 @@ export class FlowSurfacesService {
       };
     }
 
-    const relationContext = this.resolveFieldRelationContextFromBinding({
+    const associationContext = this.resolveFieldAssociationContextFromBinding({
       collection,
       fieldPath,
       associationPathName,
@@ -3389,9 +3393,9 @@ export class FlowSurfacesService {
     });
 
     return buildDefinedPayload({
-      dataSourceKey: relationContext.dataSourceKey,
-      collectionName: relationContext.collectionName,
-      associationName: relationContext.associationName,
+      dataSourceKey: associationContext.dataSourceKey,
+      collectionName: associationContext.collectionName,
+      associationName: associationContext.associationName,
     });
   }
 
@@ -6782,9 +6786,9 @@ export class FlowSurfacesService {
         continue;
       }
 
-      const relationName = getFieldName(field);
-      const relationTitle = getFieldTitle(field);
-      if (!relationName) {
+      const associationFieldName = getFieldName(field);
+      const associationFieldTitle = getFieldTitle(field);
+      if (!associationFieldName) {
         continue;
       }
 
@@ -6797,8 +6801,10 @@ export class FlowSurfacesService {
         continue;
       }
 
-      const associationPathName = input.pathPrefix ? `${input.pathPrefix}.${relationName}` : relationName;
-      const titlePrefix = [..._.castArray(input.titlePrefix || []), relationTitle];
+      const associationPathName = input.pathPrefix
+        ? `${input.pathPrefix}.${associationFieldName}`
+        : associationFieldName;
+      const titlePrefix = [..._.castArray(input.titlePrefix || []), associationFieldTitle];
 
       for (const targetField of getCollectionFields(targetCollection)) {
         if (!getFieldInterface(targetField)) {
@@ -7030,7 +7036,7 @@ export class FlowSurfacesService {
     if (!directFields.length && !collection) {
       return [];
     }
-    const relationFields = directFields.flatMap((field) => {
+    const associationLeafFields = directFields.flatMap((field) => {
       const targetCollection = resolveFieldTargetCollection(
         field,
         input.resourceInit.dataSourceKey,
@@ -7062,7 +7068,7 @@ export class FlowSurfacesService {
         associationPathName: undefined,
         label: getFieldTitle(field),
       })),
-      ...relationFields,
+      ...associationLeafFields,
     ];
 
     const semanticEntries = baseEntries
@@ -7680,14 +7686,14 @@ export class FlowSurfacesService {
   private resolvePopupSourceRecordCollectionName(
     popupAssociationName: string,
     hostContext?: {
-      relationContext?: any;
+      associationContext?: any;
       resourceContext?: any;
     } | null,
   ) {
     const normalizedAssociationName = String(popupAssociationName || '').trim();
     const resourceCollectionName = String(hostContext?.resourceContext?.resourceInit?.collectionName || '').trim();
 
-    if (hostContext?.relationContext?.associationField && resourceCollectionName) {
+    if (hostContext?.associationContext?.associationField && resourceCollectionName) {
       return resourceCollectionName;
     }
     if (normalizedAssociationName.includes('.')) {
@@ -7713,13 +7719,13 @@ export class FlowSurfacesService {
       : null;
     const popupDataSourceKey =
       popupConfig?.dataSourceKey ||
-      hostContext?.relationContext?.dataSourceKey ||
+      hostContext?.associationContext?.dataSourceKey ||
       hostContext?.resourceContext?.resourceInit?.dataSourceKey ||
       'main';
     const popupCollectionName =
-      String(popupConfig?.collectionName || hostContext?.relationContext?.collectionName || '').trim() || undefined;
+      String(popupConfig?.collectionName || hostContext?.associationContext?.collectionName || '').trim() || undefined;
     const popupAssociationName = String(
-      popupConfig?.associationName || hostContext?.relationContext?.associationName || '',
+      popupConfig?.associationName || hostContext?.associationContext?.associationName || '',
     ).trim();
     const sourceRecordCollectionName = this.resolvePopupSourceRecordCollectionName(popupAssociationName, hostContext);
     const sourceRecordDataSourceKey = hostContext?.resourceContext?.resourceInit?.dataSourceKey || popupDataSourceKey;

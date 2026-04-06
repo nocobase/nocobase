@@ -1,79 +1,79 @@
 # FlowSurfaces Skill
 
-这份 `skill.md` 是 `flowSurfaces` 面向 AI 的唯一稳定主入口。
+This `skill.md` is the only stable main entry for `flowSurfaces` when used by AI.
 
-## 推荐调用顺序
+## Recommended call order
 
-1. 先用 `flowSurfaces:get` 读取已有 surface。
-2. 再用 `flowSurfaces:catalog` 看当前 target 的 `configureOptions`，它是主要的高频配置发现入口。
-3. 先用 `flowSurfaces:createMenu` 创建菜单节点。
-4. 再用 `flowSurfaces:createPage` 为菜单项初始化 modern page(v2)。
-5. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
-6. 再用 `flowSurfaces:configure` 修改高频配置。
-7. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
-8. 外层 route-backed page/tab 继续用 `createPage`、`destroyPage`、`addTab`、`updateTab`、`moveTab`、`removeTab`；popup child tab 用 `addPopupTab`、`updatePopupTab`、`movePopupTab`、`removePopupTab`。
-9. 删除与排序时，普通节点继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`；page 请用 `destroyPage`，外层 tab 请用 `removeTab`，popup child tab 请用 `removePopupTab`。
-10. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
+1. Start with `flowSurfaces:get` to read the existing surface.
+2. Then call `flowSurfaces:catalog` to inspect the current target `configureOptions`. This is the main discovery entry for high-frequency configuration.
+3. Use `flowSurfaces:createMenu` to create the menu node first.
+4. Use `flowSurfaces:createPage` to initialize a modern page (v2) for the menu item.
+5. Use `flowSurfaces:compose` to organize blocks, fields, actions, and simple layout.
+6. Use `flowSurfaces:configure` to update high-frequency settings.
+7. For precise append operations, prefer `addBlock`, `addField`, `addAction`, `addRecordAction`, or their batch forms `addBlocks`, `addFields`, `addActions`, `addRecordActions`.
+8. Keep using `createPage`, `destroyPage`, `addTab`, `updateTab`, `moveTab`, and `removeTab` for outer route-backed pages/tabs. Use `addPopupTab`, `updatePopupTab`, `movePopupTab`, and `removePopupTab` for popup child tabs.
+9. For deletion and sorting, use `flowSurfaces:removeNode` and `flowSurfaces:moveNode` for ordinary nodes. Use `destroyPage` for pages, `removeTab` for outer tabs, and `removePopupTab` for popup child tabs.
+10. Only fall back to lower-level actions such as `updateSettings`, `setLayout`, `setEventFlows`, `apply`, and `mutate` when the public semantics above are not sufficient.
 
-## 读取接口约定
+## Read action conventions
 
-- 读接口 `flowSurfaces:get`、`flowSurfaces:catalog`、`flowSurfaces:context` 默认对 `loggedIn` 开放；写接口仍需要 `ui.flowSurfaces`
-- `flowSurfaces:get` 只接受根级定位字段：`uid`、`pageSchemaUid`、`tabSchemaUid`、`routeId`
-- 这 4 个定位字段只能四选一
-- 不要写成 `{ "target": { "uid": "..." } }`
-- 不要写成 `{ "values": { ... } }`
-- 响应里的 `target` 只保留轻量定位信息：`locator`、`uid`、`kind`
-- 真实节点树看 `tree`；页面 route 信息看顶层 `pageRoute`、`route`；route-backed page 的 tabs 统一从 `tree.subModels.tabs` 读取
-- 错误响应统一带 `message`、`type`、`code`、`status`
-- 最常用的是：
+- Read actions `flowSurfaces:get`, `flowSurfaces:catalog`, and `flowSurfaces:context` are open to `loggedIn` by default. Write actions still require `ui.flowSurfaces`.
+- `flowSurfaces:get` only accepts root-level locator fields: `uid`, `pageSchemaUid`, `tabSchemaUid`, `routeId`.
+- Exactly one of those four locator fields must be used.
+- Do not write `{ "target": { "uid": "..." } }`.
+- Do not write `{ "values": { ... } }`.
+- The `target` in the response only keeps lightweight locator information: `locator`, `uid`, `kind`.
+- Read the actual node tree from `tree`. Read page-route information from top-level `pageRoute` and `route`. Tabs for route-backed pages are always read from `tree.subModels.tabs`.
+- Error responses always include `message`, `type`, `code`, and `status`.
+- The most common read forms are:
 
 ```text
 GET /api/flowSurfaces:get?uid=view-action-uid
 GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 ```
 
-## 直写接口约定
+## Direct-write action conventions
 
-- `addAction` 只用于非 record action：block / form / filter-form / action-panel
-- `addRecordAction` 只用于 record action：table / details / list / gridCard
-- 菜单层优先使用：
+- `addAction` is only for non-record actions: block / form / filter-form / action-panel.
+- `addRecordAction` is only for record actions: table / details / list / gridCard.
+- Prefer these menu-level actions:
   - `createMenu`
   - `updateMenu`
-- `createMenu(type="group")` 创建 group；`createMenu(type="item")` 创建可绑定 V2 页面菜单项
-- `createPage(menuRouteId=...)` 优先用于把已有菜单项初始化成 modern page(v2)
-- `createPage` 兼容模式下如果不传 `menuRouteId`，仍会自动创建顶级菜单并初始化页面
-- 当前 `createMenu(type="item")` 会预创建 flowPage route、默认 hidden tab route 和 RootPageModel anchor；真正补齐首个 grid 并把页面标记为已初始化，仍由 `createPage` 完成
-- 在 `createPage(menuRouteId=...)` 之前，不要使用 `addTab`、`updateTab`、`moveTab`、`removeTab`、`destroyPage` 这类 page/tab 生命周期 API；这些接口现在要求页面已初始化
-- 外层 route-backed page/tab API 只接受外层 canonical uid：
-  - page：`destroyPage`、`addTab`
-  - tab：`updateTab`、`moveTab`、`removeTab`
-- 外层 tab 当前的 canonical uid 就是返回结果里的 `tabSchemaUid`
-- popup child tab 不要混用外层 page/tab API；统一改用：
+- `createMenu(type="group")` creates a group. `createMenu(type="item")` creates a V2 page menu item that can be bound.
+- `createPage(menuRouteId=...)` is the preferred way to initialize an existing menu item as a modern page (v2).
+- In compatibility mode, `createPage` still auto-creates a top-level menu and page when `menuRouteId` is omitted.
+- `createMenu(type="item")` currently pre-creates the flowPage route, the default hidden tab route, and the RootPageModel anchor. `createPage` still performs the real first-grid initialization and marks the page as initialized.
+- Before `createPage(menuRouteId=...)`, do not use page/tab lifecycle APIs such as `addTab`, `updateTab`, `moveTab`, `removeTab`, or `destroyPage`. Those actions now require an initialized page.
+- Outer route-backed page/tab APIs only accept canonical outer uids:
+  - page: `destroyPage`, `addTab`
+  - tab: `updateTab`, `moveTab`, `removeTab`
+- The canonical uid of the current outer tab is the returned `tabSchemaUid`.
+- Do not mix popup child tabs with outer page/tab APIs. Use only:
   - `addPopupTab`
   - `updatePopupTab`
   - `movePopupTab`
   - `removePopupTab`
-- `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义；失败项的 `error` 固定带 `message/type/code/status`
-- `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
-- `catalog` 里的 `blocks[] / actions[] / recordActions[]` 只返回当前实例里真实可用的公开能力；哪些插件没启用，对应能力就不会出现
-- `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
-- direct `addBlock` / `addField` / `addAction` / `addRecordAction` 以及对应批量 API 不接受 raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
-- 需要高频改配时统一使用 `settings`；需要底层精确控制时再降级到 `updateSettings` / `apply`
-- 除 `get` 外，其它写接口的定位一律收口为 uid-only：
-  - 有 `target` 的一律传 `{ "target": { "uid": "..." } }`
-  - `destroyPage`、`removeTab` 一律传根级 `{ "uid": "..." }`
-- 如果你手上只有 `pageSchemaUid / routeId`，先调用 `flowSurfaces:get` 拿到 canonical uid，再走写接口
-- `removeTab` 不能删除最后一个外层 tab；如果要删除整页，请改用 `destroyPage`
-- `removeNode` 只用于 block / field / action / popup subtree 等普通节点；page 请用 `destroyPage`，tab 请用 `removeTab`
+- `addBlocks`, `addFields`, `addActions`, and `addRecordActions` all use “sequential within the same target + partial success” semantics. Each failed item always returns `error.message/type/code/status`.
+- Top-level `catalog(target).configureOptions` is the main configuration entry. Each item in `blocks[] / fields[] / actions[] / recordActions[]` also carries its own `configureOptions`.
+- The `blocks[] / actions[] / recordActions[]` in `catalog` only return the truly available public capabilities in the current instance. If a plugin is disabled, its capability will not appear.
+- Both `configure` and inline `settings` should only use keys exposed in `configureOptions`.
+- Direct `addBlock` / `addField` / `addAction` / `addRecordAction` and their batch APIs do not accept raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`.
+- Use `settings` for high-frequency configuration. Fall back to `updateSettings` / `apply` only when you need lower-level precision.
+- Except for `get`, all other write actions are normalized to uid-only locating:
+  - any action with `target` must pass `{ "target": { "uid": "..." } }`
+  - `destroyPage` and `removeTab` must pass root-level `{ "uid": "..." }`
+- If you only have `pageSchemaUid / routeId`, call `flowSurfaces:get` first to obtain the canonical uid, then call the write action.
+- `removeTab` cannot delete the last outer tab. Use `destroyPage` if you need to delete the whole page.
+- `removeNode` is only for ordinary nodes such as block / field / action / popup subtree. Use `destroyPage` for pages and `removeTab` for tabs.
 
-例如 `catalog(target=table)` 里可能会看到：
+For example, `catalog(target=table)` may return:
 
 ```json
 {
   "configureOptions": {
     "title": {
       "type": "string",
-      "example": "用户表"
+      "example": "User Table"
     },
     "pageSize": {
       "type": "number",
@@ -85,46 +85,46 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
     },
     "dataScope": {
       "type": "object",
-      "description": "FilterGroup 结构；空筛选可传 null 或 {}"
+      "description": "FilterGroup shape. Use null or {} for an empty filter."
     }
   }
 }
 ```
 
-## 能力矩阵
+## Capability matrix
 
-下面列的是常见公开语义，不代表每个实例一定全部启用；真正可用集合以 `catalog` 返回为准。
+The list below shows common public semantics. It does not mean every capability is enabled in every instance. The real available set is whatever `catalog` returns.
 
-### 常用 block `type`
+### Common block `type`
 
-- collection block: `table`、`createForm`、`editForm`、`details`、`filterForm`、`list`、`gridCard`
-- static block: `markdown`、`iframe`、`chart`、`actionPanel`
+- collection block: `table`, `createForm`, `editForm`, `details`, `filterForm`, `list`, `gridCard`
+- static block: `markdown`, `iframe`, `chart`, `actionPanel`
 - JS block: `jsBlock`
 
-### 常用 action `type`
+### Common action `type`
 
-- block: `filter`、`addNew`、`popup`、`refresh`、`expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`、`triggerWorkflow`
-- record: `view`、`edit`、`popup`、`duplicate`、`addChild`、`delete`、`updateRecord`、`composeEmail`、`templatePrint`、`triggerWorkflow`
-- form: `submit`、`js`、`jsItem`、`triggerWorkflow`
-- filter-form: `submit`、`reset`、`collapse`、`js`
+- block: `filter`, `addNew`, `popup`, `refresh`, `expandCollapse`, `bulkDelete`, `bulkEdit`, `bulkUpdate`, `export`, `exportAttachments`, `import`, `link`, `upload`, `composeEmail`, `templatePrint`, `triggerWorkflow`
+- record: `view`, `edit`, `popup`, `duplicate`, `addChild`, `delete`, `updateRecord`, `composeEmail`, `templatePrint`, `triggerWorkflow`
+- form: `submit`, `js`, `jsItem`, `triggerWorkflow`
+- filter-form: `submit`, `reset`, `collapse`, `js`
 - JS action: `js`
 
-其中：
+Additional notes:
 
-- table block 额外支持 `expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`
-- table 的 `recordActions` 还支持 `duplicate`、`addChild`、`composeEmail`
-- filter-form 额外支持 `collapse`
+- table block additionally supports `expandCollapse`, `bulkDelete`, `bulkEdit`, `bulkUpdate`, `export`, `exportAttachments`, `import`, `link`, `upload`, `composeEmail`, `templatePrint`
+- table `recordActions` additionally support `duplicate`, `addChild`, `composeEmail`
+- filter-form additionally supports `collapse`
 
-### 常用 field 公开语义
+### Common field semantics
 
-- 绑定字段：`"username"` 或 `{ "fieldPath": "nickname" }`
-- 绑定字段的 JS 渲染变体：`{ "fieldPath": "nickname", "renderer": "js" }`
-- 非绑定 JS 列：`{ "type": "jsColumn" }`
-- 非绑定 JS 项：`{ "type": "jsItem" }`
-- form item 级 JS action：`{ "type": "jsItem" }`
-- `FormJSFieldItemModel` 是 inline form JS field item 的运行时 / validator 模型名；公开创建仍走 `fieldPath + renderer: "js"`
+- bound field: `"username"` or `{ "fieldPath": "nickname" }`
+- JS renderer variant of a bound field: `{ "fieldPath": "nickname", "renderer": "js" }`
+- standalone JS column: `{ "type": "jsColumn" }`
+- standalone JS item: `{ "type": "jsItem" }`
+- form-item-level JS action: `{ "type": "jsItem" }`
+- `FormJSFieldItemModel` is the runtime / validator model name of an inline form JS field item. Public creation still uses `fieldPath + renderer: "js"`.
 
-## 示例 1：创建菜单并初始化页面
+## Example 1: create a menu and initialize a page
 
 ```json
 {
@@ -133,7 +133,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-随后再调用：
+Then call:
 
 ```json
 {
@@ -142,20 +142,21 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-页面初始化成功后：
-- page 级写操作使用返回的 `pageUid`
-- 如果要继续对默认外层 tab 做写操作，直接使用返回的 `tabSchemaUid`
-- `pageSchemaUid / routeId` 主要保留给 `flowSurfaces:get`
+After page initialization succeeds:
 
-## 示例 1.1：popup child tab API
+- use the returned `pageUid` for page-level writes
+- if you need to keep writing to the default outer tab, use the returned `tabSchemaUid`
+- `pageSchemaUid / routeId` are mainly reserved for `flowSurfaces:get`
 
-如果某个 field / action 已经有 popup 子树：
+## Example 1.1: popup child tab API
 
-- `popupPageUid` 可通过 `get(hostUid).tree.subModels.page.uid` 获取
-- `popupTabUid` 可通过 `get(hostUid).tree.subModels.page.subModels.tabs[].uid` 获取
-- 这组 uid 只用于 popup tab API，不要再传给外层 `addTab / updateTab / moveTab / removeTab`
+If a field / action already has a popup subtree:
 
-`addPopupTab`：
+- `popupPageUid` can be read from `get(hostUid).tree.subModels.page.uid`
+- `popupTabUid` can be read from `get(hostUid).tree.subModels.page.subModels.tabs[].uid`
+- those uids are only for popup-tab APIs and must not be passed back to outer `addTab / updateTab / moveTab / removeTab`
+
+`addPopupTab`:
 
 ```json
 {
@@ -168,7 +169,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-`updatePopupTab`：
+`updatePopupTab`:
 
 ```json
 {
@@ -181,7 +182,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-`movePopupTab`：
+`movePopupTab`:
 
 ```json
 {
@@ -191,7 +192,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-`removePopupTab`：
+`removePopupTab`:
 
 ```json
 {
@@ -201,29 +202,29 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-这轮不提供 `removePopup`；`removePopupTab` 允许删到 0 个 tab。
+`removePopup` is not provided in this iteration. `removePopupTab` may remove tabs until the popup has 0 tabs.
 
-## 示例 1.2：popup 下的 block 资源语义
+## Example 1.2: popup block resource semantics
 
-popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
+When adding a collection block under a popup, do not guess `resourceInit` first. Check:
 
 - `catalog(target=popup-host-or-popup-grid).blocks[].resourceBindings`
 
-对外可以按三类 popup 理解：
+From the public API perspective, popups can be understood in three classes:
 
-- 关系字段弹窗：有当前记录，也有 association context
-- 非关系字段弹窗：只有当前记录，没有 association context
-- 普通弹窗：没有当前记录，也没有 association context
-- `select / subForm / bulkEditForm` scene 目前只识别，但当前 scene 下不支持 popup collection block 创建；这类 popup 先不要用 `compose/addBlock` 去创建 collection block
+- association-field popup: has the current record and association context
+- non-association-field popup: has the current record but no association context
+- plain popup: has neither current record nor association context
+- the `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported there; avoid `compose/addBlock` for collection blocks in those popup scenes
 
-推荐直接传语义化 `resource`：
+Prefer the semantic `resource` directly:
 
 - `currentCollection`
 - `currentRecord`
 - `associatedRecords`
 - `otherRecords`
 
-例如在非关系字段弹窗里创建当前记录详情：
+For example, create current-record details inside a non-association-field popup:
 
 ```json
 {
@@ -244,12 +245,12 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-例如在关系字段弹窗里创建关联记录表格：
+For example, create an associated-records table inside an association-field popup:
 
 ```json
 {
   "target": {
-    "uid": "relation-popup-action-uid"
+    "uid": "association-popup-action-uid"
   },
   "mode": "replace",
   "blocks": [
@@ -268,7 +269,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-例如在普通弹窗里只创建当前集合或其它集合区块：
+For example, create only a current-collection block or another collection block inside a plain popup:
 
 ```json
 {
@@ -282,7 +283,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-如果要明确绑定到其它数据源/数据表，可以显式传：
+If you need to bind another data source / collection explicitly, pass:
 
 ```json
 {
@@ -298,9 +299,9 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-如果手写了 `resourceInit` 但和当前 popup 语义不匹配，服务端会直接返回 `400`，并提示回到 `catalog.blocks[].resourceBindings`。
+If you hand-write `resourceInit` and it does not match the current popup semantics, the server returns `400` directly and tells you to go back to `catalog.blocks[].resourceBindings`.
 
-## 示例 2：同一行创建 `filterForm + table`，布局 `3:7`
+## Example 2: create `filterForm + table` on the same row with a `3:7` layout
 
 ```json
 {
@@ -385,15 +386,15 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-`table` / `details` / `list` / `gridCard` 的公开语义统一为：
+The public semantics of `table` / `details` / `list` / `gridCard` are unified as:
 
-- `actions` = block 级 actions
-- `recordActions` = record/item 级 actions
-- `catalog(target=table/details/list/gridCard)` 也会按同样语义分别返回 `actions` 和 `recordActions`
+- `actions` = block-level actions
+- `recordActions` = record/item-level actions
+- `catalog(target=table/details/list/gridCard)` returns `actions` and `recordActions` in the same semantic split
 
-`roles.title` 这种 to-many relation leaf path 在 display 场景下是允许的。服务端会自动归一化成 association-value binding，调用方不需要自己处理 `associationPathName`、`titleField` 或点击上下文。
+A to-many leaf path such as `roles.title` is valid in display scenarios. The server automatically normalizes it into association-value binding. The caller does not need to handle `associationPathName`, `titleField`, or click context manually.
 
-`dataScope` 必须使用 FilterGroup 结构，而不是直接传 query-object。例如：
+`dataScope` must use the FilterGroup shape rather than a plain query-object. For example:
 
 ```json
 {
@@ -408,7 +409,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-空筛选可以传 `null` 或 `{}`，服务端会自动归一化成：
+An empty filter may be `null` or `{}`. The server normalizes it to:
 
 ```json
 {
@@ -417,9 +418,9 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-## 示例 3：给关系字段开启 `clickToOpen + openView`
+## Example 3: enable `clickToOpen + openView` on an association field
 
-先拿 `compose` / `get` 返回的 `wrapperUid/fieldUid`。`configure` 传 wrapper 或 inner 都可以。
+First obtain `wrapperUid/fieldUid` from `compose` or `get`. `configure` accepts either the wrapper or the inner field.
 
 ```json
 {
@@ -437,7 +438,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-## 示例 4：继续给 field popup 追加 `details`
+## Example 4: append `details` to a field popup
 
 ```json
 {
@@ -452,11 +453,11 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-如果某个 field / action 创建了 popup 子树，响应里会带 `popupPageUid/popupTabUid/popupGridUid`。
+If a field / action creates a popup subtree, the response includes `popupPageUid/popupTabUid/popupGridUid`.
 
-## 示例 5：静态 block 与列表类 richer 子结构
+## Example 5: static blocks and richer list-like substructures
 
-### 5.1 静态 block
+### 5.1 Static blocks
 
 ```json
 {
@@ -494,9 +495,9 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 
 ### 5.2 `table` / `list` / `gridCard`
 
-- `fields` = table record / list item / grid card item 的内容字段
-- `actions` = block 级 actions
-- `recordActions` = table 每行 / list 每个 item / grid card 每张卡片上的 record actions
+- `fields` = content fields for a table record / list item / grid card item
+- `actions` = block-level actions
+- `recordActions` = record actions on each table row / each list item / each grid card
 
 ```json
 {
@@ -540,9 +541,9 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-## 示例 5.3：直接追加 record action
+## Example 5.3: append a record action directly
 
-`addRecordAction` 的 target 传 record-capable owner target，不要传 table 内部的 actions column uid。
+For `addRecordAction`, pass a record-capable owner target. Do not pass an internal table actions-column uid.
 
 ```json
 {
@@ -551,7 +552,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
   },
   "type": "view",
   "settings": {
-    "title": "查看用户",
+    "title": "View User",
     "openView": {
       "dataSourceKey": "main",
       "collectionName": "users",
@@ -575,21 +576,21 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-`addAction` 和 `addRecordAction` 要严格拆开：
+`addAction` and `addRecordAction` must stay strictly separate:
 
-- 非 record action 走 `addAction`
-- record action 走 `addRecordAction`
-- table / details / list / gridCard 的 record action 不要再混进 `addAction`
-- direct `add*` 现在也支持 inline `settings`
-- direct `add*` 不接受 raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
-- 这里的 `settings` 写法就是 `configure.changes` 的写法
-- popup-capable action 还可以直接带 `popup`
+- use `addAction` for non-record actions
+- use `addRecordAction` for record actions
+- do not put record actions of table / details / list / gridCard into `addAction`
+- direct `add*` also supports inline `settings`
+- direct `add*` does not accept raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
+- the `settings` shape is the same as `configure.changes`
+- popup-capable actions may include `popup` directly
 
-## 示例 5.4：批量追加 block / field / action / record action
+## Example 5.4: batch append block / field / action / record action
 
-批量 API 都是“同一 target 下顺序执行 + 部分成功”。失败项统一返回结构化 `error`：`message`、`type`、`code`、`status`。
+All batch APIs use “sequential within the same target + partial success” semantics. Failed items always return a structured `error`: `message`, `type`, `code`, `status`.
 
-`addBlocks`：
+`addBlocks`:
 
 ```json
 {
@@ -620,7 +621,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-`addFields`：
+`addFields`:
 
 ```json
 {
@@ -650,7 +651,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-`addActions`：
+`addActions`:
 
 ```json
 {
@@ -677,7 +678,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-`addRecordActions`：
+`addRecordActions`:
 
 ```json
 {
@@ -689,7 +690,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
       "key": "view",
       "type": "view",
       "settings": {
-        "title": "查看用户",
+        "title": "View User",
         "openView": {
           "dataSourceKey": "main",
           "collectionName": "users",
@@ -715,21 +716,21 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
       "key": "edit",
       "type": "edit",
       "settings": {
-        "title": "编辑用户"
+        "title": "Edit User"
       }
     },
     {
       "key": "delete",
       "type": "delete",
       "settings": {
-        "title": "删除用户"
+        "title": "Delete User"
       }
     }
   ]
 }
 ```
 
-## 示例 6：JS block / JS action / JS field
+## Example 6: JS block / JS action / JS field
 
 ### 6.1 `jsBlock`
 
@@ -755,7 +756,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-### 6.2 block / record / form / actionPanel 下的 `js` action
+### 6.2 `js` action under block / record / form / actionPanel
 
 ```json
 {
@@ -772,7 +773,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-### 6.2.1 form 下的 `jsItem` action
+### 6.2.1 form `jsItem` action
 
 ```json
 {
@@ -789,9 +790,9 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-### 6.3 JS 字段变体
+### 6.3 JS field variants
 
-表格/details/list/gridCard 里的绑定 JS 字段：
+Bound JS fields inside table/details/list/gridCard:
 
 ```json
 {
@@ -803,7 +804,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-表格里的非绑定 JS 列：
+Standalone JS columns inside a table:
 
 ```json
 {
@@ -819,7 +820,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-表单里的非绑定 JS 项：
+Standalone JS items inside a form:
 
 ```json
 {
@@ -836,7 +837,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
-## 示例 7：用 `configure` 改高频 JS 配置
+## Example 7: use `configure` for high-frequency JS configuration
 
 JS block:
 
@@ -855,19 +856,19 @@ JS block:
 }
 ```
 
-JS field / JS action / JS column / JS item 也都支持 `code`、`version` 这两个高频改配字段；其它简单字段继续用同一个 `configure`：
+JS field / JS action / JS column / JS item also support the high-frequency `code` and `version` keys. Other simple fields keep using the same `configure` entry:
 
-- page: `title`、`documentTitle`、`displayTitle`、`enableTabs`、`icon`、`enableHeader`
-- table: `resource`、`pageSize`、`density`、`showRowNumbers`、`sorting`、`dataScope`、`quickEdit`、`treeTable`、`defaultExpandAllRows`、`dragSort`、`dragSortBy`
-- form / createForm / editForm: `layout`、`labelAlign`、`labelWidth`、`labelWrap`、`assignRules`、`colon`
+- page: `title`, `documentTitle`, `displayTitle`, `enableTabs`, `icon`, `enableHeader`
+- table: `resource`, `pageSize`, `density`, `showRowNumbers`, `sorting`, `dataScope`, `quickEdit`, `treeTable`, `defaultExpandAllRows`, `dragSort`, `dragSortBy`
+- form / createForm / editForm: `layout`, `labelAlign`, `labelWidth`, `labelWrap`, `assignRules`, `colon`
 - editForm: `dataScope`
-- details: `resource`、`layout`、`labelAlign`、`labelWidth`、`labelWrap`、`sorting`、`dataScope`、`colon`、`linkageRules`
-- field wrapper: `label`、`tooltip`、`width`、`titleField`、`clickToOpen`、`openView`
-- action: `title`、`tooltip`、`icon`、`type`、`danger`、`openView`、`confirm`、`assignValues`、`linkageRules`、`editMode`、`updateMode`、`duplicateMode`、`collapsedRows`、`defaultCollapsed`、`emailFieldNames`、`defaultSelectAllRecords`
-- jsColumn: `title`、`tooltip`、`width`、`fixed`
-- jsItem: `label`、`tooltip`、`extra`、`showLabel`、`labelWidth`、`labelWrap`
+- details: `resource`, `layout`, `labelAlign`, `labelWidth`, `labelWrap`, `sorting`, `dataScope`, `colon`, `linkageRules`
+- field wrapper: `label`, `tooltip`, `width`, `titleField`, `clickToOpen`, `openView`
+- action: `title`, `tooltip`, `icon`, `type`, `danger`, `openView`, `confirm`, `assignValues`, `linkageRules`, `editMode`, `updateMode`, `duplicateMode`, `collapsedRows`, `defaultCollapsed`, `emailFieldNames`, `defaultSelectAllRecords`
+- jsColumn: `title`, `tooltip`, `width`, `fixed`
+- jsItem: `label`, `tooltip`, `extra`, `showLabel`, `labelWidth`, `labelWrap`
 
-page 高配示例：
+High-frequency page example:
 
 ```json
 {
@@ -881,7 +882,7 @@ page 高配示例：
 }
 ```
 
-table 高配示例：
+High-frequency table example:
 
 ```json
 {
@@ -898,7 +899,7 @@ table 高配示例：
 }
 ```
 
-editForm 高配示例：
+High-frequency editForm example:
 
 ```json
 {
@@ -921,7 +922,7 @@ editForm 高配示例：
 }
 ```
 
-details 高配示例：
+High-frequency details example:
 
 ```json
 {
@@ -946,7 +947,7 @@ details 高配示例：
 }
 ```
 
-action 高配示例：
+High-frequency action example:
 
 ```json
 {
@@ -977,22 +978,22 @@ action 高配示例：
 }
 ```
 
-## 删除与修改
+## Delete and mutate guidance
 
-- 删除字段：优先传 `wrapperUid`
-- 删除操作：传 action `uid`
-- 排序：传 `moveNode`
-- 若需要复杂事件流：仍走 `setEventFlows`
-- 若需要精准 subtree replace：走 `apply`
+- delete a field: prefer passing `wrapperUid`
+- delete an action: pass the action `uid`
+- reorder: use `moveNode`
+- complex event flows still use `setEventFlows`
+- precise subtree replacement still uses `apply`
 
-## 何时降级到底层 API
+## When to fall back to lower-level APIs
 
-仅在下面这些场景降级：
+Only fall back in these cases:
 
-- 需要精确控制 `props / decoratorProps / stepParams / flowRegistry`
-- 需要复杂 `setLayout`
-- 需要复杂事件流编排
-- 需要 `$ref` 链式事务编排
-- 需要 page/tab/popup subtree 的精确 `apply(replace)`
+- you need exact control of `props / decoratorProps / stepParams / flowRegistry`
+- you need complex `setLayout`
+- you need complex event-flow orchestration
+- you need `$ref`-style chained transactional orchestration
+- you need precise `apply(replace)` on page/tab/popup subtrees
 
-更多 JS 模型细节见 [flow-surfaces-ai-js-models.md](./flow-surfaces-ai-js-models.md)。
+For more JS model details, see [flow-surfaces-ai-js-models.md](./flow-surfaces-ai-js-models.md).

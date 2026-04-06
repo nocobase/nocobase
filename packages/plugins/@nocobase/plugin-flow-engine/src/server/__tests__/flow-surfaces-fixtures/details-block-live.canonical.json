@@ -465,7 +465,7 @@
   "pageRoute": {
     "alias": "page.route",
     "type": "flowPage",
-    "title": "宠物管理",
+    "title": "Pet Management",
     "icon": null,
     "options": null
   }

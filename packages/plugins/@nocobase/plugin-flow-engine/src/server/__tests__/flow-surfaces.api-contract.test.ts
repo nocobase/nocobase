@@ -1929,7 +1929,7 @@ describe('flowSurfaces API contract', () => {
     expect(readErrorMessage(invalidRaw)).toContain('supported bindings:');
     expect(readErrorMessage(invalidRaw)).toContain('currentRecord');
 
-    const relationPopup = getData(
+    const associationPopup = getData(
       await rootAgent.resource('flowSurfaces').addAction({
         values: {
           target: {
@@ -1939,10 +1939,10 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    const configureRelationPopup = await rootAgent.resource('flowSurfaces').configure({
+    const configureAssociationPopup = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
-          uid: relationPopup.uid,
+          uid: associationPopup.uid,
         },
         changes: {
           openView: {
@@ -1955,12 +1955,12 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(configureRelationPopup.status).toBe(200);
+    expect(configureAssociationPopup.status).toBe(200);
 
-    const invalidRelationCurrentRecordRaw = await rootAgent.resource('flowSurfaces').addBlock({
+    const invalidAssociationCurrentRecordRaw = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: relationPopup.uid,
+          uid: associationPopup.uid,
         },
         type: 'details',
         resourceInit: {
@@ -1972,8 +1972,8 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(invalidRelationCurrentRecordRaw.status).toBe(400);
-    expect(readErrorMessage(invalidRelationCurrentRecordRaw)).toContain(
+    expect(invalidAssociationCurrentRecordRaw.status).toBe(400);
+    expect(readErrorMessage(invalidAssociationCurrentRecordRaw)).toContain(
       `does not support resourceInit binding 'currentRecord'`,
     );
   });
@@ -3985,7 +3985,7 @@ describe('flowSurfaces API contract', () => {
     expect(removedSchemaRes.body.data || {}).toEqual({});
   });
 
-  it('should normalize users.roles table relation fields into text bindings and keep popup context on the clicked role record', async () => {
+  it('should normalize users.roles table association fields into text bindings and keep popup context on the clicked role record', async () => {
     const page = await createPage(rootAgent, {
       title: 'Users roles page',
       tabTitle: 'Users roles tab',
@@ -4509,7 +4509,7 @@ describe('flowSurfaces API contract', () => {
     });
   });
 
-  it('should preserve users.roles sourceId on nested record-action popups inside relation tables', async () => {
+  it('should preserve users.roles sourceId on nested record-action popups inside association tables', async () => {
     const page = await createPage(rootAgent, {
       title: 'Nested users roles popup page',
       tabTitle: 'Nested users roles popup tab',
@@ -4636,10 +4636,10 @@ describe('flowSurfaces API contract', () => {
     });
   });
 
-  it('should not auto preserve associationName when a relation field is configured as a non-relation popup', async () => {
+  it('should not auto preserve associationName when an association field is configured as a non-association-field popup', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Users roles non relation popup page',
-      tabTitle: 'Users roles non relation popup tab',
+      title: 'Users roles non-association-field popup page',
+      tabTitle: 'Users roles non-association-field popup tab',
     });
 
     const composeRes = getData(
@@ -4879,10 +4879,10 @@ describe('flowSurfaces API contract', () => {
     expect(composeInner.tree.use).toBe('DisplayTextFieldModel');
   });
 
-  it('should normalize generic to-many relation leaf paths but keep to-one leaf paths unchanged', async () => {
+  it('should normalize generic to-many association leaf paths but keep to-one leaf paths unchanged', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Relation binding page',
-      tabTitle: 'Relation binding tab',
+      title: 'Association binding page',
+      tabTitle: 'Association binding tab',
     });
 
     const detailsBlock = await addBlockData(rootAgent, {
@@ -5162,7 +5162,7 @@ async function setupFixtureCollections(rootAgent: any) {
     values: {
       name: 'skills',
       title: 'Skills',
-      // Keep generic relation leaf-path assertions stable instead of falling back to the default id title key.
+      // Keep generic association leaf-path assertions stable instead of falling back to the default id title key.
       titleField: 'label',
       filterTargetKey: 'label',
       fields: [{ name: 'label', type: 'string', interface: 'input' }],

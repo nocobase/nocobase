@@ -72,7 +72,11 @@ describe('flowSurfaces create parity (formal built-in blocks)', () => {
     });
   }
 
-  for (const key of ['table', 'list', 'grid-card', 'filter-form'] as const) {
+  // Filter-form popup creation now has popup-scene-specific resource semantics and no longer
+  // shares the same canonical baseline as the top-level representative fixture.
+  // Keep popup parity coverage for the collection blocks whose popup shape still matches the
+  // representative fixture directly.
+  for (const key of ['table', 'list', 'grid-card'] as const) {
     it(`should keep nested popup create parity aligned with representative fixture for '${key}'`, async () => {
       const readback = await buildNestedPopupCreateParityReadback(rootAgent, key);
       const actualTree = projectFormalBlockCreateParityTree(key, createCreateParityTree(readback));
@@ -118,10 +122,7 @@ async function buildCreateParityReadback(rootAgent: any, key: FormalFlowSurfaceB
   }
 }
 
-async function buildNestedPopupCreateParityReadback(
-  rootAgent: any,
-  key: 'table' | 'list' | 'grid-card' | 'filter-form',
-) {
+async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table' | 'list' | 'grid-card') {
   const page = await createPage(rootAgent, {
     title: `Nested popup parity ${key} page`,
     tabTitle: `Nested popup parity ${key} tab`,
@@ -157,17 +158,17 @@ async function buildNestedPopupCreateParityReadback(
       await configureTableBlock(rootAgent, nestedTable.uid);
 
       const addNew = await addAction(rootAgent, nestedTable.uid, 'addNew');
-      await configurePopupAction(rootAgent, addNew.uid, '新增宠物', {
+      await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
       const refresh = await addAction(rootAgent, nestedTable.uid, 'refresh');
-      await configureSimpleAction(rootAgent, refresh.uid, '刷新');
+      await configureSimpleAction(rootAgent, refresh.uid, 'Refresh');
 
       const bulkDelete = await addAction(rootAgent, nestedTable.uid, 'bulkDelete');
-      await configureSimpleAction(rootAgent, bulkDelete.uid, '批量删除');
+      await configureSimpleAction(rootAgent, bulkDelete.uid, 'Bulk Delete');
 
       let lastFieldColumnUid = '';
       for (const fieldPath of PET_TABLE_FIELD_PATHS) {
@@ -188,14 +189,14 @@ async function buildNestedPopupCreateParityReadback(
       await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
       const view = await addAction(rootAgent, nestedTable.uid, 'view');
-      await configurePopupAction(rootAgent, view.uid, '查看', {
+      await configurePopupAction(rootAgent, view.uid, 'View', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
       const edit = await addAction(rootAgent, nestedTable.uid, 'edit');
-      await configurePopupAction(rootAgent, edit.uid, '编辑', {
+      await configurePopupAction(rootAgent, edit.uid, 'Edit', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
@@ -203,7 +204,7 @@ async function buildNestedPopupCreateParityReadback(
 
       const remove = await addAction(rootAgent, nestedTable.uid, 'delete');
       await clearActionGroup(rootAgent, remove.uid, 'deleteSettings');
-      await configureSimpleAction(rootAgent, remove.uid, '删除');
+      await configureSimpleAction(rootAgent, remove.uid, 'Delete');
 
       const addNewPopup = await createBlockData(rootAgent, {
         target: {
@@ -214,8 +215,8 @@ async function buildNestedPopupCreateParityReadback(
           binding: 'currentCollection',
         },
       });
-      await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, '新增宠物');
-      await configurePetsCreateFormBlock(rootAgent, addNewPopup.uid, '保存');
+      await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, 'Add Pet');
+      await configurePetsCreateFormBlock(rootAgent, addNewPopup.uid, 'Save');
 
       const viewPopup = await createBlockData(rootAgent, {
         target: {
@@ -226,7 +227,7 @@ async function buildNestedPopupCreateParityReadback(
           binding: 'currentRecord',
         },
       });
-      await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, '宠物详情');
+      await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, 'Pet Details');
       await configurePetsDetailsBlock(rootAgent, viewPopup.uid);
 
       const editPopup = await createBlockData(rootAgent, {
@@ -238,8 +239,8 @@ async function buildNestedPopupCreateParityReadback(
           binding: 'currentRecord',
         },
       });
-      await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, '编辑宠物');
-      await configurePetsEditFormBlock(rootAgent, editPopup.uid, '保存修改');
+      await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, 'Edit Pet');
+      await configurePetsEditFormBlock(rootAgent, editPopup.uid, 'Save Changes');
 
       return getSurface(rootAgent, {
         uid: nestedTable.uid,
@@ -275,47 +276,6 @@ async function buildNestedPopupCreateParityReadback(
         uid: nestedGridCard.uid,
       });
     }
-    case 'filter-form': {
-      const nestedTargetTable = await createBlockData(rootAgent, {
-        target: {
-          uid: hostPopup.uid,
-        },
-        type: 'table',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'pets',
-        },
-      });
-      await addField(rootAgent, nestedTargetTable.uid, 'name');
-
-      const nestedFilterForm = await createBlockData(rootAgent, {
-        target: {
-          uid: hostPopup.uid,
-        },
-        type: 'filterForm',
-        resource: {
-          binding: 'currentCollection',
-        },
-      });
-      await configureFilterFormBlock(rootAgent, nestedFilterForm.uid);
-
-      const submit = await addAction(rootAgent, nestedFilterForm.uid, 'submit');
-      await configureSimpleAction(rootAgent, submit.uid, 'Filter');
-
-      const reset = await addAction(rootAgent, nestedFilterForm.uid, 'reset');
-      await configureSimpleAction(rootAgent, reset.uid, 'Reset');
-
-      for (const fieldPath of PET_FILTER_FIELD_PATHS) {
-        await addField(rootAgent, nestedFilterForm.uid, fieldPath, {
-          collectionName: 'pets',
-          defaultTargetUid: nestedTargetTable.uid,
-        });
-      }
-
-      return getSurface(rootAgent, {
-        uid: nestedFilterForm.uid,
-      });
-    }
   }
 }
 
@@ -338,17 +298,17 @@ async function createTableParityReadback(rootAgent: any) {
   await configureTableBlock(rootAgent, table.uid);
 
   const addNew = await addAction(rootAgent, table.uid, 'addNew');
-  await configurePopupAction(rootAgent, addNew.uid, '新增宠物', {
+  await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
   const refresh = await addAction(rootAgent, table.uid, 'refresh');
-  await configureSimpleAction(rootAgent, refresh.uid, '刷新');
+  await configureSimpleAction(rootAgent, refresh.uid, 'Refresh');
 
   const bulkDelete = await addAction(rootAgent, table.uid, 'bulkDelete');
-  await configureSimpleAction(rootAgent, bulkDelete.uid, '批量删除');
+  await configureSimpleAction(rootAgent, bulkDelete.uid, 'Bulk Delete');
 
   let lastFieldColumnUid = '';
   for (const fieldPath of PET_TABLE_FIELD_PATHS) {
@@ -369,14 +329,14 @@ async function createTableParityReadback(rootAgent: any) {
   await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
   const view = await addAction(rootAgent, table.uid, 'view');
-  await configurePopupAction(rootAgent, view.uid, '查看', {
+  await configurePopupAction(rootAgent, view.uid, 'View', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
   const edit = await addAction(rootAgent, table.uid, 'edit');
-  await configurePopupAction(rootAgent, edit.uid, '编辑', {
+  await configurePopupAction(rootAgent, edit.uid, 'Edit', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
@@ -384,7 +344,7 @@ async function createTableParityReadback(rootAgent: any) {
 
   const remove = await addAction(rootAgent, table.uid, 'delete');
   await clearActionGroup(rootAgent, remove.uid, 'deleteSettings');
-  await configureSimpleAction(rootAgent, remove.uid, '删除');
+  await configureSimpleAction(rootAgent, remove.uid, 'Delete');
 
   const addNewPopup = await createBlockData(rootAgent, {
     target: {
@@ -395,8 +355,8 @@ async function createTableParityReadback(rootAgent: any) {
       binding: 'currentCollection',
     },
   });
-  await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, '新增宠物');
-  await configurePetsCreateFormBlock(rootAgent, addNewPopup.uid, '保存');
+  await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, 'Add Pet');
+  await configurePetsCreateFormBlock(rootAgent, addNewPopup.uid, 'Save');
 
   const viewPopup = await createBlockData(rootAgent, {
     target: {
@@ -407,7 +367,7 @@ async function createTableParityReadback(rootAgent: any) {
       binding: 'currentRecord',
     },
   });
-  await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, '宠物详情');
+  await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, 'Pet Details');
   await configurePetsDetailsBlock(rootAgent, viewPopup.uid);
 
   const editPopup = await createBlockData(rootAgent, {
@@ -419,8 +379,8 @@ async function createTableParityReadback(rootAgent: any) {
       binding: 'currentRecord',
     },
   });
-  await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, '编辑宠物');
-  await configurePetsEditFormBlock(rootAgent, editPopup.uid, '保存修改');
+  await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, 'Edit Pet');
+  await configurePetsEditFormBlock(rootAgent, editPopup.uid, 'Save Changes');
 
   return getSurface(rootAgent, {
     uid: table.uid,
@@ -442,7 +402,7 @@ async function createCreateFormParityReadback(rootAgent: any) {
       collectionName: 'pets',
     },
   });
-  await configurePetsCreateFormBlock(rootAgent, form.uid, '保存');
+  await configurePetsCreateFormBlock(rootAgent, form.uid, 'Save');
   return getSurface(rootAgent, {
     uid: form.uid,
   });
@@ -463,7 +423,7 @@ async function createEditFormParityReadback(rootAgent: any) {
       collectionName: 'pets',
     },
   });
-  await configurePetsEditFormBlock(rootAgent, form.uid, '保存修改');
+  await configurePetsEditFormBlock(rootAgent, form.uid, 'Save Changes');
   return getSurface(rootAgent, {
     uid: form.uid,
   });

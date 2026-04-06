@@ -1,55 +1,55 @@
 # FlowSurfaces AI JS Models
 
-这份文档专门说明 `flowSurfaces` 已公开支持的 JS 系列能力。
+This document explains the JS capabilities that `flowSurfaces` publicly supports today.
 
-## 公开能力总览
+## Public capability overview
 
 ### `jsBlock`
 
 - public block key: `jsBlock`
 - model use: `JSBlockModel`
-- 适用位置：page/tab/grid 下直接创建
-- 推荐入口：`compose.blocks[].type = "jsBlock"` 或 `addBlock(type="jsBlock")`
-- 高频改配：`configure({ title, description, className, code, version })`
+- supported placement: create directly under page/tab/grid
+- recommended entry: `compose.blocks[].type = "jsBlock"` or `addBlock(type="jsBlock")`
+- common high-frequency config: `configure({ title, description, className, code, version })`
 
 ### `js` action
 
 - public action key: `js`
-- 运行时会根据容器自动映射到具体模型：
-  - collection 容器 -> `JSCollectionActionModel`
-  - record 容器 -> `JSRecordActionModel`
-  - form 容器 -> `JSFormActionModel`
-  - filter-form 容器 -> `FilterFormJSActionModel`
-  - action-panel 容器 -> `JSActionModel`
-- 高频改配：`configure({ title, icon, type, code, version })`
+- runtime model mapping is chosen automatically from the container:
+  - collection container -> `JSCollectionActionModel`
+  - record container -> `JSRecordActionModel`
+  - form container -> `JSFormActionModel`
+  - filter-form container -> `FilterFormJSActionModel`
+  - action-panel container -> `JSActionModel`
+- common high-frequency config: `configure({ title, icon, type, code, version })`
 
 ### `jsItem` action
 
 - public action key: `jsItem`
 - model use: `JSItemActionModel`
-- 适用位置：form / createForm / editForm 的 action 容器
-- 推荐入口：`addAction(type="jsItem")`
-- 高频改配：`configure({ title, icon, type, code, version })`
+- supported placement: action containers of form / createForm / editForm
+- recommended entry: `addAction(type="jsItem")`
+- common high-frequency config: `configure({ title, icon, type, code, version })`
 
-### 绑定字段 JS 变体：`renderer: "js"`
+### Bound-field JS variant: `renderer: "js"`
 
-也可以记成 `renderer: \`js\``，意思相同。
+You can also write it as `renderer: \`js\``. The meaning is the same.
 
 - table/details/list/gridCard -> wrapper + `JSFieldModel`
 - form/createForm/editForm -> wrapper + `JSEditableFieldModel`
-- filterForm 不支持
+- filterForm is not supported
 
-### 非绑定 JS 项
+### Standalone JS items
 
-- `type: "jsColumn"` -> `JSColumnModel`，仅 table
-- `type: "jsItem"` -> `JSItemModel`，仅 form/createForm/editForm
-- inline form JS field item 的运行时 / validator 上下文名 -> `FormJSFieldItemModel`
-  - 这表示上游 RunJS 真实上下文会识别这个模型名
-  - 公开创建 form 里的绑定 JS 字段，仍然使用 `fieldPath + renderer: "js"`
+- `type: "jsColumn"` -> `JSColumnModel`, table only
+- `type: "jsItem"` -> `JSItemModel`, form/createForm/editForm only
+- runtime / validator context model name for an inline form JS field item -> `FormJSFieldItemModel`
+  - this means upstream RunJS recognizes that model name in the real runtime context
+  - public creation of a bound JS field inside a form still uses `fieldPath + renderer: "js"`
 
-## 推荐调用方式
+## Recommended request patterns
 
-### 1. 创建 `jsBlock`
+### 1. Create a `jsBlock`
 
 ```json
 {
@@ -72,7 +72,7 @@
 }
 ```
 
-### 2. 创建 `js` action
+### 2. Create a `js` action
 
 ```json
 {
@@ -89,7 +89,7 @@
 }
 ```
 
-### 2.1 创建 form `jsItem` action
+### 2.1 Create a form `jsItem` action
 
 ```json
 {
@@ -106,7 +106,7 @@
 }
 ```
 
-### 3. 创建绑定字段 JS 变体
+### 3. Create a bound-field JS variant
 
 ```json
 {
@@ -118,7 +118,7 @@
 }
 ```
 
-### 4. 创建 `jsColumn`
+### 4. Create a `jsColumn`
 
 ```json
 {
@@ -134,7 +134,7 @@
 }
 ```
 
-### 5. 创建 `jsItem`
+### 5. Create a `jsItem`
 
 ```json
 {
@@ -151,7 +151,7 @@
 }
 ```
 
-## 推荐的 `configure` 映射
+## Recommended `configure` mappings
 
 ### `jsBlock`
 
@@ -167,8 +167,8 @@
 
 ### `renderer: "js"` field
 
-- wrapper 仍支持 `label/tooltip/width/titleField/clickToOpen/openView`
-- `code/version` 会同步写到 inner JS field 的 `stepParams.jsSettings.runJs`
+- the wrapper still supports `label/tooltip/width/titleField/clickToOpen/openView`
+- `code/version` is synchronized into the inner JS field `stepParams.jsSettings.runJs`
 
 ### `jsColumn`
 
@@ -181,20 +181,20 @@
 - `labelWidth/labelWrap` -> decoratorProps
 - `code/version` -> `stepParams.jsSettings.runJs`
 
-## 不支持的组合
+## Unsupported combinations
 
 - `filterForm` + `renderer: "js"`
 - form/createForm/editForm + `type: "jsColumn"`
 - table/details/list/gridCard + `type: "jsItem"`
 
-## `ctx` 使用建议
+## `ctx` usage tips
 
-JS 代码里可以优先从当前运行时上下文拿：
+In JS code, prefer reading what you need from the current runtime context:
 
 - `ctx.runjs(...)`
 - `ctx.initResource(...)` / `ctx.resource`
 - `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons`
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd` / `ctx.antdIcons` alias
-- 当前记录、当前表单值、当前弹窗上下文
+- `ctx.React` / `ctx.ReactDOM` / `ctx.antd` / `ctx.antdIcons` aliases
+- the current record, current form values, and current popup context
 
-`jsBlock` 默认不预绑定 resource。如果需要数据访问，建议在代码里显式 `ctx.initResource(...)`，然后通过 `ctx.resource` 继续操作。
+`jsBlock` does not bind a resource by default. If you need data access, initialize it explicitly with `ctx.initResource(...)` and continue through `ctx.resource`.

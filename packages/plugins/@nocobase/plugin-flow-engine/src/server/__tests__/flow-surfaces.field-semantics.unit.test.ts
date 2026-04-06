@@ -17,7 +17,7 @@ describe('flowSurfaces field semantics', () => {
     expect(normalizeFieldContainerKind('GridCardItemModel')).toBe('details');
   });
 
-  it('should use association title text display for direct to-many relation fields under table and details containers', () => {
+  it('should use association title text display for direct to-many association fields under table and details containers', () => {
     expect(
       shouldUseAssociationTitleTextDisplay({
         containerUse: 'TableBlockModel',
@@ -38,7 +38,7 @@ describe('flowSurfaces field semantics', () => {
     ).toBe(true);
   });
 
-  it('should not use association title text display for nested relation paths or non-display containers', () => {
+  it('should not use association title text display for nested association paths or non-display containers', () => {
     expect(
       shouldUseAssociationTitleTextDisplay({
         containerUse: 'DetailsBlockModel',
