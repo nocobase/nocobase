@@ -1199,23 +1199,14 @@ export class FlowSurfacesService {
       String(ownerResourceInit.associationName || '').trim() ||
       undefined;
     let sourceId = openView?.sourceId;
+    // Nested relation popups must keep the runtime source id from popup inputArgs.
+    // Reusing an inherited '{{ctx.view.inputArgs.filterByTk}}' template here would
+    // rebind it to the child popup current record instead of the relation source record.
+    if (!hasConfiguredFlowContextValue(sourceId) && associationName) {
+      sourceId = '{{ctx.view.inputArgs.sourceId}}';
+    }
     if (!hasConfiguredFlowContextValue(sourceId) && hasConfiguredFlowContextValue(ownerResourceInit.sourceId)) {
       sourceId = ownerResourceInit.sourceId;
-    }
-    if (
-      !hasConfiguredFlowContextValue(sourceId) &&
-      hostContext.relationContext &&
-      hasConfiguredFlowContextValue(ownerResourceInit.filterByTk)
-    ) {
-      sourceId = ownerResourceInit.filterByTk;
-    }
-    if (
-      !hasConfiguredFlowContextValue(sourceId) &&
-      associationName &&
-      hostContext.relationContext &&
-      hasCurrentRecord
-    ) {
-      sourceId = '{{ctx.view.inputArgs.sourceId}}';
     }
     const currentCollection = collectionName ? this.getCollection(dataSourceKey, collectionName) : null;
     const hasAssociationContext = !!associationName && hasConfiguredFlowContextValue(sourceId);

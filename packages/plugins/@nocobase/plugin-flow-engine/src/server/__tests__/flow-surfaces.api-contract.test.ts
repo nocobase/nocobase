@@ -4509,6 +4509,133 @@ describe('flowSurfaces API contract', () => {
     });
   });
 
+  it('should preserve users.roles sourceId on nested record-action popups inside relation tables', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Nested users roles popup page',
+      tabTitle: 'Nested users roles popup tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'table',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username', 'roles'],
+              recordActions: ['view'],
+            },
+          ],
+        },
+      }),
+    );
+
+    const table = composeRes.blocks.find((item: any) => item.key === 'table');
+    const tableViewAction = table?.recordActions?.[0];
+    expect(tableViewAction?.uid).toBeTruthy();
+
+    const userPopupRolesTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: tableViewAction.uid,
+          },
+          type: 'table',
+          resource: {
+            binding: 'associatedRecords',
+            associationField: 'roles',
+          },
+        },
+      }),
+    );
+
+    const userPopupRolesTableReadback = await getSurface(rootAgent, { uid: userPopupRolesTable.uid });
+    expect(userPopupRolesTableReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+
+    const roleViewAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: userPopupRolesTable.uid,
+          },
+          type: 'view',
+        },
+      }),
+    );
+
+    const roleViewActionReadback = await getSurface(rootAgent, { uid: roleViewAction.uid });
+    expect(roleViewActionReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const nestedRoleDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: roleViewAction.uid,
+          },
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+
+    const nestedRoleDetailsReadback = await getSurface(rootAgent, { uid: nestedRoleDetails.uid });
+    expect(nestedRoleDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const legacyRoleViewAction = _.cloneDeep(
+      await flowRepo.findModelById(roleViewAction.uid, { includeAsyncNode: true }),
+    );
+    delete legacyRoleViewAction?.stepParams?.popupSettings?.openView?.sourceId;
+    await flowRepo.upsertModel(legacyRoleViewAction);
+
+    const nestedRoleDetailsViaFallback = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: roleViewAction.uid,
+          },
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+
+    const nestedRoleDetailsFallbackReadback = await getSurface(rootAgent, { uid: nestedRoleDetailsViaFallback.uid });
+    expect(nestedRoleDetailsFallbackReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+  });
+
   it('should not auto preserve associationName when a relation field is configured as a non-relation popup', async () => {
     const page = await createPage(rootAgent, {
       title: 'Users roles non relation popup page',

@@ -578,6 +578,7 @@ function buildActionDefaults(options: {
       'MailSendActionModel',
     ].includes(options.use)
   ) {
+    const popupSourceId = inferPopupActionSourceId(options.resourceInit);
     stepParams.popupSettings = {
       openView: {
         mode: 'drawer',
@@ -586,6 +587,7 @@ function buildActionDefaults(options: {
         ...(options.resourceInit?.dataSourceKey ? { dataSourceKey: options.resourceInit.dataSourceKey } : {}),
         ...(options.resourceInit?.collectionName ? { collectionName: options.resourceInit.collectionName } : {}),
         ...(options.resourceInit?.associationName ? { associationName: options.resourceInit.associationName } : {}),
+        ...(popupSourceId ? { sourceId: popupSourceId } : {}),
       },
     };
   }
@@ -655,6 +657,20 @@ function buildActionDefaults(options: {
     stepParams,
     ...(Object.keys(subModels).length ? { subModels } : {}),
   };
+}
+
+function inferPopupActionSourceId(resourceInit?: Record<string, any>) {
+  if (!resourceInit?.associationName) {
+    return undefined;
+  }
+  const sourceId = typeof resourceInit?.sourceId === 'string' ? resourceInit.sourceId.trim() : resourceInit?.sourceId;
+  if (!sourceId) {
+    return undefined;
+  }
+  if (sourceId === '{{ctx.view.inputArgs.filterByTk}}') {
+    return '{{ctx.view.inputArgs.sourceId}}';
+  }
+  return sourceId;
 }
 
 function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['scope']) {
