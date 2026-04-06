@@ -13,7 +13,7 @@ import { useAPIClient, useRequest } from '@nocobase/client';
 import { ListEmpty, WorkflowTask } from './common';
 
 type UseWorkflowTasksListOptions = {
-  onOpenConversation: (sessionId: string) => void;
+  onOpenConversation: (sessionId: string, username?: string) => void;
 };
 
 const getStatusTagColor = (status: string) => {
@@ -77,9 +77,22 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
           },
         })
         .catch(() => undefined);
+
+      let username: string | undefined;
+      try {
+        const res = await api.resource('aiWorkflowTasks').getBySession({
+          values: {
+            sessionId,
+          },
+        });
+        username = res?.data?.data?.config?.username ?? res?.data?.config?.username;
+      } catch {
+        username = undefined;
+      }
+
       unreadWorkflowTaskCountService.run();
       workflowTasksService.run(keywordRef.current || '');
-      onOpenConversation(sessionId);
+      onOpenConversation(sessionId, username);
     },
     [api, onOpenConversation, unreadWorkflowTaskCountService, workflowTasksService],
   );

@@ -80,6 +80,49 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       await next();
     },
+    getBySession: async (ctx: Context, next: Next) => {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const sessionId = ctx.action.params.values?.sessionId;
+      if (!sessionId) {
+        return ctx.throw(400, 'sessionId is required');
+      }
+
+      const task = await ctx.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          sessionId,
+          'users.id': userId,
+        },
+      });
+
+      if (!task) {
+        return ctx.throw(404, 'workflow task not found');
+      }
+
+      const usersAiWorkflowTasks = await ctx.db.getModel('usersAiWorkflowTasks').findOne({
+        where: {
+          aiWorkflowTaskId: task.id,
+          userId,
+        },
+      });
+
+      const node = await ctx.db.getRepository('flow_nodes').findOne({
+        filter: {
+          id: task.nodeId,
+        },
+      });
+
+      ctx.body = {
+        ...(task?.toJSON?.() ?? task),
+        read: usersAiWorkflowTasks?.read ?? false,
+        config: node?.config ?? null,
+      };
+
+      await next();
+    },
     accept: async (ctx: Context, next: Next) => {
       const userId = ctx.auth?.user.id;
       if (!userId) {

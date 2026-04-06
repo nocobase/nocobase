@@ -17,6 +17,10 @@ export type WorkflowTask = {
   nodeTitle: string;
   status: string;
   read?: boolean;
+  config?: {
+    username?: string;
+    [key: string]: any;
+  } | null;
   updatedAt?: string;
 };
 

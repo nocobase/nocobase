@@ -99,7 +99,7 @@ export const Conversations: React.FC = memo(() => {
   });
 
   const workflowTasksController = useWorkflowTasksList({
-    onOpenConversation: (sessionId) => openConversation(sessionId),
+    onOpenConversation: (sessionId, username) => openConversation(sessionId, username),
   });
 
   return (
