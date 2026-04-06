@@ -9,6 +9,7 @@
 
 import { Application, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client';
 import { NocoBaseBuildInPluginV2 } from '@nocobase/client-v2';
+import { CollectionPluginV2 } from './CollectionPluginV2';
 
 function offsetToTimeZone(offset) {
   const hours = Math.floor(Math.abs(offset));
@@ -76,6 +77,7 @@ export class NocoBaseClientPresetPluginV2 extends Plugin {
       config.headers['X-Timezone'] = getCurrentTimezone();
       return config;
     });
+    await this.app.pm.add(CollectionPluginV2, { name: 'builtin-collection-v2' });
     await this.app.pm.add(NocoBaseBuildInPluginV2);
   }
 }

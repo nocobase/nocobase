@@ -13,6 +13,7 @@ import { initReactI18next } from 'react-i18next';
 import { type ComponentType } from 'react';
 
 import { BaseApplication, type BaseApplicationOptions } from './BaseApplication';
+import { CollectionFieldInterfaceManager } from './collection-field-interface/CollectionFieldInterfaceManager';
 import type { PluginType } from './PluginManager';
 import { PluginManager } from './PluginManager';
 import type { PluginSettingOptions } from './PluginSettingsManager';
@@ -36,8 +37,20 @@ export interface ApplicationOptions extends BaseApplicationOptions {
 }
 
 export class Application extends BaseApplication<ApplicationOptions> {
+  public declare dataSourceManager: any;
+
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient(options.apiClient);
+  }
+
+  protected configureRuntimeAdapters() {
+    this.dataSourceManager = this.flowEngine.context.dataSourceManager;
+    this.dataSourceManager.setRequester(this.apiClient.request.bind(this.apiClient));
+    if (!this.dataSourceManager.collectionFieldInterfaceManager) {
+      this.dataSourceManager.setCollectionFieldInterfaceManager(
+        new CollectionFieldInterfaceManager(this.dataSourceManager),
+      );
+    }
   }
 
   protected createI18n(options: ApplicationOptions) {
@@ -152,5 +165,21 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   protected addCustomProviders() {
     this.use(CSSVariableProvider);
+  }
+
+  addFieldInterfaces(fieldInterfaceClasses: any[] = []) {
+    return this.dataSourceManager.addFieldInterfaces(fieldInterfaceClasses);
+  }
+
+  addFieldInterfaceGroups(groups: Record<string, { label: string; order?: number }>) {
+    return this.dataSourceManager.addFieldInterfaceGroups(groups);
+  }
+
+  addFieldInterfaceComponentOption(fieldName: string, componentOption: any) {
+    return this.dataSourceManager.addFieldInterfaceComponentOption(fieldName, componentOption);
+  }
+
+  addFieldInterfaceOperator(name: string, operatorOption: any) {
+    return this.dataSourceManager.addFieldInterfaceOperator(name, operatorOption);
   }
 }

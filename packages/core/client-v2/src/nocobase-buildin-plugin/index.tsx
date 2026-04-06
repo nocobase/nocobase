@@ -42,8 +42,68 @@ function isBuiltinAuthRoute(pathname: string, basename?: string) {
   });
 }
 
+function isAdminRuntimeRoute(pathname: string, basename?: string) {
+  const normalizedPathname = removeBasename(pathname, basename);
+  return normalizedPathname === '/admin' || normalizedPathname.startsWith('/admin/');
+}
+
 const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
+
+const DataSourceBootstrapProvider: FC = ({ children }) => {
+  const app = useApp();
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const basename = app.router.getBasename();
+    const isSkippedAuthCheckRoute =
+      isBuiltinAuthRoute(location.pathname, basename) || app.router.isSkippedAuthCheckRoute(location.pathname);
+    const shouldBootstrap = isAdminRuntimeRoute(location.pathname, basename);
+
+    if (isSkippedAuthCheckRoute || !shouldBootstrap) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const run = async () => {
+      try {
+        await app.dataSourceManager.ensureLoaded();
+        if (mounted) {
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!mounted) {
+          return;
+        }
+        setLoading(false);
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    };
+
+    void run();
+
+    return () => {
+      mounted = false;
+    };
+  }, [app, location.pathname]);
+
+  if (error) {
+    throw error;
+  }
+
+  if (loading) {
+    return app.renderComponent('AppSpin');
+  }
+
+  return <>{children}</>;
+};
 
 const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp();
@@ -151,6 +211,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.addComponents();
     this.addRoutes();
 
+    this.app.use(DataSourceBootstrapProvider);
     this.app.use(CurrentUserProvider);
 
     this.app.flowEngine.registerModels({

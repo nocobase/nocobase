@@ -93,6 +93,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public name: string;
   public favicon: string;
   public flowEngine: FlowEngine;
+  public dataSourceManager: any;
   public context: FlowEngineContext & {
     routeRepository: RouteRepository;
     appInfo: Promise<Record<string, any>>;
@@ -152,6 +153,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       uid: '__app_model__',
     });
     this.context = this.flowEngine.context as any;
+    this.configureRuntimeAdapters();
     this.context.defineProperty('pluginManager', {
       get: () => this.pluginManager,
     });
@@ -196,6 +198,8 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   }
 
   protected configureContext() {}
+
+  protected configureRuntimeAdapters() {}
 
   protected addCustomProviders() {}
 
