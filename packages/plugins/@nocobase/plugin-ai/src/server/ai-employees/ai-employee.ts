@@ -57,6 +57,23 @@ export interface AIEmployeeOptions {
   tools?: { name: string }[];
 }
 
+type InterruptPayload = {
+  actionRequests: { name: string; args: unknown; description: string }[];
+  reviewConfigs: { actionName: string; allowedDecisions: string[] }[];
+};
+
+type InterruptAction = {
+  order: number;
+  description: string;
+  allowedDecisions: string[];
+  toolCall?: { id: string; name: string };
+  currentConversation?: {
+    sessionId: string;
+    from: string;
+    username: string;
+  };
+};
+
 export class AIEmployee {
   sessionId: string;
   from = 'main-agent';
@@ -275,7 +292,11 @@ export class AIEmployee {
         invokeConfig.configurable = { thread_id: threadId };
       }
 
-      return await this.agentInvoke(provider, chatContext, invokeConfig, state);
+      const invokeResult = await this.agentInvoke(provider, chatContext, invokeConfig, state);
+
+      await this.handleInterruptedToolCalls(invokeResult?.__interrupt__?.[0], () => invokeResult?.messageId);
+
+      return invokeResult;
     } catch (err) {
       if (err.name === 'GraphInterrupt') {
         throw err;
@@ -499,36 +520,25 @@ export class AIEmployee {
             }
           }
         } else if (mode === 'updates') {
-          if ('__interrupt__' in chunks) {
-            const interruptId = chunks.__interrupt__[0].id;
-            const interruptActions = this.toInterruptActions(chunks.__interrupt__[0].value);
-            if (interruptActions.size) {
-              const toolsMap = await this.getToolsMap();
-              for (const interruptAction of interruptActions.values()) {
-                if (!interruptAction.currentConversation || !interruptAction.toolCall) {
-                  this.logger.warn('currentConversation or toolCall not exist in __interrupt__', interruptAction);
-                  continue;
-                }
-                const { sessionId, from, username } = interruptAction.currentConversation;
-                const { id: toolCallId, name: toolCallName } = interruptAction.toolCall;
-                const messageId = aiMessageIdMap.get(sessionId);
-                if (!messageId) {
-                  continue;
-                }
-
-                await this.updateToolCallInterrupted(sessionId, messageId, toolCallId, interruptId, interruptAction);
-                this.protocol.with(interruptAction.currentConversation).toolCallStatus({
+          const interrupt = chunks?.__interrupt__?.[0];
+          if (interrupt) {
+            const toolsMap = await this.getToolsMap();
+            await this.handleInterruptedToolCalls(
+              interrupt,
+              (sessionId) => aiMessageIdMap.get(sessionId),
+              ({ messageId, interruptAction, toolCall, currentConversation }) => {
+                this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
-                    messageId: messageId,
-                    id: toolCallId,
-                    name: toolCallName,
-                    willInterrupt: this.shouldInterruptToolCall(toolsMap.get(toolCallName)),
+                    messageId,
+                    id: toolCall.id,
+                    name: toolCall.name,
+                    willInterrupt: this.shouldInterruptToolCall(toolsMap.get(toolCall.name)),
                   },
                   invokeStatus: 'interrupted',
                   interruptAction,
                 });
-              }
-            }
+              },
+            );
           }
         } else if (mode === 'custom') {
           const { currentConversation } = chunks;
@@ -636,6 +646,53 @@ export class AIEmployee {
       if (this.from === 'main-agent') {
         this.ctx.res.end();
       }
+    }
+  }
+
+  private async handleInterruptedToolCalls(
+    interrupt: { id?: string; value?: InterruptPayload } | undefined,
+    getMessageId: (sessionId: string) => string | undefined,
+    onInterrupted?: (params: {
+      messageId: string;
+      interruptId: string;
+      interruptAction: InterruptAction;
+      toolCall: { id: string; name: string };
+      currentConversation: { sessionId: string; from: string; username: string };
+    }) => Promise<void> | void,
+  ) {
+    const interruptId = interrupt?.id;
+    const interruptActions = this.toInterruptActions(interrupt?.value);
+    if (!interruptId || !interruptActions.size) {
+      return;
+    }
+
+    for (const interruptAction of interruptActions.values()) {
+      const currentConversation = interruptAction.currentConversation;
+      const toolCall = interruptAction.toolCall;
+      if (!currentConversation || !toolCall) {
+        this.logger.warn('currentConversation or toolCall not exist in __interrupt__', interruptAction);
+        continue;
+      }
+
+      const messageId = getMessageId(currentConversation.sessionId);
+      if (!messageId) {
+        continue;
+      }
+
+      await this.updateToolCallInterrupted(
+        currentConversation.sessionId,
+        messageId,
+        toolCall.id,
+        interruptId,
+        interruptAction,
+      );
+      await onInterrupted?.({
+        messageId,
+        interruptId,
+        interruptAction,
+        toolCall,
+        currentConversation,
+      });
     }
   }
 
@@ -1320,25 +1377,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     return result;
   }
 
-  private toInterruptActions(interrupt: {
-    actionRequests: { name: string; args: unknown; description: string }[];
-    reviewConfigs: { actionName: string; allowedDecisions: string[] }[];
-  }): Map<
-    string,
-    {
-      order: number;
-      description: string;
-      allowedDecisions: string[];
-      toolCall?: { id: string; name: string };
-      currentConversation?: {
-        sessionId: string;
-        from: string;
-        username: string;
-      };
-    }
-  > {
-    const result = new Map();
-    const { actionRequests = [], reviewConfigs = [] } = interrupt;
+  private toInterruptActions(interrupt?: InterruptPayload): Map<string, InterruptAction> {
+    const result = new Map<string, InterruptAction>();
+    const { actionRequests = [], reviewConfigs = [] } = interrupt ?? {};
     if (!actionRequests.length) {
       return result;
     }

@@ -81,11 +81,9 @@ export class AIConversationsManager {
   }
 
   async update({ userId, sessionId, title, options: inputOptions }: UpdateAIConversationParams) {
-    const conversation = await this.aiConversationsRepo.findOne({
-      filter: {
-        sessionId,
-        userId,
-      },
+    const conversation = await this.getConversation({
+      sessionId,
+      userId,
     });
 
     if (!conversation) {
@@ -117,30 +115,56 @@ export class AIConversationsManager {
     });
   }
 
+  async getConversation({ sessionId, userId }: { sessionId: string; userId?: string }) {
+    const conversation = await this.aiConversationsRepo.findOne({
+      filter: {
+        sessionId,
+      },
+    });
+
+    if (!userId) {
+      return conversation;
+    }
+
+    if (!conversation) {
+      return null;
+    }
+
+    let ownershipCheck = await this.aiConversationsRepo.count({
+      filter: {
+        sessionId,
+        userId,
+      },
+    });
+    if (ownershipCheck === 0) {
+      ownershipCheck = await this.plugin.db.getRepository('aiWorkflowTasks').count({
+        filter: {
+          sessionId,
+          'users.id': userId,
+        },
+      });
+    }
+
+    if (ownershipCheck) {
+      return conversation;
+    } else {
+      return null;
+    }
+  }
+
   async getMessages({
     userId,
     sessionId,
     cursor,
     paginate = true,
   }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
-    const conversation = await this.aiConversationsRepo.findOne({
-      filter: {
-        sessionId,
-        userId,
-      },
+    const conversation = await this.getConversation({
+      sessionId,
+      userId,
     });
 
     if (!conversation) {
-      const aiWorkflowTask = await this.plugin.db.getRepository('aiWorkflowTasks').findOne({
-        filter: {
-          sessionId,
-          'users.id': userId,
-        },
-      });
-
-      if (!aiWorkflowTask) {
-        throw new Error('invalid sessionId');
-      }
+      throw new Error('invalid sessionId');
     }
 
     const pageSize = 10;

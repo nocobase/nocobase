@@ -31,7 +31,9 @@ export class AIEmployeeInstruction extends Instruction {
           title: userMessage.slice(0, 30),
           from: 'sub-agent',
           options: {
+            systemMessage,
             skillSettings,
+            tools: [{ name: toolName }],
           },
           transaction,
         });
