@@ -60,6 +60,26 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       await next();
     },
+    unreadCount: async (ctx: Context, next: Next) => {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const usersAiWorkflowTasksModel = ctx.db.getModel('usersAiWorkflowTasks');
+      const count = await usersAiWorkflowTasksModel.count({
+        where: {
+          userId,
+          read: false,
+        },
+      });
+
+      ctx.body = {
+        count,
+      };
+
+      await next();
+    },
     accept: async (ctx: Context, next: Next) => {
       const userId = ctx.auth?.user.id;
       if (!userId) {

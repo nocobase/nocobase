@@ -8,7 +8,7 @@
  */
 
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Input, Empty, Spin, App, Segmented } from 'antd';
+import { Input, Empty, Spin, App, Segmented, Tag, Badge, List, Card, theme } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
 import { SchemaComponent, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { css } from '@emotion/css';
@@ -130,6 +130,7 @@ const Rename: React.FC<{
 
 export const Conversations: React.FC = memo(() => {
   const t = useT();
+  const { token } = theme.useToken();
   const api = useAPIClient();
   const { modal, message } = App.useApp();
   const aiConfigRepository = useAIConfigRepository();
@@ -195,6 +196,18 @@ export const Conversations: React.FC = memo(() => {
     },
   );
 
+  const unreadWorkflowTaskCountService = useRequest<{ count: number }>(
+    () => {
+      return api
+        .resource('aiWorkflowTasks')
+        .unreadCount()
+        .then((res) => res?.data?.data ?? res?.data);
+    },
+    {
+      manual: false,
+    },
+  );
+
   const conversationItems = useMemo(() => {
     const result: ConversationsProps['items'] = conversations.map((item) => {
       const title = item.title || t('New conversation');
@@ -221,54 +234,21 @@ export const Conversations: React.FC = memo(() => {
     return result;
   }, [conversations, conversationsLoading, t]);
 
-  const workflowTaskItems = useMemo(() => {
-    const tasks = workflowTasksService.data?.data || [];
-    const result: ConversationsProps['items'] = tasks.map((item) => ({
-      key: item.sessionId,
-      timestamp: item.updatedAt ? new Date(item.updatedAt).getTime() : undefined,
-      label: (
-        <div style={{ maxWidth: '100%' }}>
-          <div
-            style={{
-              fontWeight: 500,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {item.workflowTitle}
-          </div>
-          <div
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              fontSize: 12,
-              color: 'rgba(0, 0, 0, 0.45)',
-            }}
-          >
-            {item.nodeTitle} · {item.status} · {item.read ? t('Read') : t('Unread')}
-          </div>
-        </div>
-      ),
-    }));
+  const workflowTasks = workflowTasksService.data?.data || [];
 
-    if (workflowTasksService.loading) {
-      result.push({
-        key: 'workflow-task-loading',
-        label: (
-          <Spin
-            style={{
-              display: 'block',
-              margin: '8px auto',
-            }}
-          />
-        ),
-      });
+  const getStatusTagColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'pending_approval':
+      case 'pending_acceptance':
+        return 'warning';
+      case 'processing':
+        return 'processing';
+      default:
+        return 'default';
     }
-
-    return result;
-  }, [workflowTasksService.data?.data, workflowTasksService.loading, t]);
+  };
 
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -323,6 +303,8 @@ export const Conversations: React.FC = memo(() => {
         },
       })
       .catch(() => undefined);
+    unreadWorkflowTaskCountService.run();
+    workflowTasksService.run(keyword || '');
     openConversation(sessionId);
   };
 
@@ -364,9 +346,41 @@ export const Conversations: React.FC = memo(() => {
         />
         <Segmented
           style={{ width: '100%', marginTop: 8 }}
+          className={css`
+            .ant-segmented-group {
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .ant-segmented-item,
+            .ant-segmented-item-selected {
+              width: 100%;
+              justify-content: center;
+            }
+          `}
           options={[
             { label: t('Conversations'), value: 'conversations' },
-            { label: t('Workflow tasks'), value: 'workflowTasks' },
+            {
+              label: (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>{t('Workflow tasks')}</span>
+                  {(unreadWorkflowTaskCountService.data?.count || 0) > 0 ? (
+                    <Badge
+                      count={unreadWorkflowTaskCountService.data?.count || 0}
+                      size="small"
+                      style={{ boxShadow: 'none' }}
+                    />
+                  ) : null}
+                </span>
+              ),
+              value: 'workflowTasks',
+            },
           ]}
           value={currentList}
           onChange={(value) => {
@@ -374,6 +388,7 @@ export const Conversations: React.FC = memo(() => {
             setCurrentList(nextList);
             if (nextList === 'workflowTasks') {
               workflowTasksService.run(keyword || '');
+              unreadWorkflowTaskCountService.run();
             }
           }}
         />
@@ -387,54 +402,127 @@ export const Conversations: React.FC = memo(() => {
           overflowX: 'hidden',
         }}
       >
-        {(currentList === 'conversations' && conversationItems.length) ||
-        (currentList === 'workflowTasks' && workflowTaskItems.length) ? (
-          <AntConversations
-            className={css`
-              .ant-conversations-item {
-                .ant-conversations-label {
-                  display: block !important;
-                  overflow: hidden !important;
-                  text-overflow: ellipsis !important;
-                  white-space: nowrap !important;
-                  max-width: calc(100% - 30px);
+        {currentList === 'conversations' ? (
+          conversationItems.length ? (
+            <AntConversations
+              className={css`
+                .ant-conversations-item {
+                  .ant-conversations-label {
+                    display: block !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    white-space: nowrap !important;
+                    max-width: calc(100% - 30px);
+                  }
                 }
-              }
-            `}
-            activeKey={currentConversation}
-            onActiveChange={currentList === 'conversations' ? selectConversation : selectWorkflowTask}
-            items={currentList === 'conversations' ? conversationItems : workflowTaskItems}
-            menu={
-              currentList === 'conversations'
-                ? (conversation) => ({
-                    items: [
-                      {
-                        // @ts-ignore
-                        label: <Rename conversation={conversation} />,
-                        key: 'rename',
-                        icon: <EditOutlined />,
-                      },
-                      {
-                        label: t('Delete'),
-                        key: 'delete',
-                        icon: <DeleteOutlined />,
-                      },
-                    ],
-                    onClick: ({ key, domEvent }) => {
-                      domEvent.stopPropagation();
-                      switch (key) {
-                        case 'delete':
-                          modal.confirm({
-                            title: t('Delete conversation'),
-                            content: t('Are you sure you want to delete it?'),
-                            onOk: () => deleteConversation(conversation.key),
-                          });
-                          break;
-                      }
-                    },
-                  })
-                : undefined
-            }
+              `}
+              activeKey={currentConversation}
+              onActiveChange={selectConversation}
+              items={conversationItems}
+              menu={(conversation) => ({
+                items: [
+                  {
+                    // @ts-ignore
+                    label: <Rename conversation={conversation} />,
+                    key: 'rename',
+                    icon: <EditOutlined />,
+                  },
+                  {
+                    label: t('Delete'),
+                    key: 'delete',
+                    icon: <DeleteOutlined />,
+                  },
+                ],
+                onClick: ({ key, domEvent }) => {
+                  domEvent.stopPropagation();
+                  switch (key) {
+                    case 'delete':
+                      modal.confirm({
+                        title: t('Delete conversation'),
+                        content: t('Are you sure you want to delete it?'),
+                        onOk: () => deleteConversation(conversation.key),
+                      });
+                      break;
+                  }
+                },
+              })}
+            />
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          )
+        ) : workflowTasksService.loading && !workflowTasks.length ? (
+          <Spin
+            style={{
+              display: 'block',
+              margin: '16px auto',
+            }}
+          />
+        ) : workflowTasks.length ? (
+          <List
+            dataSource={workflowTasks}
+            split={false}
+            style={{ padding: '10px 12px 12px' }}
+            renderItem={(item) => (
+              <List.Item key={item.sessionId} style={{ padding: '0 0 8px' }}>
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => selectWorkflowTask(item.sessionId)}
+                  style={{ width: '100%', backgroundColor: token.colorBgContainer }}
+                  styles={{ body: { padding: '10px 12px' } }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                    >
+                      {!item.read ? (
+                        <Badge dot>
+                          <span style={{ width: 8, height: 8, display: 'inline-block' }} />
+                        </Badge>
+                      ) : null}
+                      <div
+                        style={{
+                          fontWeight: 500,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {item.workflowTitle}
+                      </div>
+                    </div>
+                    <Tag color={getStatusTagColor(item.status)} style={{ marginInlineEnd: 0 }}>
+                      {item.status}
+                    </Tag>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: 12,
+                      color: 'rgba(0, 0, 0, 0.45)',
+                    }}
+                  >
+                    {item.nodeTitle}
+                  </div>
+                </Card>
+              </List.Item>
+            )}
           />
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
