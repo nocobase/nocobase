@@ -23,7 +23,7 @@ export class AIEmployeeInstruction extends Instruction {
     }`;
     const userMessage = typeof message.user === 'object' ? JSON.stringify(message.user) : message.user;
     const agent = async () => {
-      const conversation = await this.workflow.db.sequelize.transaction(async (transaction) => {
+      const { conversation, aiWorkflowTasks } = await this.workflow.db.sequelize.transaction(async (transaction) => {
         const conversation = await ai.aiConversationsManager.create({
           aiEmployee: {
             username,
@@ -64,7 +64,7 @@ export class AIEmployeeInstruction extends Instruction {
           });
         }
 
-        return conversation;
+        return { conversation, aiWorkflowTasks };
       });
 
       const employee = await this.workflow.db.getRepository('aiEmployees').findOne({
@@ -100,6 +100,62 @@ export class AIEmployeeInstruction extends Instruction {
           },
         ],
       });
+
+      await this.workflow.db.getRepository('aiWorkflowTasks').update({
+        values: { status: 'pending_acceptance' },
+        filter: {
+          id: aiWorkflowTasks.id,
+          status: 'processing',
+        },
+      });
+
+      const aiToolMessage = await this.workflow.db.getRepository('aiToolMessages').findOne({
+        filter: {
+          sessionId: conversation.sessionId,
+          messageId: result.messageId,
+        },
+      });
+      if (aiToolMessage?.invokeStatus === 'interrupted') {
+        const aiMessage = await this.workflow.db.getRepository('aiMessages').findOne({
+          filter: {
+            messageId: result.messageId,
+          },
+        });
+        const toolCalls = aiMessage?.toolCalls;
+        if (toolCalls?.length) {
+          const toolCall = toolCalls.find((it) => it.name === toolName);
+          if (toolCall?.args?.requiresApproval === false) {
+            await this.workflow.db.getRepository('aiWorkflowTasks').update({
+              values: { status: 'pending_approval' },
+              filter: {
+                id: aiWorkflowTasks.id,
+                status: 'pending_acceptance',
+              },
+            });
+            const [updated] = await this.workflow.db.getModel('aiToolMessages').update(
+              { userDecision: { type: 'approve' }, invokeStatus: 'waiting' },
+              {
+                where: {
+                  sessionId: conversation.sessionId,
+                  messageId: result.messageId,
+                  invokeStatus: 'interrupted',
+                },
+              },
+            );
+            if (updated) {
+              const userDecisions = await ai.aiConversationsManager.getUserDecisions(result.messageId);
+              await aiEmployee.invoke({ userDecisions });
+              await this.workflow.db.getRepository('aiWorkflowTasks').update({
+                values: { status: 'approved' },
+                filter: {
+                  id: aiWorkflowTasks.id,
+                  status: 'pending_approval',
+                },
+              });
+            }
+          }
+        }
+      }
 
       return result;
     };

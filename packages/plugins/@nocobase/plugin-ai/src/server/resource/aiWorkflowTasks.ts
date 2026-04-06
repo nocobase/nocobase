@@ -149,11 +149,13 @@ export const aiWorkflowTasks: ResourceOptions = {
       const [acceptedCount] = await aiWorkflowTasksModel.update(
         {
           acceptedUserId: userId,
+          status: 'pending_approval',
         },
         {
           where: {
             id: task.id,
             acceptedUserId: null,
+            status: 'pending_acceptance',
           },
         },
       );

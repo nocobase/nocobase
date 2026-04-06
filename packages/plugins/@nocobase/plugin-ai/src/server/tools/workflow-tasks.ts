@@ -35,6 +35,25 @@ export const getWorkflowTasks = (plugin: Plugin) => async (register: ToolsRegist
     if (!config?.structuredOutput?.schema) {
       continue;
     }
+
+    const result =
+      typeof config.structuredOutput.schema === 'string'
+        ? JSON.parse(config.structuredOutput.schema)
+        : config.structuredOutput.schema;
+    const schema: any = {
+      type: 'object',
+      properties: {
+        result,
+      },
+      additionalProperties: false,
+    };
+    if (config.requiresApproval === true) {
+      schema.properties.requiresApproval = {
+        type: 'boolean',
+        description: 'If result need human to review and do some decision-making, set it to true',
+      };
+    }
+
     register.registerTools({
       scope: 'SPECIFIED',
       defaultPermission: config?.requiresApproval === true ? 'ASK' : 'ALLOW',
@@ -42,16 +61,39 @@ export const getWorkflowTasks = (plugin: Plugin) => async (register: ToolsRegist
       definition: {
         name: 'aiEmployeeWorkflowTaskOutput@' + node.id,
         description: 'When you finish workflow task, invoke this tool to output your result to workflow',
-        schema: config.structuredOutput.schema,
+        schema,
       },
       invoke: async (ctx: Context, args: Record<string, any>) => {
         const task = tasksMap[node.id];
+        if (!task) {
+          return {
+            status: 'fail',
+            message: 'task not existed',
+          };
+        }
         const job = await plugin.db.getModel('jobs').findOne({
           where: { id: task.jobId },
         });
+        if (!job) {
+          return {
+            status: 'fail',
+            message: 'job not existed',
+          };
+        }
+
+        await plugin.db.getRepository('aiWorkflowTasks').update({
+          values: {
+            status: 'approved',
+          },
+          filter: {
+            id: task.id,
+            status: 'pending_approval',
+          },
+        });
+
         job.set({
           status: JOB_STATUS.RESOLVED,
-          result: args,
+          result: args.result,
         });
         await workflowPlugin.resume(job);
         return {
