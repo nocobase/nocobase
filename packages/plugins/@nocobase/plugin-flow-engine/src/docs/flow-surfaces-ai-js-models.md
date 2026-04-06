@@ -20,6 +20,7 @@
   - record 容器 -> `JSRecordActionModel`
   - form 容器 -> `JSFormActionModel`
   - filter-form 容器 -> `FilterFormJSActionModel`
+  - item/form-record 复合上下文容器 -> `JSItemActionModel`
   - action-panel 容器 -> `JSActionModel`
 - 高频改配：`configure({ title, icon, type, code, version })`
 
@@ -35,6 +36,7 @@
 
 - `type: "jsColumn"` -> `JSColumnModel`，仅 table
 - `type: "jsItem"` -> `JSItemModel`，仅 form/createForm/editForm
+- inline JS field item -> `FormJSFieldItemModel`，用于 form 场景下 item 级 JS 字段能力
 
 ## 推荐调用方式
 
@@ -54,7 +56,7 @@
         "description": "Custom hero area",
         "className": "users-hero",
         "version": "1.0.0",
-        "code": "return { type: 'div', children: ['Users hero'] };"
+        "code": "ctx.render('<div>Users hero</div>');"
       }
     }
   ]
@@ -73,7 +75,7 @@
     "title": "Run JS",
     "type": "primary",
     "version": "1.0.0",
-    "code": "return await ctx.runjs('console.log(\"hello\")');"
+    "code": "await ctx.runjs('console.log(\"hello\")');"
   }
 }
 ```
@@ -101,7 +103,7 @@
   "settings": {
     "title": "Runtime column",
     "version": "1.0.0",
-    "code": "return record.nickname;"
+    "code": "ctx.render(String(ctx.record?.nickname || ""));"
   }
 }
 ```
@@ -118,7 +120,7 @@
     "label": "Runtime item",
     "showLabel": true,
     "version": "1.0.0",
-    "code": "return record.nickname;"
+    "code": "ctx.render(String(ctx.record?.nickname || ""));"
   }
 }
 ```
@@ -164,7 +166,9 @@
 JS 代码里可以优先从当前运行时上下文拿：
 
 - `ctx.runjs(...)`
-- `ctx.useResource(...)`
+- `ctx.initResource(...)` / `ctx.resource`
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`
+- `ctx.React` / `ctx.ReactDOM` / `ctx.antd` alias
 - 当前记录、当前表单值、当前弹窗上下文
 
-`jsBlock` 不自动推导 collection 资源。如果需要数据访问，建议在代码里显式 `ctx.useResource(...)`。
+`jsBlock` 默认不预绑定 resource。如果需要数据访问，建议在代码里显式 `ctx.initResource(...)`，然后通过 `ctx.resource` 继续操作。

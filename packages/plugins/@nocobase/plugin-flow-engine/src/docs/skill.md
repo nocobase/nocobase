@@ -105,7 +105,8 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 - block: `filter`、`addNew`、`popup`、`refresh`、`expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`、`triggerWorkflow`
 - record: `view`、`edit`、`popup`、`duplicate`、`addChild`、`delete`、`updateRecord`、`composeEmail`、`templatePrint`、`triggerWorkflow`
-- form / filter-form: `submit`、`reset`、`collapse`、`triggerWorkflow`
+- form: `submit`、`js`、`triggerWorkflow`
+- filter-form: `submit`、`reset`、`collapse`、`js`
 - JS action: `js`
 
 其中：
@@ -745,7 +746,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
         "description": "Rendered by JS block",
         "className": "users-hero",
         "version": "1.0.0",
-        "code": "return { type: 'div', children: ['Users hero'] };"
+        "code": "ctx.render('<div>Users hero</div>');"
       }
     }
   ]
@@ -764,7 +765,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
     "title": "Run JS",
     "type": "primary",
     "version": "1.0.0",
-    "code": "return await ctx.runjs('console.log(\"hello\")');"
+    "code": "await ctx.runjs('console.log(\"hello\")');"
   }
 }
 ```
@@ -794,7 +795,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
   "settings": {
     "title": "Runtime column",
     "version": "1.0.0",
-    "code": "return record.nickname;"
+    "code": "ctx.render(String(ctx.record?.nickname || ""));"
   }
 }
 ```
@@ -811,7 +812,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
     "label": "Runtime item",
     "showLabel": true,
     "version": "1.0.0",
-    "code": "return record.nickname;"
+    "code": "ctx.render(String(ctx.record?.nickname || ""));"
   }
 }
 ```
@@ -830,7 +831,7 @@ JS block:
     "description": "Rendered from configure",
     "className": "users-hero",
     "version": "1.0.1",
-    "code": "return { type: 'div', children: ['Users hero'] };"
+    "code": "ctx.render('<div>Users hero</div>');"
   }
 }
 ```

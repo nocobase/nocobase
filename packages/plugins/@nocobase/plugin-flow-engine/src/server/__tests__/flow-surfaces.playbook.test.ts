@@ -114,6 +114,8 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('`collapsedRows`、`defaultCollapsed`');
     expect(content).toContain('`emailFieldNames`、`defaultSelectAllRecords`');
     expect(content).toContain('flow-surfaces-ai-js-models.md');
+    expect(content).not.toContain("return { type: 'div'");
+    expect(content).not.toContain('return record.nickname;');
     expect(content).not.toContain('rowActions');
     expect(content).not.toContain('"actions": ["addNew", "view", "edit", "delete"]');
   });
@@ -137,6 +139,13 @@ describe('flowSurfaces ai docs', () => {
     expect(jsModels).toContain('JSEditableFieldModel');
     expect(jsModels).toContain('JSColumnModel');
     expect(jsModels).toContain('JSItemModel');
+    expect(jsModels).toContain('FormJSFieldItemModel');
+    expect(jsModels).toContain('JSItemActionModel');
+    expect(jsModels).toContain('ctx.initResource');
+    expect(jsModels).toContain('ctx.libs.React');
+    expect(jsModels).toContain('ctx.antd');
+    expect(jsModels).not.toContain("return { type: 'div'");
+    expect(jsModels).not.toContain('return record.nickname;');
     expect(jsModels).toContain('renderer: "js"');
     expect(jsModels).toContain('type: "jsColumn"');
     expect(jsModels).toContain('type: "jsItem"');

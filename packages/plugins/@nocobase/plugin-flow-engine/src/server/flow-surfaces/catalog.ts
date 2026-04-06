@@ -1788,6 +1788,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['TableColumnModel', TABLE_COLUMN_CONTRACT],
   ['JSColumnModel', JS_COLUMN_CONTRACT],
   ['JSItemModel', JS_ITEM_CONTRACT],
+  ['FormJSFieldItemModel', JS_ITEM_CONTRACT],
   ['AddNewActionModel', POPUP_ACTION_CONTRACT],
   ['ViewActionModel', POPUP_ACTION_CONTRACT],
   ['EditActionModel', POPUP_ACTION_CONTRACT],
@@ -1822,6 +1823,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['JSRecordActionModel', JS_ACTION_CONTRACT],
   ['JSFormActionModel', JS_ACTION_CONTRACT],
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
+  ['JSItemActionModel', JS_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
 ];
 
@@ -2054,6 +2056,14 @@ function resolveStandaloneFieldUse(input: { requestedType?: string; containerUse
       throw new FlowSurfaceBadRequestError(`flowSurfaces field type 'jsItem' is only allowed under form containers`);
     }
     return 'JSItemModel';
+  }
+  if (requestedType === 'formJsFieldItem') {
+    if (normalizeFieldContainerUse(input.containerUse) !== 'form') {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces field type 'formJsFieldItem' is only allowed under form containers`,
+      );
+    }
+    return 'FormJSFieldItemModel';
   }
   throw new FlowSurfaceBadRequestError(
     `flowSurfaces field type '${requestedType}' is not a supported public capability`,

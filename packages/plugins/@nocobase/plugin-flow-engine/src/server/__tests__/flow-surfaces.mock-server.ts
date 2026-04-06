@@ -9,11 +9,14 @@
 
 import { PluginManager } from '@nocobase/server';
 import { createMockServer, MockServer, type MockServerOptions } from '@nocobase/test';
+import qs from 'qs';
 import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
 type FlowSurfacesMockServerOptions = MockServerOptions & {
   enabledPluginAliases?: readonly string[];
 };
+
+const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
 
 export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServerOptions = {}) {
   const {
@@ -44,52 +47,144 @@ export async function loginFlowSurfacesRootAgent(app: MockServer) {
     },
   });
 
-  const login = async () => app.agent().login(rootUser);
+  const login = async () => wrapFlowSurfacesReadCompatibleAgent(await app.agent().login(rootUser), app);
   let currentAgent = await login();
 
-  return new Proxy(currentAgent, {
-    get(target, prop, receiver) {
-      if (prop !== 'resource') {
-        return Reflect.get(target, prop, receiver);
+  const callWithRetry = async <T>(execute: (agent: any) => Promise<T>) => {
+    let lastError: any;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (attempt > 0) {
+        currentAgent = await login();
       }
+      try {
+        const result = await execute(currentAgent);
+        if (isUnauthorizedAgentResponse(result) && attempt === 0) {
+          continue;
+        }
+        return result;
+      } catch (error: any) {
+        lastError = error;
+        if (!isRetriableAgentError(error) || attempt > 0) {
+          throw error;
+        }
+      }
+    }
+    throw lastError;
+  };
 
-      return (resourceName: string, ...resourceArgs: any[]) =>
-        new Proxy(
-          {},
-          {
-            get(_resourceTarget, action) {
-              return async (...callArgs: any[]) => {
-                let lastError: any;
-                for (let attempt = 0; attempt < 2; attempt += 1) {
-                  if (attempt > 0) {
-                    currentAgent = await login();
-                  }
-                  try {
-                    const resource = currentAgent.resource(resourceName, ...resourceArgs);
-                    const method = resource?.[action as keyof typeof resource];
-                    if (typeof method !== 'function') {
-                      return method;
-                    }
-                    return await method.apply(resource, callArgs);
-                  } catch (error: any) {
-                    lastError = error;
-                    if (!isRetriableAgentError(error) || attempt > 0) {
-                      throw error;
-                    }
-                  }
-                }
-                throw lastError;
-              };
-            },
-          },
-        );
+  return new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        if (prop === 'resource') {
+          return (resourceName: string, ...resourceArgs: any[]) =>
+            new Proxy(
+              {},
+              {
+                get(_resourceTarget, action) {
+                  return async (...callArgs: any[]) =>
+                    callWithRetry(async (agent) => {
+                      const resource = agent.resource(resourceName, ...resourceArgs);
+                      const method = resource?.[action as keyof typeof resource];
+                      if (typeof method !== 'function') {
+                        return method;
+                      }
+                      return await method.apply(resource, callArgs);
+                    });
+                },
+              },
+            );
+        }
+
+        const value = currentAgent?.[prop as keyof typeof currentAgent];
+        if (typeof value !== 'function') {
+          return value;
+        }
+        return (...callArgs: any[]) => {
+          const method = currentAgent?.[prop as keyof typeof currentAgent];
+          return method.apply(currentAgent, callArgs);
+        };
+      },
     },
-  });
+  );
 }
 
 function isRetriableAgentError(error: any) {
   const message = String(error?.message || '');
   return error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT' || /socket hang up|timed out/i.test(message);
+}
+
+function isUnauthorizedAgentResponse(response: any) {
+  return response?.status === 401;
+}
+
+export function wrapFlowSurfacesReadCompatibleAgent<T extends Record<string, any>>(agent: T, app: MockServer): T {
+  if (!agent || agent[FLOW_SURFACES_READ_COMPATIBLE_AGENT as keyof T]) {
+    return agent;
+  }
+
+  const prefix = app.resourcer.options.prefix || '';
+
+  const wrapped = new Proxy(agent, {
+    get(target, prop, receiver) {
+      if (prop === FLOW_SURFACES_READ_COMPATIBLE_AGENT) {
+        return true;
+      }
+
+      if (prop === 'resource') {
+        return (name: string, resourceOf?: any) => {
+          const resource = target.resource(name, resourceOf);
+          if (name !== 'flowSurfaces') {
+            return resource;
+          }
+          return new Proxy(resource, {
+            get(resourceTarget, action, resourceReceiver) {
+              if (!['get', 'list'].includes(String(action))) {
+                return Reflect.get(resourceTarget, action, resourceReceiver);
+              }
+              return (params: Record<string, any> = {}) => {
+                let { filterByTk } = params;
+                const { file: _file, values, ...restParams } = params;
+                if (params.associatedIndex) {
+                  resourceOf = params.associatedIndex;
+                }
+                if (params.resourceIndex) {
+                  filterByTk = params.resourceIndex;
+                }
+
+                const queryParams: Record<string, any> = {
+                  ...restParams,
+                };
+
+                if (Object.prototype.hasOwnProperty.call(params, 'values')) {
+                  queryParams.values = isEmptyPlainObject(values) ? '' : values;
+                }
+
+                if (queryParams.filter) {
+                  queryParams.filter = JSON.stringify(queryParams.filter);
+                }
+
+                let url = `${prefix}/${name}:${String(action)}`;
+                if (filterByTk) {
+                  url += `/${filterByTk}`;
+                }
+                const queryString = qs.stringify(queryParams, { arrayFormat: 'brackets' });
+                return target.get(`${url}?${queryString}`);
+              };
+            },
+          });
+        };
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+
+  return wrapped as T;
+}
+
+function isEmptyPlainObject(value: any) {
+  return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0;
 }
 
 export async function syncFlowSurfacesEnabledPlugins(

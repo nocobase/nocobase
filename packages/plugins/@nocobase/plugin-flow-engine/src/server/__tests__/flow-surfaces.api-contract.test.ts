@@ -21,6 +21,7 @@ import {
   createFlowSurfacesMockServer,
   loginFlowSurfacesRootAgent,
   syncFlowSurfacesEnabledPlugins,
+  wrapFlowSurfacesReadCompatibleAgent,
 } from './flow-surfaces.mock-server';
 import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
@@ -181,8 +182,8 @@ describe('flowSurfaces API contract', () => {
       },
     });
 
-    const readerAgent = await app.agent().login(readerUser);
-    const writerAgent = await app.agent().login(writerUser);
+    const readerAgent = wrapFlowSurfacesReadCompatibleAgent(await app.agent().login(readerUser), app);
+    const writerAgent = wrapFlowSurfacesReadCompatibleAgent(await app.agent().login(writerUser), app);
     const page = await createPage(rootAgent, {
       title: 'ACL contract page',
       tabTitle: 'ACL contract tab',
