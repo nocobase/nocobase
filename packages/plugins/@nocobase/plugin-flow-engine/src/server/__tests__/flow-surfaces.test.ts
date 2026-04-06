@@ -7754,24 +7754,38 @@ describe('flowSurfaces resource', () => {
     expect(mixedLocatorRes.status).toBe(400);
     expect(readErrorMessage(mixedLocatorRes)).toContain('exactly one locator');
 
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any);
+    await expect(
+      service.get({
+        target: {
+          uid: page.pageUid,
+        },
+      } as any),
+    ).rejects.toThrow(`do not wrap them in 'target'`);
+    await expect(
+      service.get({
+        values: {
+          uid: page.pageUid,
+        },
+      } as any),
+    ).rejects.toThrow(`do not wrap them in 'values'`);
+
     const postGetRes = await rootAgent.post('/api/flowSurfaces:get').send({
       pageSchemaUid: page.pageSchemaUid,
     });
     expect(postGetRes.status).toBe(404);
 
-    const wrappedTargetRes = await rootAgent.get('/api/flowSurfaces:get').query({
-      target: {
-        uid: page.tabSchemaUid,
-      },
-    });
-    expect(wrappedTargetRes.status).toBe(404);
+    const wrappedTargetRes = await rootAgent.get(
+      `/api/flowSurfaces:get?target%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
+    );
+    expect(wrappedTargetRes.status).toBe(400);
+    expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
 
-    const wrappedValuesRes = await rootAgent.get('/api/flowSurfaces:get').query({
-      values: {
-        uid: page.tabSchemaUid,
-      },
-    });
-    expect(wrappedValuesRes.status).toBe(404);
+    const wrappedValuesRes = await rootAgent.get(
+      `/api/flowSurfaces:get?values%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
+    );
+    expect(wrappedValuesRes.status).toBe(400);
+    expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
   });
 
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {

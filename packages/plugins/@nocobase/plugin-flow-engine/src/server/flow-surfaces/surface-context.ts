@@ -11,7 +11,7 @@ import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { blockCatalog } from './catalog';
 import { getChartBuilderResourceInit } from './chart-config';
-import { FlowSurfaceBadRequestError } from './errors';
+import { throwBadRequest } from './errors';
 import { SurfaceLocator } from './locator';
 import {
   canCatalogAddBlock,
@@ -34,10 +34,6 @@ const FILTER_TARGET_BLOCK_USES = new Set([
 ]);
 const LIST_LIKE_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel']);
 const LIST_LIKE_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel']);
-
-function throwBadRequest(message: string): never {
-  throw new FlowSurfaceBadRequestError(message);
-}
 
 export class FlowSurfaceContextResolver {
   constructor(

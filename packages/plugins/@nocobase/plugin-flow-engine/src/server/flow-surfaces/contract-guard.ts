@@ -10,7 +10,7 @@
 import _ from 'lodash';
 import { transformFilter } from '@nocobase/utils';
 import { getNodeContract } from './catalog';
-import { FlowSurfaceBadRequestError } from './errors';
+import { throwBadRequest } from './errors';
 import type { FlowSurfaceDomainContract, FlowSurfaceDomainGroupContract, FlowSurfaceNodeDomain } from './types';
 
 const EMPTY_GRID_ITEM_UID = '__EMPTY__';
@@ -19,10 +19,6 @@ const EMPTY_FILTER_GROUP = {
   items: [],
 };
 const FILTER_GROUP_EXAMPLE = JSON.stringify(EMPTY_FILTER_GROUP);
-
-function throwBadRequest(message: string): never {
-  throw new FlowSurfaceBadRequestError(message);
-}
 
 export class FlowSurfaceContractGuard {
   mergeDomainValue(

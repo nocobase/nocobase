@@ -137,7 +137,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 页面初始化成功后：
 - page 级写操作使用返回的 `pageUid`
-- 外层 tab 当前的 canonical uid 就是返回的 `tabSchemaUid`
+- 如果要继续对默认外层 tab 做写操作，直接使用返回的 `tabSchemaUid`
 - `pageSchemaUid / routeId` 主要保留给 `flowSurfaces:get`
 
 ## 示例 1.1：popup child tab API

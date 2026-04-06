@@ -309,6 +309,59 @@ describe('flowSurfaces API contract', () => {
       }),
     ).toBeNull();
 
+    const successPageSchemaUid = `mutate_shape_${uid()}`;
+    const successTabSchemaUid = `mutate_shape_tab_${uid()}`;
+    const successMutateRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        ops: [
+          {
+            opId: 'page',
+            type: 'createPage',
+            values: {
+              pageSchemaUid: successPageSchemaUid,
+              tabSchemaUid: successTabSchemaUid,
+              title: 'Mutate shape page',
+              tabTitle: 'Mutate shape tab',
+            },
+          },
+          {
+            opId: 'block',
+            type: 'addBlock',
+            values: {
+              clientKey: 'details-block',
+              target: {
+                uid: {
+                  ref: 'page.tabSchemaUid',
+                },
+              },
+              type: 'details',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(successMutateRes.status).toBe(200);
+    const successMutateData = getData(successMutateRes);
+    expect(successMutateData.results).toHaveLength(2);
+    expect(successMutateData.results[0]).toMatchObject({
+      opId: 'page',
+      result: {
+        pageSchemaUid: successPageSchemaUid,
+        tabSchemaUid: successTabSchemaUid,
+      },
+    });
+    expect(successMutateData.results[1]).toMatchObject({
+      opId: 'block',
+      result: {
+        uid: expect.any(String),
+      },
+    });
+    expect(successMutateData.clientKeyToUid['details-block']).toBe(successMutateData.results[1].result.uid);
+
     for (const { atomic, key } of [
       { atomic: false, key: 'false' },
       { atomic: null, key: 'null' },

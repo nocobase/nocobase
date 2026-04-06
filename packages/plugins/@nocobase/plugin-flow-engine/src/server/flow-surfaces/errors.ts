@@ -19,3 +19,7 @@ export class FlowSurfaceBadRequestError extends Error {
 export function isFlowSurfaceBadRequestError(error: unknown): error is FlowSurfaceBadRequestError {
   return error instanceof FlowSurfaceBadRequestError;
 }
+
+export function throwBadRequest(message: string): never {
+  throw new FlowSurfaceBadRequestError(message);
+}
