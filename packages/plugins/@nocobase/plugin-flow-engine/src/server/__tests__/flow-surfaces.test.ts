@@ -680,7 +680,7 @@ describe('flowSurfaces resource', () => {
         ],
       },
     });
-    expect(rollbackRes.status).toBe(500);
+    expect(rollbackRes.status).toBe(400);
     expect(
       await routesRepo.findOne({
         filter: {
@@ -1383,7 +1383,7 @@ describe('flowSurfaces resource', () => {
     );
     expect(detailsCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
       use: 'DetailsItemModel',
-      fieldUse: 'DisplaySubTableFieldModel',
+      fieldUse: 'DisplayTextFieldModel',
     });
     expect(detailsCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
     expect(detailsCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
@@ -1403,7 +1403,7 @@ describe('flowSurfaces resource', () => {
     );
     expect(listCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
       use: 'DetailsItemModel',
-      fieldUse: 'DisplaySubTableFieldModel',
+      fieldUse: 'DisplayTextFieldModel',
     });
 
     const gridCardUid = await addBlock(rootAgent, page.tabSchemaUid, 'gridCard', {
@@ -1421,7 +1421,7 @@ describe('flowSurfaces resource', () => {
     );
     expect(gridCardCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
       use: 'DetailsItemModel',
-      fieldUse: 'DisplaySubTableFieldModel',
+      fieldUse: 'DisplayTextFieldModel',
     });
     expect(gridCardCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
     expect(gridCardCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
@@ -1998,7 +1998,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidTableSettings.status).toBe(500);
+    expect(invalidTableSettings.status).toBe(400);
     const tableReadback = await getSurface(rootAgent, {
       uid: tableUid,
     });
@@ -2052,7 +2052,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidCreateFormLayout.status).toBe(500);
+    expect(invalidCreateFormLayout.status).toBe(400);
 
     const invalidCreateFormEventOnlyGroup = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2068,7 +2068,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidCreateFormEventOnlyGroup.status).toBe(500);
+    expect(invalidCreateFormEventOnlyGroup.status).toBe(400);
     const createFormReadback = await getSurface(rootAgent, {
       uid: createFormUid,
     });
@@ -2116,7 +2116,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidEditFormSettings.status).toBe(500);
+    expect(invalidEditFormSettings.status).toBe(400);
 
     const validDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2157,7 +2157,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidDetailsSettings.status).toBe(500);
+    expect(invalidDetailsSettings.status).toBe(400);
 
     const validFilterFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2189,7 +2189,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidFilterFormSettings.status).toBe(500);
+    expect(invalidFilterFormSettings.status).toBe(400);
     const filterFormReadback = await getSurface(rootAgent, {
       uid: filterFormUid,
     });
@@ -2276,7 +2276,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidMarkdownSettings.status).toBe(500);
+    expect(invalidMarkdownSettings.status).toBe(400);
 
     const validMarkdownSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2318,7 +2318,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidActionPanelSettings.status).toBe(500);
+    expect(invalidActionPanelSettings.status).toBe(400);
 
     const validActionPanelSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2364,7 +2364,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidListSettings.status).toBe(500);
+    expect(invalidListSettings.status).toBe(400);
 
     const validListSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2410,7 +2410,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidCreateFormLayoutPath.status).toBe(500);
+    expect(invalidCreateFormLayoutPath.status).toBe(400);
 
     const invalidCreateFormEventOnlyWrite = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2426,7 +2426,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidCreateFormEventOnlyWrite.status).toBe(500);
+    expect(invalidCreateFormEventOnlyWrite.status).toBe(400);
 
     const validCreateFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2505,7 +2505,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidEditFormEventOnlyWrite.status).toBe(500);
+    expect(invalidEditFormEventOnlyWrite.status).toBe(400);
 
     const validEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2619,7 +2619,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidDetailsLayoutPath.status).toBe(500);
+    expect(invalidDetailsLayoutPath.status).toBe(400);
 
     const validDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2681,7 +2681,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidFilterFormDefaultValuePath.status).toBe(500);
+    expect(invalidFilterFormDefaultValuePath.status).toBe(400);
 
     const validFilterFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2734,7 +2734,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidTableLegacyStep.status).toBe(500);
+    expect(invalidTableLegacyStep.status).toBe(400);
 
     const invalidTableNestedPath = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2750,7 +2750,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidTableNestedPath.status).toBe(500);
+    expect(invalidTableNestedPath.status).toBe(400);
 
     const validTableSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2808,7 +2808,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidChartSettings.status).toBe(500);
+    expect(invalidChartSettings.status).toBe(400);
 
     const validChartSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2861,7 +2861,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidLegacyButtonStep.status).toBe(500);
+    expect(invalidLegacyButtonStep.status).toBe(400);
 
     const validActionSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2909,7 +2909,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(missingLinkageRulesFlow.status).toBe(500);
+    expect(missingLinkageRulesFlow.status).toBe(400);
 
     const configureLinkageRules = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2939,7 +2939,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidLinkageRulesType.status).toBe(500);
+    expect(invalidLinkageRulesType.status).toBe(400);
 
     const validLinkageRulesFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
       values: {
@@ -3674,7 +3674,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidLegacyWrapperTitle.status).toBe(500);
+    expect(invalidLegacyWrapperTitle.status).toBe(400);
 
     const validWrapperProps = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -3748,7 +3748,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidActionColumnLabel.status).toBe(500);
+    expect(invalidActionColumnLabel.status).toBe(400);
 
     const validActionColumnProps = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -4282,7 +4282,7 @@ describe('flowSurfaces resource', () => {
         fieldPath: 'nickname',
       },
     });
-    expect(missingTargetField.status).toBe(500);
+    expect(missingTargetField.status).toBe(400);
 
     const bioFormField = await addField(rootAgent, createFormUid, 'bio');
     const bioReadback = await getSurface(rootAgent, {
@@ -6004,7 +6004,7 @@ describe('flowSurfaces resource', () => {
         ],
       },
     });
-    expect(rollbackRes.status).toBe(500);
+    expect(rollbackRes.status).toBe(400);
     expect(
       await routesRepo.findOne({
         filter: {
@@ -7461,7 +7461,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidSettings.status).toBe(500);
+    expect(invalidSettings.status).toBe(400);
 
     const invalidNestedPath = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7477,7 +7477,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidNestedPath.status).toBe(500);
+    expect(invalidNestedPath.status).toBe(400);
 
     const invalidFieldSettingsPath = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7493,7 +7493,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidFieldSettingsPath.status).toBe(500);
+    expect(invalidFieldSettingsPath.status).toBe(400);
 
     const invalidWrapperFieldSettingsPathAgain = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7509,7 +7509,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidWrapperFieldSettingsPathAgain.status).toBe(500);
+    expect(invalidWrapperFieldSettingsPathAgain.status).toBe(400);
 
     const invalidWrapperFieldSettingsPath = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7525,7 +7525,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidWrapperFieldSettingsPath.status).toBe(500);
+    expect(invalidWrapperFieldSettingsPath.status).toBe(400);
 
     const invalidPopupSettingPath = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7541,7 +7541,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidPopupSettingPath.status).toBe(500);
+    expect(invalidPopupSettingPath.status).toBe(400);
 
     const invalidPageType = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7555,7 +7555,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidPageType.status).toBe(500);
+    expect(invalidPageType.status).toBe(400);
 
     const invalidFieldType = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7571,7 +7571,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidFieldType.status).toBe(500);
+    expect(invalidFieldType.status).toBe(400);
 
     const configurePopupSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7622,7 +7622,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(clearPopupSettingsWithBoundFlow.status).toBe(500);
+    expect(clearPopupSettingsWithBoundFlow.status).toBe(400);
 
     const invalidFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
       values: {
@@ -7643,7 +7643,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidFlow.status).toBe(500);
+    expect(invalidFlow.status).toBe(400);
 
     const clearPopupSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -7677,7 +7677,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidClearedPopupFlow.status).toBe(500);
+    expect(invalidClearedPopupFlow.status).toBe(400);
 
     const invalidResourceFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
       values: {
@@ -7698,7 +7698,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidResourceFlow.status).toBe(500);
+    expect(invalidResourceFlow.status).toBe(400);
 
     const invalidLayout = await rootAgent.resource('flowSurfaces').setLayout({
       values: {
@@ -7712,7 +7712,7 @@ describe('flowSurfaces resource', () => {
         rowOrder: ['row1'],
       },
     });
-    expect(invalidLayout.status).toBe(500);
+    expect(invalidLayout.status).toBe(400);
   });
 
   it('should expose flowSurfaces:get as GET-only root locator query API', async () => {
@@ -7746,6 +7746,13 @@ describe('flowSurfaces resource', () => {
       kind: 'page',
     });
     expect(getData(routeReadbackRes).pageRoute.schemaUid).toBe(page.pageSchemaUid);
+
+    const mixedLocatorRes = await rootAgent.resource('flowSurfaces').get({
+      uid: page.pageUid,
+      pageSchemaUid: page.pageSchemaUid,
+    } as any);
+    expect(mixedLocatorRes.status).toBe(400);
+    expect(readErrorMessage(mixedLocatorRes)).toContain('exactly one locator');
 
     const postGetRes = await rootAgent.post('/api/flowSurfaces:get').send({
       pageSchemaUid: page.pageSchemaUid,

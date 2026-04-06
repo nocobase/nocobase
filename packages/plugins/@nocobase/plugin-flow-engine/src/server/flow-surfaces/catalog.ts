@@ -1997,6 +1997,14 @@ function getAllowedFieldUseSet(containerUse?: string) {
 
 function inferFieldUseByContainer(containerUse: string, field: any) {
   const fieldInterface = field?.interface || field?.options?.interface;
+  if (
+    shouldUseAssociationTitleTextDisplay({
+      containerUse,
+      fieldInterface,
+    })
+  ) {
+    return 'DisplayTextFieldModel';
+  }
   switch (normalizeFieldContainerUse(containerUse)) {
     case 'filter-form':
       return inferFilterFieldUse(fieldInterface);
@@ -2005,14 +2013,6 @@ function inferFieldUseByContainer(containerUse: string, field: any) {
     case 'details':
       return inferDisplayFieldUse(fieldInterface);
     case 'table':
-      if (
-        shouldUseAssociationTitleTextDisplay({
-          containerUse,
-          fieldInterface,
-        })
-      ) {
-        return 'DisplayTextFieldModel';
-      }
       return inferDisplayFieldUse(fieldInterface);
     default:
       throw new FlowSurfaceBadRequestError(`flowSurfaces field container '${containerUse}' is not supported`);

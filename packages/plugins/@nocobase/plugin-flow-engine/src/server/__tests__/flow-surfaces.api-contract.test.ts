@@ -300,7 +300,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(rollbackRes.status).toBe(500);
+    expect(rollbackRes.status).toBe(400);
     expect(
       await routesRepo.findOne({
         filter: {
@@ -514,6 +514,46 @@ describe('flowSurfaces API contract', () => {
         includeAsyncNode: true,
       }),
     ).toBeNull();
+  });
+
+  it('should reject removing the last outer tab and invalid outer tab move lifecycles', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Outer tab lifecycle page',
+      tabTitle: 'Outer tab lifecycle tab',
+    });
+
+    const removeLastTabRes = await rootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        uid: page.tabSchemaUid,
+      },
+    });
+    expect(removeLastTabRes.status).toBe(400);
+    expect(readErrorMessage(removeLastTabRes)).toContain('last route-backed tab');
+    expect(readErrorMessage(removeLastTabRes)).toContain('destroyPage');
+
+    const sameTabMoveRes = await rootAgent.resource('flowSurfaces').moveTab({
+      values: {
+        sourceUid: page.tabSchemaUid,
+        targetUid: page.tabSchemaUid,
+        position: 'before',
+      },
+    });
+    expect(sameTabMoveRes.status).toBe(400);
+    expect(readErrorMessage(sameTabMoveRes)).toContain('different sourceUid and targetUid');
+
+    const anotherPage = await createPage(rootAgent, {
+      title: 'Other outer tab lifecycle page',
+      tabTitle: 'Other outer tab lifecycle tab',
+    });
+    const crossPageMoveRes = await rootAgent.resource('flowSurfaces').moveTab({
+      values: {
+        sourceUid: page.tabSchemaUid,
+        targetUid: anotherPage.tabSchemaUid,
+        position: 'before',
+      },
+    });
+    expect(crossPageMoveRes.status).toBe(400);
+    expect(readErrorMessage(crossPageMoveRes)).toContain('same page route');
   });
 
   it('should create nested menu nodes and initialize a page from a bindable menu item', async () => {
@@ -1119,7 +1159,7 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(updateUnknownRes.status).toBe(500);
+    expect(updateUnknownRes.status).toBe(400);
     expect(readErrorMessage(updateUnknownRes)).toContain(`domain 'props' is not editable`);
 
     const eventUnknownRes = await rootAgent.resource('flowSurfaces').setEventFlows({
@@ -1134,7 +1174,7 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(eventUnknownRes.status).toBe(500);
+    expect(eventUnknownRes.status).toBe(400);
     expect(readErrorMessage(eventUnknownRes)).toContain(`setEventFlows is not supported`);
 
     const page = await createPage(rootAgent, {
@@ -3922,6 +3962,104 @@ describe('flowSurfaces API contract', () => {
     expect(syncedInner.tree.props?.titleField).toBe('title');
   });
 
+  it('should keep users.roles details fields aligned with manual UI Builder text-display semantics', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Users details roles page',
+      tabTitle: 'Users details roles tab',
+    });
+
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+
+    const detailsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+        },
+      }),
+    );
+    expect(detailsCatalog.fields.find((item: any) => item.key === 'roles')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
+    expect(detailsCatalog.fields.some((item: any) => item.key === 'roles.title')).toBe(false);
+
+    const rolesField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+          fieldPath: 'roles',
+        },
+      }),
+    );
+
+    const rolesFieldFromLeaf = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+          fieldPath: 'roles.title',
+        },
+      }),
+    );
+
+    expect(rolesField.fieldPath).toBe('roles');
+    expect(rolesField.associationPathName).toBeUndefined();
+    expect(rolesFieldFromLeaf.fieldPath).toBe('roles');
+    expect(rolesFieldFromLeaf.associationPathName).toBeUndefined();
+
+    const directWrapper = await getSurface(rootAgent, { uid: rolesField.wrapperUid });
+    const directInner = await getSurface(rootAgent, { uid: rolesField.fieldUid });
+    expect(directWrapper.tree.use).toBe('DetailsItemModel');
+    expect(directInner.tree.use).toBe('DisplayTextFieldModel');
+    expect(directWrapper.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+    expect(directWrapper.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(directInner.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+    expect(directInner.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(directWrapper.tree.props?.titleField).toBe('title');
+    expect(directInner.tree.props?.titleField).toBe('title');
+
+    const leafWrapper = await getSurface(rootAgent, { uid: rolesFieldFromLeaf.wrapperUid });
+    const leafInner = await getSurface(rootAgent, { uid: rolesFieldFromLeaf.fieldUid });
+    expect(leafWrapper.tree.use).toBe('DetailsItemModel');
+    expect(leafInner.tree.use).toBe('DisplayTextFieldModel');
+    expect(leafWrapper.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+    expect(leafWrapper.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(leafInner.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+    expect(leafInner.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(leafWrapper.tree.props?.titleField).toBe('title');
+    expect(leafInner.tree.props?.titleField).toBe('title');
+  });
+
   it('should keep users.roles associationName when adding associated records block inside username popup', async () => {
     const page = await createPage(rootAgent, {
       title: 'Users username popup page',
@@ -4022,6 +4160,96 @@ describe('flowSurfaces API contract', () => {
     });
   });
 
+  it('should not auto preserve associationName when a relation field is configured as a non-relation popup', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Users roles non relation popup page',
+      tabTitle: 'Users roles non relation popup tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'table',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username', 'roles'],
+              actions: ['refresh'],
+            },
+          ],
+        },
+      }),
+    );
+
+    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const directRolesField = tableFields.find((item: any) => item.fieldPath === 'roles');
+    expect(directRolesField?.wrapperUid).toBeTruthy();
+    expect(directRolesField?.fieldUid).toBeTruthy();
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: directRolesField.wrapperUid,
+            },
+            changes: {
+              clickToOpen: true,
+              openView: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                mode: 'dialog',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    let fieldReadback = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
+    expect(fieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      mode: 'dialog',
+    });
+    expect(fieldReadback.tree.stepParams?.popupSettings?.openView).not.toHaveProperty('associationName');
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: directRolesField.wrapperUid,
+            },
+            changes: {
+              openView: {
+                dataSourceKey: 'main',
+                collectionName: 'roles',
+                associationName: null,
+                mode: 'drawer',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    fieldReadback = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
+    expect(fieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: null,
+      mode: 'drawer',
+    });
+  });
+
   it('should align table/details/grid-card/edit-form field catalog semantics with frontend menus', async () => {
     const page = await createPage(rootAgent, {
       title: 'Field catalog alignment page',
@@ -4109,6 +4337,18 @@ describe('flowSurfaces API contract', () => {
     expect(tableCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
     expect(detailsCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
     expect(gridCardCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
+    expect(tableCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
+    expect(detailsCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
+    expect(gridCardCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
     expect(tableCatalog.fields.some((item: any) => item.key === 'profile.bio')).toBe(true);
     expect(detailsCatalog.fields.some((item: any) => item.key === 'profile.bio')).toBe(true);
     expect(gridCardCatalog.fields.some((item: any) => item.key === 'profile.bio')).toBe(true);
@@ -4250,9 +4490,9 @@ describe('flowSurfaces API contract', () => {
       fieldPath: 'skills',
     });
     expect(directSkillsInnerReadback.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
-    expect(directSkillsInnerReadback.tree.use).toBe('DisplaySubTableFieldModel');
-    expect(directSkillsWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
-    expect(directSkillsInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
+    expect(directSkillsInnerReadback.tree.use).toBe('DisplayTextFieldModel');
+    expect(directSkillsWrapperReadback.tree.props?.titleField).toBe('label');
+    expect(directSkillsInnerReadback.tree.props?.titleField).toBe('label');
 
     const profileWrapperReadback = await getSurface(rootAgent, { uid: profileField.wrapperUid });
     const profileInnerReadback = await getSurface(rootAgent, { uid: profileField.fieldUid });

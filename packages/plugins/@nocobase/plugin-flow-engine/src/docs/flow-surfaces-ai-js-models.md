@@ -69,17 +69,11 @@
     "uid": "action-panel-uid"
   },
   "type": "js",
-  "props": {
+  "settings": {
     "title": "Run JS",
-    "type": "primary"
-  },
-  "stepParams": {
-    "clickSettings": {
-      "runJs": {
-        "version": "1.0.0",
-        "code": "return await ctx.runjs('console.log(\"hello\")');"
-      }
-    }
+    "type": "primary",
+    "version": "1.0.0",
+    "code": "return await ctx.runjs('console.log(\"hello\")');"
   }
 }
 ```
@@ -104,16 +98,10 @@
     "uid": "table-block-uid"
   },
   "type": "jsColumn",
-  "props": {
-    "title": "Runtime column"
-  },
-  "stepParams": {
-    "jsSettings": {
-      "runJs": {
-        "version": "1.0.0",
-        "code": "return record.nickname;"
-      }
-    }
+  "settings": {
+    "title": "Runtime column",
+    "version": "1.0.0",
+    "code": "return record.nickname;"
   }
 }
 ```
@@ -126,17 +114,11 @@
     "uid": "create-form-grid-uid"
   },
   "type": "jsItem",
-  "props": {
+  "settings": {
     "label": "Runtime item",
-    "showLabel": true
-  },
-  "stepParams": {
-    "jsSettings": {
-      "runJs": {
-        "version": "1.0.0",
-        "code": "return record.nickname;"
-      }
-    }
+    "showLabel": true,
+    "version": "1.0.0",
+    "code": "return record.nickname;"
   }
 }
 ```

@@ -874,11 +874,13 @@ export class FlowSurfacesService {
         : undefined;
 
     return {
-      parsed,
-      leafField,
       relationField,
       targetCollection,
-      dataSourceKey: targetCollection?.dataSourceKey || parsed.dataSourceKey || input.dataSourceKey,
+      dataSourceKey:
+        targetCollection?.dataSourceKey ||
+        targetCollection?.options?.dataSourceKey ||
+        parsed.dataSourceKey ||
+        input.dataSourceKey,
       collectionName: targetCollectionName,
       associationName,
     };
@@ -2431,17 +2433,20 @@ export class FlowSurfacesService {
     if (!sourceUid || !targetUid) {
       throwBadRequest('flowSurfaces moveTab requires sourceUid and targetUid');
     }
+    if (sourceUid === targetUid) {
+      throwBadRequest('flowSurfaces moveTab requires different sourceUid and targetUid');
+    }
     const sourceTarget = await this.assertRouteBackedTabUidTarget('moveTab', sourceUid, options.transaction);
     const targetTarget = await this.assertRouteBackedTabUidTarget('moveTab', targetUid, options.transaction);
     const sourceRoute = await this.locator.findRouteBySchemaUid(sourceUid, options.transaction);
     const targetRoute = await this.locator.findRouteBySchemaUid(targetUid, options.transaction);
     if (!sourceRoute || !targetRoute) {
-      throw new Error('flowSurfaces moveTab route not found');
+      throwBadRequest('flowSurfaces moveTab route not found');
     }
     const sourceParentId = sourceRoute.get?.('parentId') ?? sourceRoute.parentId;
     const targetParentId = targetRoute.get?.('parentId') ?? targetRoute.parentId;
     if (!sourceParentId || !targetParentId || String(sourceParentId) !== String(targetParentId)) {
-      throw new Error('flowSurfaces moveTab only supports sibling tabs under the same page route');
+      throwBadRequest('flowSurfaces moveTab only supports sibling tabs under the same page route');
     }
 
     const desktopRoutesRepo = this.db.getRepository('desktopRoutes');
@@ -2459,7 +2464,7 @@ export class FlowSurfacesService {
     const sourceIndex = siblingRoutes.findIndex((route: any) => String(route?.id) === String(sourceRoute.get('id')));
     const targetIndex = siblingRoutes.findIndex((route: any) => String(route?.id) === String(targetRoute.get('id')));
     if (sourceIndex === -1 || targetIndex === -1) {
-      throw new Error('flowSurfaces moveTab cannot resolve sibling route order');
+      throwBadRequest('flowSurfaces moveTab cannot resolve sibling route order');
     }
 
     const [sourceItem] = siblingRoutes.splice(sourceIndex, 1);
@@ -2486,6 +2491,22 @@ export class FlowSurfacesService {
   async removeTab(values: Record<string, any>, options: { transaction?: any } = {}) {
     const uid = this.normalizeRootUidValue('removeTab', values);
     const resolved = await this.assertRouteBackedTabUidTarget('removeTab', uid, options.transaction);
+    const tabRoute = resolved.tabRoute || (await this.locator.findRouteBySchemaUid(resolved.uid, options.transaction));
+    const parentRouteId = tabRoute?.get?.('parentId') ?? tabRoute?.parentId;
+    const siblingTabRoutes = parentRouteId
+      ? _.castArray(
+          await this.db.getRepository('desktopRoutes').find({
+            filter: {
+              parentId: parentRouteId,
+              type: 'tabs',
+            },
+            transaction: options.transaction,
+          }),
+        )
+      : [];
+    if (siblingTabRoutes.length <= 1) {
+      throwBadRequest('flowSurfaces removeTab cannot delete the last route-backed tab; use destroyPage instead');
+    }
     await this.removeNodeTreeWithBindings(resolved.uid, options.transaction);
     await this.routeSync.removeTabAnchorTree(resolved.uid, options.transaction);
     await this.db.getRepository('desktopRoutes').destroy({
@@ -3314,11 +3335,28 @@ export class FlowSurfacesService {
       return openView;
     }
     const fieldOpenViewContext = this.resolveFieldOpenViewContext(fieldNode, wrapperNode);
-    const explicitAssociationName = String(openView.associationName || '').trim() || undefined;
+    const hasExplicitAssociationName = Object.prototype.hasOwnProperty.call(openView, 'associationName');
+    const explicitAssociationName = hasExplicitAssociationName
+      ? openView.associationName == null
+        ? null
+        : String(openView.associationName).trim() || null
+      : undefined;
+    const normalizedDataSourceKey = String(openView.dataSourceKey || '').trim() || undefined;
+    const normalizedCollectionName = String(openView.collectionName || '').trim() || undefined;
+    const shouldPreserveAssociationName =
+      !hasExplicitAssociationName &&
+      !!fieldOpenViewContext.associationName &&
+      !this.isExternalPopupOpenView(openView, fieldNode?.uid) &&
+      (!normalizedDataSourceKey || normalizedDataSourceKey === fieldOpenViewContext.dataSourceKey) &&
+      (!normalizedCollectionName || normalizedCollectionName === fieldOpenViewContext.collectionName);
     return buildDefinedPayload({
-      ...fieldOpenViewContext,
+      ...(shouldPreserveAssociationName ? fieldOpenViewContext : _.omit(fieldOpenViewContext, ['associationName'])),
       ...openView,
-      associationName: explicitAssociationName || fieldOpenViewContext.associationName,
+      ...(hasExplicitAssociationName
+        ? { associationName: explicitAssociationName }
+        : shouldPreserveAssociationName
+          ? { associationName: fieldOpenViewContext.associationName }
+          : {}),
     });
   }
 
@@ -3538,11 +3576,11 @@ export class FlowSurfacesService {
         return;
       }
       if (!contract.editableDomains.includes(domain)) {
-        throw new Error(`flowSurfaces updateSettings domain '${domain}' is not editable`);
+        throwBadRequest(`flowSurfaces updateSettings domain '${domain}' is not editable`);
       }
       const domainContract = contract.domains[domain];
       if (!domainContract) {
-        throw new Error(`flowSurfaces updateSettings domain '${domain}' is not supported by '${current.use}'`);
+        throwBadRequest(`flowSurfaces updateSettings domain '${domain}' is not supported by '${current.use}'`);
       }
       nextPayload[domain] = this.contractGuard.mergeDomainValue(
         domain,
@@ -3964,7 +4002,7 @@ export class FlowSurfacesService {
     const current = await this.loadResolvedNode(target, options.transaction);
     const contract = getNodeContract(current?.use);
     if (!contract.editableDomains.includes('flowRegistry')) {
-      throw new Error(`flowSurfaces setEventFlows is not supported on '${current?.use || target.uid}'`);
+      throwBadRequest(`flowSurfaces setEventFlows is not supported on '${current?.use || target.uid}'`);
     }
     const flows = values.flowRegistry || values.flows || {};
     this.contractGuard.validateFlowRegistry(current, flows);
@@ -4004,7 +4042,7 @@ export class FlowSurfacesService {
     const grid = await this.surfaceContext.resolveGridNode(resolved.uid, options.transaction);
     const contract = getNodeContract(grid?.use);
     if (!contract.layoutCapabilities?.supported) {
-      throw new Error(`flowSurfaces setLayout is not supported on '${grid?.use || resolved.uid}'`);
+      throwBadRequest(`flowSurfaces setLayout is not supported on '${grid?.use || resolved.uid}'`);
     }
     const rows = values.rows || {};
     const sizes = values.sizes || {};
@@ -4046,7 +4084,7 @@ export class FlowSurfacesService {
     const targetUid = String(values.targetUid || '').trim();
     const position = values.position === 'before' ? 'before' : 'after';
     if (!sourceUid || !targetUid) {
-      throw new Error('flowSurfaces moveNode requires sourceUid and targetUid');
+      throwBadRequest('flowSurfaces moveNode requires sourceUid and targetUid');
     }
     const sourceModel = await this.repository.findModelById(sourceUid, {
       transaction: options.transaction,
@@ -4059,14 +4097,14 @@ export class FlowSurfacesService {
     const sourceParentUid = await this.locator.findParentUid(sourceUid, options.transaction);
     const targetParentUid = await this.locator.findParentUid(targetUid, options.transaction);
     if (!sourceModel?.subKey || !targetModel?.subKey || !sourceParentUid || !targetParentUid) {
-      throw new Error('flowSurfaces moveNode requires sibling nodes with persisted parent relationship');
+      throwBadRequest('flowSurfaces moveNode requires sibling nodes with persisted parent relationship');
     }
     if (
       sourceParentUid !== targetParentUid ||
       sourceModel.subKey !== targetModel.subKey ||
       sourceModel.subType !== targetModel.subType
     ) {
-      throw new Error('flowSurfaces moveNode only supports siblings under the same parent/subKey');
+      throwBadRequest('flowSurfaces moveNode only supports siblings under the same parent/subKey');
     }
     await this.repository.attach(
       sourceUid,
@@ -4476,7 +4514,7 @@ export class FlowSurfacesService {
         `flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`,
       );
     }
-    if (hasNonEmptyGetWrapperValue(input.values)) {
+    if (Object.prototype.hasOwnProperty.call(input, 'values')) {
       throw new FlowSurfaceBadRequestError(
         `flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`,
       );
@@ -4490,6 +4528,11 @@ export class FlowSurfacesService {
     if (!Object.keys(target).length) {
       throw new FlowSurfaceBadRequestError(
         `flowSurfaces:get requires one of uid, pageSchemaUid, tabSchemaUid or routeId`,
+      );
+    }
+    if (Object.keys(target).length > 1) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces:get only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`,
       );
     }
     return target;
@@ -4832,10 +4875,10 @@ export class FlowSurfacesService {
       }
       try {
         if (!_.isPlainObject(rawItem)) {
-          throw new Error(`flowSurfaces ${options.actionName} item #${index + 1} must be an object`);
+          throwBadRequest(`flowSurfaces ${options.actionName} item #${index + 1} must be an object`);
         }
         if (Object.prototype.hasOwnProperty.call(rawItem, 'target')) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces ${options.actionName} item #${
               index + 1
             } must not include target; use the shared top-level target`,
@@ -7595,7 +7638,7 @@ export class FlowSurfacesService {
     );
     const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
     if (!field) {
-      throw new Error(`flowSurfaces field '${input.collectionName}.${input.fieldPath}' not found`);
+      throwBadRequest(`flowSurfaces field '${input.collectionName}.${input.fieldPath}' not found`);
     }
     return {
       dataSourceKey: parsed.dataSourceKey || input.dataSourceKey,
@@ -8433,19 +8476,6 @@ function assertSupportedSimpleChanges(context: string, changes: Record<string, a
       ', ',
     )}; supported configureOptions: ${allowedKeys.join(', ')}`,
   );
-}
-
-function hasNonEmptyGetWrapperValue(value: any) {
-  if (_.isNil(value)) {
-    return false;
-  }
-  if (_.isPlainObject(value)) {
-    return Object.keys(value).length > 0;
-  }
-  if (Array.isArray(value)) {
-    return value.length > 0;
-  }
-  return true;
 }
 
 function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boolean } = {}) {

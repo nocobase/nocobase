@@ -18,7 +18,9 @@
 ## 读取接口约定
 
 - `flowSurfaces:get` 只接受根级定位字段：`uid`、`pageSchemaUid`、`tabSchemaUid`、`routeId`
+- 这 4 个定位字段只能四选一
 - 不要写成 `{ "target": { "uid": "..." } }`
+- 不要写成 `{ "values": { ... } }`
 - 响应里的 `target` 只保留轻量定位信息：`locator`、`uid`、`kind`
 - 真实节点树看 `tree`；页面 route / tabs 信息看顶层 `pageRoute`、`route`、`tabs`、`tabTrees`
 - 公开请求参数错误会返回 `400`，并带可执行的错误 message
@@ -44,6 +46,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - 外层 route-backed page/tab API 只接受外层 canonical uid：
   - page：`destroyPage`、`addTab`
   - tab：`updateTab`、`moveTab`、`removeTab`
+- 外层 tab 当前的 canonical uid 就是返回结果里的 `tabSchemaUid`
 - popup child tab 不要混用外层 page/tab API；统一改用：
   - `addPopupTab`
   - `updatePopupTab`
@@ -57,7 +60,8 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - 除 `get` 外，其它写接口的定位一律收口为 uid-only：
   - 有 `target` 的一律传 `{ "target": { "uid": "..." } }`
   - `destroyPage`、`removeTab` 一律传根级 `{ "uid": "..." }`
-- 如果你手上只有 `pageSchemaUid / tabSchemaUid / routeId`，先调用 `flowSurfaces:get` 拿到 canonical uid，再走写接口
+- 如果你手上只有 `pageSchemaUid / routeId`，先调用 `flowSurfaces:get` 拿到 canonical uid，再走写接口
+- `removeTab` 不能删除最后一个外层 tab；如果要删除整页，请改用 `destroyPage`
 - `removeNode` 只用于 block / field / action / popup subtree 等普通节点；page 请用 `destroyPage`，tab 请用 `removeTab`
 
 例如 `catalog(target=table)` 里可能会看到：
@@ -752,17 +756,11 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
     "uid": "action-panel-uid"
   },
   "type": "js",
-  "props": {
+  "settings": {
     "title": "Run JS",
-    "type": "primary"
-  },
-  "stepParams": {
-    "clickSettings": {
-      "runJs": {
-        "version": "1.0.0",
-        "code": "return await ctx.runjs('console.log(\"hello\")');"
-      }
-    }
+    "type": "primary",
+    "version": "1.0.0",
+    "code": "return await ctx.runjs('console.log(\"hello\")');"
   }
 }
 ```
@@ -789,16 +787,10 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
     "uid": "table-block-uid"
   },
   "type": "jsColumn",
-  "props": {
-    "title": "Runtime column"
-  },
-  "stepParams": {
-    "jsSettings": {
-      "runJs": {
-        "version": "1.0.0",
-        "code": "return record.nickname;"
-      }
-    }
+  "settings": {
+    "title": "Runtime column",
+    "version": "1.0.0",
+    "code": "return record.nickname;"
   }
 }
 ```
@@ -811,17 +803,11 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
     "uid": "create-form-grid-uid"
   },
   "type": "jsItem",
-  "props": {
+  "settings": {
     "label": "Runtime item",
-    "showLabel": true
-  },
-  "stepParams": {
-    "jsSettings": {
-      "runJs": {
-        "version": "1.0.0",
-        "code": "return record.nickname;"
-      }
-    }
+    "showLabel": true,
+    "version": "1.0.0",
+    "code": "return record.nickname;"
   }
 }
 ```

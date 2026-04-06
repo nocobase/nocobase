@@ -20,6 +20,10 @@ const EMPTY_FILTER_GROUP = {
 };
 const FILTER_GROUP_EXAMPLE = JSON.stringify(EMPTY_FILTER_GROUP);
 
+function throwBadRequest(message: string): never {
+  throw new FlowSurfaceBadRequestError(message);
+}
+
 export class FlowSurfaceContractGuard {
   mergeDomainValue(
     domain: FlowSurfaceNodeDomain,
@@ -29,7 +33,7 @@ export class FlowSurfaceContractGuard {
     use: string,
   ) {
     if (!_.isPlainObject(nextValue)) {
-      throw new Error(`flowSurfaces updateSettings domain '${domain}' on '${use}' requires an object payload`);
+      throwBadRequest(`flowSurfaces updateSettings domain '${domain}' on '${use}' requires an object payload`);
     }
     if (contract.wildcard) {
       if (!Object.keys(nextValue).length) {
@@ -40,7 +44,7 @@ export class FlowSurfaceContractGuard {
     if (contract.groups) {
       const unknownGroups = Object.keys(nextValue).filter((key) => !contract.allowedKeys.includes(key));
       if (unknownGroups.length) {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces updateSettings domain '${domain}' on '${use}' does not allow groups: ${unknownGroups.join(
             ', ',
           )}`,
@@ -54,7 +58,7 @@ export class FlowSurfaceContractGuard {
         }
         if (value === null || (_.isPlainObject(value) && !Object.keys(value).length)) {
           if (!groupContract.clearable) {
-            throw new Error(
+            throwBadRequest(
               `flowSurfaces updateSettings domain '${domain}.${groupKey}' on '${use}' does not support clearing`,
             );
           }
@@ -62,7 +66,7 @@ export class FlowSurfaceContractGuard {
           return;
         }
         if (!_.isPlainObject(value)) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces updateSettings domain '${domain}.${groupKey}' on '${use}' requires an object payload`,
           );
         }
@@ -75,7 +79,7 @@ export class FlowSurfaceContractGuard {
           (path) => !isAllowedGroupPath(groupContract, path),
         );
         if (invalidPaths.length) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces updateSettings domain '${domain}.${groupKey}' on '${use}' does not allow paths: ${invalidPaths.join(
               ', ',
             )}`,
@@ -83,7 +87,7 @@ export class FlowSurfaceContractGuard {
         }
         const invalidValueTypes = collectTypedValueErrors(normalizedValue, groupContract.pathSchemas || {});
         if (invalidValueTypes.length) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces updateSettings domain '${domain}.${groupKey}' on '${use}' has invalid values: ${invalidValueTypes.join(
               ', ',
             )}`,
@@ -98,7 +102,7 @@ export class FlowSurfaceContractGuard {
     }
     const unknownKeys = Object.keys(nextValue).filter((key) => !contract.allowedKeys.includes(key));
     if (unknownKeys.length) {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces updateSettings domain '${domain}' on '${use}' does not allow keys: ${unknownKeys.join(', ')}`,
       );
     }
@@ -117,7 +121,7 @@ export class FlowSurfaceContractGuard {
 
   validateFlowRegistry(node: any, flowRegistry: Record<string, any>) {
     if (!_.isPlainObject(flowRegistry)) {
-      throw new Error('flowSurfaces setEventFlows requires an object flowRegistry');
+      throwBadRequest('flowSurfaces setEventFlows requires an object flowRegistry');
     }
     const contract = getNodeContract(node?.use);
     const allowedDirectEvents = new Set(contract.eventCapabilities?.direct || []);
@@ -125,7 +129,7 @@ export class FlowSurfaceContractGuard {
     const stepParamGroups = contract.domains.stepParams?.groups || {};
     Object.entries(flowRegistry).forEach(([key, flow]) => {
       if (!_.isPlainObject(flow)) {
-        throw new Error(`flowSurfaces flow '${key}' must be an object`);
+        throwBadRequest(`flowSurfaces flow '${key}' must be an object`);
       }
       const on = flow.on;
       if (!on) {
@@ -134,27 +138,27 @@ export class FlowSurfaceContractGuard {
       const onObj = typeof on === 'string' ? { eventName: on } : on;
       const eventName = onObj?.eventName;
       if (!eventName || typeof eventName !== 'string') {
-        throw new Error(`flowSurfaces flow '${key}' has invalid eventName`);
+        throwBadRequest(`flowSurfaces flow '${key}' has invalid eventName`);
       }
       if (typeof on === 'string' && !allowedDirectEvents.has(eventName)) {
-        throw new Error(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
+        throwBadRequest(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
       }
       if (typeof on !== 'string' && !allowedObjectEvents.has(eventName)) {
-        throw new Error(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
+        throwBadRequest(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
       }
       const phase = onObj?.phase;
       const allowedPhases = ['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'];
       if (phase && !allowedPhases.includes(phase)) {
-        throw new Error(`flowSurfaces flow '${key}' has invalid phase '${phase}'`);
+        throwBadRequest(`flowSurfaces flow '${key}' has invalid phase '${phase}'`);
       }
       if (['beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'].includes(phase) && !onObj.flowKey) {
-        throw new Error(`flowSurfaces flow '${key}' requires flowKey for phase '${phase}'`);
+        throwBadRequest(`flowSurfaces flow '${key}' requires flowKey for phase '${phase}'`);
       }
       if (['beforeStep', 'afterStep'].includes(phase) && !onObj.stepKey) {
-        throw new Error(`flowSurfaces flow '${key}' requires stepKey for phase '${phase}'`);
+        throwBadRequest(`flowSurfaces flow '${key}' requires stepKey for phase '${phase}'`);
       }
       if (onObj.flowKey && !stepParamGroups[onObj.flowKey]) {
-        throw new Error(`flowSurfaces flow '${key}' references unknown flowKey '${onObj.flowKey}' on '${node?.use}'`);
+        throwBadRequest(`flowSurfaces flow '${key}' references unknown flowKey '${onObj.flowKey}' on '${node?.use}'`);
       }
       const allowedStepKeys = stepParamGroups[onObj.flowKey]?.eventBindingSteps;
       if (
@@ -163,7 +167,7 @@ export class FlowSurfaceContractGuard {
         Array.isArray(allowedStepKeys) &&
         !allowedStepKeys.includes(onObj.stepKey)
       ) {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces flow '${key}' references unknown stepKey '${onObj.stepKey}' for flowKey '${onObj.flowKey}' on '${node?.use}'`,
         );
       }
@@ -173,12 +177,12 @@ export class FlowSurfaceContractGuard {
         const contractDefinesFlow = isContractDefinedFlowGroup(flowGroupContract);
         const implicitStepAvailable = isImplicitContractStep(flowGroupContract, onObj.stepKey);
         if ((!_.isPlainObject(flowGroup) || !Object.keys(flowGroup).length) && !contractDefinesFlow) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces flow '${key}' references unavailable flowKey '${onObj.flowKey}' on '${node?.use}'`,
           );
         }
         if (onObj.stepKey && _.isNil(flowGroup?.[onObj.stepKey]) && !implicitStepAvailable) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces flow '${key}' references unavailable stepKey '${onObj.stepKey}' for flowKey '${onObj.flowKey}' on '${node?.use}'`,
           );
         }
@@ -199,10 +203,10 @@ export class FlowSurfaceContractGuard {
             return;
           }
           if (!itemUids.has(itemUid)) {
-            throw new Error(`flowSurfaces layout item '${itemUid}' does not exist under grid '${grid.uid}'`);
+            throwBadRequest(`flowSurfaces layout item '${itemUid}' does not exist under grid '${grid.uid}'`);
           }
           if (seen.has(itemUid)) {
-            throw new Error(`flowSurfaces layout item '${itemUid}' is duplicated under grid '${grid.uid}'`);
+            throwBadRequest(`flowSurfaces layout item '${itemUid}' is duplicated under grid '${grid.uid}'`);
           }
           seen.add(itemUid);
         });
@@ -210,10 +214,10 @@ export class FlowSurfaceContractGuard {
 
       const sizeArray = layout.sizes?.[rowId];
       if (!sizeArray) {
-        throw new Error(`flowSurfaces layout row '${rowId}' requires sizes definition`);
+        throwBadRequest(`flowSurfaces layout row '${rowId}' requires sizes definition`);
       }
       if (sizeArray.length !== _.castArray(cells).length) {
-        throw new Error(`flowSurfaces layout sizes length of row '${rowId}' does not match columns length`);
+        throwBadRequest(`flowSurfaces layout sizes length of row '${rowId}' does not match columns length`);
       }
     });
 
@@ -222,14 +226,14 @@ export class FlowSurfaceContractGuard {
       _.difference(declaredRows, layout.rowOrder || []).length ||
       _.difference(layout.rowOrder || [], declaredRows).length
     ) {
-      throw new Error('flowSurfaces layout rowOrder must match rows');
+      throwBadRequest('flowSurfaces layout rowOrder must match rows');
     }
     if ((layout.rowOrder || []).length !== new Set(layout.rowOrder || []).size) {
-      throw new Error('flowSurfaces layout rowOrder contains duplicate row ids');
+      throwBadRequest('flowSurfaces layout rowOrder contains duplicate row ids');
     }
     if (seen.size !== itemUids.size) {
       const missing = Array.from(itemUids).filter((uid) => !seen.has(uid));
-      throw new Error(`flowSurfaces layout must cover all grid children, missing: ${missing.join(', ')}`);
+      throwBadRequest(`flowSurfaces layout must cover all grid children, missing: ${missing.join(', ')}`);
     }
   }
 
@@ -247,11 +251,11 @@ export class FlowSurfaceContractGuard {
         return;
       }
       if (!contract.editableDomains.includes(domain)) {
-        throw new Error(`flowSurfaces create tree domain '${domain}' is not editable on '${node.use}'`);
+        throwBadRequest(`flowSurfaces create tree domain '${domain}' is not editable on '${node.use}'`);
       }
       const domainContract = contract.domains[domain];
       if (!domainContract) {
-        throw new Error(`flowSurfaces create tree domain '${domain}' is not supported by '${node.use}'`);
+        throwBadRequest(`flowSurfaces create tree domain '${domain}' is not supported by '${node.use}'`);
       }
       node[domain] = this.mergeDomainValue(domain, undefined, node[domain], domainContract, node.use);
     });

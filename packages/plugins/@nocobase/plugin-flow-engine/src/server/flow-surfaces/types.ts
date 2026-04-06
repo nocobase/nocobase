@@ -164,7 +164,6 @@ export type FlowSurfaceApplySpec = {
 export type FlowSurfaceAtomicFlag = true;
 
 export type FlowSurfaceMutateValues = {
-  target?: FlowSurfaceWriteTarget;
   ops?: FlowSurfaceMutateOp[];
   atomic?: true;
 };

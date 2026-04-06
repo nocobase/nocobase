@@ -55,8 +55,9 @@ export function shouldUseAssociationTitleTextDisplay(input: {
   associationPathName?: string;
   fieldInterface?: string | null;
 }) {
+  const containerKind = normalizeFieldContainerKind(input.containerUse);
   return (
-    normalizeFieldContainerKind(input.containerUse) === 'table' &&
+    (containerKind === 'table' || containerKind === 'details') &&
     !String(input.associationPathName || '').trim() &&
     MULTI_VALUE_ASSOCIATION_INTERFACES.has(String(input.fieldInterface || '').trim())
   );

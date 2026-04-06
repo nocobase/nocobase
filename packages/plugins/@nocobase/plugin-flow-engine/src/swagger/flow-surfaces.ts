@@ -1189,7 +1189,7 @@ const actionDocs: Record<string, any> = {
     description: [
       '读取标准化后的 Flow surface 读回结果，作为 CLI / 编排工具的稳定读口。',
       '',
-      '只接受根级定位字段；以下 4 个字段共同组成定位器。',
+      '只接受根级定位字段；以下 4 个字段四选一组成定位器。',
       '不要使用 `{ target: { ... } }` 包裹。',
       '不要使用 `{ values: { ... } }` 包裹。',
       '响应里的 `target` 只保留轻量定位信息；完整节点树请看 `tree`。',
@@ -1399,7 +1399,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a tab route and its anchor tree',
     description: valuesCompatibilityNote(
-      '删除 tab route 及对应 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `tabSchemaUid`，先调用 `flowSurfaces:get`。未初始化页面下的预创建 tab 不支持本接口。',
+      '删除 tab route 及对应 FlowModel subtree。只接受根级 `uid`；当前外层 route-backed tab 的 canonical uid 就是返回结果里的 `tabSchemaUid`。不能删除最后一个外层 tab；如果要删除整页，请改用 `destroyPage`。未初始化页面下的预创建 tab 不支持本接口。',
     ),
     requestBody: requestBody('FlowSurfaceRemoveTabRequest', {
       uid: 'details-tab',
@@ -4153,7 +4153,6 @@ const schemas = {
   FlowSurfaceMutateRequest: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceWriteTarget'),
       atomic: {
         type: 'boolean',
         enum: [true],
@@ -4190,6 +4189,10 @@ const schemas = {
       ref('FlowSurfaceUpdateTabResult'),
       ref('FlowSurfaceMoveTabResult'),
       ref('FlowSurfaceRemoveTabResult'),
+      ref('FlowSurfaceAddPopupTabResult'),
+      ref('FlowSurfaceUpdatePopupTabResult'),
+      ref('FlowSurfaceMovePopupTabResult'),
+      ref('FlowSurfaceRemovePopupTabResult'),
       ref('FlowSurfaceAddBlockResult'),
       ref('FlowSurfaceAddFieldResult'),
       ref('FlowSurfaceAddActionResult'),
@@ -4201,12 +4204,23 @@ const schemas = {
       ref('FlowSurfaceRemoveNodeResult'),
     ],
   },
+  FlowSurfaceMutationItemResult: {
+    type: 'object',
+    properties: {
+      opId: {
+        type: 'string',
+      },
+      result: ref('FlowSurfaceMutationResult'),
+    },
+    required: ['result'],
+    additionalProperties: false,
+  },
   FlowSurfaceMutationResponse: {
     type: 'object',
     properties: {
       results: {
         type: 'array',
-        items: ref('FlowSurfaceMutationResult'),
+        items: ref('FlowSurfaceMutationItemResult'),
       },
       clientKeyToUid: ref('FlowSurfaceClientKeyMap'),
     },

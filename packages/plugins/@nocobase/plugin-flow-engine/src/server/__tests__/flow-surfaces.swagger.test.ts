@@ -619,11 +619,25 @@ describe('flowSurfaces swagger', () => {
     expect(mutateRequest.example.ops[1].values.menuRouteId.ref).toBe('menu.routeId');
     expect(mutateRequest.example.ops[2].values.target.uid.ref).toBe('page.tabSchemaUid');
     expect(JSON.stringify(mutateRequest.example)).not.toContain('"$ref"');
+    expect(schemas.FlowSurfaceMutateRequest.properties.target).toBeUndefined();
     expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceMutateOpItem',
     );
     expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.allOf).toBeUndefined();
     expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.oneOf).toBeUndefined();
+    expect(schemas.FlowSurfaceMutationItemResult).toBeTruthy();
+    expect(schemas.FlowSurfaceMutationItemResult.required).toEqual(['result']);
+    expect(schemas.FlowSurfaceMutationResponse.properties.results.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceMutationItemResult',
+    );
+    expect(schemas.FlowSurfaceMutationResult.oneOf).toEqual(
+      expect.arrayContaining([
+        { $ref: '#/components/schemas/FlowSurfaceAddPopupTabResult' },
+        { $ref: '#/components/schemas/FlowSurfaceUpdatePopupTabResult' },
+        { $ref: '#/components/schemas/FlowSurfaceMovePopupTabResult' },
+        { $ref: '#/components/schemas/FlowSurfaceRemovePopupTabResult' },
+      ]),
+    );
 
     const createMenuRequest =
       swaggerDocument.paths['/flowSurfaces:createMenu'].post.requestBody.content['application/json'];
@@ -646,6 +660,8 @@ describe('flowSurfaces swagger', () => {
       swaggerDocument.paths['/flowSurfaces:removeTab'].post.requestBody.content['application/json'];
     expect(removeTabRequest.example.uid).toBe('details-tab');
     expect(removeTabRequest.example.tabSchemaUid).toBeUndefined();
+    expect(swaggerDocument.paths['/flowSurfaces:removeTab'].post.description).toContain('不能删除最后一个外层 tab');
+    expect(swaggerDocument.paths['/flowSurfaces:removeTab'].post.description).toContain('destroyPage');
 
     const destroyPageRequest =
       swaggerDocument.paths['/flowSurfaces:destroyPage'].post.requestBody.content['application/json'];
@@ -673,6 +689,7 @@ describe('flowSurfaces swagger', () => {
       '#/components/parameters/flowSurfaceTargetRouteId',
     ]);
     expect(getPath.description).toContain('只接受根级定位字段');
+    expect(getPath.description).toContain('四选一');
     expect(getPath.description).toContain('不要使用 `{ target: { ... } }` 包裹');
     expect(getPath.description).toContain('不要使用 `{ values: { ... } }` 包裹');
 
@@ -689,6 +706,10 @@ describe('flowSurfaces swagger', () => {
       'updateTab',
       'moveTab',
       'removeTab',
+      'addPopupTab',
+      'updatePopupTab',
+      'movePopupTab',
+      'removePopupTab',
       'addBlock',
       'addAction',
       'addRecordAction',

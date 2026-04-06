@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import type FlowModelRepository from '../repository';
 import { getChartBuilderResourceInit } from './chart-config';
+import { FlowSurfaceBadRequestError } from './errors';
 import type { FlowSurfaceReadLocator, FlowSurfaceResolveTarget, FlowSurfaceResolvedTarget } from './types';
 
 export class SurfaceLocator {
@@ -48,7 +49,7 @@ export class SurfaceLocator {
       }
     }
 
-    throw new Error('flowSurfaces target not found');
+    throw new FlowSurfaceBadRequestError('flowSurfaces target not found');
   }
 
   async findParentUid(uid: string, transaction?: any) {
@@ -115,7 +116,7 @@ export class SurfaceLocator {
     const node = await this.repository.findModelById(uid, { transaction, includeAsyncNode: true });
     const route = await this.findRouteBySchemaUid(uid, transaction);
     if (!node?.uid && !route) {
-      throw new Error(`flowSurfaces uid '${uid}' not found`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces uid '${uid}' not found`);
     }
 
     let pageRoute = null;
@@ -192,7 +193,7 @@ export class SurfaceLocator {
       };
     }
 
-    throw new Error('flowSurfaces target not found');
+    throw new FlowSurfaceBadRequestError('flowSurfaces target not found');
   }
 
   private async findPageRouteFromModel(uid: string, transaction?: any) {

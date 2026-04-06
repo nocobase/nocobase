@@ -11,6 +11,7 @@ import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { blockCatalog } from './catalog';
 import { getChartBuilderResourceInit } from './chart-config';
+import { FlowSurfaceBadRequestError } from './errors';
 import { SurfaceLocator } from './locator';
 import {
   canCatalogAddBlock,
@@ -33,6 +34,10 @@ const FILTER_TARGET_BLOCK_USES = new Set([
 ]);
 const LIST_LIKE_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel']);
 const LIST_LIKE_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel']);
+
+function throwBadRequest(message: string): never {
+  throw new FlowSurfaceBadRequestError(message);
+}
 
 export class FlowSurfaceContextResolver {
   constructor(
@@ -59,13 +64,13 @@ export class FlowSurfaceContextResolver {
   async resolveFilterFormTarget(filterFormOwnerUid: string, targetBlockUid?: string, transaction?: any) {
     const targets = await this.collectFilterFormTargets(filterFormOwnerUid, transaction);
     if (!targets.length) {
-      throw new Error('flowSurfaces addField cannot find filter targets on the current surface');
+      throwBadRequest('flowSurfaces addField cannot find filter targets on the current surface');
     }
 
     if (targetBlockUid) {
       const matched = targets.find((item) => item.ownerUid === targetBlockUid);
       if (!matched) {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces addField filter target '${targetBlockUid}' is not available on the current surface`,
         );
       }
@@ -73,7 +78,7 @@ export class FlowSurfaceContextResolver {
     }
 
     if (targets.length > 1) {
-      throw new Error(
+      throwBadRequest(
         'flowSurfaces addField on filter-form requires defaultTargetUid when multiple target blocks are available',
       );
     }
@@ -136,7 +141,7 @@ export class FlowSurfaceContextResolver {
     if (node?.use === 'ChildPageModel') {
       const firstTab = _.castArray(node?.subModels?.tabs || [])[0];
       if (!firstTab?.uid) {
-        throw new Error(`flowSurfaces addBlock target '${node.use}' is missing its popup tab subtree`);
+        throwBadRequest(`flowSurfaces addBlock target '${node.use}' is missing its popup tab subtree`);
       }
       return {
         parentUid:
@@ -175,11 +180,11 @@ export class FlowSurfaceContextResolver {
         'sort',
       )[0];
       if (!firstTab?.schemaUid) {
-        throw new Error('flowSurfaces addBlock requires a tab under page');
+        throwBadRequest('flowSurfaces addBlock requires a tab under page');
       }
       return this.resolveBlockParent({ uid: firstTab.schemaUid }, transaction);
     }
-    throw new Error(`flowSurfaces addBlock target '${node?.use || resolved.uid}' is not a grid surface`);
+    throwBadRequest(`flowSurfaces addBlock target '${node?.use || resolved.uid}' is not a grid surface`);
   }
 
   async resolveFieldContainer(uid: string, transaction?: any) {
@@ -223,7 +228,7 @@ export class FlowSurfaceContextResolver {
     if (LIST_LIKE_BLOCK_USES.has(use)) {
       const itemUid = node.subModels?.item?.uid;
       if (!itemUid) {
-        throw new Error(`flowSurfaces addField target '${use}' is missing its item subtree`);
+        throwBadRequest(`flowSurfaces addField target '${use}' is missing its item subtree`);
       }
       return {
         ownerUid: node.uid,
@@ -293,7 +298,7 @@ export class FlowSurfaceContextResolver {
         wrapperUse: 'TableColumnModel',
       };
     }
-    throw new Error(`flowSurfaces addField target '${use || uid}' is not a field container`);
+    throwBadRequest(`flowSurfaces addField target '${use || uid}' is not a field container`);
   }
 
   async resolveActionContainer(target: FlowSurfaceWriteTarget, transaction?: any) {
@@ -332,7 +337,7 @@ export class FlowSurfaceContextResolver {
         ownerUse: node.use,
       };
     }
-    throw new Error(`flowSurfaces addAction target '${node?.use || resolved.uid}' is not an action container`);
+    throwBadRequest(`flowSurfaces addAction target '${node?.use || resolved.uid}' is not an action container`);
   }
 
   async resolveGridNode(uid: string, transaction?: any) {
@@ -358,7 +363,7 @@ export class FlowSurfaceContextResolver {
     if (node?.subModels?.grid?.uid) {
       return this.repository.findModelById(node.subModels.grid.uid, { transaction, includeAsyncNode: true });
     }
-    throw new Error(`flowSurfaces setLayout target '${uid}' is not a grid node`);
+    throwBadRequest(`flowSurfaces setLayout target '${uid}' is not a grid node`);
   }
 
   async findOwningBlockGrid(uid: string, transaction?: any) {
