@@ -338,9 +338,14 @@ describe('flowSurfaces swagger', () => {
     expect(configureRequest.examples.actionSettings.value.changes.assignValues.status).toBe('active');
     expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
+    expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('item diagnostics');
     expect(configureRequest.examples.jsFieldSettings.value.changes.code).toContain('toUpperCase');
     expect(configureRequest.examples.jsColumnSettings.value.changes.fixed).toBe('left');
     expect(configureRequest.examples.jsItemSettings.value.changes.showLabel).toBe(true);
+    expect(configureRequest.examples.jsBlockSettings.value.changes.code).not.toContain("return { type: 'div'");
+    expect(configureRequest.examples.jsFieldSettings.value.changes.code).not.toContain('return record.');
+    expect(configureRequest.examples.jsColumnSettings.value.changes.code).not.toContain('return record.');
+    expect(configureRequest.examples.jsItemSettings.value.changes.code).not.toContain('return record.');
     expect(configureRequest.examples.pageHeaderSettings.value.changes.icon).toBe('UserOutlined');
     expect(configureRequest.examples.pageHeaderSettings.value.changes.enableHeader).toBe(false);
     expect(configureRequest.examples.tableAdvancedSettings.value.changes.quickEdit).toBe(true);
@@ -394,9 +399,12 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldRequest.examples.relationField.value.settings.width).toBe(240);
     expect(addFieldRequest.examples.relationField.value.popup.blocks[0].type).toBe('details');
     expect(addFieldRequest.examples.jsColumn.value.type).toBe('jsColumn');
-    expect(addFieldRequest.examples.jsColumn.value.settings.code).toContain('record.nickname');
+    expect(addFieldRequest.examples.jsColumn.value.settings.code).toContain('ctx.render');
+    expect(addFieldRequest.examples.jsColumn.value.settings.code).not.toContain('return record.');
     expect(addFieldRequest.examples.jsItem.value.type).toBe('jsItem');
     expect(addFieldRequest.examples.jsItem.value.settings.version).toBe('1.0.0');
+    expect(addFieldRequest.examples.jsItem.value.settings.code).toContain('ctx.render');
+    expect(addFieldRequest.examples.jsItem.value.settings.code).not.toContain('return record.');
     expect(schemas.FlowSurfaceAddFieldRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
@@ -467,6 +475,9 @@ describe('flowSurfaces swagger', () => {
     expect(addActionRequest.examples.link.value.settings.title).toBe('Open docs');
     expect(addActionRequest.examples.js.value.type).toBe('js');
     expect(addActionRequest.examples.js.value.settings.version).toBe('1.0.0');
+    expect(addActionRequest.examples.js.value.settings.code).not.toContain('return await ctx.runjs');
+    expect(addActionRequest.examples.jsItem.value.type).toBe('jsItem');
+    expect(addActionRequest.examples.jsItem.value.settings.code).toContain('await ctx.runjs');
     expect(schemas.FlowSurfaceAddActionRequest.properties.scope).toBeUndefined();
     expect(schemas.FlowSurfaceAddActionRequest.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddActionRequest.properties.popup.$ref).toBe(
@@ -497,6 +508,7 @@ describe('flowSurfaces swagger', () => {
         'reset',
         'collapse',
         'js',
+        'jsItem',
       ]),
     );
     expect(schemas.FlowSurfaceAddActionRequest.properties.type.enum).not.toEqual(

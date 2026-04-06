@@ -40,6 +40,7 @@ const ACTION_TYPE_ENUM = [
   'link',
   'upload',
   'js',
+  'jsItem',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -68,6 +69,7 @@ const NON_RECORD_ACTION_TYPE_ENUM = [
   'link',
   'upload',
   'js',
+  'jsItem',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -375,7 +377,7 @@ const examples = {
           description: 'Rendered by JS block runtime',
           className: 'hero-shell',
           version: '1.0.0',
-          code: "return { type: 'div', children: ['Hello from JS block'] };",
+          code: "ctx.render('<div>Hello from JS block</div>');",
         },
       },
     ],
@@ -472,7 +474,7 @@ const examples = {
       description: 'Rendered from FlowSurfaces configure',
       className: 'users-hero',
       version: '1.0.1',
-      code: "return { type: 'div', children: ['Users hero'] };",
+      code: "ctx.render('<div>Users hero</div>');",
     },
   },
   configureJsAction: {
@@ -486,6 +488,17 @@ const examples = {
       code: 'await ctx.runjs(\'console.log("diagnostics")\');',
     },
   },
+  configureJsItemAction: {
+    target: {
+      uid: 'js-item-action-uid',
+    },
+    changes: {
+      title: 'Run item diagnostics',
+      type: 'default',
+      version: '1.0.1',
+      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+    },
+  },
   configureJsField: {
     target: {
       uid: 'js-field-wrapper-uid',
@@ -493,7 +506,7 @@ const examples = {
     changes: {
       label: 'Custom renderer',
       version: '1.0.1',
-      code: "return record.nickname?.toUpperCase?.() || '';",
+      code: "ctx.render(String(ctx.record?.nickname?.toUpperCase?.() || ''));",
     },
   },
   configureJsColumn: {
@@ -505,7 +518,7 @@ const examples = {
       width: 240,
       fixed: 'left',
       version: '1.0.1',
-      code: 'return record.username;',
+      code: "ctx.render(String(ctx.record?.username || ''));",
     },
   },
   configureJsItem: {
@@ -517,7 +530,7 @@ const examples = {
       showLabel: true,
       labelWidth: 120,
       version: '1.0.1',
-      code: 'return record.nickname;',
+      code: "ctx.render(String(ctx.record?.nickname || ''));",
     },
   },
   configurePage: {
@@ -744,7 +757,7 @@ const examples = {
       title: 'Users banner',
       description: 'Custom JS rendered banner',
       version: '1.0.0',
-      code: "return { type: 'div', children: ['Users banner'] };",
+      code: "ctx.render('<div>Users banner</div>');",
     },
   },
   addField: {
@@ -755,7 +768,7 @@ const examples = {
     renderer: 'js',
     settings: {
       label: 'Nickname (JS)',
-      code: 'return value?.toUpperCase?.() || value;',
+      code: "ctx.render(String(ctx.value?.toUpperCase?.() || ctx.value || ''));",
       version: '1.0.0',
     },
   },
@@ -792,7 +805,7 @@ const examples = {
       title: 'Runtime column',
       width: 240,
       version: '1.0.0',
-      code: 'return record.nickname;',
+      code: "ctx.render(String(ctx.record?.nickname || ''));",
     },
   },
   addJsItem: {
@@ -804,7 +817,7 @@ const examples = {
       label: 'Runtime item',
       showLabel: true,
       version: '1.0.0',
-      code: 'return record.nickname;',
+      code: "ctx.render(String(ctx.record?.nickname || ''));",
     },
   },
   addAction: {
@@ -835,7 +848,19 @@ const examples = {
       title: 'Run JS',
       type: 'primary',
       version: '1.0.0',
-      code: 'return await ctx.runjs(\'console.log("hello")\');',
+      code: 'await ctx.runjs(\'console.log("hello")\');',
+    },
+  },
+  addJsItemAction: {
+    target: {
+      uid: 'create-form-uid',
+    },
+    type: 'jsItem',
+    settings: {
+      title: 'Run item JS',
+      type: 'default',
+      version: '1.0.0',
+      code: 'await ctx.runjs(\'console.log("item")\');',
     },
   },
   addRecordAction: {
@@ -1290,6 +1315,10 @@ const actionDocs: Record<string, any> = {
               summary: 'Configure a JS action with button text and runJs code/version',
               value: examples.configureJsAction,
             },
+            jsItemActionSettings: {
+              summary: 'Configure a form JS item action with button text and runJs code/version',
+              value: examples.configureJsItemAction,
+            },
             jsFieldSettings: {
               summary: 'Configure a JS field wrapper and inner JS field with code/version',
               value: examples.configureJsField,
@@ -1536,6 +1565,10 @@ const actionDocs: Record<string, any> = {
             js: {
               summary: 'Create a JS action under an action-panel container',
               value: examples.addJsAction,
+            },
+            jsItem: {
+              summary: 'Create a form JS item action under a create/edit/form action container',
+              value: examples.addJsItemAction,
             },
           },
         },
