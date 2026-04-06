@@ -20,8 +20,15 @@
   - record 容器 -> `JSRecordActionModel`
   - form 容器 -> `JSFormActionModel`
   - filter-form 容器 -> `FilterFormJSActionModel`
-  - item/form-record 复合上下文容器 -> `JSItemActionModel`
   - action-panel 容器 -> `JSActionModel`
+- 高频改配：`configure({ title, icon, type, code, version })`
+
+### `jsItem` action
+
+- public action key: `jsItem`
+- model use: `JSItemActionModel`
+- 适用位置：form / createForm / editForm 的 action 容器
+- 推荐入口：`addAction(type="jsItem")`
 - 高频改配：`configure({ title, icon, type, code, version })`
 
 ### 绑定字段 JS 变体：`renderer: "js"`
@@ -36,7 +43,9 @@
 
 - `type: "jsColumn"` -> `JSColumnModel`，仅 table
 - `type: "jsItem"` -> `JSItemModel`，仅 form/createForm/editForm
-- inline JS field item -> `FormJSFieldItemModel`，用于 form 场景下 item 级 JS 字段能力
+- inline form JS field item 的运行时 / validator 上下文名 -> `FormJSFieldItemModel`
+  - 这表示上游 RunJS 真实上下文会识别这个模型名
+  - 公开创建 form 里的绑定 JS 字段，仍然使用 `fieldPath + renderer: "js"`
 
 ## 推荐调用方式
 
@@ -80,6 +89,23 @@
 }
 ```
 
+### 2.1 创建 form `jsItem` action
+
+```json
+{
+  "target": {
+    "uid": "create-form-uid"
+  },
+  "type": "jsItem",
+  "settings": {
+    "title": "Run item JS",
+    "type": "default",
+    "version": "1.0.0",
+    "code": "await ctx.runjs('console.log(\"item\")');"
+  }
+}
+```
+
 ### 3. 创建绑定字段 JS 变体
 
 ```json
@@ -103,7 +129,7 @@
   "settings": {
     "title": "Runtime column",
     "version": "1.0.0",
-    "code": "ctx.render(String(ctx.record?.nickname || ""));"
+    "code": "ctx.render(String(ctx.record?.nickname || ''));"
   }
 }
 ```
@@ -120,7 +146,7 @@
     "label": "Runtime item",
     "showLabel": true,
     "version": "1.0.0",
-    "code": "ctx.render(String(ctx.record?.nickname || ""));"
+    "code": "ctx.render(String(ctx.record?.nickname || ''));"
   }
 }
 ```
@@ -167,8 +193,8 @@ JS 代码里可以优先从当前运行时上下文拿：
 
 - `ctx.runjs(...)`
 - `ctx.initResource(...)` / `ctx.resource`
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd` alias
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons`
+- `ctx.React` / `ctx.ReactDOM` / `ctx.antd` / `ctx.antdIcons` alias
 - 当前记录、当前表单值、当前弹窗上下文
 
 `jsBlock` 默认不预绑定 resource。如果需要数据访问，建议在代码里显式 `ctx.initResource(...)`，然后通过 `ctx.resource` 继续操作。

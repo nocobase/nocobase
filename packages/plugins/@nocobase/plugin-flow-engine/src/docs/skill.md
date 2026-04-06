@@ -105,7 +105,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 - block: `filter`、`addNew`、`popup`、`refresh`、`expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`、`triggerWorkflow`
 - record: `view`、`edit`、`popup`、`duplicate`、`addChild`、`delete`、`updateRecord`、`composeEmail`、`templatePrint`、`triggerWorkflow`
-- form: `submit`、`js`、`triggerWorkflow`
+- form: `submit`、`js`、`jsItem`、`triggerWorkflow`
 - filter-form: `submit`、`reset`、`collapse`、`js`
 - JS action: `js`
 
@@ -121,6 +121,8 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - 绑定字段的 JS 渲染变体：`{ "fieldPath": "nickname", "renderer": "js" }`
 - 非绑定 JS 列：`{ "type": "jsColumn" }`
 - 非绑定 JS 项：`{ "type": "jsItem" }`
+- form item 级 JS action：`{ "type": "jsItem" }`
+- `FormJSFieldItemModel` 是 inline form JS field item 的运行时 / validator 模型名；公开创建仍走 `fieldPath + renderer: "js"`
 
 ## 示例 1：创建菜单并初始化页面
 
@@ -770,6 +772,23 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 }
 ```
 
+### 6.2.1 form 下的 `jsItem` action
+
+```json
+{
+  "target": {
+    "uid": "create-form-uid"
+  },
+  "type": "jsItem",
+  "settings": {
+    "title": "Run item JS",
+    "type": "default",
+    "version": "1.0.0",
+    "code": "await ctx.runjs('console.log(\"item\")');"
+  }
+}
+```
+
 ### 6.3 JS 字段变体
 
 表格/details/list/gridCard 里的绑定 JS 字段：
@@ -795,7 +814,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
   "settings": {
     "title": "Runtime column",
     "version": "1.0.0",
-    "code": "ctx.render(String(ctx.record?.nickname || ""));"
+    "code": "ctx.render(String(ctx.record?.nickname || ''));"
   }
 }
 ```
@@ -812,7 +831,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
     "label": "Runtime item",
     "showLabel": true,
     "version": "1.0.0",
-    "code": "ctx.render(String(ctx.record?.nickname || ""));"
+    "code": "ctx.render(String(ctx.record?.nickname || ''));"
   }
 }
 ```

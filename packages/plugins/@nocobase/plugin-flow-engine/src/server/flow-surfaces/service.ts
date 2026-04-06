@@ -149,7 +149,7 @@ const FIELD_WRAPPER_USES = new Set([
   'FilterFormItemModel',
   'TableColumnModel',
 ]);
-const STANDALONE_FIELD_NODE_USES = new Set(['JSColumnModel', 'JSItemModel']);
+const STANDALONE_FIELD_NODE_USES = new Set(['JSColumnModel', 'JSItemModel', 'FormJSFieldItemModel']);
 const DISPLAY_FIELD_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
 const TITLE_FIELD_SUPPORTED_WRAPPER_USES = new Set([
   'FormItemModel',
@@ -202,6 +202,7 @@ const ACTION_BUTTON_USES = new Set([
   'JSCollectionActionModel',
   'JSRecordActionModel',
   'JSFormActionModel',
+  'JSItemActionModel',
   'FilterFormJSActionModel',
   'JSActionModel',
 ]);
@@ -210,6 +211,7 @@ const JS_ACTION_USES = new Set([
   'JSCollectionActionModel',
   'JSRecordActionModel',
   'JSFormActionModel',
+  'JSItemActionModel',
   'FilterFormJSActionModel',
   'JSActionModel',
 ]);

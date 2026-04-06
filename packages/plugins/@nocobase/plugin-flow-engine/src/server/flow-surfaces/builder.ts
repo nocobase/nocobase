@@ -116,6 +116,10 @@ const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
     'const values = ctx.form?.getFieldsValue?.() || {};',
     "ctx.message.success('Current form values: ' + JSON.stringify(values));",
   ].join('\n'),
+  JSItemActionModel: [
+    'const values = ctx.form?.getFieldsValue?.() || ctx.formValues || {};',
+    "ctx.message.success('Current form values: ' + JSON.stringify(values));",
+  ].join('\n'),
   FilterFormJSActionModel: '',
   JSActionModel: "ctx.message.info('Hello JS action.');",
 };
@@ -794,6 +798,10 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
     },
     JSFormActionModel: {
       title: 'JS action',
+      icon: 'JavaScriptOutlined',
+    },
+    JSItemActionModel: {
+      title: 'JS item',
       icon: 'JavaScriptOutlined',
     },
     FilterFormJSActionModel: {

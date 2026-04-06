@@ -567,6 +567,7 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'JSCollectionActionModel':
     case 'JSRecordActionModel':
     case 'JSFormActionModel':
+    case 'JSItemActionModel':
     case 'FilterFormJSActionModel':
     case 'JSActionModel':
       return merged(ACTION_JS_OPTIONS, ACTION_LINKAGE_OPTIONS);
@@ -664,6 +665,7 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       options = cloneOptions(JS_COLUMN_OPTIONS);
       break;
     case 'JSItemModel':
+    case 'FormJSFieldItemModel':
       options = cloneOptions(JS_ITEM_OPTIONS);
       break;
     default:

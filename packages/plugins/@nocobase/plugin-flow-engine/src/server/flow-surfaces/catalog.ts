@@ -2057,14 +2057,6 @@ function resolveStandaloneFieldUse(input: { requestedType?: string; containerUse
     }
     return 'JSItemModel';
   }
-  if (requestedType === 'formJsFieldItem') {
-    if (normalizeFieldContainerUse(input.containerUse) !== 'form') {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces field type 'formJsFieldItem' is only allowed under form containers`,
-      );
-    }
-    return 'FormJSFieldItemModel';
-  }
   throw new FlowSurfaceBadRequestError(
     `flowSurfaces field type '${requestedType}' is not a supported public capability`,
   );
@@ -2562,6 +2554,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'form',
     scene: 'form',
     use: 'JSFormActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'jsItem',
+    label: 'JS item',
+    scope: 'form',
+    scene: 'form',
+    use: 'JSItemActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,

@@ -143,6 +143,8 @@ describe('flowSurfaces ai docs', () => {
     expect(jsModels).toContain('JSItemActionModel');
     expect(jsModels).toContain('ctx.initResource');
     expect(jsModels).toContain('ctx.libs.React');
+    expect(jsModels).toContain('ctx.libs.ReactDOM');
+    expect(jsModels).toContain('ctx.libs.antdIcons');
     expect(jsModels).toContain('ctx.antd');
     expect(jsModels).not.toContain("return { type: 'div'");
     expect(jsModels).not.toContain('return record.nickname;');

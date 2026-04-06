@@ -1209,7 +1209,7 @@ describe('flowSurfaces resource', () => {
     );
     expect(createFormCatalog.blocks).toEqual([]);
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
+      expect.arrayContaining(['submit', 'js', 'jsItem', 'triggerWorkflow']),
     );
     expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
@@ -5014,7 +5014,7 @@ describe('flowSurfaces resource', () => {
       expect.arrayContaining(['duplicate', 'addChild', 'composeEmail']),
     );
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
+      expect.arrayContaining(['submit', 'js', 'jsItem', 'triggerWorkflow']),
     );
     expect(detailsCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
@@ -5242,6 +5242,9 @@ describe('flowSurfaces resource', () => {
     expect(tableCatalog.actions.map((item: any) => item.key)).toContain('js');
     expect(detailsCatalog.recordActions.map((item: any) => item.key)).toContain('js');
     expect(createFormCatalog.actions.map((item: any) => item.key)).toContain('js');
+    expect(createFormCatalog.actions.find((item: any) => item.key === 'jsItem')).toMatchObject({
+      use: 'JSItemActionModel',
+    });
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toContain('js');
     expect(actionPanelCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['js', 'triggerWorkflow']),
@@ -5257,6 +5260,7 @@ describe('flowSurfaces resource', () => {
     const rowJsAction = await addRecordAction(rootAgent, tableUid, 'js');
     const detailsJsAction = await addRecordAction(rootAgent, detailsUid, 'js');
     const formJsAction = await addAction(rootAgent, createFormUid, 'js');
+    const formJsItemAction = await addAction(rootAgent, createFormUid, 'jsItem');
     const filterJsAction = await addAction(rootAgent, filterFormUid, 'js');
     const panelJsAction = await addAction(rootAgent, actionPanelUid, 'js');
 
@@ -5264,6 +5268,7 @@ describe('flowSurfaces resource', () => {
     expect((await getSurface(rootAgent, { uid: rowJsAction.uid })).tree.use).toBe('JSRecordActionModel');
     expect((await getSurface(rootAgent, { uid: detailsJsAction.uid })).tree.use).toBe('JSRecordActionModel');
     expect((await getSurface(rootAgent, { uid: formJsAction.uid })).tree.use).toBe('JSFormActionModel');
+    expect((await getSurface(rootAgent, { uid: formJsItemAction.uid })).tree.use).toBe('JSItemActionModel');
     expect((await getSurface(rootAgent, { uid: filterJsAction.uid })).tree.use).toBe('FilterFormJSActionModel');
     expect((await getSurface(rootAgent, { uid: panelJsAction.uid })).tree.use).toBe('JSActionModel');
 
@@ -5392,6 +5397,20 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsActionConfigureRes.status).toBe(200);
 
+    const jsItemActionConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: formJsItemAction.uid,
+        },
+        changes: {
+          title: 'Run item diagnostics',
+          version: '1.0.1',
+          code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+        },
+      },
+    });
+    expect(jsItemActionConfigureRes.status).toBe(200);
+
     const jsColumnConfigureRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
@@ -5428,6 +5447,7 @@ describe('flowSurfaces resource', () => {
     const composedJsBlockReadback = await getSurface(rootAgent, { uid: composedJsBlockUid });
     const jsFieldReadback = await getSurface(rootAgent, { uid: tableJsField.fieldUid });
     const jsActionReadback = await getSurface(rootAgent, { uid: panelJsAction.uid });
+    const jsItemActionReadback = await getSurface(rootAgent, { uid: formJsItemAction.uid });
     const jsColumnReadback = await getSurface(rootAgent, { uid: jsColumn.uid });
     const jsItemReadback = await getSurface(rootAgent, { uid: jsItem.uid });
 
@@ -5454,6 +5474,10 @@ describe('flowSurfaces resource', () => {
     expect(jsActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
       version: '1.0.1',
       code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+    });
+    expect(jsItemActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
     });
     expect(jsColumnReadback.tree.props).toMatchObject({
       title: 'JS column',
