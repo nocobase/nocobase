@@ -9,8 +9,8 @@ Before you begin, please ensure:
 - You have a basic NocoBase running environment. For main system installation, please refer to the [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - NocoBase version **v2.1.0-beta.2 or above**.
 - You have downloaded the corresponding CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) - For Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) - For Method 2
+  - **Backup file**: [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata) - For Method 1
+  - **SQL file**: [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip) - For Method 2
 
 **Important Notes**:
 - This solution is built on **PostgreSQL 16**. Please ensure your environment uses PostgreSQL 16.
@@ -155,3 +155,6 @@ After SQL import, file uploads may fail with an OSS-related error. Solution: go 
 Currently, version upgrades are full replacements — your custom modifications will be overwritten. Always back up before upgrading. An incremental migration solution is being planned and will prioritize Pro/Enterprise editions. Community edition support is more difficult due to the lack of the migration management plugin.
 
 We hope this tutorial helps you successfully deploy the CRM 2.0 system. If you encounter any problems during the process, please feel free to contact us!
+---
+
+*Last updated: 2026-04-02*

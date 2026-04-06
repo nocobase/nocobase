@@ -13,8 +13,8 @@ Avant de commencer, veuillez vous assurer que :
 - Vous disposez déjà d'un environnement d'exécution NocoBase de base. Pour l'installation du système principal, veuillez vous référer au [document d'installation officiel](https://docs-cn.nocobase.com/welcome/getting-started/installation) plus détaillé.
 - Version de NocoBase **v2.1.0-beta.2 ou supérieure**
 - Vous avez déjà téléchargé les fichiers correspondants du système CRM :
-  - **Fichier de sauvegarde** : [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) - Applicable à la méthode 1
-  - **Fichier SQL** : [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) - Applicable à la méthode 2
+  - **Fichier de sauvegarde** : [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata) - Applicable à la méthode 1
+  - **Fichier SQL** : [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip) - Applicable à la méthode 2
 
 **Remarques importantes** :
 - Cette solution est basée sur la base de données **PostgreSQL 16**, veuillez vous assurer que votre environnement utilise PostgreSQL 16.
@@ -135,3 +135,6 @@ Configurez vos paramètres de démarrage NocoBase (tels que les variables d'envi
 | **Scénarios recommandés** | Utilisateurs en entreprise, avec un environnement contrôlé et cohérent, nécessitant des fonctionnalités complètes | Manque de certains plugins, recherche d'une compatibilité et d'une flexibilité élevées, utilisateurs non Pro/Entreprise, acceptation de la perte des fonctions de fichiers |
 
 Nous espérons que ce tutoriel vous aidera à déployer avec succès le système CRM 2.0. Si vous rencontrez des problèmes lors de l'opération, n'hésitez pas à nous contacter !
+---
+
+*Last updated: 2026-04-02*
