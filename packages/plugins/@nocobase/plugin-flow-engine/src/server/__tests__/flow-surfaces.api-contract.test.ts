@@ -17,7 +17,12 @@ import {
   buildPopupPageTree,
   buildSyntheticRootPageTabModel,
 } from '../flow-surfaces/builder';
-import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
+import {
+  createFlowSurfacesMockServer,
+  loginFlowSurfacesRootAgent,
+  syncFlowSurfacesEnabledPlugins,
+} from './flow-surfaces.mock-server';
+import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
 describe('flowSurfaces API contract builders', () => {
   it('should keep persisted root page builder separate from synthetic tab and popup builders', async () => {
@@ -278,6 +283,29 @@ describe('flowSurfaces API contract', () => {
       type: 'bad_request',
     });
     expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+
+    const wrappedEmptyValuesRes = await rootAgent.resource('flowSurfaces').get({
+      pageSchemaUid: page.pageSchemaUid,
+      values: {},
+    } as any);
+    expect(wrappedEmptyValuesRes.status).toBe(400);
+    expectStructuredError(readErrorItem(wrappedEmptyValuesRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(wrappedEmptyValuesRes)).toContain(`do not wrap them in 'values'`);
+
+    const rawWrappedValuesQueryRes = await rootAgent.get(
+      `/flowSurfaces:get?pageSchemaUid=${encodeURIComponent(page.pageSchemaUid)}&values%5Buid%5D=${encodeURIComponent(
+        page.pageUid,
+      )}`,
+    );
+    expect(rawWrappedValuesQueryRes.status).toBe(400);
+    expectStructuredError(readErrorItem(rawWrappedValuesQueryRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(rawWrappedValuesQueryRes)).toContain(`do not wrap them in 'values'`);
   });
 
   it('should treat missing apply mode as replace and reject unsupported modes', async () => {
@@ -1525,6 +1553,87 @@ describe('flowSurfaces API contract', () => {
       .filter((item: any) => item.key === 'js')
       .map((item: any) => item.scope);
     expect(recordJsVariants).toEqual(expect.arrayContaining(['record']));
+  });
+
+  it('should only expose catalog blocks and actions backed by plugins enabled in the current app instance', async () => {
+    await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_MINIMAL_TEST_PLUGINS);
+    try {
+      const minimalRootAgent = await loginFlowSurfacesRootAgent(app);
+
+      const page = await createPage(minimalRootAgent, {
+        title: 'Minimal catalog page',
+        tabTitle: 'Minimal catalog tab',
+      });
+      const pageCatalog = getData(
+        await minimalRootAgent.resource('flowSurfaces').catalog({
+          values: {
+            target: {
+              uid: page.tabSchemaUid,
+            },
+          },
+        }),
+      );
+      expect(pageCatalog.blocks.map((item: any) => item.use)).toEqual(
+        expect.arrayContaining([
+          'TableBlockModel',
+          'CreateFormModel',
+          'EditFormModel',
+          'DetailsBlockModel',
+          'FilterFormBlockModel',
+          'JSBlockModel',
+        ]),
+      );
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'MarkdownBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'IframeBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'ChartBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')).toBeUndefined();
+      expect(pageCatalog.blocks.find((item: any) => item.use === 'ActionPanelBlockModel')).toBeUndefined();
+
+      const table = await addBlockData(minimalRootAgent, {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+      });
+      const tableCatalog = getData(
+        await minimalRootAgent.resource('flowSurfaces').catalog({
+          values: {
+            target: {
+              uid: table.uid,
+            },
+          },
+        }),
+      );
+      expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
+        expect.arrayContaining(['filter', 'addNew', 'popup', 'refresh', 'expandCollapse', 'bulkDelete', 'link', 'js']),
+      );
+      expect(tableCatalog.actions.find((item: any) => item.key === 'bulkEdit')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'bulkUpdate')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'export')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'exportAttachments')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'import')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'upload')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'composeEmail')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'templatePrint')).toBeUndefined();
+      expect(tableCatalog.actions.find((item: any) => item.key === 'triggerWorkflow')).toBeUndefined();
+
+      expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
+        expect.arrayContaining(['addChild', 'view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+      );
+      expect(tableCatalog.recordActions.find((item: any) => item.key === 'duplicate')).toBeUndefined();
+      expect(tableCatalog.recordActions.find((item: any) => item.key === 'composeEmail')).toBeUndefined();
+      expect(tableCatalog.recordActions.find((item: any) => item.key === 'templatePrint')).toBeUndefined();
+      expect(tableCatalog.recordActions.find((item: any) => item.key === 'triggerWorkflow')).toBeUndefined();
+    } finally {
+      await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_TEST_PLUGINS);
+    }
   });
 
   it('should expose public catalog action keys for representative block targets', async () => {

@@ -38,6 +38,8 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('moveNode');
     expect(content).toContain('GET /api/flowSurfaces:get?uid=view-action-uid');
     expect(content).toContain('GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema');
+    expect(content).toContain('`loggedIn`');
+    expect(content).toContain('`ui.flowSurfaces`');
     expect(content).toContain('不要写成 `{ "target": { "uid": "..." } }`');
     expect(content).toContain('`locator`、`uid`、`kind`');
     expect(content).toContain('`message`、`type`、`code`、`status`');
@@ -80,6 +82,7 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('"span": 7');
     expect(content).toContain('`table` / `details` / `list` / `gridCard`');
     expect(content).toContain('`catalog(target=table/details/list/gridCard)`');
+    expect(content).toContain('真实可用的公开能力');
     expect(content).toContain('wrapperUid/fieldUid');
     expect(content).toContain('popupPageUid/popupTabUid/popupGridUid');
     expect(content).toContain('popup child tab API');

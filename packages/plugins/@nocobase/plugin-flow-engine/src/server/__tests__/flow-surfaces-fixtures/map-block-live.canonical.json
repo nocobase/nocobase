@@ -26,13 +26,5 @@
     "title": "tmp-check",
     "icon": null,
     "options": null
-  },
-  "tabs": [
-    {
-      "alias": "tab.main.route",
-      "type": "tabs",
-      "title": "Tab 1",
-      "icon": null
-    }
-  ]
+  }
 }

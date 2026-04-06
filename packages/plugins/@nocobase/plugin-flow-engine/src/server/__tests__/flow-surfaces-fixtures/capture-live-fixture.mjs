@@ -3,9 +3,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import routeBackedTabHelpers from './route-backed-tabs.js';
-
-const { deriveRouteBackedTabs, deriveRouteBackedTabTrees } = routeBackedTabHelpers;
 
 const NOISY_KEYS = new Set([
   'id',
@@ -117,7 +114,6 @@ const rawPersisted = compactObject({
   }),
   tree,
   pageRoute: persistedRoutes.pageRoute,
-  tabs: persistedRoutes.tabs,
 });
 
 const bundle = createFlowSurfaceFixture({ rawPersisted, readback });
@@ -277,12 +273,6 @@ select json_build_object(
     select to_jsonb(dr)
     from "desktopRoutes" dr
     where dr.id = ${Number(pageRouteId) || 0}
-  ),
-  'tabs', (
-    select coalesce(json_agg(to_jsonb(tab) order by tab.sort asc), '[]'::json)
-    from "desktopRoutes" tab
-    where tab."parentId" = ${Number(pageRouteId) || 0}
-      and tab.type = 'tabs'
   )
 );
   `.trim();
@@ -348,24 +338,10 @@ function materializeCanonicalSource(input) {
   const persisted = raw?.persisted ? toPlainObject(raw.persisted) : undefined;
   const tree = persisted?.tree || raw?.tree;
   const pageRoute = persisted?.pageRoute || raw?.pageRoute;
-  const legacyTabs = persisted?.tabs || raw?.tabs;
-  const legacyTabTrees = persisted?.tabTrees || raw?.tabTrees;
-  const tabs = deriveRouteBackedTabs({
-    pageRoute,
-    tabs: legacyTabs,
-    tabTrees: legacyTabTrees,
-  });
-  const tabTrees = deriveRouteBackedTabTrees({
-    tree,
-    tabs,
-    tabTrees: legacyTabTrees,
-  });
   return compactObject({
     target: raw?.target,
     tree,
     pageRoute,
-    tabs,
-    tabTrees,
   });
 }
 
@@ -440,17 +416,6 @@ function normalizeCanonicalSource(source) {
     }),
     tree: raw?.tree ? normalizeNode(raw.tree, state, refs) : undefined,
     pageRoute: raw?.pageRoute ? normalizeRoute(raw.pageRoute, 'page.route', refs) : undefined,
-    tabs: Array.isArray(raw?.tabs)
-      ? raw.tabs.map((tab, index) => normalizeRoute(tab, `${getTopLevelTabAlias(index)}.route`, refs))
-      : undefined,
-    tabTrees: Array.isArray(raw?.tabTrees)
-      ? raw.tabTrees.map((item, index) =>
-          compactObject({
-            route: normalizeRoute(item.route, `${getTopLevelTabAlias(index)}.route`, refs),
-            tree: item.tree ? normalizeNode(item.tree, state, refs, getTopLevelTabAlias(index)) : undefined,
-          }),
-        )
-      : undefined,
   });
 
   return {

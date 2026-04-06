@@ -7801,26 +7801,30 @@ describe('flowSurfaces resource', () => {
       } as any),
     ).rejects.toThrow(`do not wrap them in 'values'`);
 
-    const postGetRes = await rootAgent.post('/api/flowSurfaces:get').send({
+    const postGetRes = await rootAgent.post('/flowSurfaces:get').send({
       pageSchemaUid: page.pageSchemaUid,
     });
-    expect(postGetRes.status).toBe(404);
+    expect(postGetRes.status).toBe(400);
+    expect(readErrorMessage(postGetRes)).toContain('only supports GET');
+
+    const wrappedEmptyValuesRes = await rootAgent.resource('flowSurfaces').get({
+      pageSchemaUid: page.pageSchemaUid,
+      values: {},
+    } as any);
+    expect(wrappedEmptyValuesRes.status).toBe(400);
+    expect(readErrorMessage(wrappedEmptyValuesRes)).toContain(`do not wrap them in 'values'`);
 
     const wrappedTargetRes = await rootAgent.get(
-      `/api/flowSurfaces:get?target%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
+      `/flowSurfaces:get?target%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
     );
-    expect([400, 404]).toContain(wrappedTargetRes.status);
-    if (wrappedTargetRes.status === 400) {
-      expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
-    }
+    expect(wrappedTargetRes.status).toBe(400);
+    expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
 
     const wrappedValuesRes = await rootAgent.get(
-      `/api/flowSurfaces:get?values%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
+      `/flowSurfaces:get?values%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
     );
-    expect([400, 404]).toContain(wrappedValuesRes.status);
-    if (wrappedValuesRes.status === 400) {
-      expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
-    }
+    expect(wrappedValuesRes.status).toBe(400);
+    expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
   });
 
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {

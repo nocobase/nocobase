@@ -11,13 +11,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import _ from 'lodash';
 import type { FormalFlowSurfaceBlockKey } from '../flow-surfaces/support-matrix';
-import routeBackedTabHelpers from './flow-surfaces-fixtures/route-backed-tabs.js';
 
 export const FLOW_SURFACE_FIXTURE_ROOT = path.resolve(__dirname, 'flow-surfaces-fixtures');
-const { deriveRouteBackedTabs, deriveRouteBackedTabTrees } = routeBackedTabHelpers as {
-  deriveRouteBackedTabs: (input: { pageRoute?: any; tabs?: any; tabTrees?: any }) => any;
-  deriveRouteBackedTabTrees: (input: { tree?: any; tabs?: any; tabTrees?: any }) => any;
-};
 
 const NOISY_KEYS = new Set([
   'id',
@@ -247,17 +242,6 @@ function normalizeCanonicalSource(source: any) {
     }),
     tree: raw?.tree ? normalizeNode(raw.tree, state, refs) : undefined,
     pageRoute: raw?.pageRoute ? normalizeRoute(raw.pageRoute, 'page.route', refs) : undefined,
-    tabs: Array.isArray(raw?.tabs)
-      ? raw.tabs.map((tab: any, index: number) => normalizeRoute(tab, `${getTopLevelTabAlias(index)}.route`, refs))
-      : undefined,
-    tabTrees: Array.isArray(raw?.tabTrees)
-      ? raw.tabTrees.map((item: any, index: number) =>
-          compactObject({
-            route: normalizeRoute(item.route, `${getTopLevelTabAlias(index)}.route`, refs),
-            tree: item.tree ? normalizeNode(item.tree, state, refs, getTopLevelTabAlias(index)) : undefined,
-          }),
-        )
-      : undefined,
   });
 
   return {
@@ -1268,25 +1252,11 @@ function materializeCanonicalSource(input: any) {
   const persisted = raw?.persisted ? toPlainObject(raw.persisted) : undefined;
   const tree = persisted?.tree || persisted?.focusNode || raw?.tree;
   const pageRoute = persisted?.pageRoute || raw?.pageRoute;
-  const legacyTabs = persisted?.tabs || raw?.tabs;
-  const legacyTabTrees = persisted?.tabTrees || raw?.tabTrees;
-  const tabs = deriveRouteBackedTabs({
-    pageRoute,
-    tabs: legacyTabs,
-    tabTrees: legacyTabTrees,
-  });
-  const tabTrees = deriveRouteBackedTabTrees({
-    tree,
-    tabs,
-    tabTrees: legacyTabTrees,
-  });
 
   return compactObject({
     target: raw?.target,
     tree,
     pageRoute,
-    tabs,
-    tabTrees,
   });
 }
 

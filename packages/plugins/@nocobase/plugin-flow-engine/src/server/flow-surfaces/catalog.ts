@@ -290,9 +290,14 @@ type FlowSurfaceActionRegistryItem = {
   scope: FlowSurfaceActionScope;
   scene?: string;
   use: string;
+  ownerPlugin: string;
   allowedContainerUses: string[];
   createSupported?: boolean;
 };
+const CORE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/core/client';
+const FLOW_SURFACE_BLOCK_OWNER_PLUGIN_BY_USE = new Map(
+  FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => [entry.modelUse, entry.ownerPlugin]),
+);
 const JS_EDITABLE_FIELD_USE_SET = new Set(['JSEditableFieldModel']);
 const JS_DISPLAY_FIELD_USE_SET = new Set(['JSFieldModel']);
 const EDITABLE_FIELD_USE_SET = new Set([
@@ -2205,7 +2210,11 @@ function dedupeActionCatalogItems(
   });
 }
 
-export function getAvailableActionCatalogItems(containerUse?: string, scope?: FlowSurfaceActionScope) {
+export function getAvailableActionCatalogItems(
+  containerUse?: string,
+  scope?: FlowSurfaceActionScope,
+  enabledPackages?: ReadonlySet<string>,
+) {
   const visible = getContainerScopedActionCatalogItems(actionCatalog, containerUse, {
     allowUnknownContainer: true,
     context: 'catalog',
@@ -2213,7 +2222,7 @@ export function getAvailableActionCatalogItems(containerUse?: string, scope?: Fl
   const scoped = scope ? visible.filter((item) => item.scope === scope) : visible;
   const normalized = scoped.map((item) => toPublicActionCatalogItem(item));
   return dedupeActionCatalogItems(
-    normalized,
+    filterAvailableCatalogItems(normalized, enabledPackages),
     containerUse ? (item) => `${item.key}:${item.use}` : (item) => `${item.key}:${item.scope || ''}:${item.use}`,
   );
 }
@@ -2253,6 +2262,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'FilterActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2262,6 +2272,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'AddNewActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2271,6 +2282,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'PopupCollectionActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2280,6 +2292,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'RefreshActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2289,6 +2302,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'ExpandCollapseActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2298,6 +2312,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'BulkDeleteActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2307,6 +2322,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'BulkEditActionModel',
+    ownerPlugin: '@nocobase/plugin-action-bulk-edit',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2316,6 +2332,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'BulkUpdateActionModel',
+    ownerPlugin: '@nocobase/plugin-action-bulk-update',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2325,6 +2342,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'ExportActionModel',
+    ownerPlugin: '@nocobase/plugin-action-export',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2334,6 +2352,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'ExportAttachmentActionModel',
+    ownerPlugin: '@nocobase/plugin-action-export',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2343,6 +2362,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'ImportActionModel',
+    ownerPlugin: '@nocobase/plugin-action-import',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2352,6 +2372,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'LinkActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2361,6 +2382,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'UploadActionModel',
+    ownerPlugin: '@nocobase/plugin-file-manager',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2370,6 +2392,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'JSCollectionActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2379,6 +2402,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'MailSendActionModel',
+    ownerPlugin: '@nocobase/plugin-email-manager',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2388,6 +2412,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'TemplatePrintCollectionActionModel',
+    ownerPlugin: '@nocobase/plugin-action-template-print',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2397,6 +2422,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'block',
     scene: 'collection',
     use: 'CollectionTriggerWorkflowActionModel',
+    ownerPlugin: '@nocobase/plugin-workflow-custom-action-trigger',
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2406,6 +2432,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'DuplicateActionModel',
+    ownerPlugin: '@nocobase/plugin-action-duplicate',
     allowedContainerUses: TABLE_ROW_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2415,6 +2442,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'AddChildActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: TABLE_ROW_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2424,6 +2452,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'ViewActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2433,6 +2462,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'EditActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2442,6 +2472,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'PopupCollectionActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2451,6 +2482,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'MailSendActionModel',
+    ownerPlugin: '@nocobase/plugin-email-manager',
     allowedContainerUses: [...TABLE_ROW_ACTION_CONTAINER_USES, ...DETAILS_ACTION_CONTAINER_USES],
     createSupported: true,
   },
@@ -2460,6 +2492,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'DeleteActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2469,6 +2502,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'UpdateRecordActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2478,6 +2512,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'JSRecordActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2487,6 +2522,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'TemplatePrintRecordActionModel',
+    ownerPlugin: '@nocobase/plugin-action-template-print',
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2496,6 +2532,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'RecordTriggerWorkflowActionModel',
+    ownerPlugin: '@nocobase/plugin-workflow-custom-action-trigger',
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2505,6 +2542,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'form',
     scene: 'form',
     use: 'FormSubmitActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2514,6 +2552,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'form',
     scene: 'form',
     use: 'JSFormActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2523,6 +2562,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'form',
     scene: 'form',
     use: 'FormTriggerWorkflowActionModel',
+    ownerPlugin: '@nocobase/plugin-workflow-custom-action-trigger',
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2532,6 +2572,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'filterForm',
     scene: 'form',
     use: 'FilterFormSubmitActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2541,6 +2582,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'filterForm',
     scene: 'form',
     use: 'FilterFormResetActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2550,6 +2592,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'filterForm',
     scene: 'form',
     use: 'FilterFormCollapseActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2559,6 +2602,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'filterForm',
     scene: 'form',
     use: 'FilterFormJSActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2568,6 +2612,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'actionPanel',
     scene: 'all',
     use: 'JSActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: ACTION_PANEL_ACTION_CONTAINER_USES,
     createSupported: true,
   },
@@ -2577,16 +2622,26 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'actionPanel',
     scene: 'all',
     use: 'WorkbenchTriggerWorkflowActionModel',
+    ownerPlugin: '@nocobase/plugin-workflow-custom-action-trigger',
     allowedContainerUses: ACTION_PANEL_ACTION_CONTAINER_USES,
     createSupported: true,
   },
 ];
+const FLOW_SURFACE_ACTION_OWNER_PLUGIN_BY_USE = actionRegistry.reduce((map, item) => {
+  if (!map.has(item.use)) {
+    map.set(item.use, item.ownerPlugin);
+  }
+  return map;
+}, new Map<string, string>());
 
 function throwCatalogInvariant(message: string): never {
   throw new FlowSurfaceInternalError(message, 'FLOW_SURFACE_INTERNAL_INVARIANT');
 }
 
 function validateActionRegistryItem(item: FlowSurfaceActionRegistryItem) {
+  if (!item.ownerPlugin.trim()) {
+    throwCatalogInvariant(`flowSurfaces action registry '${item.publicKey}' must declare ownerPlugin`);
+  }
   if (!item.allowedContainerUses.length) {
     throwCatalogInvariant(`flowSurfaces action registry '${item.publicKey}' must declare allowedContainerUses`);
   }
@@ -2640,6 +2695,64 @@ export const ACTION_CATALOG_BY_USE = actionCatalog.reduce((map, item) => {
 export const BLOCK_KEY_BY_USE = new Map(FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((item) => [item.modelUse, item.key]));
 export const ACTION_KEY_BY_USE = new Map(actionCatalog.map((item) => [item.use, toPublicActionCatalogItem(item).key]));
 
+function getCatalogItemOwnerPlugin(item: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'>) {
+  if (item.kind === 'block') {
+    return FLOW_SURFACE_BLOCK_OWNER_PLUGIN_BY_USE.get(item.use);
+  }
+  if (item.kind === 'action') {
+    return FLOW_SURFACE_ACTION_OWNER_PLUGIN_BY_USE.get(item.use);
+  }
+  return undefined;
+}
+
+function isAlwaysAvailableCatalogOwnerPlugin(ownerPlugin?: string) {
+  return !ownerPlugin || ownerPlugin === CORE_FLOW_SURFACE_OWNER_PLUGIN;
+}
+
+function throwUnavailableCatalogItem(
+  item: Pick<FlowSurfaceCatalogItem, 'kind' | 'key' | 'use'>,
+  options: {
+    context: string;
+    requestedType?: string;
+    requestedUse?: string;
+  },
+): never {
+  const requested =
+    String(options.requestedType || '').trim() ||
+    String(options.requestedUse || '').trim() ||
+    String(item.key || '').trim() ||
+    String(item.use || '').trim();
+  const ownerPlugin = getCatalogItemOwnerPlugin(item);
+  const reason =
+    ownerPlugin && !isAlwaysAvailableCatalogOwnerPlugin(ownerPlugin)
+      ? ` because plugin '${ownerPlugin}' is not enabled`
+      : '';
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces ${options.context} ${item.kind} '${requested}' is not available in the current app instance${reason}`,
+  );
+}
+
+export function isCatalogItemAvailable(
+  item: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'>,
+  enabledPackages?: ReadonlySet<string>,
+) {
+  if (!enabledPackages) {
+    return true;
+  }
+  const ownerPlugin = getCatalogItemOwnerPlugin(item);
+  return isAlwaysAvailableCatalogOwnerPlugin(ownerPlugin) || (ownerPlugin ? enabledPackages.has(ownerPlugin) : false);
+}
+
+export function filterAvailableCatalogItems<T extends Pick<FlowSurfaceCatalogItem, 'kind' | 'use'>>(
+  items: T[],
+  enabledPackages?: ReadonlySet<string>,
+) {
+  if (!enabledPackages) {
+    return [...items];
+  }
+  return items.filter((item) => isCatalogItemAvailable(item, enabledPackages));
+}
+
 function normalizeActionCatalogKey(type?: string) {
   return String(type || '').trim();
 }
@@ -2650,6 +2763,8 @@ export function resolveSupportedBlockCatalogItem(
     use?: string;
   },
   options: {
+    context?: string;
+    enabledPackages?: ReadonlySet<string>;
     requireCreateSupported?: boolean;
   } = {},
 ) {
@@ -2659,6 +2774,13 @@ export function resolveSupportedBlockCatalogItem(
 
   if (!item) {
     throw new FlowSurfaceBadRequestError(`flowSurfaces addBlock only supports registered block types/uses`);
+  }
+  if (!isCatalogItemAvailable(item, options.enabledPackages)) {
+    throwUnavailableCatalogItem(item, {
+      context: options.context || 'addBlock',
+      requestedType: input.type,
+      requestedUse: input.use,
+    });
   }
   if (options.requireCreateSupported && item.createSupported === false) {
     throw new FlowSurfaceBadRequestError(`flowSurfaces addBlock does not support creating '${item.key}' yet`);
@@ -2673,6 +2795,8 @@ export function resolveSupportedActionCatalogItem(
     containerUse?: string;
   },
   options: {
+    context?: string;
+    enabledPackages?: ReadonlySet<string>;
     requireCreateSupported?: boolean;
   } = {},
 ) {
@@ -2688,11 +2812,25 @@ export function resolveSupportedActionCatalogItem(
 
   if (normalizedUse) {
     const useCandidates = ACTION_CATALOG_BY_USE.get(normalizedUse) || [];
-    const matched = getContainerScopedActionCatalogItems(useCandidates, input.containerUse);
-    if (useCandidates.length && input.containerUse && !matched.length) {
+    const availableUseCandidates = filterAvailableCatalogItems(useCandidates, options.enabledPackages);
+    const matchedAll = getContainerScopedActionCatalogItems(useCandidates, input.containerUse);
+    const matched = getContainerScopedActionCatalogItems(availableUseCandidates, input.containerUse);
+    if (useCandidates.length && input.containerUse && !matchedAll.length) {
       throw new FlowSurfaceBadRequestError(
         `flowSurfaces addAction '${normalizedUse}' is not allowed under '${input.containerUse}'`,
       );
+    }
+    if ((matchedAll.length || useCandidates.length) && !matched.length && !availableUseCandidates.length) {
+      throwUnavailableCatalogItem(useCandidates[0], {
+        context: options.context || 'addAction',
+        requestedUse: normalizedUse,
+      });
+    }
+    if (matchedAll.length && !matched.length) {
+      throwUnavailableCatalogItem(matchedAll[0], {
+        context: options.context || 'addAction',
+        requestedUse: normalizedUse,
+      });
     }
     if (matched.length > 1 && !input.containerUse) {
       throw new FlowSurfaceBadRequestError(
@@ -2705,11 +2843,25 @@ export function resolveSupportedActionCatalogItem(
   if (!item && requestedType) {
     const normalizedType = normalizeActionCatalogKey(input.type);
     const candidates = (normalizedType ? ACTION_CATALOG_BY_KEY.get(normalizedType) : undefined) || [];
-    const matched = getContainerScopedActionCatalogItems(candidates, input.containerUse);
-    if (candidates.length && input.containerUse && !matched.length) {
+    const availableCandidates = filterAvailableCatalogItems(candidates, options.enabledPackages);
+    const matchedAll = getContainerScopedActionCatalogItems(candidates, input.containerUse);
+    const matched = getContainerScopedActionCatalogItems(availableCandidates, input.containerUse);
+    if (candidates.length && input.containerUse && !matchedAll.length) {
       throw new FlowSurfaceBadRequestError(
         `flowSurfaces addAction '${requestedType}' is not allowed under '${input.containerUse}'`,
       );
+    }
+    if ((matchedAll.length || candidates.length) && !matched.length && !availableCandidates.length) {
+      throwUnavailableCatalogItem(candidates[0], {
+        context: options.context || 'addAction',
+        requestedType,
+      });
+    }
+    if (matchedAll.length && !matched.length) {
+      throwUnavailableCatalogItem(matchedAll[0], {
+        context: options.context || 'addAction',
+        requestedType,
+      });
     }
     if (matched.length > 1 && !input.containerUse) {
       throw new FlowSurfaceBadRequestError(
@@ -2721,6 +2873,13 @@ export function resolveSupportedActionCatalogItem(
 
   if (!item) {
     throw new FlowSurfaceBadRequestError(`flowSurfaces addAction only supports registered action types/uses`);
+  }
+  if (!isCatalogItemAvailable(item, options.enabledPackages)) {
+    throwUnavailableCatalogItem(item, {
+      context: options.context || 'addAction',
+      requestedType: input.type,
+      requestedUse: input.use,
+    });
   }
   if (requestedType) {
     const publicKey = toPublicActionCatalogItem(item).key;

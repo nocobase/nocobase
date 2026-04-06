@@ -7,19 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PluginManager } from '@nocobase/server';
 import { createMockServer, MockServer, type MockServerOptions } from '@nocobase/test';
-import { FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
+import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
-export async function createFlowSurfacesMockServer(options: MockServerOptions = {}) {
-  return createMockServer({
+type FlowSurfacesMockServerOptions = MockServerOptions & {
+  enabledPluginAliases?: readonly string[];
+};
+
+export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServerOptions = {}) {
+  const {
+    enabledPluginAliases = Array.isArray(options.plugins) ? options.plugins : FLOW_SURFACES_TEST_PLUGINS,
+    plugins = [...FLOW_SURFACES_MINIMAL_TEST_PLUGINS],
+    ...restOptions
+  } = options;
+
+  const app = await createMockServer({
     registerActions: true,
     acl: true,
-    plugins: [...FLOW_SURFACES_TEST_PLUGINS],
+    plugins,
     beforeInstall: async (app) => {
       await app.cleanDb();
     },
-    ...options,
+    ...restOptions,
   });
+
+  await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases);
+
+  return app;
 }
 
 export async function loginFlowSurfacesRootAgent(app: MockServer) {
@@ -75,4 +90,68 @@ export async function loginFlowSurfacesRootAgent(app: MockServer) {
 function isRetriableAgentError(error: any) {
   const message = String(error?.message || '');
   return error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT' || /socket hang up|timed out/i.test(message);
+}
+
+export async function syncFlowSurfacesEnabledPlugins(
+  app: MockServer,
+  enabledPluginAliases: readonly string[],
+  knownPluginAliases: readonly string[] = FLOW_SURFACES_TEST_PLUGINS,
+) {
+  const repository = app.db.getRepository('applicationPlugins');
+  const existing = await repository.find({
+    fields: ['id', 'packageName', 'enabled'],
+  });
+
+  const existingByPackageName = new Map(
+    existing
+      .map((record: any) => ({
+        id: record?.get?.('id') ?? record?.id,
+        packageName: record?.get?.('packageName') || record?.packageName,
+        enabled: record?.get?.('enabled') ?? record?.enabled,
+      }))
+      .filter((record: any) => typeof record.packageName === 'string' && record.packageName.trim())
+      .map((record: any) => [record.packageName, record]),
+  );
+
+  const desiredPackageNames = new Set(
+    await Promise.all(
+      enabledPluginAliases.map(async (pluginAlias) => {
+        const { packageName } = await PluginManager.parseName(pluginAlias);
+        return packageName;
+      }),
+    ),
+  );
+
+  for (const pluginAlias of knownPluginAliases) {
+    const { name, packageName } = await PluginManager.parseName(pluginAlias);
+    const existingRecord = existingByPackageName.get(packageName);
+    const shouldEnable = desiredPackageNames.has(packageName);
+
+    if (!existingRecord && !shouldEnable) {
+      continue;
+    }
+
+    if (!existingRecord) {
+      await repository.create({
+        values: {
+          name,
+          packageName,
+          enabled: true,
+          installed: true,
+        },
+      });
+      continue;
+    }
+
+    if (Boolean(existingRecord.enabled) === shouldEnable) {
+      continue;
+    }
+
+    await repository.update({
+      filterByTk: existingRecord.id,
+      values: {
+        enabled: shouldEnable,
+      },
+    });
+  }
 }

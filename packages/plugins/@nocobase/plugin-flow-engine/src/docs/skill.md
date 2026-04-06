@@ -17,6 +17,7 @@
 
 ## 读取接口约定
 
+- 读接口 `flowSurfaces:get`、`flowSurfaces:catalog`、`flowSurfaces:context` 默认对 `loggedIn` 开放；写接口仍需要 `ui.flowSurfaces`
 - `flowSurfaces:get` 只接受根级定位字段：`uid`、`pageSchemaUid`、`tabSchemaUid`、`routeId`
 - 这 4 个定位字段只能四选一
 - 不要写成 `{ "target": { "uid": "..." } }`
@@ -54,6 +55,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
   - `removePopupTab`
 - `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义；失败项的 `error` 固定带 `message/type/code/status`
 - `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
+- `catalog` 里的 `blocks[] / actions[] / recordActions[]` 只返回当前实例里真实可用的公开能力；哪些插件没启用，对应能力就不会出现
 - `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
 - direct `addBlock` / `addField` / `addAction` / `addRecordAction` 以及对应批量 API 不接受 raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
 - 需要高频改配时统一使用 `settings`；需要底层精确控制时再降级到 `updateSettings` / `apply`
@@ -90,6 +92,8 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 ```
 
 ## 能力矩阵
+
+下面列的是常见公开语义，不代表每个实例一定全部启用；真正可用集合以 `catalog` 返回为准。
 
 ### 常用 block `type`
 

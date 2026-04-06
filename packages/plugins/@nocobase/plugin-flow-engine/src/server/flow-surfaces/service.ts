@@ -13,6 +13,7 @@ import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import {
   BLOCK_KEY_BY_USE,
+  filterAvailableCatalogItems,
   getEditableDomainsForUse,
   getAvailableActionCatalogItems,
   getNodeContract,
@@ -444,6 +445,30 @@ export class FlowSurfacesService {
     });
   }
 
+  private async loadEnabledPluginPackages(transaction?: any) {
+    if (!this.db.getCollection('applicationPlugins')) {
+      return new Set<string>();
+    }
+    const plugins = await this.db.getRepository('applicationPlugins').find({
+      fields: ['packageName'],
+      filter: {
+        enabled: true,
+      },
+      transaction,
+    });
+    return new Set(
+      plugins
+        .map((plugin: any) => plugin?.get?.('packageName') || plugin?.packageName)
+        .filter((packageName: any) => typeof packageName === 'string' && packageName.trim()),
+    );
+  }
+
+  private async resolveEnabledPluginPackages(
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
+    return options.enabledPackages || (await this.loadEnabledPluginPackages(options.transaction));
+  }
+
   private allocateRouteSortValue(offset = 0) {
     return Date.now() * 1000 + Math.floor(Math.random() * 1000) + offset;
   }
@@ -731,7 +756,10 @@ export class FlowSurfacesService {
     return structure.tabGrids.some((item) => !!item.grid?.uid);
   }
 
-  async catalog(input: { target?: FlowSurfaceWriteTarget }, options: { transaction?: any } = {}) {
+  async catalog(
+    input: { target?: FlowSurfaceWriteTarget },
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
     if (
       _.isUndefined(input?.target) &&
       hasLegacyLocatorFields(input || {}, {
@@ -750,17 +778,21 @@ export class FlowSurfacesService {
     const popupProfile = target
       ? await this.resolvePopupBlockProfile(target.uid, resolved, node, options.transaction)
       : null;
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const fieldCatalog = target ? await this.buildFieldCatalog(target, options.transaction) : [];
-    const availableBlocks = this.surfaceContext.filterBlocksByTarget(node, resolved);
+    const availableBlocks = filterAvailableCatalogItems(
+      this.surfaceContext.filterBlocksByTarget(node, resolved),
+      enabledPackages,
+    );
     const recordActionContainerUse = getCatalogRecordActionContainerUse(node?.use);
     const availableActions = node
-      ? getAvailableActionCatalogItems(node?.use).filter((item) => item.scope !== 'record')
-      : getAvailableActionCatalogItems().filter((item) => item.scope !== 'record');
+      ? getAvailableActionCatalogItems(node?.use, undefined, enabledPackages).filter((item) => item.scope !== 'record')
+      : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter((item) => item.scope !== 'record');
     const availableRecordActions = node
       ? recordActionContainerUse
-        ? getAvailableActionCatalogItems(recordActionContainerUse, 'record')
+        ? getAvailableActionCatalogItems(recordActionContainerUse, 'record', enabledPackages)
         : []
-      : getAvailableActionCatalogItems(undefined, 'record');
+      : getAvailableActionCatalogItems(undefined, 'record', enabledPackages);
 
     return {
       target: resolved || null,
@@ -1803,11 +1835,15 @@ export class FlowSurfacesService {
     return result;
   }
 
-  async compose(values: FlowSurfaceComposeValues, options: { transaction?: any } = {}) {
+  async compose(
+    values: FlowSurfaceComposeValues,
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
     const target = this.normalizeWriteTarget('compose', values?.target, values);
     const mode = this.assertComposeMode(values?.mode);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const normalizedBlocks = _.castArray(values?.blocks || []).map((item, index) =>
-      this.normalizeComposeBlock(item, index),
+      this.normalizeComposeBlock(item, index, enabledPackages),
     );
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
@@ -1839,6 +1875,7 @@ export class FlowSurfacesService {
         {
           ...options,
           deferAutoLayout: true,
+          enabledPackages,
         },
       );
 
@@ -1912,7 +1949,10 @@ export class FlowSurfacesService {
             },
             type: actionSpec.type,
           },
-          options,
+          {
+            ...options,
+            enabledPackages,
+          },
         );
 
         await this.applyInlineNodeSettings('compose action', createdAction.uid, actionSpec.settings, options);
@@ -1942,7 +1982,10 @@ export class FlowSurfacesService {
             },
             type: actionSpec.type,
           },
-          options,
+          {
+            ...options,
+            enabledPackages,
+          },
         );
         if (block.spec.type === 'table' && !block.result.actionsColumnUid) {
           block.result.actionsColumnUid = createdAction.parentUid;
@@ -2635,7 +2678,10 @@ export class FlowSurfacesService {
     return { uid: popupTab.uid };
   }
 
-  async addBlock(values: Record<string, any>, options: { transaction?: any; deferAutoLayout?: boolean } = {}) {
+  async addBlock(
+    values: Record<string, any>,
+    options: { transaction?: any; deferAutoLayout?: boolean; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
@@ -2646,12 +2692,15 @@ export class FlowSurfacesService {
     if (semanticResource && rawResourceInit) {
       throwBadRequest('flowSurfaces addBlock does not allow resource and resourceInit at the same time');
     }
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const catalogItem = resolveSupportedBlockCatalogItem(
       {
         type: values.type,
         use: values.use,
       },
       {
+        context: 'addBlock',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -2756,7 +2805,10 @@ export class FlowSurfacesService {
     return result;
   }
 
-  async addField(values: Record<string, any>, options: { transaction?: any } = {}): Promise<FlowSurfaceAddFieldResult> {
+  async addField(
+    values: Record<string, any>,
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ): Promise<FlowSurfaceAddFieldResult> {
     const target = this.normalizeWriteTarget('addField', values?.target, values);
     ensureNoRawDirectAddKeys('addField', values, [
       'wrapperProps',
@@ -3028,23 +3080,30 @@ export class FlowSurfacesService {
     return result;
   }
 
-  async addAction(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async addAction(
+    values: Record<string, any>,
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
     const target = this.normalizeWriteTarget('addAction', values?.target, values);
     ensureNoDirectActionScopeKey('addAction', values);
     ensureNoRawDirectAddKeys('addAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addAction', values.popup);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const container = await this.surfaceContext.resolveActionContainer(target, options.transaction);
     if (getActionContainerScope(container.ownerUse) === 'record') {
       throwBadRequest(
         `flowSurfaces addAction target '${container.ownerUse}' is a record action surface, use addRecordAction`,
       );
     }
-    const actionCatalogItem = this.resolveAddActionCatalogItem({
-      type: values.type,
-      use: values.use,
-      containerUse: container.ownerUse,
-    });
+    const actionCatalogItem = this.resolveAddActionCatalogItem(
+      {
+        type: values.type,
+        use: values.use,
+        containerUse: container.ownerUse,
+      },
+      enabledPackages,
+    );
     const resolvedScope = actionCatalogItem.scope;
     if (!resolvedScope) {
       throwInternalError(
@@ -3094,19 +3153,26 @@ export class FlowSurfacesService {
     };
   }
 
-  async addRecordAction(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async addRecordAction(
+    values: Record<string, any>,
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
     const target = this.normalizeWriteTarget('addRecordAction', values?.target, values);
     ensureNoDirectActionScopeKey('addRecordAction', values);
     ensureNoRawDirectAddKeys('addRecordAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addRecordAction', values.popup);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const container = await this.resolveRecordActionContainer(target, options.transaction);
-    const actionCatalogItem = this.resolveAddRecordActionCatalogItem({
-      type: values.type,
-      use: values.use,
-      containerUse: container.containerUse,
-      ownerUse: container.ownerUse,
-    });
+    const actionCatalogItem = this.resolveAddRecordActionCatalogItem(
+      {
+        type: values.type,
+        use: values.use,
+        containerUse: container.containerUse,
+        ownerUse: container.ownerUse,
+      },
+      enabledPackages,
+    );
     const resolvedScope = actionCatalogItem.scope;
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
       throwBadRequest(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
@@ -4592,6 +4658,8 @@ export class FlowSurfacesService {
       containerUse?: string;
     },
     options: {
+      context?: string;
+      enabledPackages?: ReadonlySet<string>;
       requireCreateSupported?: boolean;
     } = {},
   ) {
@@ -4602,8 +4670,13 @@ export class FlowSurfacesService {
     }
   }
 
-  private resolveAddActionCatalogItem(input: { type?: string; use?: string; containerUse: string }) {
+  private resolveAddActionCatalogItem(
+    input: { type?: string; use?: string; containerUse: string },
+    enabledPackages?: ReadonlySet<string>,
+  ) {
     const item = this.tryResolveActionCatalogItem(input, {
+      context: 'addAction',
+      enabledPackages,
       requireCreateSupported: true,
     });
     if (item) {
@@ -4623,6 +4696,8 @@ export class FlowSurfacesService {
             containerUse: recordContainerUse,
           },
           {
+            context: 'addAction',
+            enabledPackages,
             requireCreateSupported: true,
           },
         )
@@ -4634,16 +4709,21 @@ export class FlowSurfacesService {
     }
 
     return resolveSupportedActionCatalogItem(input, {
+      context: 'addAction',
+      enabledPackages,
       requireCreateSupported: true,
     });
   }
 
-  private resolveAddRecordActionCatalogItem(input: {
-    type?: string;
-    use?: string;
-    containerUse: string;
-    ownerUse: string;
-  }) {
+  private resolveAddRecordActionCatalogItem(
+    input: {
+      type?: string;
+      use?: string;
+      containerUse: string;
+      ownerUse: string;
+    },
+    enabledPackages?: ReadonlySet<string>,
+  ) {
     const item = this.tryResolveActionCatalogItem(
       {
         type: input.type,
@@ -4651,6 +4731,8 @@ export class FlowSurfacesService {
         containerUse: input.containerUse,
       },
       {
+        context: 'addRecordAction',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -4670,6 +4752,8 @@ export class FlowSurfacesService {
         containerUse: input.ownerUse,
       },
       {
+        context: 'addRecordAction',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -4686,18 +4770,26 @@ export class FlowSurfacesService {
         containerUse: input.containerUse,
       },
       {
+        context: 'addRecordAction',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
   }
 
-  private resolveComposeBlockActionCatalogItem(blockUse: string, actionType: string) {
+  private resolveComposeBlockActionCatalogItem(
+    blockUse: string,
+    actionType: string,
+    enabledPackages?: ReadonlySet<string>,
+  ) {
     const item = this.tryResolveActionCatalogItem(
       {
         type: actionType,
         containerUse: blockUse,
       },
       {
+        context: 'compose action',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -4718,6 +4810,8 @@ export class FlowSurfacesService {
             containerUse: recordContainerUse,
           },
           {
+            context: 'compose action',
+            enabledPackages,
             requireCreateSupported: true,
           },
         )
@@ -4734,12 +4828,18 @@ export class FlowSurfacesService {
         containerUse: blockUse,
       },
       {
+        context: 'compose action',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
   }
 
-  private resolveComposeRecordActionCatalogItem(blockUse: string, actionType: string) {
+  private resolveComposeRecordActionCatalogItem(
+    blockUse: string,
+    actionType: string,
+    enabledPackages?: ReadonlySet<string>,
+  ) {
     const recordContainerUse = getCatalogRecordActionContainerUse(blockUse);
     if (!recordContainerUse) {
       throwBadRequest(
@@ -4753,6 +4853,8 @@ export class FlowSurfacesService {
         containerUse: recordContainerUse,
       },
       {
+        context: 'compose recordAction',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -4771,6 +4873,8 @@ export class FlowSurfacesService {
         containerUse: blockUse,
       },
       {
+        context: 'compose recordAction',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -4786,6 +4890,8 @@ export class FlowSurfacesService {
         containerUse: recordContainerUse,
       },
       {
+        context: 'compose recordAction',
+        enabledPackages,
         requireCreateSupported: true,
       },
     );
@@ -4857,13 +4963,17 @@ export class FlowSurfacesService {
     values: Record<string, any>;
     itemField: string;
     resultField: string;
-    invoke: (itemValues: Record<string, any>, options: { transaction?: any }) => Promise<any>;
+    invoke: (
+      itemValues: Record<string, any>,
+      options: { transaction?: any; enabledPackages?: ReadonlySet<string> },
+    ) => Promise<any>;
   }) {
     const target = this.normalizeWriteTarget(options.actionName, options.values?.target, options.values);
     const items = options.values?.[options.itemField];
     if (!Array.isArray(items)) {
       throwBadRequest(`flowSurfaces ${options.actionName} requires ${options.itemField}[]`);
     }
+    const enabledPackages = await this.resolveEnabledPluginPackages();
 
     const results: Array<Record<string, any>> = [];
     let successCount = 0;
@@ -4889,7 +4999,12 @@ export class FlowSurfacesService {
           target,
           ..._.omit(rawItem, ['key']),
         };
-        result.result = await this.transaction((transaction) => options.invoke(itemValues, { transaction }));
+        result.result = await this.transaction((transaction) =>
+          options.invoke(itemValues, {
+            transaction,
+            enabledPackages,
+          }),
+        );
         result.ok = true;
         successCount += 1;
       } catch (error: any) {
@@ -4906,7 +5021,7 @@ export class FlowSurfacesService {
     };
   }
 
-  private normalizeComposeBlock(input: any, index: number) {
+  private normalizeComposeBlock(input: any, index: number, enabledPackages?: ReadonlySet<string>) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
     }
@@ -4918,14 +5033,21 @@ export class FlowSurfacesService {
     if (!key || !type) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and type`);
     }
-    const blockCatalogItem = resolveSupportedBlockCatalogItem({ type }, { requireCreateSupported: true });
+    const blockCatalogItem = resolveSupportedBlockCatalogItem(
+      { type },
+      {
+        context: 'compose',
+        enabledPackages,
+        requireCreateSupported: true,
+      },
+    );
     const actions = _.castArray(input.actions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
     const recordActions = _.castArray(input.recordActions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
-    this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions);
+    this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions, enabledPackages);
     return {
       key,
       type,
@@ -4980,7 +5102,12 @@ export class FlowSurfacesService {
     return blockResult.itemUid;
   }
 
-  private validateComposeActionGroups(blockUse: string, actions: any[], recordActions: any[]) {
+  private validateComposeActionGroups(
+    blockUse: string,
+    actions: any[],
+    recordActions: any[],
+    enabledPackages?: ReadonlySet<string>,
+  ) {
     const recordContainerUse = getCatalogRecordActionContainerUse(blockUse);
 
     if (recordActions.length && !recordContainerUse) {
@@ -4990,12 +5117,12 @@ export class FlowSurfacesService {
     }
 
     actions.forEach((action) => {
-      this.resolveComposeBlockActionCatalogItem(blockUse, action.type);
+      this.resolveComposeBlockActionCatalogItem(blockUse, action.type, enabledPackages);
     });
 
     if (recordContainerUse) {
       recordActions.forEach((action) => {
-        this.resolveComposeRecordActionCatalogItem(blockUse, action.type);
+        this.resolveComposeRecordActionCatalogItem(blockUse, action.type, enabledPackages);
       });
     }
   }

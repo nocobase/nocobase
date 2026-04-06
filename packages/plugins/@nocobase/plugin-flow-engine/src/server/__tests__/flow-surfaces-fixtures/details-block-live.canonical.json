@@ -468,14 +468,5 @@
     "title": "宠物管理",
     "icon": null,
     "options": null
-  },
-  "tabs": [
-    {
-      "alias": "tab.main.route",
-      "type": "tabs",
-      "title": null,
-      "icon": null,
-      "options": null
-    }
-  ]
+  }
 }

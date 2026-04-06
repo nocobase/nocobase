@@ -1162,13 +1162,15 @@ const examples = {
     pageSchemaUid: 'employees-page-schema',
   },
 };
+const FLOW_SURFACES_READ_ACL_NOTE =
+  '读接口（`get` / `catalog` / `context`）默认对 `loggedIn` 开放；写接口仍需要 `ui.flowSurfaces` snippet。';
 
 const actionDocs: Record<string, any> = {
   catalog: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      '返回当前 target 上下文下可创建的 block / field / action 能力，以及当前节点推荐使用的 `configureOptions`、底层 settings contract、事件能力和布局能力。',
+      `返回当前 target 上下文下可创建的 block / field / action 能力，以及当前节点推荐使用的 \`configureOptions\`、底层 settings contract、事件能力和布局能力。返回的 \`blocks[] / actions[] / recordActions[]\` 只代表当前实例已启用插件下真实可用的公开能力。${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -1177,7 +1179,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read ctx variable tree available under the current target',
     description: valuesCompatibilityNote(
-      '返回当前 target 下可用的 `ctx` 变量树。`path` 只接受裸路径，如 `record`、`popup.record`、`item.parentItem.value`；不接受 `ctx.record` 或 `{{ ctx.record }}`。',
+      `返回当前 target 下可用的 \`ctx\` 变量树。\`path\` 只接受裸路径，如 \`record\`、\`popup.record\`、\`item.parentItem.value\`；不接受 \`ctx.record\` 或 \`{{ ctx.record }}\`。${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceContextRequest', examples.context),
     responses: responses('FlowSurfaceContextResponse'),
@@ -1191,6 +1193,7 @@ const actionDocs: Record<string, any> = {
       '只接受根级定位字段；以下 4 个字段四选一组成定位器。',
       '不要使用 `{ target: { ... } }` 包裹。',
       '不要使用 `{ values: { ... } }` 包裹。',
+      FLOW_SURFACES_READ_ACL_NOTE,
       '响应里的 `target` 只保留轻量定位信息；完整节点树请看 `tree`。',
       'route-backed page 的 tabs 统一从 `tree.subModels.tabs` 读取，不再单独返回顶层 `tabs` / `tabTrees`。',
       '',

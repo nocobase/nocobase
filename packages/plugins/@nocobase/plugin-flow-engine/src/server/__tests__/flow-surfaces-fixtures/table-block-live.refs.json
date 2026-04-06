@@ -329,9 +329,5 @@
   "page.route": {
     "routeId": 355788225118208,
     "schemaUid": "pet-management"
-  },
-  "tab.main.route": {
-    "routeId": 355788225118210,
-    "schemaUid": "tabs-pet-management"
   }
 }

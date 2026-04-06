@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { parseQuery } from '@nocobase/resourcer';
 import type { Plugin } from '@nocobase/server';
 import { FLOW_SURFACES_READ_ACTION_NAMES, type FlowSurfacesActionName } from './constants';
 import { FlowSurfaceForbiddenError, normalizeFlowSurfaceError, throwBadRequest } from './errors';
@@ -26,20 +27,62 @@ function isImplicitEmptyValuesBag(value: any) {
   );
 }
 
+function getRawReadQuery(ctx: any) {
+  const querystring = String(ctx.request?.querystring ?? '');
+  if (!querystring) {
+    return {};
+  }
+  try {
+    return parseQuery(querystring) || {};
+  } catch {
+    return {};
+  }
+}
+
+function hasExplicitQueryWrapper(ctx: any, key: string) {
+  const query = getRawReadQuery(ctx);
+  return Object.prototype.hasOwnProperty.call(query, key);
+}
+
+function hasExplicitRequestBody(ctx: any) {
+  const headers = ctx.request?.headers ?? {};
+  const contentLength = headers['content-length'];
+  if (Array.isArray(contentLength)) {
+    return contentLength.some((value) => value !== '0');
+  }
+  if (typeof contentLength === 'string') {
+    return contentLength !== '0';
+  }
+  return Boolean(headers['transfer-encoding']);
+}
+
 function getReadValues(ctx: any) {
   if (ctx.request?.method?.toUpperCase() !== 'GET') {
     throwBadRequest(
       `flowSurfaces:get only supports GET with root query locator fields like /api/flowSurfaces:get?uid=...`,
     );
   }
+  if (hasExplicitQueryWrapper(ctx, 'target')) {
+    throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`);
+  }
+  if (hasExplicitQueryWrapper(ctx, 'values')) {
+    throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`);
+  }
   const params = ctx.action?.params ?? {};
-  if (!Object.prototype.hasOwnProperty.call(params, 'values') || !isImplicitEmptyValuesBag(params.values)) {
+  if (!Object.prototype.hasOwnProperty.call(params, 'values')) {
+    return params;
+  }
+  const values = params.values;
+  if (typeof values !== 'undefined' && !isImplicitEmptyValuesBag(values)) {
+    return params;
+  }
+  if (hasExplicitRequestBody(ctx)) {
     return params;
   }
 
   // Resourcer injects an empty `values` bag even for GET query requests.
-  // Strip only this transport artifact and keep explicit non-empty wrappers for service-level validation.
-  const { values, ...rest } = params;
+  // Strip only this no-body transport artifact and keep explicit query/body wrappers for service-level validation.
+  const { values: _values, ...rest } = params;
   return rest;
 }
 

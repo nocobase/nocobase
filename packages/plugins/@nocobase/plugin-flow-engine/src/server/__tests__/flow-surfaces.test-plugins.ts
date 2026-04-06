@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const FLOW_SURFACES_TEST_PLUGINS = [
+const FLOW_SURFACES_CORE_TEST_PLUGINS = [
   'error-handler',
   'users',
   'auth',
@@ -16,7 +16,31 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'field-sort',
   'acl',
   'ui-schema-storage',
-  'system-settings',
   'data-source-main',
   'data-source-manager',
+] as const;
+
+export const FLOW_SURFACES_MINIMAL_TEST_PLUGINS = [...FLOW_SURFACES_CORE_TEST_PLUGINS, 'system-settings'] as const;
+
+export const FLOW_SURFACES_TEST_PLUGINS = [
+  ...FLOW_SURFACES_CORE_TEST_PLUGINS,
+  'file-manager',
+  'system-settings',
+  'block-list',
+  'block-grid-card',
+  'block-markdown',
+  'block-iframe',
+  'block-workbench',
+  'map',
+  'data-visualization',
+  'comments',
+  'action-bulk-edit',
+  'action-bulk-update',
+  'action-export',
+  'action-import',
+  'action-duplicate',
+  'workflow',
+  'workflow-custom-action-trigger',
+  'email-manager',
+  'action-template-print',
 ] as const;

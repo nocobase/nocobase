@@ -705,6 +705,11 @@ describe('flowSurfaces swagger', () => {
     expect(getPath.description).toContain('四选一');
     expect(getPath.description).toContain('不要使用 `{ target: { ... } }` 包裹');
     expect(getPath.description).toContain('不要使用 `{ values: { ... } }` 包裹');
+    expect(getPath.description).toContain('`loggedIn`');
+
+    const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
+    expect(catalogPath.description).toContain('真实可用的公开能力');
+    expect(catalogPath.description).toContain('`loggedIn`');
 
     for (const actionName of [
       'catalog',
