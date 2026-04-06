@@ -4078,6 +4078,37 @@ describe('flowSurfaces API contract', () => {
 
     expect(rolesWrapperReadback.tree.use).toBe('TableColumnModel');
     expect(rolesInnerReadback.tree.use).toBe('DisplayTextFieldModel');
+    const rolesWrapperCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: rolesTitleField.wrapperUid,
+          },
+        },
+      }),
+    );
+    const rolesInnerCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: rolesTitleField.fieldUid,
+          },
+        },
+      }),
+    );
+    expect(rolesWrapperCatalog.configureOptions).toMatchObject({
+      fieldComponent: {
+        type: 'string',
+      },
+    });
+    expect(rolesWrapperCatalog.configureOptions.mode).toBeUndefined();
+    expect(rolesInnerCatalog.configureOptions).toMatchObject({
+      displayStyle: {
+        type: 'string',
+        enum: expect.arrayContaining(['text', 'tag']),
+      },
+    });
+    expect(rolesInnerCatalog.configureOptions.mode).toBeUndefined();
     expect(rolesWrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',

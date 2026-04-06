@@ -3635,6 +3635,65 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRes)).toContain('must reference an existing node');
   });
 
+  it('should configure roles table fields with displayStyle tag and switch fieldComponent via wrapper changes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Users roles field configure page',
+      tabTitle: 'Users roles field configure tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    const rolesField = await addField(rootAgent, tableUid, 'roles');
+
+    const displayStyleRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: rolesField.fieldUid,
+        },
+        changes: {
+          displayStyle: 'tag',
+        },
+      },
+    });
+    expect(displayStyleRes.status).toBe(200);
+
+    const rolesInnerReadback = await getSurface(rootAgent, {
+      uid: rolesField.fieldUid,
+    });
+    expect(rolesInnerReadback.tree.use).toBe('DisplayTextFieldModel');
+    expect(rolesInnerReadback.tree.props?.displayStyle).toBe('tag');
+    expect(rolesInnerReadback.tree.stepParams?.displayFieldSettings?.displayStyle?.displayStyle).toBe('tag');
+
+    const switchComponentRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: rolesField.wrapperUid,
+        },
+        changes: {
+          fieldComponent: 'DisplaySubTableFieldModel',
+        },
+      },
+    });
+    expect(switchComponentRes.status).toBe(200);
+
+    const rolesWrapperAfterSwitch = await getSurface(rootAgent, {
+      uid: rolesField.wrapperUid,
+    });
+    const rolesInnerAfterSwitch = await getSurface(rootAgent, {
+      uid: rolesField.fieldUid,
+    });
+    expect(rolesWrapperAfterSwitch.tree.stepParams?.tableColumnSettings?.model?.use).toBe('DisplaySubTableFieldModel');
+    expect(rolesInnerAfterSwitch.tree.use).toBe('DisplaySubTableFieldModel');
+    expect(rolesInnerAfterSwitch.tree.stepParams?.fieldBinding?.use).toBe('DisplaySubTableFieldModel');
+    expect(rolesInnerAfterSwitch.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+  });
+
   it('should reject invalid openView uid through updateSettings stepParams writes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Invalid updateSettings popup uid page',

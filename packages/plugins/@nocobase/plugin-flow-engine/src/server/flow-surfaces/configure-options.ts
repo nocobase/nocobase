@@ -90,6 +90,15 @@ const OPEN_VIEW = objectOption('Popup or drawer open configuration', {
   },
 });
 
+const DISPLAY_STYLE = stringOption('Display style', {
+  enum: ['text', 'tag'],
+  example: 'tag',
+});
+
+const FIELD_COMPONENT = stringOption('Field component model use', {
+  example: 'DisplayTextFieldModel',
+});
+
 const CONFIRM = objectOption('Confirmation dialog configuration. You can also pass a boolean directly.', {
   example: {
     enable: true,
@@ -327,6 +336,7 @@ const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   editable: booleanOption('Whether editable', { example: false }),
   dataIndex: stringOption('Data index'),
   titleField: stringOption('Association display title field', { example: 'title' }),
+  fieldComponent: FIELD_COMPONENT,
   clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
   openView: OPEN_VIEW,
   code: JS_CODE,
@@ -343,6 +353,7 @@ const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   disabled: booleanOption('Whether disabled', { example: false }),
   pattern: stringOption('Display mode'),
   titleField: stringOption('Association display title field', { example: 'title' }),
+  fieldComponent: FIELD_COMPONENT,
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
@@ -363,6 +374,7 @@ const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
   maxCount: numberOption('Maximum count', { example: 5 }),
   name: stringOption('Field name override'),
+  fieldComponent: FIELD_COMPONENT,
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
@@ -387,6 +399,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   pattern: stringOption('Input mode'),
   titleField: stringOption('Association display title field', { example: 'title' }),
   name: stringOption('Field name override'),
+  fieldComponent: FIELD_COMPONENT,
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
@@ -408,7 +421,7 @@ const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
   multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
   allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
   quickCreate: booleanOption('Whether quick create is allowed', { example: false }),
-  mode: stringOption('Component mode'),
+  displayStyle: DISPLAY_STYLE,
   options: objectOption('Component options'),
 };
 

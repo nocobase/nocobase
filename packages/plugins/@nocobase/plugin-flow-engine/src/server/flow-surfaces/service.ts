@@ -149,8 +149,14 @@ const FIELD_WRAPPER_USES = new Set([
   'FilterFormItemModel',
   'TableColumnModel',
 ]);
+const EDITABLE_FIELD_WRAPPER_USES = new Set(['FormItemModel', 'FilterFormItemModel']);
 const STANDALONE_FIELD_NODE_USES = new Set(['JSColumnModel', 'JSItemModel', 'FormJSFieldItemModel']);
 const DISPLAY_FIELD_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
+const DISPLAY_COMPONENT_FIELD_WRAPPER_USES = new Set([
+  'DetailsItemModel',
+  'FormAssociationItemModel',
+  'TableColumnModel',
+]);
 const TITLE_FIELD_SUPPORTED_WRAPPER_USES = new Set([
   'FormItemModel',
   'FormAssociationItemModel',
@@ -6110,7 +6116,7 @@ export class FlowSurfacesService {
   ) {
     assertSupportedSimpleChanges('field wrapper', changes, getConfigureOptionKeysForUse(current?.use));
 
-    const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version']);
+    const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version', 'fieldComponent']);
     const wrapperChanges =
       current?.use === 'TableColumnModel' &&
       !hasOwnDefined(rawWrapperChanges, 'title') &&
@@ -6240,6 +6246,23 @@ export class FlowSurfacesService {
       }
     }
 
+    if (hasOwnDefined(changes, 'fieldComponent')) {
+      if (!innerUid) {
+        throwConflict(
+          `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
+          'FLOW_SURFACE_INNER_FIELD_MISSING',
+        );
+      }
+      const normalizedFieldComponentUse = await this.rebuildFieldSubModelOnServer({
+        wrapperNode: current,
+        innerField,
+        targetFieldUse: changes.fieldComponent,
+        normalizedBinding,
+        transaction: options.transaction,
+      });
+      await this.syncFieldComponentStepParams(current, normalizedFieldComponentUse, options.transaction);
+    }
+
     if (shouldSyncTitleField) {
       if (!innerUid) {
         throwConflict(
@@ -6271,7 +6294,7 @@ export class FlowSurfacesService {
         {
           uid: innerUid,
         },
-        _.pick(changes, ['clickToOpen', 'openView', 'code', 'version']),
+        _.pick(changes, ['clickToOpen', 'openView', 'displayStyle', 'code', 'version']),
         options,
       );
     }
@@ -6410,7 +6433,7 @@ export class FlowSurfacesService {
           multiple: changes.multiple,
           allowMultiple: changes.allowMultiple,
           quickCreate: changes.quickCreate,
-          mode: changes.mode,
+          displayStyle: changes.displayStyle,
           options: changes.options,
           ...(shouldSyncTitleField ? { titleField: syncedTitleField } : {}),
           ...(hasOwnDefined(changes, 'clickToOpen') || !_.isUndefined(changes.openView)
@@ -6422,12 +6445,27 @@ export class FlowSurfacesService {
           ...(hasOwnDefined(changes, 'clickToOpen') || !_.isUndefined(changes.openView)
             ? {
                 displayFieldSettings: {
+                  ...(hasOwnDefined(changes, 'displayStyle')
+                    ? {
+                        displayStyle: {
+                          displayStyle: changes.displayStyle,
+                        },
+                      }
+                    : {}),
                   clickToOpen: {
                     clickToOpen: effectiveClickToOpen,
                   },
                 },
               }
-            : {}),
+            : hasOwnDefined(changes, 'displayStyle')
+              ? {
+                  displayFieldSettings: {
+                    displayStyle: {
+                      displayStyle: changes.displayStyle,
+                    },
+                  },
+                }
+              : {}),
           ...(hasOwnDefined(changes, 'openView')
             ? {
                 popupSettings: {
@@ -8104,6 +8142,169 @@ export class FlowSurfacesService {
     }
   }
 
+  private inferFieldComponentFlowDomain(wrapperUse?: string) {
+    switch (String(wrapperUse || '').trim()) {
+      case 'TableColumnModel':
+        return {
+          flowKey: 'tableColumnSettings',
+          stepKey: 'model',
+        };
+      case 'DetailsItemModel':
+      case 'FormAssociationItemModel':
+        return {
+          flowKey: 'detailItemSettings',
+          stepKey: 'model',
+        };
+      case 'FormItemModel':
+        return {
+          flowKey: 'editItemSettings',
+          stepKey: 'model',
+        };
+      case 'FilterFormItemModel':
+        return {
+          flowKey: 'filterFormItemSettings',
+          stepKey: 'model',
+        };
+      default:
+        return null;
+    }
+  }
+
+  private resolveFieldComponentFieldSource(wrapperNode: any, normalizedBinding?: any) {
+    const currentFieldInit =
+      normalizedBinding ||
+      wrapperNode?.subModels?.field?.stepParams?.fieldSettings?.init ||
+      wrapperNode?.stepParams?.fieldSettings?.init;
+    if (!currentFieldInit?.dataSourceKey || !currentFieldInit?.collectionName || !currentFieldInit?.fieldPath) {
+      throwConflict(
+        `flowSurfaces configure field wrapper '${wrapperNode?.use}' cannot resolve field source`,
+        'FLOW_SURFACE_FIELD_SOURCE_MISSING',
+      );
+    }
+    const collection = this.getCollection(currentFieldInit.dataSourceKey, currentFieldInit.collectionName);
+    const parsed = this.parseFieldPath(
+      collection,
+      currentFieldInit.fieldPath,
+      currentFieldInit.associationPathName,
+      currentFieldInit.dataSourceKey,
+      currentFieldInit.collectionName,
+    );
+    const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+    if (!leafField) {
+      throwConflict(
+        `flowSurfaces configure field wrapper '${wrapperNode?.use}' cannot resolve leaf field '${currentFieldInit.fieldPath}'`,
+        'FLOW_SURFACE_FIELD_LEAF_MISSING',
+      );
+    }
+    return {
+      field: leafField,
+      fieldSettingsInit: this.buildExactFieldSettingsInitPayload({
+        dataSourceKey: currentFieldInit.dataSourceKey,
+        collectionName: currentFieldInit.collectionName,
+        fieldPath: currentFieldInit.fieldPath,
+        associationPathName: currentFieldInit.associationPathName,
+      }),
+    };
+  }
+
+  private assertSupportedFieldComponentUse(wrapperUse: string | undefined, targetFieldUse: string) {
+    const normalizedTargetUse = String(targetFieldUse || '').trim();
+    if (!normalizedTargetUse) {
+      throwBadRequest('flowSurfaces configure fieldComponent cannot be empty');
+    }
+    const normalizedWrapperUse = String(wrapperUse || '').trim();
+    const containerUse =
+      normalizedWrapperUse === 'FormAssociationItemModel' ? 'DetailsItemModel' : normalizedWrapperUse;
+    if (DISPLAY_COMPONENT_FIELD_WRAPPER_USES.has(normalizedWrapperUse)) {
+      const contract = resolveSupportedFieldCapability({
+        containerUse,
+        requestedFieldUse: normalizedTargetUse,
+      });
+      if (!contract?.fieldUse) {
+        throwBadRequest(
+          `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+        );
+      }
+      return contract.fieldUse;
+    }
+    if (EDITABLE_FIELD_WRAPPER_USES.has(normalizedWrapperUse)) {
+      const contract = resolveSupportedFieldCapability({
+        containerUse,
+        requestedFieldUse: normalizedTargetUse,
+      });
+      if (!contract?.fieldUse) {
+        throwBadRequest(
+          `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+        );
+      }
+      return contract.fieldUse;
+    }
+    throwBadRequest(`flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent`);
+  }
+
+  private async syncFieldComponentStepParams(wrapperNode: any, targetFieldUse: string, transaction?: any) {
+    const flowDomain = this.inferFieldComponentFlowDomain(wrapperNode?.use);
+    if (!flowDomain || !wrapperNode?.uid) {
+      return;
+    }
+    const nextStepParams = _.merge({}, wrapperNode.stepParams || {}, {
+      [flowDomain.flowKey]: {
+        [flowDomain.stepKey]: {
+          use: targetFieldUse,
+        },
+      },
+    });
+    await this.repository.patch(
+      {
+        uid: wrapperNode.uid,
+        stepParams: nextStepParams,
+      },
+      { transaction },
+    );
+  }
+
+  private async rebuildFieldSubModelOnServer(input: {
+    wrapperNode: any;
+    innerField: any;
+    targetFieldUse: string;
+    normalizedBinding?: any;
+    transaction?: any;
+  }) {
+    const innerField = input.innerField;
+    if (!innerField?.uid) {
+      throwConflict(
+        `flowSurfaces configure field wrapper '${input.wrapperNode?.use}' cannot resolve inner field`,
+        'FLOW_SURFACE_INNER_FIELD_MISSING',
+      );
+    }
+    const normalizedTargetUse = this.assertSupportedFieldComponentUse(input.wrapperNode?.use, input.targetFieldUse);
+    const fieldSource = this.resolveFieldComponentFieldSource(input.wrapperNode, input.normalizedBinding);
+    const defaultProps = getFieldBindingDefaultProps(input.wrapperNode?.use, normalizedTargetUse, fieldSource.field);
+    const nextFieldNode = {
+      uid: innerField.uid,
+      use: normalizedTargetUse,
+      props: _.pickBy(
+        {
+          ...(innerField.props || {}),
+          ...defaultProps,
+        },
+        (value) => !_.isUndefined(value),
+      ),
+      decoratorProps: _.cloneDeep(innerField.decoratorProps || {}),
+      flowRegistry: _.cloneDeep(innerField.flowRegistry || {}),
+      stepParams: _.merge({}, innerField.stepParams || {}, {
+        fieldBinding: {
+          use: normalizedTargetUse,
+        },
+        fieldSettings: {
+          init: fieldSource.fieldSettingsInit,
+        },
+      }),
+    };
+    await this.repository.patch(nextFieldNode, { transaction: input.transaction });
+    return normalizedTargetUse;
+  }
+
   private parseFieldPath(
     collection: any,
     fieldPath: string,
@@ -8683,6 +8884,7 @@ function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: str
     'labelWidth',
     'labelWrap',
     'name',
+    'fieldComponent',
     ...(wrapperUse === 'TableColumnModel' ? ['title'] : []),
   ]);
   const fieldChanges = _.pick(changes, [
@@ -8695,7 +8897,7 @@ function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: str
     'multiple',
     'allowMultiple',
     'quickCreate',
-    'mode',
+    'displayStyle',
     'options',
     'code',
     'version',

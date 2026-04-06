@@ -1048,7 +1048,7 @@ const FORM_ITEM_CONTRACT = createContract({
     'maxCount',
   ],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['fieldSettings'],
+  stepParams: ['fieldSettings', 'editItemSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1056,13 +1056,21 @@ const FORM_ITEM_CONTRACT = createContract({
 });
 FORM_ITEM_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
+  editItemSettings: {
+    allowedPaths: ['model.use'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['model'],
+    pathSchemas: {
+      'model.use': STRING_SCHEMA,
+    },
+  },
 });
 
 const DETAILS_ITEM_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['label', 'showLabel', 'tooltip', 'extra', 'titleField', 'pattern', 'disabled'],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['fieldSettings'],
+  stepParams: ['fieldSettings', 'detailItemSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1070,6 +1078,14 @@ const DETAILS_ITEM_CONTRACT = createContract({
 });
 DETAILS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
+  detailItemSettings: {
+    allowedPaths: ['model.use'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['model'],
+    pathSchemas: {
+      'model.use': STRING_SCHEMA,
+    },
+  },
 });
 
 const FILTER_FORM_ITEM_CONTRACT = createContract({
@@ -1085,7 +1101,7 @@ const FILTER_FORM_ITEM_CONTRACT = createContract({
 FILTER_FORM_ITEM_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
   filterFormItemSettings: {
-    allowedPaths: FILTER_FORM_ITEM_ALLOWED_PATHS,
+    allowedPaths: [...FILTER_FORM_ITEM_ALLOWED_PATHS, 'model.use'],
     mergeStrategy: 'deep',
     pathSchemas: {
       'init.defaultTargetUid': STRING_SCHEMA,
@@ -1093,6 +1109,7 @@ FILTER_FORM_ITEM_CONTRACT.domains.stepParams = groupedDomain({
       'init.filterField.title': STRING_SCHEMA,
       'init.filterField.interface': STRING_SCHEMA,
       'init.filterField.type': STRING_SCHEMA,
+      'model.use': STRING_SCHEMA,
     },
   },
 });
@@ -1109,10 +1126,11 @@ const TABLE_COLUMN_CONTRACT = createContract({
 TABLE_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
   tableColumnSettings: {
-    allowedPaths: TABLE_COLUMN_ALLOWED_PATHS,
+    allowedPaths: [...TABLE_COLUMN_ALLOWED_PATHS, 'model.use'],
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
+      'model.use': STRING_SCHEMA,
     },
   },
 });
@@ -1154,7 +1172,7 @@ const FIELD_NODE_CONTRACT = createContract({
     'multiple',
     'quickCreate',
     'allowClear',
-    'mode',
+    'displayStyle',
     'options',
   ],
   decoratorProps: ['labelWidth', 'labelWrap'],
@@ -1166,7 +1184,7 @@ const FIELD_NODE_CONTRACT = createContract({
   },
   eventBindings: {
     displayFieldSettings: {
-      stepKeys: ['clickToOpen'],
+      stepKeys: ['displayStyle', 'clickToOpen'],
     },
     popupSettings: {
       stepKeys: ['openView'],
@@ -1186,7 +1204,7 @@ const JS_FIELD_NODE_CONTRACT = createContract({
     'multiple',
     'quickCreate',
     'allowClear',
-    'mode',
+    'displayStyle',
     'options',
   ],
   decoratorProps: ['labelWidth', 'labelWrap'],
@@ -1198,7 +1216,7 @@ const JS_FIELD_NODE_CONTRACT = createContract({
   },
   eventBindings: {
     displayFieldSettings: {
-      stepKeys: ['clickToOpen'],
+      stepKeys: ['displayStyle', 'clickToOpen'],
     },
     popupSettings: {
       stepKeys: ['openView'],
@@ -1211,11 +1229,12 @@ const JS_FIELD_NODE_CONTRACT = createContract({
 JS_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
   displayFieldSettings: {
-    allowedPaths: ['clickToOpen.clickToOpen'],
+    allowedPaths: ['displayStyle.displayStyle', 'clickToOpen.clickToOpen'],
     clearable: true,
     mergeStrategy: 'deep',
-    eventBindingSteps: ['clickToOpen'],
+    eventBindingSteps: ['displayStyle', 'clickToOpen'],
     pathSchemas: {
+      'displayStyle.displayStyle': STRING_SCHEMA,
       'clickToOpen.clickToOpen': BOOLEAN_SCHEMA,
     },
   },
@@ -1250,11 +1269,12 @@ JS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
 FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
   displayFieldSettings: {
-    allowedPaths: ['clickToOpen.clickToOpen'],
+    allowedPaths: ['displayStyle.displayStyle', 'clickToOpen.clickToOpen'],
     clearable: true,
     mergeStrategy: 'deep',
-    eventBindingSteps: ['clickToOpen'],
+    eventBindingSteps: ['displayStyle', 'clickToOpen'],
     pathSchemas: {
+      'displayStyle.displayStyle': STRING_SCHEMA,
       'clickToOpen.clickToOpen': BOOLEAN_SCHEMA,
     },
   },
