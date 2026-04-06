@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { theme as antdTheme, Typography } from 'antd';
+import { theme as antdTheme } from 'antd';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -24,36 +24,31 @@ export default function AuthLayout() {
   return (
     <div
       style={{
-        minHeight: '100vh',
-        background: `linear-gradient(180deg, ${token.colorBgLayout} 0%, ${token.colorBgContainer} 100%)`,
-        padding: token.paddingLG,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        maxWidth: 320,
+        margin: '0 auto',
+        paddingTop: '20vh',
+        paddingBottom: '20vh',
       }}
     >
       <div style={{ position: 'fixed', top: token.paddingLG, right: token.paddingLG, color: token.colorText }}>
         <SwitchLanguage />
       </div>
+      <h1 style={{ textAlign: 'center' }}>{t(data?.data?.title)}</h1>
+      <AuthenticatorsContextProvider>
+        <Outlet />
+      </AuthenticatorsContextProvider>
       <div
         style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
           width: '100%',
-          maxWidth: 360,
-          padding: token.paddingXL,
-          background: token.colorBgContainer,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: token.boxShadowSecondary,
+          paddingBottom: token.paddingLG,
+          textAlign: 'center',
+          backgroundColor: token.colorBgContainer,
         }}
       >
-        <Typography.Title level={2} style={{ textAlign: 'center', marginBottom: token.marginLG }}>
-          {t(data?.data?.title)}
-        </Typography.Title>
-        <AuthenticatorsContextProvider>
-          <Outlet />
-        </AuthenticatorsContextProvider>
-        <div style={{ marginTop: token.marginXL, textAlign: 'center' }}>
-          <PoweredByLite />
-        </div>
+        <PoweredByLite />
       </div>
     </div>
   );

@@ -41,7 +41,6 @@ export function BasicSignInForm({ authenticator }: { authenticator: Authenticato
     >
       {errorMessage ? <Alert style={{ marginBottom: 16 }} type="error" showIcon message={errorMessage} /> : null}
       <Form.Item
-        label={t('Username/Email')}
         name="account"
         rules={[
           { required: true, message: t('Please enter your username or email') },
@@ -64,11 +63,7 @@ export function BasicSignInForm({ authenticator }: { authenticator: Authenticato
       >
         <Input autoComplete="username" placeholder={t('Username/Email')} />
       </Form.Item>
-      <Form.Item
-        label={t('Password')}
-        name="password"
-        rules={[{ required: true, message: t('Please enter a password') }]}
-      >
+      <Form.Item name="password" rules={[{ required: true, message: t('Please enter a password') }]}>
         <Input.Password autoComplete="current-password" placeholder={t('Password')} />
       </Form.Item>
       <Form.Item style={{ marginBottom: 12 }}>
@@ -77,7 +72,7 @@ export function BasicSignInForm({ authenticator }: { authenticator: Authenticato
         </Button>
       </Form.Item>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        {allowSignUp ? <Link to={`/signup?name=${authenticator.name}`}>{t('Create an account')}</Link> : <span />}
+        {allowSignUp ? <Link to={`/signup?name=${authenticator.name}`}>{t('Create an account')}</Link> : null}
         {showForgotPassword ? (
           <Link to={`/forgot-password?name=${authenticator.name}`}>{t('Forgot password')}</Link>
         ) : null}
