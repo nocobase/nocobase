@@ -132,3 +132,6 @@ Configurez vos paramètres de démarrage NocoBase (tels que les variables d'envi
 | **Scénarios recommandés** | Utilisateurs en entreprise, avec un environnement contrôlé et cohérent, nécessitant des fonctionnalités complètes | Absence de certains plugins, recherche de haute compatibilité et flexibilité, utilisateurs non Pro/Entreprise, acceptation de la perte des fonctions de fichiers |
 
 J'espère que ce tutoriel vous aidera à déployer avec succès le système de tickets. Si vous rencontrez des problèmes au cours du processus, n'hésitez pas à nous contacter !
+---
+
+*Last updated: 2026-03-24*
