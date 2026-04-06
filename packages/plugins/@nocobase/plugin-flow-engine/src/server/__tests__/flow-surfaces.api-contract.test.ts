@@ -3095,6 +3095,236 @@ describe('flowSurfaces API contract', () => {
     expect(validTableReadback.tree.props?.title).toBe('Valid employees table');
   });
 
+  it('should require dataSourceKey when addBlock creates a collection block from raw resourceInit', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing datasource addBlock page',
+      tabTitle: 'Missing datasource addBlock tab',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          collectionName: 'employees',
+        },
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expectStructuredError(readErrorItem(response), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(response)).toContain(
+      `flowSurfaces addBlock block 'table' requires resourceInit.dataSourceKey`,
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(_.castArray(readback.tree.subModels?.grid?.subModels?.items || [])).toHaveLength(0);
+  });
+
+  it('should keep batch addBlocks partial-success semantics when collection resource misses dataSourceKey', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing datasource addBlocks page',
+      tabTitle: 'Missing datasource addBlocks tab',
+    });
+
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'notes',
+            type: 'markdown',
+            settings: {
+              content: '# Team notes',
+            },
+          },
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resourceInit: {
+              collectionName: 'employees',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    expect(addBlocksData.successCount).toBe(1);
+    expect(addBlocksData.errorCount).toBe(1);
+    expect(addBlocksData.blocks[0].ok).toBe(true);
+    expect(addBlocksData.blocks[1].ok).toBe(false);
+    expectStructuredError(addBlocksData.blocks[1].error, {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(addBlocksData.blocks[1].error.message).toContain(
+      `flowSurfaces addBlock block 'table' requires resourceInit.dataSourceKey`,
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    const items = _.castArray(readback.tree.subModels?.grid?.subModels?.items || []);
+    expect(items).toHaveLength(1);
+    expect(items[0]?.use).toBe('MarkdownBlockModel');
+  });
+
+  it('should reject compose when a collection block raw resource misses dataSourceKey', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing datasource compose page',
+      tabTitle: 'Missing datasource compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'append',
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              collectionName: 'employees',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expectStructuredError(readErrorItem(composeRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(composeRes)).toContain(
+      `flowSurfaces compose block #1 ("employeesTable", type="table") requires resource.dataSourceKey`,
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(_.castArray(readback.tree.subModels?.grid?.subModels?.items || [])).toHaveLength(0);
+  });
+
+  it('should reject mutate addBlock ops when collection resource misses dataSourceKey', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing datasource mutate page',
+      tabTitle: 'Missing datasource mutate tab',
+    });
+
+    const mutateRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            type: 'addBlock',
+            target: {
+              uid: page.tabSchemaUid,
+            },
+            values: {
+              type: 'table',
+              resourceInit: {
+                collectionName: 'employees',
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(mutateRes.status).toBe(400);
+    expectStructuredError(readErrorItem(mutateRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(mutateRes)).toContain(
+      `flowSurfaces addBlock block 'table' requires resourceInit.dataSourceKey`,
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(_.castArray(readback.tree.subModels?.grid?.subModels?.items || [])).toHaveLength(0);
+  });
+
+  it('should allow addBlock to create filterForm without block-level resourceInit', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'FilterForm addBlock without resource page',
+      tabTitle: 'FilterForm addBlock without resource tab',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'filterForm',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const block = getData(response);
+    expect(block.uid).toBeTruthy();
+
+    const readback = await getSurface(rootAgent, {
+      uid: block.uid,
+    });
+    expect(readback.tree.use).toBe('FilterFormBlockModel');
+    expect(readback.tree.stepParams?.resourceSettings?.init).toBeUndefined();
+  });
+
+  it('should allow compose to create filterForm without block-level resource', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'FilterForm compose without resource page',
+      tabTitle: 'FilterForm compose without resource tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'append',
+        blocks: [
+          {
+            key: 'filterForm',
+            type: 'filterForm',
+            actions: ['submit', 'reset'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    expect(composed.blocks).toHaveLength(1);
+    expect(composed.blocks[0]).toMatchObject({
+      key: 'filterForm',
+      type: 'filterForm',
+    });
+    expect(composed.blocks[0].uid).toBeTruthy();
+    expect(composed.keyToUid.filterForm).toBe(composed.blocks[0].uid);
+
+    const readback = await getSurface(rootAgent, {
+      uid: composed.blocks[0].uid,
+    });
+    expect(readback.tree.use).toBe('FilterFormBlockModel');
+    expect(readback.tree.stepParams?.resourceSettings?.init).toBeUndefined();
+  });
+
   it('should reject raw direct-add payload keys and require settings/configureOptions instead', async () => {
     const page = await createPage(rootAgent, {
       title: 'Raw direct add contract page',

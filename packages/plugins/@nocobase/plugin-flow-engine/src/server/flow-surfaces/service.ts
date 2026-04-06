@@ -81,6 +81,7 @@ import type {
   FlowSurfaceApplySpec,
   FlowSurfaceApplyValues,
   FlowSurfaceAtomicFlag,
+  FlowSurfaceCatalogItem,
   FlowSurfaceComposeMode,
   FlowSurfaceComposeValues,
   FlowSurfaceConfigureValues,
@@ -1353,6 +1354,47 @@ export class FlowSurfacesService {
     };
   }
 
+  private assertRequiredBlockResourceInit(input: {
+    actionName: string;
+    blockCatalogItem: FlowSurfaceCatalogItem;
+    resourceInit?: Record<string, any>;
+    resourceField?: 'resource' | 'resourceInit';
+    blockDescriptor?: string;
+  }) {
+    const requiredInitParams = _.castArray(input.blockCatalogItem.requiredInitParams || []).filter(Boolean);
+    if (!requiredInitParams.length) {
+      return;
+    }
+
+    const missingPaths = requiredInitParams
+      .filter((param) => isMissingRequiredResourceInitValue(input.resourceInit?.[param]))
+      .map((param) => `${input.resourceField || 'resourceInit'}.${param}`);
+
+    if (!missingPaths.length) {
+      return;
+    }
+
+    const blockDescriptor = input.blockDescriptor || `block '${input.blockCatalogItem.key}'`;
+    if (input.resourceField) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} ${blockDescriptor} requires ${joinRequiredFieldPaths(missingPaths)}`,
+      );
+    }
+
+    throwBadRequest(
+      `flowSurfaces ${
+        input.actionName
+      } ${blockDescriptor} requires resource or resourceInit with ${joinRequiredFieldPaths(requiredInitParams)}`,
+    );
+  }
+
+  private describeComposeBlock(blockSpec: { index?: number; key?: string; type?: string }) {
+    const index = Number(blockSpec.index || 0);
+    const quotedKey = JSON.stringify(String(blockSpec.key || ''));
+    const quotedType = JSON.stringify(String(blockSpec.type || ''));
+    return `block #${index} (${quotedKey}, type=${quotedType})`;
+  }
+
   private async resolvePopupCollectionBlockResourceInit(input: {
     actionName: string;
     blockUse: string;
@@ -1866,6 +1908,15 @@ export class FlowSurfacesService {
     const keyRefs: Record<string, any> = {};
 
     for (const blockSpec of normalizedBlocks) {
+      if (blockSpec.resource?.kind !== 'semantic') {
+        this.assertRequiredBlockResourceInit({
+          actionName: 'compose',
+          blockCatalogItem: blockSpec.catalogItem,
+          resourceInit: blockSpec.resource?.kind === 'raw' ? blockSpec.resource.value : {},
+          resourceField: 'resource',
+          blockDescriptor: this.describeComposeBlock(blockSpec),
+        });
+      }
       const created = await this.addBlock(
         {
           target: {
@@ -2727,6 +2778,12 @@ export class FlowSurfacesService {
       popupProfile,
       semanticResource: semanticResource?.kind === 'semantic' ? semanticResource.value : undefined,
       resourceInit: rawResourceInit || (semanticResource?.kind === 'raw' ? semanticResource.value : undefined),
+    });
+    this.assertRequiredBlockResourceInit({
+      actionName: 'addBlock',
+      blockCatalogItem: catalogItem,
+      resourceInit: resolvedResourceInit,
+      resourceField: rawResourceInit ? 'resourceInit' : semanticResource?.kind === 'raw' ? 'resource' : undefined,
     });
     const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
       target,
@@ -5052,8 +5109,10 @@ export class FlowSurfacesService {
     );
     this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions, enabledPackages);
     return {
+      index: index + 1,
       key,
       type,
+      catalogItem: blockCatalogItem,
       resource: this.normalizeResourceInput(input.resource),
       settings: _.isPlainObject(input.settings) ? input.settings : {},
       fields: _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex)),
@@ -8732,6 +8791,26 @@ function normalizeSimpleResourceInit(input: any) {
     throwBadRequest('flowSurfaces simple resource cannot be empty');
   }
   return normalized;
+}
+
+function isMissingRequiredResourceInitValue(value: any) {
+  if (_.isNil(value)) {
+    return true;
+  }
+  if (typeof value === 'string') {
+    return !value.trim();
+  }
+  return false;
+}
+
+function joinRequiredFieldPaths(paths: string[]) {
+  if (paths.length <= 1) {
+    return paths[0] || '';
+  }
+  if (paths.length === 2) {
+    return `${paths[0]} and ${paths[1]}`;
+  }
+  return `${paths.slice(0, -1).join(', ')}, and ${paths[paths.length - 1]}`;
 }
 
 function normalizeSimpleLayoutValue(layout: any) {

@@ -2255,7 +2255,6 @@ const COLLECTION_RESOURCE_REQUIRED = new Set([
   'EditFormModel',
   'FormBlockModel',
   'DetailsBlockModel',
-  'FilterFormBlockModel',
   'ListBlockModel',
   'GridCardBlockModel',
   'MapBlockModel',
