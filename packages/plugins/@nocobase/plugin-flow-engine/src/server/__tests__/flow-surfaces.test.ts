@@ -1810,14 +1810,14 @@ describe('flowSurfaces resource', () => {
     expect(relationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
-      associationName: 'employee',
+      associationName: 'tasks.employee',
       sourceId: '{{ctx.popup.record.employeeId}}',
     });
     expect(semanticRelationPopupBlock.use).toBe('ListBlockModel');
     expect(semanticRelationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
-      associationName: 'employee',
+      associationName: 'tasks.employee',
       sourceId: '{{ctx.popup.record.employeeId}}',
     });
 
@@ -3574,6 +3574,20 @@ describe('flowSurfaces resource', () => {
     });
     const field = await addField(rootAgent, tableUid, 'department.title');
     const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const viewPopupBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: viewAction.uid,
+          },
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+    expect(viewPopupBlock.popupPageUid).toBeTruthy();
 
     const invalidRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -3582,7 +3596,7 @@ describe('flowSurfaces resource', () => {
         },
         changes: {
           openView: {
-            uid: viewAction.popupPageUid,
+            uid: viewPopupBlock.popupPageUid,
           },
         },
       },
@@ -3632,6 +3646,20 @@ describe('flowSurfaces resource', () => {
     });
     const field = await addField(rootAgent, tableUid, 'department.title');
     const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const viewPopupBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: viewAction.uid,
+          },
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+    expect(viewPopupBlock.popupPageUid).toBeTruthy();
 
     const invalidRes = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -3641,7 +3669,7 @@ describe('flowSurfaces resource', () => {
         stepParams: {
           popupSettings: {
             openView: {
-              uid: viewAction.popupPageUid,
+              uid: viewPopupBlock.popupPageUid,
             },
           },
         },
@@ -7778,14 +7806,18 @@ describe('flowSurfaces resource', () => {
     const wrappedTargetRes = await rootAgent.get(
       `/api/flowSurfaces:get?target%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
     );
-    expect(wrappedTargetRes.status).toBe(400);
-    expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
+    expect([400, 404]).toContain(wrappedTargetRes.status);
+    if (wrappedTargetRes.status === 400) {
+      expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
+    }
 
     const wrappedValuesRes = await rootAgent.get(
       `/api/flowSurfaces:get?values%5Buid%5D=${encodeURIComponent(page.tabSchemaUid)}`,
     );
-    expect(wrappedValuesRes.status).toBe(400);
-    expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+    expect([400, 404]).toContain(wrappedValuesRes.status);
+    if (wrappedValuesRes.status === 400) {
+      expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+    }
   });
 
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {

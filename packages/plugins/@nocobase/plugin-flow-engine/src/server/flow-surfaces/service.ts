@@ -33,7 +33,7 @@ import {
 } from './builder';
 import { buildAutoLayout, compileApplySpec } from './compiler';
 import { FlowSurfaceContractGuard } from './contract-guard';
-import { FlowSurfaceBadRequestError } from './errors';
+import { FlowSurfaceBadRequestError, throwBadRequest } from './errors';
 import { executeMutateOps } from './executor';
 import {
   MULTI_VALUE_ASSOCIATION_INTERFACES,
@@ -2658,8 +2658,14 @@ export class FlowSurfacesService {
         requireCreateSupported: true,
       },
     );
-    const resolvedTarget = await this.locator.resolve(target, options);
-    const targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction);
+    let resolvedTarget = await this.locator.resolve(target, options);
+    let targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction);
+    const targetOpenView = this.resolvePopupHostOpenView(targetNode);
+    if (this.isPopupFieldHostUse(targetNode?.use) && !targetOpenView) {
+      await this.ensureLocalFieldPopupSurface('addBlock', target.uid, options, { popup: {} });
+      resolvedTarget = await this.locator.resolve(target, options);
+      targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction);
+    }
     const popupProfile = await this.resolvePopupBlockProfile(
       target.uid,
       resolvedTarget,
@@ -3742,7 +3748,7 @@ export class FlowSurfacesService {
     }
 
     if (!sqlPreview.queryOutputs?.length) {
-      throw new FlowSurfaceBadRequestError(
+      throwBadRequest(
         "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
       );
     }
@@ -3753,7 +3759,7 @@ export class FlowSurfacesService {
 
     for (const mappingField of getChartVisualMappingAliases(state.visual)) {
       if (!supportedOutputs.has(mappingField)) {
-        throw new FlowSurfaceBadRequestError(
+        throwBadRequest(
           `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
         );
       }
@@ -3774,18 +3780,18 @@ export class FlowSurfacesService {
       .replace(/;+\s*$/, '')
       .trim();
     if (!inspected) {
-      throw new FlowSurfaceBadRequestError('chart query.sql cannot be empty');
+      throwBadRequest('chart query.sql cannot be empty');
     }
     if (inspected.includes(';')) {
-      throw new FlowSurfaceBadRequestError('chart query.sql must be a single read-only SELECT statement');
+      throwBadRequest('chart query.sql must be a single read-only SELECT statement');
     }
     if (!/^(with|select)\b/i.test(inspected)) {
-      throw new FlowSurfaceBadRequestError('chart query.sql must start with SELECT or WITH');
+      throwBadRequest('chart query.sql must start with SELECT or WITH');
     }
     if (
       /\b(insert|update|delete|drop|alter|truncate|create|replace|grant|revoke|merge|call|execute)\b/i.test(inspected)
     ) {
-      throw new FlowSurfaceBadRequestError('chart query.sql must be read-only');
+      throwBadRequest('chart query.sql must be read-only');
     }
     return normalized.replace(/;+\s*$/, '').trim();
   }
@@ -3805,7 +3811,7 @@ export class FlowSurfacesService {
     if (db?.sequelize?.query) {
       return db.sequelize.query(sql, { bind, transaction });
     }
-    throw new FlowSurfaceBadRequestError('chart SQL preview is unavailable for the target data source');
+    throwBadRequest('chart SQL preview is unavailable for the target data source');
   }
 
   private extractSqlChartPreviewAliases(metadata: any) {
@@ -3928,7 +3934,7 @@ export class FlowSurfacesService {
 
       const outputAliases = Object.keys(firstRow);
       if (!outputAliases.length) {
-        throw new FlowSurfaceBadRequestError('chart query.sql must expose at least one output column');
+        throwBadRequest('chart query.sql must expose at least one output column');
       }
 
       return {
@@ -3941,7 +3947,7 @@ export class FlowSurfacesService {
       };
     } catch (error: any) {
       const message = error?.message || String(error);
-      throw new FlowSurfaceBadRequestError(`chart query.sql is invalid: ${message}`);
+      throwBadRequest(`chart query.sql is invalid: ${message}`);
     }
   }
 
@@ -4507,17 +4513,18 @@ export class FlowSurfacesService {
 
   private normalizeGetTarget(input: Record<string, any>): FlowSurfaceReadLocator {
     if (!_.isPlainObject(input)) {
-      throw new FlowSurfaceBadRequestError(`flowSurfaces:get requires root locator fields`);
+      throwBadRequest(`flowSurfaces:get requires root locator fields`);
     }
     if (Object.prototype.hasOwnProperty.call(input, 'target')) {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`,
-      );
+      throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`);
     }
     if (Object.prototype.hasOwnProperty.call(input, 'values')) {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`,
-      );
+      const wrappedValues = input.values;
+      const hasRootLocator =
+        !_.isNil(input.uid) || !_.isNil(input.pageSchemaUid) || !_.isNil(input.tabSchemaUid) || !_.isNil(input.routeId);
+      if (!_.isPlainObject(wrappedValues) || Object.keys(wrappedValues).length || !hasRootLocator) {
+        throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`);
+      }
     }
     const target = buildDefinedPayload({
       uid: input.uid,
@@ -4526,14 +4533,10 @@ export class FlowSurfacesService {
       routeId: _.isNil(input.routeId) ? undefined : String(input.routeId),
     });
     if (!Object.keys(target).length) {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces:get requires one of uid, pageSchemaUid, tabSchemaUid or routeId`,
-      );
+      throwBadRequest(`flowSurfaces:get requires one of uid, pageSchemaUid, tabSchemaUid or routeId`);
     }
     if (Object.keys(target).length > 1) {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces:get only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`,
-      );
+      throwBadRequest(`flowSurfaces:get only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`);
     }
     return target;
   }
@@ -5744,7 +5747,7 @@ export class FlowSurfacesService {
     );
     const shouldLoadCurrent = shouldUpdateConfigure || shouldUpdateCardSettings;
     const resolved = shouldLoadCurrent ? await this.locator.resolve(target, options) : null;
-    const current = shouldLoadCurrent ? await this.loadResolvedNode(resolved!, options.transaction) : null;
+    const current = resolved ? await this.loadResolvedNode(resolved, options.transaction) : null;
     let nextConfigure = shouldUpdateConfigure
       ? buildChartConfigureFromSemanticChanges(_.get(current, ['stepParams', 'chartSettings', 'configure']), changes)
       : undefined;
@@ -8376,7 +8379,7 @@ function normalizeSimpleResourceInit(input: any) {
     return undefined;
   }
   if (!_.isPlainObject(input)) {
-    throw new FlowSurfaceBadRequestError('flowSurfaces simple resource must be an object');
+    throwBadRequest('flowSurfaces simple resource must be an object');
   }
   const normalized = buildDefinedPayload({
     dataSourceKey: input.dataSourceKey,
@@ -8387,7 +8390,7 @@ function normalizeSimpleResourceInit(input: any) {
     filterByTk: input.filterByTk,
   });
   if (!Object.keys(normalized).length) {
-    throw new FlowSurfaceBadRequestError('flowSurfaces simple resource cannot be empty');
+    throwBadRequest('flowSurfaces simple resource cannot be empty');
   }
   return normalized;
 }
@@ -8420,7 +8423,7 @@ function normalizeGridCardColumns(columns: any) {
     const requiredBreakpoints = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
     const missingBreakpoints = requiredBreakpoints.filter((key) => _.isUndefined(columns[key]));
     if (missingBreakpoints.length) {
-      throw new FlowSurfaceBadRequestError(
+      throwBadRequest(
         `flowSurfaces configure gridCard columns responsive object must include xs, sm, md, lg, xl, xxl; missing: ${missingBreakpoints.join(
           ', ',
         )}`,
@@ -8428,7 +8431,7 @@ function normalizeGridCardColumns(columns: any) {
     }
     const invalidBreakpoints = requiredBreakpoints.filter((key) => !_.isNumber(columns[key]) || columns[key] <= 0);
     if (invalidBreakpoints.length) {
-      throw new FlowSurfaceBadRequestError(
+      throwBadRequest(
         `flowSurfaces configure gridCard columns responsive object values must be positive numbers; invalid: ${invalidBreakpoints.join(
           ', ',
         )}`,
@@ -8443,11 +8446,11 @@ function normalizeGridCardColumns(columns: any) {
       xxl: columns.xxl,
     });
     if (!Object.keys(normalized).length) {
-      throw new FlowSurfaceBadRequestError('flowSurfaces configure gridCard columns cannot be empty');
+      throwBadRequest('flowSurfaces configure gridCard columns cannot be empty');
     }
     return normalized;
   }
-  throw new FlowSurfaceBadRequestError('flowSurfaces configure gridCard columns must be a number or responsive object');
+  throwBadRequest('flowSurfaces configure gridCard columns must be a number or responsive object');
 }
 
 function normalizeSimpleConfirm(confirm: any) {
@@ -8463,7 +8466,7 @@ function normalizeSimpleConfirm(confirm: any) {
       content: confirm.content,
     });
   }
-  throw new FlowSurfaceBadRequestError('flowSurfaces configure confirm must be a boolean or object');
+  throwBadRequest('flowSurfaces configure confirm must be a boolean or object');
 }
 
 function assertSupportedSimpleChanges(context: string, changes: Record<string, any>, allowedKeys: string[]) {
@@ -8471,7 +8474,7 @@ function assertSupportedSimpleChanges(context: string, changes: Record<string, a
   if (!unknownKeys.length) {
     return;
   }
-  throw new FlowSurfaceBadRequestError(
+  throwBadRequest(
     `flowSurfaces configure ${context} does not support: ${unknownKeys.join(
       ', ',
     )}; supported configureOptions: ${allowedKeys.join(', ')}`,
@@ -8492,13 +8495,9 @@ function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boolean } 
 function rethrowInlineConfigurationError(error: any, prefix: string): never {
   const message = `${prefix}: ${error?.message || String(error)}`;
   if (error instanceof FlowSurfaceBadRequestError) {
-    throw new FlowSurfaceBadRequestError(message);
+    throwBadRequest(message);
   }
   throw new Error(message);
-}
-
-function throwBadRequest(message: string): never {
-  throw new FlowSurfaceBadRequestError(message);
 }
 
 function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {
@@ -8612,17 +8611,15 @@ function normalizePublicBlockHeightMode(input: any) {
     return undefined;
   }
   if (_.isNull(input)) {
-    throw new FlowSurfaceBadRequestError('flowSurfaces configure heightMode cannot be null');
+    throwBadRequest('flowSurfaces configure heightMode cannot be null');
   }
   const normalized = String(input || '').trim();
   if (!normalized) {
-    throw new FlowSurfaceBadRequestError('flowSurfaces configure heightMode cannot be empty');
+    throwBadRequest('flowSurfaces configure heightMode cannot be empty');
   }
   const aliased = normalized === 'fixed' ? 'specifyValue' : normalized;
   if (!['defaultHeight', 'specifyValue', 'fullHeight'].includes(aliased)) {
-    throw new FlowSurfaceBadRequestError(
-      'flowSurfaces configure heightMode must be one of: defaultHeight, specifyValue, fullHeight',
-    );
+    throwBadRequest('flowSurfaces configure heightMode must be one of: defaultHeight, specifyValue, fullHeight');
   }
   return aliased;
 }
@@ -8643,20 +8640,16 @@ function normalizeChartCardHeightModeForWrite(input: any) {
     return undefined;
   }
   if (_.isNull(input)) {
-    throw new FlowSurfaceBadRequestError(
-      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be null',
-    );
+    throwBadRequest('flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be null');
   }
   const normalized = String(input).trim();
   if (!normalized) {
-    throw new FlowSurfaceBadRequestError(
-      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be empty',
-    );
+    throwBadRequest('flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be empty');
   }
   try {
     return normalizePublicBlockHeightMode(normalized);
   } catch {
-    throw new FlowSurfaceBadRequestError(
+    throwBadRequest(
       'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode must be one of: defaultHeight, specifyValue, fullHeight',
     );
   }

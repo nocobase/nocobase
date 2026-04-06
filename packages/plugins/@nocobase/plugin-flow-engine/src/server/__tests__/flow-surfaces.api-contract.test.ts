@@ -1692,7 +1692,7 @@ describe('flowSurfaces API contract', () => {
     });
     expect(invalidRelationCurrentRecordRaw.status).toBe(400);
     expect(readErrorMessage(invalidRelationCurrentRecordRaw)).toContain(
-      `resourceInit does not match popup binding 'currentRecord'`,
+      `does not support resourceInit binding 'currentRecord'`,
     );
   });
 
@@ -3006,13 +3006,13 @@ describe('flowSurfaces API contract', () => {
                     alias: 'employeeCount',
                   },
                 ],
-                dimensions: [{ field: 'department' }],
+                dimensions: [{ field: 'status' }],
               },
               visual: {
                 mode: 'basic',
                 type: 'bar',
                 mappings: {
-                  x: 'department',
+                  x: 'status',
                   y: 'employeeCount',
                 },
               },
@@ -3239,34 +3239,30 @@ describe('flowSurfaces API contract', () => {
       ).status,
     ).toBe(200);
 
-    expect(
-      (
-        await rootAgent.resource('flowSurfaces').configure({
-          values: {
-            target: { uid: chartUid },
-            changes: {
-              configure: {
-                query: {
-                  mode: 'sql',
-                  sql: 'select department, count(*) as employeeCount from employees group by department',
-                  sqlDatasource: 'main',
-                },
-                chart: {
-                  option: {
-                    mode: 'basic',
-                    builder: {
-                      type: 'bar',
-                      xField: 'department',
-                      yField: 'employeeCount',
-                    },
-                  },
-                },
-              },
+    const chartConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          query: {
+            mode: 'sql',
+            // Keep this preview SQL cross-dialect and metadata-stable:
+            // - literal row avoids relying on fixture data
+            // - lowercase alias matches PG/MySQL preview alias behavior consistently
+            sql: "select 'active' as status, 1 as employeecount",
+            sqlDatasource: 'main',
+          },
+          visual: {
+            mode: 'basic',
+            type: 'bar',
+            mappings: {
+              x: 'status',
+              y: 'employeecount',
             },
           },
-        })
-      ).status,
-    ).toBe(200);
+        },
+      },
+    });
+    expect(chartConfigureRes.status).toBe(200);
 
     expect(
       (
@@ -3405,7 +3401,8 @@ describe('flowSurfaces API contract', () => {
     });
     expect(composeRes.status).toBe(200);
 
-    const gridUid = composeRes.body?.data?.results?.find?.((item: any) => item.key === 'grid')?.uid;
+    const composed = getData(composeRes);
+    const gridUid = composed.keyToUid.grid;
     expect(gridUid).toBeTruthy();
 
     const response = await rootAgent.resource('flowSurfaces').configure({
@@ -3812,12 +3809,13 @@ describe('flowSurfaces API contract', () => {
       }),
     );
 
-    const initialRolesFieldReadback = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
-    expect(initialRolesFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+    const initialPopupDetailsReadback = await getSurface(rootAgent, { uid: popupDetails.uid });
+    expect(initialPopupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
       associationName: 'users.roles',
-      mode: 'drawer',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
 
     expect(
@@ -4712,6 +4710,9 @@ async function setupFixtureCollections(rootAgent: any) {
     values: {
       name: 'skills',
       title: 'Skills',
+      // Keep generic relation leaf-path assertions stable instead of falling back to the default id title key.
+      titleField: 'label',
+      filterTargetKey: 'label',
       fields: [{ name: 'label', type: 'string', interface: 'input' }],
     },
   });

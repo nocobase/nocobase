@@ -102,7 +102,7 @@ const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.scene': OPEN_VIEW_SCENE_SCHEMA,
   'openView.dataSourceKey': STRING_SCHEMA,
   'openView.collectionName': STRING_SCHEMA,
-  'openView.associationName': STRING_SCHEMA,
+  'openView.associationName': NULLABLE_STRING_SCHEMA,
   'openView.sourceId': STRING_SCHEMA,
   'openView.filterByTk': STRING_SCHEMA,
   'openView.title': STRING_SCHEMA,

@@ -361,7 +361,7 @@ function normalizeFilterGroupValue(
     return _.cloneDeep(value);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new FlowSurfaceBadRequestError(
+    throwBadRequest(
       `flowSurfaces updateSettings domain '${context.domain}.${context.groupKey}.${path}' on '${context.use}' expects FilterGroup like ${FILTER_GROUP_EXAMPLE}: ${reason}`,
     );
   }
@@ -369,16 +369,16 @@ function normalizeFilterGroupValue(
 
 function assertFilterGroupShape(filter: any) {
   if (!_.isPlainObject(filter)) {
-    throw new FlowSurfaceBadRequestError('Invalid filter: filter must be an object');
+    throwBadRequest('Invalid filter: filter must be an object');
   }
   if (!('logic' in filter) || !('items' in filter)) {
-    throw new FlowSurfaceBadRequestError('Invalid filter: filter must have logic and items properties');
+    throwBadRequest('Invalid filter: filter must have logic and items properties');
   }
   if (filter.logic !== '$and' && filter.logic !== '$or') {
-    throw new FlowSurfaceBadRequestError("Invalid filter: logic must be '$and' or '$or'");
+    throwBadRequest("Invalid filter: logic must be '$and' or '$or'");
   }
   if (!Array.isArray(filter.items)) {
-    throw new FlowSurfaceBadRequestError('Invalid filter: items must be an array');
+    throwBadRequest('Invalid filter: items must be an array');
   }
   filter.items.forEach((item) => {
     if (_.isPlainObject(item) && 'logic' in item && 'items' in item) {
@@ -388,7 +388,7 @@ function assertFilterGroupShape(filter: any) {
     if (_.isPlainObject(item) && typeof item.path === 'string' && typeof item.operator === 'string') {
       return;
     }
-    throw new FlowSurfaceBadRequestError('Invalid filter item type');
+    throwBadRequest('Invalid filter item type');
   });
 }
 
