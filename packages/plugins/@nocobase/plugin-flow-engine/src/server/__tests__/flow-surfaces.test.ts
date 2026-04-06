@@ -485,11 +485,13 @@ describe('flowSurfaces resource', () => {
     });
     expect(removeLastTabRes.status).toBe(200);
 
-    const popupPageAfterRemoveAll = await getSurface(rootAgent, {
-      uid: popupPageUid,
+    const popupHostAfterRemoveAll = await getSurface(rootAgent, {
+      uid: popupAction.uid,
     });
-    expect(popupPageAfterRemoveAll.tree.use).toBe('ChildPageModel');
-    expect(_.castArray(popupPageAfterRemoveAll.tree.subModels?.tabs || [])).toHaveLength(0);
+    const popupPageAfterRemoveAll = popupHostAfterRemoveAll.tree.subModels?.page;
+    expect(popupPageAfterRemoveAll?.uid).toBe(popupPageUid);
+    expect(popupPageAfterRemoveAll?.use).toBe('ChildPageModel');
+    expect(_.castArray(popupPageAfterRemoveAll?.subModels?.tabs || [])).toHaveLength(0);
 
     const recoveredPopupBlock = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
@@ -8173,11 +8175,18 @@ function getRouteBackedTabs(readback: any) {
 
 async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
   const normalizedResourceInit = resourceInit && Object.keys(resourceInit).length ? resourceInit : undefined;
+  let normalizedTargetUid = targetUid;
+  const tabReadbackRes = await rootAgent.resource('flowSurfaces').get({
+    tabSchemaUid: targetUid,
+  });
+  if (tabReadbackRes.status === 200) {
+    normalizedTargetUid = tabReadbackRes.body?.data?.tree?.subModels?.grid?.uid || targetUid;
+  }
   const data = getData(
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: targetUid,
+          uid: normalizedTargetUid,
         },
         type,
         ...(normalizedResourceInit ? { resourceInit: normalizedResourceInit } : {}),

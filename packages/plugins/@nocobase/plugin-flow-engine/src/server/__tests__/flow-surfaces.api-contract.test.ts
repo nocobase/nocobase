@@ -188,6 +188,13 @@ describe('flowSurfaces API contract', () => {
       title: 'ACL contract page',
       tabTitle: 'ACL contract tab',
     });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const pageRootUid = pageReadback?.target?.uid;
+    const pageGridUid = getRouteBackedTabs(pageReadback)[0]?.subModels?.grid?.uid;
+    expect(pageRootUid).toBeTruthy();
+    expect(pageGridUid).toBeTruthy();
 
     const readRes = await readerAgent.resource('flowSurfaces').get({
       pageSchemaUid: page.pageSchemaUid,
@@ -196,7 +203,7 @@ describe('flowSurfaces API contract', () => {
     const catalogRes = await readerAgent.resource('flowSurfaces').catalog({
       values: {
         target: {
-          uid: page.tabSchemaUid,
+          uid: pageGridUid,
         },
       },
     });
@@ -204,7 +211,7 @@ describe('flowSurfaces API contract', () => {
     const contextRes = await readerAgent.resource('flowSurfaces').context({
       values: {
         target: {
-          uid: page.tabSchemaUid,
+          uid: pageGridUid,
         },
         path: 'record',
       },
@@ -214,7 +221,7 @@ describe('flowSurfaces API contract', () => {
     const deniedWriteRes = await readerAgent.resource('flowSurfaces').addTab({
       values: {
         target: {
-          uid: page.pageUid,
+          uid: pageRootUid,
         },
         title: 'Denied tab',
       },
@@ -228,7 +235,7 @@ describe('flowSurfaces API contract', () => {
     const allowedWriteRes = await writerAgent.resource('flowSurfaces').addTab({
       values: {
         target: {
-          uid: page.pageUid,
+          uid: pageRootUid,
         },
         title: 'Allowed tab',
       },
@@ -435,7 +442,7 @@ describe('flowSurfaces API contract', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'page.tabSchemaUid',
+                  ref: 'page.gridUid',
                 },
               },
               type: 'details',
@@ -490,7 +497,7 @@ describe('flowSurfaces API contract', () => {
               clientKey: 'details-block',
               target: {
                 uid: {
-                  ref: 'page.tabSchemaUid',
+                  ref: 'page.gridUid',
                 },
               },
               type: 'details',
@@ -572,7 +579,7 @@ describe('flowSurfaces API contract', () => {
             values: {
               target: {
                 uid: {
-                  $ref: 'page.tabSchemaUid',
+                  $ref: 'page.gridUid',
                 },
               },
               type: 'details',
@@ -1143,9 +1150,14 @@ describe('flowSurfaces API contract', () => {
       title: 'Popup tab contract page',
       tabTitle: 'Popup tab contract tab',
     });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const pageGridUid = getRouteBackedTabs(pageReadback)[0]?.subModels?.grid?.uid;
+    expect(pageGridUid).toBeTruthy();
     const table = await addBlockData(rootAgent, {
       target: {
-        uid: page.tabSchemaUid,
+        uid: pageGridUid,
       },
       type: 'table',
       resourceInit: {
@@ -1180,10 +1192,17 @@ describe('flowSurfaces API contract', () => {
     expect(popupAction.popupPageUid).toBeTruthy();
     expect(popupAction.popupTabUid).toBeTruthy();
     expect(popupAction.popupGridUid).toBeTruthy();
+    const popupActionReadback = await getSurface(rootAgent, {
+      uid: popupAction.uid,
+    });
+    const popupPage = popupActionReadback.tree?.subModels?.page;
+    const primaryPopupTabUid = _.castArray(popupPage?.subModels?.tabs || [])[0]?.uid;
+    expect(popupPage?.uid).toBeTruthy();
+    expect(primaryPopupTabUid).toBeTruthy();
 
     const destroyPopupPageRes = await rootAgent.resource('flowSurfaces').destroyPage({
       values: {
-        uid: popupAction.popupPageUid,
+        uid: popupPage.uid,
       },
     });
     expect(destroyPopupPageRes.status).toBe(400);
@@ -1192,7 +1211,7 @@ describe('flowSurfaces API contract', () => {
     const addTabOnPopupPageRes = await rootAgent.resource('flowSurfaces').addTab({
       values: {
         target: {
-          uid: popupAction.popupPageUid,
+          uid: popupPage.uid,
         },
         title: 'Wrong API popup tab',
       },
@@ -1203,7 +1222,7 @@ describe('flowSurfaces API contract', () => {
     const updateOuterTabOnPopupRes = await rootAgent.resource('flowSurfaces').updateTab({
       values: {
         target: {
-          uid: popupAction.popupTabUid,
+          uid: primaryPopupTabUid,
         },
         title: 'Wrong update popup tab',
       },
@@ -1213,7 +1232,7 @@ describe('flowSurfaces API contract', () => {
 
     const moveOuterTabOnPopupRes = await rootAgent.resource('flowSurfaces').moveTab({
       values: {
-        sourceUid: popupAction.popupTabUid,
+        sourceUid: primaryPopupTabUid,
         targetUid: page.tabSchemaUid,
         position: 'before',
       },
@@ -1223,7 +1242,7 @@ describe('flowSurfaces API contract', () => {
 
     const removeOuterTabOnPopupRes = await rootAgent.resource('flowSurfaces').removeTab({
       values: {
-        uid: popupAction.popupTabUid,
+        uid: primaryPopupTabUid,
       },
     });
     expect(removeOuterTabOnPopupRes.status).toBe(400);
@@ -1233,7 +1252,7 @@ describe('flowSurfaces API contract', () => {
       await rootAgent.resource('flowSurfaces').addPopupTab({
         values: {
           target: {
-            uid: popupAction.popupPageUid,
+            uid: popupPage.uid,
           },
           title: 'Secondary popup tab',
           icon: 'TableOutlined',
@@ -1242,7 +1261,7 @@ describe('flowSurfaces API contract', () => {
       }),
     );
     expect(addedPopupTab).toMatchObject({
-      popupPageUid: popupAction.popupPageUid,
+      popupPageUid: popupPage.uid,
       popupTabUid: expect.any(String),
       popupGridUid: expect.any(String),
     });
@@ -1276,14 +1295,14 @@ describe('flowSurfaces API contract', () => {
       await rootAgent.resource('flowSurfaces').movePopupTab({
         values: {
           sourceUid: addedPopupTab.popupTabUid,
-          targetUid: popupAction.popupTabUid,
+          targetUid: primaryPopupTabUid,
           position: 'before',
         },
       }),
     );
     expect(movedPopupTab).toEqual({
       sourceUid: addedPopupTab.popupTabUid,
-      targetUid: popupAction.popupTabUid,
+      targetUid: primaryPopupTabUid,
       position: 'before',
     });
 
@@ -1435,11 +1454,16 @@ describe('flowSurfaces API contract', () => {
       title: 'Mutation contract page',
       tabTitle: 'Mutation contract tab',
     });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const pageGridUid = getRouteBackedTabs(pageReadback)[0]?.subModels?.grid?.uid;
+    expect(pageGridUid).toBeTruthy();
     const pageCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
           target: {
-            uid: page.tabSchemaUid,
+            uid: pageGridUid,
           },
         },
       }),
@@ -1450,7 +1474,7 @@ describe('flowSurfaces API contract', () => {
     const unknownBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: page.tabSchemaUid,
+          uid: pageGridUid,
         },
         type: 'notRegisteredBlock',
       },
@@ -1461,7 +1485,7 @@ describe('flowSurfaces API contract', () => {
     const unsupportedBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: page.tabSchemaUid,
+          uid: pageGridUid,
         },
         type: 'map',
         resourceInit: {
@@ -1476,7 +1500,7 @@ describe('flowSurfaces API contract', () => {
     const hiddenCompatFormRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: page.tabSchemaUid,
+          uid: pageGridUid,
         },
         type: 'form',
         resourceInit: {
@@ -1491,7 +1515,7 @@ describe('flowSurfaces API contract', () => {
     const hiddenCompatFormUseRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: page.tabSchemaUid,
+          uid: pageGridUid,
         },
         use: 'FormBlockModel',
         resourceInit: {
@@ -1505,7 +1529,7 @@ describe('flowSurfaces API contract', () => {
 
     const table = await addBlockData(rootAgent, {
       target: {
-        uid: page.tabSchemaUid,
+        uid: pageGridUid,
       },
       type: 'table',
       resourceInit: {
