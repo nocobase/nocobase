@@ -9,24 +9,32 @@
 
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import { SkillSettings } from '../components/skill-settings';
 import { ModelOptions } from '../components/model-options';
 import { WebSearchOptions } from '../components/web-search-options';
 import { MessageInputs } from '../components/message-inputs';
+import { AIEmployeeSelect } from '../components/AIEmployeeSelect';
+import { namespace } from '../../locale';
 
 export class AIEmployeeTaskModel extends FlowModel {
   public render() {
     return (
       <SchemaComponent
-        components={{ SkillSettings, ModelOptions, WebSearchOptions }}
+        components={{ SkillSettings, ModelOptions, WebSearchOptions, AIEmployeeSelect }}
         schema={{
           type: 'void',
           properties: {
             username: {
+              title: tExpr('AI employee', { ns: namespace }),
               type: 'string',
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
+              'x-decorator-props': {
+                tooltip: tExpr('Choose the AI employee for this task', { ns: namespace }),
+                layout: 'horizontal',
+                labelAlign: 'left',
+              },
+              'x-component': AIEmployeeSelect,
               default: 'atlas',
             },
             message: {
