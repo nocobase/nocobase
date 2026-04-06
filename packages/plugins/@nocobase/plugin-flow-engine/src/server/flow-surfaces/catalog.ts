@@ -31,7 +31,7 @@ import {
   TABLE_BLOCK_ACTION_CONTAINER_USES,
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
-import { FlowSurfaceBadRequestError } from './errors';
+import { FlowSurfaceBadRequestError, FlowSurfaceInternalError } from './errors';
 import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
@@ -2582,12 +2582,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
   },
 ];
 
+function throwCatalogInvariant(message: string): never {
+  throw new FlowSurfaceInternalError(message, 'FLOW_SURFACE_INTERNAL_INVARIANT');
+}
+
 function validateActionRegistryItem(item: FlowSurfaceActionRegistryItem) {
   if (!item.allowedContainerUses.length) {
-    throw new Error(`flowSurfaces action registry '${item.publicKey}' must declare allowedContainerUses`);
+    throwCatalogInvariant(`flowSurfaces action registry '${item.publicKey}' must declare allowedContainerUses`);
   }
   if (!nodeContracts.has(item.use)) {
-    throw new Error(`flowSurfaces action registry '${item.publicKey}' references unsupported use '${item.use}'`);
+    throwCatalogInvariant(`flowSurfaces action registry '${item.publicKey}' references unsupported use '${item.use}'`);
   }
   item.allowedContainerUses.forEach((containerUse) =>
     assertActionScopeMatchesContainer({

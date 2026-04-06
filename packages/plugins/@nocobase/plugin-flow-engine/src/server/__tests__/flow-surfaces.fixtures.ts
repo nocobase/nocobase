@@ -11,8 +11,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import _ from 'lodash';
 import type { FormalFlowSurfaceBlockKey } from '../flow-surfaces/support-matrix';
+import routeBackedTabHelpers from './flow-surfaces-fixtures/route-backed-tabs.js';
 
 export const FLOW_SURFACE_FIXTURE_ROOT = path.resolve(__dirname, 'flow-surfaces-fixtures');
+const { deriveRouteBackedTabs, deriveRouteBackedTabTrees } = routeBackedTabHelpers as {
+  deriveRouteBackedTabs: (input: { pageRoute?: any; tabs?: any; tabTrees?: any }) => any;
+  deriveRouteBackedTabTrees: (input: { tree?: any; tabs?: any; tabTrees?: any }) => any;
+};
+
 const NOISY_KEYS = new Set([
   'id',
   'uid',
@@ -1259,16 +1265,29 @@ function extractRawPersisted(input: FlowSurfaceFixtureInputs) {
 
 function materializeCanonicalSource(input: any) {
   const raw = toPlainObject(input);
-  if (raw?.persisted) {
-    return compactObject({
-      target: raw.target,
-      tree: raw.persisted.tree || raw.persisted.focusNode || raw.tree,
-      pageRoute: raw.persisted.pageRoute || raw.pageRoute,
-      tabs: raw.persisted.tabs || raw.tabs,
-      tabTrees: raw.persisted.tabTrees || raw.tabTrees,
-    });
-  }
-  return raw;
+  const persisted = raw?.persisted ? toPlainObject(raw.persisted) : undefined;
+  const tree = persisted?.tree || persisted?.focusNode || raw?.tree;
+  const pageRoute = persisted?.pageRoute || raw?.pageRoute;
+  const legacyTabs = persisted?.tabs || raw?.tabs;
+  const legacyTabTrees = persisted?.tabTrees || raw?.tabTrees;
+  const tabs = deriveRouteBackedTabs({
+    pageRoute,
+    tabs: legacyTabs,
+    tabTrees: legacyTabTrees,
+  });
+  const tabTrees = deriveRouteBackedTabTrees({
+    tree,
+    tabs,
+    tabTrees: legacyTabTrees,
+  });
+
+  return compactObject({
+    target: raw?.target,
+    tree,
+    pageRoute,
+    tabs,
+    tabTrees,
+  });
 }
 
 function normalizeNode(

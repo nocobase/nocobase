@@ -33,7 +33,15 @@ import {
 } from './builder';
 import { buildAutoLayout, compileApplySpec } from './compiler';
 import { FlowSurfaceContractGuard } from './contract-guard';
-import { FlowSurfaceBadRequestError, throwBadRequest } from './errors';
+import {
+  FlowSurfaceBadRequestError,
+  isFlowSurfaceError,
+  normalizeFlowSurfaceError,
+  throwBadRequest,
+  throwConflict,
+  throwForbidden,
+  throwInternalError,
+} from './errors';
 import { executeMutateOps } from './executor';
 import {
   MULTI_VALUE_ASSOCIATION_INTERFACES,
@@ -1787,18 +1795,7 @@ export class FlowSurfacesService {
     };
 
     if (resolved.pageRoute) {
-      const pageRoute = await this.routeSync.hydrateRoute(resolved.pageRoute, options.transaction);
-      result.pageRoute = pageRoute;
-      result.tabs = _.sortBy(
-        _.castArray(pageRoute?.get?.('children') || pageRoute?.children || []).map((item) => item?.toJSON?.() || item),
-        'sort',
-      );
-      result.tabTrees = await Promise.all(
-        result.tabs.map(async (tabRoute) => ({
-          route: tabRoute,
-          tree: await this.routeSync.buildTabAnchor(tabRoute, options.transaction),
-        })),
-      );
+      result.pageRoute = await this.routeSync.hydrateRoute(resolved.pageRoute, options.transaction);
     } else if (resolved.route) {
       result.route = await this.routeSync.hydrateRoute(resolved.route, options.transaction);
     }
@@ -2334,7 +2331,7 @@ export class FlowSurfacesService {
     await this.assertRouteBackedPageUidTarget('addTab', pageTarget, options.transaction);
     const pageRoute = pageTarget.pageRoute;
     if (!pageRoute) {
-      throw new Error('flowSurfaces addTab page route not found');
+      throwConflict('flowSurfaces addTab page route not found', 'FLOW_SURFACE_PAGE_ROUTE_NOT_FOUND');
     }
     const tabSchemaUid = values.tabSchemaUid || uid();
     const tabSchemaName = values.tabSchemaName || uid();
@@ -2380,7 +2377,7 @@ export class FlowSurfacesService {
     const tabUid = target.uid;
     const route = target.tabRoute || (await this.locator.findRouteBySchemaUid(tabUid, options.transaction));
     if (!route) {
-      throw new Error('flowSurfaces updateTab route not found');
+      throwConflict('flowSurfaces updateTab route not found', 'FLOW_SURFACE_TAB_ROUTE_NOT_FOUND');
     }
     const current = await this.loadResolvedNode(target, options.transaction);
     const nextPayload = buildDefinedPayload({
@@ -3050,7 +3047,10 @@ export class FlowSurfacesService {
     });
     const resolvedScope = actionCatalogItem.scope;
     if (!resolvedScope) {
-      throw new Error(`flowSurfaces addAction '${actionCatalogItem.use}' is missing a resolved action scope`);
+      throwInternalError(
+        `flowSurfaces addAction '${actionCatalogItem.use}' is missing a resolved action scope`,
+        'FLOW_SURFACE_ACTION_SCOPE_MISSING',
+      );
     }
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
       throwBadRequest(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
@@ -4519,12 +4519,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`);
     }
     if (Object.prototype.hasOwnProperty.call(input, 'values')) {
-      const wrappedValues = input.values;
-      const hasRootLocator =
-        !_.isNil(input.uid) || !_.isNil(input.pageSchemaUid) || !_.isNil(input.tabSchemaUid) || !_.isNil(input.routeId);
-      if (!_.isPlainObject(wrappedValues) || Object.keys(wrappedValues).length || !hasRootLocator) {
-        throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`);
-      }
+      throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`);
     }
     const target = buildDefinedPayload({
       uid: input.uid,
@@ -4825,7 +4820,10 @@ export class FlowSurfacesService {
     if (use === 'ListBlockModel' || use === 'GridCardBlockModel') {
       const itemUid = node.subModels?.item?.uid;
       if (!itemUid) {
-        throw new Error(`flowSurfaces addRecordAction target '${use}' is missing its item subtree`);
+        throwConflict(
+          `flowSurfaces addRecordAction target '${use}' is missing its item subtree`,
+          'FLOW_SURFACE_RECORD_ACTION_ITEM_SUBTREE_MISSING',
+        );
       }
       return {
         ownerUid: node.uid,
@@ -4895,9 +4893,7 @@ export class FlowSurfacesService {
         result.ok = true;
         successCount += 1;
       } catch (error: any) {
-        result.error = {
-          message: error?.message || String(error),
-        };
+        result.error = toFlowSurfaceBatchItemError(error);
         errorCount += 1;
       }
       results.push(result);
@@ -4976,7 +4972,10 @@ export class FlowSurfacesService {
       );
     }
     if (!blockResult.itemUid) {
-      throw new Error(`flowSurfaces compose block '${blockSpec.key}' is missing its item subtree`);
+      throwConflict(
+        `flowSurfaces compose block '${blockSpec.key}' is missing its item subtree`,
+        'FLOW_SURFACE_COMPOSE_ITEM_SUBTREE_MISSING',
+      );
     }
     return blockResult.itemUid;
   }
@@ -6119,7 +6118,10 @@ export class FlowSurfacesService {
 
     if (shouldSyncTitleField) {
       if (!innerUid) {
-        throw new Error(`flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`);
+        throwConflict(
+          `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
+          'FLOW_SURFACE_INNER_FIELD_MISSING',
+        );
       }
       await this.updateSettings(
         {
@@ -6136,7 +6138,10 @@ export class FlowSurfacesService {
 
     if (hasDefinedValue(changes, ['clickToOpen', 'openView', 'code', 'version'])) {
       if (!innerUid) {
-        throw new Error(`flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`);
+        throwConflict(
+          `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
+          'FLOW_SURFACE_INNER_FIELD_MISSING',
+        );
       }
       return this.configureFieldNode(
         {
@@ -7717,8 +7722,9 @@ export class FlowSurfacesService {
       includeAsyncNode: true,
     });
     if (table?.use !== 'TableBlockModel') {
-      throw new Error(
+      throwInternalError(
         `flowSurfaces table recordActions require a TableBlockModel target, got '${table?.use || tableUid}'`,
+        'FLOW_SURFACE_TABLE_TARGET_INVALID',
       );
     }
 
@@ -7810,7 +7816,10 @@ export class FlowSurfacesService {
     const tab = _.castArray(persisted?.subModels?.tabs || [])[0];
     const grid = tab?.subModels?.grid;
     if (!persisted?.uid || !tab?.uid || !grid?.uid) {
-      throw new Error(`flowSurfaces failed to create popup surface under '${parentUid}'`);
+      throwConflict(
+        `flowSurfaces failed to create popup surface under '${parentUid}'`,
+        'FLOW_SURFACE_POPUP_SURFACE_INCOMPLETE',
+      );
     }
     return {
       pageUid: persisted.uid,
@@ -7875,7 +7884,10 @@ export class FlowSurfacesService {
     if (shouldBindAssociationValue) {
       const associationFieldPath = parsed.associationPathName;
       if (!associationFieldPath) {
-        throw new Error('flowSurfaces field binding requires associationPathName for multi-value association display');
+        throwInternalError(
+          'flowSurfaces field binding requires associationPathName for multi-value association display',
+          'FLOW_SURFACE_ASSOCIATION_PATH_REQUIRED',
+        );
       }
       return {
         dataSourceKey: parsed.dataSourceKey,
@@ -8494,10 +8506,30 @@ function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boolean } 
 
 function rethrowInlineConfigurationError(error: any, prefix: string): never {
   const message = `${prefix}: ${error?.message || String(error)}`;
-  if (error instanceof FlowSurfaceBadRequestError) {
-    throwBadRequest(message);
+  if (isFlowSurfaceError(error)) {
+    const normalized = normalizeFlowSurfaceError(error);
+    if (normalized.type === 'bad_request') {
+      throwBadRequest(message, normalized.code);
+    }
+    if (normalized.type === 'conflict') {
+      throwConflict(message, normalized.code);
+    }
+    if (normalized.type === 'forbidden') {
+      throwForbidden(message, normalized.code);
+    }
+    throwInternalError(message, normalized.code);
   }
-  throw new Error(message);
+  throwInternalError(message);
+}
+
+function toFlowSurfaceBatchItemError(error: any) {
+  const normalized = normalizeFlowSurfaceError(error);
+  return {
+    code: normalized.code,
+    message: normalized.message,
+    status: normalized.status,
+    type: normalized.type,
+  };
 }
 
 function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {

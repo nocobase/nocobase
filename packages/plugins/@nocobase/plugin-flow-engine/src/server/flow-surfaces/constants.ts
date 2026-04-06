@@ -50,11 +50,6 @@ export const FLOW_SURFACES_READ_ACTION_NAMES = [
   'get',
 ] as const satisfies readonly FlowSurfacesActionName[];
 
-export const FLOW_SURFACES_WRITE_ACTION_NAMES = FLOW_SURFACES_ACTION_NAMES.filter(
-  (actionName) =>
-    !FLOW_SURFACES_READ_ACTION_NAMES.includes(actionName as (typeof FLOW_SURFACES_READ_ACTION_NAMES)[number]),
-) as Exclude<FlowSurfacesActionName, (typeof FLOW_SURFACES_READ_ACTION_NAMES)[number]>[];
-
 export const FLOW_SURFACE_MUTATE_OP_TYPES = [
   'createMenu',
   'updateMenu',

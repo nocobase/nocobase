@@ -1,13 +1,10 @@
 {
   "target": {
-    "uid": "d8c5785c9db",
-    "kind": "block",
-    "node": {
-      "uid": "d8c5785c9db",
-      "use": "ChartBlockModel"
+    "locator": {
+      "uid": "d8c5785c9db"
     },
-    "pageSchemaUid": "nhpj3e672ci",
-    "tabSchemaUid": "8oivq8g39kf"
+    "uid": "d8c5785c9db",
+    "kind": "block"
   },
   "tree": {
     "uid": "d8c5785c9db",
@@ -18,6 +15,12 @@
     "stepParams": {},
     "sortIndex": 4,
     "flowRegistry": {}
+  },
+  "nodeMap": {
+    "d8c5785c9db": {
+      "uid": "d8c5785c9db",
+      "use": "ChartBlockModel"
+    }
   },
   "pageRoute": {
     "createdAt": "2026-03-28T09:00:25.475Z",
@@ -64,29 +67,5 @@
         "updatedById": 1
       }
     ]
-  },
-  "tabs": [
-    {
-      "createdAt": "2026-03-28T09:00:25.554Z",
-      "updatedAt": "2026-03-28T09:00:25.554Z",
-      "id": 355812088348674,
-      "parentId": 355812088348672,
-      "title": null,
-      "tooltip": null,
-      "icon": null,
-      "schemaUid": "8oivq8g39kf",
-      "menuSchemaUid": null,
-      "tabSchemaName": "jd7sxdfx0tm",
-      "type": "tabs",
-      "options": null,
-      "sort": 1,
-      "hideInMenu": null,
-      "enableTabs": null,
-      "enableHeader": null,
-      "displayTitle": null,
-      "hidden": true,
-      "createdById": 1,
-      "updatedById": 1
-    }
-  ]
+  }
 }

@@ -8,13 +8,22 @@
  */
 
 import type { Plugin } from '@nocobase/server';
-import { parseQuery } from '@nocobase/resourcer';
 import { FLOW_SURFACES_READ_ACTION_NAMES, type FlowSurfacesActionName } from './constants';
-import { normalizeFlowSurfaceError, throwBadRequest } from './errors';
+import { FlowSurfaceForbiddenError, normalizeFlowSurfaceError, throwBadRequest } from './errors';
 import { FlowSurfacesService } from './service';
 
 function getValues(ctx: any) {
   return ctx.action?.params?.values ?? ctx.action?.params ?? {};
+}
+
+function isImplicitEmptyValuesBag(value: any) {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype &&
+    Object.keys(value).length === 0
+  );
 }
 
 function getReadValues(ctx: any) {
@@ -23,14 +32,44 @@ function getReadValues(ctx: any) {
       `flowSurfaces:get only supports GET with root query locator fields like /api/flowSurfaces:get?uid=...`,
     );
   }
-  const query = parseQuery(ctx.request?.querystring || '');
-  if (Object.prototype.hasOwnProperty.call(query, 'target')) {
-    throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`);
+  const params = ctx.action?.params ?? {};
+  if (!Object.prototype.hasOwnProperty.call(params, 'values') || !isImplicitEmptyValuesBag(params.values)) {
+    return params;
   }
-  if (Object.prototype.hasOwnProperty.call(query, 'values')) {
-    throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`);
+
+  // Resourcer injects an empty `values` bag even for GET query requests.
+  // Strip only this transport artifact and keep explicit non-empty wrappers for service-level validation.
+  const { values, ...rest } = params;
+  return rest;
+}
+
+function writeFlowSurfaceErrorResponse(ctx: any, error: unknown) {
+  const normalized = normalizeFlowSurfaceError(error);
+  ctx.withoutDataWrapping = true;
+  ctx.type = 'application/json';
+  ctx.status = normalized.status;
+  ctx.body = normalized.toResponseBody();
+}
+
+function isAclPermissionDeniedForFlowSurfaces(ctx: any, error: any) {
+  const resourceName = ctx.action?.resourceName ?? ctx.permission?.resourceName;
+  return resourceName === 'flowSurfaces' && error?.status === 403 && error?.message === 'No permissions';
+}
+
+function toFlowSurfaceForbiddenError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return new FlowSurfaceForbiddenError(message);
+}
+
+async function runFlowSurfaceAclErrorWrapper(ctx: any, next: () => Promise<any>) {
+  try {
+    await next();
+  } catch (error) {
+    if (!isAclPermissionDeniedForFlowSurfaces(ctx, error)) {
+      throw error;
+    }
+    writeFlowSurfaceErrorResponse(ctx, toFlowSurfaceForbiddenError(error));
   }
-  return ctx.action?.params ?? {};
 }
 
 async function runFlowSurfaceAction(ctx: any, next: () => Promise<any>, handler: () => Promise<any>) {
@@ -38,11 +77,8 @@ async function runFlowSurfaceAction(ctx: any, next: () => Promise<any>, handler:
     ctx.body = await handler();
     await next();
   } catch (error) {
-    const normalized = normalizeFlowSurfaceError(error);
-    ctx.withoutDataWrapping = true;
-    ctx.type = 'application/json';
-    ctx.status = normalized.status;
-    ctx.body = normalized.toResponseBody();
+    writeFlowSurfaceErrorResponse(ctx, error);
+    await next();
   }
 }
 
@@ -202,6 +238,11 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     actions: ['flowSurfaces:*'],
   });
   plugin.app.acl.allow('flowSurfaces', [...FLOW_SURFACES_READ_ACTION_NAMES], 'loggedIn');
+  plugin.app.acl.use(runFlowSurfaceAclErrorWrapper, {
+    tag: 'flow-surfaces-acl-errors',
+    after: 'allow-manager',
+    before: 'core',
+  });
 
   plugin.app.resourceManager.define({
     name: 'flowSurfaces',

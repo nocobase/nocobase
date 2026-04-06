@@ -88,15 +88,6 @@ const RECORD_ACTION_TYPE_ENUM = [
   'delete',
   'updateRecord',
 ];
-const DOC_ONLY_ACTION_METHODS = {
-  addRecordAction: 'post',
-  addBlocks: 'post',
-  addFields: 'post',
-  addActions: 'post',
-  addRecordActions: 'post',
-} as const;
-type FlowSurfacesDocOnlyActionName = keyof typeof DOC_ONLY_ACTION_METHODS;
-
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
@@ -146,6 +137,14 @@ function responses(schemaName: string, includeValidationError = true) {
       ? {
           400: {
             description: 'Invalid public request parameters or semantics',
+            content: jsonContent(ref('FlowSurfaceErrorResponse')),
+          },
+          403: {
+            description: 'Current role is not allowed to call this action',
+            content: jsonContent(ref('FlowSurfaceErrorResponse')),
+          },
+          409: {
+            description: 'Current FlowSurface state conflicts with the requested operation',
             content: jsonContent(ref('FlowSurfaceErrorResponse')),
           },
           500: {
@@ -1193,6 +1192,7 @@ const actionDocs: Record<string, any> = {
       '不要使用 `{ target: { ... } }` 包裹。',
       '不要使用 `{ values: { ... } }` 包裹。',
       '响应里的 `target` 只保留轻量定位信息；完整节点树请看 `tree`。',
+      'route-backed page 的 tabs 统一从 `tree.subModels.tabs` 读取，不再单独返回顶层 `tabs` / `tabTrees`。',
       '',
       `示例：GET /api/flowSurfaces:get?uid=${examples.getPopupQuery.uid}`,
       `示例：GET /api/flowSurfaces:get?pageSchemaUid=${examples.getPageQuery.pageSchemaUid}`,
@@ -1570,7 +1570,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 block。每项都可带 `settings`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+      '在同一 target 下顺序批量创建 block。每项都可带 `settings`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`，其中 `error` 固定包含 `message/type/code/status`。',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1579,7 +1579,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 field。每项都可带 `settings`，popup-capable 字段还可带 `popup`，但不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+      '在同一 target 下顺序批量创建 field。每项都可带 `settings`，popup-capable 字段还可带 `popup`，但不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`，其中 `error` 固定包含 `message/type/code/status`。',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -1588,7 +1588,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple non-record actions sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建非 record action。每项都可带 `settings`，popup-capable action 还可带 `popup`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义；record action 不属于这个入口，请改用 `addRecordActions`。',
+      '在同一 target 下顺序批量创建非 record action。每项都可带 `settings`，popup-capable action 还可带 `popup`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义；record action 不属于这个入口，请改用 `addRecordActions`。失败项的 `error` 固定包含 `message/type/code/status`。',
     ),
     requestBody: requestBody('FlowSurfaceAddActionsRequest', examples.addActions),
     responses: responses('FlowSurfaceAddActionsResult'),
@@ -1597,7 +1597,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple record actions sequentially under the same record-capable owner target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 record action。target 使用 record-capable owner target，服务端会自动解析 canonical record action container。不要传 table 内部 actions column 或 list/gridCard item 这类内部容器 uid。每项都可带 `settings`，popup-capable action 还可带 `popup`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项。',
+      '在同一 target 下顺序批量创建 record action。target 使用 record-capable owner target，服务端会自动解析 canonical record action container。不要传 table 内部 actions column 或 list/gridCard item 这类内部容器 uid。每项都可带 `settings`，popup-capable action 还可带 `popup`，但不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，失败项的 `error` 固定包含 `message/type/code/status`。',
     ),
     requestBody: requestBody('FlowSurfaceAddRecordActionsRequest', examples.addRecordActions),
     responses: responses('FlowSurfaceAddRecordActionsResult'),
@@ -1662,15 +1662,6 @@ const actionDocs: Record<string, any> = {
     responses: responses('FlowSurfaceMutationResponse'),
   },
 };
-
-const extraPaths = Object.fromEntries(
-  (Object.keys(DOC_ONLY_ACTION_METHODS) as FlowSurfacesDocOnlyActionName[]).map((actionName) => [
-    `/flowSurfaces:${actionName}`,
-    {
-      [DOC_ONLY_ACTION_METHODS[actionName]]: actionDocs[actionName],
-    },
-  ]),
-);
 
 const parameters = {
   flowSurfaceTargetUid: {
@@ -2139,14 +2130,6 @@ const schemas = {
     },
     additionalProperties: true,
   },
-  FlowSurfaceTabReadback: {
-    type: 'object',
-    properties: {
-      route: ref('FlowSurfaceRouteMeta'),
-      tree: ref('FlowSurfaceGetTreeNode'),
-    },
-    additionalProperties: false,
-  },
   FlowSurfaceNodeSpec: {
     type: 'object',
     required: ['use'],
@@ -2430,14 +2413,6 @@ const schemas = {
       nodeMap: ref('FlowSurfaceNodeMap'),
       pageRoute: ref('FlowSurfaceRouteMeta'),
       route: ref('FlowSurfaceRouteMeta'),
-      tabs: {
-        type: 'array',
-        items: ref('FlowSurfaceRouteMeta'),
-      },
-      tabTrees: {
-        type: 'array',
-        items: ref('FlowSurfaceTabReadback'),
-      },
     },
     additionalProperties: false,
   },
@@ -3516,12 +3491,22 @@ const schemas = {
   FlowSurfaceBatchItemError: {
     type: 'object',
     properties: {
+      code: {
+        type: 'string',
+      },
       message: {
         type: 'string',
       },
+      status: {
+        type: 'integer',
+      },
+      type: {
+        type: 'string',
+        enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
+      },
     },
-    required: ['message'],
-    additionalProperties: true,
+    required: ['message', 'type', 'code', 'status'],
+    additionalProperties: false,
   },
   FlowSurfaceAddBlockItem: {
     type: 'object',
@@ -4231,8 +4216,10 @@ const schemas = {
     example: {
       errors: [
         {
+          code: 'FLOW_SURFACE_BAD_REQUEST',
           message:
             'flowSurfaces removeNode only accepts target.uid for regular nodes; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first. Page use destroyPage and tab use removeTab',
+          status: 400,
           type: 'bad_request',
         },
       ],
@@ -4243,18 +4230,29 @@ const schemas = {
         items: {
           type: 'object',
           properties: {
+            code: {
+              type: 'string',
+              description: 'Stable machine-readable error code',
+              example: 'FLOW_SURFACE_BAD_REQUEST',
+            },
             message: {
               type: 'string',
               description: 'Human-readable error message for the caller',
             },
+            status: {
+              type: 'integer',
+              description: 'HTTP status mapped from the FlowSurfaces error',
+              example: 400,
+            },
             type: {
               type: 'string',
-              description: 'Optional error category such as bad_request or internal_error',
+              description: 'Error category such as bad_request, forbidden, conflict or internal_error',
               example: 'bad_request',
+              enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
             },
           },
-          required: ['message'],
-          additionalProperties: true,
+          required: ['message', 'type', 'code', 'status'],
+          additionalProperties: false,
         },
       },
     },
@@ -4280,7 +4278,6 @@ export default {
   ],
   paths: {
     ...paths,
-    ...extraPaths,
   },
   components: {
     parameters,

@@ -40,6 +40,9 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema');
     expect(content).toContain('不要写成 `{ "target": { "uid": "..." } }`');
     expect(content).toContain('`locator`、`uid`、`kind`');
+    expect(content).toContain('`message`、`type`、`code`、`status`');
+    expect(content).toContain('`tree.subModels.tabs`');
+    expect(content).not.toContain('`tabs`、`tabTrees`');
     expect(content).toContain('"type": "filterForm"');
     expect(content).toContain('"type": "table"');
     expect(content).toContain('"recordActions"');
@@ -96,6 +99,7 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('`addFields`：');
     expect(content).toContain('`addActions`：');
     expect(content).toContain('`addRecordActions`：');
+    expect(content).toContain('`error` 固定带 `message/type/code/status`');
     expect(content).toContain('direct `add*` 现在也支持 inline `settings`');
     expect(content).toContain('`settings` 写法就是 `configure.changes` 的写法');
     expect(content).toContain('popup-capable action 还可以直接带 `popup`');

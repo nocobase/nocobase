@@ -14,20 +14,15 @@ import {
   FLOW_SURFACES_ACTION_NAMES,
 } from '../flow-surfaces/constants';
 
-const DOC_ONLY_ACTION_NAMES = ['addRecordAction', 'addBlocks', 'addFields', 'addActions', 'addRecordActions'] as const;
-
 describe('flowSurfaces swagger', () => {
-  it('should keep exported swagger paths aligned with public flowSurfaces actions plus doc-only future actions', () => {
-    const expectedPaths = [
-      ...FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`),
-      ...DOC_ONLY_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`),
-    ].sort();
+  it('should keep exported swagger paths aligned with public flowSurfaces actions only', () => {
+    const expectedPaths = FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`).sort();
     const actualPaths = Object.keys(swaggerDocument.paths).sort();
 
     expect(swaggerDocument.openapi).toBe('3.0.2');
     expect(swaggerDocument.info?.title).toBe('NocoBase API - Flow engine plugin');
     expect(swaggerDocument.info?.version).toBe('1.0.0');
-    expect(actualPaths).toEqual(expect.arrayContaining(expectedPaths));
+    expect(actualPaths).toEqual(expectedPaths);
     expect(new Set(actualPaths).size).toBe(actualPaths.length);
 
     for (const actionName of FLOW_SURFACES_ACTION_NAMES) {
@@ -38,15 +33,6 @@ describe('flowSurfaces swagger', () => {
       expect(pathItem).toBeTruthy();
       expect(pathItem[expectedMethod]).toBeTruthy();
       expect(Object.keys(pathItem)).toEqual([expectedMethod]);
-    }
-
-    for (const actionName of DOC_ONLY_ACTION_NAMES) {
-      const path = `/flowSurfaces:${actionName}`;
-      const pathItem = swaggerDocument.paths[path];
-
-      expect(pathItem).toBeTruthy();
-      expect(pathItem.post).toBeTruthy();
-      expect(Object.keys(pathItem)).toEqual(['post']);
     }
   });
 
@@ -101,16 +87,31 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceErrorResponse.example).toMatchObject({
       errors: [
         {
+          code: 'FLOW_SURFACE_BAD_REQUEST',
           message: expect.any(String),
+          status: 400,
           type: 'bad_request',
         },
       ],
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.code).toMatchObject({
+      type: 'string',
+      example: 'FLOW_SURFACE_BAD_REQUEST',
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.status).toMatchObject({
+      type: 'integer',
+      example: 400,
     });
     expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.type).toMatchObject({
       type: 'string',
       example: 'bad_request',
     });
-    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.type.enum).toBeUndefined();
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.type.enum).toEqual([
+      'bad_request',
+      'forbidden',
+      'conflict',
+      'internal_error',
+    ]);
     expect(schemas.FlowSurfaceAddRecordActionRequest).toBeTruthy();
     expect(schemas.FlowSurfaceAddRecordActionResult).toBeTruthy();
     expect(schemas.FlowSurfaceAddBlocksRequest).toBeTruthy();
@@ -198,6 +199,8 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceResourceBindingAssociationField',
     );
     expect(schemas.FlowSurfaceGetResponse.properties.target.$ref).toBe('#/components/schemas/FlowSurfaceReadTarget');
+    expect(schemas.FlowSurfaceGetResponse.properties.tabs).toBeUndefined();
+    expect(schemas.FlowSurfaceGetResponse.properties.tabTrees).toBeUndefined();
 
     const composeRequest = swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'];
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
@@ -546,6 +549,16 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceAddBlocksResult.properties.successCount.type).toBe('integer');
     expect(schemas.FlowSurfaceAddBlocksResult.properties.errorCount.type).toBe('integer');
+    expect(schemas.FlowSurfaceBatchItemError.required).toEqual(['message', 'type', 'code', 'status']);
+    expect(schemas.FlowSurfaceBatchItemError.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceBatchItemError.properties.code.type).toBe('string');
+    expect(schemas.FlowSurfaceBatchItemError.properties.status.type).toBe('integer');
+    expect(schemas.FlowSurfaceBatchItemError.properties.type.enum).toEqual([
+      'bad_request',
+      'forbidden',
+      'conflict',
+      'internal_error',
+    ]);
 
     const addFieldsRequest =
       swaggerDocument.paths['/flowSurfaces:addFields'].post.requestBody.content['application/json'];
@@ -730,6 +743,16 @@ describe('flowSurfaces swagger', () => {
       expect(operation.responses?.[200]?.content?.['application/json']?.schema?.properties?.data).toBeTruthy();
       expect(operation.responses?.[400]?.description).toBe('Invalid public request parameters or semantics');
       expect(operation.responses?.[400]?.content?.['application/json']?.schema?.$ref).toBe(
+        '#/components/schemas/FlowSurfaceErrorResponse',
+      );
+      expect(operation.responses?.[403]?.description).toBe('Current role is not allowed to call this action');
+      expect(operation.responses?.[403]?.content?.['application/json']?.schema?.$ref).toBe(
+        '#/components/schemas/FlowSurfaceErrorResponse',
+      );
+      expect(operation.responses?.[409]?.description).toBe(
+        'Current FlowSurface state conflicts with the requested operation',
+      );
+      expect(operation.responses?.[409]?.content?.['application/json']?.schema?.$ref).toBe(
         '#/components/schemas/FlowSurfaceErrorResponse',
       );
       expect(operation.responses?.[500]?.description).toBe('Unexpected internal server error');

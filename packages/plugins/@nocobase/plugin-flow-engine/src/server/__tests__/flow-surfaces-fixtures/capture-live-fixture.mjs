@@ -3,6 +3,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import routeBackedTabHelpers from './route-backed-tabs.js';
+
+const { deriveRouteBackedTabs, deriveRouteBackedTabTrees } = routeBackedTabHelpers;
 
 const NOISY_KEYS = new Set([
   'id',
@@ -17,7 +20,13 @@ const NOISY_KEYS = new Set([
   'updatedById',
 ]);
 
-const GRID_USES = new Set(['BlockGridModel', 'FormGridModel', 'DetailsGridModel', 'FilterFormGridModel', 'AssignFormGridModel']);
+const GRID_USES = new Set([
+  'BlockGridModel',
+  'FormGridModel',
+  'DetailsGridModel',
+  'FilterFormGridModel',
+  'AssignFormGridModel',
+]);
 const WRAPPER_USES = new Set(['FormItemModel', 'DetailsItemModel', 'FilterFormItemModel', 'TableColumnModel']);
 const BLOCK_USE_ALIAS = {
   TableBlockModel: 'table',
@@ -82,20 +91,18 @@ if (!tree?.uid) {
 
 const ancestry = queryAncestors(modelUid, dbConfig);
 const persistedRoutes = queryRouteSnapshot(ancestry, dbConfig);
-const readback = await fetchJson(`${stripTrailingSlash(baseUrl)}/api/flowSurfaces:get`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    values: {
-      target: {
-        uid: modelUid,
-      },
+const readback = normalizeReadbackSnapshot(
+  await fetchJson(`${stripTrailingSlash(baseUrl)}/api/flowSurfaces:get?uid=${encodeURIComponent(modelUid)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  }),
-}).then((payload) => payload?.data || payload);
+  }).then((payload) => payload?.data || payload),
+  {
+    uid: modelUid,
+    kind: inferTargetKind(tree.use),
+  },
+);
 
 const rawPersisted = compactObject({
   target: compactObject({
@@ -108,11 +115,9 @@ const rawPersisted = compactObject({
     pageSchemaUid: ancestry.pageSchemaUid,
     tabSchemaUid: ancestry.tabSchemaUid,
   }),
-  persisted: compactObject({
-    tree,
-    pageRoute: persistedRoutes.pageRoute,
-    tabs: persistedRoutes.tabs,
-  }),
+  tree,
+  pageRoute: persistedRoutes.pageRoute,
+  tabs: persistedRoutes.tabs,
 });
 
 const bundle = createFlowSurfaceFixture({ rawPersisted, readback });
@@ -160,7 +165,8 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`
+  console.log(
+    `
 Usage:
   node capture-live-fixture.mjs --name <fixture-name> --uid <flow-model-uid>
 
@@ -173,7 +179,8 @@ Environment variables:
   FLOW_FIXTURE_DB_USER
   FLOW_FIXTURE_DB_PASSWORD
   FLOW_FIXTURE_DB_NAME
-  `.trim());
+  `.trim(),
+  );
 }
 
 function requiredArg(argsMap, key) {
@@ -327,7 +334,9 @@ function writeFixtureLayer(root, name, layer, data) {
 }
 
 function createFlowSurfaceFixture({ rawPersisted, readback }) {
-  const normalized = normalizeCanonicalSource(materializeCanonicalSource(readback) || materializeCanonicalSource(rawPersisted));
+  const normalized = normalizeCanonicalSource(
+    materializeCanonicalSource(readback) || materializeCanonicalSource(rawPersisted),
+  );
   return {
     canonical: normalized.canonical,
     refs: normalized.refs,
@@ -336,16 +345,83 @@ function createFlowSurfaceFixture({ rawPersisted, readback }) {
 
 function materializeCanonicalSource(input) {
   const raw = toPlainObject(input);
-  if (raw?.persisted) {
-    return compactObject({
-      target: raw.target,
-      tree: raw.persisted.tree || raw.tree,
-      pageRoute: raw.persisted.pageRoute || raw.pageRoute,
-      tabs: raw.persisted.tabs || raw.tabs,
-      tabTrees: raw.persisted.tabTrees || raw.tabTrees,
-    });
+  const persisted = raw?.persisted ? toPlainObject(raw.persisted) : undefined;
+  const tree = persisted?.tree || raw?.tree;
+  const pageRoute = persisted?.pageRoute || raw?.pageRoute;
+  const legacyTabs = persisted?.tabs || raw?.tabs;
+  const legacyTabTrees = persisted?.tabTrees || raw?.tabTrees;
+  const tabs = deriveRouteBackedTabs({
+    pageRoute,
+    tabs: legacyTabs,
+    tabTrees: legacyTabTrees,
+  });
+  const tabTrees = deriveRouteBackedTabTrees({
+    tree,
+    tabs,
+    tabTrees: legacyTabTrees,
+  });
+  return compactObject({
+    target: raw?.target,
+    tree,
+    pageRoute,
+    tabs,
+    tabTrees,
+  });
+}
+
+function normalizeReadbackSnapshot(readback, fallbackTarget) {
+  const raw = toPlainObject(readback);
+  const tree = raw?.tree;
+  const target = normalizeReadTarget(raw?.target, fallbackTarget, tree);
+
+  return compactObject({
+    target,
+    tree,
+    nodeMap: isPlainObject(raw?.nodeMap) ? raw.nodeMap : buildNodeMap(tree),
+    pageRoute: raw?.pageRoute,
+    route: raw?.route,
+  });
+}
+
+function normalizeReadTarget(target, fallbackTarget, tree) {
+  const explicitLocator = toPlainObject(target?.locator);
+  const resolvedUid = target?.uid || target?.node?.uid || fallbackTarget?.uid || tree?.uid;
+  const locator =
+    explicitLocator ||
+    (resolvedUid
+      ? {
+          uid: resolvedUid,
+        }
+      : compactObject({
+          pageSchemaUid: target?.pageSchemaUid,
+          tabSchemaUid: target?.tabSchemaUid,
+          routeId: target?.routeId,
+        }));
+
+  return compactObject({
+    locator,
+    uid: resolvedUid || locator?.uid,
+    kind: target?.kind || fallbackTarget?.kind,
+  });
+}
+
+function buildNodeMap(node, carry = {}) {
+  if (!node?.uid) {
+    return carry;
   }
-  return raw;
+  carry[node.uid] = compactObject({
+    uid: node.uid,
+    use: node.use,
+    props: node.props,
+    decoratorProps: node.decoratorProps,
+    stepParams: node.stepParams,
+    flowRegistry: node.flowRegistry,
+  });
+  Object.values(node?.subModels || {}).forEach((value) => {
+    const children = Array.isArray(value) ? value : [value].filter(Boolean);
+    children.forEach((child) => buildNodeMap(child, carry));
+  });
+  return carry;
 }
 
 function normalizeCanonicalSource(source) {
@@ -396,10 +472,7 @@ function normalizeNode(node, state, refs, forcedAlias) {
   const subModels = Object.fromEntries(
     Object.entries(node?.subModels || {})
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([subKey, subValue]) => [
-        subKey,
-        Array.isArray(subValue) ? subValue : [subValue].filter(Boolean),
-      ])
+      .map(([subKey, subValue]) => [subKey, Array.isArray(subValue) ? subValue : [subValue].filter(Boolean)])
       .map(([subKey, children]) => [
         subKey,
         children.map((child) => normalizeNode(child, state, refs, inferChildAlias(alias, subKey, child, state))),

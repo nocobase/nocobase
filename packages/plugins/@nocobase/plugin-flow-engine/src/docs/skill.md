@@ -22,8 +22,8 @@
 - 不要写成 `{ "target": { "uid": "..." } }`
 - 不要写成 `{ "values": { ... } }`
 - 响应里的 `target` 只保留轻量定位信息：`locator`、`uid`、`kind`
-- 真实节点树看 `tree`；页面 route / tabs 信息看顶层 `pageRoute`、`route`、`tabs`、`tabTrees`
-- 公开请求参数错误会返回 `400`，并带可执行的错误 message
+- 真实节点树看 `tree`；页面 route 信息看顶层 `pageRoute`、`route`；route-backed page 的 tabs 统一从 `tree.subModels.tabs` 读取
+- 错误响应统一带 `message`、`type`、`code`、`status`
 - 最常用的是：
 
 ```text
@@ -52,7 +52,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
   - `updatePopupTab`
   - `movePopupTab`
   - `removePopupTab`
-- `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义
+- `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义；失败项的 `error` 固定带 `message/type/code/status`
 - `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
 - `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
 - direct `addBlock` / `addField` / `addAction` / `addRecordAction` 以及对应批量 API 不接受 raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
@@ -580,7 +580,7 @@ popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
 
 ## 示例 5.4：批量追加 block / field / action / record action
 
-批量 API 都是“同一 target 下顺序执行 + 部分成功”。
+批量 API 都是“同一 target 下顺序执行 + 部分成功”。失败项统一返回结构化 `error`：`message`、`type`、`code`、`status`。
 
 `addBlocks`：
 

@@ -150,6 +150,136 @@ describe('flowSurfaces API contract', () => {
     }
   });
 
+  it('should allow loggedIn users to read but require explicit flowSurfaces snippet for writes', async () => {
+    const readerRoleName = `flow_reader_${uid()}`;
+    const writerRoleName = `flow_writer_${uid()}`;
+    await db.getRepository('roles').create({
+      values: {
+        name: readerRoleName,
+      },
+    });
+    await db.getRepository('roles').create({
+      values: {
+        name: writerRoleName,
+        snippets: ['ui.flowSurfaces'],
+      },
+    });
+
+    const readerUser = await db.getRepository('users').create({
+      values: {
+        roles: [readerRoleName],
+      },
+    });
+    const writerUser = await db.getRepository('users').create({
+      values: {
+        roles: [writerRoleName],
+      },
+    });
+
+    const readerAgent = await app.agent().login(readerUser);
+    const writerAgent = await app.agent().login(writerUser);
+    const page = await createPage(rootAgent, {
+      title: 'ACL contract page',
+      tabTitle: 'ACL contract tab',
+    });
+
+    const readRes = await readerAgent.resource('flowSurfaces').get({
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    expect(readRes.status).toBe(200);
+    const catalogRes = await readerAgent.resource('flowSurfaces').catalog({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+      },
+    });
+    expect(catalogRes.status).toBe(200);
+    const contextRes = await readerAgent.resource('flowSurfaces').context({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        path: 'record',
+      },
+    });
+    expect(contextRes.status).toBe(200);
+
+    const deniedWriteRes = await readerAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: page.pageUid,
+        },
+        title: 'Denied tab',
+      },
+    });
+    expect(deniedWriteRes.status).toBe(403);
+    expectStructuredError(readErrorItem(deniedWriteRes), {
+      status: 403,
+      type: 'forbidden',
+    });
+
+    const allowedWriteRes = await writerAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: page.pageUid,
+        },
+        title: 'Allowed tab',
+      },
+    });
+    expect(allowedWriteRes.status).toBe(200);
+  });
+
+  it('should keep route-backed tabs under tree.subModels.tabs and reject wrapped get locators', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Read contract page',
+      tabTitle: 'Read contract tab',
+    });
+    const addedTab = await getData(
+      await rootAgent.resource('flowSurfaces').addTab({
+        values: {
+          target: {
+            uid: page.pageUid,
+          },
+          title: 'Read contract second tab',
+        },
+      }),
+    );
+
+    const readRes = await rootAgent.resource('flowSurfaces').get({
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    expect(readRes.status).toBe(200);
+    const readback = getData(readRes);
+    expect(readback.tabs).toBeUndefined();
+    expect(readback.tabTrees).toBeUndefined();
+    expect(getRouteBackedTabs(readback).map((tab) => tab.uid)).toEqual([page.tabSchemaUid, addedTab.tabSchemaUid]);
+
+    const wrappedTargetRes = await rootAgent.resource('flowSurfaces').get({
+      target: {
+        uid: page.pageUid,
+      },
+    } as any);
+    expect(wrappedTargetRes.status).toBe(400);
+    expectStructuredError(readErrorItem(wrappedTargetRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
+
+    const wrappedValuesRes = await rootAgent.resource('flowSurfaces').get({
+      values: {
+        uid: page.pageUid,
+      },
+    } as any);
+    expect(wrappedValuesRes.status).toBe(400);
+    expectStructuredError(readErrorItem(wrappedValuesRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+  });
+
   it('should treat missing apply mode as replace and reject unsupported modes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Contract page',
@@ -518,9 +648,10 @@ describe('flowSurfaces API contract', () => {
     const readback = await getSurface(rootAgent, {
       pageSchemaUid: created.pageSchemaUid,
     });
-    expect(readback.tabs).toHaveLength(2);
-    expect(readback.tabs[0].schemaUid).toBe(created.tabSchemaUid);
-    expect(readback.tabs[1].schemaUid).toBe(addedTab.tabSchemaUid);
+    const routeBackedTabs = getRouteBackedTabs(readback);
+    expect(routeBackedTabs).toHaveLength(2);
+    expect(routeBackedTabs[0].uid).toBe(created.tabSchemaUid);
+    expect(routeBackedTabs[1].uid).toBe(addedTab.tabSchemaUid);
 
     const removeTabRes = await rootAgent.resource('flowSurfaces').removeTab({
       values: {
@@ -567,6 +698,47 @@ describe('flowSurfaces API contract', () => {
         includeAsyncNode: true,
       }),
     ).toBeNull();
+  });
+
+  it('should return structured conflict errors when a record-capable block loses its required item subtree', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Conflict page',
+      tabTitle: 'Conflict tab',
+    });
+    const gridCard = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'gridCard',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const item = await flowRepo.findModelByParentId(gridCard.uid, {
+      subKey: 'item',
+      includeAsyncNode: true,
+    });
+    expect(item?.uid).toBeTruthy();
+
+    await flowRepo.destroy({
+      filterByTk: item.uid,
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: gridCard.uid,
+        },
+        type: 'view',
+      },
+    });
+    expect(response.status).toBe(409);
+    expectStructuredError(readErrorItem(response), {
+      status: 409,
+      type: 'conflict',
+    });
+    expect(readErrorMessage(response)).toContain('missing its item subtree');
   });
 
   it('should reject removing the last outer tab and invalid outer tab move lifecycles', async () => {
@@ -2619,6 +2791,10 @@ describe('flowSurfaces API contract', () => {
     expect(addFieldsData.errorCount).toBe(1);
     expect(addFieldsData.fields[0].ok).toBe(true);
     expect(addFieldsData.fields[1].ok).toBe(false);
+    expectStructuredError(addFieldsData.fields[1].error, {
+      status: 400,
+      type: 'bad_request',
+    });
     expect(addFieldsData.fields[1].error.message).toContain('settings invalid');
     expect(addFieldsData.fields[1].error.message).toContain('supported configureOptions');
 
@@ -2680,6 +2856,10 @@ describe('flowSurfaces API contract', () => {
     expect(addActionsData.successCount).toBe(1);
     expect(addActionsData.errorCount).toBe(1);
     expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
+    expectStructuredError(addActionsData.actions[1].error, {
+      status: 400,
+      type: 'bad_request',
+    });
     expect(addActionsData.actions[1].error.message).toContain(`type 'refresh' does not support popup`);
 
     const addRecordActionsRes = await rootAgent.resource('flowSurfaces').addRecordActions({
@@ -2790,6 +2970,10 @@ describe('flowSurfaces API contract', () => {
     expect(addBlocksData.errorCount).toBe(1);
     expect(addBlocksData.blocks[0].ok).toBe(true);
     expect(addBlocksData.blocks[1].ok).toBe(false);
+    expectStructuredError(addBlocksData.blocks[1].error, {
+      status: 400,
+      type: 'bad_request',
+    });
     expect(addBlocksData.blocks[1].error.message).toContain('settings invalid');
     expect(addBlocksData.blocks[1].error.message).toContain('stepParams.tableSettings.dataScope.filter');
     expect(addBlocksData.blocks[1].error.message).toContain('FilterGroup');
@@ -2900,6 +3084,10 @@ describe('flowSurfaces API contract', () => {
     expect(batchActionData.errorCount).toBe(1);
     expect(batchActionData.actions[0].ok).toBe(true);
     expect(batchActionData.actions[1].ok).toBe(false);
+    expectStructuredError(batchActionData.actions[1].error, {
+      status: 400,
+      type: 'bad_request',
+    });
     expect(batchActionData.actions[1].error.message).toContain('does not accept raw keys');
   });
 
@@ -4609,6 +4797,10 @@ describe('flowSurfaces API contract', () => {
     expect(batchData.errorCount).toBe(1);
     expect(batchData.fields[0].ok).toBe(true);
     expect(batchData.fields[1].ok).toBe(false);
+    expectStructuredError(batchData.fields[1].error, {
+      status: 400,
+      type: 'bad_request',
+    });
     expect(batchData.fields[1].error.message).toContain('roles.hidden');
     expect(batchData.fields[1].error.message).toContain('has no interface');
 
@@ -4645,6 +4837,25 @@ function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
 }
 
+function readErrorItem(response: any) {
+  return response?.body?.errors?.[0] || {};
+}
+
+function expectStructuredError(
+  error: any,
+  expected: {
+    status: number;
+    type: string;
+  },
+) {
+  expect(error).toMatchObject({
+    code: expect.any(String),
+    message: expect.any(String),
+    status: expected.status,
+    type: expected.type,
+  });
+}
+
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
@@ -4667,6 +4878,10 @@ async function getSurface(rootAgent: any, target: Record<string, any>) {
       ...target,
     }),
   );
+}
+
+function getRouteBackedTabs(readback: any) {
+  return _.castArray(readback?.tree?.subModels?.tabs || []);
 }
 
 async function addBlockData(rootAgent: any, values: Record<string, any>) {

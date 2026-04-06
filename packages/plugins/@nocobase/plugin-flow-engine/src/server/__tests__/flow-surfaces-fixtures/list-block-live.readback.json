@@ -1,13 +1,10 @@
 {
   "target": {
-    "uid": "e4895a8b00a",
-    "kind": "block",
-    "node": {
-      "uid": "e4895a8b00a",
-      "use": "ListBlockModel"
+    "locator": {
+      "uid": "e4895a8b00a"
     },
-    "pageSchemaUid": "nhpj3e672ci",
-    "tabSchemaUid": "8oivq8g39kf"
+    "uid": "e4895a8b00a",
+    "kind": "block"
   },
   "tree": {
     "uid": "e4895a8b00a",
@@ -48,6 +45,28 @@
           }
         }
       }
+    }
+  },
+  "nodeMap": {
+    "e4895a8b00a": {
+      "uid": "e4895a8b00a",
+      "use": "ListBlockModel",
+      "stepParams": {
+        "resourceSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "departments"
+          }
+        }
+      }
+    },
+    "cb869ae49e4": {
+      "uid": "cb869ae49e4",
+      "use": "ListItemModel"
+    },
+    "dfa112a7338": {
+      "uid": "dfa112a7338",
+      "use": "DetailsGridModel"
     }
   },
   "pageRoute": {
@@ -95,29 +114,5 @@
         "updatedById": 1
       }
     ]
-  },
-  "tabs": [
-    {
-      "createdAt": "2026-03-28T09:00:25.554Z",
-      "updatedAt": "2026-03-28T09:00:25.554Z",
-      "id": 355812088348674,
-      "parentId": 355812088348672,
-      "title": null,
-      "tooltip": null,
-      "icon": null,
-      "schemaUid": "8oivq8g39kf",
-      "menuSchemaUid": null,
-      "tabSchemaName": "jd7sxdfx0tm",
-      "type": "tabs",
-      "options": null,
-      "sort": 1,
-      "hideInMenu": null,
-      "enableTabs": null,
-      "enableHeader": null,
-      "displayTitle": null,
-      "hidden": true,
-      "createdById": 1,
-      "updatedById": 1
-    }
-  ]
+  }
 }

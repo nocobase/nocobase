@@ -296,9 +296,10 @@ describe('flowSurfaces resource', () => {
     const readback = await getSurface(rootAgent, {
       pageSchemaUid: created.pageSchemaUid,
     });
-    expect(readback.tabs).toHaveLength(2);
-    expect(readback.tabs[0].schemaUid).toBe(addedTab.tabSchemaUid);
-    expect(readback.tabs[1].schemaUid).toBe(created.tabSchemaUid);
+    const routeBackedTabs = getRouteBackedTabs(readback);
+    expect(routeBackedTabs).toHaveLength(2);
+    expect(routeBackedTabs[0].uid).toBe(addedTab.tabSchemaUid);
+    expect(routeBackedTabs[1].uid).toBe(created.tabSchemaUid);
 
     await rootAgent.resource('flowSurfaces').removeTab({
       values: {
@@ -6263,11 +6264,12 @@ describe('flowSurfaces resource', () => {
       title: 'Apply page root updated',
       enableTabs: true,
     });
-    expect(pageReadback.tabs).toHaveLength(2);
-    expect(pageReadback.tabs[0].schemaUid).toBe(secondaryTab.tabSchemaUid);
-    expect(pageReadback.tabs[1].schemaUid).toBe(pageApply.body.data.clientKeyToUid['new-tab']);
-    expect(pageReadback.tabs[0].title).toBe('Secondary first');
-    expect(pageReadback.tabs[1].title).toBe('Fresh tab');
+    const pageTabs = getRouteBackedTabs(pageReadback);
+    expect(pageTabs).toHaveLength(2);
+    expect(pageTabs[0].uid).toBe(secondaryTab.tabSchemaUid);
+    expect(pageTabs[1].uid).toBe(pageApply.body.data.clientKeyToUid['new-tab']);
+    expect(pageTabs[0].stepParams?.pageTabSettings?.tab?.title).toBe('Secondary first');
+    expect(pageTabs[1].stepParams?.pageTabSettings?.tab?.title).toBe('Fresh tab');
 
     expect(
       await routesRepo.findOne({
@@ -6301,9 +6303,10 @@ describe('flowSurfaces resource', () => {
     const pageReadbackAfterWrapperOnly = await getSurface(rootAgent, {
       pageSchemaUid: page.pageSchemaUid,
     });
-    expect(pageReadbackAfterWrapperOnly.tabs).toHaveLength(2);
-    expect(pageReadbackAfterWrapperOnly.tabs[0].schemaUid).toBe(secondaryTab.tabSchemaUid);
-    expect(pageReadbackAfterWrapperOnly.tabs[1].schemaUid).toBe(pageApply.body.data.clientKeyToUid['new-tab']);
+    const pageTabsAfterWrapperOnly = getRouteBackedTabs(pageReadbackAfterWrapperOnly);
+    expect(pageTabsAfterWrapperOnly).toHaveLength(2);
+    expect(pageTabsAfterWrapperOnly[0].uid).toBe(secondaryTab.tabSchemaUid);
+    expect(pageTabsAfterWrapperOnly[1].uid).toBe(pageApply.body.data.clientKeyToUid['new-tab']);
   });
 
   it('should apply replace on popup page target and keep popup subtree canonical', async () => {
@@ -8075,6 +8078,10 @@ async function getSurface(rootAgent: any, target: Record<string, any>) {
     }
   }
   throw lastError;
+}
+
+function getRouteBackedTabs(readback: any) {
+  return _.castArray(readback?.tree?.subModels?.tabs || []);
 }
 
 async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
