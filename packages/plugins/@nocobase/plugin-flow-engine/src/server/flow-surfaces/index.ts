@@ -9,8 +9,8 @@
 
 import type { Plugin } from '@nocobase/server';
 import { parseQuery } from '@nocobase/resourcer';
-import { FLOW_SURFACES_ACTION_NAMES, type FlowSurfacesActionName } from './constants';
-import { FlowSurfaceBadRequestError, isFlowSurfaceBadRequestError } from './errors';
+import { FLOW_SURFACES_READ_ACTION_NAMES, type FlowSurfacesActionName } from './constants';
+import { normalizeFlowSurfaceError, throwBadRequest } from './errors';
 import { FlowSurfacesService } from './service';
 
 function getValues(ctx: any) {
@@ -19,20 +19,16 @@ function getValues(ctx: any) {
 
 function getReadValues(ctx: any) {
   if (ctx.request?.method?.toUpperCase() !== 'GET') {
-    throw new FlowSurfaceBadRequestError(
+    throwBadRequest(
       `flowSurfaces:get only supports GET with root query locator fields like /api/flowSurfaces:get?uid=...`,
     );
   }
   const query = parseQuery(ctx.request?.querystring || '');
   if (Object.prototype.hasOwnProperty.call(query, 'target')) {
-    throw new FlowSurfaceBadRequestError(
-      `flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`,
-    );
+    throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`);
   }
   if (Object.prototype.hasOwnProperty.call(query, 'values')) {
-    throw new FlowSurfaceBadRequestError(
-      `flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`,
-    );
+    throwBadRequest(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`);
   }
   return ctx.action?.params ?? {};
 }
@@ -42,12 +38,11 @@ async function runFlowSurfaceAction(ctx: any, next: () => Promise<any>, handler:
     ctx.body = await handler();
     await next();
   } catch (error) {
-    if (isFlowSurfaceBadRequestError(error)) {
-      ctx.throw(400, {
-        message: error.message,
-      });
-    }
-    throw error;
+    const normalized = normalizeFlowSurfaceError(error);
+    ctx.withoutDataWrapping = true;
+    ctx.type = 'application/json';
+    ctx.status = normalized.status;
+    ctx.body = normalized.toResponseBody();
   }
 }
 
@@ -206,7 +201,7 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     name: 'ui.flowSurfaces',
     actions: ['flowSurfaces:*'],
   });
-  plugin.app.acl.allow('flowSurfaces', [...FLOW_SURFACES_ACTION_NAMES], 'loggedIn');
+  plugin.app.acl.allow('flowSurfaces', [...FLOW_SURFACES_READ_ACTION_NAMES], 'loggedIn');
 
   plugin.app.resourceManager.define({
     name: 'flowSurfaces',
