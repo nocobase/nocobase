@@ -1,7 +1,7 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
 title: "邮件别名"
-description: "邮件别名使用说明：别名同步、发件人选择、签名继承与 Gmail / Outlook 支持范围。"
+description: "邮件别名用于在同一个邮箱账号下，以不同的发件人身份发送邮件"
 keywords: "邮件别名,发件人身份,Send As,Alias,NocoBase"
 ---
 

@@ -1,7 +1,7 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
 title: "Email Alias"
-description: "Guide to using email aliases: alias sync, sender selection, signature inheritance, and Gmail / Outlook support scope."
+description: "Email alias allows you to send emails using different sender identities under the same mailbox account"
 keywords: "email alias,sender identity,Send As,Alias,NocoBase"
 ---
 
