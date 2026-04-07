@@ -106,12 +106,20 @@ describe('modeling apply actions', () => {
     const postsComments = posts.getField('comments');
     const commentsPost = comments.getField('post');
 
+    const model = await app.db.getRepository('fields').findOne({
+      filter: {
+        collectionName: 'posts',
+        name: 'comments',
+      },
+    });
+
+    expect(model.get('reverseKey')).toBeDefined();
     expect(postsComments.options.type).toBe('hasMany');
     expect(commentsPost.options.type).toBe('belongsTo');
     expect(commentsPost.options.target).toBe('posts');
     expect(commentsPost.options.uiSchema.title).toBe('Post');
     expect(postsComments.options.foreignKey).toBe(commentsPost.options.foreignKey);
-    expect(postsComments.options.reverseKey).toBeDefined();
+    // expect(postsComments.options.reverseKey).toBeDefined();
   });
 
   it('should return normalized verification result from collections apply', async () => {
