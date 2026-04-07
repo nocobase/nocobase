@@ -1,0 +1,10 @@
+{
+  "External API Settings": "外部服务配置",
+  "Please enter API Key": "请输入 API Key",
+  "Please enter API Secret": "请输入 API Secret",
+  "Please enter endpoint URL": "请输入接口地址",
+  "Save": "保存",
+  "Reset": "重置",
+  "Saved successfully": "保存成功",
+  "Save failed": "保存失败"
+}

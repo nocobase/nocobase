@@ -96,7 +96,7 @@
       },
       {
         "type": "custom-link",
-        "label": "I18n 国际化",
+        "label": "i18n 国际化",
         "link": "/plugin-development/server/i18n"
       },
       {
@@ -148,6 +148,11 @@
             "type": "custom-link",
             "label": "Styles & Themes 样式与主题",
             "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n 国际化",
+            "link": "/plugin-development/client/component/i18n"
           }
         ]
       },
@@ -219,13 +224,13 @@
           },
           {
             "type": "custom-link",
-            "label": "做一个前后端联动的数据管理插件",
-            "link": "/plugin-development/client/examples/fullstack-plugin"
+            "label": "做一个自定义字段组件",
+            "link": "/plugin-development/client/examples/custom-field"
           },
           {
             "type": "custom-link",
-            "label": "做一个自定义字段组件",
-            "link": "/plugin-development/client/examples/custom-field"
+            "label": "做一个前后端联动的数据管理插件",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
           }
         ]
       },

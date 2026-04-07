@@ -6,4 +6,24 @@ keywords: "插件示例,实战案例,完整插件,NocoBase"
 
 # 插件实战示例
 
-<!-- TODO: 待补充内容 -->
+前面的章节分别介绍了 [Plugin](../plugin)、[Router](../router)、[Component](../component/index.md)、[Context](../ctx/index.md)、[FlowEngine](../flow-engine/index.md) 等各项能力。这个章节把它们串起来——通过几个完整的实战示例，展示一个插件从创建到完成的全过程。
+
+每个示例都对应一个可运行的示例插件，你可以直接查看源码或在本地跑起来。
+
+## 示例列表
+
+| 示例 | 涉及能力 | 难度 |
+| --- | --- | --- |
+| [做一个插件设置页](./settings-page) | Plugin + Router + Component + Context | 入门 |
+| [做一个自定义展示区块](./custom-block) | Plugin + FlowEngine（BlockModel） | 入门 |
+| [做一个自定义字段组件](./custom-field) | Plugin + FlowEngine（FieldModel） | 入门 |
+| [做一个前后端联动的数据管理插件](./fullstack-plugin) | Plugin + FlowEngine（CollectionBlockModel）+ 服务端 | 进阶 |
+
+建议按顺序阅读。前三个示例聚焦客户端，最后一个涉及前后端联动。如果你还不确定该用 React 组件还是 FlowModel，可以先看 [Component vs FlowModel](../component-vs-flow-model)。
+
+## 相关链接
+
+- [编写第一个插件](../../write-your-first-plugin) — 从零创建一个可运行的插件
+- [客户端开发概述](../index.md) — 学习路径和快速索引
+- [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法和 registerFlow
+- [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考

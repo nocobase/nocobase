@@ -168,7 +168,11 @@ plugin-hello/
 }
 ```
 
-> **注意：** 初次添加语言文件需要重启应用才能生效。
+:::warning 注意
+
+初次添加语言文件需要重启应用才能生效。
+
+:::
 
 ### ctx.t()
 
@@ -229,6 +233,8 @@ HelloBlockModel.define({
 });
 ```
 
+更完整的国际化用法（翻译文件写法、useT hook、tExpr 等）见 [i18n 国际化](../component/i18n)。NocoBase 支持的语言代码完整列表见 [语言列表](../../languages)。
+
 ## 日志（ctx.logger）
 
 通过 `ctx.logger` 输出结构化日志，基于 [pino](https://github.com/pinojs/pino)。
@@ -284,7 +290,11 @@ async load() {
 
 详细用法见 [Router 路由](../router)。
 
-**注意：** `this.router` 是 RouterManager，用于**注册路由**。跟组件里的 `ctx.router`（React Router，用于**页面导航**）不是同一个东西。
+:::warning 注意
+
+`this.router` 是 RouterManager，用于**注册路由**。跟组件里的 `ctx.router`（React Router，用于**页面导航**）不是同一个东西。
+
+:::
 
 ### 页面导航（ctx.router）
 

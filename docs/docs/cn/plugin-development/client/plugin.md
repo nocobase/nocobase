@@ -10,7 +10,11 @@ keywords: "Plugin,客户端插件,生命周期,afterAdd,beforeLoad,load,NocoBase
 
 大部分时候你只需要关心 `load()`——通常来说核心逻辑是注册在 `load()` 阶段。
 
-**注意：** 开发客户端插件之前，请确保你已经阅读了 [编写第一个插件](../write-your-first-plugin.md) 章节，生成了基本的插件目录结构和文件。
+:::tip 前置条件
+
+开发客户端插件之前，请确保你已经阅读了 [编写第一个插件](../write-your-first-plugin.md) 章节，生成了基本的插件目录结构和文件。
+
+:::
 
 ## 基本结构
 
