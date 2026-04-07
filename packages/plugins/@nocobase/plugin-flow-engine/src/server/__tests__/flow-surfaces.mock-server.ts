@@ -111,7 +111,12 @@ export async function loginFlowSurfacesRootAgent(app: MockServer) {
 
 function isRetriableAgentError(error: any) {
   const message = String(error?.message || '');
-  return error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT' || /socket hang up|timed out/i.test(message);
+  return (
+    error?.code === 'ECONNRESET' ||
+    error?.code === 'ETIMEDOUT' ||
+    error?.code === 'HPE_INVALID_CONSTANT' ||
+    /socket hang up|timed out|parse error|expected http\/, rtsp\/ or ice\//i.test(message)
+  );
 }
 
 function isUnauthorizedAgentResponse(response: any) {

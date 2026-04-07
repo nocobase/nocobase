@@ -4076,8 +4076,7 @@ describe('flowSurfaces resource', () => {
     const statusField = await addField(rootAgent, formUid, 'status');
     const submitAction = await addAction(rootAgent, formUid, 'submit');
 
-    const form = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
-    const gridUid = form?.subModels?.grid?.uid;
+    const gridUid = await getBlockGridUid(rootAgent, formUid);
     await rootAgent.resource('flowSurfaces').setLayout({
       values: {
         target: {
@@ -4568,8 +4567,7 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const applyFilterForm = await flowRepo.findModelById(applyFilterFormUid, { includeAsyncNode: true });
-    const applyFilterGridUid = applyFilterForm?.subModels?.grid?.uid;
+    const applyFilterGridUid = await getBlockGridUid(rootAgent, applyFilterFormUid);
     const applyFilterField = await rootAgent.resource('flowSurfaces').apply({
       values: {
         target: {
@@ -4920,11 +4918,11 @@ describe('flowSurfaces resource', () => {
     });
     expect(explicitFilterFieldReadback.tree.use).toBe(filterNicknameField.fieldUse);
 
-    const createForm = await flowRepo.findModelById(createFormUid, { includeAsyncNode: true });
+    const createFormGridUid = await getBlockGridUid(rootAgent, createFormUid);
     const applyFieldRes = await rootAgent.resource('flowSurfaces').apply({
       values: {
         target: {
-          uid: createForm?.subModels?.grid?.uid,
+          uid: createFormGridUid,
         },
         spec: {
           subModels: {
@@ -5784,8 +5782,7 @@ describe('flowSurfaces resource', () => {
     });
     const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
 
-    const createForm = await flowRepo.findModelById(createFormUid, { includeAsyncNode: true });
-    const formGridUid = createForm?.subModels?.grid?.uid;
+    const formGridUid = await getBlockGridUid(rootAgent, createFormUid);
     expect(formGridUid).toBeTruthy();
 
     const tableApply = await rootAgent.resource('flowSurfaces').apply({
@@ -5983,8 +5980,7 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const createForm = await flowRepo.findModelById(createFormUid, { includeAsyncNode: true });
-    const formGridUid = createForm?.subModels?.grid?.uid;
+    const formGridUid = await getBlockGridUid(rootAgent, createFormUid);
 
     const invalidWrapperApply = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -6135,8 +6131,7 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const form = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
-    const gridUid = form?.subModels?.grid?.uid;
+    const gridUid = await getBlockGridUid(rootAgent, formUid);
 
     const applyRes = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -7562,8 +7557,7 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
     const field = await addField(rootAgent, formUid, 'nickname');
-    const form = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
-    const gridUid = form?.subModels?.grid?.uid;
+    const gridUid = await getBlockGridUid(rootAgent, formUid);
 
     const invalidSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -8141,32 +8135,76 @@ function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
 }
 
-async function createPage(rootAgent: any, values: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').createPage({
-      values,
-    }),
+function isRetriableHelperError(error: any) {
+  const message = String(error?.message || '');
+  return (
+    error?.code === 'ECONNRESET' ||
+    error?.code === 'ETIMEDOUT' ||
+    error?.code === 'HPE_INVALID_CONSTANT' ||
+    /socket hang up|timed out|parse error|expected http\/, rtsp\/ or ice\//i.test(message)
   );
 }
 
-async function getSurface(rootAgent: any, target: Record<string, any>) {
+function isRetriableHelperResponse(response: any) {
+  return response?.status === 404;
+}
+
+async function runFlowSurfaceHelper<T>(
+  execute: () => Promise<T>,
+  options: {
+    isRetriableResponse?: (response: T) => boolean;
+  } = {},
+) {
+  const { isRetriableResponse = isRetriableHelperResponse } = options;
   let lastError: any;
+  let lastResponse: T | undefined;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return getData(
-        await rootAgent.resource('flowSurfaces').get({
-          ...target,
-        }),
-      );
+      const response = await execute();
+      lastResponse = response;
+      if (!isRetriableResponse(response) || attempt > 0) {
+        return response;
+      }
     } catch (error: any) {
       lastError = error;
-      const isSocketHangUp = error?.code === 'ECONNRESET' || /socket hang up/i.test(String(error?.message || ''));
-      if (!isSocketHangUp || attempt > 0) {
+      if (!isRetriableHelperError(error) || attempt > 0) {
         throw error;
       }
     }
   }
-  throw lastError;
+  if (lastError) {
+    throw lastError;
+  }
+  return lastResponse as T;
+}
+
+async function createPage(rootAgent: any, values: Record<string, any>) {
+  return getData(
+    await runFlowSurfaceHelper(() =>
+      rootAgent.resource('flowSurfaces').createPage({
+        values,
+      }),
+    ),
+  );
+}
+
+async function getSurface(rootAgent: any, target: Record<string, any>) {
+  return getData(
+    await runFlowSurfaceHelper(() =>
+      rootAgent.resource('flowSurfaces').get({
+        ...target,
+      }),
+    ),
+  );
+}
+
+async function getBlockGridUid(rootAgent: any, blockUid: string) {
+  const readback = await getSurface(rootAgent, {
+    uid: blockUid,
+  });
+  const gridUid = readback?.tree?.subModels?.grid?.uid;
+  expect(gridUid).toBeTruthy();
+  return gridUid;
 }
 
 function getRouteBackedTabs(readback: any) {
@@ -8176,37 +8214,41 @@ function getRouteBackedTabs(readback: any) {
 async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
   const normalizedResourceInit = resourceInit && Object.keys(resourceInit).length ? resourceInit : undefined;
   let normalizedTargetUid = targetUid;
-  const tabReadbackRes = await rootAgent.resource('flowSurfaces').get({
-    tabSchemaUid: targetUid,
+  const targetReadback = await getSurface(rootAgent, {
+    uid: targetUid,
   });
-  if (tabReadbackRes.status === 200) {
-    normalizedTargetUid = tabReadbackRes.body?.data?.tree?.subModels?.grid?.uid || targetUid;
+  if (['RootPageTabModel', 'ChildPageTabModel'].includes(targetReadback?.tree?.use)) {
+    normalizedTargetUid = targetReadback.tree?.subModels?.grid?.uid || targetUid;
   }
   const data = getData(
-    await rootAgent.resource('flowSurfaces').addBlock({
-      values: {
-        target: {
-          uid: normalizedTargetUid,
+    await runFlowSurfaceHelper(() =>
+      rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: normalizedTargetUid,
+          },
+          type,
+          ...(normalizedResourceInit ? { resourceInit: normalizedResourceInit } : {}),
         },
-        type,
-        ...(normalizedResourceInit ? { resourceInit: normalizedResourceInit } : {}),
-      },
-    }),
+      }),
+    ),
   );
   return data.uid;
 }
 
 async function addField(rootAgent: any, targetUid: string, fieldPath: string, extraValues: Record<string, any> = {}) {
   return getData(
-    await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: {
-          uid: targetUid,
+    await runFlowSurfaceHelper(() =>
+      rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: targetUid,
+          },
+          fieldPath,
+          ...extraValues,
         },
-        fieldPath,
-        ...extraValues,
-      },
-    }),
+      }),
+    ),
   );
 }
 
@@ -8218,18 +8260,22 @@ async function addAction(rootAgent: any, targetUid: string, type: string, extraV
     type,
     ...extraValues,
   };
-  const response = await rootAgent.resource('flowSurfaces').addAction({
-    values,
-  });
+  const response = await runFlowSurfaceHelper(() =>
+    rootAgent.resource('flowSurfaces').addAction({
+      values,
+    }),
+  );
   if (response.status === 200) {
     return getData(response);
   }
   const message = readErrorMessage(response);
   if (message.includes('use addRecordAction')) {
     return getData(
-      await rootAgent.resource('flowSurfaces').addRecordAction({
-        values,
-      }),
+      await runFlowSurfaceHelper(() =>
+        rootAgent.resource('flowSurfaces').addRecordAction({
+          values,
+        }),
+      ),
     );
   }
   return getData(response);
@@ -8237,15 +8283,17 @@ async function addAction(rootAgent: any, targetUid: string, type: string, extraV
 
 async function addRecordAction(rootAgent: any, targetUid: string, type: string, extraValues: Record<string, any> = {}) {
   return getData(
-    await rootAgent.resource('flowSurfaces').addRecordAction({
-      values: {
-        target: {
-          uid: targetUid,
+    await runFlowSurfaceHelper(() =>
+      rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: targetUid,
+          },
+          type,
+          ...extraValues,
         },
-        type,
-        ...extraValues,
-      },
-    }),
+      }),
+    ),
   );
 }
 
