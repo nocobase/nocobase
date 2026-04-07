@@ -823,5 +823,29 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(200);
     });
+
+    it('should accept url with variable syntax', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: '{{$variable.url}}' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept url with variable embedded in template string', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://{{$env.HOST}}/api/data' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept plain invalid url string at config time', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'not-a-valid-url' } },
+      });
+      expect(status).toBe(200);
+    });
   });
 });
