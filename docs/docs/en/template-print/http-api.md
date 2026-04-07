@@ -19,7 +19,6 @@ curl -X POST \
 Notes:
 
 - `<resource_name>` is the resource name of the current collection.
-- In multi-data-source scenarios, the resource name may include a data source prefix, such as `t1_org`.
 - The API returns a binary file stream rather than JSON.
 - The caller must have query permission for the current resource and permission to use the corresponding template print button.
 - You must pass a user-login-based JWT token in the `Authorization` header, otherwise access will be denied.
@@ -137,21 +136,6 @@ Notes:
 - If `convertedToPDF` is `true`, the returned file extension is `.pdf`.
 - Otherwise, the API returns the original template type, such as `.docx`, `.xlsx`, or `.pptx`.
 - Frontends usually trigger the browser download based on the filename in `Content-Disposition`.
-
-## Common errors
-
-| Status code | Scenario | Description |
-| --- | --- | --- |
-| `403` | No permission | The current role does not have permission to use the corresponding template print button. |
-| `404` | Template not found | The template specified by `templateName` does not exist or has been deleted. |
-| `404` | No data | No printable data was found based on `queryParams`. |
-| `400` | Limit exceeded | The table block is trying to print more than 300 records. |
-
-## Best practices
-
-- If you are reusing a request captured from the UI, keep the original `uid`; otherwise permission checks may fail.
-- If you want the API behavior to match the UI, pass the current table filters, sorting, and pagination in `queryParams`.
-- If the template uses date and time formatting, explicitly pass `timezone` to avoid unexpected results caused by the server default time zone.
 
 ## Additional resources
 
