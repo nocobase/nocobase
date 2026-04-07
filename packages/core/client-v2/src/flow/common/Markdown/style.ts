@@ -18,7 +18,7 @@ export default function useStyle() {
 
   const wrapSSR = useStyleRegister(
     {
-      theme: antdTheme,
+      theme: antdTheme as any,
       token,
       hashId,
       path: ['flow-markdown', COMPONENT_CLS],

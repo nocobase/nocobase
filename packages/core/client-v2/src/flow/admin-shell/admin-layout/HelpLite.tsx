@@ -16,6 +16,7 @@ import type { MenuItemType, MenuDividerType } from 'antd/es/menu/interface';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePlugin } from '../../../flow-compat';
+import type { CustomToken } from '../../../theme';
 
 type SettingsMenuItemType = MenuItemType | MenuDividerType;
 
@@ -133,6 +134,7 @@ export const HelpLite = observer(
   () => {
     const [visible, setVisible] = useState(false);
     const { token } = antdTheme.useToken();
+    const customToken = token as CustomToken;
     const customBrandPlugin: any = usePlugin('@nocobase/plugin-custom-brand');
     const appInfo = useCurrentAppInfoLite();
 
@@ -147,7 +149,7 @@ export const HelpLite = observer(
           white-space: nowrap;
           text-overflow: ellipsis;
         `}
-        style={{ cursor: 'pointer', padding: '16px', color: token.colorTextHeaderMenu }}
+        style={{ cursor: 'pointer', padding: '16px', color: customToken.colorTextHeaderMenu }}
       >
         <QuestionCircleOutlined />
       </span>

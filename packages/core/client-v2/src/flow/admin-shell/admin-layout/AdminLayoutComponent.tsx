@@ -475,7 +475,7 @@ export const AdminLayoutComponent = observer((props) => {
   const layoutToken = useMemo(() => {
     return {
       header: {
-        colorBgHeader: token.colorBgHeader,
+        colorBgHeader: customToken.colorBgHeader,
         colorTextMenu: customToken.colorTextHeaderMenu,
         colorTextMenuSelected: customToken.colorTextHeaderMenuActive,
         colorTextMenuActive: customToken.colorTextHeaderMenuHover,
@@ -492,9 +492,9 @@ export const AdminLayoutComponent = observer((props) => {
         colorBgMenuItemActive: customToken.colorBgSiderMenuActive,
         colorBgMenuItemHover: customToken.colorBgSiderMenuHover,
       },
-      bgLayout: token.colorBgLayout,
+      bgLayout: customToken.colorBgLayout,
     };
-  }, [customToken, token.colorBgHeader, token.colorBgLayout]);
+  }, [customToken]);
   const { theme, isDarkTheme } = useGlobalTheme();
   const mobileTheme = useMemo(() => {
     return {
