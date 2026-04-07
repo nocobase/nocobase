@@ -10,5 +10,5 @@
 import { KnowledgeBaseGroup } from '../types';
 
 export interface KnowledgeBaseFeature {
-  getKnowledgeBaseGroup(knowledgeBaseIds: string[]): Promise<KnowledgeBaseGroup[]>;
+  getKnowledgeBaseGroup(knowledgeBaseKeys: string[]): Promise<KnowledgeBaseGroup[]>;
 }

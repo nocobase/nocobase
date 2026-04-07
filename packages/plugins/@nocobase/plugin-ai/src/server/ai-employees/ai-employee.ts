@@ -654,8 +654,8 @@ If information is missing, clearly state it in the summary.</Important>`;
           vectorStoreConfig.vectorStoreProvider,
           [
             {
-              key: 'vectorStoreConfigId',
-              value: vectorStoreConfig.vectorStoreConfigId,
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey,
             },
           ],
         );
@@ -675,8 +675,8 @@ If information is missing, clearly state it in the summary.</Important>`;
             [
               ...knowledgeBase.vectorStoreProps,
               {
-                key: 'vectorStoreConfigId',
-                value: vectorStoreConfig.vectorStoreConfigId,
+                key: 'vectorStoreConfigKey',
+                value: vectorStoreConfig.vectorStoreConfigKey,
               },
             ],
           );
@@ -721,11 +721,11 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   async getKnowledgeBaseGroup(): Promise<KnowledgeBaseGroup[]> {
-    const { knowledgeBaseIds } = this.employee.knowledgeBase ?? {};
-    if (!knowledgeBaseIds || _.isEmpty(knowledgeBaseIds)) {
+    const { knowledgeBaseKeys } = this.employee.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
       return [];
     }
-    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseIds);
+    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   // === Tool calls ===

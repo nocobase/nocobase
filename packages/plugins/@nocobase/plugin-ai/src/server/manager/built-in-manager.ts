@@ -24,7 +24,7 @@ const DEFAULT_LANGUAGE = 'en-US';
 const DEFAULT_KNOWLEDGE_BASE = {
   topK: 3,
   score: '0.6',
-  knowledgeBaseIds: [],
+  knowledgeBaseKeys: [],
 };
 const DEFAULT_KNOWLEDGE_BASE_PROMPT =
   "From knowledge base:\n{knowledgeBaseData}\nanswer user's question using this information.";
