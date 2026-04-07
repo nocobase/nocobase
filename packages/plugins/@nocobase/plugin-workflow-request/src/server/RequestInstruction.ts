@@ -94,9 +94,22 @@ function getContentTypeTransformer(mimeType: string, app: Application) {
   }
 }
 
+function validateUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Invalid URL');
+    }
+  } catch {
+    throw new Error('Invalid URL');
+  }
+}
+
 async function request(config: RequestInstructionConfig, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
+
+  validateUrl(url);
   const headers = (config.headers ?? []).reduce((result, header) => {
     const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
@@ -173,9 +186,7 @@ const CONTENT_TYPES = [
 
 export default class extends Instruction {
   configSchema = Joi.object({
-    url: Joi.string().uri({
-      scheme: ['http', 'https'],
-    }),
+    url: Joi.string(),
     method: Joi.string().valid(...METHODS),
     contentType: Joi.string().valid(...CONTENT_TYPES),
     headers: Joi.array().items(

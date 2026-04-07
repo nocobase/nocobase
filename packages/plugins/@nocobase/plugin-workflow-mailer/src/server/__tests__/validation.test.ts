@@ -54,4 +54,61 @@ describe('workflow > instructions > mailer > validation', () => {
     });
     expect(status).toBe(200);
   });
+
+  it('should accept provider.secure with variable syntax', async () => {
+    const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      values: { type: 'mailer', config: { provider: { host: 'smtp.example.com', secure: '{{$env.SMTP_SECURE}}' } } },
+    });
+    expect(status).toBe(200);
+  });
+
+  it('should accept provider.port with variable syntax', async () => {
+    const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      values: { type: 'mailer', config: { provider: { host: 'smtp.example.com', port: '{{$env.SMTP_PORT}}' } } },
+    });
+    expect(status).toBe(200);
+  });
+
+  it('should accept provider.host with variable syntax', async () => {
+    const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      values: { type: 'mailer', config: { provider: { host: '{{$env.SMTP_HOST}}' } } },
+    });
+    expect(status).toBe(200);
+  });
+
+  it('should accept provider.from with variable syntax', async () => {
+    const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      values: {
+        type: 'mailer',
+        config: { provider: { host: 'smtp.example.com', from: '{{$variable.from}}' } },
+      },
+    });
+    expect(status).toBe(200);
+  });
+
+  it('should accept provider.to with variable syntax', async () => {
+    const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      values: {
+        type: 'mailer',
+        config: { provider: { host: 'smtp.example.com', to: ['{{$context.data.email}}'] } },
+      },
+    });
+    expect(status).toBe(200);
+  });
+
+  it('should accept provider.cc and bcc with variable syntax', async () => {
+    const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      values: {
+        type: 'mailer',
+        config: {
+          provider: {
+            host: 'smtp.example.com',
+            cc: ['{{$context.data.cc}}'],
+            bcc: ['{{$context.data.bcc}}'],
+          },
+        },
+      },
+    });
+    expect(status).toBe(200);
+  });
 });

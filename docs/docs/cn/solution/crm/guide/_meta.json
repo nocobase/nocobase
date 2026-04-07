@@ -8,5 +8,30 @@
     "type": "file",
     "name": "guide-overview",
     "label": "系统介绍与仪表盘"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "线索管理"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "商机管理"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "产品、报价与订单"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "客户、联系人与邮件"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "角色与权限"
   }
 ]
