@@ -26,17 +26,17 @@ interface Provider {
 export default class MailerInstruction extends Instruction {
   configSchema = Joi.object({
     provider: Joi.object({
-      host: Joi.string().domain(),
-      port: Joi.number().port().default(465),
-      secure: Joi.boolean().default(true),
+      host: Joi.string(),
+      port: Joi.alternatives().try(Joi.number().port(), Joi.string()).default(465),
+      secure: Joi.alternatives().try(Joi.boolean(), Joi.string()).default(true),
       auth: Joi.object({
         user: Joi.string(),
         pass: Joi.string(),
       }),
-      from: Joi.string().email(),
-      to: Joi.array().items(Joi.string().email()),
-      cc: Joi.array().items(Joi.string().email()),
-      bcc: Joi.array().items(Joi.string().email()),
+      from: Joi.string(),
+      to: Joi.array().items(Joi.string()),
+      cc: Joi.array().items(Joi.string()),
+      bcc: Joi.array().items(Joi.string()),
       subject: Joi.string(),
       contentType: Joi.string().valid('html', 'text').default('html'),
       html: Joi.string(),

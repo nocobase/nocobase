@@ -1,0 +1,3834 @@
+{
+  "target": {
+    "locator": {
+      "uid": "c2pkrw9t20qa"
+    },
+    "uid": "c2pkrw9t20qa",
+    "kind": "block"
+  },
+  "tree": {
+    "uid": "c2pkrw9t20qa",
+    "use": "TableBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      },
+      "tableSettings": {
+        "pageSize": {
+          "pageSize": 20
+        },
+        "showRowNumbers": {
+          "showIndex": true
+        },
+        "dataScope": {
+          "filter": {
+            "logic": "$and",
+            "items": []
+          }
+        }
+      }
+    },
+    "title": "Pet List",
+    "subKey": "items",
+    "subType": "array",
+    "subModels": {
+      "columns": [
+        {
+          "uid": "nj2a09bmso7a",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "name"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "vuqhfyhlidlk",
+              "use": "DisplayTextFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "name"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 1
+        },
+        {
+          "uid": "ri4ueon0fa1g",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "species"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "i2zc9f5gz82v",
+              "use": "DisplayTextFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "species"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 2
+        },
+        {
+          "uid": "eh3ezt5pjv4d",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "breed"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "cirur093vavv",
+              "use": "DisplayTextFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "breed"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 3
+        },
+        {
+          "uid": "t0u8b0v9rvqt",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "ageYears"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "aqhghxb4jzlp",
+              "use": "DisplayNumberFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "ageYears"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 2
+            }
+          },
+          "sortIndex": 4
+        },
+        {
+          "uid": "bsur5cgu9jkv",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "gender"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "dv7lgscpoax1",
+              "use": "DisplayTextFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "gender"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 5
+        },
+        {
+          "uid": "qk34mlk35960",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "owner"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "cxgh58dvuu0d",
+              "use": "DisplayTextFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "owner"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 6
+        },
+        {
+          "uid": "gmfa7c7px9gz",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "status"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "f8559to124ol",
+              "use": "DisplayTextFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "status"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 7
+        },
+        {
+          "uid": "dvt0vlda2oe7",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "vaccinated"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "gfxtab5pqqfx",
+              "use": "DisplayCheckboxFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "vaccinated"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 2
+            }
+          },
+          "sortIndex": 8
+        },
+        {
+          "uid": "bugz32as8i1h",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "lastVisitAt"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "p4s9bwryyazw",
+              "use": "DisplayDateTimeFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "lastVisitAt"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 2
+            }
+          },
+          "sortIndex": 9
+        },
+        {
+          "uid": "dai3zq1csktp",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "updatedAt"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "field": {
+              "uid": "ed6r41qogbf8",
+              "use": "DisplayDateTimeFieldModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "updatedAt"
+                  }
+                }
+              },
+              "subKey": "field",
+              "subType": "object",
+              "sortIndex": 2
+            }
+          },
+          "sortIndex": 10
+        },
+        {
+          "uid": "gen49fdyfgaj",
+          "use": "TableActionsColumnModel",
+          "stepParams": {},
+          "subKey": "columns",
+          "subType": "array",
+          "subModels": {
+            "actions": [
+              {
+                "uid": "ytj9toeqwtkz",
+                "use": "ViewActionModel",
+                "stepParams": {
+                  "buttonSettings": {
+                    "general": {
+                      "title": "View",
+                      "type": ""
+                    }
+                  },
+                  "popupSettings": {
+                    "openView": {
+                      "pageModelClass": "ChildPageModel",
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "filterByTk": "{{ctx.record.id}}",
+                      "disablePopupTemplateMenu": true
+                    }
+                  }
+                },
+                "subKey": "actions",
+                "subType": "array",
+                "subModels": {
+                  "page": {
+                    "uid": "og2empa56aox",
+                    "use": "ChildPageModel",
+                    "stepParams": {
+                      "pageSettings": {
+                        "general": {
+                          "displayTitle": false,
+                          "enableTabs": true
+                        }
+                      }
+                    },
+                    "subKey": "page",
+                    "subType": "object",
+                    "subModels": {
+                      "tabs": [
+                        {
+                          "uid": "iprxkr17jeeb",
+                          "use": "ChildPageTabModel",
+                          "stepParams": {
+                            "pageTabSettings": {
+                              "tab": {
+                                "title": "Pet Details"
+                              }
+                            }
+                          },
+                          "title": "Pet Details",
+                          "subKey": "tabs",
+                          "subType": "array",
+                          "subModels": {
+                            "grid": {
+                              "uid": "fwyd8h2q7v57",
+                              "use": "BlockGridModel",
+                              "stepParams": {},
+                              "subKey": "grid",
+                              "subType": "object",
+                              "subModels": {
+                                "items": [
+                                  {
+                                    "uid": "plmj6eypi4t8",
+                                    "use": "DetailsBlockModel",
+                                    "stepParams": {
+                                      "resourceSettings": {
+                                        "init": {
+                                          "dataSourceKey": "main",
+                                          "collectionName": "pets"
+                                        }
+                                      },
+                                      "detailsSettings": {
+                                        "layout": {
+                                          "layout": "vertical",
+                                          "colon": true
+                                        },
+                                        "dataScope": {
+                                          "filter": {
+                                            "logic": "$and",
+                                            "items": []
+                                          }
+                                        },
+                                        "linkageRules": {
+                                          "value": []
+                                        }
+                                      }
+                                    },
+                                    "subKey": "items",
+                                    "subType": "array",
+                                    "subModels": {
+                                      "grid": {
+                                        "uid": "obyzusxgdv6w",
+                                        "use": "DetailsGridModel",
+                                        "stepParams": {},
+                                        "subKey": "grid",
+                                        "subType": "object",
+                                        "subModels": {
+                                          "items": [
+                                            {
+                                              "uid": "ak1p7lei4dun",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "name"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "g5w5yampdf15",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "name"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 1
+                                            },
+                                            {
+                                              "uid": "f34uio74shio",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "species"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "rd1njnddjka0",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "species"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 2
+                                            },
+                                            {
+                                              "uid": "al8zg87eu739",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "breed"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "bnlkyabme31d",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "breed"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 3
+                                            },
+                                            {
+                                              "uid": "sq9b10osgiq6",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "ageYears"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "fifbv8dgx4og",
+                                                  "use": "DisplayNumberFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "ageYears"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 4
+                                            },
+                                            {
+                                              "uid": "cul9x0hro5d0",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "gender"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "vbvstng0dpma",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "gender"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 5
+                                            },
+                                            {
+                                              "uid": "ol3fjo39iqup",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "owner"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "lao3dohdgbw6",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "owner"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 6
+                                            },
+                                            {
+                                              "uid": "yf7kossp3y9i",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "status"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "nol0fyesnipr",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "status"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 7
+                                            },
+                                            {
+                                              "uid": "uuzrdjzs334h",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "vaccinated"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "c9b07r886apj",
+                                                  "use": "DisplayCheckboxFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "vaccinated"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 8
+                                            },
+                                            {
+                                              "uid": "grte2z1y6hk9",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "lastVisitAt"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "uinvgndog60q",
+                                                  "use": "DisplayDateTimeFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "lastVisitAt"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 9
+                                            },
+                                            {
+                                              "uid": "hk33ueoh3h7m",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "notes"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "pr1qe69t2d4e",
+                                                  "use": "DisplayTextFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "notes"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 10
+                                            },
+                                            {
+                                              "uid": "cf9p6r8gcwii",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "createdAt"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "j7e4yt5k4c56",
+                                                  "use": "DisplayDateTimeFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "createdAt"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 11
+                                            },
+                                            {
+                                              "uid": "iwuyyhrebfgt",
+                                              "use": "DetailsItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "updatedAt"
+                                                  }
+                                                },
+                                                "detailItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "e903qkbq4z8n",
+                                                  "use": "DisplayDateTimeFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "updatedAt"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 12
+                                            }
+                                          ]
+                                        },
+                                        "sortIndex": 1
+                                      }
+                                    },
+                                    "sortIndex": 1
+                                  }
+                                ]
+                              },
+                              "sortIndex": 1
+                            }
+                          },
+                          "sortIndex": 1
+                        }
+                      ]
+                    },
+                    "sortIndex": 1
+                  }
+                },
+                "sortIndex": 1
+              },
+              {
+                "uid": "ge8w68u4vnki",
+                "use": "EditActionModel",
+                "stepParams": {
+                  "buttonSettings": {
+                    "general": {
+                      "title": "Edit",
+                      "type": ""
+                    }
+                  },
+                  "popupSettings": {
+                    "openView": {
+                      "pageModelClass": "ChildPageModel",
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "filterByTk": "{{ctx.record.id}}",
+                      "disablePopupTemplateMenu": true
+                    }
+                  }
+                },
+                "subKey": "actions",
+                "subType": "array",
+                "subModels": {
+                  "page": {
+                    "uid": "ummfebvluu8o",
+                    "use": "ChildPageModel",
+                    "stepParams": {
+                      "pageSettings": {
+                        "general": {
+                          "displayTitle": false,
+                          "enableTabs": true
+                        }
+                      }
+                    },
+                    "subKey": "page",
+                    "subType": "object",
+                    "subModels": {
+                      "tabs": [
+                        {
+                          "uid": "j284pp7hce5d",
+                          "use": "ChildPageTabModel",
+                          "stepParams": {
+                            "pageTabSettings": {
+                              "tab": {
+                                "title": "Edit Pet"
+                              }
+                            }
+                          },
+                          "title": "Edit Pet",
+                          "subKey": "tabs",
+                          "subType": "array",
+                          "subModels": {
+                            "grid": {
+                              "uid": "h72ggzx03tm0",
+                              "use": "BlockGridModel",
+                              "stepParams": {},
+                              "subKey": "grid",
+                              "subType": "object",
+                              "subModels": {
+                                "items": [
+                                  {
+                                    "uid": "tys4wruosezl",
+                                    "use": "EditFormModel",
+                                    "stepParams": {
+                                      "resourceSettings": {
+                                        "init": {
+                                          "dataSourceKey": "main",
+                                          "collectionName": "pets"
+                                        }
+                                      },
+                                      "formModelSettings": {
+                                        "layout": {
+                                          "layout": "vertical",
+                                          "colon": false
+                                        },
+                                        "assignRules": {
+                                          "value": []
+                                        }
+                                      },
+                                      "eventSettings": {
+                                        "linkageRules": {
+                                          "value": []
+                                        }
+                                      },
+                                      "formSettings": {
+                                        "dataScope": {
+                                          "filter": {
+                                            "logic": "$and",
+                                            "items": []
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "subKey": "items",
+                                    "subType": "array",
+                                    "subModels": {
+                                      "grid": {
+                                        "uid": "l06nom18gvj1",
+                                        "use": "FormGridModel",
+                                        "stepParams": {},
+                                        "subKey": "grid",
+                                        "subType": "object",
+                                        "subModels": {
+                                          "items": [
+                                            {
+                                              "uid": "kaoyhvqz20kv",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "name"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "bl9mnlyvkkf8",
+                                                  "use": "InputFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "name"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 1
+                                            },
+                                            {
+                                              "uid": "rnembzffvqf2",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "species"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "ykzeh8ocwso9",
+                                                  "use": "SelectFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "species"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 2
+                                            },
+                                            {
+                                              "uid": "t26u8qh2tb5p",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "breed"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "hoprc37mg4bp",
+                                                  "use": "InputFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "breed"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 1
+                                                }
+                                              },
+                                              "sortIndex": 3
+                                            },
+                                            {
+                                              "uid": "raqsxo9bcare",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "ageYears"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "p5dum9gnody5",
+                                                  "use": "NumberFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "ageYears"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 4
+                                            },
+                                            {
+                                              "uid": "elakx4f1arvd",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "gender"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "yyvr2tffgtmt",
+                                                  "use": "SelectFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "gender"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 5
+                                            },
+                                            {
+                                              "uid": "egxjq2emltw2",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "owner"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "ct1ipdunz3i5",
+                                                  "use": "RecordSelectFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "owner"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 6
+                                            },
+                                            {
+                                              "uid": "tzgvgxwbhux2",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "status"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "uwmx84ttx3yg",
+                                                  "use": "SelectFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "status"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 7
+                                            },
+                                            {
+                                              "uid": "kdilfywuiovf",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "vaccinated"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "g88rqomq19l5",
+                                                  "use": "CheckboxFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "vaccinated"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 8
+                                            },
+                                            {
+                                              "uid": "u1tuxi5l55jy",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "lastVisitAt"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "f36t8fa9cdi2",
+                                                  "use": "DateTimeTzFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "lastVisitAt"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 9
+                                            },
+                                            {
+                                              "uid": "a4tgfbkpxujh",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "notes"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subKey": "items",
+                                              "subType": "array",
+                                              "subModels": {
+                                                "field": {
+                                                  "uid": "h5262nsj6lwd",
+                                                  "use": "TextareaFieldModel",
+                                                  "stepParams": {
+                                                    "fieldSettings": {
+                                                      "init": {
+                                                        "dataSourceKey": "main",
+                                                        "collectionName": "pets",
+                                                        "fieldPath": "notes"
+                                                      }
+                                                    }
+                                                  },
+                                                  "subKey": "field",
+                                                  "subType": "object",
+                                                  "sortIndex": 2
+                                                }
+                                              },
+                                              "sortIndex": 10
+                                            }
+                                          ]
+                                        },
+                                        "sortIndex": 1
+                                      },
+                                      "actions": [
+                                        {
+                                          "uid": "uqxdvdhuoqae",
+                                          "use": "FormSubmitActionModel",
+                                          "stepParams": {
+                                            "buttonSettings": {
+                                              "general": {
+                                                "title": "Save Changes",
+                                                "type": ""
+                                              }
+                                            },
+                                            "submitSettings": {
+                                              "confirm": {
+                                                "enable": false
+                                              }
+                                            }
+                                          },
+                                          "subKey": "actions",
+                                          "subType": "array",
+                                          "sortIndex": 1
+                                        }
+                                      ]
+                                    },
+                                    "sortIndex": 1
+                                  }
+                                ]
+                              },
+                              "sortIndex": 1
+                            }
+                          },
+                          "sortIndex": 1
+                        }
+                      ]
+                    },
+                    "sortIndex": 1
+                  }
+                },
+                "sortIndex": 2
+              },
+              {
+                "uid": "vr14nvn6oh1a",
+                "use": "DeleteActionModel",
+                "stepParams": {
+                  "buttonSettings": {
+                    "general": {
+                      "title": "Delete",
+                      "type": ""
+                    }
+                  }
+                },
+                "subKey": "actions",
+                "subType": "array",
+                "sortIndex": 3
+              }
+            ]
+          },
+          "sortIndex": 11
+        }
+      ],
+      "actions": [
+        {
+          "uid": "fh5uz91gg4jg",
+          "use": "AddNewActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Add Pet",
+                "type": ""
+              }
+            },
+            "popupSettings": {
+              "openView": {
+                "pageModelClass": "ChildPageModel",
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "disablePopupTemplateMenu": true
+              }
+            }
+          },
+          "subKey": "actions",
+          "subType": "array",
+          "subModels": {
+            "page": {
+              "uid": "aqiomj2do5aj",
+              "use": "ChildPageModel",
+              "stepParams": {
+                "pageSettings": {
+                  "general": {
+                    "displayTitle": false,
+                    "enableTabs": true
+                  }
+                }
+              },
+              "subKey": "page",
+              "subType": "object",
+              "subModels": {
+                "tabs": [
+                  {
+                    "uid": "et97903w1d4n",
+                    "use": "ChildPageTabModel",
+                    "stepParams": {
+                      "pageTabSettings": {
+                        "tab": {
+                          "title": "Add Pet"
+                        }
+                      }
+                    },
+                    "title": "Add Pet",
+                    "subKey": "tabs",
+                    "subType": "array",
+                    "subModels": {
+                      "grid": {
+                        "uid": "ctxmr0ygicck",
+                        "use": "BlockGridModel",
+                        "stepParams": {},
+                        "subKey": "grid",
+                        "subType": "object",
+                        "subModels": {
+                          "items": [
+                            {
+                              "uid": "fuph0cstiq37",
+                              "use": "CreateFormModel",
+                              "stepParams": {
+                                "resourceSettings": {
+                                  "init": {
+                                    "dataSourceKey": "main",
+                                    "collectionName": "pets"
+                                  }
+                                },
+                                "formModelSettings": {
+                                  "layout": {
+                                    "layout": "vertical",
+                                    "colon": false
+                                  },
+                                  "assignRules": {
+                                    "value": []
+                                  }
+                                },
+                                "eventSettings": {
+                                  "linkageRules": {
+                                    "value": []
+                                  }
+                                }
+                              },
+                              "subKey": "items",
+                              "subType": "array",
+                              "subModels": {
+                                "grid": {
+                                  "uid": "qz8mxg1px6v8",
+                                  "use": "FormGridModel",
+                                  "stepParams": {},
+                                  "subKey": "grid",
+                                  "subType": "object",
+                                  "subModels": {
+                                    "items": [
+                                      {
+                                        "uid": "lqhyeu95c384",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "name"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "t0198uf62i99",
+                                            "use": "InputFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "name"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 1
+                                          }
+                                        },
+                                        "sortIndex": 1
+                                      },
+                                      {
+                                        "uid": "z7nr0zpyefbn",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "species"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "i19ik30vd0eq",
+                                            "use": "SelectFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "species"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 2
+                                      },
+                                      {
+                                        "uid": "odyywfav5pft",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "breed"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "ps7tl3wjupcp",
+                                            "use": "InputFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "breed"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 1
+                                          }
+                                        },
+                                        "sortIndex": 3
+                                      },
+                                      {
+                                        "uid": "yc22l3sab53s",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "ageYears"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "s92je9vmy3vr",
+                                            "use": "NumberFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "ageYears"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 4
+                                      },
+                                      {
+                                        "uid": "p0bkh5odwkkq",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "gender"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "rlzpy90cl5mz",
+                                            "use": "SelectFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "gender"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 5
+                                      },
+                                      {
+                                        "uid": "egk91ngg09zy",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "owner"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "j93nyf724amx",
+                                            "use": "RecordSelectFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "owner"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 6
+                                      },
+                                      {
+                                        "uid": "o5gmrjl81gn6",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "status"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "b4fl53akva4m",
+                                            "use": "SelectFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "status"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 7
+                                      },
+                                      {
+                                        "uid": "tyry600tqe61",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "vaccinated"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "dvdg7ktdzq9n",
+                                            "use": "CheckboxFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "vaccinated"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 8
+                                      },
+                                      {
+                                        "uid": "kf8zg90aiej5",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "lastVisitAt"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "h9c7vapij7i6",
+                                            "use": "DateTimeTzFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "lastVisitAt"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 9
+                                      },
+                                      {
+                                        "uid": "q8ygvd265qdv",
+                                        "use": "FormItemModel",
+                                        "stepParams": {
+                                          "fieldSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets",
+                                              "fieldPath": "notes"
+                                            }
+                                          },
+                                          "editItemSettings": {
+                                            "showLabel": {
+                                              "showLabel": true
+                                            }
+                                          }
+                                        },
+                                        "subKey": "items",
+                                        "subType": "array",
+                                        "subModels": {
+                                          "field": {
+                                            "uid": "kc7b6xoq6ij1",
+                                            "use": "TextareaFieldModel",
+                                            "stepParams": {
+                                              "fieldSettings": {
+                                                "init": {
+                                                  "dataSourceKey": "main",
+                                                  "collectionName": "pets",
+                                                  "fieldPath": "notes"
+                                                }
+                                              }
+                                            },
+                                            "subKey": "field",
+                                            "subType": "object",
+                                            "sortIndex": 2
+                                          }
+                                        },
+                                        "sortIndex": 10
+                                      }
+                                    ]
+                                  },
+                                  "sortIndex": 1
+                                },
+                                "actions": [
+                                  {
+                                    "uid": "xgp3qo3q866h",
+                                    "use": "FormSubmitActionModel",
+                                    "stepParams": {
+                                      "buttonSettings": {
+                                        "general": {
+                                          "title": "Save",
+                                          "type": ""
+                                        }
+                                      },
+                                      "submitSettings": {
+                                        "confirm": {
+                                          "enable": false
+                                        }
+                                      }
+                                    },
+                                    "subKey": "actions",
+                                    "subType": "array",
+                                    "sortIndex": 1
+                                  }
+                                ]
+                              },
+                              "sortIndex": 1
+                            }
+                          ]
+                        },
+                        "sortIndex": 1
+                      }
+                    },
+                    "sortIndex": 1
+                  }
+                ]
+              },
+              "sortIndex": 1
+            }
+          },
+          "sortIndex": 1
+        },
+        {
+          "uid": "eztudtbv65tc",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Refresh",
+                "type": ""
+              }
+            }
+          },
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 2
+        },
+        {
+          "uid": "grjq7718le6z",
+          "use": "BulkDeleteActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Bulk Delete",
+                "type": ""
+              }
+            }
+          },
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 3
+        }
+      ]
+    }
+  },
+  "nodeMap": {
+    "c2pkrw9t20qa": {
+      "uid": "c2pkrw9t20qa",
+      "use": "TableBlockModel",
+      "stepParams": {
+        "resourceSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets"
+          }
+        },
+        "tableSettings": {
+          "pageSize": {
+            "pageSize": 20
+          },
+          "showRowNumbers": {
+            "showIndex": true
+          },
+          "dataScope": {
+            "filter": {
+              "logic": "$and",
+              "items": []
+            }
+          }
+        }
+      }
+    },
+    "nj2a09bmso7a": {
+      "uid": "nj2a09bmso7a",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "vuqhfyhlidlk": {
+      "uid": "vuqhfyhlidlk",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        }
+      }
+    },
+    "ri4ueon0fa1g": {
+      "uid": "ri4ueon0fa1g",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "i2zc9f5gz82v": {
+      "uid": "i2zc9f5gz82v",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        }
+      }
+    },
+    "eh3ezt5pjv4d": {
+      "uid": "eh3ezt5pjv4d",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "cirur093vavv": {
+      "uid": "cirur093vavv",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        }
+      }
+    },
+    "t0u8b0v9rvqt": {
+      "uid": "t0u8b0v9rvqt",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "aqhghxb4jzlp": {
+      "uid": "aqhghxb4jzlp",
+      "use": "DisplayNumberFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        }
+      }
+    },
+    "bsur5cgu9jkv": {
+      "uid": "bsur5cgu9jkv",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "dv7lgscpoax1": {
+      "uid": "dv7lgscpoax1",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        }
+      }
+    },
+    "qk34mlk35960": {
+      "uid": "qk34mlk35960",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "cxgh58dvuu0d": {
+      "uid": "cxgh58dvuu0d",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        }
+      }
+    },
+    "gmfa7c7px9gz": {
+      "uid": "gmfa7c7px9gz",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "f8559to124ol": {
+      "uid": "f8559to124ol",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        }
+      }
+    },
+    "dvt0vlda2oe7": {
+      "uid": "dvt0vlda2oe7",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "gfxtab5pqqfx": {
+      "uid": "gfxtab5pqqfx",
+      "use": "DisplayCheckboxFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        }
+      }
+    },
+    "bugz32as8i1h": {
+      "uid": "bugz32as8i1h",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "p4s9bwryyazw": {
+      "uid": "p4s9bwryyazw",
+      "use": "DisplayDateTimeFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        }
+      }
+    },
+    "dai3zq1csktp": {
+      "uid": "dai3zq1csktp",
+      "use": "TableColumnModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "updatedAt"
+          }
+        },
+        "tableColumnSettings": {
+          "width": {
+            "width": 150
+          }
+        }
+      }
+    },
+    "ed6r41qogbf8": {
+      "uid": "ed6r41qogbf8",
+      "use": "DisplayDateTimeFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "updatedAt"
+          }
+        }
+      }
+    },
+    "gen49fdyfgaj": {
+      "uid": "gen49fdyfgaj",
+      "use": "TableActionsColumnModel"
+    },
+    "ytj9toeqwtkz": {
+      "uid": "ytj9toeqwtkz",
+      "use": "ViewActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "View",
+            "type": ""
+          }
+        },
+        "popupSettings": {
+          "openView": {
+            "pageModelClass": "ChildPageModel",
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "filterByTk": "{{ctx.record.id}}",
+            "disablePopupTemplateMenu": true
+          }
+        }
+      }
+    },
+    "og2empa56aox": {
+      "uid": "og2empa56aox",
+      "use": "ChildPageModel",
+      "stepParams": {
+        "pageSettings": {
+          "general": {
+            "displayTitle": false,
+            "enableTabs": true
+          }
+        }
+      }
+    },
+    "iprxkr17jeeb": {
+      "uid": "iprxkr17jeeb",
+      "use": "ChildPageTabModel",
+      "stepParams": {
+        "pageTabSettings": {
+          "tab": {
+            "title": "Pet Details"
+          }
+        }
+      }
+    },
+    "fwyd8h2q7v57": {
+      "uid": "fwyd8h2q7v57",
+      "use": "BlockGridModel"
+    },
+    "plmj6eypi4t8": {
+      "uid": "plmj6eypi4t8",
+      "use": "DetailsBlockModel",
+      "stepParams": {
+        "resourceSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets"
+          }
+        },
+        "detailsSettings": {
+          "layout": {
+            "layout": "vertical",
+            "colon": true
+          },
+          "dataScope": {
+            "filter": {
+              "logic": "$and",
+              "items": []
+            }
+          },
+          "linkageRules": {
+            "value": []
+          }
+        }
+      }
+    },
+    "obyzusxgdv6w": {
+      "uid": "obyzusxgdv6w",
+      "use": "DetailsGridModel"
+    },
+    "ak1p7lei4dun": {
+      "uid": "ak1p7lei4dun",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "g5w5yampdf15": {
+      "uid": "g5w5yampdf15",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        }
+      }
+    },
+    "f34uio74shio": {
+      "uid": "f34uio74shio",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "rd1njnddjka0": {
+      "uid": "rd1njnddjka0",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        }
+      }
+    },
+    "al8zg87eu739": {
+      "uid": "al8zg87eu739",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "bnlkyabme31d": {
+      "uid": "bnlkyabme31d",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        }
+      }
+    },
+    "sq9b10osgiq6": {
+      "uid": "sq9b10osgiq6",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "fifbv8dgx4og": {
+      "uid": "fifbv8dgx4og",
+      "use": "DisplayNumberFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        }
+      }
+    },
+    "cul9x0hro5d0": {
+      "uid": "cul9x0hro5d0",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "vbvstng0dpma": {
+      "uid": "vbvstng0dpma",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        }
+      }
+    },
+    "ol3fjo39iqup": {
+      "uid": "ol3fjo39iqup",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "lao3dohdgbw6": {
+      "uid": "lao3dohdgbw6",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        }
+      }
+    },
+    "yf7kossp3y9i": {
+      "uid": "yf7kossp3y9i",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "nol0fyesnipr": {
+      "uid": "nol0fyesnipr",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        }
+      }
+    },
+    "uuzrdjzs334h": {
+      "uid": "uuzrdjzs334h",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "c9b07r886apj": {
+      "uid": "c9b07r886apj",
+      "use": "DisplayCheckboxFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        }
+      }
+    },
+    "grte2z1y6hk9": {
+      "uid": "grte2z1y6hk9",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "uinvgndog60q": {
+      "uid": "uinvgndog60q",
+      "use": "DisplayDateTimeFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        }
+      }
+    },
+    "hk33ueoh3h7m": {
+      "uid": "hk33ueoh3h7m",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "pr1qe69t2d4e": {
+      "uid": "pr1qe69t2d4e",
+      "use": "DisplayTextFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        }
+      }
+    },
+    "cf9p6r8gcwii": {
+      "uid": "cf9p6r8gcwii",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "createdAt"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "j7e4yt5k4c56": {
+      "uid": "j7e4yt5k4c56",
+      "use": "DisplayDateTimeFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "createdAt"
+          }
+        }
+      }
+    },
+    "iwuyyhrebfgt": {
+      "uid": "iwuyyhrebfgt",
+      "use": "DetailsItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "updatedAt"
+          }
+        },
+        "detailItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "e903qkbq4z8n": {
+      "uid": "e903qkbq4z8n",
+      "use": "DisplayDateTimeFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "updatedAt"
+          }
+        }
+      }
+    },
+    "ge8w68u4vnki": {
+      "uid": "ge8w68u4vnki",
+      "use": "EditActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Edit",
+            "type": ""
+          }
+        },
+        "popupSettings": {
+          "openView": {
+            "pageModelClass": "ChildPageModel",
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "filterByTk": "{{ctx.record.id}}",
+            "disablePopupTemplateMenu": true
+          }
+        }
+      }
+    },
+    "ummfebvluu8o": {
+      "uid": "ummfebvluu8o",
+      "use": "ChildPageModel",
+      "stepParams": {
+        "pageSettings": {
+          "general": {
+            "displayTitle": false,
+            "enableTabs": true
+          }
+        }
+      }
+    },
+    "j284pp7hce5d": {
+      "uid": "j284pp7hce5d",
+      "use": "ChildPageTabModel",
+      "stepParams": {
+        "pageTabSettings": {
+          "tab": {
+            "title": "Edit Pet"
+          }
+        }
+      }
+    },
+    "h72ggzx03tm0": {
+      "uid": "h72ggzx03tm0",
+      "use": "BlockGridModel"
+    },
+    "tys4wruosezl": {
+      "uid": "tys4wruosezl",
+      "use": "EditFormModel",
+      "stepParams": {
+        "resourceSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets"
+          }
+        },
+        "formModelSettings": {
+          "layout": {
+            "layout": "vertical",
+            "colon": false
+          },
+          "assignRules": {
+            "value": []
+          }
+        },
+        "eventSettings": {
+          "linkageRules": {
+            "value": []
+          }
+        },
+        "formSettings": {
+          "dataScope": {
+            "filter": {
+              "logic": "$and",
+              "items": []
+            }
+          }
+        }
+      }
+    },
+    "l06nom18gvj1": {
+      "uid": "l06nom18gvj1",
+      "use": "FormGridModel"
+    },
+    "kaoyhvqz20kv": {
+      "uid": "kaoyhvqz20kv",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "bl9mnlyvkkf8": {
+      "uid": "bl9mnlyvkkf8",
+      "use": "InputFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        }
+      }
+    },
+    "rnembzffvqf2": {
+      "uid": "rnembzffvqf2",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "ykzeh8ocwso9": {
+      "uid": "ykzeh8ocwso9",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        }
+      }
+    },
+    "t26u8qh2tb5p": {
+      "uid": "t26u8qh2tb5p",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "hoprc37mg4bp": {
+      "uid": "hoprc37mg4bp",
+      "use": "InputFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        }
+      }
+    },
+    "raqsxo9bcare": {
+      "uid": "raqsxo9bcare",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "p5dum9gnody5": {
+      "uid": "p5dum9gnody5",
+      "use": "NumberFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        }
+      }
+    },
+    "elakx4f1arvd": {
+      "uid": "elakx4f1arvd",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "yyvr2tffgtmt": {
+      "uid": "yyvr2tffgtmt",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        }
+      }
+    },
+    "egxjq2emltw2": {
+      "uid": "egxjq2emltw2",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "ct1ipdunz3i5": {
+      "uid": "ct1ipdunz3i5",
+      "use": "RecordSelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        }
+      }
+    },
+    "tzgvgxwbhux2": {
+      "uid": "tzgvgxwbhux2",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "uwmx84ttx3yg": {
+      "uid": "uwmx84ttx3yg",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        }
+      }
+    },
+    "kdilfywuiovf": {
+      "uid": "kdilfywuiovf",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "g88rqomq19l5": {
+      "uid": "g88rqomq19l5",
+      "use": "CheckboxFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        }
+      }
+    },
+    "u1tuxi5l55jy": {
+      "uid": "u1tuxi5l55jy",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "f36t8fa9cdi2": {
+      "uid": "f36t8fa9cdi2",
+      "use": "DateTimeTzFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        }
+      }
+    },
+    "a4tgfbkpxujh": {
+      "uid": "a4tgfbkpxujh",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "h5262nsj6lwd": {
+      "uid": "h5262nsj6lwd",
+      "use": "TextareaFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        }
+      }
+    },
+    "uqxdvdhuoqae": {
+      "uid": "uqxdvdhuoqae",
+      "use": "FormSubmitActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Save Changes",
+            "type": ""
+          }
+        },
+        "submitSettings": {
+          "confirm": {
+            "enable": false
+          }
+        }
+      }
+    },
+    "vr14nvn6oh1a": {
+      "uid": "vr14nvn6oh1a",
+      "use": "DeleteActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Delete",
+            "type": ""
+          }
+        }
+      }
+    },
+    "fh5uz91gg4jg": {
+      "uid": "fh5uz91gg4jg",
+      "use": "AddNewActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Add Pet",
+            "type": ""
+          }
+        },
+        "popupSettings": {
+          "openView": {
+            "pageModelClass": "ChildPageModel",
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "disablePopupTemplateMenu": true
+          }
+        }
+      }
+    },
+    "aqiomj2do5aj": {
+      "uid": "aqiomj2do5aj",
+      "use": "ChildPageModel",
+      "stepParams": {
+        "pageSettings": {
+          "general": {
+            "displayTitle": false,
+            "enableTabs": true
+          }
+        }
+      }
+    },
+    "et97903w1d4n": {
+      "uid": "et97903w1d4n",
+      "use": "ChildPageTabModel",
+      "stepParams": {
+        "pageTabSettings": {
+          "tab": {
+            "title": "Add Pet"
+          }
+        }
+      }
+    },
+    "ctxmr0ygicck": {
+      "uid": "ctxmr0ygicck",
+      "use": "BlockGridModel"
+    },
+    "fuph0cstiq37": {
+      "uid": "fuph0cstiq37",
+      "use": "CreateFormModel",
+      "stepParams": {
+        "resourceSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets"
+          }
+        },
+        "formModelSettings": {
+          "layout": {
+            "layout": "vertical",
+            "colon": false
+          },
+          "assignRules": {
+            "value": []
+          }
+        },
+        "eventSettings": {
+          "linkageRules": {
+            "value": []
+          }
+        }
+      }
+    },
+    "qz8mxg1px6v8": {
+      "uid": "qz8mxg1px6v8",
+      "use": "FormGridModel"
+    },
+    "lqhyeu95c384": {
+      "uid": "lqhyeu95c384",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "t0198uf62i99": {
+      "uid": "t0198uf62i99",
+      "use": "InputFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        }
+      }
+    },
+    "z7nr0zpyefbn": {
+      "uid": "z7nr0zpyefbn",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "i19ik30vd0eq": {
+      "uid": "i19ik30vd0eq",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        }
+      }
+    },
+    "odyywfav5pft": {
+      "uid": "odyywfav5pft",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "ps7tl3wjupcp": {
+      "uid": "ps7tl3wjupcp",
+      "use": "InputFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        }
+      }
+    },
+    "yc22l3sab53s": {
+      "uid": "yc22l3sab53s",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "s92je9vmy3vr": {
+      "uid": "s92je9vmy3vr",
+      "use": "NumberFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        }
+      }
+    },
+    "p0bkh5odwkkq": {
+      "uid": "p0bkh5odwkkq",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "rlzpy90cl5mz": {
+      "uid": "rlzpy90cl5mz",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        }
+      }
+    },
+    "egk91ngg09zy": {
+      "uid": "egk91ngg09zy",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "j93nyf724amx": {
+      "uid": "j93nyf724amx",
+      "use": "RecordSelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        }
+      }
+    },
+    "o5gmrjl81gn6": {
+      "uid": "o5gmrjl81gn6",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "b4fl53akva4m": {
+      "uid": "b4fl53akva4m",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        }
+      }
+    },
+    "tyry600tqe61": {
+      "uid": "tyry600tqe61",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "dvdg7ktdzq9n": {
+      "uid": "dvdg7ktdzq9n",
+      "use": "CheckboxFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        }
+      }
+    },
+    "kf8zg90aiej5": {
+      "uid": "kf8zg90aiej5",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "h9c7vapij7i6": {
+      "uid": "h9c7vapij7i6",
+      "use": "DateTimeTzFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        }
+      }
+    },
+    "q8ygvd265qdv": {
+      "uid": "q8ygvd265qdv",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "kc7b6xoq6ij1": {
+      "uid": "kc7b6xoq6ij1",
+      "use": "TextareaFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        }
+      }
+    },
+    "xgp3qo3q866h": {
+      "uid": "xgp3qo3q866h",
+      "use": "FormSubmitActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Save",
+            "type": ""
+          }
+        },
+        "submitSettings": {
+          "confirm": {
+            "enable": false
+          }
+        }
+      }
+    },
+    "eztudtbv65tc": {
+      "uid": "eztudtbv65tc",
+      "use": "RefreshActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Refresh",
+            "type": ""
+          }
+        }
+      }
+    },
+    "grjq7718le6z": {
+      "uid": "grjq7718le6z",
+      "use": "BulkDeleteActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Bulk Delete",
+            "type": ""
+          }
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "createdAt": "2026-03-28T05:50:46.516Z",
+    "updatedAt": "2026-03-28T05:50:46.516Z",
+    "id": 355788225118208,
+    "parentId": 336550660341760,
+    "title": "Pet Management",
+    "tooltip": null,
+    "icon": null,
+    "schemaUid": "pet-management",
+    "menuSchemaUid": "menu-pet-management",
+    "tabSchemaName": null,
+    "type": "flowPage",
+    "options": null,
+    "sort": 17,
+    "hideInMenu": null,
+    "enableTabs": false,
+    "enableHeader": null,
+    "displayTitle": null,
+    "hidden": null,
+    "createdById": null,
+    "updatedById": null,
+    "children": [
+      {
+        "createdAt": "2026-03-28T05:50:46.807Z",
+        "updatedAt": "2026-03-28T05:50:46.807Z",
+        "id": 355788225118210,
+        "parentId": 355788225118208,
+        "title": null,
+        "tooltip": null,
+        "icon": null,
+        "schemaUid": "tabs-pet-management",
+        "menuSchemaUid": null,
+        "tabSchemaName": "tab-pet-management",
+        "type": "tabs",
+        "options": null,
+        "sort": 1,
+        "hideInMenu": null,
+        "enableTabs": null,
+        "enableHeader": null,
+        "displayTitle": null,
+        "hidden": true,
+        "createdById": null,
+        "updatedById": null
+      }
+    ]
+  }
+}

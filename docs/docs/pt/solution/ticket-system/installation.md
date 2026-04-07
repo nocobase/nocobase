@@ -132,3 +132,6 @@ Configure os parâmetros de inicialização do seu NocoBase (como as variáveis 
 | **Cenário recomendado** | Usuários empresariais com ambiente controlado e consistente, que precisam de funcionalidade completa | Falta de alguns plugins, busca por alta compatibilidade e flexibilidade, usuários não Pro/Enterprise, aceitam a perda de funções de arquivos |
 
 Esperamos que este tutorial ajude você a implantar o sistema de chamados com sucesso. Se encontrar qualquer problema durante o processo, sinta-se à vontade para entrar em contato conosco!
+---
+
+*Last updated: 2026-03-24*

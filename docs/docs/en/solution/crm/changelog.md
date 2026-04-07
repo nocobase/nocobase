@@ -4,6 +4,22 @@ This page documents the update history for the CRM solution. New entries are add
 
 ---
 
+## 2026-04-05
+
+**Backup files**:
+- [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
+- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
+
+**Changes**:
+- Fixed table Summary aggregation display issue
+- Configured role-based permissions
+- Added Lookup page for searching across multiple tables in one view
+- Fixed installation script error: `plugin-disable-pm-add` not found
+- Added lead assignment button
+- Fixed error when clicking opportunity filter
+
+---
+
 ## 2026-03-27
 
 **Backup files**:

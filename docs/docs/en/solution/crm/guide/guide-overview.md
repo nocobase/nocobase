@@ -28,7 +28,7 @@ Analytics is the first page in the menu bar and the first screen you see when op
 
 ### Global Filters
 
-At the top of the page, there is a filter bar with **Date Range** and **Owner** filter conditions. After filtering, all charts on the page refresh in sync.
+At the top of the page, there is a filter bar with **Date Range** and **Owner** filter conditions. After filtering, all KPI cards and charts on the page refresh in sync.
 
 ![00-overview-2026-04-01-23-40-45](https://static-docs.nocobase.com/00-overview-2026-04-01-23-40-45.png)
 
@@ -112,7 +112,7 @@ Each chart has three configuration dimensions:
 
 ### Filter Linkage
 
-When any filter condition in the top filter bar is changed, **all charts on the page refresh simultaneously** — no need to set filters individually. Typical usage:
+When any filter condition in the top filter bar is changed, **all KPI cards and charts on the page refresh simultaneously** — no need to set filters individually. Typical usage:
 
 - **View someone's performance**: Select an Owner → all page data switches to that person's leads, opportunities, and orders
 - **Compare time periods**: Switch date range from "This Month" to "This Quarter" → trend chart ranges update in sync
@@ -201,10 +201,10 @@ Drill-through comes in two forms:
 
 ---
 
-After understanding the system layout and dashboards, go back to the [User Guide](./) for subsequent chapters.
+After understanding the system layout and dashboards, go back to the [User Guide](./guide) for subsequent chapters.
 
 ## Related Pages
 
-- [CRM User Guide](./)
+- [CRM User Guide](./guide)
 - [Solution Overview](../index)
 - [Installation](../installation)

@@ -8,5 +8,30 @@
     "type": "file",
     "name": "guide-overview",
     "label": "System Overview & Dashboards"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "Lead Management"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "Opportunity Management"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "Products, Quotations & Orders"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "Customers, Contacts & Emails"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "Roles & Permissions"
   }
 ]

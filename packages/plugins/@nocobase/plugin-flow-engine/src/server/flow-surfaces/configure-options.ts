@@ -1,0 +1,726 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type {
+  FlowSurfaceCatalogItem,
+  FlowSurfaceConfigureOption,
+  FlowSurfaceConfigureOptions,
+  FlowSurfaceContainerKind,
+} from './types';
+
+const stringOption = (
+  description?: string,
+  extra: Partial<FlowSurfaceConfigureOption> = {},
+): FlowSurfaceConfigureOption => ({
+  type: 'string',
+  ...(description ? { description } : {}),
+  ...extra,
+});
+
+const numberOption = (
+  description?: string,
+  extra: Partial<FlowSurfaceConfigureOption> = {},
+): FlowSurfaceConfigureOption => ({
+  type: 'number',
+  ...(description ? { description } : {}),
+  ...extra,
+});
+
+const booleanOption = (
+  description?: string,
+  extra: Partial<FlowSurfaceConfigureOption> = {},
+): FlowSurfaceConfigureOption => ({
+  type: 'boolean',
+  ...(description ? { description } : {}),
+  ...extra,
+});
+
+const objectOption = (
+  description?: string,
+  extra: Partial<FlowSurfaceConfigureOption> = {},
+): FlowSurfaceConfigureOption => ({
+  type: 'object',
+  ...(description ? { description } : {}),
+  ...extra,
+});
+
+const arrayOption = (
+  description?: string,
+  extra: Partial<FlowSurfaceConfigureOption> = {},
+): FlowSurfaceConfigureOption => ({
+  type: 'array',
+  ...(description ? { description } : {}),
+  ...extra,
+});
+
+const COMMON_RESOURCE = objectOption('Resource binding', {
+  example: {
+    dataSourceKey: 'main',
+    collectionName: 'users',
+  },
+});
+
+const FILTER_GROUP = objectOption('FilterGroup shape. Use null or {} for an empty filter.', {
+  example: {
+    logic: '$and',
+    items: [],
+  },
+});
+
+const SORTING = arrayOption('Sorting rule array', {
+  example: [
+    {
+      field: 'createdAt',
+      direction: 'desc',
+    },
+  ],
+});
+
+const OPEN_VIEW = objectOption('Popup or drawer open configuration', {
+  example: {
+    dataSourceKey: 'main',
+    collectionName: 'roles',
+    mode: 'drawer',
+  },
+});
+
+const DISPLAY_STYLE = stringOption('Display style', {
+  enum: ['text', 'tag'],
+  example: 'tag',
+});
+
+const FIELD_COMPONENT = stringOption('Field component model use', {
+  example: 'DisplayTextFieldModel',
+});
+
+const CONFIRM = objectOption('Confirmation dialog configuration. You can also pass a boolean directly.', {
+  example: {
+    enable: true,
+    title: 'Confirm action',
+    content: 'Do you want to continue?',
+  },
+});
+
+const JS_CODE = stringOption('JS code', {
+  example: 'return value?.toUpperCase?.() || value;',
+});
+
+const JS_VERSION = stringOption('JS code version', {
+  example: 'v2',
+});
+
+const COMMON_BLOCK_TITLE_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Title', { example: 'User Table' }),
+  displayTitle: booleanOption('Whether to display the title', { example: true }),
+};
+
+const COMMON_HEIGHT_OPTIONS: FlowSurfaceConfigureOptions = {
+  height: numberOption('Height', { example: 520 }),
+  heightMode: stringOption('Height mode', {
+    enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
+    example: 'specifyValue',
+  }),
+};
+
+const PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Page title', { example: 'User Workspace' }),
+  documentTitle: stringOption('Browser document title', { example: 'User Workspace' }),
+  displayTitle: booleanOption('Whether to display the page title', { example: true }),
+  enableTabs: booleanOption('Whether to enable top-level tabs', { example: true }),
+  icon: stringOption('Icon', { example: 'UserOutlined' }),
+  enableHeader: booleanOption('Whether to display the page header', { example: true }),
+};
+
+const TAB_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Tab title', { example: 'Overview' }),
+  icon: stringOption('Icon', { example: 'TableOutlined' }),
+  documentTitle: stringOption('Browser document title', { example: 'User Overview' }),
+};
+
+const TABLE_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  pageSize: numberOption('Page size', { example: 20 }),
+  density: stringOption('Table density', { enum: ['large', 'middle', 'small'], example: 'middle' }),
+  showRowNumbers: booleanOption('Whether to display row numbers', { example: true }),
+  sorting: SORTING,
+  dataScope: FILTER_GROUP,
+  quickEdit: booleanOption('Whether to enable quick edit', { example: true }),
+  treeTable: booleanOption('Whether this is a tree table', { example: false }),
+  defaultExpandAllRows: booleanOption('Whether to expand all tree nodes by default', { example: false }),
+  dragSort: booleanOption('Whether to enable drag sorting', { example: false }),
+  dragSortBy: stringOption('Drag-sort field', { example: 'sort' }),
+};
+
+const FORM_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  resource: COMMON_RESOURCE,
+  layout: stringOption('Layout key', { example: 'vertical' }),
+  labelAlign: stringOption('Label alignment', { example: 'left' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  assignRules: objectOption('Assignment rules', { example: {} }),
+  colon: booleanOption('Whether to display a colon after the label', { example: true }),
+};
+
+const EDIT_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...FORM_COMMON_OPTIONS,
+  dataScope: FILTER_GROUP,
+};
+
+const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  resource: COMMON_RESOURCE,
+  layout: stringOption('Layout key', { example: 'vertical' }),
+  labelAlign: stringOption('Label alignment', { example: 'left' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  colon: booleanOption('Whether to display a colon after the label', { example: true }),
+  sorting: SORTING,
+  dataScope: FILTER_GROUP,
+  linkageRules: arrayOption('Linkage rules', { example: [] }),
+};
+
+const FILTER_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  resource: COMMON_RESOURCE,
+  layout: stringOption('Layout key', { example: 'vertical' }),
+  labelAlign: stringOption('Label alignment', { example: 'left' }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  defaultValues: objectOption('Default filter values', { example: { status: 'draft' } }),
+};
+
+const LIST_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  pageSize: numberOption('Page size', { example: 20 }),
+  dataScope: FILTER_GROUP,
+  sorting: SORTING,
+  layout: stringOption('List layout', { example: 'vertical' }),
+};
+
+const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  columns: objectOption('Column count. Pass a number or a full responsive object that includes xs/sm/md/lg/xl/xxl.', {
+    example: {
+      xs: 1,
+      sm: 1,
+      md: 2,
+      lg: 3,
+      xl: 3,
+      xxl: 4,
+    },
+  }),
+  rowCount: numberOption('Items per row', { example: 3 }),
+  dataScope: FILTER_GROUP,
+  sorting: SORTING,
+  layout: stringOption('Card layout', { example: 'vertical' }),
+};
+
+const MARKDOWN_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  content: stringOption('Markdown content', { example: '# Team handbook' }),
+};
+
+const IFRAME_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  mode: stringOption('iframe mode', { example: 'url' }),
+  url: stringOption('URL', { example: 'https://example.com/embed' }),
+  html: stringOption('HTML content'),
+  params: objectOption('URL parameters', { example: { id: '1' } }),
+  allow: stringOption('allow attribute'),
+  htmlId: stringOption('Embedded HTML node ID'),
+};
+
+const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  query: objectOption('Chart query DSL. Builder mode is recommended by default.', {
+    example: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      ],
+      dimensions: [{ field: 'department.title' }],
+    },
+  }),
+  visual: objectOption('Chart visual DSL. Basic mode is recommended by default.', {
+    example: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: 'department.title',
+        y: 'employeeCount',
+      },
+    },
+  }),
+  events: objectOption('Chart event DSL. Only raw JS code is exposed.', {
+    example: {
+      raw: 'chart.on("click", () => console.log("clicked"));',
+    },
+  }),
+  configure: objectOption(
+    'Chart configuration object. It is normalized by the same chart contract. Do not mix it with query/visual/events.',
+    {
+      example: {
+        query: {
+          mode: 'sql',
+          sql: 'select department, count(*) as employeeCount from employees group by department',
+          sqlDatasource: 'main',
+        },
+        chart: {
+          option: {
+            mode: 'basic',
+            builder: {
+              type: 'bar',
+              xField: 'department',
+              yField: 'employeeCount',
+            },
+          },
+        },
+      },
+    },
+  ),
+};
+
+const ACTION_PANEL_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_TITLE_OPTIONS,
+  layout: stringOption('Layout key', { example: 'list' }),
+  ellipsis: booleanOption('Whether to collapse overly long buttons', { example: false }),
+};
+
+const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Title', { example: 'Runtime Banner' }),
+  description: stringOption('Description', { example: 'Custom JS block' }),
+  className: stringOption('className', { example: 'users-banner' }),
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Column title', { example: 'Actions' }),
+  tooltip: stringOption('Column tooltip'),
+  width: numberOption('Column width', { example: 220 }),
+  fixed: stringOption('Fixed position', { example: 'right' }),
+};
+
+const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Column title alias. It maps to title under table.', { example: 'Nickname' }),
+  title: stringOption('Column title', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  width: numberOption('Column width', { example: 240 }),
+  fixed: stringOption('Fixed position', { example: 'left' }),
+  sorter: booleanOption('Whether sortable', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'roles' }),
+  editable: booleanOption('Whether editable', { example: false }),
+  dataIndex: stringOption('Data index'),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  fieldComponent: FIELD_COMPONENT,
+  clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
+  openView: OPEN_VIEW,
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Label', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'roles' }),
+  disabled: booleanOption('Whether disabled', { example: false }),
+  pattern: stringOption('Display mode'),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  fieldComponent: FIELD_COMPONENT,
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
+  openView: OPEN_VIEW,
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Label', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'department' }),
+  initialValue: objectOption('Initial value'),
+  multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
+  allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
+  maxCount: numberOption('Maximum count', { example: 5 }),
+  name: stringOption('Field name override'),
+  fieldComponent: FIELD_COMPONENT,
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
+  openView: OPEN_VIEW,
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Label', { example: 'Nickname' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'department' }),
+  initialValue: objectOption('Initial value'),
+  required: booleanOption('Whether required', { example: false }),
+  disabled: booleanOption('Whether disabled', { example: false }),
+  multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
+  allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
+  maxCount: numberOption('Maximum count', { example: 5 }),
+  pattern: stringOption('Input mode'),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  name: stringOption('Field name override'),
+  fieldComponent: FIELD_COMPONENT,
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
+  openView: OPEN_VIEW,
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
+  fieldPath: stringOption('Field path', { example: 'nickname' }),
+  associationPathName: stringOption('Association path', { example: 'roles' }),
+  titleField: stringOption('Association display title field', { example: 'title' }),
+  clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
+  openView: OPEN_VIEW,
+  title: stringOption('Title'),
+  icon: stringOption('Icon'),
+  autoSize: booleanOption('Whether to size automatically', { example: true }),
+  allowClear: booleanOption('Whether clearing is allowed', { example: true }),
+  multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
+  allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
+  quickCreate: booleanOption('Whether quick create is allowed', { example: false }),
+  displayStyle: DISPLAY_STYLE,
+  options: objectOption('Component options'),
+};
+
+const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...FIELD_NODE_OPTIONS,
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Column title', { example: 'Runtime Column' }),
+  tooltip: stringOption('Tooltip'),
+  width: numberOption('Column width', { example: 240 }),
+  fixed: stringOption('Fixed position', { example: 'right' }),
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Label', { example: 'Runtime Item' }),
+  tooltip: stringOption('Tooltip'),
+  extra: stringOption('Extra text'),
+  showLabel: booleanOption('Whether to show the label', { example: true }),
+  labelWidth: stringOption('Label width', { example: '120px' }),
+  labelWrap: booleanOption('Whether labels should wrap', { example: false }),
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const ACTION_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Button title', { example: 'Run' }),
+  tooltip: stringOption('Tooltip'),
+  icon: stringOption('Icon', { example: 'PlusOutlined' }),
+  type: stringOption('Button type', { example: 'primary' }),
+  color: stringOption('Color'),
+  htmlType: stringOption('HTML button type', { example: 'submit' }),
+  position: stringOption('Position'),
+  danger: booleanOption('Whether this is a danger button', { example: false }),
+};
+
+const ACTION_OPEN_VIEW_OPTIONS: FlowSurfaceConfigureOptions = {
+  openView: OPEN_VIEW,
+};
+
+const ACTION_CONFIRM_OPTIONS: FlowSurfaceConfigureOptions = {
+  confirm: CONFIRM,
+};
+
+const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
+  assignValues: objectOption('Bulk or single-record assigned values', { example: { status: 'published' } }),
+  updateMode: stringOption('Update mode', { example: 'overwrite' }),
+};
+
+const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
+  linkageRules: arrayOption('Linkage rules', { example: [] }),
+};
+
+const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
+  code: JS_CODE,
+  version: JS_VERSION,
+};
+
+const ACTION_EDIT_MODE_OPTIONS: FlowSurfaceConfigureOptions = {
+  editMode: stringOption('Bulk edit mode', { example: 'drawer' }),
+};
+
+const ACTION_DUPLICATE_MODE_OPTIONS: FlowSurfaceConfigureOptions = {
+  duplicateMode: stringOption('Duplicate mode', { example: 'popup' }),
+};
+
+const ACTION_COLLAPSE_OPTIONS: FlowSurfaceConfigureOptions = {
+  collapsedRows: numberOption('Default collapsed row count', { example: 2 }),
+  defaultCollapsed: booleanOption('Whether collapsed by default', { example: true }),
+};
+
+const ACTION_EMAIL_OPTIONS: FlowSurfaceConfigureOptions = {
+  emailFieldNames: arrayOption('Email field name list', { example: ['email'] }),
+  defaultSelectAllRecords: booleanOption('Whether all records are selected by default', { example: false }),
+};
+
+const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
+  'assignRules',
+  'confirm',
+  'dataScope',
+  'defaultValues',
+  'initialValue',
+  'linkageRules',
+  'assignValues',
+]);
+
+const FLOW_CONTEXT_OPTION_KEYS_BY_USE: Record<string, string[]> = {
+  RootPageModel: ['documentTitle'],
+  RootPageTabModel: ['documentTitle'],
+};
+
+function cloneOptions(options: FlowSurfaceConfigureOptions): FlowSurfaceConfigureOptions {
+  return Object.fromEntries(Object.entries(options).map(([key, value]) => [key, { ...value }]));
+}
+
+function mergeOptions(...groups: FlowSurfaceConfigureOptions[]): FlowSurfaceConfigureOptions {
+  return Object.assign({}, ...groups.map((group) => cloneOptions(group)));
+}
+
+function annotateFlowContextSupport(use: string | undefined, options: FlowSurfaceConfigureOptions) {
+  const keys = new Set<string>([
+    ...GLOBAL_FLOW_CONTEXT_OPTION_KEYS,
+    ...(FLOW_CONTEXT_OPTION_KEYS_BY_USE[String(use || '').trim()] || []),
+  ]);
+  for (const key of keys) {
+    if (options[key]) {
+      options[key] = {
+        ...options[key],
+        supportsFlowContext: true,
+      };
+    }
+  }
+  return options;
+}
+
+function isGenericFieldNodeUse(use?: string) {
+  const normalized = String(use || '').trim();
+  return !!normalized && normalized.endsWith('FieldModel');
+}
+
+function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptions {
+  const normalized = String(use || '').trim();
+  if (!normalized) {
+    return {};
+  }
+
+  const base = [ACTION_COMMON_OPTIONS];
+  const merged = (...extra: FlowSurfaceConfigureOptions[]) => mergeOptions(...base, ...extra);
+
+  switch (normalized) {
+    case 'AddNewActionModel':
+    case 'ViewActionModel':
+    case 'EditActionModel':
+    case 'PopupCollectionActionModel':
+    case 'UploadActionModel':
+      return merged(ACTION_OPEN_VIEW_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'DeleteActionModel':
+    case 'BulkDeleteActionModel':
+      return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'FormSubmitActionModel':
+      return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'UpdateRecordActionModel':
+    case 'BulkUpdateActionModel':
+      return merged(ACTION_CONFIRM_OPTIONS, ACTION_ASSIGN_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'BulkEditActionModel':
+      return merged(ACTION_EDIT_MODE_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'DuplicateActionModel':
+      return merged(ACTION_OPEN_VIEW_OPTIONS, ACTION_DUPLICATE_MODE_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'AddChildActionModel':
+      return merged(ACTION_OPEN_VIEW_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'FilterFormCollapseActionModel':
+      return merged(ACTION_COLLAPSE_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'MailSendActionModel':
+      return merged(ACTION_OPEN_VIEW_OPTIONS, ACTION_EMAIL_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'JSCollectionActionModel':
+    case 'JSRecordActionModel':
+    case 'JSFormActionModel':
+    case 'JSItemActionModel':
+    case 'FilterFormJSActionModel':
+    case 'JSActionModel':
+      return merged(ACTION_JS_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'LinkActionModel':
+    case 'ExportActionModel':
+    case 'ExportAttachmentActionModel':
+    case 'ImportActionModel':
+    case 'TemplatePrintCollectionActionModel':
+    case 'TemplatePrintRecordActionModel':
+    case 'CollectionTriggerWorkflowActionModel':
+    case 'RecordTriggerWorkflowActionModel':
+    case 'FormTriggerWorkflowActionModel':
+    case 'WorkbenchTriggerWorkflowActionModel':
+    case 'RefreshActionModel':
+    case 'FilterActionModel':
+    case 'ExpandCollapseActionModel':
+    case 'FilterFormSubmitActionModel':
+    case 'FilterFormResetActionModel':
+      return merged(ACTION_LINKAGE_OPTIONS);
+    default:
+      return {};
+  }
+}
+
+export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOptions {
+  const normalized = String(use || '').trim();
+  let options: FlowSurfaceConfigureOptions;
+  switch (normalized) {
+    case 'RootPageModel':
+      options = cloneOptions(PAGE_OPTIONS);
+      break;
+    case 'RootPageTabModel':
+      options = cloneOptions(TAB_OPTIONS);
+      break;
+    case 'TableBlockModel':
+      options = cloneOptions(TABLE_OPTIONS);
+      break;
+    case 'FormBlockModel':
+    case 'CreateFormModel':
+      options = cloneOptions(FORM_COMMON_OPTIONS);
+      break;
+    case 'EditFormModel':
+      options = cloneOptions(EDIT_FORM_OPTIONS);
+      break;
+    case 'DetailsBlockModel':
+      options = cloneOptions(DETAILS_OPTIONS);
+      break;
+    case 'FilterFormBlockModel':
+      options = cloneOptions(FILTER_FORM_OPTIONS);
+      break;
+    case 'ListBlockModel':
+      options = cloneOptions(LIST_OPTIONS);
+      break;
+    case 'GridCardBlockModel':
+      options = cloneOptions(GRID_CARD_OPTIONS);
+      break;
+    case 'MarkdownBlockModel':
+      options = cloneOptions(MARKDOWN_OPTIONS);
+      break;
+    case 'IframeBlockModel':
+      options = cloneOptions(IFRAME_OPTIONS);
+      break;
+    case 'ChartBlockModel':
+      options = cloneOptions(CHART_OPTIONS);
+      break;
+    case 'ActionPanelBlockModel':
+      options = cloneOptions(ACTION_PANEL_OPTIONS);
+      break;
+    case 'JSBlockModel':
+      options = cloneOptions(JS_BLOCK_OPTIONS);
+      break;
+    case 'TableActionsColumnModel':
+      options = cloneOptions(ACTION_COLUMN_OPTIONS);
+      break;
+    case 'TableColumnModel':
+      options = cloneOptions(TABLE_FIELD_WRAPPER_OPTIONS);
+      break;
+    case 'DetailsItemModel':
+      options = cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
+      break;
+    case 'FormAssociationItemModel':
+      options = cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
+      break;
+    case 'FilterFormItemModel':
+      options = cloneOptions(FILTER_FIELD_WRAPPER_OPTIONS);
+      break;
+    case 'FormItemModel':
+      options = cloneOptions(FORM_FIELD_WRAPPER_OPTIONS);
+      break;
+    case 'JSFieldModel':
+    case 'JSEditableFieldModel':
+      options = cloneOptions(JS_FIELD_NODE_OPTIONS);
+      break;
+    case 'JSColumnModel':
+      options = cloneOptions(JS_COLUMN_OPTIONS);
+      break;
+    case 'JSItemModel':
+    case 'FormJSFieldItemModel':
+      options = cloneOptions(JS_ITEM_OPTIONS);
+      break;
+    default:
+      if (isGenericFieldNodeUse(normalized)) {
+        options = cloneOptions(FIELD_NODE_OPTIONS);
+        break;
+      }
+      options = getActionConfigureOptionsByUse(normalized);
+      break;
+  }
+  return annotateFlowContextSupport(normalized, options);
+}
+
+export function getConfigureOptionsForResolvedNode(input: {
+  kind?: FlowSurfaceContainerKind;
+  use?: string;
+}): FlowSurfaceConfigureOptions {
+  if (input.kind === 'page') {
+    return annotateFlowContextSupport('RootPageModel', cloneOptions(PAGE_OPTIONS));
+  }
+  if (input.kind === 'tab') {
+    return annotateFlowContextSupport('RootPageTabModel', cloneOptions(TAB_OPTIONS));
+  }
+  return getConfigureOptionsForUse(input.use);
+}
+
+export function getConfigureOptionsForCatalogItem(
+  item?: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'> | { kind?: FlowSurfaceCatalogItem['kind']; use?: string } | null,
+): FlowSurfaceConfigureOptions {
+  if (!item) {
+    return {};
+  }
+  return getConfigureOptionsForUse(item.use);
+}
+
+export function getConfigureOptionKeysForUse(use?: string) {
+  return Object.keys(getConfigureOptionsForUse(use));
+}
+
+export function getConfigureOptionKeysForResolvedNode(input: { kind?: FlowSurfaceContainerKind; use?: string }) {
+  return Object.keys(getConfigureOptionsForResolvedNode(input));
+}

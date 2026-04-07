@@ -132,3 +132,6 @@ Configure los parámetros de inicio de su NocoBase (como las variables de entorn
 | **Escenario recomendado** | Usuarios empresariales con entorno controlado y consistente que necesiten la funcionalidad completa | Falta de algunos plugins, búsqueda de alta compatibilidad y flexibilidad, usuarios que no son Pro/Enterprise, pueden aceptar la falta de funciones de archivos |
 
 Esperamos que este tutorial le ayude a desplegar con éxito el sistema de tickets. Si encuentra algún problema durante el proceso, ¡no dude en ponerse en contacto con nosotros!
+---
+
+*Last updated: 2026-03-24*

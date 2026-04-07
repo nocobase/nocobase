@@ -22,7 +22,9 @@
     "@nocobase/ai": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-acl": "2.x",
     "@nocobase/plugin-data-source-manager": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"

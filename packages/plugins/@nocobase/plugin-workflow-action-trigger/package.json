@@ -21,6 +21,7 @@
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-error-handler": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"

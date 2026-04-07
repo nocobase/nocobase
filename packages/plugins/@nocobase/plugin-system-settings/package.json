@@ -15,6 +15,7 @@
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

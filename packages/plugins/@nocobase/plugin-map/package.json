@@ -35,6 +35,7 @@
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-action-bulk-update": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"
