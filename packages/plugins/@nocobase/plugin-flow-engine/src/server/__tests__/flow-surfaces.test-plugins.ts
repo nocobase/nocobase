@@ -58,6 +58,19 @@ function toFlowSurfacesStubClassName(pluginAlias: string) {
 }
 
 class FlowSurfacesExternalPluginStub extends Plugin {
+  /**
+   * These stubs exist only to satisfy flowSurfaces capability gating in tests.
+   * They should never try to load real plugin files from disk, otherwise CI can
+   * fail when optional plugin packages are not linked into NODE_MODULES_PATH.
+   */
+  async loadCollections() {}
+
+  async loadAI() {}
+
+  async loadMigrations() {
+    return { beforeLoad: [], afterSync: [], afterLoad: [] };
+  }
+
   async createFileRecord(options: any = {}) {
     return {
       title: options?.values?.title || 'flow-surfaces-stub-file',
