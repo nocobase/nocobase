@@ -74,7 +74,7 @@ describe('modeling apply actions', () => {
     });
   });
 
-  it('should create relation reverse field from fields apply helper', async () => {
+  it('should create reverse relation fields from fields apply helper', async () => {
     await agent.resource('collections').create({
       values: {
         name: 'posts',
@@ -103,12 +103,15 @@ describe('modeling apply actions', () => {
 
     const posts = app.db.getCollection('posts');
     const comments = app.db.getCollection('comments');
+    const postsComments = posts.getField('comments');
+    const commentsPost = comments.getField('post');
 
-    expect(posts.getField('comments').options.type).toBe('hasMany');
-    expect(posts.getField('comments').options.reverseKey).toBeDefined();
-    expect(comments.getField('post').options.type).toBe('belongsTo');
-    expect(comments.getField('post').options.target).toBe('posts');
-    expect(comments.getField('post').options.uiSchema.title).toBe('Post');
+    expect(postsComments.options.type).toBe('hasMany');
+    expect(commentsPost.options.type).toBe('belongsTo');
+    expect(commentsPost.options.target).toBe('posts');
+    expect(commentsPost.options.uiSchema.title).toBe('Post');
+    expect(postsComments.options.foreignKey).toBe(commentsPost.options.foreignKey);
+    expect(postsComments.options.reverseKey).toBeDefined();
   });
 
   it('should return normalized verification result from collections apply', async () => {
