@@ -24,6 +24,10 @@ NocoBase 提供了三个区块基类，根据你的数据需求选择：
 
 一个最简单的区块——支持编辑 HTML 内容：
 
+<video width="100%" height="450" controls>
+  <source src="https://static-docs.nocobase.com/iShot_2026-04-07_17.23.49.mp4" type="video/mp4">
+</video>
+
 ```tsx
 // models/SimpleBlockModel.tsx
 import React from 'react';

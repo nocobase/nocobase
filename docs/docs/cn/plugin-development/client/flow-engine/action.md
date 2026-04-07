@@ -93,31 +93,27 @@ SimpleBothActionModel.define({
 
 ## 注册操作
 
-在 Plugin 的 `load()` 中注册：
+在 Plugin 的 `load()` 中用 `registerModelLoaders` 按需加载注册：
 
 ```ts
 // plugin.tsx
 import { Plugin } from '@nocobase/client-v2';
-import models from './models';
 
 export class PluginSimpleActionClient extends Plugin {
   async load() {
-    this.flowEngine.registerModels(models);
+    this.flowEngine.registerModelLoaders({
+      SimpleCollectionActionModel: {
+        loader: () => import('./models/SimpleCollectionActionModel'),
+      },
+      SimpleRecordActionModel: {
+        loader: () => import('./models/SimpleRecordActionModel'),
+      },
+      SimpleBothActionModel: {
+        loader: () => import('./models/SimpleBothActionModel'),
+      },
+    });
   }
 }
-```
-
-```ts
-// models/index.ts
-import { SimpleCollectionActionModel } from './SimpleCollectionActionModel';
-import { SimpleRecordActionModel } from './SimpleRecordActionModel';
-import { SimpleBothActionModel } from './SimpleBothActionModel';
-
-export default {
-  SimpleCollectionActionModel,
-  SimpleRecordActionModel,
-  SimpleBothActionModel,
-};
 ```
 
 注册完成后，在区块的「配置操作」中就能添加你的自定义操作按钮了。
@@ -128,6 +124,7 @@ export default {
 
 ## 相关链接
 
+- [插件实战：做一个自定义操作按钮](../examples/custom-action) — 从零搭建三种场景的操作按钮
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
 - [区块扩展](./block) — 自定义区块
 - [字段扩展](./field) — 自定义字段组件

@@ -229,6 +229,11 @@
           },
           {
             "type": "custom-link",
+            "label": "做一个自定义操作按钮",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
             "label": "做一个前后端联动的数据管理插件",
             "link": "/plugin-development/client/examples/fullstack-plugin"
           }

@@ -17,7 +17,7 @@ keywords: "自定义区块,BlockModel,registerFlow,uiSchema,renderComponent,Noco
 - [编写第一个插件](../../write-your-first-plugin) — 插件创建和目录结构
 - [Plugin 插件](../plugin) — 插件入口和 `load()` 生命周期
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel、renderComponent、registerFlow 基础用法
-- [i18n 国际化](../component/i18n) — `tExpr()` 延迟翻译的用法
+- [i18n 国际化](../component/i18n) — 翻译文件写法和 `tExpr()` 延迟翻译的用法
 
 :::
 
@@ -109,7 +109,39 @@ SimpleBlockModel.registerFlow({
 2. **`define()`** — 设置区块在「添加区块」菜单里的显示名。`tExpr()` 用于延迟翻译，因为 `define()` 在模块加载时就执行了，此时 i18n 还没初始化
 3. **`registerFlow()`** — 添加配置面板。`uiSchema` 用 JSON Schema 定义表单（语法参考 [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema)），`handler` 把用户填写的值写入 `ctx.model.props`，`renderComponent()` 就能读到
 
-## 第三步：在插件中注册
+## 第三步：添加多语言文件
+
+编辑插件的 `src/locale/` 下的翻译文件，把 `tExpr()` 用到的 key 都加上翻译：
+
+```json
+// src/locale/zh-CN.json
+{
+  "Simple block": "简单区块",
+  "Simple Block Flow": "简单区块配置",
+  "Edit HTML Content": "编辑 HTML 内容",
+  "HTML Content": "HTML 内容"
+}
+```
+
+```json
+// src/locale/en-US.json
+{
+  "Simple block": "Simple block",
+  "Simple Block Flow": "Simple Block Flow",
+  "Edit HTML Content": "Edit HTML Content",
+  "HTML Content": "HTML Content"
+}
+```
+
+:::warning 注意
+
+初次添加语言文件需要重启应用才能生效。
+
+:::
+
+关于翻译文件的写法和 `tExpr()` 的更多用法，详见 [i18n 国际化](../component/i18n)。
+
+## 第四步：在插件中注册
 
 编辑 `src/client-v2/plugin.tsx`，用 `registerModelLoaders` 按需加载模型：
 
@@ -133,7 +165,7 @@ export default PluginSimpleBlockClient;
 
 `registerModelLoaders` 使用动态导入，模型代码在首次真正用到时才会加载——这是推荐的注册方式。
 
-## 第四步：启用插件
+## 第五步：启用插件
 
 ```bash
 yarn pm enable @my-project/plugin-simple-block

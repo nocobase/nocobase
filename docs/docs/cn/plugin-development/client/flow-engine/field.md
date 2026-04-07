@@ -12,6 +12,8 @@ keywords: "字段扩展,Field,FieldModel,ClickableFieldModel,renderComponent,bin
 
 以下示例创建了一个简单的展示字段——在字段值两侧加上方括号 `[]`：
 
+![20260407201138](https://static-docs.nocobase.com/20260407201138.png)
+
 ```tsx
 // models/SimpleFieldModel.tsx
 import React from 'react';
@@ -41,30 +43,26 @@ DisplayItemModel.bindModelToInterface('DisplaySimpleFieldModel', ['input']);
 
 ## 注册字段
 
-在 Plugin 的 `load()` 中注册：
+在 Plugin 的 `load()` 中用 `registerModelLoaders` 按需加载注册：
 
 ```ts
 // plugin.tsx
 import { Plugin } from '@nocobase/client-v2';
-import models from './models';
 
 export class PluginFieldSimpleClient extends Plugin {
   async load() {
-    this.flowEngine.registerModels(models);
+    this.flowEngine.registerModelLoaders({
+      DisplaySimpleFieldModel: {
+        loader: () => import('./models/SimpleFieldModel'),
+      },
+    });
   }
 }
 ```
 
-```ts
-// models/index.ts
-import { DisplaySimpleFieldModel } from './SimpleFieldModel';
+注册完成后，在表格区块里找到一个对应类型的字段列（比如上面示例绑定了 `input`，对应单行文本字段），点击列的配置按钮，在「字段组件」下拉菜单中就能切换到这个自定义展示组件。完整的实战示例见 [做一个自定义字段组件](../examples/custom-field)。
 
-export default {
-  DisplaySimpleFieldModel,
-};
-```
-
-注册完成后，在表格的字段配置中就能选择这个自定义展示组件了。
+![20260407201221](https://static-docs.nocobase.com/20260407201221.png)
 
 ## 完整源码
 
@@ -72,6 +70,7 @@ export default {
 
 ## 相关链接
 
+- [插件实战：做一个自定义字段组件](../examples/custom-field) — 从零搭建一个自定义字段展示组件
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
 - [区块扩展](./block) — 自定义区块
 - [操作扩展](./action) — 自定义操作按钮
