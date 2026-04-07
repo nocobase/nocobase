@@ -10,7 +10,7 @@
 import { PluginManager } from '@nocobase/server';
 import { createMockServer, MockServer, type MockServerOptions } from '@nocobase/test';
 import qs from 'qs';
-import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
+import { FLOW_SURFACES_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGIN_INSTALLS } from './flow-surfaces.test-plugins';
 
 type FlowSurfacesMockServerOptions = MockServerOptions & {
   enabledPluginAliases?: readonly string[];
@@ -19,9 +19,15 @@ type FlowSurfacesMockServerOptions = MockServerOptions & {
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
 
 export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServerOptions = {}) {
+  const pluginAliasesFromOptions =
+    Array.isArray(options.plugins) && options.plugins.every((plugin) => typeof plugin === 'string')
+      ? (options.plugins as string[])
+      : undefined;
   const {
-    enabledPluginAliases = Array.isArray(options.plugins) ? options.plugins : FLOW_SURFACES_TEST_PLUGINS,
-    plugins = [...FLOW_SURFACES_MINIMAL_TEST_PLUGINS],
+    enabledPluginAliases = pluginAliasesFromOptions || FLOW_SURFACES_TEST_PLUGINS,
+    plugins = FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+    skipInstall = false,
+    skipStart = false,
     ...restOptions
   } = options;
 
@@ -29,13 +35,21 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
     registerActions: true,
     acl: true,
     plugins,
+    skipInstall,
+    skipStart: true,
     beforeInstall: async (app) => {
       await app.cleanDb();
     },
     ...restOptions,
   });
 
-  await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases);
+  if (!skipInstall) {
+    await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases);
+  }
+
+  if (!skipInstall && !skipStart) {
+    await app.runCommandThrowError('start');
+  }
 
   return app;
 }
@@ -274,15 +288,14 @@ export async function syncFlowSurfacesEnabledPlugins(
 
   const desiredPackageNames = new Set(
     await Promise.all(
-      enabledPluginAliases.map(async (pluginAlias) => {
-        const { packageName } = await PluginManager.parseName(pluginAlias);
-        return packageName;
-      }),
+      enabledPluginAliases.map(
+        async (pluginAlias) => (await resolveFlowSurfacesPluginIdentity(app, pluginAlias)).packageName,
+      ),
     ),
   );
 
   for (const pluginAlias of knownPluginAliases) {
-    const { name, packageName } = await PluginManager.parseName(pluginAlias);
+    const { name, packageName } = await resolveFlowSurfacesPluginIdentity(app, pluginAlias);
     const existingRecord = existingByPackageName.get(packageName);
     const shouldEnable = desiredPackageNames.has(packageName);
 
@@ -313,4 +326,19 @@ export async function syncFlowSurfacesEnabledPlugins(
       },
     });
   }
+}
+
+async function resolveFlowSurfacesPluginIdentity(app: MockServer, pluginAlias: string) {
+  const plugin = app.pm.get(pluginAlias);
+  const name = plugin?.options?.name;
+  const packageName = plugin?.options?.packageName;
+
+  if (typeof name === 'string' && name.trim() && typeof packageName === 'string' && packageName.trim()) {
+    return {
+      name: name.trim(),
+      packageName: packageName.trim(),
+    };
+  }
+
+  return await PluginManager.parseName(pluginAlias);
 }

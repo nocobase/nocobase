@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Plugin } from '@nocobase/server';
+
 const FLOW_SURFACES_CORE_TEST_PLUGINS = [
   'error-handler',
   'users',
@@ -44,3 +46,54 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'email-manager',
   'action-template-print',
 ] as const;
+
+const FLOW_SURFACES_MINIMAL_TEST_PLUGIN_SET = new Set<string>(FLOW_SURFACES_MINIMAL_TEST_PLUGINS);
+
+function toFlowSurfacesStubClassName(pluginAlias: string) {
+  return `FlowSurfaces${pluginAlias
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')}PluginStub`;
+}
+
+class FlowSurfacesExternalPluginStub extends Plugin {
+  async createFileRecord(options: any = {}) {
+    return {
+      title: options?.values?.title || 'flow-surfaces-stub-file',
+      filename: 'flow-surfaces-stub-file.png',
+      extname: options?.values?.extname || '.png',
+      mimetype: options?.values?.mimetype || 'image/png',
+      url: '/flow-surfaces-stub-file.png',
+    };
+  }
+}
+
+function createFlowSurfacesExternalPluginStub(pluginAlias: string) {
+  const packageName = `@nocobase/plugin-${pluginAlias}`;
+  const StubPlugin = class extends FlowSurfacesExternalPluginStub {
+    constructor(app: any, options?: any) {
+      super(app, {
+        ...options,
+        packageName,
+      });
+    }
+  };
+  Object.defineProperty(StubPlugin, 'name', {
+    value: toFlowSurfacesStubClassName(pluginAlias),
+  });
+
+  return [
+    StubPlugin,
+    {
+      name: pluginAlias,
+    },
+  ] as const;
+}
+
+export const FLOW_SURFACES_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_MINIMAL_TEST_PLUGINS,
+  ...FLOW_SURFACES_TEST_PLUGINS.filter((pluginAlias) => !FLOW_SURFACES_MINIMAL_TEST_PLUGIN_SET.has(pluginAlias)).map(
+    createFlowSurfacesExternalPluginStub,
+  ),
+];
