@@ -31,8 +31,6 @@ The core business flow is **Lead → Customer/Contact → Opportunity → Quotat
 
 After logging in, the top menu bar is your main navigation:
 
-<!-- TODO: screenshot — top menu bar -->
-
 ```
 📁 Dashboards
     Analytics
