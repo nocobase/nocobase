@@ -7,16 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DataSourceManager } from '@nocobase/flow-engine';
+
 export interface CollectionFieldOptions {
   interface?: string;
   [key: string]: any;
-}
-
-export interface DataSourceManager {
-  collectionFieldInterfaceManager?: {
-    getFieldInterface: (name: string) => { titleUsable?: boolean } | undefined;
-  };
-  getDataSource?: (key?: string) => any;
 }
 
 export const DEFAULT_DATA_SOURCE_KEY = 'main';
