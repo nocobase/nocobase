@@ -25,7 +25,7 @@ import {
 } from './flow-surfaces.mock-server';
 import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
-describe.skip('flowSurfaces API contract builders', () => {
+describe('flowSurfaces API contract builders', () => {
   it('should keep persisted root page builder separate from synthetic tab and popup builders', async () => {
     const persistedPage = buildPersistedRootPageModel({
       pageUid: 'persisted-page',
@@ -133,7 +133,7 @@ describe.skip('flowSurfaces API contract builders', () => {
   });
 });
 
-describe.skip('flowSurfaces API contract', () => {
+describe('flowSurfaces API contract', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;

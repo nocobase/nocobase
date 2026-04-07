@@ -20,7 +20,7 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe.skip('flowSurfaces resource builders', () => {
+describe('flowSurfaces resource builders', () => {
   it('should keep persisted page builder separate from synthetic tab and popup builders', async () => {
     const persistedPage = buildPersistedRootPageModel({
       pageUid: 'persisted-page',
@@ -125,7 +125,7 @@ describe.skip('flowSurfaces resource builders', () => {
   });
 });
 
-describe.skip('flowSurfaces resource', () => {
+describe('flowSurfaces resource', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;
