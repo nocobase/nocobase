@@ -149,6 +149,7 @@ export class MyPlugin extends Plugin {
 
 ## 相关链接
 
+- [插件实战：做一个自定义展示区块](../examples/custom-block) — 从零搭建一个可配置的 BlockModel 区块
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法和 registerFlow
 - [字段扩展](./field) — 自定义字段组件
 - [操作扩展](./action) — 自定义操作按钮

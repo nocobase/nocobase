@@ -64,7 +64,7 @@ export class PluginSettingsPageClient extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('external-api', {
       title: this.t('External API Settings'),
-      icon: 'ApiOutlined', // Ant Design 图标，参考 https://ant.design/components/icon
+      icon: 'ApiOutlined', // Ant Design 图标，参考 https://5x.ant.design/components/icon
       componentLoader: () => import('./pages/ExternalApiSettingsPage'),
     });
   }
@@ -309,6 +309,8 @@ yarn pm enable @my-project/plugin-settings-page
 ```
 
 启用后刷新页面，在「插件配置」菜单里就能看到「外部服务配置」入口了。
+
+![20260407161139](https://static-docs.nocobase.com/20260407161139.png)
 
 ## 完整源码
 

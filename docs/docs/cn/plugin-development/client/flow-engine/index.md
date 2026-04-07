@@ -134,13 +134,13 @@ SimpleBlockModel.registerFlow({
 这里面几个关键点：
 
 - **`on: 'beforeRender'`** — 表示这个 Flow 在渲染前执行，配置面板的值会在渲染前写入 `this.props`
-- **`uiSchema`** — 用 [Formily](https://formilyjs.org/) 的 JSON Schema 格式定义配置面板的 UI
+- **`uiSchema`** — 用 JSON Schema 格式定义配置面板的 UI，语法参考 [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema)
 - **`handler(ctx, params)`** — `params` 是用户在配置面板填写的值，通过 `ctx.model.props` 设置到模型上
 - **`defaultParams`** — 配置面板的默认值
 
 ## uiSchema 常用写法
 
-`uiSchema` 基于 Formily JSON Schema，这里列出最常用的几种组件：
+`uiSchema` 基于 JSON Schema，这里列出最常用的几种组件（完整参考见 [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema)）：
 
 ```ts
 uiSchema: {
@@ -180,7 +180,7 @@ uiSchema: {
 }
 ```
 
-每个字段都用 `'x-decorator': 'FormItem'` 包裹，这样会自动带上标题和布局。完整的 uiSchema 参考见 [FlowEngine 文档 → uiSchema](../../../flow-engine/uischema)。
+每个字段都用 `'x-decorator': 'FormItem'` 包裹，这样会自动带上标题和布局。
 
 ## FlowModel 基类选择
 

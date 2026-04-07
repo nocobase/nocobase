@@ -14,12 +14,12 @@ keywords: "插件示例,实战案例,完整插件,NocoBase"
 
 | 示例 | 涉及能力 | 难度 |
 | --- | --- | --- |
-| [做一个插件设置页](./settings-page) | Plugin + Router + Component + Context | 入门 |
+| [做一个插件设置页](./settings-page) | Plugin + Router + Component + Context + 服务端 | 入门 |
 | [做一个自定义展示区块](./custom-block) | Plugin + FlowEngine（BlockModel） | 入门 |
 | [做一个自定义字段组件](./custom-field) | Plugin + FlowEngine（FieldModel） | 入门 |
 | [做一个前后端联动的数据管理插件](./fullstack-plugin) | Plugin + FlowEngine（CollectionBlockModel）+ 服务端 | 进阶 |
 
-建议按顺序阅读。前三个示例聚焦客户端，最后一个涉及前后端联动。如果你还不确定该用 React 组件还是 FlowModel，可以先看 [Component vs FlowModel](../component-vs-flow-model)。
+建议按顺序阅读。第一个示例用 React 组件 + 简单的服务端接口，不涉及 FlowEngine；中间两个聚焦 FlowEngine 的不同基类；最后一个是完整的前后端联动。如果你还不确定该用 React 组件还是 FlowModel，可以先看 [Component vs FlowModel](../component-vs-flow-model)。
 
 ## 相关链接
 
