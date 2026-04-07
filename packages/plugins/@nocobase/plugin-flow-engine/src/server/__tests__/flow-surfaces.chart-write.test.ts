@@ -315,7 +315,21 @@ describe('flowSurfaces chart write paths', () => {
       },
     });
     expect(zeroOutputRes.status).toBe(400);
-    expect(readErrorMessage(zeroOutputRes)).toContain('chart query.sql must expose at least one output column');
+    const zeroOutputMessage = readErrorMessage(zeroOutputRes);
+    if (process.env.DB_DIALECT === 'postgres') {
+      expect(zeroOutputMessage).toContain('chart query.sql must expose at least one output column');
+    } else {
+      expect(zeroOutputMessage).toContain('chart query.sql is invalid');
+    }
+
+    // MySQL cannot infer SQL output aliases from an empty aggregate result set,
+    // so seed one row to exercise the mapping-validation branch consistently.
+    await rootAgent.resource('employees').create({
+      values: {
+        nickname: 'sql-preview-user',
+        status: 'active',
+      },
+    });
 
     const invalidMappingRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
