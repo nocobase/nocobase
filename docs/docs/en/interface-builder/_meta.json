@@ -59,6 +59,11 @@
             "type": "custom-link",
             "label": "Form",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tree",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -143,7 +148,6 @@
       }
     ]
   },
-
   {
     "type": "custom-link",
     "label": "Fields",

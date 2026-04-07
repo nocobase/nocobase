@@ -428,7 +428,7 @@ function TreeConnectDataBlocksPanel(props: {
                     value={selectedField}
                     options={target.options}
                     style={{ width: '100%' }}
-                    getPopupContainer={() => panelRef.current || document.body}
+                    getPopupContainer={() => document.body}
                     onChange={(value) => {
                       if (!value) {
                         void removeTarget(target.model.uid);
