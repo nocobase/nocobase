@@ -102,6 +102,23 @@ import type {
   FlowSurfaceWriteTarget,
 } from './types';
 
+type FlowSurfaceChartHint = {
+  key: string;
+  title: string;
+  description: string;
+};
+
+type FlowSurfaceSqlChartQueryOutput = {
+  alias: string;
+  source: 'sql';
+  type?: string;
+};
+
+type FlowSurfaceSqlChartPreview = {
+  queryOutputs?: FlowSurfaceSqlChartQueryOutput[];
+  riskyHints?: FlowSurfaceChartHint[];
+};
+
 const COLLECTION_BLOCK_USES = new Set([
   'TableBlockModel',
   'CreateFormModel',
@@ -454,7 +471,7 @@ export class FlowSurfacesService {
     });
   }
 
-  private async loadEnabledPluginPackages(transaction?: any) {
+  private async loadEnabledPluginPackages(transaction?: any): Promise<ReadonlySet<string>> {
     if (!this.db.getCollection('applicationPlugins')) {
       return new Set<string>();
     }
@@ -465,17 +482,17 @@ export class FlowSurfacesService {
       },
       transaction,
     });
-    return new Set(
-      plugins
-        .map((plugin: any) => plugin?.get?.('packageName') || plugin?.packageName)
-        .filter((packageName: any) => typeof packageName === 'string' && packageName.trim()),
-    );
+    const packageNames = plugins
+      .map((plugin: any) => plugin?.get?.('packageName') || plugin?.packageName)
+      .filter((packageName: any): packageName is string => typeof packageName === 'string' && !!packageName.trim())
+      .map((packageName) => packageName.trim());
+    return new Set<string>(packageNames);
   }
 
   private async resolveEnabledPluginPackages(
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
-  ) {
-    return options.enabledPackages || (await this.loadEnabledPluginPackages(options.transaction));
+  ): Promise<ReadonlySet<string>> {
+    return options.enabledPackages ?? (await this.loadEnabledPluginPackages(options.transaction));
   }
 
   private allocateRouteSortValue(offset = 0) {
@@ -3940,32 +3957,26 @@ export class FlowSurfacesService {
     throwBadRequest('chart SQL preview is unavailable for the target data source');
   }
 
-  private extractSqlChartPreviewAliases(metadata: any) {
-    const pickName = (field: any) =>
-      [field?.name, field?.columnName, field?.fieldName].find((value) => typeof value === 'string' && value.trim());
+  private extractSqlChartPreviewAliases(metadata: any): string[] {
+    const pickName = (field: any): string | undefined =>
+      [field?.name, field?.columnName, field?.fieldName]
+        .find((value): value is string => typeof value === 'string' && !!value.trim())
+        ?.trim();
 
     if (Array.isArray(metadata)) {
-      return _.uniq(
-        metadata
-          .map((field) => pickName(field))
-          .map((value) => (typeof value === 'string' ? value.trim() : ''))
-          .filter(Boolean),
-      );
+      return Array.from(new Set(metadata.map((field) => pickName(field)).filter((value): value is string => !!value)));
     }
 
     if (Array.isArray(metadata?.fields)) {
-      return _.uniq(
-        metadata.fields
-          .map((field: any) => pickName(field))
-          .map((value: any) => (typeof value === 'string' ? value.trim() : ''))
-          .filter(Boolean),
+      return Array.from(
+        new Set(metadata.fields.map((field: any) => pickName(field)).filter((value): value is string => !!value)),
       );
     }
 
     return [];
   }
 
-  private inferSqlChartOutputType(value: any) {
+  private inferSqlChartOutputType(value: any): string {
     if (Array.isArray(value)) {
       return 'array';
     }
@@ -3981,21 +3992,14 @@ export class FlowSurfacesService {
     return 'string';
   }
 
-  private mergeChartHintLists(
-    base: Array<{ key: string; title: string; description: string }>,
-    extra: Array<{
-      key: string;
-      title: string;
-      description: string;
-    }>,
-  ) {
+  private mergeChartHintLists(base: FlowSurfaceChartHint[], extra: FlowSurfaceChartHint[]): FlowSurfaceChartHint[] {
     return _.uniqBy([...(base || []), ...(extra || [])], 'key');
   }
 
-  private async resolveSqlChartPreview(query: any, _transaction?: any) {
+  private async resolveSqlChartPreview(query: any, _transaction?: any): Promise<FlowSurfaceSqlChartPreview> {
     const normalizedSql = this.normalizeReadOnlyChartSql(query?.sql);
     const transformed = await transformSQL(normalizedSql);
-    const riskyHints: Array<{ key: string; title: string; description: string }> = [];
+    const riskyHints: FlowSurfaceChartHint[] = [];
     const hasRuntimeContext =
       Object.keys(transformed?.bind || {}).length > 0 || Object.keys(transformed?.liquidContext || {}).length > 0;
 
@@ -4032,18 +4036,20 @@ export class FlowSurfacesService {
         bind: transformed.bind,
         transaction: _transaction,
       });
-      const firstRow = Array.isArray(rows) ? rows[0] : undefined;
+      const firstRow = Array.isArray(rows) && _.isPlainObject(rows[0]) ? (rows[0] as Record<string, any>) : undefined;
 
       if (previewAliases.length) {
         return {
-          queryOutputs: previewAliases.map((alias) => ({
-            alias,
-            source: 'sql' as const,
-            type:
-              _.isPlainObject(firstRow) && Object.prototype.hasOwnProperty.call(firstRow, alias)
-                ? this.inferSqlChartOutputType(firstRow[alias])
-                : undefined,
-          })),
+          queryOutputs: previewAliases.map(
+            (alias): FlowSurfaceSqlChartQueryOutput => ({
+              alias,
+              source: 'sql',
+              type:
+                firstRow && Object.prototype.hasOwnProperty.call(firstRow, alias)
+                  ? this.inferSqlChartOutputType(firstRow[alias])
+                  : undefined,
+            }),
+          ),
           riskyHints,
         };
       }

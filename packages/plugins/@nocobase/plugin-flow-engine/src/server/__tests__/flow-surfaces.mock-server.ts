@@ -41,24 +41,27 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
 }
 
 export async function loginFlowSurfacesRootAgent(app: MockServer) {
-  const rootUser = await app.db.getRepository('users').findOne({
-    filter: {
-      'roles.name': 'root',
-    },
-  });
+  const rootUser = await findFlowSurfacesRootUser(app);
 
   const login = async () => wrapFlowSurfacesReadCompatibleAgent(await app.agent().login(rootUser), app);
   let currentAgent = await login();
 
-  const callWithRetry = async <T>(execute: (agent: any) => Promise<T>) => {
+  const callWithRetry = async <T>(
+    execute: (agent: any) => Promise<T>,
+    options: {
+      resourceName?: string;
+      action?: string;
+    } = {},
+  ) => {
     let lastError: any;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       if (attempt > 0) {
+        await waitForFlowSurfacesRetry();
         currentAgent = await login();
       }
       try {
         const result = await execute(currentAgent);
-        if (isUnauthorizedAgentResponse(result) && attempt === 0) {
+        if (isRetriableAgentResponse(result, options) && attempt === 0) {
           continue;
         }
         return result;
@@ -67,6 +70,7 @@ export async function loginFlowSurfacesRootAgent(app: MockServer) {
         if (!isRetriableAgentError(error) || attempt > 0) {
           throw error;
         }
+        await waitForFlowSurfacesRetry();
       }
     }
     throw lastError;
@@ -83,14 +87,20 @@ export async function loginFlowSurfacesRootAgent(app: MockServer) {
               {
                 get(_resourceTarget, action) {
                   return async (...callArgs: any[]) =>
-                    callWithRetry(async (agent) => {
-                      const resource = agent.resource(resourceName, ...resourceArgs);
-                      const method = resource?.[action as keyof typeof resource];
-                      if (typeof method !== 'function') {
-                        return method;
-                      }
-                      return await method.apply(resource, callArgs);
-                    });
+                    callWithRetry(
+                      async (agent) => {
+                        const resource = agent.resource(resourceName, ...resourceArgs);
+                        const method = resource?.[action as keyof typeof resource];
+                        if (typeof method !== 'function') {
+                          return method;
+                        }
+                        return await method.apply(resource, callArgs);
+                      },
+                      {
+                        resourceName,
+                        action: String(action),
+                      },
+                    );
                 },
               },
             );
@@ -119,8 +129,57 @@ function isRetriableAgentError(error: any) {
   );
 }
 
-function isUnauthorizedAgentResponse(response: any) {
-  return response?.status === 401;
+function isRetriableAgentResponse(
+  response: any,
+  options: {
+    resourceName?: string;
+    action?: string;
+  } = {},
+) {
+  if (response?.status === 401) {
+    return true;
+  }
+
+  return options.resourceName === 'flowSurfaces' && response?.status === 404;
+}
+
+function isRetriableRootUserError(error: any) {
+  const message = String(error?.message || '');
+  const code = error?.code || error?.parent?.code || error?.original?.code;
+  return (
+    isRetriableAgentError(error) ||
+    code === '42P01' ||
+    code === 'ER_NO_SUCH_TABLE' ||
+    /relation .+ does not exist|table .+ doesn't exist/i.test(message)
+  );
+}
+
+async function findFlowSurfacesRootUser(app: MockServer) {
+  let lastError: any;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const rootUser = await app.db.getRepository('users').findOne({
+        filter: {
+          'roles.name': 'root',
+        },
+      });
+      if (rootUser) {
+        return rootUser;
+      }
+      lastError = new Error('root user not found');
+    } catch (error: any) {
+      lastError = error;
+      if (!isRetriableRootUserError(error) || attempt > 1) {
+        throw error;
+      }
+    }
+    await waitForFlowSurfacesRetry();
+  }
+  throw lastError;
+}
+
+function waitForFlowSurfacesRetry(delayMs = 80) {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
 export function wrapFlowSurfacesReadCompatibleAgent<T extends Record<string, any>>(agent: T, app: MockServer): T {

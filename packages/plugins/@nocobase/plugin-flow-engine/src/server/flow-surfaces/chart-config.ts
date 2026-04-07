@@ -53,6 +53,18 @@ export type ChartStyleValueSupport = {
   description?: string;
 };
 
+type NormalizedBasicChartVisual = {
+  mode: 'basic';
+  builder: Partial<Record<string, any>>;
+};
+
+type NormalizedCustomChartVisual = {
+  mode: 'custom';
+  raw: string;
+};
+
+type NormalizedChartVisual = NormalizedBasicChartVisual | NormalizedCustomChartVisual;
+
 const EMPTY_FILTER_GROUP = {
   logic: '$and',
   items: [],
@@ -251,7 +263,13 @@ function hasMeaningfulSemanticPatch(input: any, key: string) {
 }
 
 function buildDefinedObject<T extends Record<string, any>>(input: T): Partial<T> {
-  return _.pickBy(input, (value) => !_.isUndefined(value));
+  const result: Partial<T> = {};
+  for (const [key, value] of Object.entries(input) as Array<[keyof T, T[keyof T]]>) {
+    if (!_.isUndefined(value)) {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 function ensurePlainObject(input: any, label: string) {
@@ -1001,7 +1019,7 @@ function normalizeCommonChartStyle(style: Record<string, any>) {
   });
 }
 
-function normalizeBasicVisual(visual: Record<string, any>) {
+function normalizeBasicVisual(visual: Record<string, any>): NormalizedBasicChartVisual {
   const type = inferBasicVisualType(visual);
   if (hasOwn(visual, 'raw')) {
     throw new FlowSurfaceBadRequestError("chart visual.mode='basic' does not support raw");
@@ -1144,7 +1162,7 @@ function normalizeBasicVisual(visual: Record<string, any>) {
   };
 }
 
-function normalizeCustomVisual(visual: Record<string, any>) {
+function normalizeCustomVisual(visual: Record<string, any>): NormalizedCustomChartVisual {
   const unsupportedKeys = ['type', 'mappings', 'style'].filter((key) => hasOwn(visual, key));
   if (unsupportedKeys.length) {
     throw new FlowSurfaceBadRequestError(`chart visual.mode='custom' does not support: ${unsupportedKeys.join(', ')}`);
@@ -1185,11 +1203,14 @@ function assertBasicVisualMappingsAgainstBuilderQuery(builderVisual: Record<stri
   }
 }
 
-function normalizeChartVisual(visual: any, query?: any) {
+function normalizeChartVisual(visual: any, query?: any): NormalizedChartVisual {
   const normalized = ensurePlainObject(visual, 'chart visual');
   const mode = inferVisualMode(normalized);
-  const visualConfig = mode === 'custom' ? normalizeCustomVisual(normalized) : normalizeBasicVisual(normalized);
-  if (query?.mode === 'builder' && visualConfig.mode === 'basic') {
+  if (mode === 'custom') {
+    return normalizeCustomVisual(normalized);
+  }
+  const visualConfig = normalizeBasicVisual(normalized);
+  if (query?.mode === 'builder') {
     assertBasicVisualMappingsAgainstBuilderQuery(visualConfig.builder || {}, query);
   }
   return visualConfig;
@@ -1348,10 +1369,12 @@ export function getChartBuilderQueryOutputs(configure: any) {
 }
 
 export function getChartBuilderQueryAliases(configure: any) {
-  return _.uniq(
-    getChartBuilderQueryOutputs(configure)
-      .map((output) => (typeof output?.alias === 'string' ? output.alias.trim() : ''))
-      .filter(Boolean),
+  return Array.from(
+    new Set(
+      getChartBuilderQueryOutputs(configure)
+        .map((output) => (typeof output?.alias === 'string' ? output.alias.trim() : ''))
+        .filter((alias): alias is string => !!alias),
+    ),
   );
 }
 
