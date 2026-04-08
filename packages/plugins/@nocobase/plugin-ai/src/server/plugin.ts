@@ -51,6 +51,7 @@ import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/chec
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { getWorkflowTasks } from './tools/workflow-tasks';
+import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -64,6 +65,7 @@ export class PluginAIServer extends Plugin {
   workContextHandler = createWorkContextHandler(this);
   documentLoaders = new DocumentLoaders(this);
   subAgentsDispatcher = new SubAgentsDispatcher(this);
+  knowledgeBaseManager = new KnowledgeBaseManager(this);
   snowflake: Snowflake;
 
   /**
