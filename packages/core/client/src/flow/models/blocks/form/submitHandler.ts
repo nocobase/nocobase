@@ -58,5 +58,6 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
     (await cb)
       ? await cb(values, currentFilterByTk)
       : await resource.update(currentFilterByTk, values, params.requestConfig);
+    blockModel.resetUserModifiedFields?.();
   }
 }
