@@ -8,14 +8,22 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
+import { loginFlowSurfacesRootAgent, syncFlowSurfacesEnabledPlugins } from './flow-surfaces.mock-server';
 import {
-  loginFlowSurfacesRootAgent,
-  syncFlowSurfacesEnabledPlugins,
-} from './flow-surfaces.mock-server';
-import {
-  FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
-  FLOW_SURFACES_TEST_PLUGINS,
-} from './flow-surfaces.test-plugins';
+  addBlockData,
+  addFieldData,
+  createPage,
+  expectTemplateUsage,
+  getData,
+  getListData,
+  getPopupGridItems,
+  getPopupOpenView,
+  getSurface,
+  readErrorMessage,
+  saveTemplate,
+  setupFixtureCollections,
+} from './flow-surfaces.templates.helpers';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
 const FLOW_SURFACES_TEMPLATE_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-templates'] as const;
 const FLOW_SURFACES_TEMPLATE_TEST_PLUGIN_INSTALLS = [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, 'ui-templates'] as const;
@@ -34,11 +42,7 @@ describe('flowSurfaces templates', () => {
         await app.cleanDb();
       },
     });
-    await syncFlowSurfacesEnabledPlugins(
-      app,
-      FLOW_SURFACES_TEMPLATE_TEST_PLUGINS,
-      FLOW_SURFACES_TEMPLATE_TEST_PLUGINS,
-    );
+    await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_TEMPLATE_TEST_PLUGINS, FLOW_SURFACES_TEMPLATE_TEST_PLUGINS);
     await app.runCommandThrowError('start');
     expect(app.pm.get('ui-templates')).toBeTruthy();
     rootAgent = await loginFlowSurfacesRootAgent(app);
@@ -247,7 +251,7 @@ describe('flowSurfaces templates', () => {
         mode: 'reference',
       },
     });
-    let fieldImportSurface = await getSurface(rootAgent, { uid: fieldImportBlock.uid });
+    const fieldImportSurface = await getSurface(rootAgent, { uid: fieldImportBlock.uid });
     expect(fieldImportSurface.tree.fieldsTemplate).toMatchObject({
       uid: template.uid,
       mode: 'reference',
@@ -343,7 +347,7 @@ describe('flowSurfaces templates', () => {
       saveMode: 'convert',
     });
     expect(template.type).toBe('popup');
-    let sourceActionSurface = await getSurface(rootAgent, { uid: sourceAction.uid });
+    const sourceActionSurface = await getSurface(rootAgent, { uid: sourceAction.uid });
     expect(sourceActionSurface.tree.popup.template).toMatchObject({
       uid: template.uid,
       mode: 'reference',
@@ -578,7 +582,7 @@ describe('flowSurfaces templates', () => {
       saveMode: 'convert',
     });
     expect(template.type).toBe('popup');
-    let sourceFieldSurface = await getSurface(rootAgent, { uid: sourceField.fieldUid || sourceField.uid });
+    const sourceFieldSurface = await getSurface(rootAgent, { uid: sourceField.fieldUid || sourceField.uid });
     expect(sourceFieldSurface.tree.popup.template).toMatchObject({
       uid: template.uid,
       mode: 'reference',
@@ -1194,9 +1198,7 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    expect(
-      listedCompatibleFieldsTemplates.rows.find((row: any) => row.uid === fieldsTemplate.uid),
-    ).toMatchObject({
+    expect(listedCompatibleFieldsTemplates.rows.find((row: any) => row.uid === fieldsTemplate.uid)).toMatchObject({
       uid: fieldsTemplate.uid,
       available: true,
     });
@@ -1387,133 +1389,3 @@ describe('flowSurfaces templates', () => {
     expect(readErrorMessage(unsupportedPopupSource)).toContain('supported block or popup template source');
   });
 });
-
-function getData(response: any) {
-  expect(response.status).toBe(200);
-  return response.body?.data?.data ?? response.body?.data;
-}
-
-function getListData(response: any) {
-  expect(response.status).toBe(200);
-  let current = response.body;
-  let meta = response.body?.meta;
-  if (current && typeof current === 'object' && 'data' in current) {
-    current = current.data;
-  }
-  for (let i = 0; i < 4; i += 1) {
-    if (current && typeof current === 'object' && Array.isArray(current.rows)) {
-      return {
-        ...current,
-        count: current.count ?? meta?.count ?? meta?.total ?? meta?.totalCount,
-        page: current.page ?? meta?.page,
-        pageSize: current.pageSize ?? meta?.pageSize,
-        totalPage: current.totalPage ?? meta?.totalPage,
-      };
-    }
-    if (current && typeof current === 'object' && 'data' in current) {
-      meta = current.meta ?? meta;
-      current = current.data;
-      continue;
-    }
-    break;
-  }
-  return {
-    rows: Array.isArray(current) ? current : [],
-    count: meta?.count ?? meta?.total ?? meta?.totalCount,
-    page: meta?.page,
-    pageSize: meta?.pageSize,
-    totalPage: meta?.totalPage,
-  };
-}
-
-function readErrorMessage(response: any) {
-  return response?.body?.errors?.[0]?.message || '';
-}
-
-async function createPage(rootAgent: any, values: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').createPage({
-      values,
-    }),
-  );
-}
-
-async function addBlockData(rootAgent: any, values: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').addBlock({
-      values,
-    }),
-  );
-}
-
-async function addFieldData(rootAgent: any, values: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').addField({
-      values,
-    }),
-  );
-}
-
-async function getSurface(rootAgent: any, target: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').get(target),
-  );
-}
-
-async function saveTemplate(rootAgent: any, values: Record<string, any>) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').saveTemplate({
-      values,
-    }),
-  );
-}
-
-async function expectTemplateUsage(rootAgent: any, templateUid: string, usageCount: number) {
-  const template = getData(
-    await rootAgent.resource('flowSurfaces').getTemplate({
-      values: {
-        uid: templateUid,
-      },
-    }),
-  );
-  expect(template.usageCount).toBe(usageCount);
-}
-
-function getPopupGridItems(tree: any) {
-  return tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [];
-}
-
-function getPopupOpenView(tree: any) {
-  return tree?.stepParams?.popupSettings?.openView || tree?.stepParams?.selectExitRecordSettings?.openView;
-}
-
-async function setupFixtureCollections(rootAgent: any) {
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'employees',
-      title: 'Employees',
-      fields: [
-        { name: 'nickname', type: 'string', interface: 'input' },
-        { name: 'status', type: 'string', interface: 'input' },
-      ],
-    },
-  });
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'departments',
-      title: 'Departments',
-      titleField: 'title',
-      filterTargetKey: 'title',
-      fields: [{ name: 'title', type: 'string', interface: 'input' }],
-    },
-  });
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'department',
-      type: 'belongsTo',
-      target: 'departments',
-      foreignKey: 'departmentId',
-      interface: 'm2o',
-    },
-  });
-}
