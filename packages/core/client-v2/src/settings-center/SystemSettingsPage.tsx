@@ -14,6 +14,7 @@ import mime from 'mime';
 import match from 'mime-match';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import languageCodes from '../locale/languageCodes';
 import { useApp } from '../hooks/useApp';
 import { useSystemSettings } from '../flow/system-settings';
 
@@ -27,11 +28,6 @@ type UploadedAttachment = {
 type AttachmentStorageRules = {
   size?: number;
   mimetype?: string | string[];
-};
-
-const LANGUAGE_LABELS: Record<string, string> = {
-  'en-US': 'English',
-  'zh-CN': '简体中文',
 };
 
 /**
@@ -105,10 +101,10 @@ export const SystemSettingsPage = () => {
 
   const languageOptions = useMemo(() => {
     const currentValues = form.getFieldValue('enabledLanguages') || data?.data?.enabledLanguages || [];
-    const supported = Array.from(new Set(['en-US', 'zh-CN', ...currentValues]));
+    const supported = Array.from(new Set([...Object.keys(languageCodes), ...currentValues]));
 
     return supported.map((code) => ({
-      label: LANGUAGE_LABELS[code] || code,
+      label: `${languageCodes[code]?.label || code} (${code})`,
       value: code,
     }));
   }, [data?.data?.enabledLanguages, form]);
