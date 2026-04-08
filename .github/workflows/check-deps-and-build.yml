@@ -1,0 +1,357 @@
+name: Check Dependencies and Build
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'develop'
+      - 'next'
+    paths:
+      - '.github/workflows/check-deps-and-build.yml'
+      - 'scripts/check-plugin-peer-deps.sh'
+      - 'scripts/peer-deps-whitelist.json'
+      - 'packages/**'
+      - '**/yarn.lock'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - '.github/workflows/check-deps-and-build.yml'
+      - 'scripts/check-plugin-peer-deps.sh'
+      - 'scripts/peer-deps-whitelist.json'
+      - 'packages/**'
+      - '**/yarn.lock'
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    secrets: inherit
+
+  check-peer-deps:
+    name: Check peer dependencies
+    needs: get-plugins
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.check.outputs.result }}
+      status: ${{ steps.check.outputs.status }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins || '[]'), ',') }}
+          skip-token-revoke: true
+
+      - uses: actions/checkout@v4
+
+      - name: Checkout pro-plugins
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          ref: ${{ github.base_ref || github.ref_name }}
+          path: packages/pro-plugins
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Switch pro-plugins branch
+        continue-on-error: true
+        run: |
+          cd packages/pro-plugins
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          elif git show-ref --quiet refs/remotes/origin/${{ github.base_ref || github.ref_name }}; then
+            git checkout ${{ github.base_ref || github.ref_name }}
+          else
+            git checkout main
+          fi
+
+      - name: Determine plugin set
+        id: plugin-set
+        run: |
+          TARGET_BRANCH="${{ github.base_ref || github.ref_name }}"
+          case "$TARGET_BRANCH" in
+            develop)
+              echo "plugins=${{ needs.get-plugins.outputs.alpha-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              ;;
+            next)
+              echo "plugins=${{ needs.get-plugins.outputs.beta-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "plugins=${{ needs.get-plugins.outputs.rc-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Clone standalone plugin repos
+        continue-on-error: true
+        shell: bash
+        run: |
+          PLUGINS='${{ steps.plugin-set.outputs.plugins }}'
+          if [[ "$PLUGINS" == "[]" || -z "$PLUGINS" ]]; then
+            echo "No standalone plugins to clone"
+            exit 0
+          fi
+          for repo in $(echo "$PLUGINS" | jq -r '.[]'); do
+            if [[ ! -d "packages/pro-plugins/@nocobase/$repo" ]]; then
+              echo "Cloning $repo..."
+              git clone -b ${{ github.base_ref || github.ref_name }} \
+                https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git \
+                packages/pro-plugins/@nocobase/$repo 2>/dev/null || true
+            fi
+          done
+
+      - name: Try checkout standalone plugin branches
+        continue-on-error: true
+        shell: bash
+        run: |
+          for plugin_dir in ./packages/pro-plugins/@nocobase/*/; do
+            if [[ -d "$plugin_dir/.git" ]]; then
+              cd "$plugin_dir"
+              git checkout ${{ github.head_ref || github.ref_name }} 2>/dev/null || true
+              cd - > /dev/null
+            fi
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run peer dependency checks
+        id: check
+        shell: bash
+        run: |
+          exit_code=0
+          plugins_json="[]"
+          pro_plugins_json="[]"
+
+          # Check packages/plugins/@nocobase
+          if [[ -d packages/plugins/@nocobase ]]; then
+            echo "::group::Checking packages/plugins/@nocobase"
+            plugins_json=$(bash scripts/check-plugin-peer-deps.sh packages/plugins/@nocobase \
+              --whitelist scripts/peer-deps-whitelist.json 2>&1 1>/tmp/plugins-result.json && cat /tmp/plugins-result.json || { cat /tmp/plugins-result.json 2>/dev/null; echo "[]"; }) || true
+
+            # Re-run to get proper exit code and output
+            if bash scripts/check-plugin-peer-deps.sh packages/plugins/@nocobase \
+              --whitelist scripts/peer-deps-whitelist.json > /tmp/plugins-result.json 2>/tmp/plugins-log.txt; then
+              cat /tmp/plugins-log.txt
+              plugins_json=$(cat /tmp/plugins-result.json)
+            else
+              cat /tmp/plugins-log.txt
+              plugins_json=$(cat /tmp/plugins-result.json)
+              exit_code=1
+            fi
+            echo "::endgroup::"
+          fi
+
+          # Check packages/pro-plugins/@nocobase
+          if [[ -d packages/pro-plugins/@nocobase ]]; then
+            echo "::group::Checking packages/pro-plugins/@nocobase"
+            if bash scripts/check-plugin-peer-deps.sh packages/pro-plugins/@nocobase \
+              --whitelist scripts/peer-deps-whitelist.json > /tmp/pro-plugins-result.json 2>/tmp/pro-plugins-log.txt; then
+              cat /tmp/pro-plugins-log.txt
+              pro_plugins_json=$(cat /tmp/pro-plugins-result.json)
+            else
+              cat /tmp/pro-plugins-log.txt
+              pro_plugins_json=$(cat /tmp/pro-plugins-result.json)
+              exit_code=1
+            fi
+            echo "::endgroup::"
+          fi
+
+          # Merge results
+          merged=$(jq -s '.[0] + .[1]' /tmp/plugins-result.json /tmp/pro-plugins-result.json 2>/dev/null || echo "[]")
+
+          # Write outputs (handle multiline JSON)
+          {
+            echo "result<<RESULT_EOF"
+            echo "$merged"
+            echo "RESULT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          if [[ $exit_code -eq 0 ]]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failure" >> "$GITHUB_OUTPUT"
+            echo ""
+            echo "::error::Missing plugin-* peerDependencies detected. See details above."
+            exit 1
+          fi
+
+  build:
+    name: Build
+    needs: [get-plugins, check-peer-deps]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins || '[]'), ',') }}
+          skip-token-revoke: true
+
+      - uses: actions/checkout@v4
+
+      - name: Checkout pro-plugins
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          ref: ${{ github.base_ref || github.ref_name }}
+          path: packages/pro-plugins
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Switch pro-plugins branch
+        continue-on-error: true
+        run: |
+          cd packages/pro-plugins
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          elif git show-ref --quiet refs/remotes/origin/${{ github.base_ref || github.ref_name }}; then
+            git checkout ${{ github.base_ref || github.ref_name }}
+          else
+            git checkout main
+          fi
+
+      - name: Determine plugin set
+        id: plugin-set
+        run: |
+          TARGET_BRANCH="${{ github.base_ref || github.ref_name }}"
+          case "$TARGET_BRANCH" in
+            develop)
+              echo "plugins=${{ needs.get-plugins.outputs.alpha-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              ;;
+            next)
+              echo "plugins=${{ needs.get-plugins.outputs.beta-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "plugins=${{ needs.get-plugins.outputs.rc-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Clone standalone plugin repos
+        continue-on-error: true
+        shell: bash
+        run: |
+          PLUGINS='${{ steps.plugin-set.outputs.plugins }}'
+          if [[ "$PLUGINS" == "[]" || -z "$PLUGINS" ]]; then
+            exit 0
+          fi
+          for repo in $(echo "$PLUGINS" | jq -r '.[]'); do
+            if [[ ! -d "packages/pro-plugins/@nocobase/$repo" ]]; then
+              git clone -b ${{ github.base_ref || github.ref_name }} \
+                https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git \
+                packages/pro-plugins/@nocobase/$repo 2>/dev/null || true
+            fi
+          done
+
+      - name: Try checkout standalone plugin branches
+        continue-on-error: true
+        shell: bash
+        run: |
+          for plugin_dir in ./packages/pro-plugins/@nocobase/*/; do
+            if [[ -d "$plugin_dir/.git" ]]; then
+              cd "$plugin_dir"
+              git checkout ${{ github.head_ref || github.ref_name }} 2>/dev/null || true
+              cd - > /dev/null
+            fi
+          done
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+
+      - name: Build
+        run: yarn build
+
+  comment-on-pr:
+    name: Comment on PR
+    needs: [check-peer-deps, build]
+    runs-on: ubuntu-latest
+    if: ${{ always() && github.event.pull_request.number }}
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = '<!-- peer-deps-check -->';
+            const prNumber = context.payload.pull_request.number;
+            const checkStatus = '${{ needs.check-peer-deps.outputs.status }}';
+            const buildResult = '${{ needs.build.result }}';
+
+            let resultJson = [];
+            try {
+              resultJson = JSON.parse(`${{ needs.check-peer-deps.outputs.result }}`);
+            } catch (e) {
+              // If parsing fails, treat as empty
+            }
+
+            let body = marker + '\n';
+
+            if (checkStatus === 'failure' && resultJson.length > 0) {
+              body += '### ❌ Missing Plugin PeerDependencies\n\n';
+              body += 'The following plugins are missing required `plugin-*` peerDependencies in their `package.json`:\n\n';
+              body += '| Plugin | Missing peerDependencies |\n';
+              body += '|--------|-------------------------|\n';
+              for (const item of resultJson) {
+                const deps = item.missing.map(d => '`' + d + '`').join(', ');
+                body += `| ${item.plugin} | ${deps} |\n`;
+              }
+              body += '\nPlease add the missing peerDependencies to resolve this check.\n';
+            } else if (buildResult === 'failure') {
+              body += '### ❌ Build Failed\n\n';
+              body += 'The build step failed. Please check the [workflow logs](' +
+                `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` +
+                ') for details.\n';
+            } else {
+              body += '### ✅ Plugin PeerDependencies Check Passed\n\n';
+              body += 'All plugins have their required `plugin-*` peerDependencies properly declared.';
+              if (buildResult === 'success') {
+                body += ' Build completed successfully.';
+              }
+              body += '\n';
+            }
+
+            // Find existing comment with marker
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info('Updated existing comment: ' + existing.html_url);
+            } else {
+              const { data: created } = await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: prNumber,
+                body,
+              });
+              core.info('Created comment: ' + created.html_url);
+            }
