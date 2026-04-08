@@ -75,6 +75,21 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceNodeSpec).toBeTruthy();
     expect(schemas.FlowSurfaceApplySpec).toBeTruthy();
     expect(schemas.FlowSurfaceGetResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceTemplateRow).toBeTruthy();
+    expect(schemas.FlowSurfaceListTemplatesRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceListTemplatesResult).toBeTruthy();
+    expect(schemas.FlowSurfaceGetTemplateRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceSaveTemplateRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceUpdateTemplateRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceDestroyTemplateRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceDestroyTemplateResult).toBeTruthy();
+    expect(schemas.FlowSurfaceConvertTemplateToCopyRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceConvertTemplateToCopyResult).toBeTruthy();
+    expect(schemas.FlowSurfacePopupSummary).toBeTruthy();
+    expect(schemas.FlowSurfaceTemplateRef).toBeTruthy();
+    expect(schemas.FlowSurfaceBlockTemplateRef).toBeTruthy();
+    expect(schemas.FlowSurfacePopupTemplateRef).toBeTruthy();
+    expect(schemas.FlowSurfaceComposeFieldPopup).toBeTruthy();
     expect(schemas.FlowSurfaceComposeRequest).toBeTruthy();
     expect(schemas.FlowSurfaceComposeResult).toBeTruthy();
     expect(schemas.FlowSurfaceComposeRecordActionSpec).toBeTruthy();
@@ -201,6 +216,53 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceGetResponse.properties.target.$ref).toBe('#/components/schemas/FlowSurfaceReadTarget');
     expect(schemas.FlowSurfaceGetResponse.properties.tabs).toBeUndefined();
     expect(schemas.FlowSurfaceGetResponse.properties.tabTrees).toBeUndefined();
+    expect(schemas.FlowSurfaceGetTreeNode.properties.template.$ref).toBe('#/components/schemas/FlowSurfaceBlockTemplateRef');
+    expect(schemas.FlowSurfaceGetTreeNode.properties.fieldsTemplate.$ref).toBe(
+      '#/components/schemas/FlowSurfaceTemplateRef',
+    );
+    expect(schemas.FlowSurfaceGetTreeNode.properties.popup.$ref).toBe('#/components/schemas/FlowSurfacePopupSummary');
+    expect(schemas.FlowSurfacePopupSummary.properties.mode.enum).toEqual(['local', 'copy']);
+    expect(schemas.FlowSurfacePopupSummary.properties.pageUid.type).toBe('string');
+    expect(schemas.FlowSurfacePopupSummary.properties.tabUid.type).toBe('string');
+    expect(schemas.FlowSurfacePopupSummary.properties.gridUid.type).toBe('string');
+    expect(schemas.FlowSurfaceTemplateRow.required).toEqual(
+      expect.arrayContaining(['uid', 'name', 'description', 'type', 'targetUid']),
+    );
+    expect(schemas.FlowSurfaceTemplateRow.properties.type.enum).toEqual(['block', 'popup']);
+    expect(schemas.FlowSurfaceTemplateRow.properties.available.type).toBe('boolean');
+    expect(schemas.FlowSurfaceTemplateRow.properties.disabledReason.type).toBe('string');
+    expect(schemas.FlowSurfaceConvertTemplateToCopyResult.properties.type.enum).toEqual(['block', 'fields', 'popup']);
+    expect(schemas.FlowSurfaceSaveTemplateRequest.required).toEqual(['target', 'name', 'description']);
+    expect(schemas.FlowSurfaceListTemplatesResult.required).toEqual(['rows', 'count', 'page', 'pageSize', 'totalPage']);
+    expect(schemas.FlowSurfaceListTemplatesRequest.properties.paginate).toBeUndefined();
+    expect(schemas.FlowSurfaceListTemplatesRequest.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceWriteTarget',
+    );
+    expect(schemas.FlowSurfaceListTemplatesRequest.properties.type.enum).toEqual(['block', 'popup']);
+    expect(schemas.FlowSurfaceListTemplatesRequest.properties.usage.enum).toEqual(['block', 'fields']);
+    expect(schemas.FlowSurfaceComposeActionPopup.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfacePopupTemplateRef',
+    );
+    expect(schemas.FlowSurfaceComposeFieldPopup.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfacePopupTemplateRef',
+    );
+
+    const listTemplatesRequest =
+      swaggerDocument.paths['/flowSurfaces:listTemplates'].post.requestBody.content['application/json'];
+    expect(listTemplatesRequest.example?.target?.uid).toBe('employee-create-form');
+    expect(listTemplatesRequest.example?.type).toBe('block');
+    expect(listTemplatesRequest.example?.usage).toBe('fields');
+    expect(listTemplatesRequest.example?.search).toBe('employee form');
+    expect(listTemplatesRequest.example?.pageSize).toBe(20);
+    const getTemplateRequest =
+      swaggerDocument.paths['/flowSurfaces:getTemplate'].post.requestBody.content['application/json'];
+    expect(getTemplateRequest.example?.uid).toBe('employee-form-template');
+    const saveTemplateRequest =
+      swaggerDocument.paths['/flowSurfaces:saveTemplate'].post.requestBody.content['application/json'];
+    expect(saveTemplateRequest.example?.description).toContain('Reusable');
+    const convertTemplateToCopyRequest =
+      swaggerDocument.paths['/flowSurfaces:convertTemplateToCopy'].post.requestBody.content['application/json'];
+    expect(convertTemplateToCopyRequest.example?.target?.uid).toBe('employee-form-block');
 
     const composeRequest = swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'];
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
@@ -254,6 +316,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.type.enum).toEqual(
       expect.arrayContaining(['table', 'filterForm', 'actionPanel', 'jsBlock']),
     );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockTemplateRef',
+    );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.fieldsTemplate).toBeUndefined();
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[2].properties.type.enum).toEqual(['jsColumn', 'jsItem']);
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.resource.$ref).toBe(
@@ -299,7 +365,10 @@ describe('flowSurfaces swagger', () => {
       expect.arrayContaining(['link', 'popup', 'duplicate', 'updateRecord', 'templatePrint', 'triggerWorkflow']),
     );
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.popup.$ref).toBe(
-      '#/components/schemas/FlowSurfaceComposeActionPopup',
+      '#/components/schemas/FlowSurfaceComposeFieldPopup',
+    );
+    expect(schemas.FlowSurfaceComposeActionPopup.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfacePopupTemplateRef',
     );
     expect(schemas.FlowSurfaceComposeFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
@@ -346,6 +415,12 @@ describe('flowSurfaces swagger', () => {
     expect(configureRequest.examples.jsFieldSettings.value.changes.code).not.toContain('return record.');
     expect(configureRequest.examples.jsColumnSettings.value.changes.code).not.toContain('return record.');
     expect(configureRequest.examples.jsItemSettings.value.changes.code).not.toContain('return record.');
+    const saveTemplateRequestForConfigure =
+      swaggerDocument.paths['/flowSurfaces:saveTemplate'].post.requestBody.content['application/json'];
+    expect(saveTemplateRequestForConfigure.example?.description).toContain('Reusable');
+    const listTemplatesRequestForConfigure =
+      swaggerDocument.paths['/flowSurfaces:listTemplates'].post.requestBody.content['application/json'];
+    expect(listTemplatesRequestForConfigure.example?.search).toBe('employee form');
     expect(configureRequest.examples.pageHeaderSettings.value.changes.icon).toBe('UserOutlined');
     expect(configureRequest.examples.pageHeaderSettings.value.changes.enableHeader).toBe(false);
     expect(configureRequest.examples.tableAdvancedSettings.value.changes.quickEdit).toBe(true);
@@ -405,12 +480,17 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldRequest.examples.jsItem.value.settings.version).toBe('1.0.0');
     expect(addFieldRequest.examples.jsItem.value.settings.code).toContain('ctx.render');
     expect(addFieldRequest.examples.jsItem.value.settings.code).not.toContain('return record.');
+    expect(addFieldRequest.examples.popupTemplate.value.popup.template.uid).toBe('employee-popup-template');
     expect(schemas.FlowSurfaceAddFieldRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceAddFieldRequest.oneOf).toHaveLength(2);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceTemplateRef',
+    );
     expect(schemas.FlowSurfaceAddFieldRequest.properties.popup.$ref).toBe(
-      '#/components/schemas/FlowSurfaceComposeActionPopup',
+      '#/components/schemas/FlowSurfaceComposeFieldPopup',
     );
     expect(schemas.FlowSurfaceAddFieldRequest.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldRequest.properties.fieldProps).toBeUndefined();
@@ -418,8 +498,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddFieldRequest.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldRequest.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.popup.$ref).toBe(
-      '#/components/schemas/FlowSurfaceComposeActionPopup',
+      '#/components/schemas/FlowSurfaceComposeFieldPopup',
     );
+    expect(schemas.FlowSurfaceAddFieldItem.oneOf).toHaveLength(2);
     expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.props).toBeUndefined();
@@ -450,6 +531,9 @@ describe('flowSurfaces swagger', () => {
     });
     expect(schemas.FlowSurfaceAddBlockRequest.properties.type.enum).toEqual(
       expect.arrayContaining(['markdown', 'actionPanel', 'jsBlock']),
+    );
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockTemplateRef',
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
@@ -551,6 +635,12 @@ describe('flowSurfaces swagger', () => {
     expect(addBlocksRequest.example.blocks[1].settings.content).toContain('Team notes');
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
     expect(schemas.FlowSurfaceAddBlockItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockTemplateRef',
+    );
+    expect(schemas.FlowSurfaceComposeBlockSpec.anyOf).toEqual(
+      expect.arrayContaining([{ required: ['type'] }, { required: ['template'] }]),
+    );
     expect(schemas.FlowSurfaceAddBlockItem.properties.props).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();
@@ -577,10 +667,17 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldsRequest.example.fields[1].renderer).toBe('js');
     expect(addFieldsRequest.example.fields[0].settings.title).toBe('User name');
     expect(addFieldsRequest.example.fields[1].settings.version).toBe('1.0.0');
-    expect(schemas.FlowSurfaceAddFieldsRequest.required).toEqual(['target', 'fields']);
+    expect(schemas.FlowSurfaceAddFieldsRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceAddFieldsRequest.oneOf).toHaveLength(2);
+    expect(schemas.FlowSurfaceAddFieldsRequest.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceTemplateRef',
+    );
     expect(schemas.FlowSurfaceAddFieldItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddFieldItem.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceTemplateRef',
+    );
     expect(schemas.FlowSurfaceAddFieldItem.properties.popup.$ref).toBe(
-      '#/components/schemas/FlowSurfaceComposeActionPopup',
+      '#/components/schemas/FlowSurfaceComposeFieldPopup',
     );
     expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
@@ -722,12 +819,24 @@ describe('flowSurfaces swagger', () => {
     const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
     expect(catalogPath.description).toContain('truly available public capabilities');
     expect(catalogPath.description).toContain('`loggedIn`');
+    const listTemplatesPath = swaggerDocument.paths['/flowSurfaces:listTemplates'].post;
+    expect(listTemplatesPath.description).toContain('required `description`');
+    expect(listTemplatesPath.description).toContain('`loggedIn`');
+    const getTemplatePath = swaggerDocument.paths['/flowSurfaces:getTemplate'].post;
+    expect(getTemplatePath.description).toContain('usage count');
+    expect(getTemplatePath.description).toContain('`loggedIn`');
 
     for (const actionName of [
       'catalog',
       'context',
+      'listTemplates',
+      'getTemplate',
       'compose',
       'configure',
+      'saveTemplate',
+      'updateTemplate',
+      'destroyTemplate',
+      'convertTemplateToCopy',
       'createMenu',
       'updateMenu',
       'createPage',

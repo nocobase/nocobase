@@ -119,6 +119,40 @@ type FlowSurfaceSqlChartPreview = {
   riskyHints?: FlowSurfaceChartHint[];
 };
 
+type FlowSurfaceTemplateRow = {
+  uid: string;
+  name?: string;
+  description?: string;
+  targetUid?: string;
+  useModel?: string;
+  type?: string;
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationName?: string;
+  filterByTk?: string;
+  sourceId?: string;
+  usageCount?: number;
+  available?: boolean;
+  disabledReason?: string;
+};
+
+type FlowSurfaceTemplateListValues = {
+  search?: string;
+  filter?: Record<string, any>;
+  sort?: string | string[];
+  page?: number;
+  pageSize?: number;
+  target?: FlowSurfaceWriteTarget;
+  type?: 'block' | 'popup';
+  usage?: 'block' | 'fields';
+};
+
+type FlowSurfaceTemplateResourceInfo = {
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationName?: string;
+};
+
 const COLLECTION_BLOCK_USES = new Set([
   'TableBlockModel',
   'CreateFormModel',
@@ -144,6 +178,19 @@ const OPEN_VIEW_MODE_ALIASES = {
   page: 'embed',
 } as const;
 const OPEN_VIEW_SUPPORTED_MODES = new Set(['drawer', 'dialog', 'embed']);
+const FLOW_TEMPLATE_SUPPORTED_TYPES = new Set(['block', 'popup']);
+const FLOW_TEMPLATE_SUPPORTED_MODES = new Set(['reference', 'copy']);
+const FLOW_TEMPLATE_BLOCK_USAGES = new Set(['block', 'fields']);
+const FLOW_TEMPLATE_UNSUPPORTED_BLOCK_TEMPLATE_SOURCE_USES = new Set([
+  'ApplyTaskCardDetailsModel',
+  'ApprovalTaskCardDetailsModel',
+]);
+const FLOW_TEMPLATE_ROOT_USE_FAMILIES: Record<string, string> = {
+  CreateFormModel: 'crudForm',
+  EditFormModel: 'crudForm',
+  ApplyFormModel: 'approvalForm',
+  ProcessFormModel: 'approvalForm',
+};
 const STATIC_CONTENT_BLOCK_USES = new Set([
   'MarkdownBlockModel',
   'IframeBlockModel',
@@ -247,6 +294,13 @@ const POPUP_ACTION_USES = new Set([
   'DuplicateActionModel',
   'AddChildActionModel',
   'MailSendActionModel',
+]);
+const POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES = new Set([
+  'ViewActionModel',
+  'EditActionModel',
+  'PopupCollectionActionModel',
+  'AddChildActionModel',
+  'DuplicateActionModel',
 ]);
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
 const CONFIRMABLE_SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel']);
@@ -437,7 +491,70 @@ type FlowSurfaceNormalizedResourceInput =
     }
   | undefined;
 
+type FlowSurfaceTemplateListTargetContext = {
+  target: FlowSurfaceWriteTarget;
+  resolved: FlowSurfaceResolvedTarget;
+  node: any;
+  resourceContext?: {
+    resourceInit?: Record<string, any>;
+  } | null;
+  fieldContainer?: {
+    ownerUid: string;
+    ownerUse?: string;
+  } | null;
+  fieldHostBlock?: any;
+  popupProfile?: FlowSurfacePopupBlockProfile | null;
+};
+
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
+const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE = 1;
+const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE = 50;
+
+function toTemplatePlainRow(row: any) {
+  if (!row) {
+    return row;
+  }
+  if (typeof row.toJSON === 'function') {
+    return row.toJSON();
+  }
+  return row;
+}
+
+function buildFlowTemplateSearchFilter(existing: any, search?: string) {
+  const filters = [];
+  if (existing) {
+    filters.push(existing);
+  }
+  const normalizedSearch = String(search || '').trim();
+  if (normalizedSearch) {
+    filters.push({
+      $or: [{ name: { $includes: normalizedSearch } }, { description: { $includes: normalizedSearch } }],
+    });
+  }
+  if (!filters.length) {
+    return undefined;
+  }
+  if (filters.length === 1) {
+    return filters[0];
+  }
+  return { $and: filters };
+}
+
+function normalizeTemplatePage(value: any) {
+  const num = Number(value || FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE);
+  if (!Number.isFinite(num) || num < 1) {
+    return FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE;
+  }
+  return Math.floor(num);
+}
+
+function normalizeTemplatePageSize(value: any) {
+  const num = Number(value || FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE);
+  if (!Number.isFinite(num) || num < 1) {
+    return FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE;
+  }
+  return Math.floor(num);
+}
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -456,6 +573,47 @@ export class FlowSurfacesService {
 
   private get routeSync() {
     return new FlowSurfaceRouteSync(this.db, this.repository);
+  }
+
+  private getFlowTemplateRepository(actionName: string) {
+    try {
+      return this.db.getRepository('flowModelTemplates');
+    } catch (error) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} requires '@nocobase/plugin-ui-templates' to be enabled`,
+        'FLOW_SURFACE_TEMPLATE_FEATURE_UNAVAILABLE',
+      );
+    }
+  }
+
+  private getFlowTemplateUsageRepository(actionName: string) {
+    try {
+      return this.db.getRepository('flowModelTemplateUsages');
+    } catch (error) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} requires '@nocobase/plugin-ui-templates' to be enabled`,
+        'FLOW_SURFACE_TEMPLATE_FEATURE_UNAVAILABLE',
+      );
+    }
+  }
+
+  private getFlowTemplateUsageModel(actionName: string) {
+    try {
+      return this.db.getModel('flowModelTemplateUsages');
+    } catch (error) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} requires '@nocobase/plugin-ui-templates' to be enabled`,
+        'FLOW_SURFACE_TEMPLATE_FEATURE_UNAVAILABLE',
+      );
+    }
+  }
+
+  private getFlowTemplateUsageRepositorySafe() {
+    try {
+      return this.db.getRepository('flowModelTemplateUsages');
+    } catch (error) {
+      return null;
+    }
   }
 
   private get contractGuard() {
@@ -1211,7 +1369,7 @@ export class FlowSurfacesService {
     let hasCurrentRecord = hasConfiguredFlowContextValue(filterByTk);
     if (
       !hasCurrentRecord &&
-      ['ViewActionModel', 'EditActionModel', 'PopupCollectionActionModel'].includes(hostNode?.use) &&
+      POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(hostNode?.use || '') &&
       hostContext.recordActionContainerUse
     ) {
       filterByTk = '{{ctx.view.inputArgs.filterByTk}}';
@@ -1880,7 +2038,10 @@ export class FlowSurfacesService {
   async get(input: Record<string, any>, options: { transaction?: any } = {}) {
     const target = this.normalizeGetTarget(input);
     const resolved = await this.locator.resolve(target, options);
-    const node = this.normalizePopupTreeShape(await this.loadResolvedNode(resolved, options.transaction));
+    const node = await this.decorateTemplateReadbackTree(
+      this.normalizePopupTreeShape(await this.loadResolvedNode(resolved, options.transaction)),
+      options.transaction,
+    );
     const nodeMap = flattenModel(node);
     const result: Record<string, any> = {
       target: this.buildReadTargetSummary(target, resolved),
@@ -1895,6 +2056,1665 @@ export class FlowSurfacesService {
     }
 
     return result;
+  }
+
+  private normalizeTemplateUidValue(actionName: string, values: Record<string, any>) {
+    const templateUid = String(values?.filterByTk || values?.uid || '').trim();
+    if (!templateUid) {
+      throwBadRequest(`flowSurfaces ${actionName} template uid is required`, 'FLOW_SURFACE_TEMPLATE_UID_REQUIRED');
+    }
+    return templateUid;
+  }
+
+  private normalizeRequiredTemplateString(actionName: string, value: any, field: string) {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      throwBadRequest(`flowSurfaces ${actionName} ${field} is required`, 'FLOW_SURFACE_TEMPLATE_REQUIRED_FIELD');
+    }
+    return normalized;
+  }
+
+  private normalizeTemplateSaveMode(actionName: string, value: any) {
+    const normalized = String(value || 'duplicate').trim() || 'duplicate';
+    if (normalized !== 'duplicate' && normalized !== 'convert') {
+      throwBadRequest(
+        `flowSurfaces ${actionName} saveMode only supports 'duplicate' or 'convert'`,
+        'FLOW_SURFACE_TEMPLATE_SAVE_MODE_UNSUPPORTED',
+      );
+    }
+    return normalized as 'duplicate' | 'convert';
+  }
+
+  private getFlowTemplateRootUseFamily(use: any) {
+    const normalizedUse = String(use || '').trim();
+    return FLOW_TEMPLATE_ROOT_USE_FAMILIES[normalizedUse] || normalizedUse;
+  }
+
+  private areFlowTemplateRootUsesCompatible(hostUse: any, templateUse: any) {
+    const normalizedHostUse = String(hostUse || '').trim();
+    const normalizedTemplateUse = String(templateUse || '').trim();
+    if (!normalizedHostUse || !normalizedTemplateUse) {
+      return true;
+    }
+    return this.getFlowTemplateRootUseFamily(normalizedHostUse) === this.getFlowTemplateRootUseFamily(normalizedTemplateUse);
+  }
+
+  private resolveAssociationTargetResourceInfo(input: FlowSurfaceTemplateResourceInfo): FlowSurfaceTemplateResourceInfo {
+    const dataSourceKey = String(input?.dataSourceKey || '').trim() || undefined;
+    const collectionName = String(input?.collectionName || '').trim() || undefined;
+    const associationName = String(input?.associationName || '').trim() || undefined;
+    if (!associationName) {
+      return {
+        dataSourceKey,
+        collectionName,
+      };
+    }
+
+    const parts = associationName.split('.').filter(Boolean);
+    const baseCollectionName = (parts.length > 1 ? parts[0] : collectionName) || undefined;
+    const fieldPath = (parts.length > 1 ? parts.slice(1).join('.') : associationName) || undefined;
+    if (!dataSourceKey || !baseCollectionName || !fieldPath) {
+      return {
+        dataSourceKey,
+        collectionName,
+        associationName,
+      };
+    }
+
+    const baseCollection = this.getCollection(dataSourceKey, baseCollectionName);
+    const associationField = resolveFieldFromCollection(baseCollection, fieldPath);
+    const targetCollection = resolveFieldTargetCollection(
+      associationField,
+      dataSourceKey,
+      (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
+    );
+
+    return {
+      dataSourceKey:
+        targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
+      collectionName:
+        getCollectionName(targetCollection) || getFieldTarget(associationField) || collectionName || baseCollectionName,
+      associationName,
+    };
+  }
+
+  private resolveTemplateResourceInfo(input: FlowSurfaceTemplateResourceInfo): FlowSurfaceTemplateResourceInfo {
+    return this.resolveAssociationTargetResourceInfo(input);
+  }
+
+  private resolveBlockTemplateExpectedResourceInfo(node: any): FlowSurfaceTemplateResourceInfo {
+    const init = _.get(node, ['stepParams', 'resourceSettings', 'init']) || {};
+    return this.resolveTemplateResourceInfo({
+      dataSourceKey: String(init.dataSourceKey || '').trim() || undefined,
+      collectionName: String(init.collectionName || '').trim() || undefined,
+      associationName: String(init.associationName || '').trim() || undefined,
+    });
+  }
+
+  private buildTemplateMissingResourceReason() {
+    return 'missing data source or collection information';
+  }
+
+  private buildTemplateDataSourceMismatchReason(expectedDataSourceKey: string, actualDataSourceKey: string) {
+    return `data source mismatch: expected '${expectedDataSourceKey}', got '${actualDataSourceKey}'`;
+  }
+
+  private buildTemplateCollectionMismatchReason(expectedCollectionName: string, actualCollectionName: string) {
+    return `collection mismatch: expected '${expectedCollectionName}', got '${actualCollectionName}'`;
+  }
+
+  private buildTemplateAssociationMismatchReason(expectedAssociationName?: string, actualAssociationName?: string) {
+    return `association mismatch: expected '${expectedAssociationName || '(none)'}', got '${actualAssociationName || '(none)'}'`;
+  }
+
+  private buildTemplateMissingContextReason(param: string) {
+    return `cannot resolve template parameter '${param}'`;
+  }
+
+  private getTemplateResourceCompatibilityDisabledReason(
+    template: FlowSurfaceTemplateRow,
+    expected: FlowSurfaceTemplateResourceInfo,
+    options: {
+      associationMatch?: 'none' | 'exactIfTemplateHasAssociationName' | 'associationResourceOnly';
+      checkResource?: boolean;
+    } = {},
+  ) {
+    const associationMatch = options.associationMatch || 'none';
+    const checkResource = options.checkResource !== false;
+    const templateAssociationName = String(template?.associationName || '').trim() || undefined;
+    const expectedAssociationName = String(expected?.associationName || '').trim() || undefined;
+
+    const getAssociationMismatchReason = () => {
+      if (associationMatch === 'none') {
+        return undefined;
+      }
+      if (associationMatch === 'exactIfTemplateHasAssociationName') {
+        if (!templateAssociationName || templateAssociationName === expectedAssociationName) {
+          return undefined;
+        }
+        return this.buildTemplateAssociationMismatchReason(expectedAssociationName, templateAssociationName);
+      }
+      const toAssociationResource = (value?: string) => (value && value.includes('.') ? value : undefined);
+      const templateAssociationResource = toAssociationResource(templateAssociationName);
+      if (!templateAssociationResource) {
+        return undefined;
+      }
+      const expectedAssociationResource = toAssociationResource(expectedAssociationName);
+      if (templateAssociationResource === expectedAssociationResource) {
+        return undefined;
+      }
+      return this.buildTemplateAssociationMismatchReason(expectedAssociationResource, templateAssociationResource);
+    };
+
+    if (!checkResource) {
+      return getAssociationMismatchReason();
+    }
+
+    const templateResource = this.resolveTemplateResourceInfo(template || {});
+    const expectedResource = this.resolveTemplateResourceInfo(expected || {});
+    if (expectedResource.dataSourceKey && expectedResource.collectionName) {
+      if (!templateResource.dataSourceKey || !templateResource.collectionName) {
+        return this.buildTemplateMissingResourceReason();
+      }
+      if (templateResource.dataSourceKey !== expectedResource.dataSourceKey) {
+        return this.buildTemplateDataSourceMismatchReason(
+          expectedResource.dataSourceKey,
+          templateResource.dataSourceKey,
+        );
+      }
+      if (templateResource.collectionName !== expectedResource.collectionName) {
+        return this.buildTemplateCollectionMismatchReason(
+          expectedResource.collectionName,
+          templateResource.collectionName,
+        );
+      }
+    }
+
+    return getAssociationMismatchReason();
+  }
+
+  private getFieldsTemplateDisabledReason(hostBlock: any, template: FlowSurfaceTemplateRow) {
+    if (!this.areFlowTemplateRootUsesCompatible(hostBlock?.use, template?.useModel)) {
+      return `requires root use compatible with '${template?.useModel || 'unknown'}', got '${hostBlock?.use || 'unknown'}'`;
+    }
+    return this.getTemplateResourceCompatibilityDisabledReason(
+      template,
+      this.resolveBlockTemplateExpectedResourceInfo(hostBlock),
+    );
+  }
+
+  private async assertFieldsTemplateCompatibility(actionName: string, hostBlock: any, template: FlowSurfaceTemplateRow) {
+    const disabledReason = this.getFieldsTemplateDisabledReason(hostBlock, template);
+    if (!disabledReason) {
+      return;
+    }
+    throwBadRequest(
+      `flowSurfaces ${actionName} fields template '${template.uid}' ${disabledReason}`,
+      disabledReason.startsWith('requires root use compatible')
+        ? 'FLOW_SURFACE_TEMPLATE_FIELDS_USE_MISMATCH'
+        : 'FLOW_SURFACE_TEMPLATE_FIELDS_RESOURCE_MISMATCH',
+    );
+  }
+
+  private async loadTemplateListTargetContext(
+    target: FlowSurfaceWriteTarget,
+    transaction?: any,
+  ): Promise<FlowSurfaceTemplateListTargetContext> {
+    const resolved = await this.locator.resolve(target, { transaction });
+    const node = await this.loadResolvedNode(resolved, transaction);
+    const resourceContext = await this.locator.resolveCollectionContext(node.uid, transaction).catch(() => null);
+    const fieldContainer = await this.surfaceContext.resolveFieldContainer(node.uid, transaction).catch(() => null);
+    const fieldHostBlock =
+      fieldContainer?.ownerUid && fieldContainer.ownerUid !== node.uid
+        ? await this.repository.findModelById(fieldContainer.ownerUid, {
+            transaction,
+            includeAsyncNode: true,
+          }).catch(() => null)
+        : fieldContainer?.ownerUid === node.uid
+          ? node
+          : null;
+    const popupProfile =
+      node?.uid && (POPUP_ACTION_USES.has(node.use) || this.isPopupFieldHostUse(node.use))
+        ? await this.resolvePopupBlockProfile(node.uid, resolved, node, transaction).catch(() => null)
+        : null;
+
+    return {
+      target,
+      resolved,
+      node,
+      resourceContext,
+      fieldContainer,
+      fieldHostBlock,
+      popupProfile,
+    };
+  }
+
+  private inferTemplateListCurrentRecordCapability(node: any): boolean | undefined {
+    const use = String(node?.use || '').trim();
+    if (!use) {
+      return undefined;
+    }
+    if (DETAILS_BLOCK_USES.has(use) || RECORD_CONTEXT_OWNER_USES.has(use)) {
+      return true;
+    }
+    if (['ListItemModel', 'GridCardItemModel'].includes(use)) {
+      return true;
+    }
+    if (['FilterFormBlockModel', 'ActionPanelBlockModel'].includes(use)) {
+      return false;
+    }
+    return undefined;
+  }
+
+  private getBlockTemplateDisabledReason(
+    template: FlowSurfaceTemplateRow,
+    targetContext?: FlowSurfaceTemplateListTargetContext,
+  ) {
+    const expectedAssociationName =
+      String(targetContext?.resourceContext?.resourceInit?.associationName || '').trim() || undefined;
+    return this.getTemplateResourceCompatibilityDisabledReason(
+      template,
+      {
+        associationName: expectedAssociationName,
+      },
+      {
+        checkResource: false,
+        associationMatch: 'associationResourceOnly',
+      },
+    );
+  }
+
+  private async assertBlockTemplateCompatibility(
+    actionName: string,
+    target: FlowSurfaceWriteTarget,
+    template: FlowSurfaceTemplateRow,
+    transaction?: any,
+  ) {
+    const disabledReason = this.getBlockTemplateDisabledReason(
+      template,
+      await this.loadTemplateListTargetContext(target, transaction),
+    );
+    if (disabledReason) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template '${template.uid}' ${disabledReason}`,
+        'FLOW_SURFACE_TEMPLATE_BLOCK_RESOURCE_MISMATCH',
+      );
+    }
+  }
+
+  private async getPopupTemplateDisabledReason(
+    template: FlowSurfaceTemplateRow,
+    targetContext?: FlowSurfaceTemplateListTargetContext,
+  ) {
+    if (!targetContext?.node?.uid) {
+      return undefined;
+    }
+
+    const popupProfile = targetContext.popupProfile;
+    if (popupProfile?.isPopupSurface) {
+      const resourceReason = this.getTemplateResourceCompatibilityDisabledReason(
+        template,
+        {
+          dataSourceKey: popupProfile.dataSourceKey,
+          collectionName: popupProfile.collectionName,
+          associationName: popupProfile.associationName,
+        },
+        {
+          associationMatch: 'exactIfTemplateHasAssociationName',
+        },
+      );
+      if (resourceReason) {
+        return resourceReason;
+      }
+      if (String(template.filterByTk || '').trim() && !popupProfile.hasCurrentRecord) {
+        return this.buildTemplateMissingContextReason('filterByTk');
+      }
+      return undefined;
+    }
+
+    const expectedResourceInit = targetContext.resourceContext?.resourceInit || {};
+    const resourceReason = this.getTemplateResourceCompatibilityDisabledReason(
+      template,
+      {
+        dataSourceKey: String(expectedResourceInit.dataSourceKey || '').trim() || undefined,
+        collectionName: String(expectedResourceInit.collectionName || '').trim() || undefined,
+        associationName: String(expectedResourceInit.associationName || '').trim() || undefined,
+      },
+      {
+        associationMatch: 'exactIfTemplateHasAssociationName',
+      },
+    );
+    if (resourceReason) {
+      return resourceReason;
+    }
+    if (
+      String(template.filterByTk || '').trim() &&
+      this.inferTemplateListCurrentRecordCapability(targetContext.node) === false
+    ) {
+      return this.buildTemplateMissingContextReason('filterByTk');
+    }
+    return undefined;
+  }
+
+  private async getTemplateListDisabledReason(
+    template: FlowSurfaceTemplateRow,
+    values: {
+      requestedType?: 'block' | 'popup';
+      requestedUsage?: 'block' | 'fields';
+      targetContext?: FlowSurfaceTemplateListTargetContext;
+    },
+  ) {
+    const normalizedType = String(template?.type || '').trim() || 'block';
+    if (values.requestedType === 'popup' || normalizedType === 'popup') {
+      return this.getPopupTemplateDisabledReason(template, values.targetContext);
+    }
+    if (values.requestedUsage === 'fields') {
+      const hostBlock =
+        values.targetContext?.fieldHostBlock ||
+        (values.targetContext?.node?.uid && BLOCK_KEY_BY_USE.has(values.targetContext.node.use)
+          ? values.targetContext.node
+          : null);
+      if (!hostBlock?.uid) {
+        return undefined;
+      }
+      return this.getFieldsTemplateDisabledReason(hostBlock, template);
+    }
+    return this.getBlockTemplateDisabledReason(template, values.targetContext);
+  }
+
+  private async withTemplateAvailability(
+    rows: FlowSurfaceTemplateRow[],
+    values: {
+      requestedType?: 'block' | 'popup';
+      requestedUsage?: 'block' | 'fields';
+      targetContext?: FlowSurfaceTemplateListTargetContext;
+    },
+  ) {
+    const shouldAnnotate =
+      !!values.requestedType || !!values.requestedUsage || !!values.targetContext?.target?.uid;
+    if (!shouldAnnotate) {
+      return rows;
+    }
+    return Promise.all(
+      rows.map(async (row) => {
+        const disabledReason = await this.getTemplateListDisabledReason(row, values);
+        return {
+          ...row,
+          available: !disabledReason,
+          ...(disabledReason ? { disabledReason } : {}),
+        } satisfies FlowSurfaceTemplateRow;
+      }),
+    );
+  }
+
+  private async assertPopupTemplateCompatibility(
+    actionName: string,
+    hostUid: string | undefined,
+    template: FlowSurfaceTemplateRow,
+    transaction?: any,
+  ) {
+    const normalizedHostUid = String(hostUid || '').trim();
+    if (!normalizedHostUid) {
+      return;
+    }
+    const hostNode = await this.repository.findModelById(normalizedHostUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (!hostNode?.uid) {
+      return;
+    }
+
+    const popupProfile = await this.resolvePopupBlockProfile(normalizedHostUid, null, hostNode, transaction).catch(
+      () => null,
+    );
+    if (!popupProfile?.isPopupSurface) {
+      return;
+    }
+
+    const disabledReason = await this.getPopupTemplateDisabledReason(template, {
+      target: { uid: normalizedHostUid },
+      resolved: {
+        uid: normalizedHostUid,
+        target: { uid: normalizedHostUid },
+        kind: 'node',
+      } as FlowSurfaceResolvedTarget,
+      node: hostNode,
+      popupProfile,
+    });
+    if (!disabledReason) {
+      return;
+    }
+    throwBadRequest(
+      `flowSurfaces ${actionName} popup template '${template.uid}' ${disabledReason}`,
+      disabledReason.includes("parameter 'filterByTk'")
+        ? 'FLOW_SURFACE_TEMPLATE_POPUP_CONTEXT_MISMATCH'
+        : 'FLOW_SURFACE_TEMPLATE_POPUP_RESOURCE_MISMATCH',
+    );
+  }
+
+  private normalizeOptionalFlowTemplateType(actionName: string, type: any) {
+    if (_.isUndefined(type) || _.isNull(type) || String(type).trim() === '') {
+      return undefined;
+    }
+    const normalizedType = String(type).trim();
+    if (!FLOW_TEMPLATE_SUPPORTED_TYPES.has(normalizedType)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} type only supports 'block' or 'popup'`,
+        'FLOW_SURFACE_TEMPLATE_TYPE_UNSUPPORTED',
+      );
+    }
+    return normalizedType as 'block' | 'popup';
+  }
+
+  private buildTemplateListFilter(existingFilter: any, search: any, requestedType?: 'block' | 'popup') {
+    const typeFilter = requestedType ? { type: requestedType } : undefined;
+    return buildFlowTemplateSearchFilter(
+      existingFilter && typeFilter ? { $and: [existingFilter, typeFilter] } : existingFilter || typeFilter,
+      search,
+    );
+  }
+
+  private async withFlowTemplateUsageCounts(
+    rows: any[],
+    actionName: string,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceTemplateRow[]> {
+    const data = rows.map((row) => toTemplatePlainRow(row)).filter(Boolean);
+    const templateUids = data
+      .map((row) => String(row?.uid || '').trim())
+      .filter(Boolean);
+    if (!templateUids.length) {
+      return data;
+    }
+    const UsageModel = this.getFlowTemplateUsageModel(actionName);
+    const usageRows = await UsageModel.findAll({
+      attributes: ['templateUid', [UsageModel.sequelize.fn('COUNT', '*'), 'count']],
+      where: {
+        templateUid: templateUids,
+      },
+      group: ['templateUid'],
+      raw: true,
+      transaction: options.transaction,
+    });
+    const usageMap = new Map<string, number>();
+    for (const row of usageRows as any[]) {
+      usageMap.set(String(row.templateUid), Number(row.count) || 0);
+    }
+    return data.map((row) => ({
+      ...row,
+      usageCount: usageMap.get(String(row.uid || '')) || 0,
+    }));
+  }
+
+  async listTemplates(
+    values: FlowSurfaceTemplateListValues = {},
+    options: { transaction?: any } = {},
+  ): Promise<{
+    rows: FlowSurfaceTemplateRow[];
+    count: number;
+    page: number;
+    pageSize: number;
+    totalPage: number;
+  }> {
+    const repo = this.getFlowTemplateRepository('listTemplates');
+    const requestedType =
+      this.normalizeOptionalFlowTemplateType('listTemplates', values?.type) ||
+      (!_.isUndefined(values?.usage) ? 'block' : undefined);
+    const requestedUsage =
+      _.isUndefined(values?.usage) || _.isNull(values?.usage) || String(values?.usage).trim() === ''
+      ? undefined
+      : this.normalizeFlowTemplateUsage('listTemplates', values?.usage);
+    if (requestedType === 'popup' && requestedUsage) {
+      throwBadRequest(
+        `flowSurfaces listTemplates usage is only supported when type='block'`,
+        'FLOW_SURFACE_TEMPLATE_USAGE_UNSUPPORTED',
+      );
+    }
+    const target = _.isUndefined(values?.target)
+      ? undefined
+      : this.normalizeWriteTarget('listTemplates', values?.target, values);
+    const targetContext = target ? await this.loadTemplateListTargetContext(target, options.transaction) : undefined;
+    const filter = this.buildTemplateListFilter(values?.filter, values?.search, requestedType);
+    const page = normalizeTemplatePage(values?.page);
+    const pageSize = normalizeTemplatePageSize(values?.pageSize);
+    const [rows, count] = await repo.findAndCount({
+      filter,
+      sort: values?.sort,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+      transaction: options.transaction,
+    });
+    return {
+      rows: await this.withTemplateAvailability(
+        await this.withFlowTemplateUsageCounts(rows, 'listTemplates', options),
+        {
+          requestedType,
+          requestedUsage,
+          targetContext,
+        },
+      ),
+      count,
+      page,
+      pageSize,
+      totalPage: Math.ceil(count / pageSize),
+    };
+  }
+
+  async getTemplate(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const templateUid = this.normalizeTemplateUidValue('getTemplate', values || {});
+    const template = await this.getFlowTemplateOrThrow('getTemplate', templateUid, {
+      transaction: options.transaction,
+    });
+    const [row] = await this.withFlowTemplateUsageCounts([template], 'getTemplate', options);
+    return row;
+  }
+
+  private findFlowTemplateOpenViewStep(node: any) {
+    for (const [flowKey, stepKey] of POPUP_HOST_STEP_PARAM_PATHS) {
+      const openView = _.get(node, ['stepParams', flowKey, stepKey]);
+      if (_.isPlainObject(openView)) {
+        return {
+          flowKey,
+          stepKey,
+          openView,
+        };
+      }
+    }
+    return null;
+  }
+
+  private async inferSaveTemplateTarget(actionName: string, node: any, transaction?: any) {
+    const openViewStep = this.findFlowTemplateOpenViewStep(node);
+    const openView = openViewStep?.openView || {};
+    const popupTargetUid = String(openView.uid || '').trim();
+    const popupPageUid = String(node?.subModels?.page?.uid || '').trim();
+    const popupTemplateUid = String(openView.popupTemplateUid || '').trim();
+    if (popupTargetUid || popupPageUid) {
+      const sourceUse = String(node?.use || '').trim();
+      if (!POPUP_ACTION_USES.has(sourceUse) && !this.isPopupFieldHostUse(sourceUse)) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} target '${node?.uid || 'unknown'}' is not a supported popup action or field template source`,
+          'FLOW_SURFACE_TEMPLATE_POPUP_SOURCE_UNSUPPORTED',
+        );
+      }
+      if (popupTemplateUid) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} target '${node.uid}' already uses a popup template; convert it to copy first`,
+          'FLOW_SURFACE_TEMPLATE_SOURCE_ALREADY_TEMPLATED',
+        );
+      }
+      const popupProfile = await this.resolvePopupBlockProfile(node.uid, null, node, transaction).catch(() => null);
+      return {
+        templateType: 'popup' as const,
+        sourceUid: popupTargetUid || String(node.uid || '').trim(),
+        useModel: String(node.use || '').trim() || undefined,
+        dataSourceKey:
+          String(openView.dataSourceKey || '').trim() || String(popupProfile?.dataSourceKey || '').trim() || undefined,
+        collectionName:
+          String(openView.collectionName || '').trim() ||
+          String(popupProfile?.collectionName || '').trim() ||
+          undefined,
+        associationName:
+          String(openView.associationName || '').trim() ||
+          String(popupProfile?.associationName || '').trim() ||
+          undefined,
+        filterByTk: String(openView.filterByTk || '').trim() || String(popupProfile?.filterByTk || '').trim() || undefined,
+        sourceId: String(openView.sourceId || '').trim() || String(popupProfile?.sourceId || '').trim() || undefined,
+        openViewStep,
+      };
+    }
+
+    const use = String(node?.use || '').trim();
+    const parentUid = String(node?.parentId || '').trim();
+    if (parentUid) {
+      const parentNode = await this.repository.findModelById(parentUid, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      if (parentNode?.use === 'ReferenceBlockModel') {
+        throwBadRequest(
+          `flowSurfaces ${actionName} target '${node.uid}' belongs to a referenced block; convert it to copy first`,
+          'FLOW_SURFACE_TEMPLATE_SOURCE_ALREADY_TEMPLATED',
+        );
+      }
+    }
+
+    const referenceGrid = getSingleNodeSubModel(node?.subModels?.grid);
+    const fieldsTemplateUid = String(_.get(referenceGrid, ['stepParams', 'referenceSettings', 'useTemplate', 'templateUid']) || '').trim();
+    if (fieldsTemplateUid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} target '${node.uid}' already uses a fields template; convert it to copy first`,
+        'FLOW_SURFACE_TEMPLATE_SOURCE_ALREADY_TEMPLATED',
+      );
+    }
+
+    if (
+      !BLOCK_KEY_BY_USE.has(use) ||
+      use === 'ReferenceBlockModel' ||
+      use === 'ReferenceFormGridModel' ||
+      FLOW_TEMPLATE_UNSUPPORTED_BLOCK_TEMPLATE_SOURCE_USES.has(use)
+    ) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} target '${use || node?.uid || 'unknown'}' is not a supported block or popup template source`,
+        'FLOW_SURFACE_TEMPLATE_SOURCE_UNSUPPORTED',
+      );
+    }
+
+    const init = _.get(node, ['stepParams', 'resourceSettings', 'init']) || {};
+    return {
+      templateType: 'block' as const,
+      sourceUid: String(node.uid || '').trim(),
+      useModel: use || undefined,
+      dataSourceKey: String(init.dataSourceKey || '').trim() || undefined,
+      collectionName: String(init.collectionName || '').trim() || undefined,
+      associationName: String(init.associationName || '').trim() || undefined,
+      filterByTk: String(init.filterByTk || '').trim() || undefined,
+      sourceId: String(init.sourceId || '').trim() || undefined,
+      openViewStep: null,
+    };
+  }
+
+  private createFlowTemplateReferenceBlockModel(
+    currentNode: any,
+    template: FlowSurfaceTemplateRow,
+    templateTargetUid: string,
+  ) {
+    const init = buildDefinedPayload(_.get(currentNode, ['stepParams', 'resourceSettings', 'init']) || {});
+    return {
+      uid: currentNode.uid,
+      use: 'ReferenceBlockModel',
+      parentId: currentNode.parentId,
+      subKey: currentNode.subKey,
+      subType: currentNode.subType,
+      stepParams: this.buildFlowTemplateReferenceBlockStepParams(template, templateTargetUid, init),
+    };
+  }
+
+  private buildFlowTemplateReferenceBlockStepParams(
+    template: FlowSurfaceTemplateRow,
+    templateTargetUid: string,
+    resourceInit?: Record<string, any>,
+  ) {
+    const normalizedResourceInit = buildDefinedPayload(resourceInit || {});
+    return buildDefinedPayload({
+      referenceSettings: {
+        target: {
+          targetUid: templateTargetUid,
+          mode: 'reference',
+        },
+        useTemplate: {
+          templateUid: template.uid,
+          templateName: template.name,
+          templateDescription: template.description,
+          targetUid: templateTargetUid,
+          mode: 'reference',
+        },
+      },
+      ...(Object.keys(normalizedResourceInit).length
+        ? {
+            resourceSettings: {
+              init: normalizedResourceInit,
+            },
+          }
+        : {}),
+    });
+  }
+
+  private buildPopupTemplateReferenceOpenView(template: FlowSurfaceTemplateRow, templateTargetUid: string) {
+    return this.buildPopupTemplateOpenView(template, 'reference', templateTargetUid);
+  }
+
+  private collectFlowTemplateUsageMap(node: any, carry = new Map<string, Set<string>>()) {
+    if (!node?.uid) {
+      return carry;
+    }
+
+    const addUsage = (templateUid: any) => {
+      const normalizedTemplateUid = String(templateUid || '').trim();
+      if (!normalizedTemplateUid) {
+        return;
+      }
+      if (!carry.has(node.uid)) {
+        carry.set(node.uid, new Set<string>());
+      }
+      carry.get(node.uid)?.add(normalizedTemplateUid);
+    };
+
+    const useTemplate = _.get(node, ['stepParams', 'referenceSettings', 'useTemplate']);
+    const useTemplateUid = String(useTemplate?.templateUid || '').trim();
+    const useTemplateMode = String(useTemplate?.mode || 'reference').trim() || 'reference';
+    if (useTemplateUid && useTemplateMode !== 'copy') {
+      addUsage(useTemplateUid);
+    }
+
+    const popupGroups = [
+      _.get(node, ['stepParams', 'popupSettings']),
+      _.get(node, ['stepParams', 'selectExitRecordSettings']),
+    ];
+    for (const group of popupGroups) {
+      if (!group || typeof group !== 'object') {
+        continue;
+      }
+      for (const value of Object.values(group)) {
+        const popupTemplateUid = String((value as any)?.popupTemplateUid || '').trim();
+        const popupTemplateMode = String((value as any)?.popupTemplateMode || 'reference').trim() || 'reference';
+        if (popupTemplateUid && popupTemplateMode !== 'copy') {
+          addUsage(popupTemplateUid);
+        }
+      }
+    }
+
+    for (const child of Object.values(node.subModels || {})) {
+      for (const item of _.castArray(child as any)) {
+        this.collectFlowTemplateUsageMap(item, carry);
+      }
+    }
+
+    return carry;
+  }
+
+  private collectFlowTemplateUsageMapFromModelOptions(modelUid: string, options: any, carry = new Map<string, Set<string>>()) {
+    const normalizedModelUid = String(modelUid || '').trim();
+    if (!normalizedModelUid) {
+      return carry;
+    }
+
+    const addUsage = (templateUid: any) => {
+      const normalizedTemplateUid = String(templateUid || '').trim();
+      if (!normalizedTemplateUid) {
+        return;
+      }
+      if (!carry.has(normalizedModelUid)) {
+        carry.set(normalizedModelUid, new Set<string>());
+      }
+      carry.get(normalizedModelUid)?.add(normalizedTemplateUid);
+    };
+
+    const normalizedOptions =
+      _.isPlainObject(options) || Array.isArray(options)
+        ? options
+        : typeof options === 'string'
+          ? JSON.parse(options)
+          : {};
+    const useTemplate = _.get(normalizedOptions, ['stepParams', 'referenceSettings', 'useTemplate']);
+    const useTemplateUid = String(useTemplate?.templateUid || '').trim();
+    const useTemplateMode = String(useTemplate?.mode || 'reference').trim() || 'reference';
+    if (useTemplateUid && useTemplateMode !== 'copy') {
+      addUsage(useTemplateUid);
+    }
+
+    const popupGroups = [
+      _.get(normalizedOptions, ['stepParams', 'popupSettings']),
+      _.get(normalizedOptions, ['stepParams', 'selectExitRecordSettings']),
+    ];
+    for (const group of popupGroups) {
+      if (!group || typeof group !== 'object') {
+        continue;
+      }
+      for (const value of Object.values(group)) {
+        const popupTemplateUid = String((value as any)?.popupTemplateUid || '').trim();
+        const popupTemplateMode = String((value as any)?.popupTemplateMode || 'reference').trim() || 'reference';
+        if (popupTemplateUid && popupTemplateMode !== 'copy') {
+          addUsage(popupTemplateUid);
+        }
+      }
+    }
+
+    return carry;
+  }
+
+  private collectFlowTemplateModelUids(node: any, carry = new Set<string>()) {
+    if (!node?.uid) {
+      return carry;
+    }
+    carry.add(String(node.uid));
+    for (const child of Object.values(node.subModels || {})) {
+      for (const item of _.castArray(child as any)) {
+        this.collectFlowTemplateModelUids(item, carry);
+      }
+    }
+    return carry;
+  }
+
+  private async clearFlowTemplateUsagesByModelUids(modelUids: Iterable<string>, transaction?: any) {
+    const usageRepo = this.getFlowTemplateUsageRepositorySafe();
+    if (!usageRepo) {
+      return;
+    }
+    for (const modelUid of modelUids) {
+      const normalizedModelUid = String(modelUid || '').trim();
+      if (!normalizedModelUid) {
+        continue;
+      }
+      await usageRepo.destroy({
+        filter: { modelUid: normalizedModelUid },
+        transaction,
+      });
+    }
+  }
+
+  private async clearFlowTemplateUsagesForNodeTree(nodeOrUid: any, transaction?: any) {
+    const usageRepo = this.getFlowTemplateUsageRepositorySafe();
+    if (!usageRepo) {
+      return;
+    }
+    const modelUids =
+      typeof nodeOrUid === 'string'
+        ? new Set<string>(
+            (await this.repository.findNodesById(nodeOrUid, {
+              transaction,
+              includeAsyncNode: true,
+            }))
+              .map((row: any) => String(row?.uid || '').trim())
+              .filter(Boolean),
+          )
+        : this.collectFlowTemplateModelUids(nodeOrUid);
+    if (!modelUids.size) {
+      return;
+    }
+    await this.clearFlowTemplateUsagesByModelUids(modelUids, transaction);
+  }
+
+  private async syncFlowTemplateUsagesForNodeTree(rootUid: string, transaction?: any) {
+    const usageRepo = this.getFlowTemplateUsageRepositorySafe();
+    if (!usageRepo) {
+      return;
+    }
+    const persistedNodes = await this.repository.findNodesById(rootUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (!persistedNodes?.length) {
+      return;
+    }
+
+    const usageMap = new Map<string, Set<string>>();
+    const modelUids = new Set<string>();
+    for (const row of persistedNodes as any[]) {
+      const modelUid = String(row?.uid || '').trim();
+      if (!modelUid) {
+        continue;
+      }
+      modelUids.add(modelUid);
+      this.collectFlowTemplateUsageMapFromModelOptions(modelUid, row?.options, usageMap);
+    }
+    await this.clearFlowTemplateUsagesByModelUids(modelUids, transaction);
+
+    for (const [modelUid, templateUids] of usageMap.entries()) {
+      for (const templateUid of templateUids) {
+        await usageRepo.updateOrCreate({
+          filterKeys: ['templateUid', 'modelUid'],
+          values: {
+            uid: uid(),
+            templateUid,
+            modelUid,
+          },
+          transaction,
+          context: {
+            disableAfterDestroy: true,
+          },
+        });
+      }
+    }
+  }
+
+  private async clearFlowTemplateUsagesForRouteSchemaUid(schemaUid: string, transaction?: any) {
+    const normalizedSchemaUid = String(schemaUid || '').trim();
+    if (!normalizedSchemaUid) {
+      return;
+    }
+    const anchorNode = await this.repository.findModelById(normalizedSchemaUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (anchorNode?.uid) {
+      await this.clearFlowTemplateUsagesForNodeTree(anchorNode, transaction);
+    }
+    const asyncGridChild = await this.repository.findModelByParentId(normalizedSchemaUid, {
+      transaction,
+      subKey: 'grid',
+      includeAsyncNode: true,
+    });
+    if (asyncGridChild?.uid) {
+      await this.clearFlowTemplateUsagesForNodeTree(asyncGridChild, transaction);
+    }
+  }
+
+  private async syncTemplateMetaToReferencedModels(template: FlowSurfaceTemplateRow, transaction?: any) {
+    const usageRepo = this.getFlowTemplateUsageRepositorySafe();
+    if (!usageRepo || !template?.uid) {
+      return;
+    }
+    const usageRows = await usageRepo.find({
+      filter: { templateUid: template.uid },
+      fields: ['modelUid'],
+      transaction,
+    });
+    const modelUids = _.uniq(
+      usageRows
+        .map((row: any) => String(row?.get?.('modelUid') || row?.modelUid || '').trim())
+        .filter(Boolean),
+    );
+
+    for (const modelUid of modelUids) {
+      const model = await this.repository.findOne({
+        filter: { uid: modelUid },
+        transaction,
+      });
+      if (!model) {
+        continue;
+      }
+      const options = FlowModelRepository.optionsToJson(model.get('options') || model.options || {});
+      const useTemplate = _.get(options, ['stepParams', 'referenceSettings', 'useTemplate']);
+      if (!useTemplate || String(useTemplate.templateUid || '').trim() !== template.uid) {
+        continue;
+      }
+      const nextOptions = _.cloneDeep(options);
+      _.set(nextOptions, ['stepParams', 'referenceSettings', 'useTemplate'], {
+        ...useTemplate,
+        templateName: template.name,
+        templateDescription: template.description,
+        targetUid: template.targetUid || useTemplate.targetUid,
+      });
+      await this.db.getRepository('flowModels').update({
+        filterByTk: modelUid,
+        values: {
+          options: nextOptions,
+        },
+        transaction,
+      });
+    }
+  }
+
+  private resolveFlowModelAttachPosition(node: any, parentNode: any) {
+    if (!node?.uid || !parentNode?.uid || node?.subType !== 'array' || !node?.subKey) {
+      return undefined;
+    }
+    const siblings = _.castArray(parentNode?.subModels?.[node.subKey] || []).filter((item: any) => item?.uid);
+    const currentIndex = siblings.findIndex((item: any) => item.uid === node.uid);
+    if (currentIndex < 0) {
+      return undefined;
+    }
+    const nextSibling = siblings.slice(currentIndex + 1).find((item: any) => item?.uid);
+    if (nextSibling?.uid) {
+      return {
+        type: 'before' as const,
+        target: nextSibling.uid,
+      };
+    }
+    const previousSibling = siblings.slice(0, currentIndex).reverse().find((item: any) => item?.uid);
+    if (previousSibling?.uid) {
+      return {
+        type: 'after' as const,
+        target: previousSibling.uid,
+      };
+    }
+    return undefined;
+  }
+
+  private async repositionFlowModelInParent(node: any, parentNode: any, transaction?: any) {
+    const position = this.resolveFlowModelAttachPosition(node, parentNode);
+    if (!position || !node?.uid || !node?.parentId || !node?.subKey || !node?.subType) {
+      return;
+    }
+    await this.repository.attach(
+      node.uid,
+      {
+        parentId: node.parentId,
+        subKey: node.subKey,
+        subType: node.subType,
+        position,
+      },
+      { transaction },
+    );
+  }
+
+  private async convertBlockSourceToTemplateReference(
+    sourceNode: any,
+    template: FlowSurfaceTemplateRow,
+    templateTargetUid: string,
+    transaction?: any,
+  ) {
+    if (!sourceNode?.uid || !sourceNode?.parentId || !sourceNode?.subKey || !sourceNode?.subType) {
+      throwBadRequest(
+        `flowSurfaces saveTemplate target '${sourceNode?.uid || 'unknown'}' cannot be converted in place`,
+        'FLOW_SURFACE_TEMPLATE_CONVERT_TARGET_INVALID',
+      );
+    }
+    const parentNode = await this.repository.findModelById(sourceNode.parentId, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    await this.clearFlowTemplateUsagesForNodeTree(sourceNode, transaction);
+    await this.repository.remove(sourceNode.uid, { transaction });
+    await this.repository.upsertModel(
+      this.createFlowTemplateReferenceBlockModel(sourceNode, template, templateTargetUid),
+      {
+        transaction,
+      },
+    );
+    await this.repositionFlowModelInParent(sourceNode, parentNode, transaction);
+    await this.syncFlowTemplateUsagesForNodeTree(sourceNode.uid, transaction);
+    return {
+      uid: sourceNode.uid,
+      type: 'block' as const,
+    };
+  }
+
+  private async convertPopupSourceToTemplateReference(
+    sourceNode: any,
+    openViewStep: { flowKey: string; stepKey: string; openView: Record<string, any> },
+    template: FlowSurfaceTemplateRow,
+    templateTargetUid: string,
+    transaction?: any,
+  ) {
+    if (!sourceNode?.uid || !openViewStep) {
+      throwBadRequest(
+        `flowSurfaces saveTemplate target '${sourceNode?.uid || 'unknown'}' cannot be converted to popup template reference`,
+        'FLOW_SURFACE_TEMPLATE_CONVERT_TARGET_INVALID',
+      );
+    }
+    const nextStepParams = _.cloneDeep(sourceNode.stepParams || {});
+    const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
+      ? _.cloneDeep(nextStepParams[openViewStep.flowKey])
+      : {};
+    currentGroup[openViewStep.stepKey] = {
+      ..._.omit(openViewStep.openView || {}, [
+        'popupTemplateUid',
+        'popupTemplateMode',
+        'popupTemplateContext',
+        'popupTemplateHasFilterByTk',
+        'popupTemplateHasSourceId',
+      ]),
+      ...this.buildPopupTemplateReferenceOpenView(template, templateTargetUid),
+    };
+    nextStepParams[openViewStep.flowKey] = currentGroup;
+    await this.cleanupLocalPopupSurfaceForHost(sourceNode.uid, transaction, sourceNode);
+    await this.repository.patch(
+      {
+        uid: sourceNode.uid,
+        stepParams: nextStepParams,
+      },
+      { transaction },
+    );
+    await this.syncFlowTemplateUsagesForNodeTree(sourceNode.uid, transaction);
+    return {
+      uid: sourceNode.uid,
+      type: 'popup' as const,
+    };
+  }
+
+  async saveTemplate(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const templateRepo = this.getFlowTemplateRepository('saveTemplate');
+    const name = this.normalizeRequiredTemplateString('saveTemplate', values?.name, 'name');
+    const description = this.normalizeRequiredTemplateString('saveTemplate', values?.description, 'description');
+    const saveMode = this.normalizeTemplateSaveMode('saveTemplate', values?.saveMode);
+    const target = this.normalizeWriteTarget('saveTemplate', values?.target, values);
+    const sourceNode = await this.repository.findModelById(target.uid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (!sourceNode?.uid) {
+      throwBadRequest(
+        `flowSurfaces saveTemplate target '${target.uid}' does not exist`,
+        'FLOW_SURFACE_TEMPLATE_SOURCE_NOT_FOUND',
+      );
+    }
+
+    const inferred = await this.inferSaveTemplateTarget('saveTemplate', sourceNode, options.transaction);
+    const duplicatedTarget = await this.duplicateDetachedFlowModelTree(
+      'saveTemplate',
+      inferred.sourceUid,
+      options.transaction,
+    );
+    const templateTargetUid = String(duplicatedTarget?.uid || '').trim();
+    if (!templateTargetUid) {
+      throwConflict(
+        `flowSurfaces saveTemplate failed to duplicate target '${inferred.sourceUid}'`,
+        'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+      );
+    }
+    if (inferred.templateType === 'popup') {
+      await this.ensurePopupSurface(templateTargetUid, options.transaction);
+    }
+
+    const templateUid = String(values?.uid || uid()).trim() || uid();
+    await templateRepo.create({
+      values: buildDefinedPayload({
+        uid: templateUid,
+        name,
+        description,
+        targetUid: templateTargetUid,
+        useModel: inferred.useModel,
+        type: inferred.templateType,
+        dataSourceKey: inferred.dataSourceKey,
+        collectionName: inferred.collectionName,
+        associationName: inferred.associationName,
+        filterByTk: inferred.filterByTk,
+        sourceId: inferred.sourceId,
+      }),
+      transaction: options.transaction,
+    });
+    await this.syncFlowTemplateUsagesForNodeTree(templateTargetUid, options.transaction);
+
+    if (saveMode === 'convert') {
+      const template = {
+        uid: templateUid,
+        name,
+        description,
+        targetUid: templateTargetUid,
+        useModel: inferred.useModel,
+        type: inferred.templateType,
+        dataSourceKey: inferred.dataSourceKey,
+        collectionName: inferred.collectionName,
+        associationName: inferred.associationName,
+        filterByTk: inferred.filterByTk,
+        sourceId: inferred.sourceId,
+      } satisfies FlowSurfaceTemplateRow;
+
+      if (inferred.templateType === 'popup') {
+        await this.convertPopupSourceToTemplateReference(
+          sourceNode,
+          inferred.openViewStep,
+          template,
+          templateTargetUid,
+          options.transaction,
+        );
+      } else {
+        await this.convertBlockSourceToTemplateReference(sourceNode, template, templateTargetUid, options.transaction);
+      }
+    }
+
+    return this.getTemplate(
+      {
+        filterByTk: templateUid,
+      },
+      options,
+    );
+  }
+
+  async updateTemplate(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const templateRepo = this.getFlowTemplateRepository('updateTemplate');
+    const templateUid = this.normalizeTemplateUidValue('updateTemplate', values || {});
+    const name = this.normalizeRequiredTemplateString('updateTemplate', values?.name, 'name');
+    const description = this.normalizeRequiredTemplateString('updateTemplate', values?.description, 'description');
+
+    await templateRepo.update({
+      filterByTk: templateUid,
+      values: {
+        name,
+        description,
+      },
+      transaction: options.transaction,
+    });
+
+    const template = await this.getTemplate(
+      {
+        filterByTk: templateUid,
+      },
+      options,
+    );
+    await this.syncTemplateMetaToReferencedModels(template as FlowSurfaceTemplateRow, options.transaction);
+    return template;
+  }
+
+  async destroyTemplate(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const templateRepo = this.getFlowTemplateRepository('destroyTemplate');
+    const usageRepo = this.getFlowTemplateUsageRepository('destroyTemplate');
+    const templateUid = this.normalizeTemplateUidValue('destroyTemplate', values || {});
+    const template = await this.getFlowTemplateOrThrow('destroyTemplate', templateUid, {
+      transaction: options.transaction,
+    });
+    const usageCount = await usageRepo.count({
+      filter: { templateUid },
+      transaction: options.transaction,
+    });
+    if (usageCount > 0) {
+      throwBadRequest(
+        `flowSurfaces destroyTemplate template '${templateUid}' is still in use (${usageCount})`,
+        'FLOW_SURFACE_TEMPLATE_IN_USE',
+      );
+    }
+    if (template.targetUid) {
+      await this.removeNodeTreeWithBindings(template.targetUid, options.transaction);
+    }
+    await templateRepo.destroy({
+      filterByTk: templateUid,
+      transaction: options.transaction,
+    });
+    await usageRepo.destroy({
+      filter: { templateUid },
+      transaction: options.transaction,
+    });
+    return {
+      uid: templateUid,
+    };
+  }
+
+  private async resolveTemplateCopySource(
+    actionName: string,
+    node: any,
+    transaction?: any,
+  ): Promise<
+    | {
+        type: 'block';
+        template: FlowSurfaceTemplateRow;
+        targetUid: string;
+      }
+    | {
+        type: 'fields';
+        template: FlowSurfaceTemplateRow;
+        blockUid: string;
+      }
+    | {
+        type: 'popup';
+        template: FlowSurfaceTemplateRow;
+        openViewStep: { flowKey: string; stepKey: string; openView: Record<string, any> };
+      }
+  > {
+    const useTemplate = _.get(node, ['stepParams', 'referenceSettings', 'useTemplate']);
+    const templateUid = String(useTemplate?.templateUid || '').trim();
+
+    if (node?.use === 'ReferenceBlockModel' && templateUid) {
+      const template = await this.getFlowTemplateOrThrow(actionName, templateUid, {
+        transaction,
+        expectedType: 'block',
+      });
+      const targetUid = String(useTemplate?.targetUid || template.targetUid || '').trim();
+      if (!targetUid) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} target '${node.uid}' is missing template targetUid`,
+          'FLOW_SURFACE_TEMPLATE_TARGET_MISSING',
+        );
+      }
+      return {
+        type: 'block',
+        template,
+        targetUid,
+      };
+    }
+
+    if (node?.use === 'ReferenceFormGridModel' && templateUid) {
+      const template = await this.getFlowTemplateOrThrow(actionName, templateUid, {
+        transaction,
+        expectedType: 'block',
+      });
+      return {
+        type: 'fields',
+        template,
+        blockUid: String(node.parentId || '').trim(),
+      };
+    }
+
+    const referenceGrid = getSingleNodeSubModel(node?.subModels?.grid);
+    const referenceGridTemplateUid = String(
+      _.get(referenceGrid, ['stepParams', 'referenceSettings', 'useTemplate', 'templateUid']) || '',
+    ).trim();
+    if (referenceGrid?.use === 'ReferenceFormGridModel' && referenceGridTemplateUid) {
+      const template = await this.getFlowTemplateOrThrow(actionName, referenceGridTemplateUid, {
+        transaction,
+        expectedType: 'block',
+      });
+      return {
+        type: 'fields',
+        template,
+        blockUid: String(node.uid || '').trim(),
+      };
+    }
+
+    const openViewStep = this.findFlowTemplateOpenViewStep(node);
+    const popupTemplateUid = String(openViewStep?.openView?.popupTemplateUid || '').trim();
+    if (popupTemplateUid) {
+      const template = await this.getFlowTemplateOrThrow(actionName, popupTemplateUid, {
+        transaction,
+        expectedType: 'popup',
+      });
+      return {
+        type: 'popup',
+        template,
+        openViewStep,
+      };
+    }
+
+    throwBadRequest(
+      `flowSurfaces ${actionName} target '${node?.uid || 'unknown'}' is not using a template reference`,
+      'FLOW_SURFACE_TEMPLATE_REFERENCE_REQUIRED',
+    );
+  }
+
+  private replaceFlowModelTreeUids(node: any, uidMap: Record<string, string>) {
+    const replaceInPlace = (value: any): any => {
+      if (Array.isArray(value)) {
+        for (let i = 0; i < value.length; i += 1) {
+          value[i] = replaceInPlace(value[i]);
+        }
+        return value;
+      }
+      if (value && typeof value === 'object') {
+        for (const key of Object.keys(value)) {
+          value[key] = replaceInPlace(value[key]);
+        }
+        return value;
+      }
+      return typeof value === 'string' && uidMap[value] ? uidMap[value] : value;
+    };
+
+    const walk = (current: any) => {
+      if (!current || typeof current !== 'object') {
+        return current;
+      }
+      if (typeof current.uid === 'string' && uidMap[current.uid]) {
+        current.uid = uidMap[current.uid];
+      }
+      if (typeof current.parent === 'string' && uidMap[current.parent]) {
+        current.parent = uidMap[current.parent];
+      }
+      if (typeof current.parentId === 'string' && uidMap[current.parentId]) {
+        current.parentId = uidMap[current.parentId];
+      }
+      if (current.stepParams) {
+        current.stepParams = replaceInPlace(current.stepParams);
+      }
+      Object.values(current.subModels || {}).forEach((child) => {
+        _.castArray(child as any).forEach((item) => walk(item));
+      });
+      return current;
+    };
+
+    return walk(_.cloneDeep(node));
+  }
+
+  private async duplicateDetachedFlowModelTree(actionName: string, rootUid: string, transaction?: any) {
+    const sourceNode = await this.repository.findModelById(rootUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (!sourceNode?.uid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} source '${rootUid}' does not exist`,
+        'FLOW_SURFACE_TEMPLATE_SOURCE_NOT_FOUND',
+      );
+    }
+    const uidMap = Object.fromEntries(
+      Array.from(this.collectFlowTemplateModelUids(sourceNode)).map((modelUid) => [modelUid, uid()]),
+    ) as Record<string, string>;
+    const duplicatedTree = this.replaceFlowModelTreeUids(sourceNode, uidMap);
+    delete duplicatedTree.parent;
+    delete duplicatedTree.parentId;
+    delete duplicatedTree.subKey;
+    delete duplicatedTree.subType;
+    await this.repository.upsertModel(duplicatedTree, {
+      transaction,
+    });
+    return this.repository.findModelById(String(duplicatedTree.uid || '').trim(), {
+      transaction,
+      includeAsyncNode: true,
+    });
+  }
+
+  async convertTemplateToCopy(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const target = this.normalizeWriteTarget('convertTemplateToCopy', values?.target, values);
+    const node = await this.repository.findModelById(target.uid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (!node?.uid) {
+      throwBadRequest(
+        `flowSurfaces convertTemplateToCopy target '${target.uid}' does not exist`,
+        'FLOW_SURFACE_TEMPLATE_REFERENCE_REQUIRED',
+      );
+    }
+
+    const resolved = await this.resolveTemplateCopySource('convertTemplateToCopy', node, options.transaction);
+
+    if (resolved.type === 'popup') {
+      const duplicatedPopup = await this.duplicateDetachedFlowModelTree(
+        'convertTemplateToCopy',
+        resolved.template.targetUid || '',
+        options.transaction,
+      );
+      const popupUid = String(duplicatedPopup?.uid || '').trim();
+      if (!popupUid) {
+        throwConflict(
+          `flowSurfaces convertTemplateToCopy failed to duplicate popup template '${resolved.template.uid}'`,
+          'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+        );
+      }
+      await this.ensurePopupSurface(popupUid, options.transaction);
+      const nextStepParams = _.cloneDeep(node.stepParams || {});
+      const currentGroup = _.isPlainObject(nextStepParams[resolved.openViewStep.flowKey])
+        ? _.cloneDeep(nextStepParams[resolved.openViewStep.flowKey])
+        : {};
+      currentGroup[resolved.openViewStep.stepKey] = {
+        ..._.omit(resolved.openViewStep.openView || {}, [
+          'popupTemplateUid',
+          'popupTemplateMode',
+          'popupTemplateContext',
+          'popupTemplateHasFilterByTk',
+          'popupTemplateHasSourceId',
+        ]),
+        ...this.buildPopupTemplateOpenView(resolved.template, 'copy', popupUid),
+      };
+      nextStepParams[resolved.openViewStep.flowKey] = currentGroup;
+      await this.cleanupLocalPopupSurfaceForHost(node.uid, options.transaction, node);
+      await this.repository.patch(
+        {
+          uid: node.uid,
+          stepParams: nextStepParams,
+        },
+        { transaction: options.transaction },
+      );
+      await this.syncFlowTemplateUsagesForNodeTree(node.uid, options.transaction);
+      return {
+        uid: node.uid,
+        type: 'popup',
+        popupUid,
+      };
+    }
+
+    if (resolved.type === 'fields') {
+      const result = await this.applyTemplateFieldsToBlock(
+        'convertTemplateToCopy',
+        resolved.blockUid,
+        resolved.template,
+        'copy',
+        options,
+      );
+      return {
+        uid: resolved.blockUid,
+        type: 'fields',
+        ...result,
+      };
+    }
+
+    const duplicatedBlock = await this.duplicateDetachedFlowModelTree(
+      'convertTemplateToCopy',
+      resolved.targetUid,
+      options.transaction,
+    );
+    if (!duplicatedBlock?.uid) {
+      throwConflict(
+        `flowSurfaces convertTemplateToCopy failed to duplicate template '${resolved.template.uid}'`,
+        'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+      );
+    }
+    const parentNode = node.parentId
+      ? await this.repository.findModelById(node.parentId, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        })
+      : null;
+    await this.clearFlowTemplateUsagesForNodeTree(node, options.transaction);
+    await this.repository.remove(node.uid, { transaction: options.transaction });
+    await this.repository.upsertModel(
+      {
+        ...this.replaceFlowModelTreeUids(duplicatedBlock, {
+          [String(duplicatedBlock.uid || '')]: node.uid,
+        }),
+        uid: node.uid,
+        parentId: node.parentId,
+        subKey: node.subKey,
+        subType: node.subType,
+      },
+      { transaction: options.transaction },
+    );
+    await this.repositionFlowModelInParent(node, parentNode, options.transaction);
+    await this.syncFlowTemplateUsagesForNodeTree(node.uid, options.transaction);
+    return {
+      uid: node.uid,
+      type: 'block',
+    };
+  }
+
+  private async buildPopupSurfaceSummaryFromHost(
+    hostNode: any,
+    mode: 'local' | 'copy' | 'reference' = 'local',
+    transaction?: any,
+  ) {
+    if (!hostNode?.uid) {
+      return undefined;
+    }
+    const popupPage =
+      hostNode?.subModels?.page ||
+      (await this.repository.findModelByParentId(hostNode.uid, {
+        transaction,
+        subKey: 'page',
+        includeAsyncNode: true,
+      }));
+    const popupTab =
+      _.castArray(popupPage?.subModels?.tabs || [])[0] ||
+      (popupPage?.uid
+        ? await this.repository.findModelByParentId(popupPage.uid, {
+            transaction,
+            subKey: 'tabs',
+            includeAsyncNode: true,
+          })
+        : undefined);
+    const popupGrid =
+      popupTab?.subModels?.grid ||
+      (popupTab?.uid
+        ? await this.repository.findModelByParentId(popupTab.uid, {
+            transaction,
+            subKey: 'grid',
+            includeAsyncNode: true,
+          })
+        : undefined);
+    const summary = buildDefinedPayload({
+      mode,
+      pageUid: popupPage?.uid,
+      tabUid: popupTab?.uid,
+      gridUid: popupGrid?.uid,
+    });
+    return Object.keys(summary).length ? summary : undefined;
+  }
+
+  private stripTemplateInternalOpenViewFields(openView: any) {
+    if (!_.isPlainObject(openView)) {
+      return openView;
+    }
+    const hasTemplateState =
+      !!String(openView.popupTemplateUid || '').trim() ||
+      !!openView.popupTemplateContext ||
+      !!String(openView.popupTemplateMode || '').trim();
+    return _.omit(openView, [
+      'popupTemplateUid',
+      'popupTemplateMode',
+      'popupTemplateContext',
+      'popupTemplateHasFilterByTk',
+      'popupTemplateHasSourceId',
+      ...(hasTemplateState ? ['uid'] : []),
+    ]);
+  }
+
+  private stripTemplateInternalReferenceSettings(node: any) {
+    if (!_.isPlainObject(node?.stepParams?.referenceSettings)) {
+      return;
+    }
+    delete node.stepParams.referenceSettings;
+    if (_.isPlainObject(node.stepParams) && !Object.keys(node.stepParams).length) {
+      delete node.stepParams;
+    }
+  }
+
+  private async decorateTemplateReadbackTree(node: any, transaction?: any): Promise<any> {
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+
+    const blockTemplate = _.get(node, ['stepParams', 'referenceSettings', 'useTemplate']);
+    const blockTemplateUid = String(blockTemplate?.templateUid || '').trim();
+    const blockTemplateMode = String(blockTemplate?.mode || 'reference').trim() || 'reference';
+    if (blockTemplateUid && blockTemplateMode !== 'copy') {
+      node.template = {
+        uid: blockTemplateUid,
+        mode: blockTemplateMode,
+      };
+      this.stripTemplateInternalReferenceSettings(node);
+    }
+
+    const gridNode = getSingleNodeSubModel(node.subModels?.grid);
+    const fieldsTemplate = _.get(gridNode, ['stepParams', 'referenceSettings', 'useTemplate']);
+    const fieldsTemplateUid = String(fieldsTemplate?.templateUid || '').trim();
+    const fieldsTemplateMode = String(fieldsTemplate?.mode || 'reference').trim() || 'reference';
+    if (fieldsTemplateUid && gridNode?.use === 'ReferenceFormGridModel' && fieldsTemplateMode !== 'copy') {
+      node.fieldsTemplate = {
+        uid: fieldsTemplateUid,
+        mode: fieldsTemplateMode,
+      };
+      this.stripTemplateInternalReferenceSettings(gridNode);
+    }
+
+    const popupGroups: Array<[string, any]> = [
+      ['popupSettings', _.get(node, ['stepParams', 'popupSettings'])],
+      ['selectExitRecordSettings', _.get(node, ['stepParams', 'selectExitRecordSettings'])],
+    ];
+    let popupSummary = await this.buildPopupSurfaceSummaryFromHost(node, 'local', transaction);
+    for (const [groupKey, popupSettings] of popupGroups) {
+      if (!popupSettings || typeof popupSettings !== 'object') {
+        continue;
+      }
+      for (const [openViewKey, value] of Object.entries(popupSettings)) {
+        const popupTemplateUid = String((value as any)?.popupTemplateUid || '').trim();
+        const popupTemplateMode = String((value as any)?.popupTemplateMode || 'reference').trim() || 'reference';
+        const popupTemplateContext = !!(value as any)?.popupTemplateContext;
+        const externalPopupHostUid = this.resolveExternalPopupHostUid(node.uid, value);
+        if (popupTemplateUid && popupTemplateMode !== 'copy') {
+          popupSummary = {
+            template: {
+              uid: popupTemplateUid,
+              mode: popupTemplateMode as 'reference' | 'copy',
+            },
+          };
+        } else if (popupTemplateContext && externalPopupHostUid) {
+          const copiedPopupHost = await this.repository.findModelById(externalPopupHostUid, {
+            transaction,
+            includeAsyncNode: true,
+          });
+          popupSummary = (await this.buildPopupSurfaceSummaryFromHost(copiedPopupHost, 'copy', transaction)) || {
+            mode: 'copy',
+          };
+        }
+        popupSettings[openViewKey] = this.stripTemplateInternalOpenViewFields(value);
+      }
+      if (_.isPlainObject(node?.stepParams?.[groupKey]) && !Object.keys(node.stepParams[groupKey]).length) {
+        delete node.stepParams[groupKey];
+      }
+    }
+    if (_.isPlainObject(node.stepParams) && !Object.keys(node.stepParams).length) {
+      delete node.stepParams;
+    }
+    if (popupSummary && Object.keys(popupSummary).length) {
+      node.popup = popupSummary;
+    }
+
+    for (const value of Object.values(node.subModels || {})) {
+      for (const child of _.castArray(value as any)) {
+        await this.decorateTemplateReadbackTree(child, transaction);
+      }
+    }
+
+    return node;
   }
 
   async compose(
@@ -1925,7 +3745,7 @@ export class FlowSurfacesService {
     const keyRefs: Record<string, any> = {};
 
     for (const blockSpec of normalizedBlocks) {
-      if (blockSpec.resource?.kind !== 'semantic') {
+      if (!blockSpec.template && blockSpec.resource?.kind !== 'semantic') {
         this.assertRequiredBlockResourceInit({
           actionName: 'compose',
           blockCatalogItem: blockSpec.catalogItem,
@@ -1939,9 +3759,10 @@ export class FlowSurfacesService {
           target: {
             uid: gridUid,
           },
-          type: blockSpec.type,
+          ...(blockSpec.type ? { type: blockSpec.type } : {}),
           ...(blockSpec.resource?.kind === 'semantic' ? { resource: blockSpec.resource.value } : {}),
           ...(blockSpec.resource?.kind === 'raw' ? { resourceInit: blockSpec.resource.value } : {}),
+          ...(blockSpec.template ? { template: blockSpec.template } : {}),
         },
         {
           ...options,
@@ -2419,10 +4240,12 @@ export class FlowSurfacesService {
         includeAsyncNode: true,
       });
       chartUids.push(...this.collectChartBlockUidsFromTree(tabGrid));
+      await this.clearFlowTemplateUsagesForRouteSchemaUid(String(tabSchemaUid), options.transaction);
     }
+    await this.clearFlowTemplateUsagesForRouteSchemaUid(pageSchemaUid, options.transaction);
     await this.removeFlowSqlBindingsForChartUids(chartUids, options.transaction);
     if (pageModel?.uid) {
-      await this.repository.remove(pageModel.uid, { transaction: options.transaction });
+      await this.removeNodeTreeWithBindings(pageModel.uid, options.transaction);
     }
     for (const tabRoute of tabRoutes) {
       await this.routeSync.removeTabAnchorTree(
@@ -2619,6 +4442,7 @@ export class FlowSurfacesService {
       throwBadRequest('flowSurfaces removeTab cannot delete the last route-backed tab; use destroyPage instead');
     }
     await this.removeNodeTreeWithBindings(resolved.uid, options.transaction);
+    await this.clearFlowTemplateUsagesForRouteSchemaUid(resolved.uid, options.transaction);
     await this.routeSync.removeTabAnchorTree(resolved.uid, options.transaction);
     await this.db.getRepository('desktopRoutes').destroy({
       filter: {
@@ -2749,10 +4573,418 @@ export class FlowSurfacesService {
     return { uid: popupTab.uid };
   }
 
+  private buildFlowTemplateReferenceBlockTree(template: any) {
+    const resourceInit = buildDefinedPayload({
+      dataSourceKey: template.dataSourceKey,
+      collectionName: template.collectionName,
+      associationName: template.associationName,
+      filterByTk: template.filterByTk,
+      sourceId: template.sourceId,
+    });
+    return {
+      use: 'ReferenceBlockModel',
+      stepParams: this.buildFlowTemplateReferenceBlockStepParams(template, template.targetUid, resourceInit),
+    };
+  }
+
+  private patchCopiedTemplateGridFromRoot(templateRoot: any, gridModel: any) {
+    if (!templateRoot || !gridModel || typeof gridModel !== 'object') {
+      return gridModel;
+    }
+    const nextGrid = _.cloneDeep(gridModel);
+    const nextStepParams = _.isPlainObject(nextGrid.stepParams) ? _.cloneDeep(nextGrid.stepParams) : {};
+    const delegatedStepParams: Array<{ flowKey: string; stepKey: string }> = [
+      { flowKey: 'formModelSettings', stepKey: 'layout' },
+      { flowKey: 'eventSettings', stepKey: 'linkageRules' },
+    ];
+
+    for (const { flowKey, stepKey } of delegatedStepParams) {
+      const value = _.get(templateRoot, ['stepParams', flowKey, stepKey]);
+      if (_.isUndefined(value)) {
+        continue;
+      }
+      const currentFlow = _.isPlainObject(nextStepParams[flowKey]) ? _.cloneDeep(nextStepParams[flowKey]) : {};
+      if (!Object.prototype.hasOwnProperty.call(currentFlow, stepKey) || _.isUndefined(currentFlow[stepKey])) {
+        currentFlow[stepKey] = _.cloneDeep(value);
+        nextStepParams[flowKey] = currentFlow;
+      }
+    }
+
+    nextGrid.stepParams = nextStepParams;
+    return nextGrid;
+  }
+
+  private buildBlockCreateResult(tree: any, parentUid: string, subKey: string, popupSurface?: any) {
+    const gridNode = getSingleNodeSubModel(tree?.subModels?.grid);
+    const itemNode = getSingleNodeSubModel(tree?.subModels?.item);
+    const itemGridNode = getSingleNodeSubModel(itemNode?.subModels?.grid);
+    const columnNodes = getNodeSubModelList(tree?.subModels?.columns);
+    const blockGridUid = gridNode?.uid || itemGridNode?.uid;
+    const popupGridUid = popupSurface?.gridUid;
+    const actionsColumnUid = columnNodes.find((item) => item.use === 'TableActionsColumnModel')?.uid;
+    return {
+      uid: tree.uid,
+      parentUid,
+      subKey,
+      ...(blockGridUid || popupGridUid ? { gridUid: blockGridUid || popupGridUid } : {}),
+      ...(blockGridUid ? { blockGridUid } : {}),
+      ...(itemNode?.uid ? { itemUid: itemNode.uid } : {}),
+      ...(itemGridNode?.uid ? { itemGridUid: itemGridNode.uid } : {}),
+      ...(actionsColumnUid ? { actionsColumnUid } : {}),
+      ...(popupSurface
+        ? {
+            pageUid: popupSurface.pageUid,
+            tabUid: popupSurface.tabUid,
+            popupPageUid: popupSurface.pageUid,
+            popupTabUid: popupSurface.tabUid,
+            popupGridUid: popupSurface.gridUid,
+          }
+        : {}),
+    };
+  }
+
+  private async appendAddedBlockLayout(
+    parentUid: string,
+    createdUid: string,
+    initialGrid: any,
+    options: { transaction?: any },
+  ) {
+    if (!initialGrid?.uid) {
+      return;
+    }
+    const finalGrid = await this.repository.findModelById(parentUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const layoutPayload = this.buildAppendGridLayoutPayload({
+      initialGrid,
+      finalGrid,
+      appendedItemUids: [createdUid],
+    });
+    await this.setLayout(
+      {
+        target: {
+          uid: parentUid,
+        },
+        ...layoutPayload,
+      },
+      options,
+    );
+  }
+
+  private async applyTemplateFieldsToBlock(
+    actionName: string,
+    blockUid: string,
+    template: any,
+    mode: 'reference' | 'copy',
+    options: { transaction?: any },
+  ) {
+    const hostBlock = await this.repository.findModelById(blockUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (!hostBlock?.uid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} target '${blockUid}' does not exist`,
+        'FLOW_SURFACE_TEMPLATE_FIELDS_TARGET_INVALID',
+      );
+    }
+    await this.assertFieldsTemplateCompatibility(actionName, hostBlock, template);
+    const currentGrid = getSingleNodeSubModel(hostBlock?.subModels?.grid);
+    if (!currentGrid?.uid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} target '${blockUid}' does not have a form grid`,
+        'FLOW_SURFACE_TEMPLATE_FIELDS_TARGET_INVALID',
+      );
+    }
+
+    const templateRoot = await this.repository.findModelById(template.targetUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const templateGrid = getSingleNodeSubModel(templateRoot?.subModels?.grid);
+    if (!templateGrid?.uid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template '${template.uid}' does not contain a form grid`,
+        'FLOW_SURFACE_TEMPLATE_FIELDS_SOURCE_INVALID',
+      );
+    }
+
+    await this.clearFlowTemplateUsagesForNodeTree(currentGrid, options.transaction);
+
+    if (mode === 'reference') {
+      const nextSettings = {
+        templateUid: template.uid,
+        templateName: template.name,
+        templateDescription: template.description,
+        targetUid: template.targetUid,
+        targetPath: 'subModels.grid',
+        mode,
+      };
+      if (currentGrid.use === 'ReferenceFormGridModel') {
+        const nextGrid = _.cloneDeep(currentGrid);
+        _.set(nextGrid, ['stepParams', 'referenceSettings', 'useTemplate'], nextSettings);
+        await this.repository.upsertModel(
+          {
+            ...nextGrid,
+            parentId: blockUid,
+            subKey: 'grid',
+            subType: 'object',
+          },
+          { transaction: options.transaction },
+        );
+        await this.syncFlowTemplateUsagesForNodeTree(currentGrid.uid, options.transaction);
+        return { gridUid: currentGrid.uid };
+      }
+
+      await this.repository.remove(currentGrid.uid, { transaction: options.transaction });
+      await this.repository.upsertModel(
+        {
+          uid: currentGrid.uid,
+          use: 'ReferenceFormGridModel',
+          props: currentGrid.props,
+          decoratorProps: currentGrid.decoratorProps,
+          flowRegistry: currentGrid.flowRegistry,
+          sortIndex: currentGrid.sortIndex,
+          parentId: blockUid,
+          subKey: 'grid',
+          subType: 'object',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: nextSettings,
+            },
+          },
+        },
+        { transaction: options.transaction },
+      );
+      await this.syncFlowTemplateUsagesForNodeTree(currentGrid.uid, options.transaction);
+      return { gridUid: currentGrid.uid };
+    }
+
+    const duplicatedGrid = await this.duplicateDetachedFlowModelTree(actionName, templateGrid.uid, options.transaction);
+    if (!duplicatedGrid?.uid) {
+      throwConflict(
+        `flowSurfaces ${actionName} failed to duplicate fields template '${template.uid}'`,
+        'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+      );
+    }
+
+    await this.repository.remove(currentGrid.uid, { transaction: options.transaction });
+    await this.repository.upsertModel(
+      {
+        ...this.patchCopiedTemplateGridFromRoot(templateRoot, duplicatedGrid),
+        parentId: blockUid,
+        subKey: 'grid',
+        subType: 'object',
+      },
+      { transaction: options.transaction },
+    );
+    await this.syncFlowTemplateUsagesForNodeTree(duplicatedGrid.uid, options.transaction);
+    return { gridUid: duplicatedGrid.uid };
+  }
+
+  private async addBlockFromFieldsTemplate(
+    values: Record<string, any>,
+    template: any,
+    templateRef: { uid: string; mode: 'reference' | 'copy'; usage?: 'block' | 'fields' },
+    options: { transaction?: any; deferAutoLayout?: boolean; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
+    if (!template.useModel) {
+      throwBadRequest(
+        `flowSurfaces addBlock template '${template.uid}' is missing useModel`,
+        'FLOW_SURFACE_TEMPLATE_USE_MODEL_MISSING',
+      );
+    }
+    if (!_.isUndefined(values.resource) || !_.isUndefined(values.resourceInit)) {
+      throwBadRequest(
+        `flowSurfaces addBlock template.usage='fields' does not allow resource or resourceInit overrides`,
+        'FLOW_SURFACE_TEMPLATE_FIELDS_RESOURCE_CONFLICT',
+      );
+    }
+    if (!_.isUndefined(values.type) || !_.isUndefined(values.use)) {
+      const expectedBlock = resolveSupportedBlockCatalogItem(
+        {
+          type: values.type,
+          use: values.use,
+        },
+        {
+          context: 'addBlock',
+          enabledPackages: options.enabledPackages,
+          requireCreateSupported: true,
+        },
+      );
+      if (expectedBlock.use !== template.useModel) {
+        throwBadRequest(
+          `flowSurfaces addBlock template '${template.uid}' requires block use '${template.useModel}', got '${expectedBlock.use}'`,
+          'FLOW_SURFACE_TEMPLATE_FIELDS_USE_MISMATCH',
+        );
+      }
+    }
+
+    const createdBlock = await this.addBlock(
+      {
+        ..._.omit(values, ['template']),
+        use: template.useModel,
+        ...(_.isUndefined(values.resource) && _.isUndefined(values.resourceInit)
+          ? {
+              resourceInit: buildDefinedPayload({
+                dataSourceKey: template.dataSourceKey,
+                collectionName: template.collectionName,
+                associationName: template.associationName,
+                filterByTk: template.filterByTk,
+                sourceId: template.sourceId,
+              }),
+            }
+          : {}),
+      },
+      options,
+    );
+    const templateFieldsResult = await this.applyTemplateFieldsToBlock(
+      'addBlock',
+      createdBlock.uid,
+      template,
+      templateRef.mode,
+      options,
+    );
+    return {
+      ...createdBlock,
+      ...templateFieldsResult,
+    };
+  }
+
+  private async addBlockFromTemplate(
+    values: Record<string, any>,
+    templateRef: { uid: string; mode: 'reference' | 'copy'; usage?: 'block' | 'fields' },
+    options: { transaction?: any; deferAutoLayout?: boolean; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
+    ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
+    const template = await this.getFlowTemplateOrThrow('addBlock', templateRef.uid, {
+      transaction: options.transaction,
+      expectedType: 'block',
+    });
+
+    if (templateRef.usage === 'fields') {
+      return this.addBlockFromFieldsTemplate(values, template, templateRef, options);
+    }
+
+    if (!_.isUndefined(values.type) || !_.isUndefined(values.use) || !_.isUndefined(values.resource) || !_.isUndefined(values.resourceInit)) {
+      throwBadRequest(
+        `flowSurfaces addBlock template.usage='block' does not allow type, use, resource or resourceInit`,
+        'FLOW_SURFACE_TEMPLATE_BLOCK_CONFLICT',
+      );
+    }
+    if (templateRef.mode === 'reference' && !_.isUndefined(values.settings)) {
+      throwBadRequest(
+        `flowSurfaces addBlock template.mode='reference' does not allow settings`,
+        'FLOW_SURFACE_TEMPLATE_REFERENCE_SETTINGS_UNSUPPORTED',
+      );
+    }
+
+    const target = this.normalizeWriteTarget('addBlock', values?.target, values);
+    await this.assertBlockTemplateCompatibility('addBlock', target, template, options.transaction);
+    const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
+      target,
+      options.transaction,
+    );
+    const initialGrid = options.deferAutoLayout
+      ? null
+      : await this.repository.findModelById(parentUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+
+    if (templateRef.mode === 'reference') {
+      const tree = this.buildFlowTemplateReferenceBlockTree(template);
+      const createdUid = await this.repository.upsertModel(
+        {
+          parentId: parentUid,
+          subKey,
+          subType,
+          ...tree,
+        },
+        { transaction: options.transaction },
+      );
+      await this.syncFlowTemplateUsagesForNodeTree(createdUid, options.transaction);
+      if (!options.deferAutoLayout && initialGrid?.uid) {
+        await this.appendAddedBlockLayout(parentUid, createdUid, initialGrid, options);
+      }
+      return this.buildBlockCreateResult({ ...tree, uid: createdUid }, parentUid, subKey, popupSurface);
+    }
+
+    const duplicated = await this.duplicateDetachedFlowModelTree('addBlock', template.targetUid, options.transaction);
+    if (!duplicated?.uid) {
+      throwConflict(
+        `flowSurfaces addBlock failed to duplicate template '${template.uid}'`,
+        'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+      );
+    }
+    const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
+    const createdUid = await this.repository.upsertModel(
+      {
+        ...duplicated,
+        parentId: parentUid,
+        subKey,
+        subType,
+      },
+      { transaction: options.transaction },
+    );
+    if (inlineSettings && Object.keys(inlineSettings).length) {
+      await this.applyInlineNodeSettings('addBlock', createdUid, inlineSettings, options);
+    }
+    await this.syncFlowTemplateUsagesForNodeTree(createdUid, options.transaction);
+    if (!options.deferAutoLayout && initialGrid?.uid) {
+      await this.appendAddedBlockLayout(parentUid, createdUid, initialGrid, options);
+    }
+    return this.buildBlockCreateResult({ ...duplicated, uid: createdUid }, parentUid, subKey, popupSurface);
+  }
+
+  private async addFieldFromTemplate(
+    values: Record<string, any>,
+    templateRef: { uid: string; mode: 'reference' | 'copy' },
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ): Promise<FlowSurfaceAddFieldResult> {
+    const unsupportedKeys = Object.keys(_.omit(values || {}, ['target', 'template']));
+    if (unsupportedKeys.length) {
+      throwBadRequest(
+        `flowSurfaces addField template import does not allow: ${unsupportedKeys.join(', ')}`,
+        'FLOW_SURFACE_TEMPLATE_FIELDS_CONFLICT',
+      );
+    }
+    const template = await this.getFlowTemplateOrThrow('addField', templateRef.uid, {
+      transaction: options.transaction,
+      expectedType: 'block',
+    });
+    const target = this.normalizeWriteTarget('addField', values?.target, values);
+    const resolvedTarget = await this.locator.resolve(target, options);
+    const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
+    const result = await this.applyTemplateFieldsToBlock(
+      'addField',
+      container.ownerUid,
+      template,
+      templateRef.mode,
+      options,
+    );
+    return {
+      uid: container.ownerUid,
+      parentUid: container.parentUid,
+      subKey: container.subKey,
+      ...result,
+    };
+  }
+
   async addBlock(
     values: Record<string, any>,
     options: { transaction?: any; deferAutoLayout?: boolean; enabledPackages?: ReadonlySet<string> } = {},
   ) {
+    const templateRef = !_.isUndefined(values?.template)
+      ? this.normalizeFlowTemplateReference('addBlock', values.template, {
+          allowUsage: true,
+          expectedType: 'block',
+        })
+      : null;
+    if (templateRef) {
+      return this.addBlockFromTemplate(values, templateRef, options);
+    }
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
@@ -2886,6 +5118,14 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
   ): Promise<FlowSurfaceAddFieldResult> {
+    const templateRef = !_.isUndefined(values?.template)
+      ? this.normalizeFlowTemplateReference('addField', values.template, {
+          expectedType: 'block',
+        })
+      : null;
+    if (templateRef) {
+      return this.addFieldFromTemplate(values, templateRef, options);
+    }
     const target = this.normalizeWriteTarget('addField', values?.target, values);
     ensureNoRawDirectAddKeys('addField', values, [
       'wrapperProps',
@@ -3221,6 +5461,7 @@ export class FlowSurfacesService {
     );
     await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
     await this.applyInlineActionPopup('addAction', created, inlinePopup, options);
+    await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
     return {
       uid: created,
       parentUid: container.parentUid,
@@ -3284,6 +5525,7 @@ export class FlowSurfacesService {
     );
     await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
     await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, options);
+    await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
     return {
       uid: created,
       parentUid: container.parentUid,
@@ -3304,6 +5546,24 @@ export class FlowSurfacesService {
   }
 
   async addFields(values: Record<string, any>) {
+    if (!_.isUndefined(values?.template)) {
+      const result = await this.transaction((transaction) =>
+        this.addField(values, {
+          transaction,
+        }),
+      );
+      return {
+        fields: [
+          {
+            index: 0,
+            ok: true,
+            result,
+          },
+        ],
+        successCount: 1,
+        errorCount: 0,
+      };
+    }
     return this.runBatchCreate({
       actionName: 'addFields',
       values,
@@ -3383,7 +5643,188 @@ export class FlowSurfacesService {
     }
   }
 
-  private async normalizeOpenView(actionName: string, openView: any, options: { transaction?: any } = {}) {
+  private normalizeFlowTemplateMode(actionName: string, mode: any, fieldName = 'template.mode') {
+    const normalizedMode = String(mode || 'reference').trim() || 'reference';
+    if (!FLOW_TEMPLATE_SUPPORTED_MODES.has(normalizedMode)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${fieldName} only supports 'reference' or 'copy'`,
+        'FLOW_SURFACE_TEMPLATE_MODE_UNSUPPORTED',
+      );
+    }
+    return normalizedMode as 'reference' | 'copy';
+  }
+
+  private normalizeFlowTemplateUsage(actionName: string, usage: any) {
+    if (_.isUndefined(usage) || _.isNull(usage) || String(usage).trim() === '') {
+      return 'block' as const;
+    }
+    const normalizedUsage = String(usage).trim();
+    if (!FLOW_TEMPLATE_BLOCK_USAGES.has(normalizedUsage)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template.usage only supports 'block' or 'fields'`,
+        'FLOW_SURFACE_TEMPLATE_USAGE_UNSUPPORTED',
+      );
+    }
+    return normalizedUsage as 'block' | 'fields';
+  }
+
+  private normalizeFlowTemplateReference(
+    actionName: string,
+    input: any,
+    options: { allowUsage?: boolean; expectedType?: 'block' | 'popup' } = {},
+  ) {
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`flowSurfaces ${actionName} template must be an object`, 'FLOW_SURFACE_TEMPLATE_INVALID');
+    }
+    const uid = String(input.uid || '').trim();
+    if (!uid) {
+      throwBadRequest(`flowSurfaces ${actionName} template.uid is required`, 'FLOW_SURFACE_TEMPLATE_UID_REQUIRED');
+    }
+    const mode = this.normalizeFlowTemplateMode(actionName, input.mode);
+    const usage = options.allowUsage ? this.normalizeFlowTemplateUsage(actionName, input.usage) : undefined;
+    return {
+      uid,
+      mode,
+      ...(usage ? { usage } : {}),
+      ...(options.expectedType ? { expectedType: options.expectedType } : {}),
+    };
+  }
+
+  private async getFlowTemplateOrThrow(
+    actionName: string,
+    templateUid: string,
+    options: { transaction?: any; expectedType?: 'block' | 'popup' } = {},
+  ) {
+    const repo = this.getFlowTemplateRepository(actionName);
+    const templateRecord = await repo.findOne({
+      filter: { uid: templateUid },
+      transaction: options.transaction,
+    });
+    if (!templateRecord) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template '${templateUid}' does not exist`,
+        'FLOW_SURFACE_TEMPLATE_NOT_FOUND',
+      );
+    }
+    const template = toTemplatePlainRow(templateRecord);
+    const normalizedType = String(template.type || '').trim() || 'block';
+    if (!FLOW_TEMPLATE_SUPPORTED_TYPES.has(normalizedType)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template '${templateUid}' has unsupported type '${normalizedType}'`,
+        'FLOW_SURFACE_TEMPLATE_TYPE_UNSUPPORTED',
+      );
+    }
+    if (options.expectedType && normalizedType !== options.expectedType) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template '${templateUid}' must be type '${options.expectedType}', got '${normalizedType}'`,
+        'FLOW_SURFACE_TEMPLATE_TYPE_MISMATCH',
+      );
+    }
+    const targetUid = String(template.targetUid || '').trim();
+    if (!targetUid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} template '${templateUid}' is missing targetUid`,
+        'FLOW_SURFACE_TEMPLATE_TARGET_MISSING',
+      );
+    }
+    return {
+      ...template,
+      type: normalizedType,
+      targetUid,
+      useModel: String(template.useModel || '').trim() || undefined,
+      dataSourceKey: String(template.dataSourceKey || '').trim() || undefined,
+      collectionName: String(template.collectionName || '').trim() || undefined,
+      associationName: String(template.associationName || '').trim() || undefined,
+      filterByTk: String(template.filterByTk || '').trim() || undefined,
+      sourceId: String(template.sourceId || '').trim() || undefined,
+    };
+  }
+
+  private buildPopupTemplateOpenView(template: any, mode: 'reference' | 'copy', uidValue: string) {
+    const popupTemplateHasFilterByTk = !!String(template.filterByTk || '').trim();
+    const popupTemplateHasSourceId =
+      !!String(template.sourceId || '').trim() || !!String(template.associationName || '').trim();
+    const base = buildDefinedPayload({
+      uid: uidValue,
+      dataSourceKey: template.dataSourceKey,
+      collectionName: template.collectionName,
+      associationName: template.associationName,
+      ...(popupTemplateHasFilterByTk ? { filterByTk: template.filterByTk } : {}),
+      ...(popupTemplateHasSourceId && template.sourceId ? { sourceId: template.sourceId } : {}),
+      popupTemplateHasFilterByTk,
+      popupTemplateHasSourceId,
+      popupTemplateMode: mode,
+    });
+    if (mode === 'copy') {
+      return {
+        ...base,
+        popupTemplateContext: true,
+      };
+    }
+    return {
+      ...base,
+      popupTemplateUid: template.uid,
+    };
+  }
+
+  private resolveExternalPopupHostUid(hostUid: string | undefined, openView: any) {
+    const normalizedHostUid = String(hostUid || '').trim();
+    if (!normalizedHostUid || !_.isPlainObject(openView)) {
+      return undefined;
+    }
+    const externalUid = String(openView.uid || '').trim();
+    if (!externalUid || externalUid === normalizedHostUid) {
+      return undefined;
+    }
+    return externalUid;
+  }
+
+  private resolveDetachedPopupCopyUid(hostUid: string | undefined, openView: any) {
+    if (!_.isPlainObject(openView) || !openView.popupTemplateContext) {
+      return undefined;
+    }
+    return this.resolveExternalPopupHostUid(hostUid, openView);
+  }
+
+  private async cleanupLocalPopupSurfaceForHost(hostUid: string | undefined, transaction?: any, hostNode?: any) {
+    const normalizedHostUid = String(hostUid || '').trim();
+    if (!normalizedHostUid) {
+      return;
+    }
+    const resolvedHost =
+      hostNode ||
+      (await this.repository.findModelById(normalizedHostUid, {
+        transaction,
+        includeAsyncNode: true,
+      }));
+    const localPopupPageUid = String(resolvedHost?.subModels?.page?.uid || '').trim();
+    if (!localPopupPageUid) {
+      return;
+    }
+    await this.removeNodeTreeWithBindings(localPopupPageUid, transaction);
+  }
+
+  private async reconcilePopupOpenViewTransition(
+    hostUid: string | undefined,
+    currentOpenView: any,
+    nextOpenView: any,
+    transaction?: any,
+  ) {
+    const currentDetachedPopupCopyUid = this.resolveDetachedPopupCopyUid(hostUid, currentOpenView);
+    const nextDetachedPopupCopyUid = this.resolveDetachedPopupCopyUid(hostUid, nextOpenView);
+    if (currentDetachedPopupCopyUid && currentDetachedPopupCopyUid !== nextDetachedPopupCopyUid) {
+      await this.removeNodeTreeWithBindings(currentDetachedPopupCopyUid, transaction);
+    }
+    if (this.resolveExternalPopupHostUid(hostUid, nextOpenView)) {
+      await this.cleanupLocalPopupSurfaceForHost(hostUid, transaction);
+    }
+  }
+
+  private async normalizeOpenView(
+    actionName: string,
+    openView: any,
+    options: { transaction?: any; popupTemplateHostUid?: string } = {},
+  ) {
     if (_.isUndefined(openView) || _.isNull(openView)) {
       return openView;
     }
@@ -3391,6 +5832,52 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} openView must be an object`);
     }
     const normalizedOpenView = _.cloneDeep(openView);
+    if (!_.isUndefined(normalizedOpenView.template)) {
+      const templateRef = this.normalizeFlowTemplateReference(actionName, normalizedOpenView.template, {
+        expectedType: 'popup',
+      });
+      const template = await this.getFlowTemplateOrThrow(actionName, templateRef.uid, {
+        transaction: options.transaction,
+        expectedType: 'popup',
+      });
+      await this.assertPopupTemplateCompatibility(
+        actionName,
+        options.popupTemplateHostUid,
+        template,
+        options.transaction,
+      );
+      const resolvedUid =
+        templateRef.mode === 'copy'
+          ? String(
+              (
+                await this.duplicateDetachedFlowModelTree(actionName, template.targetUid, options.transaction)
+              )?.uid || '',
+            )
+          : template.targetUid;
+      if (!resolvedUid) {
+        throwConflict(
+          `flowSurfaces ${actionName} failed to duplicate popup template '${template.uid}'`,
+          'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+        );
+      }
+      if (templateRef.mode === 'copy') {
+        await this.ensurePopupSurface(resolvedUid, options.transaction);
+      }
+      const nextTemplateOpenView = this.buildPopupTemplateOpenView(template, templateRef.mode, resolvedUid);
+      Object.keys(normalizedOpenView).forEach((key) => {
+        if (
+          key === 'template' ||
+          key === 'popupTemplateUid' ||
+          key === 'popupTemplateMode' ||
+          key === 'popupTemplateContext' ||
+          key === 'popupTemplateHasFilterByTk' ||
+          key === 'popupTemplateHasSourceId'
+        ) {
+          delete normalizedOpenView[key];
+        }
+      });
+      Object.assign(normalizedOpenView, nextTemplateOpenView);
+    }
     if (!_.isUndefined(normalizedOpenView.uid)) {
       const normalizedUid = String(normalizedOpenView.uid || '').trim();
       if (!normalizedUid) {
@@ -3600,6 +6087,16 @@ export class FlowSurfacesService {
     }
   }
 
+  private assertInlinePopupTemplateConflict(actionName: string, popup: Record<string, any>) {
+    const forbiddenKeys = ['blocks', 'layout', 'mode'].filter((key) => !_.isUndefined(popup[key]));
+    if (forbiddenKeys.length) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} popup.template cannot be combined with ${forbiddenKeys.join(', ')}`,
+        'FLOW_SURFACE_TEMPLATE_POPUP_CONFLICT',
+      );
+    }
+  }
+
   private async applyInlineFieldPopup(
     actionName: string,
     result: FlowSurfaceAddFieldResult,
@@ -3607,6 +6104,27 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const fieldHostUid = result.fieldUid || result.uid;
+    if (!_.isUndefined(popup?.template)) {
+      this.assertInlinePopupTemplateConflict(actionName, popup);
+      Object.assign(
+        result,
+        await this.configureFieldNode(
+          {
+            uid: fieldHostUid,
+          },
+          {
+            openView: {
+              template: popup.template,
+            },
+          },
+          {
+            ...options,
+            openViewActionName: actionName,
+          },
+        ),
+      );
+      return;
+    }
     try {
       Object.assign(result, await this.ensureLocalFieldPopupSurface(actionName, fieldHostUid, options, { popup }));
       if (!popup || !fieldHostUid) {
@@ -3693,6 +6211,32 @@ export class FlowSurfacesService {
     if (!popup) {
       return;
     }
+    if (!_.isUndefined(popup.template)) {
+      this.assertInlinePopupTemplateConflict(actionName, popup);
+      const actionNode = await this.repository.findModelById(actionUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      if (!actionNode?.uid) {
+        throwBadRequest(`flowSurfaces ${actionName} action '${actionUid}' does not exist`);
+      }
+      await this.configureActionNode(
+        {
+          uid: actionUid,
+        },
+        actionNode.use,
+        {
+          openView: {
+            template: popup.template,
+          },
+        },
+        {
+          ...options,
+          openViewActionName: actionName,
+        },
+      );
+      return;
+    }
     try {
       await this.compose(
         {
@@ -3712,7 +6256,12 @@ export class FlowSurfacesService {
 
   async updateSettings(
     values: Record<string, any>,
-    options: { transaction?: any; replaceChartCardSettings?: boolean } = {},
+    options: {
+      transaction?: any;
+      replaceChartCardSettings?: boolean;
+      openViewActionName?: string;
+      popupTemplateHostUid?: string;
+    } = {},
   ) {
     const writeTarget = this.normalizeWriteTarget('updateSettings', values?.target, values);
     const target = await this.locator.resolve(writeTarget, options);
@@ -3741,7 +6290,10 @@ export class FlowSurfacesService {
     });
 
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
-    await this.normalizeOpenViewForUpdateSettings('updateSettings', nextPayload, options);
+    await this.normalizeOpenViewForUpdateSettings(options.openViewActionName || 'updateSettings', current, nextPayload, {
+      transaction: options.transaction,
+      popupTemplateHostUid: options.popupTemplateHostUid,
+    });
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
     await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
     this.syncChartCardRuntimeStepParamsForUpdateSettings(
@@ -3797,6 +6349,7 @@ export class FlowSurfacesService {
     } else if (current.use === 'ChartBlockModel' && !_.isUndefined(nextPayload.stepParams?.chartSettings)) {
       await this.syncChartDataBindingsForNode(effectiveNode, options.transaction);
     }
+    await this.syncFlowTemplateUsagesForNodeTree(current.uid, options.transaction);
     return {
       uid: current.uid,
       updated: Object.keys(_.omit(nextPayload, ['uid'])),
@@ -3836,21 +6389,38 @@ export class FlowSurfacesService {
 
   private async normalizeOpenViewForUpdateSettings(
     actionName: string,
+    current: any,
     nextPayload: Record<string, any>,
-    options: { transaction?: any } = {},
+    options: { transaction?: any; popupTemplateHostUid?: string } = {},
   ) {
     const openViewPaths: Array<[string, string]> = [
       ['popupSettings', 'openView'],
       ['selectExitRecordSettings', 'openView'],
     ];
+    const popupTemplateHostUid = String(options.popupTemplateHostUid || current?.uid || '').trim() || undefined;
     for (const [flowKey, stepKey] of openViewPaths) {
       if (!_.has(nextPayload, ['stepParams', flowKey, stepKey])) {
         continue;
       }
+      const currentOpenView = _.get(current, ['stepParams', flowKey, stepKey]);
+      const nextOpenView = await this.normalizeOpenView(
+        actionName,
+        _.get(nextPayload, ['stepParams', flowKey, stepKey]),
+        {
+          transaction: options.transaction,
+          popupTemplateHostUid,
+        },
+      );
+      await this.reconcilePopupOpenViewTransition(
+        popupTemplateHostUid,
+        currentOpenView,
+        nextOpenView,
+        options.transaction,
+      );
       _.set(
         nextPayload,
         ['stepParams', flowKey, stepKey],
-        await this.normalizeOpenView(actionName, _.get(nextPayload, ['stepParams', flowKey, stepKey]), options),
+        nextOpenView,
       );
     }
   }
@@ -5096,24 +7666,52 @@ export class FlowSurfacesService {
     }
     const key = String(input.key || '').trim();
     const type = String(input.type || '').trim();
-    if (!key || !type) {
-      throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and type`);
+    const template = _.isUndefined(input.template)
+      ? undefined
+      : _.isPlainObject(input.template)
+        ? _.cloneDeep(input.template)
+        : throwBadRequest(`flowSurfaces compose block #${index + 1} template must be an object`);
+    const templateUsage = String((template as any)?.usage || 'block').trim() || 'block';
+    if (templateUsage === 'fields' && _.castArray(input.fields || []).length) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} cannot mix template.usage='fields' with fields[]`);
     }
-    const blockCatalogItem = resolveSupportedBlockCatalogItem(
-      { type },
-      {
-        context: 'compose',
-        enabledPackages,
-        requireCreateSupported: true,
-      },
-    );
+    if (
+      template &&
+      String((template as any).mode || 'reference').trim() !== 'copy' &&
+      _.isPlainObject(input.settings) &&
+      Object.keys(input.settings).length
+    ) {
+      throwBadRequest(
+        `flowSurfaces compose block #${index + 1} does not allow settings when template.mode is 'reference'`,
+      );
+    }
+    if (!key || (!type && !template)) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and either type or template`);
+    }
+    const blockCatalogItem = type
+      ? resolveSupportedBlockCatalogItem(
+          { type },
+          {
+            context: 'compose',
+            enabledPackages,
+            requireCreateSupported: true,
+          },
+        )
+      : null;
     const actions = _.castArray(input.actions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
     const recordActions = _.castArray(input.recordActions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
-    this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions, enabledPackages);
+    if (!blockCatalogItem && (actions.length || recordActions.length)) {
+      throwBadRequest(
+        `flowSurfaces compose block #${index + 1} requires type when actions or recordActions are provided`,
+      );
+    }
+    if (blockCatalogItem) {
+      this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions, enabledPackages);
+    }
     return {
       index: index + 1,
       key,
@@ -5124,6 +7722,7 @@ export class FlowSurfacesService {
       fields: _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex)),
       actions,
       recordActions,
+      template,
     };
   }
 
@@ -5396,7 +7995,19 @@ export class FlowSurfacesService {
         transaction,
         includeAsyncNode: true,
       }));
-    const popupPage = resolvedHost?.subModels?.page;
+    const openView = this.resolvePopupHostOpenView(resolvedHost);
+    const externalPopupHostUid = this.resolveExternalPopupHostUid(resolvedHost?.uid, openView);
+    if (externalPopupHostUid && String(openView?.popupTemplateUid || '').trim() && !openView?.popupTemplateContext) {
+      return {};
+    }
+    const popupHost =
+      externalPopupHostUid && externalPopupHostUid !== resolvedHost?.uid
+        ? await this.repository.findModelById(externalPopupHostUid, {
+            transaction,
+            includeAsyncNode: true,
+          })
+        : resolvedHost;
+    const popupPage = popupHost?.subModels?.page;
     const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
     const popupGrid = popupTab?.subModels?.grid;
     return _.pickBy(
@@ -5417,9 +8028,14 @@ export class FlowSurfacesService {
     if (!node?.uid) {
       return;
     }
+    const detachedPopupCopyUid = this.resolveDetachedPopupCopyUid(node.uid, this.resolvePopupHostOpenView(node));
     await this.removeFlowSqlBindingsForNodeTree(node, transaction);
     await this.cleanupNodeBindings(node, transaction);
+    await this.clearFlowTemplateUsagesForNodeTree(node, transaction);
     await this.repository.remove(uid, { transaction });
+    if (detachedPopupCopyUid && detachedPopupCopyUid !== node.uid) {
+      await this.removeNodeTreeWithBindings(detachedPopupCopyUid, transaction);
+    }
   }
 
   private async cleanupNodeBindings(node: any, transaction?: any) {
@@ -6372,7 +8988,7 @@ export class FlowSurfacesService {
   private async configureFieldNode(
     target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
-    options: { transaction?: any },
+    options: { transaction?: any; openViewActionName?: string },
   ) {
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
@@ -6469,9 +9085,7 @@ export class FlowSurfacesService {
       ? this.applyFieldOpenViewContext(
           current,
           parentWrapper,
-          await this.normalizeOpenView('configure field', changes.openView, {
-            transaction: options.transaction,
-          }),
+          _.cloneDeep(changes.openView),
         )
       : undefined;
     const exactBindingInit =
@@ -6550,12 +9164,17 @@ export class FlowSurfacesService {
             : {}),
         }),
       },
-      options,
+      {
+        ...options,
+        openViewActionName: options.openViewActionName || 'configure field',
+        popupTemplateHostUid: target.uid,
+      },
     );
     if (hasOwnDefined(changes, 'openView')) {
       return {
         ...result,
-        ...(await this.ensureLocalFieldPopupSurface('configure field', target.uid, options)),
+        ...(await this.ensureLocalFieldPopupSurface(options.openViewActionName || 'configure field', target.uid, options)),
+        ...(await this.collectPopupSurfaceRefs(target.uid, options.transaction)),
       };
     }
     return result;
@@ -6565,7 +9184,7 @@ export class FlowSurfacesService {
     target: FlowSurfaceWriteTarget,
     use: string,
     changes: Record<string, any>,
-    options: { transaction?: any },
+    options: { transaction?: any; openViewActionName?: string },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
@@ -6588,18 +9207,15 @@ export class FlowSurfacesService {
       };
     }
     if (!_.isUndefined(changes.openView)) {
-      const normalizedOpenView = await this.normalizeOpenView('configure action', changes.openView, {
-        transaction: options.transaction,
-      });
       if (use === 'UploadActionModel') {
         stepParams.selectExitRecordSettings = {
-          openView: normalizedOpenView,
+          openView: _.cloneDeep(changes.openView),
         };
       } else if (!POPUP_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support openView`);
       } else {
         stepParams.popupSettings = {
-          openView: normalizedOpenView,
+          openView: _.cloneDeep(changes.openView),
         };
       }
     }
@@ -6738,7 +9354,11 @@ export class FlowSurfacesService {
         }),
         stepParams: Object.keys(stepParams).length ? stepParams : undefined,
       },
-      options,
+      {
+        ...options,
+        openViewActionName: options.openViewActionName || 'configure action',
+        popupTemplateHostUid: target.uid,
+      },
     );
   }
 
@@ -7979,7 +10599,20 @@ export class FlowSurfacesService {
   }
 
   private async ensurePopupSurface(parentUid: string, transaction?: any) {
-    const existingPage = await this.repository.findModelByParentId(parentUid, {
+    const hostNode = await this.repository.findModelById(parentUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const openView = this.resolvePopupHostOpenView(hostNode);
+    const externalPopupHostUid = this.resolveExternalPopupHostUid(parentUid, openView);
+    if (externalPopupHostUid && String(openView?.popupTemplateUid || '').trim() && !openView?.popupTemplateContext) {
+      throwBadRequest(
+        `flowSurfaces popup surface '${parentUid}' uses a popup template reference; convert it to copy before editing popup blocks`,
+        'FLOW_SURFACE_TEMPLATE_REFERENCE_REQUIRED',
+      );
+    }
+    const popupHostUid = externalPopupHostUid || parentUid;
+    const existingPage = await this.repository.findModelByParentId(popupHostUid, {
       transaction,
       subKey: 'page',
       includeAsyncNode: true,
@@ -8029,7 +10662,7 @@ export class FlowSurfacesService {
     const tree = buildPopupPageTree({});
     await this.repository.upsertModel(
       {
-        parentId: parentUid,
+        parentId: popupHostUid,
         subKey: 'page',
         subType: 'object',
         ...tree,
@@ -8037,7 +10670,7 @@ export class FlowSurfacesService {
       { transaction },
     );
 
-    const persisted = await this.repository.findModelByParentId(parentUid, {
+    const persisted = await this.repository.findModelByParentId(popupHostUid, {
       transaction,
       subKey: 'page',
       includeAsyncNode: true,
@@ -8629,6 +11262,9 @@ function flattenModel(node: any, carry: Record<string, any> = {}) {
     decoratorProps: node.decoratorProps,
     stepParams: node.stepParams,
     flowRegistry: node.flowRegistry,
+    ...(node.template ? { template: node.template } : {}),
+    ...(node.fieldsTemplate ? { fieldsTemplate: node.fieldsTemplate } : {}),
+    ...(node.popup ? { popup: node.popup } : {}),
   };
   Object.values(node.subModels || {}).forEach((value) => {
     _.castArray(value as any).forEach((child) => flattenModel(child, carry));

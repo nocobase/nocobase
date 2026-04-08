@@ -94,6 +94,9 @@ const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.uid',
   'openView.subModelKey',
   'openView.navigation',
+  'openView.template',
+  'openView.template.uid',
+  'openView.template.mode',
 ];
 const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.mode': OPEN_VIEW_MODE_SCHEMA,
@@ -109,6 +112,12 @@ const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.uid': STRING_SCHEMA,
   'openView.subModelKey': STRING_SCHEMA,
   'openView.navigation': BOOLEAN_SCHEMA,
+  'openView.template': OBJECT_SCHEMA,
+  'openView.template.uid': STRING_SCHEMA,
+  'openView.template.mode': {
+    type: 'string',
+    enum: ['reference', 'copy'],
+  },
 };
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
 const TABLE_COLUMN_ALLOWED_PATHS = ['title.title'];

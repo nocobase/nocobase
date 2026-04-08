@@ -820,6 +820,18 @@ const examples = {
       code: "ctx.render(String(ctx.record?.nickname || ''));",
     },
   },
+  addFieldPopupTemplate: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'nickname',
+    popup: {
+      template: {
+        uid: 'employee-popup-template',
+        mode: 'reference',
+      },
+    },
+  },
   addAction: {
     target: {
       uid: 'filter-form-block-uid',
@@ -1188,7 +1200,7 @@ const examples = {
   },
 };
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `catalog` / `context`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const actionDocs: Record<string, any> = {
   catalog: {
@@ -1233,11 +1245,93 @@ const actionDocs: Record<string, any> = {
     ],
     responses: responses('FlowSurfaceGetResponse'),
   },
+  listTemplates: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Search saved flow surface templates for automation and CLI reuse',
+    description: valuesCompatibilityNote(
+      `Lists saved block / popup templates backed by FlowModel trees. Use \`search\` against \`name\` and required \`description\` to help humans and models choose the right template. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceListTemplatesRequest', {
+      target: {
+        uid: 'employee-create-form',
+      },
+      type: 'block',
+      usage: 'fields',
+      search: 'employee form',
+      page: 1,
+      pageSize: 20,
+    }),
+    responses: responses('FlowSurfaceListTemplatesResult'),
+  },
+  getTemplate: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read one saved flow surface template by uid',
+    description: valuesCompatibilityNote(
+      `Reads one saved template and its usage count. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceGetTemplateRequest', {
+      uid: 'employee-form-template',
+    }),
+    responses: responses('FlowSurfaceTemplateRow'),
+  },
+  saveTemplate: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Save a block or popup source as a reusable template',
+    description: valuesCompatibilityNote(
+      'Saves the current source as a FlowModel-backed template. Only supported block sources plus supported popup action/field openers may be saved. `description` is required so API callers can search and choose templates accurately. `saveMode="duplicate"` only creates the template. `saveMode="convert"` additionally rewrites the current source into a template reference when the source kind supports it.',
+    ),
+    requestBody: requestBody('FlowSurfaceSaveTemplateRequest', {
+      target: {
+        uid: 'employee-create-form',
+      },
+      name: 'Employee create form',
+      description: 'Reusable employee create form with common fields and popup behavior.',
+      saveMode: 'duplicate',
+    }),
+    responses: responses('FlowSurfaceTemplateRow'),
+  },
+  updateTemplate: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Update template name and description',
+    description: valuesCompatibilityNote(
+      'Updates searchable template metadata only. Use this to refine template naming and required description without changing the stored FlowModel tree.',
+    ),
+    requestBody: requestBody('FlowSurfaceUpdateTemplateRequest', {
+      uid: 'employee-form-template',
+      name: 'Employee create form',
+      description: 'Reusable employee create form with validated field order.',
+    }),
+    responses: responses('FlowSurfaceTemplateRow'),
+  },
+  destroyTemplate: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Delete an unused template and its stored target tree',
+    description: valuesCompatibilityNote(
+      'Deletes the template record and its stored FlowModel tree. The backend rejects deletion while `usageCount > 0` so callers do not break existing references accidentally.',
+    ),
+    requestBody: requestBody('FlowSurfaceDestroyTemplateRequest', {
+      uid: 'employee-form-template',
+    }),
+    responses: responses('FlowSurfaceDestroyTemplateResult'),
+  },
+  convertTemplateToCopy: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Convert a referenced block, fields template, or popup template to copy mode',
+    description: valuesCompatibilityNote(
+      'Converts the current template reference into a detached copy. Block and field references can only move from reference to copy. Popup template references can also be reconfigured separately through action/field openView updates, but this action gives an explicit detach path.',
+    ),
+    requestBody: requestBody('FlowSurfaceConvertTemplateToCopyRequest', {
+      target: {
+        uid: 'employee-form-block',
+      },
+    }),
+    responses: responses('FlowSurfaceConvertTemplateToCopyResult'),
+  },
   compose: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics. This is the preferred creation entry for AI callers. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics. This is the preferred creation entry for AI callers. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
     ),
     requestBody: {
       required: true,
@@ -1478,7 +1572,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      'Creates a block by catalog key or an explicitly supported block use. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`.',
+      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`.',
     ),
     requestBody: {
       required: true,
@@ -1512,7 +1606,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`. Popup-capable fields can also pass `popup` directly to append a popup subtree. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
     ),
     requestBody: {
       required: true,
@@ -1536,6 +1630,10 @@ const actionDocs: Record<string, any> = {
               summary: 'Create a standalone JS item under a form field container',
               value: examples.addJsItem,
             },
+            popupTemplate: {
+              summary: 'Create a bound field that reuses a saved popup template',
+              value: examples.addFieldPopupTemplate,
+            },
           },
         },
       },
@@ -1546,7 +1644,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
     ),
     requestBody: {
       required: true,
@@ -1580,7 +1678,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree.',
+      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
     ),
     requestBody: {
       required: true,
@@ -1606,7 +1704,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings` or `template`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1615,7 +1713,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple fields sequentially under the same target. Each item may include `settings`, and popup-capable fields may also include `popup`, but raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple fields sequentially under the same target. The request may either import one shared `template` or create explicit `fields[]`. Each item may include `settings`, and popup-capable fields may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. Raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -2109,6 +2207,9 @@ const schemas = {
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
       flowRegistry: ANY_OBJECT_SCHEMA,
+      template: ref('FlowSurfaceBlockTemplateRef'),
+      fieldsTemplate: ref('FlowSurfaceTemplateRef'),
+      popup: ref('FlowSurfacePopupSummary'),
       subModels: {
         type: 'object',
         additionalProperties: {
@@ -2454,6 +2555,230 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfacePopupSummary: {
+    type: 'object',
+    properties: {
+      mode: {
+        type: 'string',
+        enum: ['local', 'copy'],
+      },
+      pageUid: {
+        type: 'string',
+      },
+      tabUid: {
+        type: 'string',
+      },
+      gridUid: {
+        type: 'string',
+      },
+      template: ref('FlowSurfacePopupTemplateRef'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceTemplateRow: {
+    type: 'object',
+    required: ['uid', 'name', 'description', 'type', 'targetUid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      name: {
+        type: 'string',
+      },
+      description: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['block', 'popup'],
+      },
+      targetUid: {
+        type: 'string',
+      },
+      useModel: {
+        type: 'string',
+      },
+      dataSourceKey: {
+        type: 'string',
+      },
+      collectionName: {
+        type: 'string',
+      },
+      associationName: {
+        type: 'string',
+      },
+      filterByTk: STRING_OR_INTEGER_SCHEMA,
+      sourceId: STRING_OR_INTEGER_SCHEMA,
+      usageCount: {
+        type: 'integer',
+      },
+      available: {
+        type: 'boolean',
+      },
+      disabledReason: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceListTemplatesRequest: {
+    type: 'object',
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      type: {
+        type: 'string',
+        enum: ['block', 'popup'],
+      },
+      usage: {
+        type: 'string',
+        enum: ['block', 'fields'],
+      },
+      search: {
+        type: 'string',
+      },
+      filter: ANY_OBJECT_SCHEMA,
+      sort: {
+        oneOf: [
+          {
+            type: 'string',
+          },
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+        ],
+      },
+      page: {
+        type: 'integer',
+        minimum: 1,
+      },
+      pageSize: {
+        type: 'integer',
+        minimum: 1,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceListTemplatesResult: {
+    type: 'object',
+    required: ['rows', 'count', 'page', 'pageSize', 'totalPage'],
+    properties: {
+      rows: {
+        type: 'array',
+        items: ref('FlowSurfaceTemplateRow'),
+      },
+      count: {
+        type: 'integer',
+      },
+      page: {
+        type: 'integer',
+      },
+      pageSize: {
+        type: 'integer',
+      },
+      totalPage: {
+        type: 'integer',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceGetTemplateRequest: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceSaveTemplateRequest: {
+    type: 'object',
+    required: ['target', 'name', 'description'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      uid: {
+        type: 'string',
+      },
+      name: {
+        type: 'string',
+      },
+      description: {
+        type: 'string',
+      },
+      saveMode: {
+        type: 'string',
+        enum: ['duplicate', 'convert'],
+        default: 'duplicate',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceUpdateTemplateRequest: {
+    type: 'object',
+    required: ['uid', 'name', 'description'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      name: {
+        type: 'string',
+      },
+      description: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceDestroyTemplateRequest: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceDestroyTemplateResult: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceConvertTemplateToCopyRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceConvertTemplateToCopyResult: {
+    type: 'object',
+    required: ['uid', 'type'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['block', 'fields', 'popup'],
+      },
+      gridUid: {
+        type: 'string',
+      },
+      popupUid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceComposeLayoutCell: {
     oneOf: [
       {
@@ -2515,7 +2840,7 @@ const schemas = {
             description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceComposeActionPopup'),
+          popup: ref('FlowSurfaceComposeFieldPopup'),
         },
         additionalProperties: false,
       },
@@ -2537,9 +2862,81 @@ const schemas = {
       },
     ],
   },
+  FlowSurfaceTemplateRef: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+        description: 'Saved template uid.',
+      },
+      mode: {
+        type: 'string',
+        enum: ['reference', 'copy'],
+        default: 'reference',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockTemplateRef: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      mode: {
+        type: 'string',
+        enum: ['reference', 'copy'],
+        default: 'reference',
+      },
+      usage: {
+        type: 'string',
+        enum: ['block', 'fields'],
+        description: 'For form templates, choose whether to create the whole block or only import its fields.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePopupTemplateRef: {
+    allOf: [ref('FlowSurfaceTemplateRef')],
+  },
   FlowSurfaceComposeActionPopup: {
     type: 'object',
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
+      },
+    ],
     properties: {
+      template: ref('FlowSurfacePopupTemplateRef'),
+      mode: {
+        type: 'string',
+        enum: ['append', 'replace'],
+      },
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeBlockSpec'),
+      },
+      layout: ref('FlowSurfaceComposeLayout'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceComposeFieldPopup: {
+    type: 'object',
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
+      },
+    ],
+    properties: {
+      template: ref('FlowSurfacePopupTemplateRef'),
       mode: {
         type: 'string',
         enum: ['append', 'replace'],
@@ -2600,7 +2997,8 @@ const schemas = {
   },
   FlowSurfaceComposeBlockSpec: {
     type: 'object',
-    required: ['key', 'type'],
+    required: ['key'],
+    anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
       key: {
         type: 'string',
@@ -2622,6 +3020,7 @@ const schemas = {
           'jsBlock',
         ],
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       settings: ANY_OBJECT_SCHEMA,
       fields: {
@@ -3305,6 +3704,7 @@ const schemas = {
       use: {
         type: 'string',
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
@@ -3359,8 +3759,17 @@ const schemas = {
   FlowSurfaceAddFieldRequest: {
     type: 'object',
     required: ['target'],
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
+      },
+    ],
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
+      template: ref('FlowSurfaceTemplateRef'),
       fieldPath: {
         type: 'string',
         description: 'Required for bound fields. Omit when using synthetic standalone types such as jsColumn/jsItem.',
@@ -3399,7 +3808,7 @@ const schemas = {
         description: 'Legacy alias used by filter-form target selection. This is not the same field as `target.uid`.',
       },
       settings: ANY_OBJECT_SCHEMA,
-      popup: ref('FlowSurfaceComposeActionPopup'),
+      popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
   },
@@ -3572,6 +3981,7 @@ const schemas = {
       use: {
         type: 'string',
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
@@ -3580,10 +3990,19 @@ const schemas = {
   },
   FlowSurfaceAddFieldItem: {
     type: 'object',
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
+      },
+    ],
     properties: {
       key: {
         type: 'string',
       },
+      template: ref('FlowSurfaceTemplateRef'),
       fieldPath: {
         type: 'string',
       },
@@ -3617,7 +4036,7 @@ const schemas = {
         type: 'string',
       },
       settings: ANY_OBJECT_SCHEMA,
-      popup: ref('FlowSurfaceComposeActionPopup'),
+      popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
   },
@@ -3673,9 +4092,18 @@ const schemas = {
   },
   FlowSurfaceAddFieldsRequest: {
     type: 'object',
-    required: ['target', 'fields'],
+    required: ['target'],
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        required: ['fields'],
+      },
+    ],
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
+      template: ref('FlowSurfaceTemplateRef'),
       fields: {
         type: 'array',
         items: ref('FlowSurfaceAddFieldItem'),
