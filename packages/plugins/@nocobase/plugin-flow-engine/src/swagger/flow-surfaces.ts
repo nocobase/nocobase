@@ -14,6 +14,7 @@ import {
 } from '../server/flow-surfaces/constants';
 import { flowSurfaceExamples as examples } from './flow-surfaces.examples';
 import { createFlowSurfaceTemplateActionDocs } from './flow-surfaces.template-action-docs';
+import { createFlowSurfaceTemplateSchemas } from './flow-surfaces.template-schemas';
 
 const FLOW_SURFACES_TAG = 'flowSurfaces';
 const ANY_OBJECT_SCHEMA = {
@@ -178,6 +179,12 @@ const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   requestBody,
   responses,
   valuesCompatibilityNote,
+});
+
+const templateSchemas = createFlowSurfaceTemplateSchemas({
+  ref,
+  stringOrIntegerSchema: STRING_OR_INTEGER_SCHEMA,
+  actionTypeEnum: ACTION_TYPE_ENUM,
 });
 
 const actionDocs: Record<string, any> = {
@@ -1472,218 +1479,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceTemplateRow: {
-    type: 'object',
-    required: ['uid', 'name', 'description', 'type', 'targetUid'],
-    properties: {
-      uid: {
-        type: 'string',
-      },
-      name: {
-        type: 'string',
-      },
-      description: {
-        type: 'string',
-      },
-      type: {
-        type: 'string',
-        enum: ['block', 'popup'],
-      },
-      targetUid: {
-        type: 'string',
-      },
-      useModel: {
-        type: 'string',
-      },
-      dataSourceKey: {
-        type: 'string',
-      },
-      collectionName: {
-        type: 'string',
-      },
-      associationName: {
-        type: 'string',
-      },
-      filterByTk: STRING_OR_INTEGER_SCHEMA,
-      sourceId: STRING_OR_INTEGER_SCHEMA,
-      usageCount: {
-        type: 'integer',
-      },
-      available: {
-        type: 'boolean',
-      },
-      disabledReason: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceListTemplatesRequest: {
-    type: 'object',
-    properties: {
-      target: ref('FlowSurfaceWriteTarget'),
-      type: {
-        type: 'string',
-        enum: ['block', 'popup'],
-      },
-      usage: {
-        type: 'string',
-        enum: ['block', 'fields'],
-      },
-      actionType: {
-        type: 'string',
-        enum: ACTION_TYPE_ENUM,
-      },
-      actionScope: {
-        type: 'string',
-        enum: ['block', 'record'],
-      },
-      search: {
-        type: 'string',
-      },
-      filter: ANY_OBJECT_SCHEMA,
-      sort: {
-        oneOf: [
-          {
-            type: 'string',
-          },
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-          },
-        ],
-      },
-      page: {
-        type: 'integer',
-        minimum: 1,
-      },
-      pageSize: {
-        type: 'integer',
-        minimum: 1,
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceListTemplatesResult: {
-    type: 'object',
-    required: ['rows', 'count', 'page', 'pageSize', 'totalPage'],
-    properties: {
-      rows: {
-        type: 'array',
-        items: ref('FlowSurfaceTemplateRow'),
-      },
-      count: {
-        type: 'integer',
-      },
-      page: {
-        type: 'integer',
-      },
-      pageSize: {
-        type: 'integer',
-      },
-      totalPage: {
-        type: 'integer',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceGetTemplateRequest: {
-    type: 'object',
-    required: ['uid'],
-    properties: {
-      uid: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceSaveTemplateRequest: {
-    type: 'object',
-    required: ['target', 'name', 'description'],
-    properties: {
-      target: ref('FlowSurfaceWriteTarget'),
-      uid: {
-        type: 'string',
-      },
-      name: {
-        type: 'string',
-      },
-      description: {
-        type: 'string',
-      },
-      saveMode: {
-        type: 'string',
-        enum: ['duplicate', 'convert'],
-        default: 'duplicate',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceUpdateTemplateRequest: {
-    type: 'object',
-    required: ['uid', 'name', 'description'],
-    properties: {
-      uid: {
-        type: 'string',
-      },
-      name: {
-        type: 'string',
-      },
-      description: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceDestroyTemplateRequest: {
-    type: 'object',
-    required: ['uid'],
-    properties: {
-      uid: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceDestroyTemplateResult: {
-    type: 'object',
-    properties: {
-      uid: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceConvertTemplateToCopyRequest: {
-    type: 'object',
-    required: ['target'],
-    properties: {
-      target: ref('FlowSurfaceWriteTarget'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceConvertTemplateToCopyResult: {
-    type: 'object',
-    required: ['uid', 'type'],
-    properties: {
-      uid: {
-        type: 'string',
-      },
-      type: {
-        type: 'string',
-        enum: ['block', 'fields', 'popup'],
-      },
-      gridUid: {
-        type: 'string',
-      },
-      popupUid: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
+  ...templateSchemas,
   FlowSurfaceComposeLayoutCell: {
     oneOf: [
       {
