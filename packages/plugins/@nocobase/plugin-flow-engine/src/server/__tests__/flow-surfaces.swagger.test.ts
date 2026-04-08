@@ -240,6 +240,10 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceListTemplatesRequest.properties.type.enum).toEqual(['block', 'popup']);
     expect(schemas.FlowSurfaceListTemplatesRequest.properties.usage.enum).toEqual(['block', 'fields']);
+    expect(schemas.FlowSurfaceListTemplatesRequest.properties.actionType.enum).toEqual(
+      expect.arrayContaining(['addNew', 'popup', 'view', 'edit']),
+    );
+    expect(schemas.FlowSurfaceListTemplatesRequest.properties.actionScope.enum).toEqual(['block', 'record']);
     expect(schemas.FlowSurfaceComposeActionPopup.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfacePopupTemplateRef',
     );
@@ -249,10 +253,11 @@ describe('flowSurfaces swagger', () => {
 
     const listTemplatesRequest =
       swaggerDocument.paths['/flowSurfaces:listTemplates'].post.requestBody.content['application/json'];
-    expect(listTemplatesRequest.example?.target?.uid).toBe('employee-create-form');
-    expect(listTemplatesRequest.example?.type).toBe('block');
-    expect(listTemplatesRequest.example?.usage).toBe('fields');
-    expect(listTemplatesRequest.example?.search).toBe('employee form');
+    expect(listTemplatesRequest.example?.target?.uid).toBe('employee-table-block');
+    expect(listTemplatesRequest.example?.type).toBe('popup');
+    expect(listTemplatesRequest.example?.actionType).toBe('view');
+    expect(listTemplatesRequest.example?.actionScope).toBe('record');
+    expect(listTemplatesRequest.example?.search).toBe('employee popup');
     expect(listTemplatesRequest.example?.pageSize).toBe(20);
     const getTemplateRequest =
       swaggerDocument.paths['/flowSurfaces:getTemplate'].post.requestBody.content['application/json'];
@@ -420,7 +425,9 @@ describe('flowSurfaces swagger', () => {
     expect(saveTemplateRequestForConfigure.example?.description).toContain('Reusable');
     const listTemplatesRequestForConfigure =
       swaggerDocument.paths['/flowSurfaces:listTemplates'].post.requestBody.content['application/json'];
-    expect(listTemplatesRequestForConfigure.example?.search).toBe('employee form');
+    expect(listTemplatesRequestForConfigure.example?.search).toBe('employee popup');
+    expect(listTemplatesRequestForConfigure.example?.actionType).toBe('view');
+    expect(listTemplatesRequestForConfigure.example?.actionScope).toBe('record');
     expect(configureRequest.examples.pageHeaderSettings.value.changes.icon).toBe('UserOutlined');
     expect(configureRequest.examples.pageHeaderSettings.value.changes.enableHeader).toBe(false);
     expect(configureRequest.examples.tableAdvancedSettings.value.changes.quickEdit).toBe(true);

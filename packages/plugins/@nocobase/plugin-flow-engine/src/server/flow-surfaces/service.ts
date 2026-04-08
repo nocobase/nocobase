@@ -145,12 +145,18 @@ type FlowSurfaceTemplateListValues = {
   target?: FlowSurfaceWriteTarget;
   type?: 'block' | 'popup';
   usage?: 'block' | 'fields';
+  actionType?: string;
+  actionScope?: 'block' | 'record';
 };
 
 type FlowSurfaceTemplateResourceInfo = {
   dataSourceKey?: string;
   collectionName?: string;
   associationName?: string;
+};
+
+type FlowSurfaceTemplateListPopupActionContext = {
+  hasCurrentRecord?: boolean;
 };
 
 const COLLECTION_BLOCK_USES = new Set([
@@ -2306,6 +2312,178 @@ export class FlowSurfacesService {
     return undefined;
   }
 
+  private normalizeOptionalTemplateListActionType(actionType: any) {
+    if (_.isUndefined(actionType) || _.isNull(actionType) || String(actionType).trim() === '') {
+      return undefined;
+    }
+    return String(actionType).trim();
+  }
+
+  private normalizeOptionalTemplateListActionScope(actionScope: any) {
+    const normalized = normalizeActionScope(actionScope);
+    if (!normalized) {
+      return undefined;
+    }
+    if (normalized !== 'block' && normalized !== 'record') {
+      throwBadRequest(
+        `flowSurfaces listTemplates actionScope only supports 'block' or 'record'`,
+        'FLOW_SURFACE_TEMPLATE_ACTION_SCOPE_UNSUPPORTED',
+      );
+    }
+    return normalized;
+  }
+
+  private assertTemplateListPopupActionScopeSupported(
+    targetContext: FlowSurfaceTemplateListTargetContext | undefined,
+    actionScope: 'block' | 'record',
+  ) {
+    const targetUse = String(targetContext?.node?.use || '').trim();
+    if (!targetUse) {
+      return;
+    }
+    const targetContainerScope = getActionContainerScope(targetUse);
+    if (actionScope === 'record') {
+      if (targetContainerScope === 'record' || getCatalogRecordActionContainerUse(targetUse)) {
+        return;
+      }
+      throwBadRequest(
+        `flowSurfaces listTemplates actionScope 'record' is not supported under '${targetUse}'`,
+        'FLOW_SURFACE_TEMPLATE_ACTION_SCOPE_UNSUPPORTED',
+      );
+    }
+    if (targetContainerScope === 'record') {
+      throwBadRequest(
+        `flowSurfaces listTemplates actionScope 'block' is not supported under '${targetUse}', use 'record'`,
+        'FLOW_SURFACE_TEMPLATE_ACTION_SCOPE_UNSUPPORTED',
+      );
+    }
+  }
+
+  private resolveTemplateListPopupActionItem(
+    targetContext: FlowSurfaceTemplateListTargetContext | undefined,
+    actionType: string | undefined,
+    actionScope?: 'block' | 'record',
+  ) {
+    const normalizedActionType = String(actionType || '').trim();
+    const targetUse = String(targetContext?.node?.use || '').trim();
+    if (!normalizedActionType || !targetUse) {
+      return null;
+    }
+    if (actionScope) {
+      this.assertTemplateListPopupActionScopeSupported(targetContext, actionScope);
+    }
+
+    const targetContainerScope = getActionContainerScope(targetUse);
+    const recordContainerUse =
+      targetContainerScope === 'record' ? targetUse : getCatalogRecordActionContainerUse(targetUse);
+    const tryResolve = (containerUse?: string | null) =>
+      containerUse
+        ? this.tryResolveActionCatalogItem(
+            {
+              type: normalizedActionType,
+              containerUse,
+            },
+            {
+              context: 'listTemplates',
+              requireCreateSupported: true,
+            },
+          )
+        : null;
+
+    let item =
+      actionScope === 'record'
+        ? tryResolve(recordContainerUse)
+        : actionScope === 'block'
+          ? tryResolve(targetUse)
+          : tryResolve(targetUse) || (recordContainerUse && recordContainerUse !== targetUse
+              ? tryResolve(recordContainerUse)
+              : null);
+
+    if (!item) {
+      if (actionScope === 'record') {
+        if (!recordContainerUse) {
+          throwBadRequest(
+            `flowSurfaces listTemplates actionScope 'record' is not supported under '${targetUse}'`,
+            'FLOW_SURFACE_TEMPLATE_ACTION_SCOPE_UNSUPPORTED',
+          );
+        }
+        item = this.resolveAddRecordActionCatalogItem(
+          {
+            type: normalizedActionType,
+            containerUse: recordContainerUse,
+            ownerUse: targetUse,
+          },
+          undefined,
+        );
+      } else if (recordContainerUse && recordContainerUse !== targetUse) {
+        item =
+          this.tryResolveActionCatalogItem(
+            {
+              type: normalizedActionType,
+              containerUse: recordContainerUse,
+            },
+            {
+              context: 'listTemplates',
+              requireCreateSupported: true,
+            },
+          ) ||
+          this.resolveAddActionCatalogItem(
+            {
+              type: normalizedActionType,
+              containerUse: targetUse,
+            },
+            undefined,
+          );
+      } else {
+        item = this.resolveAddActionCatalogItem(
+          {
+            type: normalizedActionType,
+            containerUse: targetUse,
+          },
+          undefined,
+        );
+      }
+    }
+
+    if (!POPUP_ACTION_USES.has(item.use)) {
+      throwBadRequest(
+        `flowSurfaces listTemplates actionType '${item.key}' does not support popup templates`,
+        'FLOW_SURFACE_TEMPLATE_POPUP_ACTION_UNSUPPORTED',
+      );
+    }
+    return item;
+  }
+
+  private resolveTemplateListPopupActionContext(values: {
+    targetContext?: FlowSurfaceTemplateListTargetContext;
+    actionType?: string;
+    actionScope?: 'block' | 'record';
+  }): FlowSurfaceTemplateListPopupActionContext | undefined {
+    if (!values.actionType && !values.actionScope) {
+      return undefined;
+    }
+    if (values.actionType) {
+      const actionCatalogItem = this.resolveTemplateListPopupActionItem(
+        values.targetContext,
+        values.actionType,
+        values.actionScope,
+      );
+      if (!actionCatalogItem) {
+        return undefined;
+      }
+      return {
+        hasCurrentRecord: actionCatalogItem.scope === 'record' || actionCatalogItem.scene === 'record',
+      };
+    }
+    if (values.actionScope) {
+      this.assertTemplateListPopupActionScopeSupported(values.targetContext, values.actionScope);
+      return {
+        hasCurrentRecord: values.actionScope === 'record',
+      };
+    }
+    return undefined;
+  }
+
   private getBlockTemplateDisabledReason(
     template: FlowSurfaceTemplateRow,
     targetContext?: FlowSurfaceTemplateListTargetContext,
@@ -2345,6 +2523,7 @@ export class FlowSurfacesService {
   private async getPopupTemplateDisabledReason(
     template: FlowSurfaceTemplateRow,
     targetContext?: FlowSurfaceTemplateListTargetContext,
+    popupActionContext?: FlowSurfaceTemplateListPopupActionContext,
   ) {
     if (!targetContext?.node?.uid) {
       return undefined;
@@ -2387,9 +2566,11 @@ export class FlowSurfacesService {
     if (resourceReason) {
       return resourceReason;
     }
+    const hasCurrentRecord =
+      popupActionContext?.hasCurrentRecord ?? this.inferTemplateListCurrentRecordCapability(targetContext.node);
     if (
       String(template.filterByTk || '').trim() &&
-      this.inferTemplateListCurrentRecordCapability(targetContext.node) === false
+      hasCurrentRecord === false
     ) {
       return this.buildTemplateMissingContextReason('filterByTk');
     }
@@ -2402,11 +2583,12 @@ export class FlowSurfacesService {
       requestedType?: 'block' | 'popup';
       requestedUsage?: 'block' | 'fields';
       targetContext?: FlowSurfaceTemplateListTargetContext;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
     },
   ) {
     const normalizedType = String(template?.type || '').trim() || 'block';
     if (values.requestedType === 'popup' || normalizedType === 'popup') {
-      return this.getPopupTemplateDisabledReason(template, values.targetContext);
+      return this.getPopupTemplateDisabledReason(template, values.targetContext, values.popupActionContext);
     }
     if (values.requestedUsage === 'fields') {
       const hostBlock =
@@ -2428,6 +2610,7 @@ export class FlowSurfacesService {
       requestedType?: 'block' | 'popup';
       requestedUsage?: 'block' | 'fields';
       targetContext?: FlowSurfaceTemplateListTargetContext;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
     },
   ) {
     const shouldAnnotate =
@@ -2565,16 +2748,32 @@ export class FlowSurfacesService {
       _.isUndefined(values?.usage) || _.isNull(values?.usage) || String(values?.usage).trim() === ''
       ? undefined
       : this.normalizeFlowTemplateUsage('listTemplates', values?.usage);
+    const requestedActionType = this.normalizeOptionalTemplateListActionType(values?.actionType);
+    const requestedActionScope = this.normalizeOptionalTemplateListActionScope(values?.actionScope);
     if (requestedType === 'popup' && requestedUsage) {
       throwBadRequest(
         `flowSurfaces listTemplates usage is only supported when type='block'`,
         'FLOW_SURFACE_TEMPLATE_USAGE_UNSUPPORTED',
       );
     }
+    if ((requestedActionType || requestedActionScope) && requestedType !== 'popup') {
+      throwBadRequest(
+        `flowSurfaces listTemplates actionType/actionScope are only supported when type='popup'`,
+        'FLOW_SURFACE_TEMPLATE_POPUP_ACTION_UNSUPPORTED',
+      );
+    }
     const target = _.isUndefined(values?.target)
       ? undefined
       : this.normalizeWriteTarget('listTemplates', values?.target, values);
     const targetContext = target ? await this.loadTemplateListTargetContext(target, options.transaction) : undefined;
+    const popupActionContext =
+      requestedType === 'popup'
+        ? this.resolveTemplateListPopupActionContext({
+            targetContext,
+            actionType: requestedActionType,
+            actionScope: requestedActionScope,
+          })
+        : undefined;
     const filter = this.buildTemplateListFilter(values?.filter, values?.search, requestedType);
     const page = normalizeTemplatePage(values?.page);
     const pageSize = normalizeTemplatePageSize(values?.pageSize);
@@ -2592,6 +2791,7 @@ export class FlowSurfacesService {
           requestedType,
           requestedUsage,
           targetContext,
+          popupActionContext,
         },
       ),
       count,

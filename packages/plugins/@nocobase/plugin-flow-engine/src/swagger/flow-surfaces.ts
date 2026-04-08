@@ -1253,11 +1253,12 @@ const actionDocs: Record<string, any> = {
     ),
     requestBody: requestBody('FlowSurfaceListTemplatesRequest', {
       target: {
-        uid: 'employee-create-form',
+        uid: 'employee-table-block',
       },
-      type: 'block',
-      usage: 'fields',
-      search: 'employee form',
+      type: 'popup',
+      actionType: 'view',
+      actionScope: 'record',
+      search: 'employee popup',
       page: 1,
       pageSize: 20,
     }),
@@ -2632,6 +2633,14 @@ const schemas = {
       usage: {
         type: 'string',
         enum: ['block', 'fields'],
+      },
+      actionType: {
+        type: 'string',
+        enum: ACTION_TYPE_ENUM,
+      },
+      actionScope: {
+        type: 'string',
+        enum: ['block', 'record'],
       },
       search: {
         type: 'string',

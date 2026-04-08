@@ -995,6 +995,133 @@ describe('flowSurfaces templates', () => {
     await expectTemplateUsage(rootAgent, popupTemplate.uid, 0);
   });
 
+  it('should keep listTemplates target-aware for association block templates and pre-add popup action contexts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Target aware template list page',
+      tabTitle: 'Target aware template list tab',
+    });
+
+    const employeeDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const popupField = await addFieldData(rootAgent, {
+      target: { uid: employeeDetails.uid },
+      fieldPath: 'nickname',
+      popup: {
+        blocks: [
+          {
+            key: 'employee-record-popup-details',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['nickname'],
+          },
+        ],
+      },
+    });
+
+    const associationBlock = await addBlockData(rootAgent, {
+      target: { uid: popupField.fieldUid || popupField.uid },
+      type: 'table',
+      resource: {
+        binding: 'associatedRecords',
+        associationField: 'department',
+      },
+    });
+    const associationBlockTemplate = await saveTemplate(rootAgent, {
+      target: { uid: associationBlock.uid },
+      name: 'Employee department association table',
+      description: 'Association block template bound to employees.department for target-aware listTemplates checks.',
+      saveMode: 'duplicate',
+    });
+
+    const mismatchedAssociationTemplates = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'block',
+          search: 'Employee department association table',
+        },
+      }),
+    );
+    const mismatchedAssociationTemplate = mismatchedAssociationTemplates.rows.find(
+      (row: any) => row.uid === associationBlockTemplate.uid,
+    );
+    expect(mismatchedAssociationTemplate).toMatchObject({
+      uid: associationBlockTemplate.uid,
+      available: false,
+    });
+    expect(mismatchedAssociationTemplate?.disabledReason).toContain('association mismatch');
+
+    const incompatibleAssociationBlock = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        template: {
+          uid: associationBlockTemplate.uid,
+          mode: 'reference',
+        },
+      },
+    });
+    expect(incompatibleAssociationBlock.status).toBe(400);
+    expect(readErrorMessage(incompatibleAssociationBlock)).toContain('association mismatch');
+
+    const popupTemplate = await saveTemplate(rootAgent, {
+      target: { uid: popupField.fieldUid || popupField.uid },
+      name: 'Employee record popup action context template',
+      description: 'Popup template requiring current record context for pre-add listTemplates checks.',
+      saveMode: 'duplicate',
+    });
+    const employeeTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const addNewPopupTemplates = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          target: { uid: employeeTable.uid },
+          type: 'popup',
+          actionType: 'addNew',
+          actionScope: 'block',
+          search: 'Employee record popup action context template',
+        },
+      }),
+    );
+    expect(addNewPopupTemplates.rows.find((row: any) => row.uid === popupTemplate.uid)).toMatchObject({
+      uid: popupTemplate.uid,
+      available: false,
+    });
+    expect(addNewPopupTemplates.rows.find((row: any) => row.uid === popupTemplate.uid)?.disabledReason).toContain(
+      'filterByTk',
+    );
+
+    const viewPopupTemplates = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          target: { uid: employeeTable.uid },
+          type: 'popup',
+          actionType: 'view',
+          actionScope: 'record',
+          search: 'Employee record popup action context template',
+        },
+      }),
+    );
+    expect(viewPopupTemplates.rows.find((row: any) => row.uid === popupTemplate.uid)).toMatchObject({
+      uid: popupTemplate.uid,
+      available: true,
+    });
+  });
+
   it('should reject incompatible fields templates popup templates and unsupported popup template sources', async () => {
     const page = await createPage(rootAgent, {
       title: 'Template validation page',
@@ -1375,7 +1502,18 @@ async function setupFixtureCollections(rootAgent: any) {
     values: {
       name: 'departments',
       title: 'Departments',
+      titleField: 'title',
+      filterTargetKey: 'title',
       fields: [{ name: 'title', type: 'string', interface: 'input' }],
+    },
+  });
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'department',
+      type: 'belongsTo',
+      target: 'departments',
+      foreignKey: 'departmentId',
+      interface: 'm2o',
     },
   });
 }
