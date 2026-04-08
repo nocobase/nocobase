@@ -773,13 +773,17 @@ export class AIEmployee {
       background = `${background}\n${workContextBackground.join('\n')}`;
     }
 
-    let knowledgeBase;
+    let knowledgeBase: string | undefined;
     const { knowledgeBaseManager } = this.plugin;
     const employee: AIEmployeeType = this.employee.toJSON();
-    if (knowledgeBaseManager.isEnabledKnowledgeBase(employee) && employee.knowledgeBasePrompt && userMessages?.length) {
+    if (
+      (await knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
+      employee.knowledgeBasePrompt &&
+      userMessages?.length
+    ) {
       const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
       if (lastUserMessage) {
-        knowledgeBase = knowledgeBaseManager.retrievePrompt({
+        knowledgeBase = await knowledgeBaseManager.retrievePrompt({
           employee,
           query: lastUserMessage.content.content as string,
         });
@@ -1317,6 +1321,12 @@ If information is missing, clearly state it in the summary.</Important>`;
     const toolMap = await this.getToolsMap();
     const employeeTools = this.employee.skillSettings?.tools ?? [];
     employeeTools.push(...this.tools);
+    if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
+      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools('knowledge-base-retrieve');
+      if (knowledgeBaseRetrieveTool) {
+        employeeTools.push({ name: 'knowledge-base-retrieve' });
+      }
+    }
     for (const toolSetting of employeeTools) {
       if (generalToolsNameSet.has(toolSetting.name)) {
         continue;
