@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AdminSettingsLayoutModel as BaseAdminSettingsLayoutModel } from '@nocobase/client-v2';
-
-export class AdminSettingsLayoutModel extends BaseAdminSettingsLayoutModel {}
+export * from './AdminSettingsLayout';
+export * from './AdminSettingsLayoutModel';
+export * from './PluginManagerPage';
+export * from './SystemSettingsPage';
+export * from './utils';

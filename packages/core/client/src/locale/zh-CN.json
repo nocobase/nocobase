@@ -1644,5 +1644,12 @@
   "Edit popup (Select record)":"编辑弹窗（选择纪录）",
   "Remove record":"移除记录",
   "Block height":"区块高度",
-  "Height": "高度"
+  "Height": "高度",
+  "Compatible": "兼容",
+  "Current settings page is unavailable": "当前设置页不可用",
+  "Failed to load plugins": "加载插件失败",
+  "Failed to load system settings": "加载系统设置失败",
+  "No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.": "当前 Client V2 中还没有可用的设置页。已迁移插件注册的设置页会自动出现在这里。",
+  "No settings pages available": "暂无可用设置页",
+  "The requested settings page does not exist or you do not have permission to access it.": "请求的设置页不存在，或者你没有访问权限。"
 }

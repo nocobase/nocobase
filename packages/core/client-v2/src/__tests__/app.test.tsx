@@ -13,11 +13,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 
+const waitForAppReady = async () => {
+  await waitFor(() => {
+    expect(document.querySelector('.ant-spin-spinning')).not.toBeInTheDocument();
+  });
+};
+
 const renderApp = async (app: Application) => {
   const Root = app.getRootComponent();
   render(<Root />);
-  expect(screen.getByText('Loading')).toBeInTheDocument();
-  await waitFor(() => expect(screen.queryByText('Loading')).not.toBeInTheDocument());
+  await waitForAppReady();
   return Root;
 };
 
@@ -26,15 +31,13 @@ describe('app', () => {
     const app = createMockClient();
     const element = document.createElement('div');
     act(() => app.mount(element));
-    expect(element.textContent).toBe('Loading');
-    await waitFor(() => expect(element.textContent).not.toBe('Loading'));
-    expect(element.textContent).toBe('Not Found');
+    await waitFor(() => expect(element.textContent).toContain('Sorry, the page you visited does not exist.'));
   });
 
   it('should render default "Not Found" view', async () => {
     const app = createMockClient();
     await renderApp(app);
-    expect(screen.getByText('Not Found')).toBeInTheDocument();
+    expect(screen.getByText('Sorry, the page you visited does not exist.')).toBeInTheDocument();
   });
 
   it('should render custom "Not Found" component', async () => {
@@ -154,8 +157,10 @@ describe('app', () => {
     const app = createMockClient({ plugins: [PluginHelloClient] });
     app.maintained = false;
     app.maintaining = true;
+    app.error = { code: 'APP_INITIALIZING', message: 'maintaining message' } as any;
     await renderApp(app);
-    expect(screen.getByText('Maintaining')).toBeInTheDocument();
+    expect(screen.getByText('App initializing')).toBeInTheDocument();
+    expect(screen.getByText('maintaining message')).toBeInTheDocument();
   });
 
   it('should show maintained dialog state', async () => {
@@ -163,8 +168,11 @@ describe('app', () => {
     const app = createMockClient({ plugins: [PluginHelloClient] });
     app.maintained = true;
     app.maintaining = true;
+    app.error = { code: 'APP_INITIALIZING', message: 'maintaining dialog message' } as any;
     await renderApp(app);
-    expect(screen.getByText('Maintaining Dialog')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('App initializing')).toBeInTheDocument();
+    expect(screen.getByText('maintaining dialog message')).toBeInTheDocument();
   });
 
   it('should handle long loading state gracefully', async () => {
@@ -198,13 +206,13 @@ describe('app', () => {
     });
 
     await renderApp(app);
-    expect(screen.getByText('Maintaining')).toBeInTheDocument();
+    expect(screen.getByText('maintaining error message')).toBeInTheDocument();
 
     app.ws.emit('message', {
       type: 'maintaining',
       payload: { code: 'APP_RUNNING', message: 'app running message' },
     });
-    await waitFor(() => expect(screen.queryByText('Maintaining')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
     expect(screen.getByText('Hello')).toBeInTheDocument();
     expect(reloadMock).toHaveBeenCalled();
   });

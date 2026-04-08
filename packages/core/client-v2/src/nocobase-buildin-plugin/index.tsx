@@ -9,12 +9,18 @@
 
 import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
+import {
+  AdminSettingsLayout,
+  AdminSettingsLayoutModel,
+  PluginManagerPage,
+  SystemSettingsPage,
+} from '../settings-center';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
 type CurrentUserState = {
@@ -213,12 +219,26 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
     this.app.use(DataSourceBootstrapProvider);
     this.app.use(CurrentUserProvider);
-
     this.app.flowEngine.registerModels({
       AdminLayoutModel,
       AdminLayoutMenuItemModel,
+      AdminSettingsLayoutModel,
     });
 
+    this.app.pluginSettingsManager.add('plugin-manager', {
+      title: this.app.i18n.t('Plugin manager'),
+      icon: 'ApiOutlined',
+      Component: PluginManagerPage,
+      aclSnippet: 'pm',
+      sort: -200,
+    });
+    this.app.pluginSettingsManager.add('system-settings', {
+      title: this.app.i18n.t('System settings'),
+      icon: 'SettingOutlined',
+      Component: SystemSettingsPage,
+      aclSnippet: 'pm.system-settings.system-settings',
+      sort: -100,
+    });
     this.app.pluginSettingsManager.add('security', {
       title: this.app.i18n.t('Security'),
       icon: 'SafetyOutlined',
@@ -239,6 +259,14 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.router.add('admin', {
       path: '/admin',
       componentLoader: () => import('../flow/components/AdminLayout'),
+    });
+    this.router.add('admin.settings', {
+      path: '/admin/settings',
+      Component: AdminSettingsLayout,
+    });
+    this.router.add('admin.settings.route-empty', {
+      path: '*',
+      Component: Outlet,
     });
     this.router.add('admin.page', {
       path: '/admin/:name',

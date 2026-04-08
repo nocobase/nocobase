@@ -97,6 +97,7 @@ export * from './actions';
 export * from './system-settings';
 export * from './admin-shell/admin-layout';
 export * from './admin-shell/AdminLayoutRouteCoordinator';
+export * from '../settings-center';
 export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
 

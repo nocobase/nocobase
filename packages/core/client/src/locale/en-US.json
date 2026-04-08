@@ -1604,6 +1604,13 @@
   "{{#label}} with value \"{{#value}}\" matches the inverted {{#name}} pattern": "{{#label}} with value \"{{#value}}\" matches the inverted {{#name}} pattern",
   "{{count}} filter items": "{{count}} filter items",
   "{{count}} more items": "{{count}} more items",
+  "Compatible": "Compatible",
+  "Current settings page is unavailable": "Current settings page is unavailable",
+  "Failed to load plugins": "Failed to load plugins",
+  "Failed to load system settings": "Failed to load system settings",
+  "No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.": "No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.",
+  "No settings pages available": "No settings pages available",
+  "The requested settings page does not exist or you do not have permission to access it.": "The requested settings page does not exist or you do not have permission to access it.",
   "≠": "≠",
   "≤": "≤",
   "≥": "≥"

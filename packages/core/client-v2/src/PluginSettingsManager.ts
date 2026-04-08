@@ -8,10 +8,11 @@
  */
 
 import { set } from 'lodash';
-import React from 'react';
+import React, { createElement, type ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import type { BaseApplication } from './BaseApplication';
+import { Icon } from './components';
 import type { RouteType } from './RouterManager';
 
 export const ADMIN_SETTINGS_KEY = 'admin.settings.';
@@ -25,7 +26,7 @@ export interface PluginSettingOptions {
    */
   Component?: RouteType['Component'];
   componentLoader?: RouteType['componentLoader'];
-  icon?: string;
+  icon?: string | ReactNode;
   /**
    * sort, the smaller the number, the higher the priority
    * @default 0
@@ -43,7 +44,7 @@ export interface PluginSettingsPageType {
   title: string | React.ReactElement;
   link?: string;
   key: string;
-  icon: any;
+  icon: ReactNode;
   path: string;
   sort?: number;
   name?: string;
@@ -67,8 +68,16 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
     });
   }
 
-  protected renderIcon(icon: PluginSettingOptions['icon']) {
-    return this.app.flowEngine.context.renderIon?.(icon);
+  protected renderIcon(icon: PluginSettingOptions['icon']): ReactNode {
+    if (!icon) {
+      return null;
+    }
+
+    if (typeof icon === 'string') {
+      return createElement(Icon, { type: icon });
+    }
+
+    return icon;
   }
 
   clearCache() {
@@ -77,6 +86,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
 
   setAclSnippets(aclSnippets: string[]) {
     this.aclSnippets = aclSnippets;
+    this.clearCache();
   }
 
   getAclSnippet(name: string) {
@@ -96,6 +106,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
   }
 
   add(name: string, options: PluginSettingOptions) {
+    this.clearCache();
     const nameArr = name.split('.');
     const topLevelName = nameArr[0];
     this.settings[name] = {
@@ -119,6 +130,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
   }
 
   remove(name: string) {
+    this.clearCache();
     // delete self and children
     Object.keys(this.settings).forEach((key) => {
       if (key.startsWith(name)) {
