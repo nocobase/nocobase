@@ -18,6 +18,7 @@ export type VectorStoreProp = {
 export type KnowledgeBase = {
   knowledgeBaseType: KnowledgeBaseType;
   knowledgeBaseOuterId: string;
+  key: string;
   name: string;
   description: string;
   vectorStoreProvider: string;

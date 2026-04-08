@@ -125,4 +125,5 @@ export type AIEmployee = {
   enableKnowledgeBase: boolean;
   enabled: boolean;
   builtIn: boolean;
+  missingKnowledgeBaseKeys?: string[];
 };
