@@ -27,7 +27,9 @@ keywords: "自定义操作,ActionModel,ActionSceneEnum,操作按钮,NocoBase"
 - **记录级操作**（`record`）— 出现在表格每行的操作列，比如「编辑」「删除」旁边
 - **两者都适用**（`both`）— 两种场景都会出现
 
-<!-- 需要一个展示三种操作按钮出现位置的截图或视频 -->
+<video width="100%" height="450" controls>
+  <source src="https://static-docs.nocobase.com/iShot_2026-04-08_17.55.43.mp4" type="video/mp4">
+</video>
 
 完整源码见 [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-action)。如果你想直接在本地跑起来看效果：
 
@@ -51,11 +53,11 @@ yarn pm create @my-project/plugin-simple-action
 
 每个操作需要声明它出现的场景，通过 `static scene` 属性指定：
 
-| 场景 | 值 | 说明 |
-| --- | --- | --- |
-| collection | `ActionSceneEnum.collection` | 作用于数据表，比如「新建」按钮 |
-| record | `ActionSceneEnum.record` | 作用于单条记录，比如「编辑」「删除」按钮 |
-| both | `ActionSceneEnum.both` | 两种场景都可用 |
+| 场景       | 值                           | 说明                                     |
+| ---------- | ---------------------------- | ---------------------------------------- |
+| collection | `ActionSceneEnum.collection` | 作用于数据表，比如「新建」按钮           |
+| record     | `ActionSceneEnum.record`     | 作用于单条记录，比如「编辑」「删除」按钮 |
+| both       | `ActionSceneEnum.both`       | 两种场景都可用                           |
 
 ### 数据表级操作
 
@@ -77,6 +79,20 @@ export class SimpleCollectionActionModel extends ActionModel {
 
 SimpleCollectionActionModel.define({
   label: tExpr('Simple collection action'),
+});
+
+// 通过 registerFlow 监听点击事件，用 ctx.message 给用户反馈
+SimpleCollectionActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple collection action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        ctx.message.success(ctx.t('Collection action clicked'));
+      },
+    },
+  },
 });
 ```
 
@@ -101,6 +117,21 @@ export class SimpleRecordActionModel extends ActionModel {
 SimpleRecordActionModel.define({
   label: tExpr('Simple record action'),
 });
+
+// 记录级操作可以通过 ctx.model.context 拿到当前行的数据和索引
+SimpleRecordActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple record action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        const index = ctx.model.context.recordIndex;
+        ctx.message.info(ctx.t('Record action clicked, row index: {{index}}', { index }));
+      },
+    },
+  },
+});
 ```
 
 ### 两种场景都适用
@@ -124,9 +155,22 @@ export class SimpleBothActionModel extends ActionModel {
 SimpleBothActionModel.define({
   label: tExpr('Simple both action'),
 });
+
+SimpleBothActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple both action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        ctx.message.info(ctx.t('Both action clicked'));
+      },
+    },
+  },
+});
 ```
 
-三种写法的结构一样——区别只在 `static scene` 的值和按钮文案。
+三种写法的结构一样——区别只在 `static scene` 的值和按钮文案。每个按钮都通过 `registerFlow({ on: 'click' })` 监听点击事件，用 `ctx.message` 弹出提示，让用户能看到按钮确实生效了。
 
 ## 第三步：添加多语言文件
 
@@ -137,7 +181,10 @@ SimpleBothActionModel.define({
 {
   "Simple collection action": "简单数据表操作",
   "Simple record action": "简单记录操作",
-  "Simple both action": "简单通用操作"
+  "Simple both action": "简单通用操作",
+  "Collection action clicked": "数据表操作被点击了",
+  "Record action clicked, row index: {{index}}": "记录操作被点击了，行索引：{{index}}",
+  "Both action clicked": "通用操作被点击了"
 }
 ```
 
@@ -146,7 +193,10 @@ SimpleBothActionModel.define({
 {
   "Simple collection action": "Simple collection action",
   "Simple record action": "Simple record action",
-  "Simple both action": "Simple both action"
+  "Simple both action": "Simple both action",
+  "Collection action clicked": "Collection action clicked",
+  "Record action clicked, row index: {{index}}": "Record action clicked, row index: {{index}}",
+  "Both action clicked": "Both action clicked"
 }
 ```
 
@@ -201,13 +251,13 @@ yarn pm enable @my-project/plugin-simple-action
 
 这个示例用到的能力：
 
-| 能力 | 用法 | 文档 |
-| --- | --- | --- |
-| 操作按钮 | `ActionModel` + `static scene` | [FlowEngine → 操作扩展](../flow-engine/action) |
+| 能力     | 用法                                         | 文档                                           |
+| -------- | -------------------------------------------- | ---------------------------------------------- |
+| 操作按钮 | `ActionModel` + `static scene`               | [FlowEngine → 操作扩展](../flow-engine/action) |
 | 操作场景 | `ActionSceneEnum.collection / record / both` | [FlowEngine → 操作扩展](../flow-engine/action) |
-| 菜单注册 | `define({ label })` | [FlowEngine 概述](../flow-engine/index.md) |
-| 模型注册 | `this.flowEngine.registerModelLoaders()` | [Plugin 插件](../plugin) |
-| 延迟翻译 | `tExpr()` | [i18n 国际化](../component/i18n) |
+| 菜单注册 | `define({ label })`                          | [FlowEngine 概述](../flow-engine/index.md)     |
+| 模型注册 | `this.flowEngine.registerModelLoaders()`     | [Plugin 插件](../plugin)                       |
+| 延迟翻译 | `tExpr()`                                    | [i18n 国际化](../component/i18n)               |
 
 ## 相关链接
 
