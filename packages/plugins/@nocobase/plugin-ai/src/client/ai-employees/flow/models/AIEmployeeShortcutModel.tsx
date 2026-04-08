@@ -373,7 +373,6 @@ const TaskWebSearchSwitch: React.FC = observer(() => {
 
   const supportWebSearch = selectedService?.supportWebSearch;
   const isDisabled = !!modelField?.value && supportWebSearch === false;
-  const showConflictWarning = !!field.value && !!selectedService?.isToolConflict;
 
   useEffect(() => {
     if (isDisabled && field.value) {
@@ -385,9 +384,6 @@ const TaskWebSearchSwitch: React.FC = observer(() => {
     <div>
       <Switch checked={!!field.value} disabled={isDisabled} onChange={(checked) => (field.value = checked)} />
       {isDisabled && <div style={{ marginTop: 8, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Web search not supported')}</div>}
-      {showConflictWarning && (
-        <Alert style={{ marginTop: 8 }} type="warning" showIcon={true} message={t('Search disables tools')} />
-      )}
     </div>
   );
 });

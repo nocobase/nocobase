@@ -172,7 +172,9 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
-    const { provider, model, service } = await this.getLLMService();
+    const { provider, model, service } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const { historyMessages, tools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
@@ -279,51 +281,6 @@ export class AIEmployee {
       this.ctx.log.error(err);
       throw err;
     }
-  }
-
-  // === LLM/provider setup ===
-  async getLLMService() {
-    // model is required - it's set by the frontend ModelSwitcher
-    if (!this.model?.llmService || !this.model?.model) {
-      throw new Error('LLM service not configured');
-    }
-
-    const llmServiceName = this.model.llmService;
-    const model = this.model.model;
-
-    // Build model options from model
-    const modelOptions: Record<string, any> = {
-      llmService: llmServiceName,
-      model,
-    };
-
-    if (this.webSearch === true) {
-      modelOptions.builtIn = { webSearch: true };
-    }
-
-    const service = await this.db.getRepository('llmServices').findOne({
-      filter: {
-        name: llmServiceName,
-      },
-    });
-
-    if (!service) {
-      throw new Error('LLM service not found');
-    }
-
-    const providerOptions = this.plugin.aiManager.llmProviders.get(service.provider);
-    if (!providerOptions) {
-      throw new Error('LLM service provider not found');
-    }
-
-    const Provider = providerOptions.provider;
-    const provider = new Provider({
-      app: this.ctx.app,
-      serviceOptions: service.options,
-      modelOptions,
-    });
-
-    return { provider, model, service };
   }
 
   // === Agent wiring & execution ===
@@ -438,20 +395,27 @@ export class AIEmployee {
     let isReasoning = false;
     let gathered: any;
     signal.addEventListener('abort', async () => {
-      if (gathered?.type === 'ai') {
-        const values = convertAIMessage({
-          aiEmployee: this,
-          providerName,
-          model,
-          aiMessage: gathered,
-        });
-        if (values) {
-          values.metadata.interrupted = true;
-        }
+      try {
+        if (gathered?.type === 'ai') {
+          const values = convertAIMessage({
+            aiEmployee: this,
+            providerName,
+            model,
+            aiMessage: gathered,
+          });
+          if (values) {
+            values.metadata.interrupted = true;
+          }
 
-        await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-          const result: AIMessage = await conversation.addMessages(values);
-        });
+          await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+            const result: AIMessage = await conversation.addMessages(values);
+            if (toolCalls?.length) {
+              await this.initToolCall(transaction, result.messageId, toolCalls as any);
+            }
+          });
+        }
+      } catch (e) {
+        this.logger.error('Fail to save message after conversation abort', gathered);
       }
     });
 
@@ -1064,7 +1028,9 @@ If information is missing, clearly state it in the summary.</Important>`;
       return;
     }
 
-    const { model, service } = await this.getLLMService();
+    const { model, service } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
     const toolMessageContent = 'The user ignored the application for tools usage and will continued to ask questions';
@@ -1364,6 +1330,10 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private async getAIEmployeeTools() {
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    if (this.webSearch === true) {
+      const subAgentWebSearch = await this.toolsManager.getTools('subAgentWebSearch');
+      tools.push(subAgentWebSearch);
+    }
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
     const employeeTools = this.employee.skillSettings?.tools ?? [];

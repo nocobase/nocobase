@@ -44,8 +44,8 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       await resource.refresh();
     } else {
       blockModel.form.resetFields();
-      blockModel.resetUserModifiedFields?.();
       blockModel.emitter.emit('onFieldReset');
+      blockModel.resetUserModifiedFields?.();
       if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
         ctx.view.inputArgs.onChange(data?.data);
       }
@@ -59,5 +59,6 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
     (await cb)
       ? await cb(values, currentFilterByTk)
       : await resource.update(currentFilterByTk, values, params.requestConfig);
+    blockModel.resetUserModifiedFields?.();
   }
 }

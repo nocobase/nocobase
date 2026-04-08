@@ -1,0 +1,1911 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "TableBlockModel"
+  },
+  "tree": {
+    "alias": "block.table1",
+    "use": "TableBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      },
+      "tableSettings": {
+        "pageSize": {
+          "pageSize": 20
+        },
+        "showRowNumbers": {
+          "showIndex": true
+        },
+        "dataScope": {
+          "filter": {
+            "logic": "$and",
+            "items": []
+          }
+        }
+      }
+    },
+    "subModels": {
+      "actions": [
+        {
+          "alias": "action.addNew1",
+          "use": "AddNewActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Add Pet",
+                "type": ""
+              }
+            },
+            "popupSettings": {
+              "openView": {
+                "pageModelClass": "ChildPageModel",
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "disablePopupTemplateMenu": true
+              }
+            }
+          },
+          "subModels": {
+            "page": [
+              {
+                "alias": "action.addNew1.popup.page",
+                "use": "ChildPageModel",
+                "stepParams": {
+                  "pageSettings": {
+                    "general": {
+                      "displayTitle": false,
+                      "enableTabs": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "tabs": [
+                    {
+                      "alias": "action.addNew1.popup.tab",
+                      "use": "ChildPageTabModel",
+                      "stepParams": {
+                        "pageTabSettings": {
+                          "tab": {
+                            "title": "Add Pet"
+                          }
+                        }
+                      },
+                      "subModels": {
+                        "grid": [
+                          {
+                            "alias": "action.addNew1.popup.grid",
+                            "use": "BlockGridModel",
+                            "subModels": {
+                              "items": [
+                                {
+                                  "alias": "block.createForm1",
+                                  "use": "CreateFormModel",
+                                  "stepParams": {
+                                    "resourceSettings": {
+                                      "init": {
+                                        "dataSourceKey": "main",
+                                        "collectionName": "pets"
+                                      }
+                                    },
+                                    "formModelSettings": {
+                                      "layout": {
+                                        "layout": "vertical",
+                                        "colon": false
+                                      },
+                                      "assignRules": {
+                                        "value": []
+                                      }
+                                    },
+                                    "eventSettings": {
+                                      "linkageRules": {
+                                        "value": []
+                                      }
+                                    }
+                                  },
+                                  "subModels": {
+                                    "actions": [
+                                      {
+                                        "alias": "action.submit1",
+                                        "use": "FormSubmitActionModel",
+                                        "stepParams": {
+                                          "buttonSettings": {
+                                            "general": {
+                                              "title": "Save",
+                                              "type": ""
+                                            }
+                                          },
+                                          "submitSettings": {
+                                            "confirm": {
+                                              "enable": false
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "grid": [
+                                      {
+                                        "alias": "block.createForm1.grid",
+                                        "use": "FormGridModel",
+                                        "subModels": {
+                                          "items": [
+                                            {
+                                              "alias": "field.name.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "name"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.name.inner",
+                                                    "use": "InputFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "name"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.species.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "species"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.species.inner",
+                                                    "use": "SelectFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "species"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.breed.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "breed"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.breed.inner",
+                                                    "use": "InputFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "breed"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.ageYears.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "ageYears"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.ageYears.inner",
+                                                    "use": "NumberFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "ageYears"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.gender.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "gender"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.gender.inner",
+                                                    "use": "SelectFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "gender"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.owner.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "owner"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.owner.inner",
+                                                    "use": "RecordSelectFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "owner"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.status.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "status"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.status.inner",
+                                                    "use": "SelectFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "status"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.vaccinated.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "vaccinated"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.vaccinated.inner",
+                                                    "use": "CheckboxFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "vaccinated"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.lastVisitAt.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "lastVisitAt"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.lastVisitAt.inner",
+                                                    "use": "DateTimeTzFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "lastVisitAt"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            {
+                                              "alias": "field.notes.wrapper",
+                                              "use": "FormItemModel",
+                                              "stepParams": {
+                                                "fieldSettings": {
+                                                  "init": {
+                                                    "dataSourceKey": "main",
+                                                    "collectionName": "pets",
+                                                    "fieldPath": "notes"
+                                                  }
+                                                },
+                                                "editItemSettings": {
+                                                  "showLabel": {
+                                                    "showLabel": true
+                                                  }
+                                                }
+                                              },
+                                              "subModels": {
+                                                "field": [
+                                                  {
+                                                    "alias": "field.notes.inner",
+                                                    "use": "TextareaFieldModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "notes"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "node.RefreshActionModel1",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Refresh",
+                "type": ""
+              }
+            }
+          }
+        },
+        {
+          "alias": "node.BulkDeleteActionModel1",
+          "use": "BulkDeleteActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Bulk Delete",
+                "type": ""
+              }
+            }
+          }
+        }
+      ],
+      "columns": [
+        {
+          "alias": "field.name.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "name"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayTextFieldModel1",
+                "use": "DisplayTextFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "name"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.species.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "species"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayTextFieldModel2",
+                "use": "DisplayTextFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "species"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.breed.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "breed"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayTextFieldModel3",
+                "use": "DisplayTextFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "breed"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.ageYears.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "ageYears"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayNumberFieldModel1",
+                "use": "DisplayNumberFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "ageYears"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.gender.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "gender"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayTextFieldModel4",
+                "use": "DisplayTextFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "gender"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.owner.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "owner"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayTextFieldModel5",
+                "use": "DisplayTextFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "owner"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.status.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "status"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayTextFieldModel6",
+                "use": "DisplayTextFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.vaccinated.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "vaccinated"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayCheckboxFieldModel1",
+                "use": "DisplayCheckboxFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "vaccinated"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.lastVisitAt.wrapper1",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "lastVisitAt"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "node.DisplayDateTimeFieldModel1",
+                "use": "DisplayDateTimeFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "lastVisitAt"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "field.updatedAt.wrapper",
+          "use": "TableColumnModel",
+          "stepParams": {
+            "fieldSettings": {
+              "init": {
+                "dataSourceKey": "main",
+                "collectionName": "pets",
+                "fieldPath": "updatedAt"
+              }
+            },
+            "tableColumnSettings": {
+              "width": {
+                "width": 150
+              }
+            }
+          },
+          "subModels": {
+            "field": [
+              {
+                "alias": "field.updatedAt.inner",
+                "use": "DisplayDateTimeFieldModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "updatedAt"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "alias": "column.actions1",
+          "use": "TableActionsColumnModel",
+          "subModels": {
+            "actions": [
+              {
+                "alias": "action.view1",
+                "use": "ViewActionModel",
+                "stepParams": {
+                  "buttonSettings": {
+                    "general": {
+                      "title": "View",
+                      "type": ""
+                    }
+                  },
+                  "popupSettings": {
+                    "openView": {
+                      "pageModelClass": "ChildPageModel",
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "filterByTk": "{{ctx.record.id}}",
+                      "disablePopupTemplateMenu": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "page": [
+                    {
+                      "alias": "action.view1.popup.page",
+                      "use": "ChildPageModel",
+                      "stepParams": {
+                        "pageSettings": {
+                          "general": {
+                            "displayTitle": false,
+                            "enableTabs": true
+                          }
+                        }
+                      },
+                      "subModels": {
+                        "tabs": [
+                          {
+                            "alias": "action.view1.popup.tab",
+                            "use": "ChildPageTabModel",
+                            "stepParams": {
+                              "pageTabSettings": {
+                                "tab": {
+                                  "title": "Pet Details"
+                                }
+                              }
+                            },
+                            "subModels": {
+                              "grid": [
+                                {
+                                  "alias": "action.view1.popup.grid",
+                                  "use": "BlockGridModel",
+                                  "subModels": {
+                                    "items": [
+                                      {
+                                        "alias": "block.details1",
+                                        "use": "DetailsBlockModel",
+                                        "stepParams": {
+                                          "resourceSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets"
+                                            }
+                                          },
+                                          "detailsSettings": {
+                                            "layout": {
+                                              "layout": "vertical",
+                                              "colon": true
+                                            },
+                                            "dataScope": {
+                                              "filter": {
+                                                "logic": "$and",
+                                                "items": []
+                                              }
+                                            },
+                                            "linkageRules": {
+                                              "value": []
+                                            }
+                                          }
+                                        },
+                                        "subModels": {
+                                          "grid": [
+                                            {
+                                              "alias": "block.details1.grid",
+                                              "use": "DetailsGridModel",
+                                              "subModels": {
+                                                "items": [
+                                                  {
+                                                    "alias": "field.name.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "name"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel7",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "name"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.species.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "species"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel8",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "species"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.breed.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "breed"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel9",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "breed"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.ageYears.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "ageYears"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayNumberFieldModel2",
+                                                          "use": "DisplayNumberFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "ageYears"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.gender.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "gender"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel10",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "gender"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.owner.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "owner"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel11",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "owner"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.status.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "status"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel12",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "status"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.vaccinated.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "vaccinated"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayCheckboxFieldModel2",
+                                                          "use": "DisplayCheckboxFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "vaccinated"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.lastVisitAt.wrapper2",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "lastVisitAt"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayDateTimeFieldModel2",
+                                                          "use": "DisplayDateTimeFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "lastVisitAt"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.notes.wrapper1",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "notes"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayTextFieldModel13",
+                                                          "use": "DisplayTextFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "notes"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.createdAt.wrapper",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "createdAt"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "field.createdAt.inner",
+                                                          "use": "DisplayDateTimeFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "createdAt"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.updatedAt.wrapper1",
+                                                    "use": "DetailsItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "updatedAt"
+                                                        }
+                                                      },
+                                                      "detailItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DisplayDateTimeFieldModel3",
+                                                          "use": "DisplayDateTimeFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "updatedAt"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "action.edit1",
+                "use": "EditActionModel",
+                "stepParams": {
+                  "buttonSettings": {
+                    "general": {
+                      "title": "Edit",
+                      "type": ""
+                    }
+                  },
+                  "popupSettings": {
+                    "openView": {
+                      "pageModelClass": "ChildPageModel",
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "filterByTk": "{{ctx.record.id}}",
+                      "disablePopupTemplateMenu": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "page": [
+                    {
+                      "alias": "action.edit1.popup.page",
+                      "use": "ChildPageModel",
+                      "stepParams": {
+                        "pageSettings": {
+                          "general": {
+                            "displayTitle": false,
+                            "enableTabs": true
+                          }
+                        }
+                      },
+                      "subModels": {
+                        "tabs": [
+                          {
+                            "alias": "action.edit1.popup.tab",
+                            "use": "ChildPageTabModel",
+                            "stepParams": {
+                              "pageTabSettings": {
+                                "tab": {
+                                  "title": "Edit Pet"
+                                }
+                              }
+                            },
+                            "subModels": {
+                              "grid": [
+                                {
+                                  "alias": "action.edit1.popup.grid",
+                                  "use": "BlockGridModel",
+                                  "subModels": {
+                                    "items": [
+                                      {
+                                        "alias": "block.editForm1",
+                                        "use": "EditFormModel",
+                                        "stepParams": {
+                                          "resourceSettings": {
+                                            "init": {
+                                              "dataSourceKey": "main",
+                                              "collectionName": "pets"
+                                            }
+                                          },
+                                          "formModelSettings": {
+                                            "layout": {
+                                              "layout": "vertical",
+                                              "colon": false
+                                            },
+                                            "assignRules": {
+                                              "value": []
+                                            }
+                                          },
+                                          "eventSettings": {
+                                            "linkageRules": {
+                                              "value": []
+                                            }
+                                          },
+                                          "formSettings": {
+                                            "dataScope": {
+                                              "filter": {
+                                                "logic": "$and",
+                                                "items": []
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "subModels": {
+                                          "actions": [
+                                            {
+                                              "alias": "action.submit2",
+                                              "use": "FormSubmitActionModel",
+                                              "stepParams": {
+                                                "buttonSettings": {
+                                                  "general": {
+                                                    "title": "Save Changes",
+                                                    "type": ""
+                                                  }
+                                                },
+                                                "submitSettings": {
+                                                  "confirm": {
+                                                    "enable": false
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ],
+                                          "grid": [
+                                            {
+                                              "alias": "block.editForm1.grid",
+                                              "use": "FormGridModel",
+                                              "subModels": {
+                                                "items": [
+                                                  {
+                                                    "alias": "field.name.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "name"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.InputFieldModel1",
+                                                          "use": "InputFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "name"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.species.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "species"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.SelectFieldModel1",
+                                                          "use": "SelectFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "species"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.breed.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "breed"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.InputFieldModel2",
+                                                          "use": "InputFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "breed"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.ageYears.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "ageYears"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.NumberFieldModel1",
+                                                          "use": "NumberFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "ageYears"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.gender.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "gender"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.SelectFieldModel2",
+                                                          "use": "SelectFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "gender"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.owner.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "owner"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.RecordSelectFieldModel1",
+                                                          "use": "RecordSelectFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "owner"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.status.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "status"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.SelectFieldModel3",
+                                                          "use": "SelectFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "status"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.vaccinated.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "vaccinated"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.CheckboxFieldModel1",
+                                                          "use": "CheckboxFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "vaccinated"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.lastVisitAt.wrapper3",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "lastVisitAt"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.DateTimeTzFieldModel1",
+                                                          "use": "DateTimeTzFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "lastVisitAt"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  {
+                                                    "alias": "field.notes.wrapper2",
+                                                    "use": "FormItemModel",
+                                                    "stepParams": {
+                                                      "fieldSettings": {
+                                                        "init": {
+                                                          "dataSourceKey": "main",
+                                                          "collectionName": "pets",
+                                                          "fieldPath": "notes"
+                                                        }
+                                                      },
+                                                      "editItemSettings": {
+                                                        "showLabel": {
+                                                          "showLabel": true
+                                                        }
+                                                      }
+                                                    },
+                                                    "subModels": {
+                                                      "field": [
+                                                        {
+                                                          "alias": "node.TextareaFieldModel1",
+                                                          "use": "TextareaFieldModel",
+                                                          "stepParams": {
+                                                            "fieldSettings": {
+                                                              "init": {
+                                                                "dataSourceKey": "main",
+                                                                "collectionName": "pets",
+                                                                "fieldPath": "notes"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "action.delete1",
+                "use": "DeleteActionModel",
+                "stepParams": {
+                  "buttonSettings": {
+                    "general": {
+                      "title": "Delete",
+                      "type": ""
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Pet Management",
+    "icon": null,
+    "options": null
+  }
+}

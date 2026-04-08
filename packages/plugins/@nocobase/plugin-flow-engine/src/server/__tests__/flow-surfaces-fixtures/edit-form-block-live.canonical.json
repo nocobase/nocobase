@@ -1,0 +1,428 @@
+{
+  "target": {
+    "kind": "node",
+    "use": "EditFormModel"
+  },
+  "tree": {
+    "alias": "block.editForm1",
+    "use": "EditFormModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      },
+      "formModelSettings": {
+        "layout": {
+          "layout": "vertical",
+          "colon": false
+        },
+        "assignRules": {
+          "value": []
+        }
+      },
+      "eventSettings": {
+        "linkageRules": {
+          "value": []
+        }
+      },
+      "formSettings": {
+        "dataScope": {
+          "filter": {
+            "logic": "$and",
+            "items": []
+          }
+        }
+      }
+    },
+    "subModels": {
+      "actions": [
+        {
+          "alias": "action.submit1",
+          "use": "FormSubmitActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Save Changes",
+                "type": ""
+              }
+            },
+            "submitSettings": {
+              "confirm": {
+                "enable": false
+              }
+            }
+          }
+        }
+      ],
+      "grid": [
+        {
+          "alias": "block.editForm1.grid",
+          "use": "FormGridModel",
+          "subModels": {
+            "items": [
+              {
+                "alias": "field.name.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "name"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.name.inner",
+                      "use": "InputFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "name"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.species.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "species"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.species.inner",
+                      "use": "SelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "species"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.breed.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "breed"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.breed.inner",
+                      "use": "InputFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "breed"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.ageYears.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "ageYears"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.ageYears.inner",
+                      "use": "NumberFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "ageYears"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.gender.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "gender"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.gender.inner",
+                      "use": "SelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "gender"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.owner.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "owner"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.owner.inner",
+                      "use": "RecordSelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "owner"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.status.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "status"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.status.inner",
+                      "use": "SelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "status"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.vaccinated.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "vaccinated"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.vaccinated.inner",
+                      "use": "CheckboxFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "vaccinated"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.lastVisitAt.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "lastVisitAt"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.lastVisitAt.inner",
+                      "use": "DateTimeTzFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "lastVisitAt"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.notes.wrapper",
+                "use": "FormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "notes"
+                    }
+                  },
+                  "editItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.notes.inner",
+                      "use": "TextareaFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "notes"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Pet Management",
+    "icon": null,
+    "options": null
+  }
+}

@@ -86,7 +86,19 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       ...modelOptions,
     };
 
-    if (fieldOptions.rawType && modelOptions.rawType && fieldOptions.rawType !== modelOptions.rawType) {
+    const incomingPossibleTypes = Array.isArray(fieldOptions.possibleTypes)
+      ? fieldOptions.possibleTypes
+      : fieldOptions.type
+        ? [fieldOptions.type]
+        : [];
+
+    const shouldUseIncomingType =
+      Boolean(fieldOptions.rawType) &&
+      (modelOptions.rawType
+        ? fieldOptions.rawType !== modelOptions.rawType
+        : !incomingPossibleTypes.includes(modelOptions.type));
+
+    if (shouldUseIncomingType) {
       newOptions.type = fieldOptions.type;
       newOptions.interface = fieldOptions.interface;
       newOptions.rawType = fieldOptions.rawType;

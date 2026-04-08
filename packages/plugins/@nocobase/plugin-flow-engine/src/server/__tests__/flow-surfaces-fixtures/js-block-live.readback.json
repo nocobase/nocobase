@@ -1,0 +1,86 @@
+{
+  "target": {
+    "locator": {
+      "uid": "d0b8c4a4e6f"
+    },
+    "uid": "d0b8c4a4e6f",
+    "kind": "block"
+  },
+  "tree": {
+    "uid": "d0b8c4a4e6f",
+    "use": "JSBlockModel",
+    "parentId": "d28a57cb7e9",
+    "subKey": "items",
+    "subType": "array",
+    "stepParams": {
+      "jsSettings": {
+        "runJs": {
+          "version": "v2",
+          "code": "// Welcome to the JS block\nctx.render(`\n  <div style=\"padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;\">\n    <h2 style=\"color: #1890ff; margin: 0 0 12px 0; font-size: 24px; font-weight: 600;\">JS Block</h2>\n    <p style=\"color: #666; margin: 0;\">Replace this code with your custom JavaScript to build an interactive block.</p>\n  </div>\n`);"
+        }
+      }
+    },
+    "sortIndex": 4,
+    "flowRegistry": {}
+  },
+  "nodeMap": {
+    "d0b8c4a4e6f": {
+      "uid": "d0b8c4a4e6f",
+      "use": "JSBlockModel",
+      "stepParams": {
+        "jsSettings": {
+          "runJs": {
+            "version": "v2",
+            "code": "// Welcome to the JS block\nctx.render(`\n  <div style=\"padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;\">\n    <h2 style=\"color: #1890ff; margin: 0 0 12px 0; font-size: 24px; font-weight: 600;\">JS Block</h2>\n    <p style=\"color: #666; margin: 0;\">Replace this code with your custom JavaScript to build an interactive block.</p>\n  </div>\n`);"
+          }
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "createdAt": "2026-03-28T09:00:25.475Z",
+    "updatedAt": "2026-03-28T09:00:25.475Z",
+    "id": 355812088348672,
+    "parentId": 336550660341760,
+    "title": "Fixture Blocks",
+    "tooltip": null,
+    "icon": null,
+    "schemaUid": "nhpj3e672ci",
+    "menuSchemaUid": "jwz785gibrs",
+    "tabSchemaName": null,
+    "type": "flowPage",
+    "options": null,
+    "sort": 18,
+    "hideInMenu": null,
+    "enableTabs": false,
+    "enableHeader": null,
+    "displayTitle": null,
+    "hidden": null,
+    "createdById": 1,
+    "updatedById": 1,
+    "children": [
+      {
+        "createdAt": "2026-03-28T09:00:25.554Z",
+        "updatedAt": "2026-03-28T09:00:25.554Z",
+        "id": 355812088348674,
+        "parentId": 355812088348672,
+        "title": null,
+        "tooltip": null,
+        "icon": null,
+        "schemaUid": "8oivq8g39kf",
+        "menuSchemaUid": null,
+        "tabSchemaName": "jd7sxdfx0tm",
+        "type": "tabs",
+        "options": null,
+        "sort": 1,
+        "hideInMenu": null,
+        "enableTabs": null,
+        "enableHeader": null,
+        "displayTitle": null,
+        "hidden": true,
+        "createdById": 1,
+        "updatedById": 1
+      }
+    ]
+  }
+}
