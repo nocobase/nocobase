@@ -210,6 +210,8 @@ export const InternalAdminSettingsLayout = () => {
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         <PageHeader
@@ -241,10 +243,6 @@ export const InternalAdminSettingsLayout = () => {
         <div
           style={{
             padding: token.paddingLG,
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
           }}
         >
           <Outlet />
