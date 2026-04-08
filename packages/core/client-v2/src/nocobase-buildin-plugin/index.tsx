@@ -228,14 +228,14 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.app.pluginSettingsManager.add('plugin-manager', {
       title: this.app.i18n.t('Plugin manager'),
       icon: 'ApiOutlined',
-      Component: PluginManagerPage,
+      componentLoader: () => import('../settings-center/PluginManagerPage'),
       aclSnippet: 'pm',
       sort: -200,
     });
     this.app.pluginSettingsManager.add('system-settings', {
       title: this.app.i18n.t('System settings'),
       icon: 'SettingOutlined',
-      Component: SystemSettingsPage,
+      componentLoader: () => import('../settings-center/SystemSettingsPage'),
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,
     });
@@ -262,7 +262,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
     this.router.add('admin.settings', {
       path: '/admin/settings',
-      Component: AdminSettingsLayout,
+      componentLoader: () => import('../settings-center/AdminSettingsLayout'),
     });
     this.router.add('admin.settings.route-empty', {
       path: '*',
