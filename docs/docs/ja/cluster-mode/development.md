@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "クラスターモード：プラグイン開発"
+description: "クラスターモードでのプラグイン開発：Cache、SyncMessageManager、PubSubManager、Queue、分散ロック。状態の一貫性、タスクスケジューリング、競合の解消。"
+keywords: "クラスタープラグイン開発,Cache,SyncMessageManager,PubSubManager,キュー,分散ロック,WORKER_MODE,NocoBase"
+---
+
 :::tip
 このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
 :::

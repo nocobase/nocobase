@@ -15,6 +15,7 @@
   "Insert": "Insert",
   "Milliseconds": "Milliseconds",
   "Only support standard JSON data": "Only support standard JSON data",
+  "Only return response data": "Only return response data",
   "Parameters": "Parameters",
   "Response headers": "Response headers",
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.",

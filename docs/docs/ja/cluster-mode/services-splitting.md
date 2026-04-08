@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "サービス分割"
+description: "ワークフローや非同期タスクなどの処理を専用ノードに分割。WORKER_MODE によるリクエストノードとタスクノード、水平スケール。"
+keywords: "サービス分割,WORKER_MODE,非同期ワークフロー,async-task,水平スケール,リクエストノード,タスクノード,NocoBase"
+---
+
 :::tip
 このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
 :::

@@ -1,5 +1,7 @@
 node_modules/
 lib/
+!packages/**/src/lib/
+!packages/**/src/lib/**
 esm/
 es/
 !docs/docs/es

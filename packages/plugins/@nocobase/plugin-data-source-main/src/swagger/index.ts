@@ -15,7 +15,7 @@ export default {
   tags: [
     {
       name: 'collections',
-      description: 'Collection modeling: CRUD, metadata inspection and bulk field synchronization',
+      description: 'Collection modeling: CRUD, metadata inspection and bulk field updates',
     },
     {
       name: 'collections.fields',
@@ -29,6 +29,10 @@ export default {
       name: 'dbViews',
       description: 'Database view inspection for view-based collections',
     },
+    {
+      name: 'fields',
+      description: 'High-level field modeling entry for compact field application requests',
+    },
   ],
   paths: {
     '/collections:list': {
@@ -38,8 +42,8 @@ export default {
         description: [
           'Get paginated collection records from the collection manager.',
           '',
-          'Use this when you only need collection-level metadata. If you also need loaded field definitions,',
-          'prefer `collections:listMeta`.',
+          'Suitable for finding collection names, titles, templates, and other high-level metadata',
+          'before inspecting one collection in detail.',
         ].join('\n'),
         parameters: [
           { $ref: '#/components/schemas/common/filter' },
@@ -127,7 +131,12 @@ export default {
       get: {
         tags: ['collections'],
         summary: 'Get a collection',
-        description: 'Get a single collection by collection name (`filterByTk`).',
+        description: [
+          'Get a single collection by collection name (`filterByTk`).',
+          '',
+          'Use this when you need the current collection definition before changing fields,',
+          'template-specific options, or other collection-level settings.',
+        ].join('\n'),
         parameters: [
           { $ref: '#/components/schemas/collection/filterByTk' },
           { $ref: '#/components/schemas/common/filter' },
@@ -266,7 +275,7 @@ export default {
           '- fields missing from request are destroyed',
           '- new fields are created',
           '',
-          'This is the preferred bulk-sync endpoint for view collections after reading fresh metadata from `dbViews:get`.',
+          'This is the preferred bulk replacement endpoint for view collections after reading fresh metadata from `dbViews:get`.',
         ].join('\n'),
         parameters: [{ $ref: '#/components/schemas/collection/filterByTk' }],
         requestBody: {
@@ -294,6 +303,49 @@ export default {
         responses: {
           '200': {
             description: 'OK',
+          },
+        },
+      },
+    },
+    '/collections:apply': {
+      post: {
+        tags: ['collections'],
+        summary: 'Create or update a collection through the compact high-level modeling interface',
+        description: [
+          'Upsert a collection from a compact request body.',
+          '',
+          'This endpoint accepts a compact collection payload and fills derived defaults in server logic.',
+          '',
+          'Prefer concise inputs such as collection name, title, template, and only the extra options',
+          'that cannot be derived safely.',
+          '',
+          'Use `fields` only when creating or replacing multiple fields together.',
+          'Use `settings` only for advanced raw overrides.',
+        ].join('\n'),
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/collection/apply' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: { $ref: '#/components/schemas/collection/model' },
+                    verify: {
+                      type: 'object',
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -506,6 +558,42 @@ export default {
         responses: {
           '200': {
             description: 'OK',
+          },
+        },
+      },
+    },
+    '/fields:apply': {
+      post: {
+        tags: ['fields'],
+        summary: 'Create or update a field through the compact high-level modeling interface',
+        description: [
+          'Upsert one field from a compact request body.',
+          '',
+          'This endpoint accepts a compact field payload and fills derived defaults in server logic.',
+          '',
+          'Prefer concise inputs such as collection name, field name, title, and interface.',
+          'Supply relation target, enum, default value, reverse-field details, or raw settings only when needed.',
+        ].join('\n'),
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/field/apply' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: { $ref: '#/components/schemas/field/model' },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -973,6 +1061,48 @@ export default {
           },
           additionalProperties: true,
         },
+        apply: {
+          type: 'object',
+          description: [
+            'Compact collection write schema for the high-level apply action.',
+            '',
+            'Use a small set of high-signal properties by default.',
+            'Pass `settings` only when you need an advanced override.',
+          ].join('\n'),
+          properties: {
+            name: { type: 'string', description: 'Collection name' },
+            title: { type: 'string', description: 'Display title. Derived from name when omitted on create.' },
+            description: { type: 'string' },
+            template: {
+              type: 'string',
+              description: 'Collection template such as `general`, `tree`, `file`, `view`, or `inherit`',
+            },
+            viewName: { type: 'string', description: 'Upstream database view name for `view` collections' },
+            inherits: {
+              oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+              description: 'Parent collection name or names for `inherit` collections',
+            },
+            replaceFields: {
+              type: 'boolean',
+              description: 'When true on update, replace the full field set instead of patching',
+            },
+            verify: {
+              type: 'boolean',
+              description: 'Whether to include normalized verification result in the apply response. Default true.',
+            },
+            fields: {
+              type: 'array',
+              description: 'Compact field definitions applied together with the collection.',
+              items: { $ref: '#/components/schemas/field/applyNested' },
+            },
+            settings: {
+              type: 'object',
+              description: 'Advanced raw collection overrides. Use only when the compact fields are insufficient.',
+              additionalProperties: true,
+            },
+          },
+          additionalProperties: true,
+        },
         update: {
           type: 'object',
           properties: {
@@ -1165,6 +1295,120 @@ export default {
         },
         create: {
           allOf: [{ $ref: '#/components/schemas/field/write' }],
+        },
+        apply: {
+          type: 'object',
+          description: [
+            'Compact field write schema for the high-level apply action.',
+            '',
+            'Typical payload only needs `collectionName`, `name`, `title`, and `interface`.',
+            'For relations, add `target` and optional reverse-field helpers.',
+          ].join('\n'),
+          properties: {
+            collectionName: { type: 'string', description: 'Target collection name' },
+            name: { type: 'string' },
+            title: { type: 'string' },
+            interface: { type: 'string' },
+            description: { type: 'string' },
+            target: { type: 'string' },
+            defaultValue: {
+              description: 'Optional default value JSON. Structure depends on the selected interface.',
+            },
+            enum: {
+              type: 'array',
+              description: 'Choice options JSON.',
+              items: {
+                anyOf: [
+                  { type: 'string' },
+                  {
+                    type: 'object',
+                    properties: {
+                      label: { type: 'string' },
+                      value: {},
+                      color: { type: 'string' },
+                    },
+                    required: ['label', 'value'],
+                    additionalProperties: true,
+                  },
+                ],
+              },
+            },
+            reverseName: { type: 'string' },
+            reverseTitle: { type: 'string' },
+            reverseInterface: { type: 'string' },
+            settings: {
+              type: 'object',
+              description: 'Advanced raw field overrides. Use only when the compact fields are insufficient.',
+              additionalProperties: true,
+            },
+            reverseField: {
+              allOf: [{ $ref: '#/components/schemas/field/applyShallow' }],
+              description: 'Reverse relation helper field definition.',
+            },
+          },
+          required: ['collectionName'],
+          additionalProperties: true,
+        },
+        applyShallow: {
+          type: 'object',
+          description: 'Compact reverse-field helper schema.',
+          properties: {
+            name: { type: 'string' },
+            title: { type: 'string' },
+            interface: { type: 'string' },
+            target: { type: 'string' },
+            settings: {
+              type: 'object',
+              additionalProperties: true,
+            },
+          },
+          additionalProperties: true,
+        },
+        applyNested: {
+          type: 'object',
+          description: 'Compact field schema used inside collection apply.',
+          properties: {
+            name: { type: 'string' },
+            title: { type: 'string' },
+            interface: { type: 'string' },
+            description: { type: 'string' },
+            target: { type: 'string' },
+            defaultValue: {
+              description: 'Optional default value JSON. Structure depends on the selected interface.',
+            },
+            enum: {
+              type: 'array',
+              description: 'Choice options JSON.',
+              items: {
+                anyOf: [
+                  { type: 'string' },
+                  {
+                    type: 'object',
+                    properties: {
+                      label: { type: 'string' },
+                      value: {},
+                      color: { type: 'string' },
+                    },
+                    required: ['label', 'value'],
+                    additionalProperties: true,
+                  },
+                ],
+              },
+            },
+            reverseName: { type: 'string' },
+            reverseTitle: { type: 'string' },
+            reverseInterface: { type: 'string' },
+            settings: {
+              type: 'object',
+              description: 'Advanced raw field overrides. Use only when the compact fields are insufficient.',
+              additionalProperties: true,
+            },
+            reverseField: {
+              allOf: [{ $ref: '#/components/schemas/field/applyShallow' }],
+              description: 'Reverse relation helper field definition.',
+            },
+          },
+          additionalProperties: true,
         },
         update: {
           allOf: [{ $ref: '#/components/schemas/field/write' }],

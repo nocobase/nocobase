@@ -66,5 +66,6 @@ export async function submitHandler(ctx, params) {
       })
       .update({ values: updateData.values, forceUpdate: true, ...params.requestConfig?.params });
   }
+  blockModel.resetUserModifiedFields?.();
   ctx.message.success(ctx.t('Saved successfully'));
 }

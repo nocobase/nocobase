@@ -12,11 +12,11 @@ Este documento foi traduzido por IA. Para informações precisas, consulte a [ve
 
 O nó de script JavaScript permite que os usuários executem um script JavaScript personalizado no lado do servidor dentro de um fluxo de trabalho. O script pode usar variáveis de etapas anteriores do fluxo como parâmetros, e o valor de retorno do script pode ser fornecido para nós subsequentes.
 
-O script é executado em uma worker thread no servidor da aplicação NocoBase e suporta a maioria dos recursos do Node.js, mas ainda existem algumas diferenças em relação ao ambiente de execução nativo. Para mais detalhes, consulte a [Lista de recursos](#lista-de-recursos).
+O script é executado em uma *worker thread* no servidor da aplicação NocoBase. Por padrão, utiliza um sandbox seguro (isolated-vm) que não suporta `require` nem APIs nativas do Node.js. Para mais detalhes, consulte [Motor de execução](#motor-de-execução) e [Lista de recursos](#lista-de-recursos).
 
 ## Criar nó
 
-Na interface de configuração do fluxo de trabalho, clique no botão de adição (“+”) no fluxo para adicionar um nó “JavaScript”:
+Na interface de configuração do fluxo de trabalho, clique no botão de adição ("+") no fluxo para adicionar um nó "JavaScript":
 
 ![20241202203457](https://static-docs.nocobase.com/20241202203457.png)
 
@@ -48,15 +48,30 @@ Se selecionado, os nós subsequentes ainda serão executados mesmo que o script 
 Se o script falhar, ele não terá valor de retorno, e o resultado do nó será preenchido com a mensagem de erro. Se nós subsequentes utilizarem a variável de resultado do nó de script, você precisará lidar com isso com cautela.
 :::
 
-## Lista de recursos
+## Motor de execução
 
-### Versão do Node.js
+O nó de script JavaScript suporta dois motores de execução, selecionados automaticamente com base na configuração da variável de ambiente `WORKFLOW_SCRIPT_MODULES`:
 
-Consistente com a versão do Node.js que executa a aplicação principal.
+### Modo seguro (padrão)
 
-### Suporte a módulos
+Quando `WORKFLOW_SCRIPT_MODULES` **não está configurada**, os scripts são executados usando o motor [isolated-vm](https://github.com/laverdet/isolated-vm). Este motor executa o código em um ambiente V8 isolado com as seguintes características:
 
-Os módulos podem ser usados no script com limitações, de forma consistente com o CommonJS, utilizando a diretiva `require()` para importar módulos.
+- **Não suporta** `require` — nenhum módulo pode ser importado
+- **Não suporta** APIs nativas do Node.js (como `process`, `Buffer`, `global`, etc.)
+- Apenas objetos integrados do padrão ECMAScript estão disponíveis (como `JSON`, `Math`, `Promise`, `Date`, etc.)
+- Suporta passagem de dados via parâmetros, `console` para logs e `async`/`await`
+
+Este é o modo padrão recomendado, adequado para lógica de computação pura e processamento de dados, oferecendo o mais alto nível de isolamento de segurança.
+
+### Modo não seguro (suporte a módulos)
+
+Quando `WORKFLOW_SCRIPT_MODULES` **está configurada**, os scripts utilizam o motor `vm` nativo do Node.js para habilitar a funcionalidade `require`.
+
+:::warning{title="Aviso de segurança"}
+No modo não seguro, embora os scripts sejam executados em um sandbox `vm` com uma lista restrita de módulos permitidos, o módulo `vm` do Node.js não é um mecanismo de sandbox seguro. Habilitar este modo implica confiar em todos os usuários que têm permissão para editar scripts de fluxo de trabalho. Os administradores devem avaliar os riscos de segurança de forma independente e controlar rigorosamente a lista de módulos permitidos e as permissões de edição de fluxos de trabalho.
+:::
+
+Os módulos podem ser usados no script de forma consistente com o CommonJS, utilizando a diretiva `require()` para importar módulos.
 
 Suporta módulos nativos do Node.js e módulos instalados em `node_modules` (incluindo pacotes de dependência já utilizados pelo NocoBase). Os módulos a serem disponibilizados para o código devem ser declarados na variável de ambiente da aplicação `WORKFLOW_SCRIPT_MODULES`, com múltiplos nomes de pacotes separados por vírgulas, por exemplo:
 
@@ -88,7 +103,13 @@ const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 
-### Variáveis globais
+## Lista de recursos
+
+### Versão do Node.js
+
+É a mesma versão do Node.js que executa a aplicação principal.
+
+### Variáveis Globais
 
 **Não suporta** variáveis globais como `global`, `process`, `__dirname` e `__filename`.
 
@@ -133,7 +154,7 @@ return value;
 
 ### Timers
 
-Para usar métodos como `setTimeout`, `setInterval` ou `setImmediate`, você precisa importá-los através do pacote `timers` do Node.js.
+Para usar métodos como `setTimeout`, `setInterval` ou `setImmediate`, você precisa importá-los do pacote `timers` do Node.js (disponível apenas no modo não seguro).
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

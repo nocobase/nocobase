@@ -50,16 +50,49 @@ jobs:
         name: Get plugins
         shell: bash
         run: |
+          set -euo pipefail
+
           function retry() {
+            local query="$1"
             local i=0
             local plugins="[]"
             until [ "$i" -ge 2 ]
             do
-              plugins=$(gh search repos "props.plugin-type:$1" --owner=nocobase --json name | jq -r 'map(.name) | tostring') && [[ "$plugins" != "[]" ]] && break
+              plugins=$(gh search repos "props.plugin-type:$query" --owner=nocobase --limit 1000 --json name | jq -r 'map(.name) | tostring') && [[ "$plugins" != "[]" ]] && break
               i=$((i+1))
               sleep 10
             done
+            echo "[get-plugins] search raw query=$query result=$plugins" >&2
             echo $plugins
+          }
+
+          function ensureRepoAccessible() {
+            local repo="$1"
+
+            if ! gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo" >/dev/null 2>&1; then
+              echo "[get-plugins] error repo=nocobase/$repo reason=repo_access_failed" >&2
+              echo "Failed to access repo nocobase/$repo while collecting plugin metadata. Check GitHub App installation permissions or repository visibility." >&2
+              exit 1
+            fi
+          }
+
+          function checkRefExists() {
+            local repo="$1"
+            local refPath="$2"
+            local refLabel="$3"
+
+            local output
+            if output=$(gh api -H "Accept: application/vnd.github+json" "$refPath" 2>&1); then
+              return 0
+            fi
+
+            if [[ "$output" == *"HTTP 404"* ]]; then
+              return 1
+            fi
+
+            echo "[get-plugins] error repo=nocobase/$repo reason=ref_check_failed ref=$refLabel" >&2
+            echo "Failed to check $refLabel for nocobase/$repo: $output" >&2
+            exit 1
           }
 
           function filterByBranch() {
@@ -76,9 +109,12 @@ jobs:
 
             local kept="[]"
             for repo in $repos; do
-              if gh api -H "Accept: application/vnd.github+json" \
-                "/repos/nocobase/$repo/git/ref/heads/$branch" >/dev/null 2>&1; then
+              ensureRepoAccessible "$repo"
+              if checkRefExists "$repo" "/repos/nocobase/$repo/git/ref/heads/$branch" "branch $branch"; then
+                echo "[get-plugins] branch kept repo=nocobase/$repo branch=$branch" >&2
                 kept=$(echo "$kept" | jq --arg r "$repo" '. + [$r]')
+              else
+                echo "[get-plugins] branch filtered repo=nocobase/$repo branch=$branch reason=missing_ref" >&2
               fi
             done
 
@@ -99,9 +135,12 @@ jobs:
 
             local kept="[]"
             for repo in $repos; do
-              if gh api -H "Accept: application/vnd.github+json" \
-                "/repos/nocobase/$repo/git/ref/tags/$tag" >/dev/null 2>&1; then
+              ensureRepoAccessible "$repo"
+              if checkRefExists "$repo" "/repos/nocobase/$repo/git/ref/tags/$tag" "tag $tag"; then
+                echo "[get-plugins] tag kept repo=nocobase/$repo tag=$tag" >&2
                 kept=$(echo "$kept" | jq --arg r "$repo" '. + [$r]')
+              else
+                echo "[get-plugins] tag filtered repo=nocobase/$repo tag=$tag reason=missing_ref" >&2
               fi
             done
 
@@ -111,6 +150,7 @@ jobs:
           REQUIRE_TAG='${{ inputs.require_tag }}'
 
           REQUIRE_BRANCH='${{ inputs.require_branch }}'
+          echo "[get-plugins] inputs require_branch=${REQUIRE_BRANCH:-<empty>} require_tag=${REQUIRE_TAG:-<empty>}" >&2
 
           allPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry custom,rc,beta,alpha,unreleased)")")
           if [[ "$allPlugins" == "[]" ]]; then
@@ -122,6 +162,12 @@ jobs:
           betaPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry beta,rc)")")
           alphaPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry alpha,beta,rc)")")
           unreleasedPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry unreleased)")")
+          echo "[get-plugins] outputs all-plugins=$allPlugins" >&2
+          echo "[get-plugins] outputs custom-plugins=$customPlugins" >&2
+          echo "[get-plugins] outputs rc-plugins=$rcPlugins" >&2
+          echo "[get-plugins] outputs beta-plugins=$betaPlugins" >&2
+          echo "[get-plugins] outputs alpha-plugins=$alphaPlugins" >&2
+          echo "[get-plugins] outputs unreleased-plugins=$unreleasedPlugins" >&2
           echo "all-plugins=$allPlugins" >> "$GITHUB_OUTPUT"
           echo "custom-plugins=$customPlugins" >> "$GITHUB_OUTPUT"
           echo "rc-plugins=$rcPlugins" >> "$GITHUB_OUTPUT"

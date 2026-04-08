@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Preparação para implantação em cluster"
+description: "Preparação para implantação em cluster: licenças de plugins comerciais (adaptadores PubSub, Queue, Lock, Worker ID), banco de dados, middleware Redis ou RabbitMQ, armazenamento compartilhado e balanceamento de carga."
+keywords: "preparação cluster,licença comercial,Redis,RabbitMQ,armazenamento compartilhado,balanceamento de carga,Nginx,NocoBase"
+---
+
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::

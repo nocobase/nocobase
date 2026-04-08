@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Implantação no Kubernetes"
+description: "Implantar um cluster NocoBase no K8s ou K3s: ConfigMap, Deployment, PVC compartilhado, middleware Redis ou PostgreSQL, balanceamento de carga e verificações de integridade."
+keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,implantação cluster,NocoBase"
+---
+
 # Implantação no Kubernetes
 
 Este artigo tem como objetivo guiar você na implantação rápida do NocoBase em modo de cluster em um ambiente Kubernetes. Presume-se que você já esteja familiarizado com o ambiente Kubernetes e tenha concluído as etapas em [Preparações](./preparations.md).

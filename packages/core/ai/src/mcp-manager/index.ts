@@ -139,7 +139,7 @@ export class DefaultMCPManager implements MCPManager {
               description: tool.description || `MCP tool: ${tool.name} from ${serverName}`,
               schema: tool.schema,
             },
-            invoke: async (_ctx: Context, args: any, _id: string) => {
+            invoke: async (_ctx: Context, args: any) => {
               try {
                 const result = await tool.invoke(args);
                 return result;

@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster Deployment Prerequisites"
+description: "Prepare for cluster deployment: commercial plugin licenses (PubSub, Queue, Lock, Worker ID adapters), database, Redis or RabbitMQ middleware, shared storage, and load balancing."
+keywords: "cluster prerequisites,commercial license,Redis,RabbitMQ,shared storage,load balancing,Nginx,NocoBase"
+---
+
 # Prerequisites
 
 Before deploying a cluster application, you need to complete the following preparations.

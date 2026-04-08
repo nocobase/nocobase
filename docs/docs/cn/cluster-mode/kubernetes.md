@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/preset-cluster"
 title: "Kubernetes 部署"
 description: "在 K8S/K3S 中部署 NocoBase 集群：ConfigMap 环境变量、Deployment、共享存储 PVC、Redis/PostgreSQL 中间件、负载均衡与健康检查。"
 keywords: "Kubernetes 部署,K8S,K3S,ConfigMap,Deployment,PVC 共享存储,集群部署,NocoBase"

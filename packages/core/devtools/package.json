@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/devtools",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.14",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "2.1.0-alpha.13",
-    "@nocobase/client": "2.1.0-alpha.13",
-    "@nocobase/test": "2.1.0-alpha.13",
+    "@nocobase/build": "2.1.0-alpha.14",
+    "@nocobase/client": "2.1.0-alpha.14",
+    "@nocobase/test": "2.1.0-alpha.14",
     "@rsbuild/core": "1.7.3",
     "@rsbuild/plugin-less": "^1.6.2",
     "@rsbuild/plugin-node-polyfill": "1.4.4",

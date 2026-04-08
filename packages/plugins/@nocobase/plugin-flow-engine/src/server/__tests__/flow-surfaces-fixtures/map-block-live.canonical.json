@@ -1,0 +1,30 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "MapBlockModel"
+  },
+  "tree": {
+    "alias": "block.map1",
+    "use": "MapBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "users"
+        }
+      },
+      "cardSettings": {
+        "titleDescription": {
+          "title": "Fixture map"
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "tmp-check",
+    "icon": null,
+    "options": null
+  }
+}

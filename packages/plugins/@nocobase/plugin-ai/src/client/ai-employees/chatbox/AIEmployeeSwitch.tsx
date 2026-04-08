@@ -7,20 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Avatar, Button, Divider, Dropdown, Flex, Popover, Tag } from 'antd';
-import { UserAddOutlined, CloseCircleOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Avatar, Dropdown } from 'antd';
+import { CheckOutlined, DownOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { avatars } from '../avatars';
-import { ProfileCard } from '../ProfileCard';
-import { AttachmentsHeader } from './AttachmentsHeader';
-import { ContextItemsHeader } from './ContextItemsHeader';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { EditMessageHeader } from './EditMessageHeader';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
 export const AIEmployeeSwitcher: React.FC = observer(() => {
@@ -57,7 +53,14 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
               {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
             </span>
           ),
-          onClick: () => switchAIEmployee(employee),
+          onClick: () =>
+            switchAIEmployee(employee, {
+              clear: {
+                sender: false,
+                attachments: false,
+                contextItems: false,
+              },
+            }),
         };
       });
 
@@ -106,125 +109,5 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
     >
       {dropdownContent}
     </Dropdown>
-  );
-});
-
-export const SenderHeader: React.FC = observer(() => {
-  const aiConfigRepository = useAIConfigRepository();
-  const aiEmployees = aiConfigRepository.aiEmployees;
-  const { token } = useToken();
-  const t = useT();
-
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
-
-  const { switchAIEmployee } = useChatBoxActions();
-
-  useEffect(() => {
-    aiConfigRepository.getAIEmployees();
-  }, [aiConfigRepository]);
-
-  const items = aiEmployees?.map((employee) => ({
-    key: employee.username,
-    label: (
-      <AIEmployeeListItem
-        aiEmployee={employee}
-        onClick={() => {
-          switchAIEmployee(employee);
-        }}
-      />
-    ),
-  }));
-
-  const avatar = useMemo(() => {
-    if (!currentEmployee) {
-      return null;
-    }
-    return avatars(currentEmployee.avatar);
-  }, [currentEmployee]);
-
-  return (
-    <div
-      style={{
-        padding: '8px 8px 0 8px',
-      }}
-    >
-      <div>
-        {isEditingMessage ? (
-          <div style={{ marginBottom: 8 }}>
-            <EditMessageHeader />
-          </div>
-        ) : null}
-        {!currentEmployee ? (
-          <Button variant="dashed" color="default" size="small">
-            <span
-              style={{
-                color: token.colorTextDescription,
-              }}
-            >
-              <UserAddOutlined />
-              {t('Select an')}
-            </span>
-            <Dropdown menu={{ items }} placement="topLeft" overlayStyle={{ zIndex: 1200 }}>
-              {t('AI employee')}
-            </Dropdown>
-          </Button>
-        ) : (
-          <Tag
-            closeIcon={
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: '4px',
-                }}
-              >
-                <CloseCircleOutlined />
-              </div>
-            }
-            onClose={() => {
-              switchAIEmployee(null);
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: token.colorBgContainer,
-            }}
-          >
-            <Flex align="center">
-              <Popover content={<ProfileCard aiEmployee={currentEmployee} />} placement="leftTop">
-                <Avatar
-                  style={{
-                    margin: '4px 0',
-                  }}
-                  shape="circle"
-                  size={35}
-                  src={avatar}
-                />
-              </Popover>
-              <Flex
-                style={{
-                  margin: '4px 12px',
-                }}
-                align="center"
-              >
-                <div>{currentEmployee.nickname}</div>
-                <Divider type="vertical" />
-                <div
-                  style={{
-                    fontSize: token.fontSizeSM,
-                    color: token.colorTextSecondary,
-                  }}
-                >
-                  {currentEmployee.position}
-                </div>
-              </Flex>
-            </Flex>
-          </Tag>
-        )}
-      </div>
-      {currentEmployee ? <ContextItemsHeader /> : null}
-      {currentEmployee ? <AttachmentsHeader /> : null}
-    </div>
   );
 });

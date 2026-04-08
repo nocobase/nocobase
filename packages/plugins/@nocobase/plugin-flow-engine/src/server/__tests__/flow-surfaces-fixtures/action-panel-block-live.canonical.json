@@ -1,0 +1,17 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "ActionPanelBlockModel"
+  },
+  "tree": {
+    "alias": "block.actionPanel1",
+    "use": "ActionPanelBlockModel"
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Blocks",
+    "icon": null,
+    "options": null
+  }
+}

@@ -1,0 +1,868 @@
+{
+  "target": {
+    "locator": {
+      "uid": "fuph0cstiq37"
+    },
+    "uid": "fuph0cstiq37",
+    "kind": "node"
+  },
+  "tree": {
+    "uid": "fuph0cstiq37",
+    "use": "CreateFormModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      },
+      "formModelSettings": {
+        "layout": {
+          "layout": "vertical",
+          "colon": false
+        },
+        "assignRules": {
+          "value": []
+        }
+      },
+      "eventSettings": {
+        "linkageRules": {
+          "value": []
+        }
+      }
+    },
+    "subKey": "items",
+    "subType": "array",
+    "subModels": {
+      "grid": {
+        "uid": "qz8mxg1px6v8",
+        "use": "FormGridModel",
+        "stepParams": {},
+        "subKey": "grid",
+        "subType": "object",
+        "subModels": {
+          "items": [
+            {
+              "uid": "lqhyeu95c384",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "name"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "t0198uf62i99",
+                  "use": "InputFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "name"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 1
+            },
+            {
+              "uid": "z7nr0zpyefbn",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "species"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "i19ik30vd0eq",
+                  "use": "SelectFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "species"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 2
+            },
+            {
+              "uid": "odyywfav5pft",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "breed"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "ps7tl3wjupcp",
+                  "use": "InputFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "breed"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 3
+            },
+            {
+              "uid": "yc22l3sab53s",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "ageYears"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "s92je9vmy3vr",
+                  "use": "NumberFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "ageYears"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 4
+            },
+            {
+              "uid": "p0bkh5odwkkq",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "gender"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "rlzpy90cl5mz",
+                  "use": "SelectFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "gender"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 5
+            },
+            {
+              "uid": "egk91ngg09zy",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "owner"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "j93nyf724amx",
+                  "use": "RecordSelectFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "owner"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 6
+            },
+            {
+              "uid": "o5gmrjl81gn6",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "status"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "b4fl53akva4m",
+                  "use": "SelectFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "status"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 7
+            },
+            {
+              "uid": "tyry600tqe61",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "vaccinated"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "dvdg7ktdzq9n",
+                  "use": "CheckboxFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "vaccinated"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 8
+            },
+            {
+              "uid": "kf8zg90aiej5",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "lastVisitAt"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "h9c7vapij7i6",
+                  "use": "DateTimeTzFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "lastVisitAt"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 9
+            },
+            {
+              "uid": "q8ygvd265qdv",
+              "use": "FormItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "notes"
+                  }
+                },
+                "editItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "kc7b6xoq6ij1",
+                  "use": "TextareaFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "notes"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 10
+            }
+          ]
+        },
+        "sortIndex": 1
+      },
+      "actions": [
+        {
+          "uid": "xgp3qo3q866h",
+          "use": "FormSubmitActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Save",
+                "type": ""
+              }
+            },
+            "submitSettings": {
+              "confirm": {
+                "enable": false
+              }
+            }
+          },
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 1
+        }
+      ]
+    }
+  },
+  "nodeMap": {
+    "fuph0cstiq37": {
+      "uid": "fuph0cstiq37",
+      "use": "CreateFormModel",
+      "stepParams": {
+        "resourceSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets"
+          }
+        },
+        "formModelSettings": {
+          "layout": {
+            "layout": "vertical",
+            "colon": false
+          },
+          "assignRules": {
+            "value": []
+          }
+        },
+        "eventSettings": {
+          "linkageRules": {
+            "value": []
+          }
+        }
+      }
+    },
+    "qz8mxg1px6v8": {
+      "uid": "qz8mxg1px6v8",
+      "use": "FormGridModel"
+    },
+    "lqhyeu95c384": {
+      "uid": "lqhyeu95c384",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "t0198uf62i99": {
+      "uid": "t0198uf62i99",
+      "use": "InputFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "name"
+          }
+        }
+      }
+    },
+    "z7nr0zpyefbn": {
+      "uid": "z7nr0zpyefbn",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "i19ik30vd0eq": {
+      "uid": "i19ik30vd0eq",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "species"
+          }
+        }
+      }
+    },
+    "odyywfav5pft": {
+      "uid": "odyywfav5pft",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "ps7tl3wjupcp": {
+      "uid": "ps7tl3wjupcp",
+      "use": "InputFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "breed"
+          }
+        }
+      }
+    },
+    "yc22l3sab53s": {
+      "uid": "yc22l3sab53s",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "s92je9vmy3vr": {
+      "uid": "s92je9vmy3vr",
+      "use": "NumberFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "ageYears"
+          }
+        }
+      }
+    },
+    "p0bkh5odwkkq": {
+      "uid": "p0bkh5odwkkq",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "rlzpy90cl5mz": {
+      "uid": "rlzpy90cl5mz",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "gender"
+          }
+        }
+      }
+    },
+    "egk91ngg09zy": {
+      "uid": "egk91ngg09zy",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "j93nyf724amx": {
+      "uid": "j93nyf724amx",
+      "use": "RecordSelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "owner"
+          }
+        }
+      }
+    },
+    "o5gmrjl81gn6": {
+      "uid": "o5gmrjl81gn6",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "b4fl53akva4m": {
+      "uid": "b4fl53akva4m",
+      "use": "SelectFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "status"
+          }
+        }
+      }
+    },
+    "tyry600tqe61": {
+      "uid": "tyry600tqe61",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "dvdg7ktdzq9n": {
+      "uid": "dvdg7ktdzq9n",
+      "use": "CheckboxFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "vaccinated"
+          }
+        }
+      }
+    },
+    "kf8zg90aiej5": {
+      "uid": "kf8zg90aiej5",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "h9c7vapij7i6": {
+      "uid": "h9c7vapij7i6",
+      "use": "DateTimeTzFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "lastVisitAt"
+          }
+        }
+      }
+    },
+    "q8ygvd265qdv": {
+      "uid": "q8ygvd265qdv",
+      "use": "FormItemModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        },
+        "editItemSettings": {
+          "showLabel": {
+            "showLabel": true
+          }
+        }
+      }
+    },
+    "kc7b6xoq6ij1": {
+      "uid": "kc7b6xoq6ij1",
+      "use": "TextareaFieldModel",
+      "stepParams": {
+        "fieldSettings": {
+          "init": {
+            "dataSourceKey": "main",
+            "collectionName": "pets",
+            "fieldPath": "notes"
+          }
+        }
+      }
+    },
+    "xgp3qo3q866h": {
+      "uid": "xgp3qo3q866h",
+      "use": "FormSubmitActionModel",
+      "stepParams": {
+        "buttonSettings": {
+          "general": {
+            "title": "Save",
+            "type": ""
+          }
+        },
+        "submitSettings": {
+          "confirm": {
+            "enable": false
+          }
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "createdAt": "2026-03-28T05:50:46.516Z",
+    "updatedAt": "2026-03-28T05:50:46.516Z",
+    "id": 355788225118208,
+    "parentId": 336550660341760,
+    "title": "Pet Management",
+    "tooltip": null,
+    "icon": null,
+    "schemaUid": "pet-management",
+    "menuSchemaUid": "menu-pet-management",
+    "tabSchemaName": null,
+    "type": "flowPage",
+    "options": null,
+    "sort": 17,
+    "hideInMenu": null,
+    "enableTabs": false,
+    "enableHeader": null,
+    "displayTitle": null,
+    "hidden": null,
+    "createdById": null,
+    "updatedById": null,
+    "children": [
+      {
+        "createdAt": "2026-03-28T05:50:46.807Z",
+        "updatedAt": "2026-03-28T05:50:46.807Z",
+        "id": 355788225118210,
+        "parentId": 355788225118208,
+        "title": null,
+        "tooltip": null,
+        "icon": null,
+        "schemaUid": "tabs-pet-management",
+        "menuSchemaUid": null,
+        "tabSchemaName": "tab-pet-management",
+        "type": "tabs",
+        "options": null,
+        "sort": 1,
+        "hideInMenu": null,
+        "enableTabs": null,
+        "enableHeader": null,
+        "displayTitle": null,
+        "hidden": true,
+        "createdById": null,
+        "updatedById": null
+      }
+    ]
+  }
+}

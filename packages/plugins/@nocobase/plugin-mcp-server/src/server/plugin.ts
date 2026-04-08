@@ -12,7 +12,7 @@ import type { McpTool } from '@nocobase/ai';
 import type PluginIdpOauthServer from '@nocobase/plugin-idp-oauth';
 import { collectMcpToolsFromSwagger, normalizePackagePatterns } from './mcp-tools';
 import { McpServer } from './mcp-server';
-import { createCrudTool } from './crud-tool';
+import { createCrudTools } from './crud-tool';
 
 function normalizeBasePath(path = '') {
   const normalized = path.replace(/\/+/g, '/').replace(/\/$/, '');
@@ -140,10 +140,7 @@ export class PluginMcpServerServer extends Plugin {
       })
         .then((apiTools) => [
           ...apiTools,
-          createCrudTool({
-            app: this.app,
-            mcpToolsManager: this.ai.mcpToolsManager,
-          }),
+          ...createCrudTools({ app: this.app, mcpToolsManager: this.ai.mcpToolsManager }),
         ])
         .catch((error) => {
           this.mcpToolsCache.delete(cacheKey);
