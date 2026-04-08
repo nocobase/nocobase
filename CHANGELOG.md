@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.32](https://github.com/nocobase/nocobase/compare/v2.0.31...v2.0.32) - 2026-04-04
+
+### 🚀 Improvements
+
+- **[undefined]** Add table of contents to README ([#8878](https://github.com/nocobase/nocobase/pull/8878)) by @gaston98765
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - subform relationship field failed to save ([#9004](https://github.com/nocobase/nocobase/pull/9004)) by @jiannx
+
+  - the subforms of the fields do not display data ([#9008](https://github.com/nocobase/nocobase/pull/9008)) by @jiannx
+
+  - Fixed the issue where ctx.request could not override the Authorization header. ([#8850](https://github.com/nocobase/nocobase/pull/8850)) by @gchust
+
+- **[server]** Add serving check to avoid app status updated by non-serving instance ([#8959](https://github.com/nocobase/nocobase/pull/8959)) by @mytharcher
+
+- **[AI employees]**
+  - Fixed the issue when using deepseek or minmax models on dashscope ([#9033](https://github.com/nocobase/nocobase/pull/9033)) by @cgyrock
+
+  - Fixed the issue where abort AI employees reasonning would cause the service to crash ([#9031](https://github.com/nocobase/nocobase/pull/9031)) by @cgyrock
+
+- **[Workflow: HTTP request node]** Sanitized workflow request node results to avoid exposing request config, defaulted new nodes to return response data only, and added debug logging for failed requests. ([#9024](https://github.com/nocobase/nocobase/pull/9024)) by @mytharcher
+
+- **[Collection field: Sort]** fix(field-sort): prevent crash when scopeKey attribute is undefined ([#9019](https://github.com/nocobase/nocobase/pull/9019)) by @gaston98765
+
+- **[Block: GridCard]** Fixed the problem that the button is not refreshed when the grid card is refreshed ([#9021](https://github.com/nocobase/nocobase/pull/9021)) by @jiannx
+
+- **[Workflow: Approval]**
+  - Add fault-tolerant on workflow deleted, to avoid load error in tasks list by @mytharcher
+
+  - Add fault-tolerant for no `latestRound` by @mytharcher
+
+## [v2.0.31](https://github.com/nocobase/nocobase/compare/v2.0.30...v2.0.31) - 2026-04-01
+
+### 🚀 Improvements
+
+- **[AI employees]** Optimize prompts for deepseek when handling unsupported file types ([#9003](https://github.com/nocobase/nocobase/pull/9003)) by @cgyrock
+
+- **[Workflow]** Change enabled switch size to small ([#9010](https://github.com/nocobase/nocobase/pull/9010)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed the issue where the copy of the associated fields in the table was not displayed correctly in the first rendering. ([#9007](https://github.com/nocobase/nocobase/pull/9007)) by @jiannx
+
+- **[flow-engine]** Fix clipped settings menus in popup ([#9005](https://github.com/nocobase/nocobase/pull/9005)) by @gchust
+
+- **[Notification: In-app message]** Fix action whitelist for in-app message updates to prevent unauthorized updates by non-owners. ([#9001](https://github.com/nocobase/nocobase/pull/9001)) by @mytharcher
+
+- **[AI employees]** Fixed the issue of abnormal web search behavior when using the Qwen  LLM ([#9012](https://github.com/nocobase/nocobase/pull/9012)) by @cgyrock
+
+## [v2.0.30](https://github.com/nocobase/nocobase/compare/v2.0.29...v2.0.30) - 2026-03-30
+
+### 🚀 Improvements
+
+- **[Workflow: JavaScript]** Add `isolated-vm` as default JavaScript execute engine for JavaScript node ([#8973](https://github.com/nocobase/nocobase/pull/8973)) by @mytharcher
+Reference: [JavaScript Node](https://docs.nocobase.com/cn/workflow/nodes/javascript)
+### 🐛 Bug Fixes
+
+- **[client]** Fixed incorrect secondary confirmation message when closing multi-level popup after modifying form data. ([#8944](https://github.com/nocobase/nocobase/pull/8944)) by @gchust
+
+- **[Workflow: SQL node]** Fix security issue in SQL node ([#8989](https://github.com/nocobase/nocobase/pull/8989)) by @mytharcher
+
+- **[AI employees]** Add ownership verification to the AI conversation API ([#8993](https://github.com/nocobase/nocobase/pull/8993)) by @cgyrock
+
+- **[Workflow: Approval]** Fix version limit of legacy migrations to avoid error thrown when start in latest version deployment by @mytharcher
+
 ## [v2.0.29](https://github.com/nocobase/nocobase/compare/v2.0.28...v2.0.29) - 2026-03-29
 
 ### 🚀 Improvements

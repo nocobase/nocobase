@@ -56,7 +56,11 @@ export function parseResponseMessage(row: Model) {
 }
 
 export async function encodeLocalFile(url: string) {
+  if (process.env.APP_PUBLIC_PATH && url.startsWith(process.env.APP_PUBLIC_PATH)) {
+    url = url.slice(process.env.APP_PUBLIC_PATH.length);
+  }
   url = path.join(process.cwd(), url);
+
   const data = await fs.promises.readFile(url);
   return Buffer.from(data).toString('base64');
 }

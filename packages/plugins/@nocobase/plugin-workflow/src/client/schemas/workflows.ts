@@ -10,7 +10,7 @@
 import React from 'react';
 import { ISchema } from '@formily/react';
 
-import { css, useCollectionRecordData } from '@nocobase/client';
+import { useCollectionRecordData } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
@@ -332,7 +332,7 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   'x-decorator': 'Table.Column.Decorator',
                   'x-component': 'Table.Column',
-                  title: `{{ t("Status", { ns: "${NAMESPACE}" }) }}`,
+                  title: `{{ t("Enabled", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     enabled: {
                       type: 'boolean',
