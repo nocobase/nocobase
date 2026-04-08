@@ -76,6 +76,78 @@ import {
   getConfigureOptionsForResolvedNode,
   getConfigureOptionsForUse,
 } from './configure-options';
+import {
+  buildCatalogCollectionCycleKey,
+  buildFilterFieldMeta,
+  buildFlowTemplateSearchFilter,
+  dedupeVisibleFieldCandidates,
+  getAssociationFilterTargetKey,
+  getCollectionFields,
+  getCollectionName,
+  getCollectionTitle,
+  getCollectionTitleFieldName,
+  getFieldFilterable,
+  getFieldInterface,
+  getFieldName,
+  getFieldTarget,
+  getFieldTitle,
+  getFieldType,
+  hasConfiguredFlowContextValue,
+  inferAssociationLeafDisplayFieldUse,
+  inferFieldMenuEditableFieldUse,
+  inferFlowContextTypeFromField,
+  isAssociationField,
+  normalizeFieldPath,
+  normalizeTemplatePage,
+  normalizeTemplatePageSize,
+  resolveAssociationNameFromField,
+  resolveFieldFromCollection,
+  resolveFieldTargetCollection,
+  toTemplatePlainRow,
+} from './service-helpers';
+import {
+  assertSupportedSimpleChanges,
+  buildChartCardSettingsFromSemanticChanges,
+  buildDefaultFieldState,
+  buildDefinedPayload,
+  buildPopupTabTree,
+  ensureNoDirectActionScopeKey,
+  ensureNoRawDirectAddKeys,
+  ensureNoRawSimpleChangeKeys,
+  flattenModel,
+  getCatalogRecordActionContainerUse,
+  getNodeSubModelList,
+  getSingleNodeSubModel,
+  hasDefinedValue,
+  hasLegacyLocatorFields,
+  hasMeaningfulChartSemanticPatch,
+  hasOwnDefined,
+  isFieldNodeUse,
+  isMissingRequiredResourceInitValue,
+  joinRequiredFieldPaths,
+  normalizeChartCardSettings,
+  normalizeChartCardHeightModeForWrite,
+  normalizeComposeActionSpec,
+  normalizeComposeFieldSpec,
+  normalizeGridCardColumns,
+  normalizePublicBlockHeightMode,
+  normalizeRowSpans,
+  normalizeSimpleConfirm,
+  normalizeSimpleLayoutValue,
+  normalizeSimpleResourceInit,
+  normalizeStoredChartCardHeightMode,
+  rethrowInlineConfigurationError,
+  splitComposeFieldChanges,
+  toFlowSurfaceBatchItemError,
+} from './service-utils';
+import {
+  areFlowTemplateRootUsesCompatible,
+  buildTemplateMissingContextReason,
+  getTemplateResourceCompatibilityDisabledReason,
+  resolveBlockTemplateExpectedResourceInfo,
+  resolveTemplateResourceInfo,
+  type FlowSurfaceTemplateResourceInfo,
+} from './template-compatibility';
 import type {
   FlowSurfaceApplyMode,
   FlowSurfaceApplySpec,
@@ -149,12 +221,6 @@ type FlowSurfaceTemplateListValues = {
   actionScope?: 'block' | 'record';
 };
 
-type FlowSurfaceTemplateResourceInfo = {
-  dataSourceKey?: string;
-  collectionName?: string;
-  associationName?: string;
-};
-
 type FlowSurfaceTemplateListPopupActionContext = {
   hasCurrentRecord?: boolean;
 };
@@ -191,12 +257,6 @@ const FLOW_TEMPLATE_UNSUPPORTED_BLOCK_TEMPLATE_SOURCE_USES = new Set([
   'ApplyTaskCardDetailsModel',
   'ApprovalTaskCardDetailsModel',
 ]);
-const FLOW_TEMPLATE_ROOT_USE_FAMILIES: Record<string, string> = {
-  CreateFormModel: 'crudForm',
-  EditFormModel: 'crudForm',
-  ApplyFormModel: 'approvalForm',
-  ProcessFormModel: 'approvalForm',
-};
 const STATIC_CONTENT_BLOCK_USES = new Set([
   'MarkdownBlockModel',
   'IframeBlockModel',
@@ -513,54 +573,6 @@ type FlowSurfaceTemplateListTargetContext = {
 };
 
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
-const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE = 1;
-const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE = 50;
-
-function toTemplatePlainRow(row: any) {
-  if (!row) {
-    return row;
-  }
-  if (typeof row.toJSON === 'function') {
-    return row.toJSON();
-  }
-  return row;
-}
-
-function buildFlowTemplateSearchFilter(existing: any, search?: string) {
-  const filters = [];
-  if (existing) {
-    filters.push(existing);
-  }
-  const normalizedSearch = String(search || '').trim();
-  if (normalizedSearch) {
-    filters.push({
-      $or: [{ name: { $includes: normalizedSearch } }, { description: { $includes: normalizedSearch } }],
-    });
-  }
-  if (!filters.length) {
-    return undefined;
-  }
-  if (filters.length === 1) {
-    return filters[0];
-  }
-  return { $and: filters };
-}
-
-function normalizeTemplatePage(value: any) {
-  const num = Number(value || FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE);
-  if (!Number.isFinite(num) || num < 1) {
-    return FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE;
-  }
-  return Math.floor(num);
-}
-
-function normalizeTemplatePageSize(value: any) {
-  const num = Number(value || FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE);
-  if (!Number.isFinite(num) || num < 1) {
-    return FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE;
-  }
-  return Math.floor(num);
-}
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -2091,90 +2103,16 @@ export class FlowSurfacesService {
     return normalized as 'duplicate' | 'convert';
   }
 
-  private getFlowTemplateRootUseFamily(use: any) {
-    const normalizedUse = String(use || '').trim();
-    return FLOW_TEMPLATE_ROOT_USE_FAMILIES[normalizedUse] || normalizedUse;
-  }
-
-  private areFlowTemplateRootUsesCompatible(hostUse: any, templateUse: any) {
-    const normalizedHostUse = String(hostUse || '').trim();
-    const normalizedTemplateUse = String(templateUse || '').trim();
-    if (!normalizedHostUse || !normalizedTemplateUse) {
-      return true;
-    }
-    return this.getFlowTemplateRootUseFamily(normalizedHostUse) === this.getFlowTemplateRootUseFamily(normalizedTemplateUse);
-  }
-
-  private resolveAssociationTargetResourceInfo(input: FlowSurfaceTemplateResourceInfo): FlowSurfaceTemplateResourceInfo {
-    const dataSourceKey = String(input?.dataSourceKey || '').trim() || undefined;
-    const collectionName = String(input?.collectionName || '').trim() || undefined;
-    const associationName = String(input?.associationName || '').trim() || undefined;
-    if (!associationName) {
-      return {
-        dataSourceKey,
-        collectionName,
-      };
-    }
-
-    const parts = associationName.split('.').filter(Boolean);
-    const baseCollectionName = (parts.length > 1 ? parts[0] : collectionName) || undefined;
-    const fieldPath = (parts.length > 1 ? parts.slice(1).join('.') : associationName) || undefined;
-    if (!dataSourceKey || !baseCollectionName || !fieldPath) {
-      return {
-        dataSourceKey,
-        collectionName,
-        associationName,
-      };
-    }
-
-    const baseCollection = this.getCollection(dataSourceKey, baseCollectionName);
-    const associationField = resolveFieldFromCollection(baseCollection, fieldPath);
-    const targetCollection = resolveFieldTargetCollection(
-      associationField,
-      dataSourceKey,
-      (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
-    );
-
-    return {
-      dataSourceKey:
-        targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
-      collectionName:
-        getCollectionName(targetCollection) || getFieldTarget(associationField) || collectionName || baseCollectionName,
-      associationName,
-    };
-  }
-
   private resolveTemplateResourceInfo(input: FlowSurfaceTemplateResourceInfo): FlowSurfaceTemplateResourceInfo {
-    return this.resolveAssociationTargetResourceInfo(input);
-  }
-
-  private resolveBlockTemplateExpectedResourceInfo(node: any): FlowSurfaceTemplateResourceInfo {
-    const init = _.get(node, ['stepParams', 'resourceSettings', 'init']) || {};
-    return this.resolveTemplateResourceInfo({
-      dataSourceKey: String(init.dataSourceKey || '').trim() || undefined,
-      collectionName: String(init.collectionName || '').trim() || undefined,
-      associationName: String(init.associationName || '').trim() || undefined,
+    return resolveTemplateResourceInfo(input, {
+      getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
     });
   }
 
-  private buildTemplateMissingResourceReason() {
-    return 'missing data source or collection information';
-  }
-
-  private buildTemplateDataSourceMismatchReason(expectedDataSourceKey: string, actualDataSourceKey: string) {
-    return `data source mismatch: expected '${expectedDataSourceKey}', got '${actualDataSourceKey}'`;
-  }
-
-  private buildTemplateCollectionMismatchReason(expectedCollectionName: string, actualCollectionName: string) {
-    return `collection mismatch: expected '${expectedCollectionName}', got '${actualCollectionName}'`;
-  }
-
-  private buildTemplateAssociationMismatchReason(expectedAssociationName?: string, actualAssociationName?: string) {
-    return `association mismatch: expected '${expectedAssociationName || '(none)'}', got '${actualAssociationName || '(none)'}'`;
-  }
-
-  private buildTemplateMissingContextReason(param: string) {
-    return `cannot resolve template parameter '${param}'`;
+  private resolveBlockTemplateExpectedResourceInfo(node: any): FlowSurfaceTemplateResourceInfo {
+    return resolveBlockTemplateExpectedResourceInfo(node, {
+      resolveTemplateResourceInfo: (input) => this.resolveTemplateResourceInfo(input),
+    });
   }
 
   private getTemplateResourceCompatibilityDisabledReason(
@@ -2185,62 +2123,14 @@ export class FlowSurfacesService {
       checkResource?: boolean;
     } = {},
   ) {
-    const associationMatch = options.associationMatch || 'none';
-    const checkResource = options.checkResource !== false;
-    const templateAssociationName = String(template?.associationName || '').trim() || undefined;
-    const expectedAssociationName = String(expected?.associationName || '').trim() || undefined;
-
-    const getAssociationMismatchReason = () => {
-      if (associationMatch === 'none') {
-        return undefined;
-      }
-      if (associationMatch === 'exactIfTemplateHasAssociationName') {
-        if (!templateAssociationName || templateAssociationName === expectedAssociationName) {
-          return undefined;
-        }
-        return this.buildTemplateAssociationMismatchReason(expectedAssociationName, templateAssociationName);
-      }
-      const toAssociationResource = (value?: string) => (value && value.includes('.') ? value : undefined);
-      const templateAssociationResource = toAssociationResource(templateAssociationName);
-      if (!templateAssociationResource) {
-        return undefined;
-      }
-      const expectedAssociationResource = toAssociationResource(expectedAssociationName);
-      if (templateAssociationResource === expectedAssociationResource) {
-        return undefined;
-      }
-      return this.buildTemplateAssociationMismatchReason(expectedAssociationResource, templateAssociationResource);
-    };
-
-    if (!checkResource) {
-      return getAssociationMismatchReason();
-    }
-
-    const templateResource = this.resolveTemplateResourceInfo(template || {});
-    const expectedResource = this.resolveTemplateResourceInfo(expected || {});
-    if (expectedResource.dataSourceKey && expectedResource.collectionName) {
-      if (!templateResource.dataSourceKey || !templateResource.collectionName) {
-        return this.buildTemplateMissingResourceReason();
-      }
-      if (templateResource.dataSourceKey !== expectedResource.dataSourceKey) {
-        return this.buildTemplateDataSourceMismatchReason(
-          expectedResource.dataSourceKey,
-          templateResource.dataSourceKey,
-        );
-      }
-      if (templateResource.collectionName !== expectedResource.collectionName) {
-        return this.buildTemplateCollectionMismatchReason(
-          expectedResource.collectionName,
-          templateResource.collectionName,
-        );
-      }
-    }
-
-    return getAssociationMismatchReason();
+    return getTemplateResourceCompatibilityDisabledReason(template, expected, {
+      ...options,
+      resolveTemplateResourceInfo: (input) => this.resolveTemplateResourceInfo(input),
+    });
   }
 
   private getFieldsTemplateDisabledReason(hostBlock: any, template: FlowSurfaceTemplateRow) {
-    if (!this.areFlowTemplateRootUsesCompatible(hostBlock?.use, template?.useModel)) {
+    if (!areFlowTemplateRootUsesCompatible(hostBlock?.use, template?.useModel)) {
       return `requires root use compatible with '${template?.useModel || 'unknown'}', got '${hostBlock?.use || 'unknown'}'`;
     }
     return this.getTemplateResourceCompatibilityDisabledReason(
@@ -2546,7 +2436,7 @@ export class FlowSurfacesService {
         return resourceReason;
       }
       if (String(template.filterByTk || '').trim() && !popupProfile.hasCurrentRecord) {
-        return this.buildTemplateMissingContextReason('filterByTk');
+        return buildTemplateMissingContextReason('filterByTk');
       }
       return undefined;
     }
@@ -2572,7 +2462,7 @@ export class FlowSurfacesService {
       String(template.filterByTk || '').trim() &&
       hasCurrentRecord === false
     ) {
-      return this.buildTemplateMissingContextReason('filterByTk');
+      return buildTemplateMissingContextReason('filterByTk');
     }
     return undefined;
   }
@@ -11301,953 +11191,4 @@ export class FlowSurfacesService {
     visit(node);
     return node;
   }
-}
-
-function buildDefinedPayload(payload: Record<string, any>) {
-  return _.pickBy(payload, (value) => !_.isUndefined(value));
-}
-
-function normalizeChartCardSettings(cardSettings: any) {
-  if (!_.isPlainObject(cardSettings)) {
-    return {};
-  }
-
-  const nextCardSettings = _.cloneDeep(cardSettings);
-  const title =
-    typeof _.get(nextCardSettings, ['titleDescription', 'title']) === 'string'
-      ? _.get(nextCardSettings, ['titleDescription', 'title']).trim()
-      : _.get(nextCardSettings, ['titleDescription', 'title']);
-  if (title) {
-    _.set(nextCardSettings, ['titleDescription', 'title'], title);
-  } else {
-    _.unset(nextCardSettings, ['titleDescription']);
-  }
-
-  const rawHeightMode = _.get(nextCardSettings, ['blockHeight', 'heightMode']);
-  const rawHeight = _.get(nextCardSettings, ['blockHeight', 'height']);
-  const normalizedHeightMode = _.isUndefined(rawHeightMode)
-    ? !_.isUndefined(rawHeight)
-      ? 'specifyValue'
-      : undefined
-    : normalizeChartCardHeightModeForWrite(rawHeightMode);
-  if (normalizedHeightMode) {
-    _.set(nextCardSettings, ['blockHeight', 'heightMode'], normalizedHeightMode);
-    if (normalizedHeightMode === 'specifyValue' && !_.isUndefined(rawHeight)) {
-      _.set(nextCardSettings, ['blockHeight', 'height'], rawHeight);
-    } else {
-      _.unset(nextCardSettings, ['blockHeight', 'height']);
-    }
-  } else {
-    _.unset(nextCardSettings, ['blockHeight']);
-  }
-
-  if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
-    _.unset(nextCardSettings, ['blockHeight']);
-  }
-
-  return nextCardSettings;
-}
-
-function buildChartCardSettingsFromSemanticChanges(currentCardSettings: any, changes: Record<string, any>) {
-  const nextCardSettings = _.cloneDeep(currentCardSettings || {});
-
-  const currentTitle =
-    typeof _.get(currentCardSettings, ['titleDescription', 'title']) === 'string'
-      ? _.get(currentCardSettings, ['titleDescription', 'title']).trim()
-      : _.get(currentCardSettings, ['titleDescription', 'title']);
-  const nextTitle = hasOwnDefined(changes, 'title')
-    ? typeof changes.title === 'string'
-      ? changes.title.trim()
-      : changes.title
-    : currentTitle;
-  const shouldShowTitle = hasOwnDefined(changes, 'displayTitle') ? changes.displayTitle !== false : !!nextTitle;
-
-  if (nextTitle && shouldShowTitle) {
-    _.set(nextCardSettings, ['titleDescription', 'title'], nextTitle);
-  } else {
-    _.unset(nextCardSettings, ['titleDescription']);
-  }
-
-  const currentHeight = _.get(currentCardSettings, ['blockHeight', 'height']);
-  const nextHeight = hasOwnDefined(changes, 'height') ? changes.height : currentHeight;
-  const currentHeightMode = normalizeStoredChartCardHeightMode(
-    _.get(currentCardSettings, ['blockHeight', 'heightMode']),
-  );
-  const nextHeightMode = hasOwnDefined(changes, 'heightMode')
-    ? normalizePublicBlockHeightMode(changes.heightMode)
-    : hasOwnDefined(changes, 'height')
-      ? !_.isUndefined(nextHeight)
-        ? 'specifyValue'
-        : undefined
-      : currentHeightMode ?? (!_.isUndefined(nextHeight) ? 'specifyValue' : undefined);
-
-  if (nextHeightMode) {
-    _.set(nextCardSettings, ['blockHeight', 'heightMode'], nextHeightMode);
-    if (nextHeightMode === 'specifyValue' && !_.isUndefined(nextHeight)) {
-      _.set(nextCardSettings, ['blockHeight', 'height'], nextHeight);
-    } else {
-      _.unset(nextCardSettings, ['blockHeight', 'height']);
-    }
-  } else {
-    _.unset(nextCardSettings, ['blockHeight']);
-  }
-
-  if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
-    _.unset(nextCardSettings, ['blockHeight']);
-  }
-
-  return normalizeChartCardSettings(nextCardSettings);
-}
-
-function buildPopupTabTree(options: {
-  tabUid?: string;
-  gridUid?: string;
-  title?: string;
-  icon?: string;
-  documentTitle?: string;
-  flowRegistry?: Record<string, any>;
-}) {
-  const tabUid = options.tabUid || uid();
-  const gridUid = options.gridUid || uid();
-  const title = options.title || 'Untitled';
-
-  return {
-    uid: tabUid,
-    use: 'ChildPageTabModel',
-    props: buildDefinedPayload({
-      title,
-      icon: options.icon,
-    }),
-    stepParams: {
-      pageTabSettings: {
-        tab: buildDefinedPayload({
-          title,
-          icon: options.icon,
-          documentTitle: options.documentTitle,
-        }),
-      },
-    },
-    ...(typeof options.flowRegistry !== 'undefined' ? { flowRegistry: _.cloneDeep(options.flowRegistry) } : {}),
-    subModels: {
-      grid: {
-        uid: gridUid,
-        use: 'BlockGridModel',
-      },
-    },
-  };
-}
-
-function getSingleNodeSubModel(subModel?: FlowSurfaceNodeSubModel | null): FlowSurfaceNodeSpec | undefined {
-  if (!subModel || Array.isArray(subModel)) {
-    return undefined;
-  }
-  return subModel;
-}
-
-function getNodeSubModelList(subModel?: FlowSurfaceNodeSubModel | null): FlowSurfaceNodeSpec[] {
-  if (!subModel) {
-    return [];
-  }
-  return Array.isArray(subModel) ? subModel : [subModel];
-}
-
-function flattenModel(node: any, carry: Record<string, any> = {}) {
-  if (!node?.uid) {
-    return carry;
-  }
-  carry[node.uid] = {
-    uid: node.uid,
-    use: node.use,
-    props: node.props,
-    decoratorProps: node.decoratorProps,
-    stepParams: node.stepParams,
-    flowRegistry: node.flowRegistry,
-    ...(node.template ? { template: node.template } : {}),
-    ...(node.fieldsTemplate ? { fieldsTemplate: node.fieldsTemplate } : {}),
-    ...(node.popup ? { popup: node.popup } : {}),
-  };
-  Object.values(node.subModels || {}).forEach((value) => {
-    _.castArray(value as any).forEach((child) => flattenModel(child, carry));
-  });
-  return carry;
-}
-
-function buildDefaultFieldState(containerUse: string, fieldUse: string, field: any) {
-  const bindingDefaults = getFieldBindingDefaultProps(containerUse, fieldUse, field);
-  return {
-    wrapperProps: {},
-    fieldProps: _.cloneDeep(bindingDefaults),
-  };
-}
-
-function hasOwnDefined(input: Record<string, any>, key: string) {
-  return Object.prototype.hasOwnProperty.call(input, key) && !_.isUndefined(input[key]);
-}
-
-function hasMeaningfulChartSemanticPatch(input: Record<string, any>, key: string) {
-  if (!Object.prototype.hasOwnProperty.call(input, key)) {
-    return false;
-  }
-  const value = input[key];
-  if (_.isNull(value)) {
-    return true;
-  }
-  if (_.isPlainObject(value)) {
-    return Object.keys(value).length > 0;
-  }
-  return !_.isUndefined(value);
-}
-
-function hasDefinedValue(input: Record<string, any>, keys: string[]) {
-  return keys.some((key) => hasOwnDefined(input, key));
-}
-
-function ensureNoRawSimpleChangeKeys(changes: Record<string, any>) {
-  const rawKeys = ['props', 'decoratorProps', 'stepParams', 'flowRegistry', 'use', 'fieldUse'];
-  const forbidden = Object.keys(changes).filter((key) => rawKeys.includes(key));
-  if (forbidden.length) {
-    throwBadRequest(
-      `flowSurfaces configure does not accept raw keys: ${forbidden.join(
-        ', ',
-      )}; use catalog.configureOptions and configure.changes instead`,
-    );
-  }
-}
-
-function ensureNoRawDirectAddKeys(actionName: string, values: Record<string, any>, rawKeys: string[]) {
-  const forbidden = rawKeys.filter((key) => hasOwnDefined(values || {}, key));
-  if (!forbidden.length) {
-    return;
-  }
-  throwBadRequest(
-    `flowSurfaces ${actionName} does not accept raw keys: ${forbidden.join(
-      ', ',
-    )}; use settings with catalog.configureOptions or fall back to updateSettings/apply for low-level control`,
-  );
-}
-
-function ensureNoDirectActionScopeKey(actionName: 'addAction' | 'addRecordAction', values: Record<string, any>) {
-  if (_.isUndefined(values?.scope)) {
-    return;
-  }
-  throwBadRequest(
-    `flowSurfaces ${actionName} does not support scope; use addAction for non-record actions and addRecordAction for record actions`,
-  );
-}
-
-function normalizeComposeFieldSpec(input: any, index: number) {
-  if (typeof input === 'string') {
-    const fieldPath = String(input || '').trim();
-    if (!fieldPath) {
-      throwBadRequest(`flowSurfaces compose field #${index + 1} cannot be empty`);
-    }
-    return {
-      key: fieldPath,
-      fieldPath,
-      settings: {},
-      popup: undefined,
-    };
-  }
-  if (!_.isPlainObject(input)) {
-    throwBadRequest(`flowSurfaces compose field #${index + 1} must be a string or object`);
-  }
-  if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps) {
-    throwBadRequest('flowSurfaces compose field only accepts public semantic field fields');
-  }
-  const semanticType = String(input.type || '').trim() || undefined;
-  const fieldPath = String(input.fieldPath || '').trim();
-  const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();
-  if (!_.isUndefined(input.popup) && !_.isPlainObject(input.popup)) {
-    throwBadRequest(`flowSurfaces compose field #${index + 1} popup must be an object`);
-  }
-  if (!fieldPath && !semanticType) {
-    throwBadRequest(`flowSurfaces compose field #${index + 1} requires fieldPath`);
-  }
-  if (semanticType && fieldPath) {
-    throwBadRequest(
-      `flowSurfaces compose field #${index + 1} cannot mix fieldPath with synthetic field type '${semanticType}'`,
-    );
-  }
-  return {
-    key: String(input.key || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim(),
-    ...(fieldPath ? { fieldPath } : {}),
-    associationPathName: String(input.associationPathName || '').trim() || undefined,
-    ...(renderer ? { renderer } : {}),
-    ...(semanticType ? { type: semanticType } : {}),
-    target: String(input.target || '').trim() || undefined,
-    settings: _.isPlainObject(input.settings) ? input.settings : {},
-    popup: _.isPlainObject(input.popup) ? input.popup : undefined,
-  };
-}
-
-function normalizeComposeActionSpec(input: any, index: number) {
-  if (typeof input === 'string') {
-    const type = String(input || '').trim();
-    if (!type) {
-      throwBadRequest(`flowSurfaces compose action #${index + 1} cannot be empty`);
-    }
-    return {
-      key: type,
-      type,
-      settings: {},
-      popup: undefined,
-    };
-  }
-  if (!_.isPlainObject(input)) {
-    throwBadRequest(`flowSurfaces compose action #${index + 1} must be a string or object`);
-  }
-  if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps || input.flowRegistry) {
-    throwBadRequest('flowSurfaces compose action only accepts public semantic action fields');
-  }
-  const type = String(input.type || '').trim();
-  if (!type) {
-    throwBadRequest(`flowSurfaces compose action #${index + 1} requires type`);
-  }
-  if (!_.isUndefined(input.scope)) {
-    throwBadRequest(`flowSurfaces compose action #${index + 1} does not support scope, use actions or recordActions`);
-  }
-  return {
-    key: String(input.key || type).trim(),
-    type,
-    settings: _.isPlainObject(input.settings) ? input.settings : {},
-    popup: _.isPlainObject(input.popup) ? input.popup : undefined,
-  };
-}
-
-function normalizeSimpleResourceInit(input: any) {
-  if (!input) {
-    return undefined;
-  }
-  if (!_.isPlainObject(input)) {
-    throwBadRequest('flowSurfaces simple resource must be an object');
-  }
-  const normalized = buildDefinedPayload({
-    dataSourceKey: input.dataSourceKey,
-    collectionName: input.collectionName,
-    associationName: input.associationName,
-    associationPathName: input.associationPathName,
-    sourceId: input.sourceId,
-    filterByTk: input.filterByTk,
-  });
-  if (!Object.keys(normalized).length) {
-    throwBadRequest('flowSurfaces simple resource cannot be empty');
-  }
-  return normalized;
-}
-
-function isMissingRequiredResourceInitValue(value: any) {
-  if (_.isNil(value)) {
-    return true;
-  }
-  if (typeof value === 'string') {
-    return !value.trim();
-  }
-  return false;
-}
-
-function joinRequiredFieldPaths(paths: string[]) {
-  if (paths.length <= 1) {
-    return paths[0] || '';
-  }
-  if (paths.length === 2) {
-    return `${paths[0]} and ${paths[1]}`;
-  }
-  return `${paths.slice(0, -1).join(', ')}, and ${paths[paths.length - 1]}`;
-}
-
-function normalizeSimpleLayoutValue(layout: any) {
-  if (_.isUndefined(layout)) {
-    return undefined;
-  }
-  if (_.isPlainObject(layout)) {
-    return layout.layout;
-  }
-  return layout;
-}
-
-function normalizeGridCardColumns(columns: any) {
-  if (_.isUndefined(columns)) {
-    return undefined;
-  }
-  if (_.isNumber(columns) && columns > 0) {
-    return {
-      xs: columns,
-      sm: columns,
-      md: columns,
-      lg: columns,
-      xl: columns,
-      xxl: columns,
-    };
-  }
-  if (_.isPlainObject(columns)) {
-    const requiredBreakpoints = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
-    const missingBreakpoints = requiredBreakpoints.filter((key) => _.isUndefined(columns[key]));
-    if (missingBreakpoints.length) {
-      throwBadRequest(
-        `flowSurfaces configure gridCard columns responsive object must include xs, sm, md, lg, xl, xxl; missing: ${missingBreakpoints.join(
-          ', ',
-        )}`,
-      );
-    }
-    const invalidBreakpoints = requiredBreakpoints.filter((key) => !_.isNumber(columns[key]) || columns[key] <= 0);
-    if (invalidBreakpoints.length) {
-      throwBadRequest(
-        `flowSurfaces configure gridCard columns responsive object values must be positive numbers; invalid: ${invalidBreakpoints.join(
-          ', ',
-        )}`,
-      );
-    }
-    const normalized = buildDefinedPayload({
-      xs: columns.xs,
-      sm: columns.sm,
-      md: columns.md,
-      lg: columns.lg,
-      xl: columns.xl,
-      xxl: columns.xxl,
-    });
-    if (!Object.keys(normalized).length) {
-      throwBadRequest('flowSurfaces configure gridCard columns cannot be empty');
-    }
-    return normalized;
-  }
-  throwBadRequest('flowSurfaces configure gridCard columns must be a number or responsive object');
-}
-
-function normalizeSimpleConfirm(confirm: any) {
-  if (_.isBoolean(confirm)) {
-    return {
-      enable: confirm,
-    };
-  }
-  if (_.isPlainObject(confirm)) {
-    return buildDefinedPayload({
-      enable: confirm.enable,
-      title: confirm.title,
-      content: confirm.content,
-    });
-  }
-  throwBadRequest('flowSurfaces configure confirm must be a boolean or object');
-}
-
-function assertSupportedSimpleChanges(context: string, changes: Record<string, any>, allowedKeys: string[]) {
-  const unknownKeys = Object.keys(changes).filter((key) => !allowedKeys.includes(key));
-  if (!unknownKeys.length) {
-    return;
-  }
-  throwBadRequest(
-    `flowSurfaces configure ${context} does not support: ${unknownKeys.join(
-      ', ',
-    )}; supported configureOptions: ${allowedKeys.join(', ')}`,
-  );
-}
-
-function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boolean } = {}) {
-  if (!_.isPlainObject(input)) {
-    return false;
-  }
-  const keys = ['pageSchemaUid', 'tabSchemaUid', 'routeId', 'schemaUid'];
-  if (options.allowRootUid) {
-    keys.push('uid');
-  }
-  return keys.some((key) => Object.prototype.hasOwnProperty.call(input, key));
-}
-
-function rethrowInlineConfigurationError(error: any, prefix: string): never {
-  const message = `${prefix}: ${error?.message || String(error)}`;
-  if (isFlowSurfaceError(error)) {
-    const normalized = normalizeFlowSurfaceError(error);
-    if (normalized.type === 'bad_request') {
-      throwBadRequest(message, normalized.code);
-    }
-    if (normalized.type === 'conflict') {
-      throwConflict(message, normalized.code);
-    }
-    if (normalized.type === 'forbidden') {
-      throwForbidden(message, normalized.code);
-    }
-    throwInternalError(message, normalized.code);
-  }
-  throwInternalError(message);
-}
-
-function toFlowSurfaceBatchItemError(error: any) {
-  const normalized = normalizeFlowSurfaceError(error);
-  return {
-    code: normalized.code,
-    message: normalized.message,
-    status: normalized.status,
-    type: normalized.type,
-  };
-}
-
-function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {
-  ensureNoRawSimpleChangeKeys(changes);
-  const supportedKeys = getConfigureOptionKeysForUse(wrapperUse || 'FormItemModel');
-  assertSupportedSimpleChanges('field', changes, supportedKeys);
-  const wrapperChanges = _.pick(changes, [
-    'label',
-    'tooltip',
-    'extra',
-    'showLabel',
-    'width',
-    'fixed',
-    'sorter',
-    'fieldPath',
-    'associationPathName',
-    'initialValue',
-    'required',
-    'disabled',
-    'maxCount',
-    'pattern',
-    'titleField',
-    'dataIndex',
-    'editable',
-    'labelWidth',
-    'labelWrap',
-    'name',
-    'fieldComponent',
-    ...(wrapperUse === 'TableColumnModel' ? ['title'] : []),
-  ]);
-  const fieldChanges = _.pick(changes, [
-    'clickToOpen',
-    'openView',
-    ...(wrapperUse === 'TableColumnModel' ? [] : ['title']),
-    'icon',
-    'autoSize',
-    'allowClear',
-    'multiple',
-    'allowMultiple',
-    'quickCreate',
-    'displayStyle',
-    'options',
-    'code',
-    'version',
-  ]);
-  return {
-    wrapperChanges: _.pickBy(wrapperChanges, (value) => !_.isUndefined(value)),
-    fieldChanges: _.pickBy(fieldChanges, (value) => !_.isUndefined(value)),
-  };
-}
-
-function getCatalogRecordActionContainerUse(use?: string) {
-  switch (String(use || '').trim()) {
-    case 'TableBlockModel':
-    case 'TableActionsColumnModel':
-      return 'TableActionsColumnModel';
-    case 'DetailsBlockModel':
-      return 'DetailsBlockModel';
-    case 'ListBlockModel':
-    case 'ListItemModel':
-      return 'ListItemModel';
-    case 'GridCardBlockModel':
-    case 'GridCardItemModel':
-      return 'GridCardItemModel';
-    default:
-      return null;
-  }
-}
-
-function normalizeRowSpans(spans?: Array<number | undefined>) {
-  const numericSpans = _.castArray(spans || []).map((span) => {
-    if (_.isNumber(span) && span > 0) {
-      return span;
-    }
-    return 1;
-  });
-  const total = numericSpans.reduce((sum, value) => sum + value, 0);
-  if (!total) {
-    return numericSpans.map(() => 24);
-  }
-  if (total === 24 && numericSpans.every((value) => Number.isInteger(value))) {
-    return numericSpans;
-  }
-  const raw = numericSpans.map((value) => (value / total) * 24);
-  const base = raw.map((value) => Math.max(1, Math.floor(value)));
-  let remainder = 24 - base.reduce((sum, value) => sum + value, 0);
-  const order = raw
-    .map((value, index) => ({
-      index,
-      fraction: value - Math.floor(value),
-    }))
-    .sort((left, right) => right.fraction - left.fraction || left.index - right.index);
-  let cursor = 0;
-  while (remainder > 0 && order.length) {
-    base[order[cursor % order.length].index] += 1;
-    remainder -= 1;
-    cursor += 1;
-  }
-  while (remainder < 0 && order.length) {
-    const target = order[(cursor + order.length - 1) % order.length].index;
-    if (base[target] > 1) {
-      base[target] -= 1;
-      remainder += 1;
-    }
-    cursor += 1;
-  }
-  return base;
-}
-
-function normalizePublicBlockHeightMode(input: any) {
-  if (_.isUndefined(input)) {
-    return undefined;
-  }
-  if (_.isNull(input)) {
-    throwBadRequest('flowSurfaces configure heightMode cannot be null');
-  }
-  const normalized = String(input || '').trim();
-  if (!normalized) {
-    throwBadRequest('flowSurfaces configure heightMode cannot be empty');
-  }
-  const aliased = normalized === 'fixed' ? 'specifyValue' : normalized;
-  if (!['defaultHeight', 'specifyValue', 'fullHeight'].includes(aliased)) {
-    throwBadRequest('flowSurfaces configure heightMode must be one of: defaultHeight, specifyValue, fullHeight');
-  }
-  return aliased;
-}
-
-function normalizeStoredChartCardHeightMode(input: any) {
-  if (_.isUndefined(input) || _.isNull(input) || String(input).trim() === '') {
-    return undefined;
-  }
-  try {
-    return normalizePublicBlockHeightMode(input);
-  } catch {
-    return undefined;
-  }
-}
-
-function normalizeChartCardHeightModeForWrite(input: any) {
-  if (_.isUndefined(input)) {
-    return undefined;
-  }
-  if (_.isNull(input)) {
-    throwBadRequest('flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be null');
-  }
-  const normalized = String(input).trim();
-  if (!normalized) {
-    throwBadRequest('flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode cannot be empty');
-  }
-  try {
-    return normalizePublicBlockHeightMode(normalized);
-  } catch {
-    throwBadRequest(
-      'flowSurfaces updateSettings chart stepParams.cardSettings.blockHeight.heightMode must be one of: defaultHeight, specifyValue, fullHeight',
-    );
-  }
-}
-
-function isFieldNodeUse(use?: string) {
-  return !!use && use.endsWith('FieldModel');
-}
-
-function getFieldBindingDefaultProps(containerUse: string, fieldUse: string, field: any) {
-  const fieldInterface = getFieldInterface(field);
-  const defaults: Record<string, any> = {};
-  const isFilterField = ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(containerUse);
-
-  if (fieldUse === 'TextareaFieldModel') {
-    defaults.autoSize = {
-      maxRows: 10,
-      minRows: 3,
-    };
-  }
-
-  if (fieldUse === 'FilterFormRecordSelectFieldModel') {
-    defaults.allowMultiple = true;
-    defaults.multiple = true;
-    defaults.quickCreate = 'none';
-  }
-
-  if (fieldUse === 'SelectFieldModel') {
-    if (['select', 'multipleSelect', 'radioGroup'].includes(fieldInterface)) {
-      defaults.allowClear = true;
-    }
-    if (fieldInterface === 'checkboxGroup') {
-      defaults.allowClear = true;
-      defaults.mode = 'tags';
-    }
-    if (isFilterField && fieldInterface === 'checkbox') {
-      defaults.allowClear = true;
-      defaults.multiple = false;
-      defaults.options = [
-        {
-          label: '{{t("Yes")}}',
-          value: true,
-        },
-        {
-          label: '{{t("No")}}',
-          value: false,
-        },
-      ];
-    }
-  }
-
-  return defaults;
-}
-
-function normalizeFieldPath(fieldPath: string, associationPathName?: string) {
-  const normalizedFieldPath = String(fieldPath || '').trim();
-  const normalizedAssociationPath = String(associationPathName || '').trim();
-  if (!normalizedAssociationPath || !normalizedFieldPath || normalizedFieldPath.includes('.')) {
-    return normalizedFieldPath;
-  }
-  return `${normalizedAssociationPath}.${normalizedFieldPath}`;
-}
-
-function hasConfiguredFlowContextValue(value: any) {
-  return !_.isNil(value) && value !== '';
-}
-
-function buildFilterFieldMeta(field: any) {
-  return _.pickBy(
-    {
-      name: getFieldName(field),
-      title: getFieldTitle(field),
-      interface: getFieldInterface(field),
-      type: getFieldType(field),
-    },
-    (value) => !_.isUndefined(value),
-  );
-}
-
-function getCollectionFields(collection: any) {
-  return _.castArray(collection?.getFields?.() || Array.from(collection?.fields?.values?.() || []));
-}
-
-function getCollectionTitle(collection: any) {
-  return collection?.title || collection?.options?.title || collection?.name || collection?.options?.name;
-}
-
-function getCollectionName(collection: any) {
-  return collection?.name || collection?.options?.name;
-}
-
-function getCollectionTitleFieldName(collection: any) {
-  const filterTargetKey = collection?.filterTargetKey || collection?.options?.filterTargetKey;
-  return (
-    collection?.options?.titleField ||
-    collection?.titleCollectionField?.name ||
-    collection?.titleCollectionField?.options?.name ||
-    (Array.isArray(filterTargetKey) ? filterTargetKey[0] : filterTargetKey) ||
-    collection?.titleField
-  );
-}
-
-function getFieldName(field: any) {
-  return field?.name || field?.options?.name;
-}
-
-function getFieldTitle(field: any) {
-  return field?.title || field?.options?.title || getFieldName(field);
-}
-
-function resolveAssociationNameFromField(field: any, fallbackCollection?: any) {
-  const resourceName = typeof field?.resourceName === 'string' ? field.resourceName.trim() : '';
-  if (resourceName) {
-    return resourceName;
-  }
-  const fieldName = getFieldName(field);
-  if (!fieldName) {
-    return undefined;
-  }
-  const sourceCollectionName = getCollectionName(field?.collection) || getCollectionName(fallbackCollection);
-  return sourceCollectionName ? `${sourceCollectionName}.${fieldName}` : undefined;
-}
-
-function getFieldInterface(field: any) {
-  return field?.interface || field?.options?.interface;
-}
-
-function getFieldType(field: any) {
-  return field?.type || field?.options?.type;
-}
-
-function inferFlowContextTypeFromField(field: any) {
-  switch (getFieldType(field)) {
-    case 'boolean':
-      return 'boolean';
-    case 'integer':
-    case 'float':
-    case 'double':
-    case 'decimal':
-      return 'number';
-    case 'json':
-      return 'object';
-    case 'array':
-      return 'array';
-    default:
-      return 'string';
-  }
-}
-
-function getFieldTarget(field: any) {
-  return field?.target || field?.options?.target;
-}
-
-function getFieldFilterable(field: any) {
-  if (!_.isUndefined(field?.filterable)) {
-    return field.filterable;
-  }
-  return field?.options?.filterable;
-}
-
-function inferAssociationLeafDisplayFieldUse(fieldInterface?: string) {
-  const normalized = String(fieldInterface || '').trim();
-  const map: Record<string, string> = {
-    richText: 'DisplayHtmlFieldModel',
-    number: 'DisplayNumberFieldModel',
-    integer: 'DisplayNumberFieldModel',
-    id: 'DisplayNumberFieldModel',
-    snowflakeId: 'DisplayNumberFieldModel',
-    json: 'DisplayJSONFieldModel',
-    select: 'DisplayTextFieldModel',
-    multipleSelect: 'DisplayTextFieldModel',
-    radioGroup: 'DisplayTextFieldModel',
-    checkboxGroup: 'DisplayTextFieldModel',
-    collection: 'DisplayTextFieldModel',
-    tableoid: 'DisplayTextFieldModel',
-    icon: 'DisplayIconFieldModel',
-    checkbox: 'DisplayCheckboxFieldModel',
-    password: 'DisplayPasswordFieldModel',
-    percent: 'DisplayPercentFieldModel',
-    date: 'DisplayDateTimeFieldModel',
-    datetimeNoTz: 'DisplayDateTimeFieldModel',
-    createdAt: 'DisplayDateTimeFieldModel',
-    datetime: 'DisplayDateTimeFieldModel',
-    updatedAt: 'DisplayDateTimeFieldModel',
-    unixTimestamp: 'DisplayDateTimeFieldModel',
-    formula: 'DisplayDateTimeFieldModel',
-    input: 'DisplayTextFieldModel',
-    email: 'DisplayTextFieldModel',
-    phone: 'DisplayTextFieldModel',
-    uuid: 'DisplayTextFieldModel',
-    textarea: 'DisplayTextFieldModel',
-    nanoid: 'DisplayTextFieldModel',
-    url: 'DisplayURLFieldModel',
-    color: 'DisplayColorFieldModel',
-    time: 'DisplayTimeFieldModel',
-  };
-  return map[normalized];
-}
-
-function inferFieldMenuEditableFieldUse(fieldInterface?: string) {
-  const normalized = String(fieldInterface || '').trim();
-  if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(normalized)) {
-    return 'RecordSelectFieldModel';
-  }
-
-  const map: Record<string, string> = {
-    json: 'JsonFieldModel',
-    textarea: 'TextareaFieldModel',
-    icon: 'IconFieldModel',
-    radioGroup: 'SelectFieldModel',
-    color: 'ColorFieldModel',
-    select: 'SelectFieldModel',
-    multipleSelect: 'SelectFieldModel',
-    checkboxGroup: 'SelectFieldModel',
-    checkbox: 'CheckboxFieldModel',
-    password: 'PasswordFieldModel',
-    number: 'NumberFieldModel',
-    integer: 'NumberFieldModel',
-    id: 'NumberFieldModel',
-    snowflakeId: 'NumberFieldModel',
-    percent: 'PercentFieldModel',
-    datetimeNoTz: 'DateTimeNoTzFieldModel',
-    date: 'DateOnlyFieldModel',
-    datetime: 'DateTimeTzFieldModel',
-    createdAt: 'DateTimeTzFieldModel',
-    updatedAt: 'DateTimeTzFieldModel',
-    unixTimestamp: 'DateTimeTzFieldModel',
-    time: 'TimeFieldModel',
-    collection: 'CollectionSelectorFieldModel',
-    tableoid: 'CollectionSelectorFieldModel',
-    richText: 'RichTextFieldModel',
-    input: 'InputFieldModel',
-    email: 'InputFieldModel',
-    phone: 'InputFieldModel',
-    uuid: 'InputFieldModel',
-    url: 'InputFieldModel',
-    nanoid: 'InputFieldModel',
-  };
-  return map[normalized];
-}
-
-function isAssociationField(field: any) {
-  if (typeof field?.isAssociationField === 'function') {
-    return field.isAssociationField();
-  }
-  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(getFieldType(field));
-}
-
-function resolveFieldFromCollection(collection: any, fieldPath: string) {
-  if (!collection || !fieldPath) {
-    return null;
-  }
-  if (typeof collection?.getFieldByPath === 'function') {
-    const direct = collection.getFieldByPath(fieldPath);
-    if (direct) {
-      return direct;
-    }
-  }
-
-  const [head, ...rest] = String(fieldPath || '')
-    .split('.')
-    .filter(Boolean);
-  const field = collection?.getField?.(head) || collection?.fields?.get?.(head);
-  if (!field || rest.length === 0) {
-    return field || null;
-  }
-  const targetCollection = resolveFieldTargetCollection(field, collection?.dataSourceKey, () => null);
-  if (!targetCollection) {
-    return null;
-  }
-  return resolveFieldFromCollection(targetCollection, rest.join('.'));
-}
-
-function resolveFieldTargetCollection(
-  field: any,
-  dataSourceKey: string,
-  getCollection: (dataSourceKey: string, collectionName: string) => any,
-) {
-  return (
-    (typeof field?.targetCollection === 'function' ? field.targetCollection() : field?.targetCollection) ||
-    (getFieldTarget(field) ? getCollection(dataSourceKey || 'main', getFieldTarget(field)) : null)
-  );
-}
-
-function buildCatalogCollectionCycleKey(collection: any, dataSourceKey?: string) {
-  if (!collection) {
-    return undefined;
-  }
-  return `${dataSourceKey || collection?.dataSourceKey || 'main'}:${
-    collection?.name || collection?.options?.name || collection?.title || 'unknown'
-  }`;
-}
-
-function dedupeVisibleFieldCandidates(candidates: FlowSurfaceFieldMenuCandidate[]) {
-  const seen = new Set<string>();
-  return candidates.filter((candidate) => {
-    const dedupeKey = [
-      normalizeFieldPath(candidate.fieldPath, candidate.associationPathName),
-      candidate.explicitWrapperUse || '',
-      candidate.explicitFieldUse || '',
-    ].join('::');
-    if (seen.has(dedupeKey)) {
-      return false;
-    }
-    seen.add(dedupeKey);
-    return true;
-  });
-}
-
-function getAssociationFilterTargetKey(field: any, targetCollection?: any) {
-  const resolvedTargetCollection = targetCollection || resolveFieldTargetCollection(field, '', () => null);
-  const filterTargetKey =
-    resolvedTargetCollection?.filterTargetKey || resolvedTargetCollection?.options?.filterTargetKey;
-
-  if (Array.isArray(filterTargetKey)) {
-    return filterTargetKey[0] || 'id';
-  }
-
-  return filterTargetKey || 'id';
 }
