@@ -161,7 +161,27 @@ describe('RecordPickerFieldModel item context', () => {
 
   it('disables current item attributes for select-record popup item context', async () => {
     const parentCtx = new FlowContext();
-    const usersCollection = createMockCollection();
+    const departmentsCollection = {
+      name: 'departments',
+      title: 'Departments',
+      fields: [],
+      dataSourceKey: 'main',
+      filterTargetKey: 'id',
+      getFields: () => [],
+      getField: () => undefined,
+    } as any;
+    const departmentField = {
+      name: 'department',
+      target: 'departments',
+      targetCollection: departmentsCollection,
+      isAssociationField: () => true,
+    } as any;
+    const usersCollection = {
+      ...createMockCollection(),
+      dataSourceKey: 'main',
+      getFields: () => [departmentField],
+      getField: (name: string) => (name === 'department' ? departmentField : undefined),
+    } as any;
     const rolesCollection = {
       ...createMockCollection(),
       name: 'roles',
@@ -173,33 +193,17 @@ describe('RecordPickerFieldModel item context', () => {
       collection: usersCollection,
       targetCollection: rolesCollection,
     } as any;
-    const parentItemMeta = {
-      type: 'object',
-      title: 'Current item',
-      properties: {
-        value: {
-          type: 'object',
-          title: 'Attributes',
-          properties: {
-            nickname: { type: 'string', title: 'Nickname' },
-          },
-        },
-      },
-      buildVariablesParams: () => ({
-        value: {
-          nickname: 'parent-nickname',
-        },
-      }),
-    };
-
-    const parentItemResolver = vi.fn((subPath: string) => subPath === 'value.nickname');
+    const parentItemResolver = vi.fn((subPath: string) => subPath === 'value.department.title');
     const inputArgs = {
       collectionField,
       currentItemValue: [{ id: 1, name: 'admin' }],
       parentItem: {
-        value: { id: 1, nickname: 'jack' },
+        value: {
+          id: 1,
+          nickname: 'jack',
+          department: { id: 2, title: 'R&D' },
+        },
       },
-      parentItemMeta,
       parentItemResolver,
     };
 
@@ -229,12 +233,16 @@ describe('RecordPickerFieldModel item context', () => {
     expect(vars.value).toBeUndefined();
     expect(vars.parentItem).toEqual({
       value: {
-        nickname: 'parent-nickname',
+        department: {
+          collection: 'departments',
+          dataSourceKey: 'main',
+          filterByTk: 2,
+        },
       },
     });
 
     expect(itemOptions.resolveOnServer('value.name')).toBe(false);
-    expect(itemOptions.resolveOnServer('parentItem.value.nickname')).toBe(true);
-    expect(parentItemResolver).toHaveBeenCalledWith('value.nickname');
+    expect(itemOptions.resolveOnServer('parentItem.value.department.title')).toBe(true);
+    expect(parentItemResolver).toHaveBeenCalledWith('value.department.title');
   });
 });
