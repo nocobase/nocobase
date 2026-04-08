@@ -186,15 +186,16 @@ uiSchema: {
 
 NocoBase 提供了多个 FlowModel 基类，根据你要扩展的类型选择：
 
-| 基类                   | 用途                     | 详细文档             |
-| ---------------------- | ------------------------ | -------------------- |
-| `BlockModel`           | 普通区块                 | [区块扩展](./block)  |
-| `DataBlockModel`       | 需要自行获取数据的区块   | [区块扩展](./block)  |
-| `CollectionBlockModel` | 绑定数据表、自动获取数据 | [区块扩展](./block)  |
-| `FieldModel`           | 字段组件                 | [字段扩展](./field)  |
-| `ActionModel`          | 操作按钮                 | [操作扩展](./action) |
+| 基类                   | 用途                               | 详细文档             |
+| ---------------------- | ---------------------------------- | -------------------- |
+| `BlockModel`           | 普通区块                           | [区块扩展](./block)  |
+| `DataBlockModel`       | 需要自行获取数据的区块             | [区块扩展](./block)  |
+| `CollectionBlockModel` | 绑定数据表、自动获取数据           | [区块扩展](./block)  |
+| `TableBlockModel`      | 完整表格区块，自带字段列、操作栏等 | [区块扩展](./block)  |
+| `FieldModel`           | 字段组件                           | [字段扩展](./field)  |
+| `ActionModel`          | 操作按钮                           | [操作扩展](./action) |
 
-通常来说，做区块用 `BlockModel` 或 `CollectionBlockModel`，做字段用 `FieldModel`，做操作按钮用 `ActionModel`。
+通常来说，做表格区块用 `TableBlockModel`（最常用，开箱即用），需要完全自定义渲染用 `CollectionBlockModel` 或 `BlockModel`，做字段用 `FieldModel`，做操作按钮用 `ActionModel`。
 
 ## 相关链接
 

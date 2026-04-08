@@ -27,6 +27,8 @@ keywords: "自定义操作,ActionModel,ActionSceneEnum,操作按钮,NocoBase"
 - **记录级操作**（`record`）— 出现在表格每行的操作列，比如「编辑」「删除」旁边
 - **两者都适用**（`both`）— 两种场景都会出现
 
+<!-- 需要一个展示三种操作按钮出现位置的截图或视频 -->
+
 完整源码见 [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-action)。如果你想直接在本地跑起来看效果：
 
 ```bash

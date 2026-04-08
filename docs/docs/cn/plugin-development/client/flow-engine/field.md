@@ -71,6 +71,7 @@ export class PluginFieldSimpleClient extends Plugin {
 ## 相关链接
 
 - [插件实战：做一个自定义字段组件](../examples/custom-field) — 从零搭建一个自定义字段展示组件
+- [插件实战：做一个前后端联动的数据管理插件](../examples/fullstack-plugin) — 自定义字段在完整插件中的实际应用
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
 - [区块扩展](./block) — 自定义区块
 - [操作扩展](./action) — 自定义操作按钮

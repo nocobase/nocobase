@@ -18,9 +18,9 @@ keywords: "插件示例,实战案例,完整插件,NocoBase"
 | [做一个自定义展示区块](./custom-block) | Plugin + FlowEngine（BlockModel） | 入门 |
 | [做一个自定义字段组件](./custom-field) | Plugin + FlowEngine（FieldModel） | 入门 |
 | [做一个自定义操作按钮](./custom-action) | Plugin + FlowEngine（ActionModel） | 入门 |
-| [做一个前后端联动的数据管理插件](./fullstack-plugin) | Plugin + FlowEngine（CollectionBlockModel）+ 服务端 | 进阶 |
+| [做一个前后端联动的数据管理插件](./fullstack-plugin) | Plugin + FlowEngine（TableBlockModel + FieldModel + ActionModel）+ 服务端 | 进阶 |
 
-建议按顺序阅读。第一个示例用 React 组件 + 简单的服务端接口，不涉及 FlowEngine；中间三个分别演示 FlowEngine 的区块、字段、操作三种基类；最后一个是完整的前后端联动。如果你还不确定该用 React 组件还是 FlowModel，可以先看 [Component vs FlowModel](../component-vs-flow-model)。
+建议按顺序阅读。第一个示例用 React 组件 + 简单的服务端接口，不涉及 FlowEngine；中间三个分别演示 FlowEngine 的区块、字段、操作三种基类；最后一个把前面学到的区块、字段、操作串在一起，加上服务端数据表，组成一个完整的前后端联动插件。如果你还不确定该用 React 组件还是 FlowModel，可以先看 [Component vs FlowModel](../component-vs-flow-model)。
 
 ## 相关链接
 

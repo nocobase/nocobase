@@ -125,6 +125,7 @@ export class PluginSimpleActionClient extends Plugin {
 ## 相关链接
 
 - [插件实战：做一个自定义操作按钮](../examples/custom-action) — 从零搭建三种场景的操作按钮
+- [插件实战：做一个前后端联动的数据管理插件](../examples/fullstack-plugin) — 自定义操作 + ctx.viewer.dialog 在完整插件中的实际应用
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
 - [区块扩展](./block) — 自定义区块
 - [字段扩展](./field) — 自定义字段组件

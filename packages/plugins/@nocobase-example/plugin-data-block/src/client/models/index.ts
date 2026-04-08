@@ -8,5 +8,12 @@
  */
 
 import { ModelConstructor } from '@nocobase/flow-engine';
+import { TodoBlockModel } from './TodoBlockModel';
+import { PriorityFieldModel } from './PriorityFieldModel';
+import { NewTodoActionModel } from './NewTodoActionModel';
 
-export default {} as Record<string, ModelConstructor>;
+export default {
+  TodoBlockModel,
+  PriorityFieldModel,
+  NewTodoActionModel,
+} as Record<string, ModelConstructor>;

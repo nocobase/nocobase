@@ -1,7 +1,7 @@
 ---
 title: "区块扩展"
-description: "NocoBase 区块扩展开发：BlockModel、DataBlockModel、CollectionBlockModel 基类与注册方式。"
-keywords: "区块扩展,Block,BlockModel,DataBlockModel,CollectionBlockModel,renderComponent,NocoBase"
+description: "NocoBase 区块扩展开发：BlockModel、DataBlockModel、CollectionBlockModel、TableBlockModel 基类与注册方式。"
+keywords: "区块扩展,Block,BlockModel,DataBlockModel,CollectionBlockModel,TableBlockModel,renderComponent,NocoBase"
 ---
 
 # 区块扩展
@@ -12,15 +12,18 @@ keywords: "区块扩展,Block,BlockModel,DataBlockModel,CollectionBlockModel,ren
 
 NocoBase 提供了三个区块基类，根据你的数据需求选择：
 
-| 基类                   | 说明                     | 适用场景                           |
-| ---------------------- | ------------------------ | ---------------------------------- |
-| `BlockModel`           | 最基础的区块             | 不需要数据源的展示区块             |
-| `DataBlockModel`       | 需要自行获取数据         | 需要数据但不绑定 NocoBase 数据表   |
-| `CollectionBlockModel` | 绑定数据表，自动获取数据 | 最常用，绑定 NocoBase 数据表的区块 |
+| 基类                   | 继承关系                              | 适用场景                                   |
+| ---------------------- | ------------------------------------- | ------------------------------------------ |
+| `BlockModel`           | 最基础的区块                          | 不需要数据源的展示区块                     |
+| `DataBlockModel`       | 继承 `BlockModel`                     | 需要数据但不绑定 NocoBase 数据表           |
+| `CollectionBlockModel` | 继承 `DataBlockModel`                 | 绑定 NocoBase 数据表，自动获取数据         |
+| `TableBlockModel`      | 继承 `CollectionBlockModel`           | 完整的表格区块，自带字段列、操作栏、分页等 |
 
-通常来说，如果你的区块需要展示数据表的数据，直接用 `CollectionBlockModel`；如果只是展示一些静态内容或自定义 UI，用 `BlockModel` 就够了。
+继承链路是：`BlockModel` → `DataBlockModel` → `CollectionBlockModel` → `TableBlockModel`。
 
-## 最小示例：BlockModel
+通常来说，如果你想要一个开箱即用的表格区块，直接用 `TableBlockModel`——它自带字段列、操作栏、分页、排序等完整能力，是用得最多的基类。如果你需要完全自定义渲染方式（比如用卡片列表、时间线等），用 `CollectionBlockModel` 自己写 `renderComponent`。如果只是展示静态内容或自定义 UI，用 `BlockModel` 就够了。
+
+## BlockModel 示例
 
 一个最简单的区块——支持编辑 HTML 内容：
 
@@ -93,7 +96,7 @@ export class ManyRecordBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
 
   createResource() {
-    return this.context.createResource(MultiRecordResource);
+    return this.context.makeResource(MultiRecordResource);
   }
 
   get resource() {
@@ -121,6 +124,34 @@ ManyRecordBlockModel.define({
 - **`static scene`** — 声明区块场景，`BlockSceneEnum.many` 表示多条记录
 - **`createResource()`** — 创建数据资源，`MultiRecordResource` 用于获取多条记录
 - **`this.resource.getData()`** — 获取数据表的数据
+
+## TableBlockModel 示例
+
+`TableBlockModel` 继承自 `CollectionBlockModel`，是 NocoBase 内置的完整表格区块——自带字段列、操作栏、分页、排序等能力。用户在「添加区块」里选择「Table」用的就是它。
+
+通常来说，如果内置的 `TableBlockModel` 已经满足需求，用户直接在界面上添加就行，开发者不需要做任何事。只有当你需要**在 TableBlockModel 基础上做定制**时，才需要继承它——比如：
+
+- 覆盖 `customModelClasses` 替换内置的操作组或字段列模型
+- 通过 `filterCollection` 限制只对特定数据表可用
+- 注册额外的 Flow 添加自定义配置项
+
+```tsx
+// 示例：限制只对 todoItems 数据表可用的表格区块
+import { TableBlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
+
+export class TodoBlockModel extends TableBlockModel {
+  static filterCollection(collection) {
+    return collection.name === 'todoItems';
+  }
+}
+
+TodoBlockModel.define({
+  label: tExpr('Todo block'),
+});
+```
+
+完整的 `TableBlockModel` 定制示例见 [做一个前后端联动的数据管理插件](../examples/fullstack-plugin)。
 
 ## 注册区块
 
@@ -154,6 +185,7 @@ export class MyPlugin extends Plugin {
 ## 相关链接
 
 - [插件实战：做一个自定义展示区块](../examples/custom-block) — 从零搭建一个可配置的 BlockModel 区块
+- [插件实战：做一个前后端联动的数据管理插件](../examples/fullstack-plugin) — TableBlockModel + 自定义字段 + 自定义操作的完整示例
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法和 registerFlow
 - [字段扩展](./field) — 自定义字段组件
 - [操作扩展](./action) — 自定义操作按钮

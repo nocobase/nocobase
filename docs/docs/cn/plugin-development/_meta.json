@@ -250,7 +250,7 @@
           },
           {
             "type": "custom-link",
-            "label": "插件文件注册速查",
+            "label": "插件开发速查表",
             "link": "/plugin-development/client/appendix/cheatsheet"
           }
         ]
@@ -261,11 +261,6 @@
     "type": "custom-link",
     "label": "其他",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "插件升级指南",
-        "link": "/plugin-development/plugin-upgrade-guide"
-      },
       {
         "type": "custom-link",
         "label": "语言列表",

@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-import models from './models';
+import { Plugin } from '@nocobase/client-v2';
+// TODO: client-v2 暂未提供 CollectionBlockModel，待实现后取消注释
 
 const todoItemsCollection = {
   name: 'todoItems',
@@ -43,13 +43,22 @@ const todoItemsCollection = {
   ],
 };
 
-export class PluginDataBlockClient extends Plugin {
+export class PluginDataBlockClientV2 extends Plugin {
   async load() {
-    this.flowEngine.registerModels(models);
-
-    const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
-    mainDS?.addCollection(todoItemsCollection);
+    // TODO: client-v2 暂未提供 CollectionBlockModel，待实现后取消注释
+    // this.flowEngine.registerModelLoaders({
+    //   TodoBlockModel: {
+    //     loader: () => import('./models/TodoBlockModel'),
+    //   },
+    // });
+    // 将 todoItems 注册到客户端数据源，让它出现在区块的数据表选择列表中
+    // 通过 addReloadCallback 确保在数据源 reload 后重新注册，不被覆盖
+    // const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
+    // mainDS?.addCollection(todoItemsCollection);
+    // mainDS?.addReloadCallback(() => {
+    //   mainDS?.addCollection(todoItemsCollection);
+    // });
   }
 }
 
-export default PluginDataBlockClient;
+export default PluginDataBlockClientV2;
