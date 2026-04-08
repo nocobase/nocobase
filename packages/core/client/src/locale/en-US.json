@@ -734,6 +734,7 @@
   "Index": "Index",
   "Index (starts from 0)": "Index (starts from 0)",
   "Attributes": "Attributes",
+  "Attributes are unavailable before selecting a record": "Attributes are unavailable before selecting a record",
   "Individual": "Individual",
   "Inherited fields": "Inherited fields",
   "Inherited template": "Inherited template",

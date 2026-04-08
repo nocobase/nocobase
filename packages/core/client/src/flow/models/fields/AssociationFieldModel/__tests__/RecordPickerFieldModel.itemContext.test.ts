@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowContext } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildCurrentItemTitle,
@@ -18,6 +19,7 @@ import {
   createParentItemAccessorsFromInputArgs,
   resolveRecordPersistenceState,
 } from '../itemChain';
+import { injectRecordPickerPopupContext } from '@nocobase/client';
 
 function createMockCollection() {
   return {
@@ -155,5 +157,84 @@ describe('RecordPickerFieldModel item context', () => {
     expect(opts.serverOnlyWhenContextParams).toBe(true);
     expect(associationOpts.cache).toBe(false);
     expect(associationOpts.serverOnlyWhenContextParams).toBe(true);
+  });
+
+  it('disables current item attributes for select-record popup item context', async () => {
+    const parentCtx = new FlowContext();
+    const usersCollection = createMockCollection();
+    const rolesCollection = {
+      ...createMockCollection(),
+      name: 'roles',
+      title: 'Roles',
+    } as any;
+    const collectionField = {
+      name: 'roles',
+      title: 'Roles',
+      collection: usersCollection,
+      targetCollection: rolesCollection,
+    } as any;
+    const parentItemMeta = {
+      type: 'object',
+      title: 'Current item',
+      properties: {
+        value: {
+          type: 'object',
+          title: 'Attributes',
+          properties: {
+            nickname: { type: 'string', title: 'Nickname' },
+          },
+        },
+      },
+      buildVariablesParams: () => ({
+        value: {
+          nickname: 'parent-nickname',
+        },
+      }),
+    };
+
+    const parentItemResolver = vi.fn((subPath: string) => subPath === 'value.nickname');
+    const inputArgs = {
+      collectionField,
+      currentItemValue: [{ id: 1, name: 'admin' }],
+      parentItem: {
+        value: { id: 1, nickname: 'jack' },
+      },
+      parentItemMeta,
+      parentItemResolver,
+    };
+
+    const model = {
+      context: new FlowContext(),
+    } as any;
+    const fieldModel = {
+      context: parentCtx,
+    } as any;
+    const viewCtx = {
+      t: (value: string) => value,
+      view: {
+        inputArgs,
+      },
+    } as any;
+
+    injectRecordPickerPopupContext(model, viewCtx, fieldModel);
+
+    const itemOptions = model.context.getPropertyOptions('item');
+    const itemMeta = await itemOptions.meta();
+    expect(itemMeta.properties.value.disabled).toBe(true);
+    expect(itemMeta.properties.value.disabledReason).toBe('Attributes are unavailable before selecting a record');
+    expect(itemMeta.properties.parentItem.disabled).toBeUndefined();
+    expect(itemMeta.properties.parentItem.properties.value.disabled).toBeUndefined();
+
+    const vars = await itemMeta.buildVariablesParams({ item: model.context.item });
+    expect(vars.value).toBeUndefined();
+    expect(vars.parentItem).toEqual({
+      value: {
+        nickname: 'parent-nickname',
+      },
+    });
+
+    expect(itemOptions.resolveOnServer('value.name')).toBe(false);
+    expect(itemOptions.resolveOnServer('parentItem.value.nickname')).toBe(true);
+    expect(parentItemResolver).toHaveBeenCalledWith('value.nickname');
   });
 });

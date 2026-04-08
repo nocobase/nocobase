@@ -93,6 +93,8 @@ export function injectRecordPickerPopupContext(model: FlowModel, viewCtx: any, f
   const itemPropertyOptions = createAssociationItemChainContextPropertyOptions({
     t,
     title: buildCurrentItemTitle(t, collectionField),
+    disableValueBranch: true,
+    valueBranchDisabledReason: t('Attributes are unavailable before selecting a record'),
     collectionAccessor: () => currentCollection,
     propertiesAccessor: currentItemValueAccessor,
     resolverPropertiesAccessor: currentItemValueAccessor,

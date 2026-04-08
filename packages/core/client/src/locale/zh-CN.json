@@ -733,6 +733,7 @@
   "Index": "索引",
   "Index (starts from 0)": "索引（从0开始）",
   "Attributes": "属性",
+  "Attributes are unavailable before selecting a record": "选择记录之前，当前项属性不可用",
   "Individual": "单独配置",
   "Inherited fields": "继承字段",
   "Inherited template": "继承模板",
