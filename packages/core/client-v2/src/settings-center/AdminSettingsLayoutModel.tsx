@@ -27,6 +27,6 @@ import React from 'react';
  */
 export class AdminSettingsLayoutModel extends FlowModel {
   render() {
-    return <>{this.props.children}</>;
+    return <div style={{ height: '100%' }}>{this.props.children}</div>;
   }
 }

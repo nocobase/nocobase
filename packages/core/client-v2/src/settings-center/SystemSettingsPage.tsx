@@ -225,6 +225,7 @@ export const SystemSettingsPage = () => {
   return (
     <div
       style={{
+        minHeight: '100%',
         background: token.colorBgContainer,
         borderRadius: token.borderRadiusLG,
         padding: token.paddingLG,
@@ -287,11 +288,7 @@ export const SystemSettingsPage = () => {
             </Space>
           </Space>
         </Form.Item>
-        <Form.Item
-          name="enabledLanguages"
-          label={t('Enabled languages')}
-          rules={[{ required: true, type: 'array', min: 1 }]}
-        >
+        <Form.Item name="enabledLanguages" label={t('Enabled languages')} rules={[{ type: 'array', min: 1 }]}>
           <Select mode="multiple" options={languageOptions} />
         </Form.Item>
         <Button type="primary" onClick={() => void handleSubmit()} loading={submitting}>

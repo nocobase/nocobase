@@ -9,6 +9,7 @@
 
 import { ApiOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
+import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { Layout, Menu, Result, theme } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -164,6 +165,7 @@ export const InternalAdminSettingsLayout = () => {
   return (
     <Layout
       style={{
+        height: '100%',
         minHeight: '100%',
         background: token.colorBgLayout,
         borderRadius: token.borderRadiusLG,
@@ -171,7 +173,7 @@ export const InternalAdminSettingsLayout = () => {
       }}
     >
       <Layout.Sider
-        width={240}
+        width={200}
         style={{
           background: token.colorBgContainer,
           borderInlineEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
@@ -202,7 +204,14 @@ export const InternalAdminSettingsLayout = () => {
           items={sidebarMenus}
         />
       </Layout.Sider>
-      <Layout.Content style={{ background: token.colorBgLayout }}>
+      <Layout.Content
+        style={{
+          background: token.colorBgLayout,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+        }}
+      >
         <PageHeader
           ghost={false}
           title={currentTopLevelSetting?.title}
@@ -232,7 +241,10 @@ export const InternalAdminSettingsLayout = () => {
         <div
           style={{
             padding: token.paddingLG,
-            minHeight: 360,
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
           }}
         >
           <Outlet />
@@ -252,6 +264,19 @@ export const AdminSettingsLayout = (props) => {
   const flowEngine = useFlowEngine();
   const modelRef = useRef<AdminSettingsLayoutModel | null>(null);
   const modelChildren = <InternalAdminSettingsLayout {...props} />;
+  const hostClassName = css`
+    height: 100%;
+    > div {
+      height: 100%;
+    }
+    > div > div {
+      height: 100%;
+    }
+    > div > div > .ant-layout.ant-layout-has-sider {
+      height: 100% !important;
+      min-height: 100% !important;
+    }
+  `;
 
   if (!modelRef.current) {
     modelRef.current =
@@ -269,7 +294,11 @@ export const AdminSettingsLayout = (props) => {
     model.setProps({ ...props, children: modelChildren });
   }, [model, modelChildren, props]);
 
-  return <FlowModelRenderer model={model} />;
+  return (
+    <div className={hostClassName}>
+      <FlowModelRenderer model={model} />
+    </div>
+  );
 };
 
 export default AdminSettingsLayout;
