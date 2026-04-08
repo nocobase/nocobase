@@ -207,6 +207,5 @@ export const getActionCollection = (ctx: Context): Collection | undefined => {
     }
     return;
   }
-
   return db.getCollection(resourceName);
 };
