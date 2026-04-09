@@ -18,7 +18,7 @@ export class AIEmployeeInstruction extends Instruction {
     const ai = this.workflow.app.pm.get(PluginAIServer);
     const { username, message, skillSettings, webSearch, model, requiresApproval, assignees } =
       processor.getParsedValue(node.config, node.id);
-    const toolName = 'aiEmployeeWorkflowTaskOutput@' + node.id;
+    const toolName = 'aiEmployeeWorkflowTaskOutput';
     const systemMessage = `You are invoked by workflow, after done your job, call tool **${toolName}**\n\n${
       typeof message.system === 'object' ? JSON.stringify(message.system) : message.system
     }`;

@@ -548,7 +548,7 @@ export default {
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
-      const toolsList = await plugin.ai.toolsManager.listTools();
+      const toolsList = await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId });
       const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
 
       for (const toolCall of toolCalls) {

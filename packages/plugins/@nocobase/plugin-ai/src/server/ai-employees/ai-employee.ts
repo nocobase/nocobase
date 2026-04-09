@@ -1479,7 +1479,9 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   async getToolsMap() {
-    const tools = await this.listTools();
+    const tools = await this.listTools({
+      sessionId: this.sessionId,
+    });
     return new Map(tools.map((tool) => [tool.definition.name, tool]));
   }
 
