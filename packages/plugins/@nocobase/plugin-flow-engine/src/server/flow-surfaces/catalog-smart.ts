@@ -175,7 +175,7 @@ export function scenario(input: FlowSurfaceCatalogScenarioInput): FlowSurfaceCat
 }
 
 export function selectedSections(input: FlowSurfaceCatalogSelectedSectionsInput): FlowSurfaceCatalogSection[] {
-  if (input.requestedSections?.length) {
+  if (!_.isUndefined(input.requestedSections)) {
     return input.requestedSections;
   }
   if (!input.hasTarget) {

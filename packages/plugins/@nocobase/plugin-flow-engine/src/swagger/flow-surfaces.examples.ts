@@ -70,34 +70,39 @@ export const flowSurfaceExamples = {
     },
   },
   executePlan: {
-    surface: {
-      locator: {
-        pageSchemaUid: 'employees-page-schema',
-      },
-    },
-    bindRefs: [
-      {
-        ref: 'employeesTable',
-        locator: {
-          uid: 'employees-table-uid',
-        },
-        expectedKind: 'block',
-      },
-    ],
     plan: {
       steps: [
         {
-          id: 'configureTable',
-          action: 'configure',
-          selectors: {
-            target: {
-              ref: 'employeesTable',
+          id: 'group',
+          action: 'createMenu',
+          values: {
+            title: 'Workspace',
+            type: 'group',
+          },
+        },
+        {
+          id: 'menu',
+          action: 'createMenu',
+          values: {
+            title: 'Employees',
+            type: 'item',
+            parentMenuRouteId: {
+              step: 'group',
+              path: 'routeId',
             },
           },
+        },
+        {
+          id: 'page',
+          action: 'createPage',
           values: {
-            changes: {
-              pageSize: 20,
+            menuRouteId: {
+              step: 'menu',
+              path: 'routeId',
             },
+            title: 'Employees',
+            tabTitle: 'Overview',
+            enableTabs: true,
           },
         },
       ],

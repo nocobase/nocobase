@@ -3623,6 +3623,17 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
+    getData(
+      await rootAgent.resource('flowSurfaces').updatePopupTab({
+        values: {
+          target: {
+            uid: externalPopupAction.popupTabUid,
+          },
+          title: 'Shared employee popup',
+        },
+      }),
+    );
+
     const replaceRes = await rootAgent.resource('flowSurfaces').addRecordAction({
       values: {
         target: {
@@ -3638,16 +3649,42 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(replaceRes.status).toBe(200);
-    expect(getData(replaceRes).popupPageUid).toBeTruthy();
+    expect(getData(replaceRes).popupPageUid).toBe(externalPopupAction.popupPageUid);
+
+    const layoutOnlyRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'view',
+        settings: {
+          openView: {
+            uid: externalPopupAction.uid,
+          },
+        },
+        popup: {
+          mode: 'replace',
+          layout: {
+            rows: [['details']],
+          },
+        },
+      },
+    });
+    expect(layoutOnlyRes.status).toBe(200);
+    expect(getData(layoutOnlyRes).popupPageUid).toBe(externalPopupAction.popupPageUid);
 
     const externalPopupReadback = await getSurface(rootAgent, {
       uid: externalPopupAction.uid,
     });
-    const externalPopupBlock = _.castArray(
-      externalPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-    )[0];
+    const externalPopupTab = _.castArray(externalPopupReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const externalPopupBlock = _.castArray(externalPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const externalPopupFieldPaths = _.castArray(externalPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(externalPopupTab?.props?.title).toBe('Shared employee popup');
     expect(externalPopupBlock?.use).toBe('DetailsBlockModel');
     expect(externalPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(externalPopupFieldPaths).toEqual(['nickname']);
   });
 
   it('should reject openView uid when it points to a popup page node', async () => {
@@ -4078,7 +4115,7 @@ describe('flowSurfaces resource', () => {
     expect(viewPopupTab?.props?.title).toBe('Details');
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department', 'createdAt', 'updatedAt']));
+    expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
     expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
 
     const editReadback = await getSurface(rootAgent, {

@@ -157,15 +157,21 @@ export function projectCatalogNode(
   expand?: FlowSurfaceCatalogExpandFlags,
   options?: FlowSurfaceCatalogNodeProjectInput['options'],
 ): FlowSurfaceCatalogNodeProjectResult {
-  const input =
-    arguments.length === 1
-      ? (inputOrNode as FlowSurfaceCatalogNodeProjectInput)
-      : ({
-          node: inputOrNode,
-          resolved: resolved || null,
-          expand: expand!,
-          options: options!,
-        } satisfies FlowSurfaceCatalogNodeProjectInput);
+  let input: FlowSurfaceCatalogNodeProjectInput;
+
+  if (arguments.length === 1) {
+    input = inputOrNode as FlowSurfaceCatalogNodeProjectInput;
+  } else {
+    if (!expand || !options) {
+      throw new TypeError('projectCatalogNode requires expand and options');
+    }
+    input = {
+      node: inputOrNode,
+      resolved: resolved || null,
+      expand,
+      options,
+    };
+  }
 
   const projected: FlowSurfaceCatalogNodeProjectResult = {
     editableDomains: input.options.getEditableDomains(input.node?.use),
@@ -178,9 +184,9 @@ export function projectCatalogNode(
   if (input.expand.includeNodeContracts) {
     const contract = input.options.getNodeContract(input.node?.use);
     projected.settingsSchema = input.options.getSettingsSchema(input.node?.use);
-    projected.settingsContract = contract.domains;
-    projected.eventCapabilities = contract.eventCapabilities;
-    projected.layoutCapabilities = contract.layoutCapabilities;
+    projected.settingsContract = contract?.domains;
+    projected.eventCapabilities = contract?.eventCapabilities;
+    projected.layoutCapabilities = contract?.layoutCapabilities;
   }
 
   return projected;

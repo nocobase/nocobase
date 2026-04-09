@@ -98,57 +98,65 @@ export function createCanonicalTreeFromReadback(readback: any) {
 }
 
 export function projectFormalBlockCreateParityTree(formalKey: FormalFlowSurfaceBlockKey, tree: any) {
-  switch (formalKey) {
-    case 'table':
-      return projectTableBlock(tree);
-    case 'create-form':
-      return projectCreateFormBlock(tree);
-    case 'edit-form':
-      return projectEditFormBlock(tree);
-    case 'details':
-      return projectDetailsBlock(tree);
-    case 'filter-form':
-      return projectFilterFormBlock(tree);
-    case 'list':
-      return projectListLikeBlock(tree);
-    case 'grid-card':
-      return projectGridCardLikeBlock(tree);
-    case 'js-block':
-    case 'markdown':
-    case 'iframe':
-    case 'chart':
-    case 'action-panel':
-      return projectStaticBlock(tree);
-    default:
-      throw new Error(`Unsupported formal flow surface create parity key: ${formalKey}`);
-  }
+  const projected = (() => {
+    switch (formalKey) {
+      case 'table':
+        return projectTableBlock(tree);
+      case 'create-form':
+        return projectCreateFormBlock(tree);
+      case 'edit-form':
+        return projectEditFormBlock(tree);
+      case 'details':
+        return projectDetailsBlock(tree);
+      case 'filter-form':
+        return projectFilterFormBlock(tree);
+      case 'list':
+        return projectListLikeBlock(tree);
+      case 'grid-card':
+        return projectGridCardLikeBlock(tree);
+      case 'js-block':
+      case 'markdown':
+      case 'iframe':
+      case 'chart':
+      case 'action-panel':
+        return projectStaticBlock(tree);
+      default:
+        throw new Error(`Unsupported formal flow surface create parity key: ${formalKey}`);
+    }
+  })();
+
+  return stripCreateParityAliases(projected);
 }
 
 export function extractCreateParityFixtureExpectation(formalKey: FormalFlowSurfaceBlockKey, tree: any) {
-  switch (formalKey) {
-    case 'table':
-      return extractFixtureTableBlock(tree);
-    case 'create-form':
-      return extractFixtureCreateFormBlock(tree);
-    case 'edit-form':
-      return extractFixtureEditFormBlock(tree);
-    case 'details':
-      return extractFixtureDetailsBlock(tree);
-    case 'filter-form':
-      return extractFixtureFilterFormBlock(tree);
-    case 'list':
-      return extractFixtureListLikeBlock(tree);
-    case 'grid-card':
-      return extractFixtureGridCardLikeBlock(tree);
-    case 'js-block':
-    case 'markdown':
-    case 'iframe':
-    case 'chart':
-    case 'action-panel':
-      return extractFixtureStaticBlock(tree);
-    default:
-      throw new Error(`Unsupported formal flow surface fixture expectation key: ${formalKey}`);
-  }
+  const extracted = (() => {
+    switch (formalKey) {
+      case 'table':
+        return extractFixtureTableBlock(tree);
+      case 'create-form':
+        return extractFixtureCreateFormBlock(tree);
+      case 'edit-form':
+        return extractFixtureEditFormBlock(tree);
+      case 'details':
+        return extractFixtureDetailsBlock(tree);
+      case 'filter-form':
+        return extractFixtureFilterFormBlock(tree);
+      case 'list':
+        return extractFixtureListLikeBlock(tree);
+      case 'grid-card':
+        return extractFixtureGridCardLikeBlock(tree);
+      case 'js-block':
+      case 'markdown':
+      case 'iframe':
+      case 'chart':
+      case 'action-panel':
+        return extractFixtureStaticBlock(tree);
+      default:
+        throw new Error(`Unsupported formal flow surface fixture expectation key: ${formalKey}`);
+    }
+  })();
+
+  return stripCreateParityAliases(extracted);
 }
 
 export function readFixtureBundle(name: string): FlowSurfaceFixtureBundle {
@@ -1223,6 +1231,22 @@ function normalizeFilterFormDefaultTargetRefs(tree: any) {
 
 function compactArray<T>(items: Array<T | undefined | null>) {
   return items.filter(Boolean) as T[];
+}
+
+function stripCreateParityAliases(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripCreateParityAliases(item));
+  }
+  if (_.isPlainObject(value)) {
+    return compactObject(
+      Object.fromEntries(
+        Object.entries(value)
+          .filter(([key]) => key !== 'alias')
+          .map(([key, item]) => [key, stripCreateParityAliases(item)]),
+      ),
+    );
+  }
+  return value;
 }
 
 function firstChild(value: any) {

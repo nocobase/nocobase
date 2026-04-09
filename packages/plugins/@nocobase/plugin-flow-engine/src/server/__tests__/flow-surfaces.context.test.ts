@@ -574,6 +574,7 @@ describe('flowSurfaces context', () => {
       title: 'Context catalog page',
       tabTitle: 'Context catalog tab',
     });
+    const catalogExpand = ['item.configureOptions'];
 
     const pageCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -582,13 +583,14 @@ describe('flowSurfaces context', () => {
         },
       }),
     );
-    expect(pageCatalog.configureOptions.documentTitle.supportsFlowContext).toBe(true);
-    expect(pageCatalog.configureOptions.title.supportsFlowContext).toBeUndefined();
+    expect(pageCatalog.node.configureOptions.documentTitle.supportsFlowContext).toBe(true);
+    expect(pageCatalog.node.configureOptions.title.supportsFlowContext).toBeUndefined();
 
     const tabCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
           target: { uid: page.gridUid },
+          expand: catalogExpand,
         },
       }),
     );
@@ -616,8 +618,8 @@ describe('flowSurfaces context', () => {
         },
       }),
     );
-    expect(formCatalog.configureOptions.assignRules.supportsFlowContext).toBe(true);
-    expect(formCatalog.configureOptions.resource.supportsFlowContext).toBeUndefined();
+    expect(formCatalog.node.configureOptions.assignRules.supportsFlowContext).toBe(true);
+    expect(formCatalog.node.configureOptions.resource.supportsFlowContext).toBeUndefined();
   });
 });
 

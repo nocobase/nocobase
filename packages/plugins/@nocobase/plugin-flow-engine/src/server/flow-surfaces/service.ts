@@ -89,6 +89,16 @@ import {
   getChartUnsupportedPatternHints,
   getChartVisualMappingAliases,
 } from './chart-config';
+import {
+  analyzeCatalogTarget as analyzeSmartCatalogTarget,
+  buildCatalogExpandFlags,
+  normalizeCatalogExpand as normalizeSmartCatalogExpand,
+  normalizeCatalogSections as normalizeSmartCatalogSections,
+} from './catalog-smart';
+import {
+  projectCatalogItem as projectSmartCatalogItem,
+  projectCatalogNode as projectSmartCatalogNode,
+} from './catalog-smart.projector';
 import { compileComposeExecutionPlan } from './compose-compiler';
 import { executeComposeRuntime } from './compose-runtime';
 import { SurfaceLocator } from './locator';
@@ -258,19 +268,6 @@ type FlowSurfaceSqlChartPreview = {
   riskyHints?: FlowSurfaceChartHint[];
 };
 
-const FLOW_SURFACE_CATALOG_SECTION_SET = new Set<FlowSurfaceCatalogSection>([
-  'blocks',
-  'fields',
-  'actions',
-  'recordActions',
-  'node',
-]);
-const FLOW_SURFACE_CATALOG_EXPAND_SET = new Set<FlowSurfaceCatalogExpand>([
-  'item.configureOptions',
-  'item.contracts',
-  'item.allowedContainerUses',
-  'node.contracts',
-]);
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel']);
 const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -948,10 +945,11 @@ export class FlowSurfacesService {
       ? await this.resolvePopupBlockProfile(target.uid, resolved, node, options.transaction)
       : null;
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const expand = new Set(this.normalizeCatalogExpand('catalog', input?.expand));
+    const expand = new Set(normalizeSmartCatalogExpand('catalog', input?.expand));
+    const expandFlags = buildCatalogExpandFlags(expand);
     const requestedSections = _.isUndefined(input?.sections)
       ? undefined
-      : this.normalizeCatalogSections('catalog', input?.sections);
+      : normalizeSmartCatalogSections('catalog', input?.sections);
     const catalogAnalysis = await this.analyzeCatalogTarget({
       target,
       resolved,
@@ -974,7 +972,7 @@ export class FlowSurfacesService {
       );
       response.blocks = availableBlocks
         .filter((item) => this.isCatalogBlockVisibleForPopupProfile(item.use, popupProfile))
-        .map((item) => this.projectCatalogItem(this.buildCatalogBlockItem(item, popupProfile), expand));
+        .map((item) => this.projectCatalogItem(this.buildCatalogBlockItem(item, popupProfile), expandFlags));
     }
 
     if (catalogAnalysis.selectedSections.includes('fields')) {
@@ -985,7 +983,7 @@ export class FlowSurfacesService {
             includeContracts: expand.has('item.contracts'),
           })
         : [];
-      response.fields = fieldCatalog.map((item) => this.projectCatalogItem(item, expand));
+      response.fields = fieldCatalog.map((item) => this.projectCatalogItem(item, expandFlags));
     }
 
     if (catalogAnalysis.selectedSections.includes('actions')) {
@@ -996,7 +994,7 @@ export class FlowSurfacesService {
         : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter(
             (item) => item.scope !== 'record',
           );
-      response.actions = availableActions.map((item) => this.projectCatalogItem(item, expand));
+      response.actions = availableActions.map((item) => this.projectCatalogItem(item, expandFlags));
     }
 
     if (catalogAnalysis.selectedSections.includes('recordActions')) {
@@ -1005,11 +1003,11 @@ export class FlowSurfacesService {
           ? getAvailableActionCatalogItems(catalogAnalysis.recordActionContainerUse, 'record', enabledPackages)
           : []
         : getAvailableActionCatalogItems(undefined, 'record', enabledPackages);
-      response.recordActions = availableRecordActions.map((item) => this.projectCatalogItem(item, expand));
+      response.recordActions = availableRecordActions.map((item) => this.projectCatalogItem(item, expandFlags));
     }
 
     if (catalogAnalysis.selectedSections.includes('node')) {
-      response.node = this.projectCatalogNode(node, resolved, expand);
+      response.node = this.projectCatalogNode(node, resolved, expandFlags);
     }
 
     return response;
@@ -1029,67 +1027,46 @@ export class FlowSurfacesService {
   }> {
     const targetSummary =
       input.target && input.resolved ? this.buildReadTargetSummary(input.target, input.resolved) : null;
-    const fieldContainer = input.target
-      ? await this.surfaceContext.resolveFieldContainer(input.resolved!.uid, input.transaction).catch(() => null)
-      : null;
+    const resolvedUid = input.resolved?.uid;
+    const fieldContainer =
+      input.target && resolvedUid
+        ? await this.surfaceContext.resolveFieldContainer(resolvedUid, input.transaction).catch(() => null)
+        : null;
     const actionContainer = input.target
       ? await this.surfaceContext.resolveActionContainer(input.target, input.transaction).catch(() => null)
       : null;
     const recordActionContainerUse = getCatalogRecordActionContainerUse(input.node?.use);
-    let fieldContainerScenario: FlowSurfaceCatalogFieldContainerScenario | undefined;
+    let filterFormTargetCount: number | undefined;
 
-    if (fieldContainer?.ownerUse) {
-      const fieldContainerKind = normalizeFieldContainerKind(fieldContainer.ownerUse);
-      if (fieldContainerKind === 'filter-form') {
-        const targets = await this.surfaceContext.collectFilterFormTargets(fieldContainer.ownerUid, input.transaction);
-        fieldContainerScenario = {
-          kind: fieldContainerKind,
-          targetMode: targets.length > 1 ? 'multiple' : 'single',
-        };
-      } else if (fieldContainerKind) {
-        fieldContainerScenario = {
-          kind: fieldContainerKind,
-        };
-      }
+    if (fieldContainer?.ownerUid && normalizeFieldContainerKind(fieldContainer.ownerUse) === 'filter-form') {
+      const targets = await this.surfaceContext.collectFilterFormTargets(fieldContainer.ownerUid, input.transaction);
+      filterFormTargetCount = targets.length;
     }
+    const hasBlockSurface = !!filterAvailableCatalogItems(
+      this.surfaceContext.filterBlocksByTarget(input.node, input.resolved),
+      undefined,
+    ).length;
 
-    const actionScope = getActionContainerScope(actionContainer?.ownerUse);
-    const scenario: FlowSurfaceCatalogScenario = {
+    const { scenario, selectedSections } = analyzeSmartCatalogTarget({
+      hasTarget: !!input.target,
+      hasBlockSurface,
       surfaceKind: targetSummary?.kind || 'global',
-      ...(input.popupProfile?.isPopupSurface
+      requestedSections: input.requestedSections,
+      popupProfile: input.popupProfile,
+      fieldContainer: fieldContainer?.ownerUse
         ? {
-            popup: {
-              kind: input.popupProfile.popupKind || 'plainPopup',
-              scene: input.popupProfile.scene,
-              hasCurrentRecord: input.popupProfile.hasCurrentRecord,
-              hasAssociationContext: input.popupProfile.hasAssociationContext,
-            },
+            ownerUse: fieldContainer.ownerUse,
           }
-        : {}),
-      ...(fieldContainerScenario ? { fieldContainer: fieldContainerScenario } : {}),
-      ...(actionScope
+        : null,
+      filterFormTargetCount,
+      actionContainer: actionContainer?.ownerUse
         ? {
-            actionContainer: {
-              scope: actionScope,
-              ownerUse: actionContainer?.ownerUse,
-              ...(recordActionContainerUse ? { recordActionContainerUse } : {}),
-            },
+            ownerUse: actionContainer.ownerUse,
           }
-        : {}),
-    };
-
-    const selectedSections = input.requestedSections
-      ? input.requestedSections
-      : this.inferDefaultCatalogSections({
-          hasTarget: !!input.target,
-          hasBlockSurface: !!filterAvailableCatalogItems(
-            this.surfaceContext.filterBlocksByTarget(input.node, input.resolved),
-            undefined,
-          ).length,
-          hasFieldContainer: !!fieldContainerScenario,
-          hasActionContainer: !!actionScope,
-          hasRecordActions: !!recordActionContainerUse || !input.target,
-        });
+        : null,
+      recordActionContainerUse,
+      hasRecordActions: !!recordActionContainerUse || !input.target,
+    });
 
     return {
       scenario,
@@ -1098,137 +1075,26 @@ export class FlowSurfacesService {
     };
   }
 
-  private inferDefaultCatalogSections(input: {
-    hasTarget: boolean;
-    hasBlockSurface: boolean;
-    hasFieldContainer: boolean;
-    hasActionContainer: boolean;
-    hasRecordActions: boolean;
-  }): FlowSurfaceCatalogSection[] {
-    if (!input.hasTarget) {
-      return ['blocks', 'actions', 'recordActions'];
-    }
-    const sections: FlowSurfaceCatalogSection[] = [];
-    if (input.hasBlockSurface) {
-      sections.push('blocks');
-    }
-    if (input.hasFieldContainer) {
-      sections.push('fields');
-    }
-    if (input.hasActionContainer) {
-      sections.push('actions');
-    }
-    if (input.hasRecordActions) {
-      sections.push('recordActions');
-    }
-    sections.push('node');
-    return sections;
-  }
-
-  private normalizeCatalogSections(actionName: string, input: any): FlowSurfaceCatalogSection[] {
-    if (_.isUndefined(input)) {
-      return [];
-    }
-    if (!Array.isArray(input)) {
-      throwBadRequest(`flowSurfaces ${actionName} sections must be an array`);
-    }
-    const seen = new Set<FlowSurfaceCatalogSection>();
-    return input
-      .map((value, index) => {
-        const normalized = String(value || '').trim() as FlowSurfaceCatalogSection;
-        if (!FLOW_SURFACE_CATALOG_SECTION_SET.has(normalized)) {
-          throwBadRequest(`flowSurfaces ${actionName} sections[${index}] '${String(value || '')}' is not supported`);
-        }
-        if (seen.has(normalized)) {
-          return null;
-        }
-        seen.add(normalized);
-        return normalized;
-      })
-      .filter(Boolean) as FlowSurfaceCatalogSection[];
-  }
-
-  private normalizeCatalogExpand(actionName: string, input: any): FlowSurfaceCatalogExpand[] {
-    if (_.isUndefined(input)) {
-      return [];
-    }
-    if (!Array.isArray(input)) {
-      throwBadRequest(`flowSurfaces ${actionName} expand must be an array`);
-    }
-    const seen = new Set<FlowSurfaceCatalogExpand>();
-    return input
-      .map((value, index) => {
-        const normalized = String(value || '').trim() as FlowSurfaceCatalogExpand;
-        if (!FLOW_SURFACE_CATALOG_EXPAND_SET.has(normalized)) {
-          throwBadRequest(`flowSurfaces ${actionName} expand[${index}] '${String(value || '')}' is not supported`);
-        }
-        if (seen.has(normalized)) {
-          return null;
-        }
-        seen.add(normalized);
-        return normalized;
-      })
-      .filter(Boolean) as FlowSurfaceCatalogExpand[];
-  }
-
   private projectCatalogNode(
     node: any,
     resolved: FlowSurfaceResolvedTarget | null,
-    expand: Set<FlowSurfaceCatalogExpand>,
+    expand: ReturnType<typeof buildCatalogExpandFlags>,
   ) {
-    const projected: Record<string, any> = {
-      editableDomains: this.getEditableDomains(node?.use),
-      configureOptions: getConfigureOptionsForResolvedNode({
-        kind: resolved?.kind,
-        use: node?.use,
-      }),
-    };
-    if (expand.has('node.contracts')) {
-      const contract = getNodeContract(node?.use);
-      projected.settingsSchema = getSettingsSchemaForUse(node?.use);
-      projected.settingsContract = contract?.domains;
-      projected.eventCapabilities = contract?.eventCapabilities;
-      projected.layoutCapabilities = contract?.layoutCapabilities;
-    }
-    return projected;
+    return projectSmartCatalogNode(node, resolved, expand, {
+      getEditableDomains: this.getEditableDomains.bind(this),
+      getConfigureOptionsForResolvedNode,
+      getSettingsSchema: getSettingsSchemaForUse,
+      getNodeContract,
+    });
   }
 
-  private projectCatalogItem(item: Record<string, any>, expand: Set<FlowSurfaceCatalogExpand>) {
-    const projected: Record<string, any> = _.pick(item, [
-      'key',
-      'label',
-      'use',
-      'kind',
-      'scope',
-      'scene',
-      'requiredInitParams',
-      'createSupported',
-      'fieldUse',
-      'wrapperUse',
-      'associationPathName',
-      'defaultTargetUid',
-      'targetBlockUid',
-      'type',
-      'renderer',
-    ]);
-    if (item.resourceBindings?.length) {
-      projected.resourceBindings = item.resourceBindings;
-    }
-    if (expand.has('item.allowedContainerUses') && item.allowedContainerUses?.length) {
-      projected.allowedContainerUses = item.allowedContainerUses;
-    }
-    if (expand.has('item.configureOptions')) {
-      projected.configureOptions = item.configureOptions || getConfigureOptionsForCatalogItem(item);
-    }
-    if (expand.has('item.contracts')) {
-      const contract = getNodeContract(item.use);
-      projected.editableDomains = item.editableDomains || this.getEditableDomains(item.use);
-      projected.settingsSchema = item.settingsSchema || getSettingsSchemaForUse(item.use);
-      projected.settingsContract = item.settingsContract || contract?.domains;
-      projected.eventCapabilities = item.eventCapabilities || contract?.eventCapabilities;
-      projected.layoutCapabilities = item.layoutCapabilities || contract?.layoutCapabilities;
-    }
-    return _.pickBy(projected, (value) => !_.isUndefined(value));
+  private projectCatalogItem(item: Record<string, any>, expand: ReturnType<typeof buildCatalogExpandFlags>) {
+    return projectSmartCatalogItem(item, expand, {
+      getEditableDomains: this.getEditableDomains.bind(this),
+      getConfigureOptions: getConfigureOptionsForCatalogItem,
+      getSettingsSchema: getSettingsSchemaForUse,
+      getNodeContract,
+    });
   }
 
   private buildCatalogBlockItem(item: any, popupProfile: FlowSurfacePopupBlockProfile | null) {
@@ -6280,8 +6146,15 @@ export class FlowSurfacesService {
     return normalizedTitle || undefined;
   }
 
-  private isPopupTemplateReferenceOpenView(openView: any) {
-    return !!String(openView?.popupTemplateUid || '').trim() && !openView?.popupTemplateContext;
+  private isSemanticallyEmptyInlinePopup(popup: Record<string, any> | undefined) {
+    if (!_.isPlainObject(popup)) {
+      return false;
+    }
+    return !hasFlowSurfaceInlinePopupTemplate(popup) && !hasFlowSurfaceInlinePopupBlocks(popup);
+  }
+
+  private isNonLocalPopupTarget(openView: any, hostUid?: string) {
+    return !!this.resolveExternalPopupHostUid(hostUid, openView);
   }
 
   private shouldAutoCompleteDefaultActionPopup(
@@ -6295,14 +6168,11 @@ export class FlowSurfacesService {
     if (!isFlowSurfaceDefaultActionPopupUse(actionNode?.use)) {
       return false;
     }
-    if (hasFlowSurfaceInlinePopupTemplate(popup) || hasFlowSurfaceInlinePopupBlocks(popup)) {
+    const openView = this.resolvePopupHostOpenView(actionNode);
+    if (this.isNonLocalPopupTarget(openView, actionNode?.uid)) {
       return false;
     }
-    const openView = this.resolvePopupHostOpenView(actionNode);
-    if (
-      _.isUndefined(popup) &&
-      (this.isExternalPopupOpenView(openView, actionNode?.uid) || this.isPopupTemplateReferenceOpenView(openView))
-    ) {
+    if (!_.isUndefined(popup) && !this.isSemanticallyEmptyInlinePopup(popup)) {
       return false;
     }
     return true;
@@ -6461,6 +6331,14 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} action '${actionUid}' does not exist`);
     }
 
+    const openView = this.resolvePopupHostOpenView(actionNode);
+    if (this.isExternalPopupOpenView(openView, actionNode?.uid)) {
+      if (_.isUndefined(popup) || this.isSemanticallyEmptyInlinePopup(popup)) {
+        return;
+      }
+      throwBadRequest(`flowSurfaces ${actionName} popup cannot be combined with external openView.uid`);
+    }
+
     if (popup && hasFlowSurfaceInlinePopupTemplate(popup)) {
       this.assertInlinePopupTemplateConflict(actionName, popup);
       await this.configureActionNode(
@@ -6481,7 +6359,16 @@ export class FlowSurfacesService {
       return;
     }
     const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultActionPopup(actionNode, popup, options);
+    const isNonLocalPopupTarget = this.isNonLocalPopupTarget(openView, actionNode?.uid);
     if (_.isUndefined(popup) && !shouldAutoCompleteDefaultPopup) {
+      return;
+    }
+    if (
+      !_.isUndefined(popup) &&
+      isNonLocalPopupTarget &&
+      !shouldAutoCompleteDefaultPopup &&
+      this.isSemanticallyEmptyInlinePopup(popup)
+    ) {
       return;
     }
 

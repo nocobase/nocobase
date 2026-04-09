@@ -133,6 +133,16 @@ describe('flowSurfaces catalog smart helpers', () => {
         hasRecordActions: true,
       }),
     ).toEqual(['blocks', 'actions', 'recordActions']);
+    expect(
+      selectedSections({
+        requestedSections: [],
+        hasTarget: true,
+        hasBlockSurface: true,
+        hasFieldContainer: true,
+        hasActionContainer: true,
+        hasRecordActions: true,
+      }),
+    ).toEqual([]);
   });
 
   it('should keep field candidates light and decorate on demand', () => {
@@ -296,6 +306,36 @@ describe('flowSurfaces catalog smart helpers', () => {
       layoutCapabilities: {
         supported: true,
       },
+    });
+  });
+
+  it('should tolerate readonly node contract when node contracts are requested', () => {
+    const options = {
+      getEditableDomains: vi.fn(() => []),
+      getConfigureOptionsForResolvedNode: vi.fn(() => ({})),
+      getSettingsSchema: vi.fn(() => ({})),
+      getNodeContract: vi.fn(() => ({
+        editableDomains: [],
+        domains: {},
+      })),
+    };
+
+    expect(
+      projectCatalogNode(
+        {
+          use: 'MysteryBlockModel',
+        },
+        {
+          kind: 'block',
+        } as any,
+        buildCatalogExpandFlags(['node.contracts']),
+        options,
+      ),
+    ).toMatchObject({
+      editableDomains: [],
+      configureOptions: {},
+      settingsSchema: {},
+      settingsContract: {},
     });
   });
 

@@ -1679,6 +1679,7 @@ describe('flowSurfaces API contract', () => {
         values: {},
       }),
     );
+    expect(globalCatalog.selectedSections).toEqual(['blocks', 'actions', 'recordActions']);
 
     const popupVariants = globalCatalog.actions
       .filter((item: any) => item.key === 'popup')
@@ -1702,6 +1703,23 @@ describe('flowSurfaces API contract', () => {
       .filter((item: any) => item.key === 'js')
       .map((item: any) => item.scope);
     expect(recordJsVariants).toEqual(expect.arrayContaining(['record']));
+  });
+
+  it('should treat explicit empty catalog sections as an empty response instead of falling back to defaults', async () => {
+    const emptyCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          sections: [],
+        },
+      }),
+    );
+
+    expect(emptyCatalog.selectedSections).toEqual([]);
+    expect(emptyCatalog.blocks).toBeUndefined();
+    expect(emptyCatalog.fields).toBeUndefined();
+    expect(emptyCatalog.actions).toBeUndefined();
+    expect(emptyCatalog.recordActions).toBeUndefined();
+    expect(emptyCatalog.node).toBeUndefined();
   });
 
   it('should only expose catalog blocks and actions backed by plugins enabled in the current app instance', async () => {
@@ -5730,6 +5748,133 @@ describe('flowSurfaces API contract', () => {
     expect(composeRes.status).toBe(400);
     expect(readErrorMessage(composeRes)).toContain('roles.hidden');
     expect(readErrorMessage(composeRes)).toContain('has no interface');
+  });
+
+  it('should execute bootstrap createMenu/createPage steps through executePlan and resolve previous step refs', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        plan: {
+          steps: [
+            {
+              id: 'group',
+              action: 'createMenu',
+              values: {
+                title: 'Bootstrap workspace',
+                type: 'group',
+              },
+            },
+            {
+              id: 'menu',
+              action: 'createMenu',
+              values: {
+                title: 'Bootstrap employees',
+                type: 'item',
+                parentMenuRouteId: {
+                  step: 'group',
+                  path: 'routeId',
+                },
+              },
+            },
+            {
+              id: 'page',
+              action: 'createPage',
+              values: {
+                menuRouteId: {
+                  step: 'menu',
+                  path: 'routeId',
+                },
+                tabTitle: 'Overview',
+                enableTabs: true,
+              },
+            },
+            {
+              id: 'extraTab',
+              action: 'addTab',
+              selectors: {
+                target: {
+                  step: 'page',
+                  path: 'pageUid',
+                },
+              },
+              values: {
+                title: {
+                  step: 'page',
+                  path: 'tabSchemaName',
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+
+    const executeData = getData(executeRes);
+    expect(executeData.surfaceExistsAfterExecute).toBe(true);
+    expect(executeData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'group',
+          action: 'createMenu',
+          payload: expect.objectContaining({
+            title: 'Bootstrap workspace',
+            type: 'group',
+          }),
+        }),
+        expect.objectContaining({
+          id: 'menu',
+          action: 'createMenu',
+          payload: expect.objectContaining({
+            type: 'item',
+            parentMenuRouteId: {
+              ref: 'group.routeId',
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'page',
+          action: 'createPage',
+          payload: expect.objectContaining({
+            menuRouteId: {
+              ref: 'menu.routeId',
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'extraTab',
+          action: 'addTab',
+          payload: expect.objectContaining({
+            title: {
+              ref: 'page.tabSchemaName',
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const resultById = Object.fromEntries(
+      executeData.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
+    );
+    expect(resultById.group.routeId).toBeTruthy();
+    expect(resultById.menu.parentMenuRouteId).toBe(resultById.group.routeId);
+    expect(resultById.page.routeId).toBe(resultById.menu.routeId);
+    expect(resultById.extraTab.pageUid).toBe(resultById.page.pageUid);
+    expect(executeData.target).toMatchObject({
+      locator: {
+        pageSchemaUid: resultById.page.pageSchemaUid,
+      },
+      uid: resultById.page.pageUid,
+      kind: 'page',
+    });
+    expect(executeData.refs.surface.uid).toBe(resultById.page.pageUid);
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: resultById.page.pageSchemaUid,
+    });
+    const tabs = getRouteBackedTabs(pageSurface);
+    expect(tabs).toHaveLength(2);
+    expect(tabs[0]?.uid).toBe(resultById.page.tabSchemaUid);
+    expect(tabs[1]?.uid).toBe(resultById.extraTab.tabSchemaUid);
   });
 
   it('should execute compose through executePlan runtime dispatch', async () => {

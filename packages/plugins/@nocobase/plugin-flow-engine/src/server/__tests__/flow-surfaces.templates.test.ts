@@ -640,7 +640,7 @@ describe('flowSurfaces templates', () => {
     expect(destroyTemplateRes.status).toBe(200);
   });
 
-  it('should reject empty popup payloads when settings target a popup template reference', async () => {
+  it('should preserve empty popup payload semantics when settings target a popup template reference', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup template empty payload page',
       tabTitle: 'Popup template empty payload tab',
@@ -681,7 +681,7 @@ describe('flowSurfaces templates', () => {
       saveMode: 'duplicate',
     });
 
-    const invalidRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+    const referenceRes = await rootAgent.resource('flowSurfaces').addRecordAction({
       values: {
         target: { uid: table.uid },
         type: 'view',
@@ -696,8 +696,107 @@ describe('flowSurfaces templates', () => {
         popup: {},
       },
     });
-    expect(invalidRes.status).toBe(400);
-    expect(readErrorMessage(invalidRes)).toContain('popup template reference');
+    expect(referenceRes.status).toBe(200);
+    const referencedAction = getData(referenceRes);
+    expect(referencedAction.popupPageUid).toBeUndefined();
+
+    const referencedActionSurface = await getSurface(rootAgent, { uid: referencedAction.uid });
+    expect(referencedActionSurface.tree.popup.template).toMatchObject({
+      uid: template.uid,
+      mode: 'reference',
+    });
+    expect(referencedActionSurface.tree.popup.pageUid).toBeUndefined();
+    expect(referencedActionSurface.tree.popup.tabUid).toBeUndefined();
+    expect(referencedActionSurface.tree.popup.gridUid).toBeUndefined();
+  });
+
+  it('should preserve empty popup payload semantics for popup template copies', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup template copy empty payload page',
+      tabTitle: 'Popup template copy empty payload tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const sourceAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'details',
+                type: 'details',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    getData(
+      await rootAgent.resource('flowSurfaces').updatePopupTab({
+        values: {
+          target: {
+            uid: sourceAction.popupTabUid,
+          },
+          title: 'Copied employee popup',
+        },
+      }),
+    );
+    const template = await saveTemplate(rootAgent, {
+      target: { uid: sourceAction.uid },
+      name: 'Popup template copy empty payload guard',
+      description: 'Reusable popup template for validating empty popup payload copy behavior.',
+      saveMode: 'duplicate',
+    });
+
+    const copiedAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          settings: {
+            openView: {
+              template: {
+                uid: template.uid,
+                mode: 'copy',
+              },
+            },
+          },
+          popup: {},
+        },
+      }),
+    );
+    expect(copiedAction.popupPageUid).toBeTruthy();
+    expect(copiedAction.popupTabUid).toBeTruthy();
+    expect(copiedAction.popupGridUid).toBeTruthy();
+
+    const copiedActionSurface = await getSurface(rootAgent, { uid: copiedAction.uid });
+    expect(copiedActionSurface.tree.popup.mode).toBe('copy');
+    expect(copiedActionSurface.tree.popup.pageUid).toBe(copiedAction.popupPageUid);
+    expect(copiedActionSurface.tree.popup.tabUid).toBe(copiedAction.popupTabUid);
+    expect(copiedActionSurface.tree.popup.gridUid).toBe(copiedAction.popupGridUid);
+
+    const copiedPopupPageSurface = await getSurface(rootAgent, { uid: copiedAction.popupPageUid });
+    const copiedPopupTab = copiedPopupPageSurface.tree.subModels?.tabs?.[0];
+    const copiedPopupBlock = getPopupGridItems(copiedPopupPageSurface.tree)[0];
+    const copiedPopupFieldPaths = (copiedPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(copiedPopupTab?.props?.title).toBe('Copied employee popup');
+    expect(copiedPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(copiedPopupFieldPaths).toEqual(['nickname']);
   });
 
   it('should support field popup templates through saveTemplate addField addFields configure and convertTemplateToCopy', async () => {

@@ -31,27 +31,44 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
     ...restOptions
   } = options;
 
-  const app = await createMockServer({
-    registerActions: true,
-    acl: true,
-    plugins,
-    skipInstall,
-    skipStart: true,
-    beforeInstall: async (app) => {
-      await app.cleanDb();
-    },
-    ...restOptions,
-  });
+  let lastError: any;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let app: MockServer | undefined;
+    try {
+      app = await createMockServer({
+        registerActions: true,
+        acl: true,
+        plugins,
+        skipInstall,
+        skipStart: true,
+        beforeInstall: async (app) => {
+          await app.cleanDb();
+        },
+        ...restOptions,
+      });
 
-  if (!skipInstall) {
-    await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases);
+      if (!skipInstall) {
+        await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases);
+      }
+
+      if (!skipInstall && !skipStart) {
+        await app.runCommandThrowError('start');
+      }
+
+      return app;
+    } catch (error: any) {
+      lastError = error;
+      if (app) {
+        await app.destroy().catch(() => undefined);
+      }
+      if (!isRetriableFlowSurfacesBootstrapError(error) || attempt > 1) {
+        throw error;
+      }
+      await waitForFlowSurfacesRetry(120);
+    }
   }
 
-  if (!skipInstall && !skipStart) {
-    await app.runCommandThrowError('start');
-  }
-
-  return app;
+  throw lastError;
 }
 
 export async function loginFlowSurfacesRootAgent(app: MockServer) {
@@ -165,6 +182,20 @@ function isRetriableRootUserError(error: any) {
     code === '42P01' ||
     code === 'ER_NO_SUCH_TABLE' ||
     /relation .+ does not exist|table .+ doesn't exist/i.test(message)
+  );
+}
+
+function isRetriableFlowSurfacesBootstrapError(error: any) {
+  const message = String(error?.message || '');
+  const code = error?.code || error?.parent?.code || error?.original?.code;
+  const constraint = String(error?.constraint || error?.parent?.constraint || error?.original?.constraint || '');
+  const sql = String(error?.sql || error?.parent?.sql || error?.original?.sql || '');
+  return (
+    code === '42P01' ||
+    code === '23505' ||
+    code === 'ER_NO_SUCH_TABLE' ||
+    /relation .+ does not exist|table .+ doesn't exist/i.test(message) ||
+    (constraint === 'pg_type_typname_nsp_index' && /migrations/i.test(sql))
   );
 }
 

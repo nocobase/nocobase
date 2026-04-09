@@ -221,9 +221,17 @@ describe('flowSurfaces swagger', () => {
     const validateRequest =
       swaggerDocument.paths['/flowSurfaces:validatePlan'].post.requestBody.content['application/json'];
     expect(validateRequest.example?.plan?.steps?.[0]?.action).toBe('configure');
-    const executeRequest =
-      swaggerDocument.paths['/flowSurfaces:executePlan'].post.requestBody.content['application/json'];
-    expect(executeRequest.example?.plan?.steps?.[0]?.selectors?.target?.ref).toBe('employeesTable');
+    const executePath = swaggerDocument.paths['/flowSurfaces:executePlan'].post;
+    const executeRequest = executePath.requestBody.content['application/json'];
+    expect(executeRequest.example?.plan?.steps?.[0]?.action).toBe('createMenu');
+    expect(executeRequest.example?.plan?.steps?.[1]?.values?.parentMenuRouteId).toEqual({
+      step: 'group',
+      path: 'routeId',
+    });
+    expect(executeRequest.example?.plan?.steps?.[2]?.values?.menuRouteId).toEqual({
+      step: 'menu',
+      path: 'routeId',
+    });
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
     expect(contextRequest.example?.path).toBe('record');
@@ -880,10 +888,18 @@ describe('flowSurfaces swagger', () => {
     expect(getPath.description).toContain('Do not wrap the payload with `{ target: { ... } }`');
     expect(getPath.description).toContain('Do not wrap the payload with `{ values: { ... } }`');
     expect(getPath.description).toContain('`loggedIn`');
+    expect(executePath.description).toContain('recommended orchestration entry for AI and automation callers');
 
     const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
     expect(catalogPath.description).toContain('truly available public capabilities');
     expect(catalogPath.description).toContain('`loggedIn`');
+    const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
+    expect(composePath.description).toContain('low-level building primitive');
+    expect(composePath.description).not.toContain('preferred creation entry for AI callers');
+    const configurePath = swaggerDocument.paths['/flowSurfaces:configure'].post;
+    expect(configurePath.description).toContain('catalog item `configureOptions`');
+    expect(configurePath.description).toContain('catalog.node.configureOptions');
+    expect(configurePath.description).not.toContain('catalog(target).configureOptions');
     const listTemplatesPath = swaggerDocument.paths['/flowSurfaces:listTemplates'].post;
     expect(listTemplatesPath.description).toContain('required `description`');
     expect(listTemplatesPath.description).toContain('`loggedIn`');
