@@ -45,6 +45,7 @@ import {
   throwInternalError,
 } from './errors';
 import { executeMutateOps } from './executor';
+import { getFlowSurfacePlanActionSpec } from './planning/action-specs';
 import { buildPlanSurfaceContext as buildPlanningSurfaceContext } from './planning/context';
 import {
   compilePlanStep as compilePlanningStep,
@@ -2204,6 +2205,7 @@ export class FlowSurfacesService {
     return collectPlanningDeclaredRefsFromTree(
       node,
       {
+        actionName: 'describeSurface',
         buildPlanRefKind: (currentNode, resolvedKind) => this.buildPlanRefKind(currentNode, resolvedKind),
       },
       carry,
@@ -2259,7 +2261,15 @@ export class FlowSurfacesService {
         buildPlanRefKind: (node, resolvedKind) => this.buildPlanRefKind(node, resolvedKind),
         assertBindRefKind: (currentActionName, bindRef, node, resolvedKind) =>
           this.assertBindRefKind(currentActionName, bindRef, node, resolvedKind),
-        collectDeclaredRefsFromTree: (node) => this.collectDeclaredRefsFromTree(node),
+        collectDeclaredRefsFromTree: (node) =>
+          collectPlanningDeclaredRefsFromTree(
+            node,
+            {
+              actionName,
+              buildPlanRefKind: (currentNode, resolvedKind) => this.buildPlanRefKind(currentNode, resolvedKind),
+            },
+            new Map<string, FlowSurfaceResolvedRef>(),
+          ),
       },
       options,
     );
@@ -2373,17 +2383,24 @@ export class FlowSurfacesService {
     payload: Record<string, any>,
     transaction?: any,
   ) {
-    const options = { transaction };
-    switch (action) {
-      case 'compose':
-        return this.compose(payload as FlowSurfaceComposeValues, options);
-      case 'configure':
-        return this.configure(payload as FlowSurfaceConfigureValues, options);
-      case 'convertTemplateToCopy':
-        return this.convertTemplateToCopy(payload, options);
-      default:
-        throwBadRequest(`flowSurfaces executePlan action '${action}' is not supported`);
+    const spec = getFlowSurfacePlanActionSpec(action);
+    if (!spec || spec.executionKind !== 'planOnly') {
+      throwBadRequest(`flowSurfaces executePlan action '${action}' is not supported`);
     }
+    const options = { transaction };
+    const handler = (this as any)[spec.planOnlyMethod];
+    if (typeof handler !== 'function') {
+      throwInternalError(`flowSurfaces executePlan action '${action}' is misconfigured`);
+    }
+    return handler.call(this, payload, options);
+  }
+
+  private getPersistableDeclaredRef(node: any) {
+    const declaredRef = this.getDeclaredRefFromNode(node);
+    if (!declaredRef || FLOW_SURFACE_RESERVED_REFS.has(declaredRef)) {
+      return undefined;
+    }
+    return declaredRef;
   }
 
   private serializeCompiledPlanSteps(compiledSteps: FlowSurfaceCompiledPlanStep[]) {
@@ -2490,7 +2507,7 @@ export class FlowSurfacesService {
     if (refInfo.reboundFromUid && refInfo.reboundFromUid !== refInfo.uid) {
       await this.clearDeclaredRefForNode(refInfo.reboundFromUid, transaction);
     }
-    const currentDeclaredRef = this.getDeclaredRefFromNode(node);
+    const currentDeclaredRef = this.getPersistableDeclaredRef(node);
     if (currentDeclaredRef && currentDeclaredRef !== refInfo.ref && !refInfo.rebind) {
       throwConflict(
         `flowSurfaces executePlan node '${node.uid}' already has declared ref '${currentDeclaredRef}'`,

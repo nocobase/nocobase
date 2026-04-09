@@ -68,6 +68,7 @@ export function normalizeBindRefs(
 export function collectDeclaredRefsFromTree(
   node: any,
   deps: {
+    actionName?: string;
     buildPlanRefKind: (node: any, resolvedKind?: string) => string;
   },
   carry = new Map<string, FlowSurfaceResolvedRef>(),
@@ -81,7 +82,9 @@ export function collectDeclaredRefsFromTree(
       const existing = carry.get(declaredRef);
       if (existing && existing.uid !== node.uid) {
         throwConflict(
-          `flowSurfaces describeSurface declared ref '${declaredRef}' is duplicated on '${existing.uid}' and '${node.uid}'`,
+          `flowSurfaces ${deps.actionName || 'describeSurface'} declared ref '${declaredRef}' is duplicated on '${
+            existing.uid
+          }' and '${node.uid}'`,
           'FLOW_SURFACE_DECLARED_REF_CONFLICT',
         );
       }

@@ -42,9 +42,19 @@ export type FlowSurfacePlanActionSpec = {
   payloadProjection: FlowSurfacePlanPayloadProjection;
   requiresTarget: boolean;
   requiresSource: boolean;
-  mutateOpType?: string;
-  planOnly?: true;
 };
+
+export type FlowSurfacePlanMutateActionSpec = FlowSurfacePlanActionSpec & {
+  executionKind: 'mutate';
+  mutateOpType: string;
+};
+
+export type FlowSurfacePlanOnlyActionSpec = FlowSurfacePlanActionSpec & {
+  executionKind: 'planOnly';
+  planOnlyMethod: FlowSurfacePlanStepActionName;
+};
+
+export type FlowSurfaceResolvedPlanActionSpec = FlowSurfacePlanMutateActionSpec | FlowSurfacePlanOnlyActionSpec;
 
 export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
   compose: {
@@ -53,7 +63,8 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
-    planOnly: true,
+    executionKind: 'planOnly',
+    planOnlyMethod: 'compose',
   },
   configure: {
     action: 'configure',
@@ -61,7 +72,8 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
-    planOnly: true,
+    executionKind: 'planOnly',
+    planOnlyMethod: 'configure',
   },
   updateSettings: {
     action: 'updateSettings',
@@ -69,6 +81,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'updateSettings',
   },
   setEventFlows: {
@@ -77,6 +90,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'setEventFlows',
   },
   setLayout: {
@@ -85,6 +99,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'setLayout',
   },
   addTab: {
@@ -93,6 +108,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'addTab',
   },
   updateTab: {
@@ -101,6 +117,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'updateTab',
   },
   moveTab: {
@@ -109,6 +126,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'sourceTargetUids',
     requiresTarget: true,
     requiresSource: true,
+    executionKind: 'mutate',
     mutateOpType: 'moveTab',
   },
   removeTab: {
@@ -117,6 +135,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'uid',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'removeTab',
   },
   addPopupTab: {
@@ -125,6 +144,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'addPopupTab',
   },
   updatePopupTab: {
@@ -133,6 +153,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'updatePopupTab',
   },
   movePopupTab: {
@@ -141,6 +162,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'sourceTargetUids',
     requiresTarget: true,
     requiresSource: true,
+    executionKind: 'mutate',
     mutateOpType: 'movePopupTab',
   },
   removePopupTab: {
@@ -149,6 +171,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'removePopupTab',
   },
   addBlock: {
@@ -157,6 +180,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'addBlock',
   },
   addField: {
@@ -165,6 +189,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'addField',
   },
   addAction: {
@@ -173,6 +198,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'addAction',
   },
   addRecordAction: {
@@ -181,6 +207,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'addRecordAction',
   },
   moveNode: {
@@ -189,6 +216,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'sourceTargetUids',
     requiresTarget: true,
     requiresSource: true,
+    executionKind: 'mutate',
     mutateOpType: 'moveNode',
   },
   removeNode: {
@@ -197,6 +225,7 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'removeNode',
   },
   convertTemplateToCopy: {
@@ -205,7 +234,8 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'target',
     requiresTarget: true,
     requiresSource: false,
-    planOnly: true,
+    executionKind: 'planOnly',
+    planOnlyMethod: 'convertTemplateToCopy',
   },
   destroyPage: {
     action: 'destroyPage',
@@ -213,10 +243,11 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = {
     payloadProjection: 'uid',
     requiresTarget: true,
     requiresSource: false,
+    executionKind: 'mutate',
     mutateOpType: 'destroyPage',
   },
-} as const satisfies Record<FlowSurfacePlanStepActionName, FlowSurfacePlanActionSpec>;
+} as const satisfies Record<FlowSurfacePlanStepActionName, FlowSurfaceResolvedPlanActionSpec>;
 
-export function getFlowSurfacePlanActionSpec(action: string): FlowSurfacePlanActionSpec | undefined {
+export function getFlowSurfacePlanActionSpec(action: string): FlowSurfaceResolvedPlanActionSpec | undefined {
   return FLOW_SURFACE_PLAN_ACTION_SPECS[action as FlowSurfacePlanStepActionName];
 }

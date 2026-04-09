@@ -284,7 +284,7 @@ export async function compilePlanStep(
     throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
   }
 
-  if (spec.mutateOpType) {
+  if (spec.executionKind === 'mutate') {
     compiled.mutateOp = buildMutateOp(spec.mutateOpType, spec.payloadProjection, compiled.payload);
   } else {
     compiled.planPayload = compiled.payload;
