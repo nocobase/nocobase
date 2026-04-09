@@ -52,7 +52,6 @@ export const SearchSwitch: React.FC = observer(
     const disabledTooltip = isToolConflict ? (
       <div>
         <div>{t('Enable search')}</div>
-        <div style={{ marginTop: 4 }}>{t('Search disables tools')}</div>
       </div>
     ) : (
       t('Enable search')

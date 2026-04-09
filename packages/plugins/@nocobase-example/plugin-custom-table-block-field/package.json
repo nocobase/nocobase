@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-custom-table-block-field",
   "displayName": "Plugin example: Custom field for table block",
   "description": "This plugin demonstrates how to use the custom field for table block feature to create a custom field for a table block.",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.14",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

@@ -20,7 +20,7 @@ import React from 'react';
 import { uid } from '@formily/shared';
 import { FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
-import { RecordPickerContent } from '../RecordPickerFieldModel';
+import { buildRecordPickerPopupContextInputArgs, RecordPickerContent } from '../RecordPickerFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
@@ -297,6 +297,7 @@ SubTableFieldModel.registerFlow({
         const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
         ctx.model.selectedRows.value = ctx.model.props.value || [];
+        const currentItemValue = ctx.inputArgs.currentItemValue ?? ctx.model.props.value ?? [];
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -308,6 +309,9 @@ SubTableFieldModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
+            ...buildRecordPickerPopupContextInputArgs(ctx, {
+              currentItemValue,
+            }),
             rowSelectionProps: {
               type: 'checkbox',
               defaultSelectedRows: () => {

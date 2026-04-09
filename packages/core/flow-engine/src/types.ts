@@ -407,21 +407,33 @@ export type FlowModelLoaderResult =
 export type FlowModelLoader = () => Promise<FlowModelLoaderResult>;
 
 /**
- * FlowModel loader entry.
- * Future contribution-style fields are intentionally kept as commented placeholders in phase A
- * and are not consumed by current runtime logic.
+ * FlowModel loader entry (normalized internal form).
  */
 export interface FlowModelLoaderEntry {
   loader: FlowModelLoader;
-  // extends?: string;
+  extends?: string[];
   // meta?: Partial<FlowModelMeta>;
   // scenes?: string[];
 }
 
 /**
- * FlowModel loader entry map.
+ * FlowModel loader input (user-facing form for registerModelLoaders).
+ * The `extends` field accepts flexible formats that will be normalized to `string[]` at registration time.
+ */
+export interface FlowModelLoaderInput {
+  loader: FlowModelLoader;
+  extends?: string | ModelConstructor | (string | ModelConstructor)[];
+}
+
+/**
+ * FlowModel loader entry map (normalized internal form).
  */
 export type FlowModelLoaderMap = Record<string, FlowModelLoaderEntry>;
+
+/**
+ * FlowModel loader input map (user-facing form for registerModelLoaders).
+ */
+export type FlowModelLoaderInputMap = Record<string, FlowModelLoaderInput>;
 
 /**
  * Batch ensure result.

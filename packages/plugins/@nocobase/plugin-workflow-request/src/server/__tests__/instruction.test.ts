@@ -228,6 +228,7 @@ describe('workflow > instructions > request', () => {
       expect(job.result).toMatchObject({
         data: { meta: {}, data: {} },
       });
+      expect(job.result).not.toHaveProperty('config');
     });
 
     it('timeout', async () => {
@@ -250,10 +251,11 @@ describe('workflow > instructions > request', () => {
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
-        // status: null,
         message: 'timeout of 250ms exceeded',
       });
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('stack');
+      expect(job.result).not.toHaveProperty('name');
 
       // NOTE: to wait for the response to finish and avoid non finished promise.
       await sleep(1500);
@@ -279,10 +281,9 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
-        // status: null,
         message: 'timeout of 250ms exceeded',
       });
+      expect(job.result).not.toHaveProperty('config');
     });
 
     it('response 400 without body', async () => {
@@ -301,7 +302,13 @@ describe('workflow > instructions > request', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.FAILED);
-      expect(job.result.status).toBe(400);
+      expect(job.result).toEqual({
+        message: 'Request failed with status code 400',
+        code: 'ERR_BAD_REQUEST',
+        status: 400,
+        statusText: 'Bad Request',
+        data: 'Bad Request',
+      });
     });
 
     it('response 400 with text message', async () => {
@@ -322,6 +329,8 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.FAILED);
       expect(job.result.status).toBe(400);
       expect(job.result.data).toBe('bad request message');
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('headers');
     });
 
     it('response 400 with object', async () => {
@@ -342,6 +351,8 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.FAILED);
       expect(job.result.status).toBe(400);
       expect(job.result.data).toEqual({ a: 1 });
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('headers');
     });
 
     it('response just end', async () => {
@@ -362,10 +373,10 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.FAILED);
       expect(job.result).toMatchObject({
         code: 'ECONNRESET',
-        name: 'Error',
-        // status: null,
         message: 'socket hang up',
       });
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('stack');
     });
 
     it('response 400 ignoreFail', async () => {
@@ -688,6 +699,7 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ meta: {}, data: {} });
+      expect(job.result).not.toHaveProperty('config');
     });
 
     it('ignoreFail', async () => {
@@ -707,6 +719,7 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.status).toBe(404);
+      expect(job.result).not.toHaveProperty('config');
     });
   });
 
@@ -714,7 +727,7 @@ describe('workflow > instructions > request', () => {
     it('invalid config', async () => {
       const { status, result } = await instruction.test(Object.create({}));
       expect(status).toBe(JOB_STATUS.FAILED);
-      expect(result).toBe('Invalid URL');
+      expect(result).toEqual({ message: 'Invalid URL', code: 'ERR_INVALID_URL' });
     });
 
     it('data url', async () => {
@@ -727,6 +740,7 @@ describe('workflow > instructions > request', () => {
       expect(status).toBe(JOB_STATUS.RESOLVED);
       expect(result.status).toBe(200);
       expect(result.data).toEqual({ meta: {}, data: { a: 1 } });
+      expect(result).not.toHaveProperty('config');
     });
 
     it('404', async () => {
@@ -737,6 +751,8 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.FAILED);
       expect(result.status).toBe(404);
+      expect(result).not.toHaveProperty('config');
+      expect(result).not.toHaveProperty('headers');
     });
 
     it('timeout', async () => {
@@ -748,6 +764,8 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.FAILED);
       expect(result.code).toBe('ECONNABORTED');
+      expect(result).not.toHaveProperty('config');
+      expect(result).not.toHaveProperty('stack');
     });
 
     it('ignoreFail', async () => {
@@ -759,6 +777,7 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.RESOLVED);
       expect(result.status).toBe(404);
+      expect(result).not.toHaveProperty('config');
     });
 
     it('timeout and ignoreFail', async () => {
@@ -771,6 +790,7 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.RESOLVED);
       expect(result.code).toBe('ECONNABORTED');
+      expect(result).not.toHaveProperty('config');
     });
   });
 
