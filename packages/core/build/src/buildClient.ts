@@ -198,10 +198,6 @@ export function buildLocale(cwd: string, userConfig: UserConfig, log: PkgLog) {
   log('build client locale');
 
   const entry = fg.globSync(['src/locale/**', ...globExcludeFiles], { cwd, absolute: true });
-  if (!entry.length) {
-    log('skip client locale build, no locale sources found');
-    return Promise.resolve();
-  }
   const outDir = path.resolve(cwd, 'lib', 'locale');
   return tsupBuild(
     userConfig.modifyTsupConfig({

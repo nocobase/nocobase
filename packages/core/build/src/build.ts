@@ -18,7 +18,6 @@ import { buildPlugin } from './buildPlugin';
 import {
   CORE_APP,
   CORE_CLIENT,
-  CORE_CLIENT_V2,
   ESM_PACKAGES,
   getCjsPackages,
   getPluginPackages,
@@ -88,6 +87,13 @@ export async function build(pkgs: string[]) {
       stageName: 'core cjs',
       profile,
     });
+    const clientCore = packages.find((item) => item.location === CORE_CLIENT);
+    if (clientCore) {
+      await buildSinglePackage(clientCore, 'es', buildClient, {
+        stageName: 'core client',
+        profile,
+      });
+    }
     const esmPackages = packages.filter((pkg) => ESM_PACKAGES.includes(pkg.name));
     await buildPackages(esmPackages, 'lib', buildCjs, {
       sourceConcurrency: DEFAULT_LAYER_CONCURRENCY,
@@ -101,20 +107,6 @@ export async function build(pkgs: string[]) {
       stageName: 'esm',
       profile,
     });
-    const clientCoreV2 = packages.find((item) => item.location === CORE_CLIENT_V2);
-    if (clientCoreV2) {
-      await buildSinglePackage(clientCoreV2, 'es', buildClient, {
-        stageName: 'core client-v2',
-        profile,
-      });
-    }
-    const clientCore = packages.find((item) => item.location === CORE_CLIENT);
-    if (clientCore) {
-      await buildSinglePackage(clientCore, 'es', buildClient, {
-        stageName: 'core client',
-        profile,
-      });
-    }
 
     // plugins/*、samples/*
     await buildPackages(pluginPackages, 'dist', buildPlugin, {
