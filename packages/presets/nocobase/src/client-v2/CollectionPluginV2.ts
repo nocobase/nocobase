@@ -50,8 +50,8 @@ import {
   UpdatedByFieldInterface,
   UrlFieldInterface,
   UUIDFieldInterface,
-} from '@nocobase/client';
-import { Plugin } from '@nocobase/client-v2';
+  Plugin,
+} from '@nocobase/client-v2';
 
 const MAIN_DATA_SOURCE_KEY = 'main';
 const MAIN_DATA_SOURCE_TITLE = '{{t("Main")}}';
