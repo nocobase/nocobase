@@ -7,4 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { buildAutoLayout, compileApplySpec } from './apply';
+export { compileApplySpec } from './compiler';
+export { buildAutoLayout } from './layout';

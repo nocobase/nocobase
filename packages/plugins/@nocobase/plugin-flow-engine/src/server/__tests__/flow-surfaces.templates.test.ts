@@ -192,6 +192,101 @@ describe('flowSurfaces templates', () => {
     expect(destroyTemplateRes.status).toBe(200);
   });
 
+  it('should execute convertTemplateToCopy through executePlan for block template references', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Execute plan block template page',
+      tabTitle: 'Execute plan block template tab',
+    });
+    const sourceBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'createForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    await addFieldData(rootAgent, {
+      target: { uid: sourceBlock.uid },
+      fieldPath: 'nickname',
+    });
+
+    const template = await saveTemplate(rootAgent, {
+      target: { uid: sourceBlock.uid },
+      name: 'Execute plan block template',
+      description: 'Reusable block template to verify executePlan convertTemplateToCopy dispatch.',
+      saveMode: 'duplicate',
+    });
+    const referencedBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      template: {
+        uid: template.uid,
+        mode: 'reference',
+      },
+    });
+
+    const referencedSurface = await getSurface(rootAgent, { uid: referencedBlock.uid });
+    expect(referencedSurface.tree.template).toMatchObject({
+      uid: template.uid,
+      mode: 'reference',
+    });
+    await expectTemplateUsage(rootAgent, template.uid, 1);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'detachTemplate',
+              action: 'convertTemplateToCopy',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: referencedBlock.uid,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    const executeData = getData(executeRes);
+    expect(executeData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'detachTemplate',
+          action: 'convertTemplateToCopy',
+          payload: expect.objectContaining({
+            target: {
+              uid: referencedBlock.uid,
+            },
+          }),
+        }),
+      ]),
+    );
+    expect(executeData.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'detachTemplate',
+          action: 'convertTemplateToCopy',
+          result: expect.objectContaining({
+            uid: referencedBlock.uid,
+            type: 'block',
+          }),
+        }),
+      ]),
+    );
+
+    const convertedSurface = await getSurface(rootAgent, { uid: referencedBlock.uid });
+    expect(convertedSurface.tree.template).toBeUndefined();
+    await expectTemplateUsage(rootAgent, template.uid, 0);
+  });
+
   it('should support fields templates through addBlock addField addFields convertTemplateToCopy and destroy cleanup', async () => {
     const page = await createPage(rootAgent, {
       title: 'Fields template page',

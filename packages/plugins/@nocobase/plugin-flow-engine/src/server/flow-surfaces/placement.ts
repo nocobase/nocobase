@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FIELD_WRAPPER_USES } from './node-use-sets';
 import type { FlowSurfaceResolvedTarget } from './types';
 
 export const FLOW_SURFACE_POPUP_HOST_USES = new Set([
@@ -42,12 +43,7 @@ export const FLOW_SURFACE_GRID_USES = new Set([
   'FilterFormGridModel',
   'AssignFormGridModel',
 ]);
-export const FLOW_SURFACE_FIELD_WRAPPER_USES = new Set([
-  'FormItemModel',
-  'DetailsItemModel',
-  'FilterFormItemModel',
-  'TableColumnModel',
-]);
+export const FLOW_SURFACE_FIELD_WRAPPER_USES = FIELD_WRAPPER_USES;
 export const FLOW_SURFACE_PAGE_MODEL_USES = new Set([
   'RootPageModel',
   'ChildPageModel',

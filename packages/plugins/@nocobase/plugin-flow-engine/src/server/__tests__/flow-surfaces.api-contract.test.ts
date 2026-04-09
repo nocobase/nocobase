@@ -5402,6 +5402,91 @@ describe('flowSurfaces API contract', () => {
     expect(readErrorMessage(composeRes)).toContain('has no interface');
   });
 
+  it('should execute compose through executePlan runtime dispatch', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Execute plan compose page',
+      tabTitle: 'Execute plan compose tab',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'composeTable',
+              action: 'compose',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    key: 'employeesTable',
+                    type: 'table',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                    },
+                    fields: ['nickname'],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+
+    const executeData = getData(executeRes);
+    expect(executeData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'composeTable',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: page.tabSchemaUid,
+            },
+          }),
+        }),
+      ]),
+    );
+    expect(executeData.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'composeTable',
+          action: 'compose',
+          result: expect.objectContaining({
+            keyToUid: expect.objectContaining({
+              employeesTable: expect.any(String),
+            }),
+          }),
+        }),
+      ]),
+    );
+
+    const tableUid = executeData.results[0]?.result?.keyToUid?.employeesTable;
+    const tableSurface = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    expect(tableSurface.tree.use).toBe('TableBlockModel');
+    expect(tableSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+  });
+
   it('should persist only used bindRefs as declared refs and keep metadata hidden from public reads', async () => {
     const page = await createPage(rootAgent, {
       title: 'Ref persistence page',
