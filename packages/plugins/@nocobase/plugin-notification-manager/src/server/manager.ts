@@ -60,15 +60,8 @@ export class NotificationManager implements NotificationManager {
     await this.plugin.app.eventQueue.publish(this.plugin.sendQueueChannel, message);
   }
 
-  async findChannel(name: string, transaction?) {
-    const repository = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
-    const instance = await repository.findOne({ filterByTk: name, transaction });
-
-    if (!instance) {
-      return null;
-    }
-
-    return this.plugin.app.environment.renderJsonTemplate(instance.toJSON());
+  async findChannel(name: string) {
+    return await this.plugin.getChannel(name);
   }
 
   private getReceiverMeta(receivers?: ReceiversOptions) {

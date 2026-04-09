@@ -13,6 +13,7 @@ import { vi } from 'vitest';
 import channelCollection from '../../collections/channel';
 import { COLLECTION_NAME } from '../../constant';
 import NotificationManager from '../manager';
+import PluginNotificationManagerServer from '../plugin';
 
 describe('notification manager server', () => {
   let app;
@@ -51,6 +52,7 @@ describe('notification manager server', () => {
     notificationManager = new NotificationManager({
       plugin: {
         app,
+        getChannel: vi.fn(),
         //@ts-ignore
         logger: {
           info: (log) => log,
@@ -82,6 +84,7 @@ describe('notification manager server', () => {
     notificationManager = new NotificationManager({
       plugin: {
         sendQueueChannel: 'notification-manager.send',
+        getChannel: vi.fn(),
         app: {
           eventQueue: {
             publish,
@@ -127,6 +130,7 @@ describe('notification manager server', () => {
     notificationManager = new NotificationManager({
       plugin: {
         sendQueueChannel: 'notification-manager.send',
+        getChannel: vi.fn(),
         app: {
           eventQueue: {
             publish,
@@ -168,13 +172,11 @@ describe('notification manager server', () => {
 
   test('send should only enqueue message and should not perform actual sending', async () => {
     const publish = vi.fn().mockResolvedValue(undefined);
-    const findOne = vi.fn().mockResolvedValue({
-      toJSON: () => ({
-        name: testChannelData.name,
-        title: testChannelData.title,
-        notificationType: testChannelData.notificationType,
-        options: {},
-      }),
+    const getChannel = vi.fn().mockResolvedValue({
+      name: testChannelData.name,
+      title: testChannelData.title,
+      notificationType: testChannelData.notificationType,
+      options: {},
     });
     const create = vi.fn().mockResolvedValue(undefined);
     const send = vi.fn().mockResolvedValue({ status: 'success', message: { content: 'test' } });
@@ -182,15 +184,13 @@ describe('notification manager server', () => {
     notificationManager = new NotificationManager({
       plugin: {
         sendQueueChannel: 'notification-manager.send',
+        getChannel,
         app: {
           eventQueue: {
             publish,
           },
           db: {
             getRepository: vi.fn((name) => {
-              if (name === COLLECTION_NAME.channels) {
-                return { findOne };
-              }
               if (name === COLLECTION_NAME.logs) {
                 return { create };
               }
@@ -228,31 +228,27 @@ describe('notification manager server', () => {
       message: { content: 'test' },
       triggerFrom: 'workflow',
     });
-    expect(findOne).not.toHaveBeenCalled();
+    expect(getChannel).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
 
   test('sendNow should perform actual sending without transaction', async () => {
-    const findOne = vi.fn().mockResolvedValue({
-      toJSON: () => ({
-        name: testChannelData.name,
-        title: testChannelData.title,
-        notificationType: testChannelData.notificationType,
-        options: {},
-      }),
+    const getChannel = vi.fn().mockResolvedValue({
+      name: testChannelData.name,
+      title: testChannelData.title,
+      notificationType: testChannelData.notificationType,
+      options: {},
     });
     const create = vi.fn().mockResolvedValue(undefined);
     const send = vi.fn().mockResolvedValue({ status: 'success', message: { content: 'test' } });
 
     notificationManager = new NotificationManager({
       plugin: {
+        getChannel,
         app: {
           db: {
             getRepository: vi.fn((name) => {
-              if (name === COLLECTION_NAME.channels) {
-                return { findOne };
-              }
               if (name === COLLECTION_NAME.logs) {
                 return { create };
               }
@@ -285,10 +281,7 @@ describe('notification manager server', () => {
       triggerFrom: 'workflow',
     });
 
-    expect(findOne).toHaveBeenCalledWith({
-      filterByTk: testChannelData.name,
-      transaction: undefined,
-    });
+    expect(getChannel).toHaveBeenCalledWith(testChannelData.name);
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: expect.objectContaining({
@@ -307,5 +300,48 @@ describe('notification manager server', () => {
         }),
       }),
     );
+  });
+
+  test('plugin should reuse channels cache after initial load', async () => {
+    const plugin = app.pm.get('notification-manager') as PluginNotificationManagerServer;
+    const repository = app.db.getRepository(COLLECTION_NAME.channels);
+    const find = vi.spyOn(repository, 'find');
+
+    await agent.resource(COLLECTION_NAME.channels).create({
+      values: {
+        ...testChannelData,
+      },
+    });
+    find.mockClear();
+
+    await plugin.loadChannels();
+    expect(find).toHaveBeenCalledTimes(1);
+
+    const first = await plugin.getChannel(testChannelData.name);
+    const second = await plugin.getChannel(testChannelData.name);
+
+    expect(first?.name).toBe(testChannelData.name);
+    expect(second?.name).toBe(testChannelData.name);
+    expect(find).toHaveBeenCalledTimes(1);
+  });
+
+  test('plugin should lazy load channels cache when not initialized', async () => {
+    const plugin = app.pm.get('notification-manager') as PluginNotificationManagerServer;
+    const repository = app.db.getRepository(COLLECTION_NAME.channels);
+    const find = vi.spyOn(repository, 'find');
+
+    await agent.resource(COLLECTION_NAME.channels).create({
+      values: {
+        ...testChannelData,
+      },
+    });
+    find.mockClear();
+
+    await plugin.cache.del('channels');
+
+    const channel = await plugin.getChannel(testChannelData.name);
+
+    expect(channel?.name).toBe(testChannelData.name);
+    expect(find).toHaveBeenCalledTimes(1);
   });
 });
