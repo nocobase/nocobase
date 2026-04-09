@@ -24,7 +24,6 @@ import {
   resolveSupportedBlockCatalogItem,
 } from './catalog';
 import { assertRequestedActionScope, getActionContainerScope, normalizeActionScope } from './action-scope';
-import { FLOW_SURFACE_PLAN_STEP_ACTIONS } from './constants';
 import {
   buildActionTree,
   buildBlockTree,
@@ -46,6 +45,31 @@ import {
   throwInternalError,
 } from './errors';
 import { executeMutateOps } from './executor';
+import { buildPlanSurfaceContext as buildPlanningSurfaceContext } from './planning/context';
+import {
+  compilePlanStep as compilePlanningStep,
+  normalizePlanSelector as normalizePlanningSelector,
+  normalizePlanSteps as normalizePlanningSteps,
+} from './planning/compiler';
+import {
+  annotateTreeRef as annotatePlanningTreeRef,
+  buildSurfaceFingerprintRefsObject as buildPlanningSurfaceFingerprintRefsObject,
+  buildSurfaceRefsObject as buildPlanningSurfaceRefsObject,
+  collectDeclaredRefsFromTree as collectPlanningDeclaredRefsFromTree,
+  collectRequestRefsToPersist,
+  FLOW_SURFACE_DECLARED_REF_KEY,
+  FLOW_SURFACE_INTERNAL_META_KEY,
+  FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE,
+  FLOW_SURFACE_RESERVED_REFS,
+  FLOW_SURFACE_SYSTEM_REF,
+  getDeclaredRefFromNode as getPlanningDeclaredRefFromNode,
+  normalizeBindRefs as normalizePlanningBindRefs,
+} from './planning/ref-registry';
+import type {
+  FlowSurfaceCompiledPlanStep,
+  FlowSurfacePlanSurfaceContext,
+  FlowSurfaceResolvedRef,
+} from './planning/types';
 import {
   MULTI_VALUE_ASSOCIATION_INTERFACES,
   normalizeFieldContainerKind,
@@ -555,56 +579,6 @@ type FlowSurfaceTemplateListTargetContext = {
 };
 
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
-const FLOW_SURFACE_SYSTEM_REF = 'surface';
-const FLOW_SURFACE_RESERVED_REFS = new Set([FLOW_SURFACE_SYSTEM_REF]);
-const FLOW_SURFACE_INTERNAL_META_KEY = '__flowSurfaceMeta';
-const FLOW_SURFACE_DECLARED_REF_KEY = 'declaredRef';
-const FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE = 'FLOW_SURFACE_REF_NOT_PERSISTABLE';
-const FLOW_SURFACE_PLAN_ACTION_SET = new Set<string>(FLOW_SURFACE_PLAN_STEP_ACTIONS as readonly string[]);
-const FLOW_SURFACE_PLAN_TARGET_ACTIONS = new Set<string>([
-  'compose',
-  'configure',
-  'updateSettings',
-  'setEventFlows',
-  'setLayout',
-  'addTab',
-  'updateTab',
-  'addPopupTab',
-  'updatePopupTab',
-  'addBlock',
-  'addField',
-  'addAction',
-  'addRecordAction',
-  'removeNode',
-  'removePopupTab',
-  'convertTemplateToCopy',
-]);
-const FLOW_SURFACE_PLAN_ROOT_UID_ACTIONS = new Set<string>(['removeTab', 'destroyPage']);
-const FLOW_SURFACE_PLAN_SOURCE_TARGET_ACTIONS = new Set<string>(['moveTab', 'movePopupTab', 'moveNode']);
-
-type FlowSurfaceResolvedRef = {
-  ref: string;
-  uid: string;
-  source: 'declared' | 'request' | 'system';
-  kind: string;
-  locator: FlowSurfaceReadLocator;
-  rebind?: boolean;
-  reboundFromUid?: string;
-};
-
-type FlowSurfacePlanSurfaceContext = {
-  surfaceSelector: FlowSurfacePlanSelector;
-  surfaceTarget: FlowSurfaceReadLocator;
-  surfaceResolved: FlowSurfaceResolvedTarget;
-  rawTree: any;
-  publicTree: any;
-  publicNodeMap: Record<string, any>;
-  targetSummary: FlowSurfaceReadTarget;
-  fingerprint: string;
-  uidSet: Set<string>;
-  refMap: Map<string, FlowSurfaceResolvedRef>;
-  requestRefMap: Map<string, FlowSurfaceResolvedRef>;
-};
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -2106,8 +2080,7 @@ export class FlowSurfacesService {
   }
 
   private getDeclaredRefFromNode(node: any) {
-    const declaredRef = _.get(node, ['stepParams', FLOW_SURFACE_INTERNAL_META_KEY, FLOW_SURFACE_DECLARED_REF_KEY]);
-    return typeof declaredRef === 'string' && declaredRef.trim() ? declaredRef.trim() : undefined;
+    return getPlanningDeclaredRefFromNode(node);
   }
 
   private stripInternalSurfaceMetaFromNodeTree<T = any>(node: T): T {
@@ -2211,129 +2184,42 @@ export class FlowSurfacesService {
   }
 
   private normalizePlanSelector(actionName: string, selector: any, fieldName = 'selector'): FlowSurfacePlanSelector {
-    if (!_.isPlainObject(selector)) {
-      throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be an object`);
-    }
-    if (Object.keys(selector).length === 1 && typeof selector.ref === 'string' && selector.ref.trim()) {
-      return {
-        ref: selector.ref.trim(),
-      };
-    }
-    if (Object.keys(selector).length === 1 && _.isPlainObject(selector.locator)) {
-      return {
-        locator: this.normalizeGetTarget(selector.locator),
-      };
-    }
-    throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be either { ref } or { locator }`);
+    return normalizePlanningSelector(
+      actionName,
+      selector,
+      {
+        normalizeGetTarget: (value) => this.normalizeGetTarget(value),
+      },
+      fieldName,
+    );
   }
 
   private normalizeBindRefs(actionName: string, bindRefs: any): FlowSurfaceBindRef[] {
-    if (_.isUndefined(bindRefs)) {
-      return [];
-    }
-    if (!Array.isArray(bindRefs)) {
-      throwBadRequest(`flowSurfaces ${actionName} bindRefs must be an array`);
-    }
-    const seenRefs = new Set<string>();
-    return bindRefs.map((item, index) => {
-      if (!_.isPlainObject(item)) {
-        throwBadRequest(`flowSurfaces ${actionName} bindRefs[${index}] must be an object`);
-      }
-      const ref = String(item.ref || '').trim();
-      if (!ref) {
-        throwBadRequest(`flowSurfaces ${actionName} bindRefs[${index}].ref is required`);
-      }
-      if (FLOW_SURFACE_RESERVED_REFS.has(ref)) {
-        throwBadRequest(`flowSurfaces ${actionName} bindRefs[${index}].ref '${ref}' is reserved`);
-      }
-      if (seenRefs.has(ref)) {
-        throwBadRequest(`flowSurfaces ${actionName} bindRefs[${index}].ref '${ref}' is duplicated`);
-      }
-      seenRefs.add(ref);
-      if (!_.isPlainObject(item.locator)) {
-        throwBadRequest(`flowSurfaces ${actionName} bindRefs[${index}].locator is required`);
-      }
-      return buildDefinedPayload({
-        ref,
-        locator: this.normalizeGetTarget(item.locator),
-        expectedKind: typeof item.expectedKind === 'string' ? String(item.expectedKind).trim() : undefined,
-        rebind: item.rebind === true,
-      }) as FlowSurfaceBindRef;
+    return normalizePlanningBindRefs(actionName, bindRefs, {
+      normalizeGetTarget: (value) => this.normalizeGetTarget(value),
     });
   }
 
   private collectDeclaredRefsFromTree(node: any, carry = new Map<string, FlowSurfaceResolvedRef>()) {
-    if (!node || typeof node !== 'object') {
-      return carry;
-    }
-    if (node.uid) {
-      const declaredRef = this.getDeclaredRefFromNode(node);
-      if (declaredRef && !FLOW_SURFACE_RESERVED_REFS.has(declaredRef)) {
-        const existing = carry.get(declaredRef);
-        if (existing && existing.uid !== node.uid) {
-          throwConflict(
-            `flowSurfaces describeSurface declared ref '${declaredRef}' is duplicated on '${existing.uid}' and '${node.uid}'`,
-            'FLOW_SURFACE_DECLARED_REF_CONFLICT',
-          );
-        }
-        carry.set(declaredRef, {
-          ref: declaredRef,
-          uid: node.uid,
-          source: 'declared',
-          kind: this.buildPlanRefKind(node),
-          locator: {
-            uid: node.uid,
-          },
-        });
-      }
-    }
-    for (const value of Object.values(node.subModels || {})) {
-      _.castArray(value as any).forEach((child) => this.collectDeclaredRefsFromTree(child, carry));
-    }
-    return carry;
+    return collectPlanningDeclaredRefsFromTree(
+      node,
+      {
+        buildPlanRefKind: (currentNode, resolvedKind) => this.buildPlanRefKind(currentNode, resolvedKind),
+      },
+      carry,
+    );
   }
 
   private annotateTreeRef(tree: any, refByUid: Map<string, string>) {
-    const visit = (current: any) => {
-      if (!current || typeof current !== 'object') {
-        return;
-      }
-      const currentRef = current.uid ? refByUid.get(current.uid) : undefined;
-      if (currentRef && typeof current.ref === 'undefined') {
-        current.ref = currentRef;
-      }
-      for (const value of Object.values(current.subModels || {})) {
-        _.castArray(value as any).forEach((child) => visit(child));
-      }
-    };
-    visit(tree);
-    return tree;
+    return annotatePlanningTreeRef(tree, refByUid);
   }
 
   private buildSurfaceRefsObject(refMap: Map<string, FlowSurfaceResolvedRef>) {
-    return Object.fromEntries(
-      Array.from(refMap.entries()).map(([ref, info]) => [
-        ref,
-        {
-          uid: info.uid,
-          kind: info.kind,
-          source: info.source,
-          locator: info.locator,
-        },
-      ]),
-    );
+    return buildPlanningSurfaceRefsObject(refMap);
   }
 
   private buildSurfaceFingerprintRefsObject(refMap: Map<string, FlowSurfaceResolvedRef>) {
-    return Object.fromEntries(
-      Array.from(refMap.entries()).map(([ref, info]) => [
-        ref,
-        {
-          uid: info.uid,
-          kind: info.kind,
-        },
-      ]),
-    );
+    return buildPlanningSurfaceFingerprintRefsObject(refMap);
   }
 
   private buildSurfaceContextFingerprint(
@@ -2354,90 +2240,29 @@ export class FlowSurfacesService {
     actionName: string,
     options: { transaction?: any } = {},
   ): Promise<FlowSurfacePlanSurfaceContext> {
-    const bindRefs = this.normalizeBindRefs(actionName, bindRefsInput);
-    const surfaceSelector = this.normalizePlanSelector(actionName, surfaceSelectorInput, 'surface');
-    let surfaceTarget: FlowSurfaceReadLocator;
-    if ('ref' in surfaceSelector) {
-      const matchedBindRef = bindRefs.find((item) => item.ref === surfaceSelector.ref);
-      if (!matchedBindRef) {
-        throwBadRequest(`flowSurfaces ${actionName} surface.ref '${surfaceSelector.ref}' must also appear in bindRefs`);
-      }
-      surfaceTarget = matchedBindRef.locator;
-    } else {
-      surfaceTarget = surfaceSelector.locator;
-    }
-
-    const surfaceResolved = await this.locator.resolve(surfaceTarget, options);
-    const rawTree = await this.decorateTemplateReadbackTree(
-      this.normalizePopupTreeShape(await this.loadResolvedNode(surfaceResolved, options.transaction)),
-      options.transaction,
-    );
-    const publicTree = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawTree));
-    const publicNodeMap = flattenModel(publicTree);
-    const uidSet = new Set<string>([surfaceResolved.uid, ...Object.keys(publicNodeMap)]);
-    const refMap = this.collectDeclaredRefsFromTree(rawTree);
-    const requestRefMap = new Map<string, FlowSurfaceResolvedRef>();
-
-    for (const bindRef of bindRefs) {
-      const resolved = await this.locator.resolve(bindRef.locator, options);
-      if (!uidSet.has(resolved.uid)) {
-        throwBadRequest(
-          `flowSurfaces ${actionName} bindRefs ref '${bindRef.ref}' must resolve inside the current surface '${surfaceResolved.uid}'`,
-        );
-      }
-      const node = publicNodeMap[resolved.uid] || (resolved.uid === surfaceResolved.uid ? publicTree : undefined);
-      this.assertBindRefKind(actionName, bindRef, node, resolved.kind);
-      const existing = requestRefMap.get(bindRef.ref) || refMap.get(bindRef.ref);
-      if (existing && existing.uid !== resolved.uid && !bindRef.rebind) {
-        throwConflict(
-          `flowSurfaces ${actionName} ref '${bindRef.ref}' is already bound to '${existing.uid}', set rebind=true to move it`,
-          'FLOW_SURFACE_DECLARED_REF_CONFLICT',
-        );
-      }
-      requestRefMap.set(bindRef.ref, {
-        ref: bindRef.ref,
-        uid: resolved.uid,
-        source: 'request',
-        kind: this.buildPlanRefKind(node, resolved.kind),
-        locator: {
-          uid: resolved.uid,
-        },
-        rebind: bindRef.rebind === true,
-        reboundFromUid: existing && existing.uid !== resolved.uid ? existing.uid : undefined,
-      });
-    }
-
-    requestRefMap.forEach((value, key) => refMap.set(key, value));
-    refMap.set(FLOW_SURFACE_SYSTEM_REF, {
-      ref: FLOW_SURFACE_SYSTEM_REF,
-      uid: surfaceResolved.uid,
-      source: 'system',
-      kind: this.buildPlanRefKind(publicTree, surfaceResolved.kind),
-      locator: {
-        uid: surfaceResolved.uid,
+    return buildPlanningSurfaceContext(
+      {
+        actionName,
+        surfaceSelector: this.normalizePlanSelector(actionName, surfaceSelectorInput, 'surface'),
+        bindRefs: this.normalizeBindRefs(actionName, bindRefsInput),
       },
-    });
-
-    const targetSummary = this.buildReadTargetSummary(surfaceTarget, surfaceResolved);
-    const fingerprint = this.buildSurfaceContextFingerprint({
-      surfaceResolved,
-      publicTree,
-      refMap,
-    });
-
-    return {
-      surfaceSelector,
-      surfaceTarget,
-      surfaceResolved,
-      rawTree,
-      publicTree,
-      publicNodeMap,
-      targetSummary,
-      fingerprint,
-      uidSet,
-      refMap,
-      requestRefMap,
-    };
+      {
+        resolveLocator: (target, resolveOptions) => this.locator.resolve(target, resolveOptions),
+        loadResolvedSurfaceTree: async (resolved, transaction) =>
+          this.decorateTemplateReadbackTree(
+            this.normalizePopupTreeShape(await this.loadResolvedNode(resolved, transaction)),
+            transaction,
+          ),
+        stripInternalSurfaceMetaFromNodeTree: (node) => this.stripInternalSurfaceMetaFromNodeTree(node),
+        buildReadTargetSummary: (target, resolved) => this.buildReadTargetSummary(target, resolved),
+        buildSurfaceContextFingerprint: (context) => this.buildSurfaceContextFingerprint(context),
+        buildPlanRefKind: (node, resolvedKind) => this.buildPlanRefKind(node, resolvedKind),
+        assertBindRefKind: (currentActionName, bindRef, node, resolvedKind) =>
+          this.assertBindRefKind(currentActionName, bindRef, node, resolvedKind),
+        collectDeclaredRefsFromTree: (node) => this.collectDeclaredRefsFromTree(node),
+      },
+      options,
+    );
   }
 
   private async buildDescribeSurfaceResponse(
@@ -2515,98 +2340,11 @@ export class FlowSurfacesService {
   }
 
   private normalizePlanSteps(actionName: string, values: FlowSurfaceValidatePlanValues) {
-    if (!_.isPlainObject(values?.plan) || !Array.isArray(values.plan.steps)) {
-      throwBadRequest(`flowSurfaces ${actionName} requires plan.steps[]`);
-    }
-    return values.plan.steps.map((rawStep, index) => {
-      if (!_.isPlainObject(rawStep)) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] must be an object`);
-      }
-      if (
-        Object.prototype.hasOwnProperty.call(rawStep, 'target') ||
-        Object.prototype.hasOwnProperty.call(rawStep, 'source')
-      ) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] must use selectors.target / selectors.source`);
-      }
-      const action = String(rawStep.action || '').trim();
-      if (!action || !FLOW_SURFACE_PLAN_ACTION_SET.has(action)) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action is not supported`);
-      }
-      const selectorsInput = _.isUndefined(rawStep.selectors) ? {} : rawStep.selectors;
-      if (!_.isPlainObject(selectorsInput)) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].selectors must be an object`);
-      }
-      const selectorKeys = Object.keys(selectorsInput || {});
-      if (selectorKeys.some((key) => !['target', 'source'].includes(key))) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].selectors only supports target/source`);
-      }
-      const stepValues = _.isUndefined(rawStep.values) ? {} : rawStep.values;
-      if (!_.isPlainObject(stepValues)) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].values must be an object`);
-      }
-      const forbiddenKeys = ['target', 'uid', 'sourceUid', 'targetUid'].filter((key) =>
-        Object.prototype.hasOwnProperty.call(stepValues, key),
-      );
-      if (forbiddenKeys.length) {
-        throwBadRequest(
-          `flowSurfaces ${actionName} plan.steps[${index}].values must not include ${forbiddenKeys.join(
-            ', ',
-          )}; use selectors`,
-        );
-      }
-      this.validatePlanPayloadShape(actionName, stepValues, `plan.steps[${index}].values`);
-      return {
-        id: typeof rawStep.id === 'string' && rawStep.id.trim() ? rawStep.id.trim() : undefined,
-        action: action as FlowSurfacePlanStep['action'],
-        selectors: buildDefinedPayload({
-          target: _.isUndefined(selectorsInput.target)
-            ? undefined
-            : this.normalizePlanSelector(actionName, selectorsInput.target, `plan.steps[${index}].selectors.target`),
-          source: _.isUndefined(selectorsInput.source)
-            ? undefined
-            : this.normalizePlanSelector(actionName, selectorsInput.source, `plan.steps[${index}].selectors.source`),
-        }),
-        values: _.cloneDeep(stepValues),
-      } satisfies FlowSurfacePlanStep;
+    return normalizePlanningSteps(actionName, values, {
+      normalizeGetTarget: (value) => this.normalizeGetTarget(value),
+      validatePlanPayloadShape: (currentActionName, value, path) =>
+        this.validatePlanPayloadShape(currentActionName, value, path),
     });
-  }
-
-  private async resolvePlanSelectorInContext(
-    actionName: string,
-    selector: FlowSurfacePlanSelector,
-    context: FlowSurfacePlanSurfaceContext,
-    fieldName: string,
-    options: { transaction?: any } = {},
-  ): Promise<FlowSurfaceResolvedRef> {
-    const normalizedSelector = this.normalizePlanSelector(actionName, selector, fieldName);
-    if ('ref' in normalizedSelector) {
-      const ref = context.refMap.get(normalizedSelector.ref);
-      if (!ref) {
-        throwBadRequest(`flowSurfaces ${actionName} ${fieldName} ref '${normalizedSelector.ref}' is not defined`);
-      }
-      return ref;
-    }
-    const resolved = await this.locator.resolve(normalizedSelector.locator, options);
-    if (!context.uidSet.has(resolved.uid)) {
-      throwBadRequest(
-        `flowSurfaces ${actionName} ${fieldName} locator must resolve inside the current surface '${context.surfaceResolved.uid}'`,
-      );
-    }
-    const node =
-      context.publicNodeMap[resolved.uid] ||
-      (resolved.uid === context.surfaceResolved.uid ? context.publicTree : undefined);
-    return {
-      ref: '',
-      uid: resolved.uid,
-      source: 'system',
-      kind: this.buildPlanRefKind(node, resolved.kind),
-      locator: buildDefinedPayload({
-        uid: normalizedSelector.locator.uid,
-        pageSchemaUid: normalizedSelector.locator.pageSchemaUid,
-        tabSchemaUid: normalizedSelector.locator.tabSchemaUid,
-        routeId: normalizedSelector.locator.routeId,
-      }),
-    };
   }
 
   private async compilePlanStep(
@@ -2615,109 +2353,19 @@ export class FlowSurfacesService {
     index: number,
     context: FlowSurfacePlanSurfaceContext,
     options: { transaction?: any } = {},
-  ) {
-    const payload = _.cloneDeep(step.values || {});
-    const compiled: Record<string, any> = {
+  ): Promise<FlowSurfaceCompiledPlanStep> {
+    return compilePlanningStep(
+      actionName,
+      step,
       index,
-      ...(step.id ? { id: step.id } : {}),
-      action: step.action,
-      payload,
-      resolvedSelectors: {},
-      usedRefs: [] as FlowSurfaceResolvedRef[],
-    };
-    const addUsedRef = (refInfo: FlowSurfaceResolvedRef) => {
-      if (refInfo.source === 'request' || refInfo.source === 'declared') {
-        compiled.usedRefs.push(refInfo);
-      }
-      return {
-        uid: refInfo.uid,
-        kind: refInfo.kind,
-        ...(refInfo.ref ? { ref: refInfo.ref } : {}),
-        source: refInfo.source,
-      };
-    };
-
-    if (FLOW_SURFACE_PLAN_TARGET_ACTIONS.has(step.action)) {
-      if (!step.selectors?.target) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
-      }
-      if (step.selectors?.source) {
-        throwBadRequest(
-          `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.source`,
-        );
-      }
-      const target = await this.resolvePlanSelectorInContext(
-        actionName,
-        step.selectors.target,
-        context,
-        `plan.steps[${index}].selectors.target`,
-        options,
-      );
-      compiled.payload = {
-        ...payload,
-        target: {
-          uid: target.uid,
-        },
-      };
-      compiled.resolvedSelectors.target = addUsedRef(target);
-      return compiled;
-    }
-
-    if (FLOW_SURFACE_PLAN_ROOT_UID_ACTIONS.has(step.action)) {
-      if (!step.selectors?.target) {
-        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
-      }
-      if (step.selectors?.source) {
-        throwBadRequest(
-          `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.source`,
-        );
-      }
-      const target = await this.resolvePlanSelectorInContext(
-        actionName,
-        step.selectors.target,
-        context,
-        `plan.steps[${index}].selectors.target`,
-        options,
-      );
-      compiled.payload = {
-        ...payload,
-        uid: target.uid,
-      };
-      compiled.resolvedSelectors.target = addUsedRef(target);
-      return compiled;
-    }
-
-    if (FLOW_SURFACE_PLAN_SOURCE_TARGET_ACTIONS.has(step.action)) {
-      if (!step.selectors?.source || !step.selectors?.target) {
-        throwBadRequest(
-          `flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source and selectors.target`,
-        );
-      }
-      const source = await this.resolvePlanSelectorInContext(
-        actionName,
-        step.selectors.source,
-        context,
-        `plan.steps[${index}].selectors.source`,
-        options,
-      );
-      const target = await this.resolvePlanSelectorInContext(
-        actionName,
-        step.selectors.target,
-        context,
-        `plan.steps[${index}].selectors.target`,
-        options,
-      );
-      compiled.payload = {
-        ...payload,
-        sourceUid: source.uid,
-        targetUid: target.uid,
-      };
-      compiled.resolvedSelectors.source = addUsedRef(source);
-      compiled.resolvedSelectors.target = addUsedRef(target);
-      return compiled;
-    }
-
-    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
+      context,
+      {
+        normalizeGetTarget: (value) => this.normalizeGetTarget(value),
+        resolveLocator: (target, resolveOptions) => this.locator.resolve(target, resolveOptions),
+        buildPlanRefKind: (node, resolvedKind) => this.buildPlanRefKind(node, resolvedKind),
+      },
+      options,
+    );
   }
 
   private async dispatchPlanAction(
@@ -2731,73 +2379,37 @@ export class FlowSurfacesService {
         return this.compose(payload as FlowSurfaceComposeValues, options);
       case 'configure':
         return this.configure(payload as FlowSurfaceConfigureValues, options);
-      case 'updateSettings':
-        return this.updateSettings(payload, options);
-      case 'setEventFlows':
-        return this.setEventFlows(payload, options);
-      case 'setLayout':
-        return this.setLayout(payload, options);
-      case 'addTab':
-        return this.addTab(payload, options);
-      case 'updateTab':
-        return this.updateTab(payload, options);
-      case 'moveTab':
-        return this.moveTab(payload, options);
-      case 'removeTab':
-        return this.removeTab(payload, options);
-      case 'addPopupTab':
-        return this.addPopupTab(payload, options);
-      case 'updatePopupTab':
-        return this.updatePopupTab(payload, options);
-      case 'movePopupTab':
-        return this.movePopupTab(payload, options);
-      case 'removePopupTab':
-        return this.removePopupTab(payload, options);
-      case 'addBlock':
-        return this.addBlock(payload, options);
-      case 'addField':
-        return this.addField(payload, options);
-      case 'addAction':
-        return this.addAction(payload, options);
-      case 'addRecordAction':
-        return this.addRecordAction(payload, options);
-      case 'moveNode':
-        return this.moveNode(payload, options);
-      case 'removeNode':
-        return this.removeNode(payload, options);
       case 'convertTemplateToCopy':
         return this.convertTemplateToCopy(payload, options);
-      case 'destroyPage':
-        return this.destroyPage(payload, options);
       default:
         throwBadRequest(`flowSurfaces executePlan action '${action}' is not supported`);
     }
   }
 
-  private getSurfaceSelectorRequestRef(context: FlowSurfacePlanSurfaceContext) {
-    if (!('ref' in context.surfaceSelector)) {
-      return undefined;
-    }
-    return context.requestRefMap.get(context.surfaceSelector.ref);
+  private serializeCompiledPlanSteps(compiledSteps: FlowSurfaceCompiledPlanStep[]) {
+    return compiledSteps.map((item) => ({
+      index: item.index,
+      ...(item.id ? { id: item.id } : {}),
+      action: item.action,
+      resolvedSelectors: item.resolvedSelectors,
+      payload: item.payload,
+    }));
   }
 
-  private collectRequestRefsToPersist(
-    context: FlowSurfacePlanSurfaceContext,
-    compiledSteps: Array<Record<string, any>>,
-  ): Map<string, FlowSurfaceResolvedRef> {
-    const refs = new Map<string, FlowSurfaceResolvedRef>();
-    const surfaceRequestRef = this.getSurfaceSelectorRequestRef(context);
-    if (surfaceRequestRef) {
-      refs.set(surfaceRequestRef.ref, surfaceRequestRef);
+  private async executeCompiledPlanStep(
+    compiled: FlowSurfaceCompiledPlanStep,
+    execCtx: FlowSurfaceExecutorContext,
+    transaction?: any,
+  ) {
+    if (compiled.mutateOp) {
+      const mutateResults = await executeMutateOps(
+        [compiled.mutateOp],
+        execCtx,
+        async (op, resolvedValues, currentCtx) => this.dispatchOp(op, resolvedValues, currentCtx),
+      );
+      return mutateResults[0]?.result;
     }
-    for (const compiled of compiledSteps) {
-      for (const refInfo of compiled.usedRefs as FlowSurfaceResolvedRef[]) {
-        if (refInfo.source === 'request') {
-          refs.set(refInfo.ref, refInfo);
-        }
-      }
-    }
-    return refs;
+    return this.dispatchPlanAction(compiled.action, compiled.planPayload || compiled.payload, transaction);
   }
 
   private assertRefPersistable(actionName: string, refInfo: FlowSurfaceResolvedRef, node: any) {
@@ -2915,24 +2527,18 @@ export class FlowSurfacesService {
     const context = await this.buildPlanSurfaceContext(values.surface, values.bindRefs, 'validatePlan', options);
     this.assertPlanFingerprint('validatePlan', values.expectedFingerprint, context.fingerprint);
     const steps = this.normalizePlanSteps('validatePlan', values);
-    const compiledSteps = [];
+    const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
     for (const [index, step] of steps.entries()) {
       compiledSteps.push(await this.compilePlanStep('validatePlan', step, index, context, options));
     }
-    const requestRefsToPersist = this.collectRequestRefsToPersist(context, compiledSteps);
+    const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
     await this.assertRequestRefsPersistable('validatePlan', requestRefsToPersist, options.transaction);
 
     return {
       target: context.targetSummary,
       fingerprint: context.fingerprint,
       refs: this.buildSurfaceRefsObject(context.refMap),
-      compiledSteps: compiledSteps.map((item) => ({
-        index: item.index,
-        ...(item.id ? { id: item.id } : {}),
-        action: item.action,
-        resolvedSelectors: item.resolvedSelectors,
-        payload: item.payload,
-      })),
+      compiledSteps: this.serializeCompiledPlanSteps(compiledSteps),
     };
   }
 
@@ -2943,16 +2549,21 @@ export class FlowSurfacesService {
     const context = await this.buildPlanSurfaceContext(values.surface, values.bindRefs, 'executePlan', options);
     this.assertPlanFingerprint('executePlan', values.expectedFingerprint, context.fingerprint);
     const steps = this.normalizePlanSteps('executePlan', values);
-    const compiledSteps = [];
+    const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
     for (const [index, step] of steps.entries()) {
       compiledSteps.push(await this.compilePlanStep('executePlan', step, index, context, options));
     }
-    const requestRefsToPersist = this.collectRequestRefsToPersist(context, compiledSteps);
+    const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
     await this.assertRequestRefsPersistable('executePlan', requestRefsToPersist, options.transaction);
 
     const results = [] as Array<Record<string, any>>;
+    const execCtx: FlowSurfaceExecutorContext = {
+      transaction: options.transaction,
+      refs: new Map(),
+      clientKeyToUid: {},
+    };
     for (const compiled of compiledSteps) {
-      const result = await this.dispatchPlanAction(compiled.action, compiled.payload, options.transaction);
+      const result = await this.executeCompiledPlanStep(compiled, execCtx, options.transaction);
       results.push({
         index: compiled.index,
         ...(compiled.id ? { id: compiled.id } : {}),
@@ -2989,13 +2600,7 @@ export class FlowSurfacesService {
       fingerprintBefore: context.fingerprint,
       surfaceExistsAfterExecute,
       refs: afterDescribe?.refs || {},
-      compiledSteps: compiledSteps.map((item) => ({
-        index: item.index,
-        ...(item.id ? { id: item.id } : {}),
-        action: item.action,
-        resolvedSelectors: item.resolvedSelectors,
-        payload: item.payload,
-      })),
+      compiledSteps: this.serializeCompiledPlanSteps(compiledSteps),
       results,
       persistedRefs,
     };

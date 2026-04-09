@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export { FLOW_SURFACE_PLAN_STEP_ACTIONS } from './planning/action-specs';
+
 export const FLOW_SURFACES_ACTION_NAMES = [
   'catalog',
   'context',
@@ -62,30 +64,6 @@ export const FLOW_SURFACES_READ_ACTION_NAMES = [
   'listTemplates',
   'getTemplate',
 ] as const satisfies readonly FlowSurfacesActionName[];
-
-export const FLOW_SURFACE_PLAN_STEP_ACTIONS = [
-  'compose',
-  'configure',
-  'updateSettings',
-  'setEventFlows',
-  'setLayout',
-  'addTab',
-  'updateTab',
-  'moveTab',
-  'removeTab',
-  'addPopupTab',
-  'updatePopupTab',
-  'movePopupTab',
-  'removePopupTab',
-  'addBlock',
-  'addField',
-  'addAction',
-  'addRecordAction',
-  'moveNode',
-  'removeNode',
-  'convertTemplateToCopy',
-  'destroyPage',
-] as const;
 
 export const FLOW_SURFACE_MUTATE_OP_TYPES = [
   'createMenu',
