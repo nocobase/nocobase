@@ -811,7 +811,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       subModels: {
         fields: [
           {
-            use: (originFieldModel as any)?.use || effectiveFieldModelUse,
+            // 字段赋值编辑器默认应回到 collection field 的可编辑绑定；
+            // 仅在 preferFormItemFieldModel=true（如筛选表单默认值）时，才复用当前表单字段模型。
+            use: effectiveFieldModelUse,
             stepParams: tempFieldStepParams,
             props: {
               placeholder,

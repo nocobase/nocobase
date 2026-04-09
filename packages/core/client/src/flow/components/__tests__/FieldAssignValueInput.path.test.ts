@@ -41,6 +41,23 @@ describe('FieldAssignValueInput path resolve', () => {
     expect(resolveAssignValueFieldPath(model)).toBe(buildCustomFieldTargetPath('custom_name'));
   });
 
+  it('prefers collection default editable binding by default', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'PopupSubTableFieldModel',
+        },
+      },
+    };
+
+    expect(
+      resolveAssignValueFieldModelUse({
+        itemModel: model,
+        fieldModelUse: 'RecordSelectFieldModel',
+      }),
+    ).toBe('RecordSelectFieldModel');
+  });
+
   it('uses custom field model when form item has no bound collection field', () => {
     const model = {
       getStepParams: (flowKey: string, stepKey: string) => {
@@ -60,5 +77,23 @@ describe('FieldAssignValueInput path resolve', () => {
         preferFormItemFieldModel: true,
       }),
     ).toBe('DateTimeFilterFieldModel');
+  });
+
+  it('reuses current form item field model only when explicitly requested', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'PopupSubTableFieldModel',
+        },
+      },
+    };
+
+    expect(
+      resolveAssignValueFieldModelUse({
+        itemModel: model,
+        fieldModelUse: 'RecordSelectFieldModel',
+        preferFormItemFieldModel: true,
+      }),
+    ).toBe('PopupSubTableFieldModel');
   });
 });
