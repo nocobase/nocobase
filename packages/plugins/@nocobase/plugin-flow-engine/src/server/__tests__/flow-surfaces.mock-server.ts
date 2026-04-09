@@ -32,24 +32,35 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
     skipStart = false,
     version,
     beforeInstall,
+    database,
     ...restOptions
   } = options;
 
   let lastError: any;
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    const isolatedDatabaseOptions = createFlowSurfacesIsolatedDatabaseOptions(database, attempt);
     const app = mockServer({
       registerActions: true,
       acl: true,
       plugins,
+      database: isolatedDatabaseOptions,
       ...restOptions,
     });
+    if (isolatedDatabaseOptions?.schema) {
+      const originalDestroy = app.destroy.bind(app);
+      app.destroy = async (destroyOptions: any = {}) => {
+        try {
+          await app.cleanDb();
+        } catch (error) {
+          // ignore teardown cleanup errors and continue destroying the app instance
+        }
+        await originalDestroy(destroyOptions);
+      };
+    }
     try {
       if (!skipInstall) {
-        if (beforeInstall) {
-          await beforeInstall(app);
-        } else {
-          await app.cleanDb();
-        }
+        await app.cleanDb();
+        await beforeInstall?.(app);
         await app.runCommandThrowError('install', '-f');
       }
 
@@ -201,10 +212,35 @@ function isRetriableFlowSurfacesBootstrapError(error: any) {
   return (
     code === '42P01' ||
     code === '23505' ||
+    code === 'XX000' ||
     code === 'ER_NO_SUCH_TABLE' ||
-    /relation .+ does not exist|table .+ doesn't exist/i.test(message) ||
+    /relation .+ does not exist|table .+ doesn't exist|could not open relation with OID/i.test(message) ||
     (constraint === 'pg_type_typname_nsp_index' && /migrations/i.test(sql))
   );
+}
+
+function createFlowSurfacesIsolatedDatabaseOptions(
+  database: MockServerOptions['database'] | undefined,
+  attempt: number,
+) {
+  if (!shouldUseFlowSurfacesIsolatedSchema(database)) {
+    return database;
+  }
+
+  return {
+    ...(database || {}),
+    schema: buildFlowSurfacesSchemaName(attempt),
+  };
+}
+
+function shouldUseFlowSurfacesIsolatedSchema(database: MockServerOptions['database'] | undefined) {
+  const dialect = String(database?.dialect || process.env.DB_DIALECT || '').toLowerCase();
+  return dialect === 'postgres' && !database?.schema;
+}
+
+function buildFlowSurfacesSchemaName(attempt: number) {
+  const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return `fs_${process.pid}_${attempt}_${nonce}`.replace(/[^a-z0-9_]/gi, '_').slice(0, 63);
 }
 
 async function findFlowSurfacesRootUser(app: MockServer) {
