@@ -228,6 +228,7 @@ dataSourceManager.afterAddDataSource((dataSource) => {
 
 ## 相关链接
 
+- [Resource API 速查表](../../api/flow-engine/resource.md) — 客户端 MultiRecordResource / SingleRecordResource 的完整方法签名和用法
 - [ACL 权限控制](./acl.md) — 为资源操作配置角色权限和访问控制
 - [Context 请求上下文](./context.md) — 在请求处理器中获取上下文信息
 - [Middleware 中间件](./middleware.md) — 为请求添加拦截和处理逻辑

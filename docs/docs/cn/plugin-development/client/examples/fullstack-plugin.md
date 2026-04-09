@@ -360,6 +360,12 @@ NewTodoActionModel.registerFlow({
 
 编辑 `src/client-v2/plugin.tsx`。需要做两件事：注册模型，以及把 `todoItems` 注册到客户端数据源。
 
+:::warning 注意
+
+在插件代码里通过 `addCollection` 手动注册数据表是一种**少见的做法**，这里只是为了演示前后端联动的完整流程。实际项目中，数据表通常由用户在 NocoBase 界面上创建和配置，或者通过 API / MCP 等方式管理，不需要在插件客户端代码里显式注册。
+
+:::
+
 通过 `defineCollection` 定义的表是服务端内部表，默认不会出现在区块的数据表选择列表中。通过 `addCollection` 手动注册后，用户在添加区块时就能选到 `todoItems` 了。
 
 ![20260408164023](https://static-docs.nocobase.com/20260408164023.png)
@@ -483,4 +489,5 @@ yarn pm enable @my-project/plugin-data-block
 - [做一个自定义操作按钮](./custom-action) — ActionModel 基础示例
 - [服务端开发概述](../../server) — 服务端插件基础
 - [服务端 → Collections 数据表](../../server/collections) — defineCollection 和 addCollection
+- [Resource API 速查表](../../../api/flow-engine/resource.md) — MultiRecordResource / SingleRecordResource 的完整方法签名
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考

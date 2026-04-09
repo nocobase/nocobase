@@ -92,7 +92,7 @@ async load() {
 }
 ```
 
-详细用法见 [FlowEngine](./flow-engine/index.md)。
+`registerModelLoaders` 使用按需加载（动态导入），只有在模型首次被使用时才会加载对应模块，是推荐的注册方式。详细用法见 [FlowEngine](./flow-engine/index.md)。
 
 ## 插件常用属性
 

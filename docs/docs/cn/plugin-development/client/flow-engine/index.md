@@ -134,13 +134,15 @@ SimpleBlockModel.registerFlow({
 这里面几个关键点：
 
 - **`on: 'beforeRender'`** — 表示这个 Flow 在渲染前执行，配置面板的值会在渲染前写入 `this.props`
-- **`uiSchema`** — 用 JSON Schema 格式定义配置面板的 UI，语法参考 [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema)
+- **`uiSchema`** — 用 JSON Schema 格式定义配置面板的 UI，语法参考 [UI Schema](../../../flow-engine/ui-schema)
 - **`handler(ctx, params)`** — `params` 是用户在配置面板填写的值，通过 `ctx.model.props` 设置到模型上
 - **`defaultParams`** — 配置面板的默认值
 
 ## uiSchema 常用写法
 
-`uiSchema` 基于 JSON Schema，这里列出最常用的几种组件（完整参考见 [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema)）：
+`uiSchema` 基于 JSON Schema，v2 对 uiSchema 语法是兼容的，不过使用场景有限——主要用在 Flow 的配置面板中描述表单 UI。大部分运行时的组件渲染推荐直接用 Antd 组件实现，不需要走 uiSchema。
+
+这里列出最常用的几种组件（完整参考见 [UI Schema](../../../flow-engine/ui-schema)）：
 
 ```ts
 uiSchema: {
@@ -182,6 +184,39 @@ uiSchema: {
 
 每个字段都用 `'x-decorator': 'FormItem'` 包裹，这样会自动带上标题和布局。
 
+## define() 参数说明
+
+`FlowModel.define()` 用于设置模型的元数据，控制它在菜单中的显示方式。插件开发中最常用的是 `label`，不过它还支持更多参数：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `label` | `string \| ReactNode` | 在「添加区块 / 字段 / 操作」菜单中的显示名，支持 `tExpr()` 延迟翻译 |
+| `icon` | `ReactNode` | 菜单中的图标 |
+| `sort` | `number` | 排序权重，数字越小越靠前。默认 `0` |
+| `hide` | `boolean \| (ctx) => boolean` | 是否在菜单中隐藏，支持动态判断 |
+| `group` | `string` | 分组标识，用于归类到特定菜单分组 |
+| `children` | `SubModelItem[] \| (ctx) => SubModelItem[]` | 子菜单项，支持异步函数动态构建 |
+| `toggleable` | `boolean \| (model) => boolean` | 是否支持切换行为（同一父级下唯一） |
+| `searchable` | `boolean` | 子菜单是否启用搜索 |
+
+大多数插件只需要设置 `label`：
+
+```ts
+MyBlockModel.define({
+  label: tExpr('My block'),
+});
+```
+
+如果需要控制排序或隐藏，可以加上 `sort` 和 `hide`：
+
+```ts
+MyBlockModel.define({
+  label: tExpr('My block'),
+  sort: 10,       // 排在后面
+  hide: (ctx) => !ctx.someCondition,  // 条件隐藏
+});
+```
+
 ## FlowModel 基类选择
 
 NocoBase 提供了多个 FlowModel 基类，根据你要扩展的类型选择：
@@ -203,5 +238,6 @@ NocoBase 提供了多个 FlowModel 基类，根据你要扩展的类型选择：
 - [字段扩展](./field) — 用 FieldModel 开发自定义字段
 - [操作扩展](./action) — 用 ActionModel 开发操作按钮
 - [Component vs FlowModel](../component-vs-flow-model) — 不确定该用哪种方式？
+- [FlowDefinition 流定义](../../../flow-engine/definitions/flow-definition.md) — registerFlow 的完整参数说明和事件类型列表
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考
 - [FlowEngine 快速开始](../../../flow-engine/quickstart) — 从零构建一个可编排的按钮组件

@@ -75,4 +75,5 @@ export class PluginFieldSimpleClient extends Plugin {
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
 - [区块扩展](./block) — 自定义区块
 - [操作扩展](./action) — 自定义操作按钮
+- [FlowDefinition 流定义](../../../flow-engine/definitions/flow-definition.md) — registerFlow 的完整参数和事件类型
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — 完整参考

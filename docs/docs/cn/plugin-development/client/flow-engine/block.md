@@ -23,6 +23,8 @@ NocoBase 提供了三个区块基类，根据你的数据需求选择：
 
 通常来说，如果你想要一个开箱即用的表格区块，直接用 `TableBlockModel`——它自带字段列、操作栏、分页、排序等完整能力，是用得最多的基类。如果你需要完全自定义渲染方式（比如用卡片列表、时间线等），用 `CollectionBlockModel` 自己写 `renderComponent`。如果只是展示静态内容或自定义 UI，用 `BlockModel` 就够了。
 
+`DataBlockModel` 的定位比较特殊——它本身不添加任何新属性或方法，类体是空的。它的作用是**分类标识**：继承 `DataBlockModel` 的区块会被归入 UI 上的「数据区块」分组菜单。如果你的区块需要自己管理数据获取逻辑（不走 NocoBase 标准的 Collection 绑定），可以继承 `DataBlockModel`。比如图表插件的 `ChartBlockModel` 就是这样——它用自定义的 `ChartResource` 获取数据，不需要标准的数据表绑定。大多数场景下你不需要直接用 `DataBlockModel`，用 `CollectionBlockModel` 或 `TableBlockModel` 就够了。
+
 ## BlockModel 示例
 
 一个最简单的区块——支持编辑 HTML 内容：
@@ -189,4 +191,6 @@ export class MyPlugin extends Plugin {
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法和 registerFlow
 - [字段扩展](./field) — 自定义字段组件
 - [操作扩展](./action) — 自定义操作按钮
+- [Resource API 速查表](../../../api/flow-engine/resource.md) — MultiRecordResource / SingleRecordResource 的完整方法签名
+- [FlowDefinition 流定义](../../../flow-engine/definitions/flow-definition.md) — registerFlow 的完整参数和事件类型
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — 完整参考

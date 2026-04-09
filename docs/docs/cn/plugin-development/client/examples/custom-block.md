@@ -107,7 +107,7 @@ SimpleBlockModel.registerFlow({
 
 - **`renderComponent()`** — 渲染区块 UI，通过 `this.props.html` 读取 HTML 内容
 - **`define()`** — 设置区块在「添加区块」菜单里的显示名。`tExpr()` 用于延迟翻译，因为 `define()` 在模块加载时就执行了，此时 i18n 还没初始化
-- **`registerFlow()`** — 添加配置面板。`uiSchema` 用 JSON Schema 定义表单（语法参考 [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema)），`handler` 把用户填写的值写入 `ctx.model.props`，`renderComponent()` 就能读到
+- **`registerFlow()`** — 添加配置面板。`uiSchema` 用 JSON Schema 定义表单（语法参考 [UI Schema](../../../../flow-engine/ui-schema)），`handler` 把用户填写的值写入 `ctx.model.props`，`renderComponent()` 就能读到
 
 ## 第三步：添加多语言文件
 
@@ -194,6 +194,6 @@ yarn pm enable @my-project/plugin-simple-block
 - [编写第一个插件](../../write-your-first-plugin) — 从零创建插件骨架
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法和 registerFlow
 - [FlowEngine → 区块扩展](../flow-engine/block) — BlockModel、DataBlockModel、CollectionBlockModel
-- [UI Schema](https://docs.nocobase.com/v1/zh-CN/development/client/ui-schema/what-is-ui-schema) — uiSchema 语法参考
+- [UI Schema](../../../../flow-engine/ui-schema) — uiSchema 语法参考
 - [Component vs FlowModel](../component-vs-flow-model) — 什么时候用 FlowModel
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考

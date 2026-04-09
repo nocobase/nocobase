@@ -83,6 +83,11 @@
         "type": "custom-link",
         "label": "RunJS 插件扩展点",
         "link": "/flow-engine/runjs-extension-points"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Schema",
+        "link": "/flow-engine/ui-schema"
       }
     ]
   },
