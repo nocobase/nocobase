@@ -8,8 +8,8 @@
  */
 
 import { HighlightOutlined, SettingOutlined, BellOutlined } from '@ant-design/icons';
-import { FlowModel } from '@nocobase/flow-engine';
-import { Button, Tooltip } from 'antd';
+import { FlowModel, tExpr } from '@nocobase/flow-engine';
+import { Button, Dropdown, Tooltip } from 'antd';
 import React from 'react';
 
 export class TopbarActionModel extends FlowModel {
@@ -19,11 +19,13 @@ export class TopbarActionModel extends FlowModel {
 
   onClick() {}
 
+  renderWrapper(node: React.ReactNode) {
+    return <Tooltip title={this.context.t(this.tooltip)}>{node}</Tooltip>;
+  }
+
   render() {
-    return (
-      <Tooltip title={this.tooltip}>
-        <Button {...this.props} icon={this.icon} type="link" onClick={this.onClick.bind(this)}></Button>
-      </Tooltip>
+    return this.renderWrapper(
+      <Button {...this.props} icon={this.icon} type="link" onClick={this.onClick.bind(this)}></Button>,
     );
   }
 }
@@ -31,7 +33,7 @@ export class TopbarActionModel extends FlowModel {
 export class UIEditorTopbarActionModel extends TopbarActionModel {
   sort = 0;
   icon = (<HighlightOutlined />);
-  tooltip = 'UI Editor';
+  tooltip = tExpr('UI editor');
 
   onClick() {
     const flowSettings = this.context.engine.flowSettings;
@@ -46,7 +48,7 @@ export class UIEditorTopbarActionModel extends TopbarActionModel {
 export class MessageTopbarActionModel extends TopbarActionModel {
   sort = 200;
   icon = (<BellOutlined />);
-  tooltip = 'Message';
+  tooltip = tExpr('Message');
 
   onClick() {
     console.log('Message');
@@ -56,9 +58,32 @@ export class MessageTopbarActionModel extends TopbarActionModel {
 export class PluginSettingsTopbarActionModel extends TopbarActionModel {
   sort = 100;
   icon = (<SettingOutlined />);
-  tooltip = 'Message';
 
   onClick() {
     console.log('Message');
+  }
+
+  renderWrapper(node: React.ReactNode) {
+    return (
+      <Dropdown
+        menu={{
+          items: [
+            {
+              key: 'plugin-manager',
+              label: 'Plugin manager',
+            },
+            {
+              type: 'divider',
+            },
+            {
+              key: 'system-settings',
+              label: 'System settings',
+            },
+          ],
+        }}
+      >
+        {node}
+      </Dropdown>
+    );
   }
 }
