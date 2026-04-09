@@ -27,7 +27,7 @@ import type {
   EnsureBatchResult,
   EventDefinition,
   FlowModelLoaderEntry,
-  FlowModelLoaderMap,
+  FlowModelLoaderInputMap,
   FlowModelLoaderResult,
   FlowModelOptions,
   IFlowModelRepository,
@@ -483,20 +483,30 @@ export class FlowEngine {
 
   /**
    * Register multiple model loader entries.
-   * @param {FlowModelLoaderMap} loaders Model loader entry map, key is model name, value is the model loader entry
+   * The `extends` field declares parent class(es) for async subclass discovery via `getSubclassesOfAsync`.
+   * It accepts `string | ModelConstructor | (string | ModelConstructor)[]` and is normalized to `string[]` internally.
+   * @param {FlowModelLoaderInputMap} loaders Model loader input map
    * @returns {void}
    * @example
    * flowEngine.registerModelLoaders({
    *   DemoModel: {
+   *     extends: 'BaseModel',
    *     loader: () => import('./models/DemoModel'),
    *   },
    * });
    */
-  public registerModelLoaders(loaders: FlowModelLoaderMap): void {
+  public registerModelLoaders(loaders: FlowModelLoaderInputMap): void {
     let changed = false;
-    for (const [name, entry] of Object.entries(loaders)) {
+    for (const [name, input] of Object.entries(loaders)) {
       if (this._modelLoaders.has(name)) {
         console.warn(`FlowEngine: Model loader with name '${name}' is already registered and will be overwritten.`);
+      }
+      const entry: FlowModelLoaderEntry = {
+        loader: input.loader,
+      };
+      if (input.extends != null) {
+        const raw = Array.isArray(input.extends) ? input.extends : [input.extends];
+        entry.extends = raw.map((item) => (typeof item === 'string' ? item : item.name));
       }
       this._modelLoaders.set(name, entry);
       changed = true;
@@ -842,6 +852,70 @@ export class FlowEngine {
         }
       }
     }
+    return result;
+  }
+
+  /**
+   * Asynchronously get all subclasses of a base class, including those registered via model loaders.
+   * Merges results from already-loaded classes (_modelClasses) and async loader entries with matching `extends` declarations.
+   * Loader-resolved classes are validated with `isInheritedFrom`; mismatches are warned and excluded.
+   * @param {string | ModelConstructor} baseClass Base class name or constructor
+   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] Optional filter function
+   * @returns {Promise<Map<string, ModelConstructor>>} Model classes that are subclasses of the base class
+   */
+  public async getSubclassesOfAsync(
+    baseClass: string | ModelConstructor,
+    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
+  ): Promise<Map<string, ModelConstructor>> {
+    const baseClassName = typeof baseClass === 'string' ? baseClass : baseClass.name;
+
+    // If baseClass is a string and not yet loaded, try to resolve it first
+    let parentModelClass: ModelConstructor | undefined;
+    if (typeof baseClass === 'string') {
+      if (!this.getModelClass(baseClass)) {
+        await this.ensureModel(baseClass);
+      }
+      parentModelClass = this.getModelClass(baseClass);
+    } else {
+      parentModelClass = baseClass;
+    }
+
+    if (!parentModelClass) {
+      return new Map();
+    }
+
+    // Step 1: Collect already-loaded subclasses from _modelClasses
+    const result = this.getSubclassesOf(parentModelClass, filter);
+
+    // Step 2: Find unloaded loaders whose extends includes baseClassName
+    const loaderCandidates: string[] = [];
+    for (const [name, entry] of this._modelLoaders) {
+      if (result.has(name) || this._modelClasses.has(name)) continue;
+      if (entry.extends?.includes(baseClassName)) {
+        loaderCandidates.push(name);
+      }
+    }
+
+    // Step 3: Resolve all matching loaders
+    if (loaderCandidates.length > 0) {
+      await this.ensureModels(loaderCandidates);
+    }
+
+    // Step 4: Validate resolved classes and add to result
+    for (const name of loaderCandidates) {
+      const ModelClass = this._modelClasses.get(name);
+      if (!ModelClass) continue;
+      if (!isInheritedFrom(ModelClass, parentModelClass)) {
+        console.warn(
+          `FlowEngine: Model '${name}' declares extends '${baseClassName}' but does not actually inherit from it. Skipping.`,
+        );
+        continue;
+      }
+      if (!filter || filter(ModelClass, name)) {
+        result.set(name, ModelClass);
+      }
+    }
+
     return result;
   }
 
