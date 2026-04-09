@@ -86,8 +86,15 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
     // 组件卸载时统一清理所有挂起任务，避免异步回调在卸载后继续运行。
     useEffect(() => {
       return () => {
-        clearPendingTimer();
-        clearPendingDisposer();
+        if (pendingTimerRef.current) {
+          clearTimeout(pendingTimerRef.current);
+          pendingTimerRef.current = null;
+        }
+
+        if (pendingDisposerRef.current) {
+          pendingDisposerRef.current();
+          pendingDisposerRef.current = null;
+        }
       };
     }, []);
 
