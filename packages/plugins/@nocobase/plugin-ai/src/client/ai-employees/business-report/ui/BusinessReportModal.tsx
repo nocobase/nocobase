@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Result, Space, Spin, Tabs, Typography } from 'antd';
 import { FileMarkdownOutlined, FilePdfOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design/icons';
-import { ToolCall, useToken } from '@nocobase/client';
+import { ToolCall, useAPIClient, useToken } from '@nocobase/client';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useT } from '../../../locale';
 import { Markdown } from '../../chatbox/markdown/Markdown';
@@ -18,29 +18,31 @@ import {
   buildReportHtml,
   buildReportMarkdown,
   BusinessReport,
+  BusinessReportRenderState,
   downloadTextFile,
   getReportFileName,
   printReport,
 } from './report-utils';
 
-const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> = ({ tool }) => {
+const REPORT_PANEL_HEIGHT = 'calc(100vh - 420px)';
+
+function useBusinessReportState(tool: ToolCall<BusinessReport>) {
   const t = useT();
-  const { message } = App.useApp();
   const { token } = useToken();
+  const api = useAPIClient();
+  const locale = api.auth.getLocale();
   const report = useMemo(
     () =>
       ({
         ...(tool?.args as BusinessReport),
-        generatedAt: (tool?.args as BusinessReport)?.generatedAt || tool?.invokeEndTime,
-      }) as BusinessReport,
+        generatedAt: tool?.invokeEndTime,
+      }) as BusinessReportRenderState,
     [tool?.args, tool?.invokeEndTime],
   );
   const isGenerating = !['done', 'confirmed'].includes(tool.invokeStatus);
   const hasRenderableContent = !!(report?.title || report?.summary || report?.markdown);
-  const [snapshot, setSnapshot] = useState<BusinessReport | null>(null);
+  const [snapshot, setSnapshot] = useState<BusinessReportRenderState | null>(null);
   const [htmlPreview, setHtmlPreview] = useState('');
-  const [printableHtml, setPrintableHtml] = useState('');
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     setSnapshot(null);
@@ -55,7 +57,7 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
   const displayReport = snapshot || report;
   const title = displayReport?.title || t('Business analysis report');
 
-  const markdown = useMemo(() => buildReportMarkdown(displayReport), [displayReport]);
+  const markdown = useMemo(() => buildReportMarkdown(displayReport, { locale }), [displayReport, locale]);
   const fileName = useMemo(() => getReportFileName(displayReport), [displayReport]);
   const previewMessage = useMemo(
     () => ({
@@ -74,25 +76,19 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
     const run = async () => {
       if (!displayReport?.markdown) {
         setHtmlPreview('');
-        setPrintableHtml('');
         return;
       }
 
       try {
-        const [previewHtml, printable] = await Promise.all([
-          buildReportHtml(displayReport),
-          buildReportHtml(displayReport, { printMode: true }),
-        ]);
+        const previewHtml = await buildReportHtml(displayReport, { locale });
         if (cancelled) {
           return;
         }
         setHtmlPreview(previewHtml);
-        setPrintableHtml(printable);
       } catch (error) {
         if (!cancelled) {
           console.error('Failed to build business report HTML:', error);
           setHtmlPreview('');
-          setPrintableHtml('');
         }
       }
     };
@@ -102,7 +98,7 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
     return () => {
       cancelled = true;
     };
-  }, [displayReport]);
+  }, [displayReport, locale]);
 
   if (!hasRenderableContent && isGenerating) {
     return (
@@ -115,13 +111,48 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
   }
 
   if (!displayReport?.title && !displayReport?.markdown && !isGenerating) {
+    return {
+      t,
+      token,
+      displayReport,
+      isGenerating,
+      markdown,
+      fileName,
+      htmlPreview,
+      previewMessage,
+      title,
+      locale,
+      invalid: true,
+    };
+  }
+
+  return {
+    t,
+    token,
+    displayReport,
+    isGenerating,
+    markdown,
+    fileName,
+    htmlPreview,
+    previewMessage,
+    title,
+    locale,
+    invalid: false,
+  };
+}
+
+const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> = ({ tool }) => {
+  const state = useBusinessReportState(tool);
+  const { t, token, previewMessage, htmlPreview, displayReport, isGenerating, title, invalid } = state;
+
+  if (invalid) {
     return <Alert type="error" showIcon message={t('Invalid report definition')} />;
   }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Space wrap align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
-        <div>
+    <div>
+      <div>
+        <div style={{ paddingRight: token.paddingSM }}>
           <Typography.Title level={4} style={{ marginBottom: 4 }}>
             {title}
             {isGenerating ? (
@@ -138,45 +169,10 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
             </Typography.Paragraph>
           ) : null}
         </div>
-        <Space wrap>
-          <Button
-            icon={<FileMarkdownOutlined />}
-            disabled={isGenerating || !displayReport?.markdown}
-            onClick={() => downloadTextFile(`${fileName}.md`, markdown, 'text/markdown;charset=utf-8')}
-          >
-            {t('Download Markdown')}
-          </Button>
-          <Button
-            icon={<FileTextOutlined />}
-            disabled={isGenerating || !displayReport?.markdown || !printableHtml || exporting}
-            onClick={() => downloadTextFile(`${fileName}.html`, printableHtml, 'text/html;charset=utf-8')}
-          >
-            {t('Download HTML')}
-          </Button>
-          <Button
-            type="primary"
-            icon={<FilePdfOutlined />}
-            loading={exporting}
-            disabled={isGenerating || !displayReport?.markdown || exporting}
-            onClick={async () => {
-              setExporting(true);
-              try {
-                if (!(await printReport(displayReport))) {
-                  message.error(t('Popup blocked. Please allow popups and try again.'));
-                }
-              } catch (error) {
-                console.error('Failed to print business report:', error);
-                message.error(t('Popup blocked. Please allow popups and try again.'));
-              } finally {
-                setExporting(false);
-              }
-            }}
-          >
-            {t('Print PDF')}
-          </Button>
-        </Space>
-      </Space>
+      </div>
       <Tabs
+        style={{ height: REPORT_PANEL_HEIGHT }}
+        tabBarStyle={{ marginBottom: token.marginSM }}
         items={[
           {
             key: 'preview',
@@ -184,7 +180,7 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
             children: (
               <div
                 style={{
-                  maxHeight: '70vh',
+                  height: REPORT_PANEL_HEIGHT,
                   overflow: 'auto',
                   padding: 16,
                   border: `1px solid ${token.colorBorderSecondary}`,
@@ -204,7 +200,7 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
             children: (
               <pre
                 style={{
-                  maxHeight: '70vh',
+                  height: REPORT_PANEL_HEIGHT,
                   overflow: 'auto',
                   padding: 16,
                   borderRadius: 12,
@@ -227,7 +223,7 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
                 srcDoc={htmlPreview}
                 style={{
                   width: '100%',
-                  height: '70vh',
+                  height: REPORT_PANEL_HEIGHT,
                   border: `1px solid ${token.colorBorderSecondary}`,
                   borderRadius: token.borderRadiusLG,
                   background: token.colorBgContainer,
@@ -239,6 +235,73 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
           },
         ]}
       />
+    </div>
+  );
+};
+
+export const BusinessReportModalFooter: React.FC<{ tool: ToolCall<BusinessReport> }> = ({ tool }) => {
+  const t = useT();
+  const { message } = App.useApp();
+  const api = useAPIClient();
+  const locale = api.auth.getLocale();
+  const report = useMemo(
+    () =>
+      ({
+        ...(tool?.args as BusinessReport),
+        generatedAt: tool?.invokeEndTime,
+      }) as BusinessReportRenderState,
+    [tool?.args, tool?.invokeEndTime],
+  );
+  const isGenerating = !['done', 'confirmed'].includes(tool.invokeStatus);
+  const markdown = useMemo(() => buildReportMarkdown(report, { locale }), [report, locale]);
+  const fileName = useMemo(() => getReportFileName(report), [report]);
+  const [exporting, setExporting] = useState(false);
+
+  return (
+    <Space wrap style={{ justifyContent: 'flex-end', width: '100%' }}>
+      <Button
+        icon={<FileMarkdownOutlined />}
+        disabled={isGenerating || !report?.markdown}
+        onClick={() => downloadTextFile(`${fileName}.md`, markdown, 'text/markdown;charset=utf-8')}
+      >
+        {t('Download Markdown')}
+      </Button>
+      <Button
+        icon={<FileTextOutlined />}
+        disabled={isGenerating || !report?.markdown || exporting}
+        onClick={async () => {
+          setExporting(true);
+          try {
+            const printableHtml = await buildReportHtml(report, { printMode: true, locale });
+            downloadTextFile(`${fileName}.html`, printableHtml, 'text/html;charset=utf-8');
+          } finally {
+            setExporting(false);
+          }
+        }}
+      >
+        {t('Download HTML')}
+      </Button>
+      <Button
+        type="primary"
+        icon={<FilePdfOutlined />}
+        loading={exporting}
+        disabled={isGenerating || !report?.markdown || exporting}
+        onClick={async () => {
+          setExporting(true);
+          try {
+            if (!(await printReport(report, { locale }))) {
+              message.error(t('Popup blocked. Please allow popups and try again.'));
+            }
+          } catch (error) {
+            console.error('Failed to print business report:', error);
+            message.error(t('Popup blocked. Please allow popups and try again.'));
+          } finally {
+            setExporting(false);
+          }
+        }}
+      >
+        {t('Print PDF')}
+      </Button>
     </Space>
   );
 };

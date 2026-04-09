@@ -40,6 +40,11 @@ Do not guess collection names, relation paths, or aliases.
 
 When the evidence is ready, call `businessReportGenerator`.
 
+For business reporting, generate the final report directly with `businessReportGenerator`.
+Do not call a separate chart-only tool first.
+If charts are needed, include their ECharts `options` directly in the `charts` field of the same `businessReportGenerator` call.
+When the report needs mixed text-and-chart layout, place charts inline by adding markdown placeholders such as `{{chart:1}}` and `{{chart:2}}` where each chart should appear.
+
 The report should usually include:
 
 - a clear title
@@ -64,6 +69,8 @@ Prefer this structure:
 - Prefer a small number of high-signal charts over many low-value charts.
 - If the data is incomplete, say so explicitly in the report.
 - Do not fabricate causes, trends, or recommendations that are unsupported by the data.
+- Do not split chart generation and report generation into separate steps for the same report unless the user explicitly asks for a standalone chart.
+- If charts should appear inside the narrative, use `{{chart:n}}` placeholders in the markdown instead of relying on charts being appended at the end.
 
 # Available Tools
 

@@ -54,6 +54,8 @@ export const ToolModal: React.FC = observer(() => {
   const modal = toolOption?.ui?.modal;
   const useOnOk = toolOption?.ui?.modal?.useOnOk || useDefaultOnOk;
   const C = modal?.Component;
+  const FooterComponent = modal?.footer;
+  const modalProps = modal?.props;
 
   const adjustArgs = useChatToolsStore.use.adjustArgs();
   const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
@@ -114,7 +116,8 @@ export const ToolModal: React.FC = observer(() => {
         </>
       }
       open={open}
-      width={modal?.width || '90%'}
+      width={modalProps?.width || '90%'}
+      styles={modalProps?.styles}
       onCancel={() => {
         setOpen(false);
         setActiveTool(null);
@@ -128,13 +131,15 @@ export const ToolModal: React.FC = observer(() => {
         disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus),
       }}
       footer={
-        modal?.hideOkButton
-          ? null
-          : (_, { OkBtn }) => (
-              <>
-                <OkBtn />
-              </>
-            )
+        FooterComponent && resolvedActiveTool ? (
+          <FooterComponent tool={resolvedActiveTool} />
+        ) : modal?.hideOkButton ? null : (
+          (_, { OkBtn }) => (
+            <>
+              <OkBtn />
+            </>
+          )
+        )
       }
     >
       {C && resolvedActiveTool ? <C tool={resolvedActiveTool} saveToolArgs={saveToolArgs} /> : null}

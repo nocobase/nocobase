@@ -27,14 +27,22 @@ export default defineTools({
   },
   definition: {
     name: 'businessReportGenerator',
-    description: 'Generate a business analysis report with markdown content and ECharts charts.',
+    description:
+      'Generate a complete business analysis report with markdown content and embedded ECharts charts in a single tool call.',
     schema: z.object({
       title: z.string().describe('Report title.'),
       summary: z.string().optional().describe('Short executive summary shown in the report header.'),
       markdown: z
         .string()
-        .describe('Main report body in markdown. Use sections for findings, risks, and recommendations.'),
-      charts: z.array(chartSchema).optional().describe('Charts included in the report.'),
+        .describe(
+          'Main report body in markdown. Use sections for findings, risks, and recommendations. To place a chart inline at a specific position, insert placeholders like {{chart:1}}, {{chart:2}}.',
+        ),
+      charts: z
+        .array(chartSchema)
+        .optional()
+        .describe(
+          'Charts included in the report. Put full ECharts options here directly instead of generating charts in a separate step.',
+        ),
       fileName: z.string().optional().describe('Optional export file name without extension.'),
     }),
   },

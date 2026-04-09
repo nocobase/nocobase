@@ -12,6 +12,7 @@ import { tval } from '@nocobase/utils/client';
 
 const { BusinessReportCard } = lazy(() => import('../ui/BusinessReportCard'), 'BusinessReportCard');
 const { BusinessReportModal } = lazy(() => import('../ui/BusinessReportModal'), 'BusinessReportModal');
+const { BusinessReportModalFooter } = lazy(() => import('../ui/BusinessReportModal'), 'BusinessReportModalFooter');
 
 export const businessReportGeneratorTool: [string, ToolsOptions] = [
   'businessReportGenerator',
@@ -21,7 +22,19 @@ export const businessReportGeneratorTool: [string, ToolsOptions] = [
       modal: {
         title: tval('Business analysis report', { ns: 'ai' }),
         hideOkButton: true,
-        width: '92%',
+        props: {
+          width: '92%',
+          styles: {
+            body: {
+              height: 'calc(100vh - 240px)',
+              maxHeight: 'calc(100vh - 240px)',
+              overflow: 'hidden',
+              paddingTop: 16,
+              paddingBottom: 0,
+            },
+          },
+        },
+        footer: BusinessReportModalFooter,
         Component: BusinessReportModal,
       },
     },

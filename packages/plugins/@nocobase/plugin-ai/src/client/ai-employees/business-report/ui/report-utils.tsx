@@ -28,7 +28,14 @@ export type BusinessReport = {
   markdown: string;
   charts?: BusinessReportChart[];
   fileName?: string;
-  generatedAt?: string;
+};
+
+export type BusinessReportRenderState = BusinessReport & {
+  generatedAt?: string | number | Date;
+};
+
+type ReportRenderOptions = {
+  locale?: string;
 };
 
 export function getReportFileName(report: BusinessReport) {
@@ -36,9 +43,9 @@ export function getReportFileName(report: BusinessReport) {
   return raw.replace(/[\\/:*?"<>|]+/g, '-').trim();
 }
 
-export function buildReportMarkdown(report: BusinessReport) {
+export function buildReportMarkdown(report: BusinessReportRenderState, options?: ReportRenderOptions) {
   const parts: string[] = [`# ${report.title}`];
-  const generatedAt = formatReportGeneratedAt(report.generatedAt);
+  const generatedAt = formatReportGeneratedAt(report.generatedAt, options?.locale);
 
   if (generatedAt) {
     parts.push(`_${i18n.t('Generated at')}: ${generatedAt}_`);
@@ -49,10 +56,10 @@ export function buildReportMarkdown(report: BusinessReport) {
   }
 
   if (report.markdown?.trim()) {
-    parts.push(report.markdown.trim());
+    parts.push(insertChartsIntoMarkdown(report.markdown.trim(), report.charts || []));
   }
 
-  (report.charts || []).forEach((chart, index) => {
+  getRemainingCharts(report.markdown, report.charts || []).forEach((chart, index) => {
     parts.push(`## ${chart.title || `Chart ${index + 1}`}`);
     if (chart.summary) {
       parts.push(chart.summary);
@@ -61,6 +68,50 @@ export function buildReportMarkdown(report: BusinessReport) {
   });
 
   return parts.filter(Boolean).join('\n\n');
+}
+
+function insertChartsIntoMarkdown(markdown: string, charts: BusinessReportChart[]) {
+  if (!markdown || !charts.length) {
+    return markdown;
+  }
+
+  return markdown.replace(/\{\{\s*chart\s*:\s*(\d+)\s*\}\}/gi, (match, rawIndex) => {
+    const index = Number(rawIndex) - 1;
+    const chart = charts[index];
+    if (!chart) {
+      return match;
+    }
+    return buildChartMarkdownBlock(chart, index);
+  });
+}
+
+function getRemainingCharts(markdown: string | undefined, charts: BusinessReportChart[]) {
+  if (!charts.length) {
+    return [];
+  }
+
+  const usedIndexes = new Set<number>();
+  const placeholderPattern = /\{\{\s*chart\s*:\s*(\d+)\s*\}\}/gi;
+  const source = markdown || '';
+  let match: RegExpExecArray | null;
+
+  while ((match = placeholderPattern.exec(source))) {
+    const index = Number(match[1]) - 1;
+    if (index >= 0 && index < charts.length) {
+      usedIndexes.add(index);
+    }
+  }
+
+  return charts.filter((_, index) => !usedIndexes.has(index));
+}
+
+function buildChartMarkdownBlock(chart: BusinessReportChart, index: number) {
+  const parts = [`## ${chart.title || `Chart ${index + 1}`}`];
+  if (chart.summary) {
+    parts.push(chart.summary);
+  }
+  parts.push(`<echarts>${JSON.stringify(chart.options, null, 2)}</echarts>`);
+  return parts.join('\n\n');
 }
 
 function buildReportBodyHtml(markdown: string) {
@@ -103,11 +154,14 @@ function buildReportBodyHtml(markdown: string) {
   return { body, charts };
 }
 
-export async function buildReportHtml(report: BusinessReport, options?: { autoPrint?: boolean; printMode?: boolean }) {
-  const markdown = buildReportMarkdown(report);
+export async function buildReportHtml(
+  report: BusinessReportRenderState,
+  options?: { autoPrint?: boolean; printMode?: boolean; locale?: string },
+) {
+  const markdown = buildReportMarkdown(report, { locale: options?.locale });
   const { body, charts } = buildReportBodyHtml(markdown);
   const printMode = options?.printMode === true;
-  const htmlLang = getReportHtmlLang(report);
+  const htmlLang = getReportHtmlLang(options?.locale, report);
   const fontFamily = getReportFontFamily(htmlLang);
   const bodyBackground = printMode ? '#ffffff' : '#f5f7fb';
   const shellStyles = printMode
@@ -201,12 +255,12 @@ export function downloadTextFile(filename: string, content: string, mimeType: st
   URL.revokeObjectURL(url);
 }
 
-export async function printReport(report: BusinessReport) {
+export async function printReport(report: BusinessReportRenderState, options?: ReportRenderOptions) {
   if (typeof window === 'undefined') {
     return false;
   }
 
-  const html = await buildReportHtml(report, { autoPrint: true, printMode: true });
+  const html = await buildReportHtml(report, { autoPrint: true, printMode: true, locale: options?.locale });
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -300,7 +354,7 @@ function replaceChartPlaceholders(body: string, chartImages: Map<string, string>
 }
 
 function normalizeChartOptionsForExport(options: Record<string, any>) {
-  const normalized = {
+  const normalized: Record<string, any> = {
     ...options,
     animation: false,
     toolbox: { show: false },
@@ -357,50 +411,75 @@ function safeParseChartOptions(raw: string) {
   return null;
 }
 
-function getReportHtmlLang(report: BusinessReport) {
-  const currentLanguage = normalizeLanguageTag(i18n.language);
+function getReportHtmlLang(locale: string | undefined, _report: BusinessReport) {
+  const currentLanguage = normalizeLanguageTag(locale);
   if (currentLanguage) {
     return currentLanguage;
-  }
-
-  const sample = [report.title, report.summary, report.markdown].filter(Boolean).join('\n');
-  if (containsJapanese(sample)) {
-    return 'ja-JP';
-  }
-  if (containsKorean(sample)) {
-    return 'ko-KR';
-  }
-  if (containsChinese(sample)) {
-    return 'zh-CN';
   }
   return 'en-US';
 }
 
-function formatReportGeneratedAt(value?: string) {
-  if (!value) {
+function formatReportGeneratedAt(value: string | number | Date | undefined, locale?: string) {
+  const parsed = parseReportGeneratedAt(value);
+  if (!parsed) {
     return null;
   }
 
-  const parsed = new Date(value);
-  if (!Number.isNaN(parsed.getTime())) {
-    const locale = normalizeLanguageTag(i18n.language) || 'en-US';
-    try {
-      return new Intl.DateTimeFormat(locale, {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }).format(parsed);
-    } catch (error) {
-      console.error('Failed to format business report generatedAt:', error);
-      return parsed.toLocaleString();
-    }
+  const normalizedLocale = normalizeLanguageTag(locale) || 'en-US';
+  try {
+    return new Intl.DateTimeFormat(normalizedLocale, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(parsed);
+  } catch (error) {
+    console.error('Failed to format business report generatedAt:', error);
+    return parsed.toLocaleString();
+  }
+}
+
+function parseReportGeneratedAt(value?: string | number | Date) {
+  if (value == null || value === '') {
+    return null;
   }
 
-  return value;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    return parseTimestampNumber(value);
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^\d+$/.test(trimmed)) {
+    return parseTimestampNumber(Number(trimmed));
+  }
+
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  return null;
+}
+
+function parseTimestampNumber(value: number) {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const normalized = value < 1e12 ? value * 1000 : value;
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function getReportFontFamily(lang: string) {
@@ -425,36 +504,12 @@ function normalizeLanguageTag(input?: string) {
     return null;
   }
 
-  const lower = value.toLowerCase();
-  if (lower === 'zh' || lower.startsWith('zh-cn') || lower.startsWith('zh-hans')) {
-    return 'zh-CN';
+  try {
+    return Intl.getCanonicalLocales(value)[0] || null;
+  } catch (error) {
+    if (/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(value)) {
+      return value;
+    }
+    return null;
   }
-  if (lower.startsWith('zh-tw') || lower.startsWith('zh-hk') || lower.startsWith('zh-hant')) {
-    return 'zh-TW';
-  }
-  if (lower === 'ja' || lower.startsWith('ja-')) {
-    return 'ja-JP';
-  }
-  if (lower === 'ko' || lower.startsWith('ko-')) {
-    return 'ko-KR';
-  }
-  if (lower === 'en' || lower.startsWith('en-')) {
-    return 'en-US';
-  }
-  if (/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(value)) {
-    return value;
-  }
-  return null;
-}
-
-function containsChinese(value: string) {
-  return /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(value);
-}
-
-function containsJapanese(value: string) {
-  return /[\u3040-\u30ff]/.test(value);
-}
-
-function containsKorean(value: string) {
-  return /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(value);
 }
