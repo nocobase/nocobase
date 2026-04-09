@@ -29,7 +29,7 @@ else
   STATUS_EMOJI="❌"
 fi
 
-TITLE="版本 ${VERSION} Release 结果通知"
+TITLE="NocoBase 版本 ${VERSION} Release 结果通知"
 
 PAYLOAD=$(cat <<EOF
 {
