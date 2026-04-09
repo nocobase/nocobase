@@ -223,6 +223,40 @@ describe('flowSurfaces catalog smart helpers', () => {
     expect(options.getNodeContract).toHaveBeenCalledTimes(1);
   });
 
+  it('should keep popup block resourceBindings on light projections', () => {
+    const options = createProjectorOptions();
+
+    const projected = projectCatalogItem(
+      {
+        key: 'table',
+        label: 'Table',
+        use: 'TableBlockModel',
+        kind: 'block',
+        resourceBindings: [
+          {
+            key: 'currentCollection',
+            label: 'Current collection',
+          },
+        ],
+      },
+      buildCatalogExpandFlags([]),
+      options,
+    );
+
+    expect(projected).toEqual({
+      key: 'table',
+      label: 'Table',
+      use: 'TableBlockModel',
+      kind: 'block',
+      resourceBindings: [
+        {
+          key: 'currentCollection',
+          label: 'Current collection',
+        },
+      ],
+    });
+  });
+
   it('should lazily load contract fields for items and nodes', () => {
     const options = createProjectorOptions();
 

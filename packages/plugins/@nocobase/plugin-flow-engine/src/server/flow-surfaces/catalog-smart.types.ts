@@ -84,6 +84,14 @@ export type FlowSurfaceCatalogProjectedItem = FlowSurfaceCatalogItem & {
   type?: string;
 };
 
+export type FlowSurfaceCatalogProjectableItem = Pick<FlowSurfaceCatalogItem, 'key' | 'label' | 'use' | 'kind'> &
+  Partial<FlowSurfaceCatalogItem> &
+  Record<string, any>;
+
+export type FlowSurfaceFieldCatalogProjectableItem = Pick<FlowSurfaceCatalogItem, 'key' | 'label' | 'use'> &
+  Partial<Omit<FlowSurfaceCatalogItem, 'kind'>> &
+  Record<string, any>;
+
 export type FlowSurfaceFieldCatalogLightCandidate = FlowSurfaceCatalogProjectedItem;
 
 export type FlowSurfaceCatalogProjectItemOptions = {

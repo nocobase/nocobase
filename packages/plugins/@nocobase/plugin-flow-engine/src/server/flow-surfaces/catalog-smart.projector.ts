@@ -15,7 +15,9 @@ import type {
   FlowSurfaceCatalogNodeProjectInput,
   FlowSurfaceCatalogNodeProjectResult,
   FlowSurfaceCatalogProjectItemOptions,
+  FlowSurfaceCatalogProjectableItem,
   FlowSurfaceCatalogProjectedItem,
+  FlowSurfaceFieldCatalogProjectableItem,
   FlowSurfaceFieldCatalogLightCandidate,
 } from './catalog-smart.types';
 
@@ -37,8 +39,8 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'type',
 ] as const;
 
-function pickLightCatalogItem(item: Record<string, any>): FlowSurfaceCatalogProjectedItem {
-  const projected = _.pick(item, LIGHT_CATALOG_ITEM_KEYS);
+function pickLightCatalogItem(item: FlowSurfaceCatalogProjectableItem): FlowSurfaceCatalogProjectedItem {
+  const projected = _.pick(item, LIGHT_CATALOG_ITEM_KEYS) as FlowSurfaceCatalogProjectedItem;
 
   if (item.resourceBindings?.length) {
     projected.resourceBindings = item.resourceBindings;
@@ -48,7 +50,7 @@ function pickLightCatalogItem(item: Record<string, any>): FlowSurfaceCatalogProj
 }
 
 function createNodeContractResolver(
-  item: Record<string, any>,
+  item: Pick<FlowSurfaceCatalogProjectableItem, 'use'>,
   options: Pick<FlowSurfaceCatalogProjectItemOptions, 'getNodeContract'>,
 ) {
   let loaded = false;
@@ -86,7 +88,9 @@ export function buildCatalogItemOptionalFields(
   return _.pickBy(projected, (value) => !_.isUndefined(value));
 }
 
-export function buildFieldCatalogLightCandidate(item: Record<string, any>): FlowSurfaceFieldCatalogLightCandidate {
+export function buildFieldCatalogLightCandidate(
+  item: FlowSurfaceFieldCatalogProjectableItem,
+): FlowSurfaceFieldCatalogLightCandidate {
   return pickLightCatalogItem({
     ...item,
     kind: 'field',
@@ -94,7 +98,7 @@ export function buildFieldCatalogLightCandidate(item: Record<string, any>): Flow
 }
 
 export function projectCatalogItem(
-  item: Record<string, any>,
+  item: FlowSurfaceCatalogProjectableItem,
   expand: FlowSurfaceCatalogExpandFlags,
   options: FlowSurfaceCatalogProjectItemOptions,
 ): FlowSurfaceCatalogProjectedItem {
@@ -133,7 +137,7 @@ export function projectCatalogItem(
 }
 
 export function expandFieldCatalogCandidate(
-  item: Record<string, any>,
+  item: FlowSurfaceFieldCatalogProjectableItem,
   expand: FlowSurfaceCatalogExpandFlags,
   options: FlowSurfaceCatalogProjectItemOptions,
 ): FlowSurfaceCatalogProjectedItem {

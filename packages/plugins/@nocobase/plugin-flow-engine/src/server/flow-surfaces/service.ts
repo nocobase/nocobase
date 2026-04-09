@@ -96,6 +96,7 @@ import {
   normalizeCatalogSections as normalizeSmartCatalogSections,
   projectCatalogItem as projectSmartCatalogItem,
   projectCatalogNode as projectSmartCatalogNode,
+  type FlowSurfaceCatalogProjectableItem,
 } from './catalog-smart';
 import { compileComposeExecutionPlan } from './compose-compiler';
 import { executeComposeRuntime } from './compose-runtime';
@@ -1086,7 +1087,10 @@ export class FlowSurfacesService {
     });
   }
 
-  private projectCatalogItem(item: Record<string, any>, expand: ReturnType<typeof buildCatalogExpandFlags>) {
+  private projectCatalogItem(
+    item: FlowSurfaceCatalogProjectableItem,
+    expand: ReturnType<typeof buildCatalogExpandFlags>,
+  ) {
     return projectSmartCatalogItem(item, expand, {
       getEditableDomains: this.getEditableDomains.bind(this),
       getConfigureOptions: getConfigureOptionsForCatalogItem,
@@ -9496,7 +9500,7 @@ export class FlowSurfacesService {
       includeConfigureOptions?: boolean;
       includeContracts?: boolean;
     } = {},
-  ) {
+  ): Promise<FlowSurfaceCatalogProjectableItem[]> {
     const resolved = await this.locator.resolve(target, { transaction: options.transaction });
     const container = await this.surfaceContext
       .resolveFieldContainer(resolved.uid, options.transaction)
@@ -9790,7 +9794,7 @@ export class FlowSurfacesService {
     requireDefaultTargetUid?: boolean;
     includeConfigureOptions?: boolean;
     includeContracts?: boolean;
-  }) {
+  }): FlowSurfaceCatalogProjectableItem[] {
     const containerKind = normalizeFieldContainerKind(input.ownerUse);
     const targetPrefix = input.multiTarget && input.targetLabel ? `${input.targetLabel} / ` : '';
     const fieldMenuEntries = this.buildFieldMenuCandidates({
@@ -9800,7 +9804,7 @@ export class FlowSurfacesService {
     if (fieldMenuEntries.length) {
       const semanticEntries = fieldMenuEntries.flatMap((item) => {
         const label = `${targetPrefix}${item.label}`;
-        const entries: Array<Record<string, any>> = [];
+        const entries: FlowSurfaceCatalogProjectableItem[] = [];
         const pushEntry = (semantic: { renderer?: 'js'; type?: 'jsColumn' | 'jsItem' } = {}) => {
           if (semantic.renderer === 'js' && !item.supportsJs) {
             return;
@@ -9903,7 +9907,7 @@ export class FlowSurfacesService {
     requireDefaultTargetUid?: boolean;
     includeConfigureOptions?: boolean;
     includeContracts?: boolean;
-  }) {
+  }): FlowSurfaceCatalogProjectableItem[] {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     const getFields = (targetCollection: any) => getCollectionFields(targetCollection);
     const isFilterFieldVisible = (field: any) => getFieldFilterable(field) !== false && !!getFieldInterface(field);
@@ -9954,7 +9958,7 @@ export class FlowSurfacesService {
       .filter((item) => !!getFieldInterface(item?.field))
       .flatMap((item) => {
         const label = `${targetPrefix}${item.label}`;
-        const entries: Array<Record<string, any>> = [];
+        const entries: FlowSurfaceCatalogProjectableItem[] = [];
         const pushEntry = (semantic: { renderer?: 'js'; type?: 'jsColumn' | 'jsItem' } = {}) => {
           const capabilityField = this.resolvePreferredFieldForCapability({
             containerUse: input.ownerUse,
