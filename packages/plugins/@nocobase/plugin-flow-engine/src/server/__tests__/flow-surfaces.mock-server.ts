@@ -8,12 +8,13 @@
  */
 
 import { PluginManager } from '@nocobase/server';
-import { createMockServer, MockServer, type MockServerOptions } from '@nocobase/test';
+import { mockServer, MockServer, type MockServerOptions } from '@nocobase/test';
 import qs from 'qs';
 import { FLOW_SURFACES_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGIN_INSTALLS } from './flow-surfaces.test-plugins';
 
 type FlowSurfacesMockServerOptions = MockServerOptions & {
   enabledPluginAliases?: readonly string[];
+  knownPluginAliases?: readonly string[];
 };
 
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
@@ -25,42 +26,49 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
       : undefined;
   const {
     enabledPluginAliases = pluginAliasesFromOptions || FLOW_SURFACES_TEST_PLUGINS,
+    knownPluginAliases = enabledPluginAliases,
     plugins = FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
     skipInstall = false,
     skipStart = false,
+    version,
+    beforeInstall,
     ...restOptions
   } = options;
 
   let lastError: any;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    let app: MockServer | undefined;
+    const app = mockServer({
+      registerActions: true,
+      acl: true,
+      plugins,
+      ...restOptions,
+    });
     try {
-      app = await createMockServer({
-        registerActions: true,
-        acl: true,
-        plugins,
-        skipInstall,
-        skipStart: true,
-        beforeInstall: async (app) => {
-          await app.cleanDb();
-        },
-        ...restOptions,
-      });
-
       if (!skipInstall) {
-        await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases);
+        if (beforeInstall) {
+          await beforeInstall(app);
+        } else {
+          await app.cleanDb();
+        }
+        await app.runCommandThrowError('install', '-f');
       }
 
-      if (!skipInstall && !skipStart) {
+      if (version) {
+        await app.version.update(version);
+      }
+
+      if (!skipInstall) {
+        await syncFlowSurfacesEnabledPlugins(app, enabledPluginAliases, knownPluginAliases);
+      }
+
+      if (!skipStart) {
         await app.runCommandThrowError('start');
       }
 
       return app;
     } catch (error: any) {
       lastError = error;
-      if (app) {
-        await app.destroy().catch(() => undefined);
-      }
+      await app.destroy().catch(() => undefined);
       if (!isRetriableFlowSurfacesBootstrapError(error) || attempt > 1) {
         throw error;
       }

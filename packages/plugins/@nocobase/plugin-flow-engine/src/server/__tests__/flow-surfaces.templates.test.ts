@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
-import { loginFlowSurfacesRootAgent, syncFlowSurfacesEnabledPlugins } from './flow-surfaces.mock-server';
+import { MockServer } from '@nocobase/test';
+import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 import {
   addBlockData,
   addFieldData,
@@ -33,17 +33,10 @@ describe('flowSurfaces templates', () => {
   let rootAgent: any;
 
   beforeAll(async () => {
-    app = await createMockServer({
-      registerActions: true,
-      acl: true,
+    app = await createFlowSurfacesMockServer({
       plugins: FLOW_SURFACES_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
-      skipStart: true,
-      beforeInstall: async (app) => {
-        await app.cleanDb();
-      },
+      enabledPluginAliases: FLOW_SURFACES_TEMPLATE_TEST_PLUGINS,
     });
-    await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_TEMPLATE_TEST_PLUGINS, FLOW_SURFACES_TEMPLATE_TEST_PLUGINS);
-    await app.runCommandThrowError('start');
     expect(app.pm.get('ui-templates')).toBeTruthy();
     rootAgent = await loginFlowSurfacesRootAgent(app);
     await setupFixtureCollections(rootAgent);
