@@ -353,7 +353,7 @@ const renderMenuNodeWithModel = (
   return dom;
 };
 
-export const AdminLayoutComponent = observer((props) => {
+export const AdminLayoutComponent = observer((props: any) => {
   const flowEngine = useFlowEngine();
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
   const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
@@ -565,7 +565,7 @@ export const AdminLayoutComponent = observer((props) => {
               className={resetStyle}
               location={location}
               route={route}
-              actionsRender={actionsRender}
+              actionsRender={props.actionsRender || actionsRender}
               logo={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   {AppsComponent && <AppsComponent />}

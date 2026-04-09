@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './actions';
-export * from './base';
-export * from './blocks';
-export * from './fields';
-export * from './topbar';
+export * from './TopbarActionModel';

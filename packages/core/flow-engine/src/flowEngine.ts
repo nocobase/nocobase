@@ -845,6 +845,13 @@ export class FlowEngine {
     return result;
   }
 
+  public async getSubclassesOfAsync(
+    baseClass: string | ModelConstructor,
+    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
+  ): Promise<Map<string, ModelConstructor>> {
+    return this.getSubclassesOf(baseClass, filter);
+  }
+
   /**
    * Create and register a model instance.
    * If an instance with the same UID exists, returns the existing instance.

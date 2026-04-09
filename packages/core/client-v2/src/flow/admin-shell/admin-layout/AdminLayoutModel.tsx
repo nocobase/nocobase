@@ -8,7 +8,7 @@
  */
 
 import { define, observable, reaction } from '@formily/reactive';
-import { type FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { type FlowEngine, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import type { NocoBaseDesktopRoute } from '../../../flow-compat';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../AdminLayoutRouteCoordinator';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
@@ -20,6 +20,7 @@ import {
 } from './AdminLayoutMenuUtils';
 import { AdminLayoutComponent } from './AdminLayoutComponent';
 import React from 'react';
+import { TopbarActionModel } from '../../models/topbar/TopbarActionModel';
 
 export type AdminLayoutStructure = {
   subModels: {
@@ -271,6 +272,28 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
     return <AdminLayoutComponent {...this.props} />;
   }
 }
+
+AdminLayoutModel.registerFlow({
+  key: 'topbarAction',
+  steps: {
+    step1: {
+      handler: async (ctx, params) => {
+        const topbarActionModels = await ctx.engine.getSubclassesOfAsync('TopbarActionModel');
+        const actions = [...topbarActionModels.keys()]
+          .map<TopbarActionModel>((name) => {
+            return ctx.engine.createModel({
+              use: name,
+              uid: `topbar-action-${name}`,
+            });
+          })
+          .sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        ctx.model.props.actionsRender = () => {
+          return actions.map((action) => <FlowModelRenderer key={action.uid} model={action} />);
+        };
+      },
+    },
+  },
+});
 
 /**
  * 获取或创建 admin-layout host model。
