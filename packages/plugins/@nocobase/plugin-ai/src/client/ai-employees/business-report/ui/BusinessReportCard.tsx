@@ -112,7 +112,7 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   return (
     <Card
       hoverable={isReady}
-      style={{ margin: '16px 0', cursor: isReady ? 'pointer' : 'not-allowed' }}
+      style={{ margin: '16px 0', cursor: isReady ? 'pointer' : isGenerating ? 'progress' : 'default' }}
       onClick={() => {
         if (!isReady) {
           return;

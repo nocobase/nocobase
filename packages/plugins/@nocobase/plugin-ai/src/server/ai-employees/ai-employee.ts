@@ -583,6 +583,9 @@ export class AIEmployee {
               },
               invokeStatus: 'done',
               status: chunks.body?.toolCallResult?.status,
+              invokeStartTime: chunks.body?.toolCallResult?.invokeStartTime,
+              invokeEndTime: chunks.body?.toolCallResult?.invokeEndTime,
+              content: chunks.body?.toolCallResult?.content,
             });
           } else if (chunks.action === 'beforeSendToolMessage') {
             const { messageId, messages } = chunks.body ?? {};
@@ -604,6 +607,9 @@ export class AIEmployee {
                   },
                   invokeStatus: 'confirmed',
                   status: toolCallResult?.status,
+                  invokeStartTime: toolCallResult?.invokeStartTime,
+                  invokeEndTime: toolCallResult?.invokeEndTime,
+                  content: toolCallResult?.content,
                 });
               }
             }
@@ -1712,11 +1718,17 @@ export class ChatStreamProtocol {
         toolCall,
         invokeStatus,
         status,
+        invokeStartTime,
+        invokeEndTime,
+        content,
         interruptAction,
       }: {
         toolCall: { messageId: string; id: string; name: string; willInterrupt: boolean };
         invokeStatus: string;
         status?: string;
+        invokeStartTime?: string | Date | null;
+        invokeEndTime?: string | Date | null;
+        content?: unknown;
         interruptAction?: {
           order: number;
           description: string;
@@ -1729,6 +1741,9 @@ export class ChatStreamProtocol {
             toolCall,
             invokeStatus,
             status,
+            invokeStartTime,
+            invokeEndTime,
+            content,
             interruptAction,
           },
         });

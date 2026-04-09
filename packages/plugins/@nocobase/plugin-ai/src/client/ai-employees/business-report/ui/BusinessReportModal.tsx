@@ -58,42 +58,71 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>) {
       }) as BusinessReportRenderState,
     [tool?.args, tool?.invokeEndTime],
   );
+  const reportSignature = useMemo(
+    () =>
+      JSON.stringify({
+        title: report?.title || '',
+        summary: report?.summary || '',
+        markdown: report?.markdown || '',
+        charts: report?.charts || [],
+        generatedAt: report?.generatedAt || null,
+      }),
+    [report],
+  );
   const isGenerating = !['done', 'confirmed'].includes(tool.invokeStatus);
   const hasRenderableContent = !!(report?.title || report?.summary || report?.markdown);
   const [snapshot, setSnapshot] = useState<BusinessReportRenderState | null>(null);
   const [htmlPreview, setHtmlPreview] = useState('');
+  const [snapshotSignature, setSnapshotSignature] = useState<string | null>(null);
 
   useEffect(() => {
     setSnapshot(null);
+    setSnapshotSignature(null);
   }, [tool.id]);
 
   useEffect(() => {
-    if (tool.status === 'success' && tool.invokeStatus === 'done' && hasRenderableContent) {
+    if (
+      tool.status === 'success' &&
+      tool.invokeStatus === 'done' &&
+      hasRenderableContent &&
+      reportSignature !== snapshotSignature
+    ) {
       setSnapshot(report);
+      setSnapshotSignature(reportSignature);
     }
-  }, [hasRenderableContent, report, tool.invokeStatus, tool.status]);
+  }, [hasRenderableContent, report, reportSignature, snapshotSignature, tool.invokeStatus, tool.status]);
 
   const displayReport = snapshot || report;
+  const displayReportSignature = snapshot ? snapshotSignature || reportSignature : reportSignature;
   const title = displayReport?.title || t('Business analysis report');
-
-  const markdown = useMemo(() => buildReportMarkdown(displayReport, { locale }), [displayReport, locale]);
+  const stableReport = useMemo<BusinessReportRenderState>(
+    () =>
+      isGenerating
+        ? {
+            ...displayReport,
+            charts: [],
+          }
+        : displayReport,
+    [displayReport, isGenerating],
+  );
+  const markdown = useMemo(() => buildReportMarkdown(displayReport, { locale }), [displayReportSignature, locale]);
   const fileName = useMemo(() => getReportFileName(displayReport), [displayReport]);
   const previewMessage = useMemo(
     () => ({
-      content: displayReport?.markdown
-        ? markdown
+      content: stableReport?.markdown
+        ? buildReportMarkdown(stableReport, { locale })
         : `# ${title}\n\n${displayReport?.summary || t('Generating business analysis report...')}`,
       type: 'text' as const,
       messageId: tool.id,
     }),
-    [displayReport?.markdown, displayReport?.summary, markdown, t, title, tool.id],
+    [displayReport?.summary, displayReportSignature, locale, stableReport, t, title, tool.id],
   );
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
-      if (!displayReport?.markdown) {
+      if (!displayReport?.markdown || isGenerating) {
         setHtmlPreview('');
         return;
       }
@@ -103,7 +132,7 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>) {
         if (cancelled) {
           return;
         }
-        setHtmlPreview(previewHtml);
+        setHtmlPreview((prev) => (prev === previewHtml ? prev : previewHtml));
       } catch (error) {
         if (!cancelled) {
           console.error('Failed to build business report HTML:', error);
@@ -117,7 +146,7 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>) {
     return () => {
       cancelled = true;
     };
-  }, [displayReport, locale]);
+  }, [displayReportSignature, isGenerating, locale]);
 
   const baseState: BusinessReportModalState = {
     t,
