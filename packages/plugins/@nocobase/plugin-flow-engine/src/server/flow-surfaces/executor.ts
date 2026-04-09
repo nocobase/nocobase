@@ -18,7 +18,7 @@ export async function executeMutateOps(
 ) {
   const results: Array<{ opId?: string; result: any }> = [];
   for (const op of ops) {
-    const resolvedValues = resolveRefs(
+    const resolvedValues = resolveFlowSurfaceValueRefs(
       _.cloneDeep({
         ...(op.target ? { target: op.target } : {}),
         ...(op.values || {}),
@@ -34,9 +34,9 @@ export async function executeMutateOps(
   return results;
 }
 
-function resolveRefs(input: any, refs: Map<string, any>): any {
+export function resolveFlowSurfaceValueRefs(input: any, refs: Map<string, any>): any {
   if (Array.isArray(input)) {
-    return input.map((item) => resolveRefs(item, refs));
+    return input.map((item) => resolveFlowSurfaceValueRefs(item, refs));
   }
   if (_.isPlainObject(input)) {
     if (Object.prototype.hasOwnProperty.call(input, '$ref')) {
@@ -50,7 +50,9 @@ function resolveRefs(input: any, refs: Map<string, any>): any {
       }
       return readRef(input.ref, refs);
     }
-    return Object.fromEntries(Object.entries(input).map(([key, value]) => [key, resolveRefs(value, refs)]));
+    return Object.fromEntries(
+      Object.entries(input).map(([key, value]) => [key, resolveFlowSurfaceValueRefs(value, refs)]),
+    );
   }
   return input;
 }

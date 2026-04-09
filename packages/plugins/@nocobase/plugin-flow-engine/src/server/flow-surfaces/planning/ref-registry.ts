@@ -124,32 +124,36 @@ export function annotateTreeRef(tree: any, refByUid: Map<string, string>) {
 
 export function buildSurfaceRefsObject(refMap: Map<string, FlowSurfaceResolvedRef>) {
   return Object.fromEntries(
-    Array.from(refMap.entries()).map(([ref, info]) => [
-      ref,
-      {
-        uid: info.uid,
-        kind: info.kind,
-        source: info.source,
-        locator: info.locator,
-      },
-    ]),
+    Array.from(refMap.entries()).map(([ref, info]) => {
+      return [
+        ref,
+        {
+          uid: info.uid,
+          kind: info.kind,
+          source: info.source,
+          locator: info.locator,
+        },
+      ];
+    }),
   );
 }
 
 export function buildSurfaceFingerprintRefsObject(refMap: Map<string, FlowSurfaceResolvedRef>) {
   return Object.fromEntries(
-    Array.from(refMap.entries()).map(([ref, info]) => [
-      ref,
-      {
-        uid: info.uid,
-        kind: info.kind,
-      },
-    ]),
+    Array.from(refMap.entries()).map(([ref, info]) => {
+      return [
+        ref,
+        {
+          uid: info.uid,
+          kind: info.kind,
+        },
+      ];
+    }),
   );
 }
 
 export function getSurfaceSelectorRequestRef(context: FlowSurfacePlanSurfaceContext) {
-  if (!('ref' in context.surfaceSelector)) {
+  if (!context.surfaceSelector || !('ref' in context.surfaceSelector)) {
     return undefined;
   }
   return context.requestRefMap.get(context.surfaceSelector.ref);

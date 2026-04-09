@@ -1536,14 +1536,15 @@ describe('flowSurfaces API contract', () => {
           target: {
             uid: 'mystery-node',
           },
+          expand: ['node.contracts'],
         },
       }),
     );
-    expect(mysteryCatalog.editableDomains).toEqual([]);
-    expect(mysteryCatalog.configureOptions).toEqual({});
-    expect(mysteryCatalog.settingsSchema).toEqual({});
-    expect(mysteryCatalog.settingsContract).toEqual({});
-    expect(mysteryCatalog.actions).toEqual([]);
+    expect(mysteryCatalog.node.editableDomains).toEqual([]);
+    expect(mysteryCatalog.node.configureOptions).toEqual({});
+    expect(mysteryCatalog.node.settingsSchema).toEqual({});
+    expect(mysteryCatalog.node.settingsContract).toEqual({});
+    expect(mysteryCatalog.actions).toBeUndefined();
 
     const updateUnknownRes = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -1836,6 +1837,7 @@ describe('flowSurfaces API contract', () => {
           target: {
             uid: table.uid,
           },
+          expand: ['item.configureOptions'],
         },
       }),
     );
@@ -1860,7 +1862,7 @@ describe('flowSurfaces API contract', () => {
         'triggerWorkflow',
       ]),
     );
-    expect(tableCatalog.configureOptions).toMatchObject({
+    expect(tableCatalog.node.configureOptions).toMatchObject({
       title: {
         type: 'string',
       },
@@ -4473,19 +4475,19 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(rolesWrapperCatalog.configureOptions).toMatchObject({
+    expect(rolesWrapperCatalog.node.configureOptions).toMatchObject({
       fieldComponent: {
         type: 'string',
       },
     });
-    expect(rolesWrapperCatalog.configureOptions.mode).toBeUndefined();
-    expect(rolesInnerCatalog.configureOptions).toMatchObject({
+    expect(rolesWrapperCatalog.node.configureOptions.mode).toBeUndefined();
+    expect(rolesInnerCatalog.node.configureOptions).toMatchObject({
       displayStyle: {
         type: 'string',
         enum: expect.arrayContaining(['text', 'tag']),
       },
     });
-    expect(rolesInnerCatalog.configureOptions.mode).toBeUndefined();
+    expect(rolesInnerCatalog.node.configureOptions.mode).toBeUndefined();
     expect(rolesWrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',

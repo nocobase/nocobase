@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import { throwBadRequest, throwConflict, throwInternalError } from '../errors';
-import { executeMutateOps } from '../executor';
+import { executeMutateOps, resolveFlowSurfaceValueRefs } from '../executor';
 import type {
   FlowSurfaceDescribeValues,
   FlowSurfaceExecutePlanValues,
@@ -96,20 +96,55 @@ async function buildPlanSurfaceContext(
   deps: FlowSurfacePlanningRuntimeDeps,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfacePlanSurfaceContext> {
+  const bindRefs = normalizePlanningBindRefs(actionName, bindRefsInput, {
+    normalizeGetTarget: deps.normalizeGetTarget,
+  });
+  if (_.isUndefined(surfaceSelectorInput) || _.isNil(surfaceSelectorInput)) {
+    return buildPlanningSurfaceContext(
+      {
+        actionName,
+        bindRefs,
+      },
+      {
+        resolveLocator: deps.resolveLocator,
+        loadResolvedSurfaceTree: deps.loadResolvedSurfaceTree,
+        stripInternalSurfaceMetaFromNodeTree: deps.stripInternalSurfaceMetaFromNodeTree,
+        buildReadTargetSummary: deps.buildReadTargetSummary,
+        buildSurfaceContextFingerprint: deps.buildSurfaceContextFingerprint,
+        buildPlanRefKind: buildPlanningRefKind,
+        assertBindRefKind: assertPlanningBindRefKind,
+        collectDeclaredRefsFromTree: (node) =>
+          collectPlanningDeclaredRefsFromTree(
+            node,
+            {
+              actionName,
+              buildPlanRefKind: buildPlanningRefKind,
+            },
+            new Map<string, FlowSurfaceResolvedRef>(),
+          ),
+      },
+      options,
+    );
+  }
+  const normalizedSurfaceSelector = normalizePlanningSelector(
+    actionName,
+    surfaceSelectorInput,
+    {
+      normalizeGetTarget: deps.normalizeGetTarget,
+    },
+    'surface',
+    {
+      allowRef: true,
+    },
+  );
+  if ('step' in normalizedSurfaceSelector) {
+    throwBadRequest(`flowSurfaces ${actionName} surface only supports { ref } or { locator }`);
+  }
   return buildPlanningSurfaceContext(
     {
       actionName,
-      surfaceSelector: normalizePlanningSelector(
-        actionName,
-        surfaceSelectorInput,
-        {
-          normalizeGetTarget: deps.normalizeGetTarget,
-        },
-        'surface',
-      ),
-      bindRefs: normalizePlanningBindRefs(actionName, bindRefsInput, {
-        normalizeGetTarget: deps.normalizeGetTarget,
-      }),
+      surfaceSelector: normalizedSurfaceSelector,
+      bindRefs,
     },
     {
       resolveLocator: deps.resolveLocator,
@@ -138,6 +173,9 @@ async function buildDescribeSurfaceResponse(
   deps: FlowSurfacePlanningRuntimeDeps,
   options: { transaction?: any } = {},
 ) {
+  if (!context.surfaceTarget || !context.surfaceResolved) {
+    throwBadRequest(`flowSurfaces describeSurface requires locator`);
+  }
   const tree = _.cloneDeep(context.publicTree);
   const refByUid = new Map<string, string>();
   context.refMap.forEach((value, key) => {
@@ -169,6 +207,7 @@ async function compilePlanStep(
   index: number,
   context: FlowSurfacePlanSurfaceContext,
   deps: FlowSurfacePlanningRuntimeDeps,
+  priorStepIds: Set<string>,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceCompiledPlanStep> {
   return compilePlanningStep(
@@ -181,6 +220,7 @@ async function compilePlanStep(
       resolveLocator: deps.resolveLocator,
       buildPlanRefKind: buildPlanningRefKind,
     },
+    priorStepIds,
     options,
   );
 }
@@ -210,7 +250,53 @@ async function executeCompiledPlanStep(
   if (!isFlowSurfacePlanOnlyAction(compiled.action)) {
     throwInternalError(`flowSurfaces executePlan action '${compiled.action}' is not supported`);
   }
-  return deps.dispatchPlanOnlyAction(compiled.action, compiled.payload, transaction);
+  const result = await deps.dispatchPlanOnlyAction(
+    compiled.action,
+    resolveFlowSurfaceValueRefs(_.cloneDeep(compiled.payload), execCtx.refs),
+    transaction,
+  );
+  if (compiled.id) {
+    execCtx.refs.set(compiled.id, result);
+  }
+  return result;
+}
+
+function assertBootstrapPlanConstraints(
+  actionName: string,
+  values: FlowSurfaceValidatePlanValues,
+  compiledSteps: FlowSurfaceCompiledPlanStep[],
+) {
+  if (!_.isUndefined(values.bindRefs) && (!Array.isArray(values.bindRefs) || values.bindRefs.length > 0)) {
+    throwBadRequest(`flowSurfaces ${actionName} bindRefs require surface`);
+  }
+  if (!_.isUndefined(values.expectedFingerprint) && String(values.expectedFingerprint || '').trim()) {
+    throwBadRequest(`flowSurfaces ${actionName} expectedFingerprint requires surface`);
+  }
+  for (const compiled of compiledSteps) {
+    for (const selector of Object.values(compiled.resolvedSelectors)) {
+      if (!selector) {
+        continue;
+      }
+      if (selector.source !== 'step') {
+        throwBadRequest(`flowSurfaces ${actionName} bootstrap plan only supports step selectors`);
+      }
+    }
+  }
+}
+
+function findBootstrapAfterLocator(results: Array<Record<string, any>>): FlowSurfaceReadLocator | null {
+  for (const item of [...results].reverse()) {
+    if (item?.action !== 'createPage') {
+      continue;
+    }
+    const result = item?.result;
+    if (_.isPlainObject(result) && typeof result.pageSchemaUid === 'string' && result.pageSchemaUid.trim()) {
+      return {
+        pageSchemaUid: result.pageSchemaUid.trim(),
+      };
+    }
+  }
+  return null;
 }
 
 export async function describeSurface(
@@ -232,14 +318,23 @@ export async function validatePlan(
   options: { transaction?: any } = {},
 ) {
   if (!_.isPlainObject(values)) {
-    throwBadRequest(`flowSurfaces validatePlan requires surface and plan`);
+    throwBadRequest(`flowSurfaces validatePlan requires plan`);
   }
   const context = await buildPlanSurfaceContext(values.surface, values.bindRefs, 'validatePlan', deps, options);
-  assertPlanFingerprint('validatePlan', values.expectedFingerprint, context.fingerprint);
+  if (context.fingerprint) {
+    assertPlanFingerprint('validatePlan', values.expectedFingerprint, context.fingerprint);
+  }
   const steps = normalizePlanSteps('validatePlan', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
+  const priorStepIds = new Set<string>();
   for (const [index, step] of steps.entries()) {
-    compiledSteps.push(await compilePlanStep('validatePlan', step, index, context, deps, options));
+    compiledSteps.push(await compilePlanStep('validatePlan', step, index, context, deps, priorStepIds, options));
+    if (step.id) {
+      priorStepIds.add(step.id);
+    }
+  }
+  if (!context.surfaceSelector) {
+    assertBootstrapPlanConstraints('validatePlan', values, compiledSteps);
   }
   const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
   await deps.assertRequestRefsPersistable('validatePlan', requestRefsToPersist, options.transaction);
@@ -258,14 +353,23 @@ export async function executePlan(
   options: { transaction?: any } = {},
 ) {
   if (!_.isPlainObject(values)) {
-    throwBadRequest(`flowSurfaces executePlan requires surface and plan`);
+    throwBadRequest(`flowSurfaces executePlan requires plan`);
   }
   const context = await buildPlanSurfaceContext(values.surface, values.bindRefs, 'executePlan', deps, options);
-  assertPlanFingerprint('executePlan', values.expectedFingerprint, context.fingerprint);
+  if (context.fingerprint) {
+    assertPlanFingerprint('executePlan', values.expectedFingerprint, context.fingerprint);
+  }
   const steps = normalizePlanSteps('executePlan', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
+  const priorStepIds = new Set<string>();
   for (const [index, step] of steps.entries()) {
-    compiledSteps.push(await compilePlanStep('executePlan', step, index, context, deps, options));
+    compiledSteps.push(await compilePlanStep('executePlan', step, index, context, deps, priorStepIds, options));
+    if (step.id) {
+      priorStepIds.add(step.id);
+    }
+  }
+  if (!context.surfaceSelector) {
+    assertBootstrapPlanConstraints('executePlan', values, compiledSteps);
   }
   const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
   await deps.assertRequestRefsPersistable('executePlan', requestRefsToPersist, options.transaction);
@@ -292,26 +396,30 @@ export async function executePlan(
   }
 
   let afterDescribe: any = null;
-  let surfaceExistsAfterExecute = true;
-  try {
-    const afterContext = await buildPlanSurfaceContext(
-      { locator: context.surfaceTarget },
-      undefined,
-      'executePlan',
-      deps,
-      options,
-    );
-    afterDescribe = await buildDescribeSurfaceResponse(afterContext, deps, options);
-  } catch (error) {
-    if (deps.isSurfaceReadbackMissingError(error)) {
-      surfaceExistsAfterExecute = false;
-    } else {
-      throw error;
+  let surfaceExistsAfterExecute: boolean | null = context.surfaceTarget ? true : null;
+  const afterLocator = context.surfaceTarget || findBootstrapAfterLocator(results);
+  if (afterLocator) {
+    try {
+      const afterContext = await buildPlanSurfaceContext(
+        { locator: afterLocator },
+        undefined,
+        'executePlan',
+        deps,
+        options,
+      );
+      afterDescribe = await buildDescribeSurfaceResponse(afterContext, deps, options);
+      surfaceExistsAfterExecute = true;
+    } catch (error) {
+      if (deps.isSurfaceReadbackMissingError(error)) {
+        surfaceExistsAfterExecute = false;
+      } else {
+        throw error;
+      }
     }
   }
 
   return {
-    target: context.targetSummary,
+    target: afterDescribe?.target || context.targetSummary,
     fingerprintBefore: context.fingerprint,
     surfaceExistsAfterExecute,
     refs: afterDescribe?.refs || {},

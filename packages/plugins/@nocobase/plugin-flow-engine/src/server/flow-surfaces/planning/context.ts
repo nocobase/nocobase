@@ -12,10 +12,10 @@ import { throwBadRequest, throwConflict } from '../errors';
 import { flattenModel } from '../service-utils';
 import type {
   FlowSurfaceBindRef,
-  FlowSurfacePlanSelector,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
+  FlowSurfaceSurfaceSelector,
 } from '../types';
 import { FLOW_SURFACE_SYSTEM_REF } from './ref-registry';
 import type { FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
@@ -42,13 +42,26 @@ type BuildPlanSurfaceContextDeps = {
 export async function buildPlanSurfaceContext(
   input: {
     actionName: string;
-    surfaceSelector: FlowSurfacePlanSelector;
+    surfaceSelector?: FlowSurfaceSurfaceSelector;
     bindRefs: FlowSurfaceBindRef[];
   },
   deps: BuildPlanSurfaceContextDeps,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfacePlanSurfaceContext> {
   const { actionName, surfaceSelector, bindRefs } = input;
+  if (!surfaceSelector) {
+    if (bindRefs.length) {
+      throwBadRequest(`flowSurfaces ${actionName} bindRefs require surface`);
+    }
+    return {
+      publicNodeMap: {},
+      targetSummary: null,
+      fingerprint: null,
+      uidSet: new Set<string>(),
+      refMap: new Map<string, FlowSurfaceResolvedRef>(),
+      requestRefMap: new Map<string, FlowSurfaceResolvedRef>(),
+    };
+  }
   let surfaceTarget: FlowSurfaceReadLocator;
   if ('ref' in surfaceSelector) {
     const matchedBindRef = bindRefs.find((item) => item.ref === surfaceSelector.ref);

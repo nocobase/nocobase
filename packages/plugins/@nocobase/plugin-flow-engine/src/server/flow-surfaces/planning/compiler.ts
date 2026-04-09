@@ -15,15 +15,30 @@ import type {
   FlowSurfaceMutateOpType,
   FlowSurfacePlanSelector,
   FlowSurfacePlanStep,
+  FlowSurfacePlanStepRef,
   FlowSurfaceReadLocator,
   FlowSurfaceResolvedTarget,
   FlowSurfaceValidatePlanValues,
 } from '../types';
 import { getFlowSurfacePlanActionSpec, getFlowSurfacePlanSelectorRequirements } from './action-specs';
-import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
+import {
+  normalizeFlowSurfacePlanStepRef,
+  replaceFlowSurfacePlanStepRefs,
+  toFlowSurfaceStepResultRefPath,
+} from './step-ref';
+import type {
+  FlowSurfaceCompiledPlanStep,
+  FlowSurfaceCompiledPlanStepSelectorRef,
+  FlowSurfacePlanSurfaceContext,
+  FlowSurfaceResolvedRef,
+} from './types';
 
 type NormalizePlanSelectorDeps = {
   normalizeGetTarget: (value: any) => FlowSurfaceReadLocator;
+};
+
+type NormalizePlanSelectorOptions = {
+  allowRef?: boolean;
 };
 
 type NormalizePlanStepsDeps = NormalizePlanSelectorDeps & {
@@ -43,11 +58,13 @@ export function normalizePlanSelector(
   selector: any,
   deps: NormalizePlanSelectorDeps,
   fieldName = 'selector',
+  options: NormalizePlanSelectorOptions = {},
 ): FlowSurfacePlanSelector {
+  const allowRef = options.allowRef !== false;
   if (!_.isPlainObject(selector)) {
     throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be an object`);
   }
-  if (Object.keys(selector).length === 1 && typeof selector.ref === 'string' && selector.ref.trim()) {
+  if (allowRef && Object.keys(selector).length === 1 && typeof selector.ref === 'string' && selector.ref.trim()) {
     return {
       ref: selector.ref.trim(),
     };
@@ -57,7 +74,14 @@ export function normalizePlanSelector(
       locator: deps.normalizeGetTarget(selector.locator),
     };
   }
-  throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be either { ref } or { locator }`);
+  if (Object.keys(selector).every((key) => ['step', 'path'].includes(key)) && typeof selector.step === 'string') {
+    return normalizeFlowSurfacePlanStepRef(actionName, selector, fieldName);
+  }
+  throwBadRequest(
+    `flowSurfaces ${actionName} ${fieldName} must be ${
+      allowRef ? 'either { ref }, { locator } or { step }' : 'either { locator } or { step }'
+    }`,
+  );
 }
 
 export function normalizePlanSteps(
@@ -68,6 +92,7 @@ export function normalizePlanSteps(
   if (!_.isPlainObject(values?.plan) || !Array.isArray(values.plan.steps)) {
     throwBadRequest(`flowSurfaces ${actionName} requires plan.steps[]`);
   }
+  const seenIds = new Set<string>();
   return values.plan.steps.map((rawStep, index) => {
     if (!_.isPlainObject(rawStep)) {
       throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] must be an object`);
@@ -105,8 +130,15 @@ export function normalizePlanSteps(
       );
     }
     deps.validatePayloadShape(actionName, stepValues, `plan.steps[${index}].values`);
+    const id = typeof rawStep.id === 'string' && rawStep.id.trim() ? rawStep.id.trim() : undefined;
+    if (id) {
+      if (seenIds.has(id)) {
+        throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].id '${id}' is duplicated`);
+      }
+      seenIds.add(id);
+    }
     return {
-      id: typeof rawStep.id === 'string' && rawStep.id.trim() ? rawStep.id.trim() : undefined,
+      id,
       action: action as FlowSurfacePlanStep['action'],
       selectors: buildDefinedPayload({
         target: _.isUndefined(selectorsInput.target)
@@ -121,23 +153,46 @@ export function normalizePlanSteps(
   });
 }
 
+function buildPlanStepSelectorSummary(stepRef: FlowSurfacePlanStepRef) {
+  return {
+    source: 'step' as const,
+    step: stepRef.step,
+    ...(stepRef.path ? { path: stepRef.path } : {}),
+  };
+}
+
 async function resolvePlanSelectorInContext(
   actionName: string,
   selector: FlowSurfacePlanSelector,
   context: FlowSurfacePlanSurfaceContext,
   deps: CompilePlanStepDeps,
   fieldName: string,
+  priorStepIds: Set<string>,
   options: { transaction?: any } = {},
-): Promise<FlowSurfaceResolvedRef> {
+): Promise<FlowSurfaceResolvedRef | FlowSurfaceCompiledPlanStepSelectorRef> {
   const normalizedSelector = normalizePlanSelector(actionName, selector, deps, fieldName);
-  if ('ref' in normalizedSelector) {
-    const ref = context.refMap.get(normalizedSelector.ref);
-    if (!ref) {
-      throwBadRequest(`flowSurfaces ${actionName} ${fieldName} ref '${normalizedSelector.ref}' is not defined`);
+  if ('step' in normalizedSelector) {
+    if (!priorStepIds.has(normalizedSelector.step)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${fieldName}.step '${normalizedSelector.step}' is not a previous step id`,
+      );
     }
-    return ref;
+    return {
+      ...normalizedSelector,
+      summary: buildPlanStepSelectorSummary(normalizedSelector),
+    };
+  }
+  if ('ref' in normalizedSelector) {
+    const refInfo = context.refMap.get(normalizedSelector.ref);
+    if (!refInfo) {
+      throwBadRequest(`flowSurfaces ${actionName} ${fieldName}.ref '${normalizedSelector.ref}' is not defined`);
+    }
+    return refInfo;
   }
   const resolved = await deps.resolveLocator(normalizedSelector.locator, options);
+  if (!context.surfaceResolved) {
+    throwBadRequest(`flowSurfaces ${actionName} ${fieldName} locator requires surface`);
+  }
   if (!context.uidSet.has(resolved.uid)) {
     throwBadRequest(
       `flowSurfaces ${actionName} ${fieldName} locator must resolve inside the current surface '${context.surfaceResolved.uid}'`,
@@ -160,15 +215,21 @@ async function resolvePlanSelectorInContext(
   };
 }
 
-function buildMutateOp(type: FlowSurfaceMutateOpType, payload: Record<string, any>): FlowSurfaceMutateOp {
+function buildMutateOp(
+  type: FlowSurfaceMutateOpType,
+  payload: Record<string, any>,
+  opId?: string,
+): FlowSurfaceMutateOp {
   if (_.isPlainObject(payload.target)) {
     return {
+      ...(opId ? { opId } : {}),
       type,
       target: payload.target,
       values: _.omit(payload, ['target']),
     };
   }
   return {
+    ...(opId ? { opId } : {}),
     type,
     values: payload,
   };
@@ -180,9 +241,15 @@ export async function compilePlanStep(
   index: number,
   context: FlowSurfacePlanSurfaceContext,
   deps: CompilePlanStepDeps,
+  priorStepIds: Set<string>,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceCompiledPlanStep> {
-  const payload = _.cloneDeep(step.values || {});
+  const payload = replaceFlowSurfacePlanStepRefs(
+    actionName,
+    _.cloneDeep(step.values || {}),
+    `plan.steps[${index}].values`,
+    priorStepIds,
+  );
   const compiled: FlowSurfaceCompiledPlanStep = {
     index,
     ...(step.id ? { id: step.id } : {}),
@@ -190,8 +257,13 @@ export async function compilePlanStep(
     payload,
     resolvedSelectors: {},
     usedRefs: [],
+    usedStepRefs: [],
   };
-  const addUsedRef = (refInfo: FlowSurfaceResolvedRef) => {
+  const addUsedRef = (refInfo: FlowSurfaceResolvedRef | FlowSurfaceCompiledPlanStepSelectorRef) => {
+    if ('summary' in refInfo) {
+      compiled.usedStepRefs.push(refInfo);
+      return refInfo.summary;
+    }
     if (refInfo.source === 'request' || refInfo.source === 'declared') {
       compiled.usedRefs.push(refInfo);
     }
@@ -224,19 +296,22 @@ export async function compilePlanStep(
     );
   }
 
-  if (spec.selectorMode === 'target') {
+  if (spec.selectorMode === 'none') {
+    compiled.payload = payload;
+  } else if (spec.selectorMode === 'target') {
     const target = await resolvePlanSelectorInContext(
       actionName,
       step.selectors!.target!,
       context,
       deps,
       `plan.steps[${index}].selectors.target`,
+      priorStepIds,
       options,
     );
     compiled.payload = {
       ...payload,
       target: {
-        uid: target.uid,
+        uid: 'summary' in target ? ({ ref: toFlowSurfaceStepResultRefPath(target) } as any) : target.uid,
       },
     };
     compiled.resolvedSelectors.target = addUsedRef(target);
@@ -247,11 +322,12 @@ export async function compilePlanStep(
       context,
       deps,
       `plan.steps[${index}].selectors.target`,
+      priorStepIds,
       options,
     );
     compiled.payload = {
       ...payload,
-      uid: target.uid,
+      uid: 'summary' in target ? ({ ref: toFlowSurfaceStepResultRefPath(target) } as any) : target.uid,
     };
     compiled.resolvedSelectors.target = addUsedRef(target);
   } else if (spec.selectorMode === 'sourceTarget') {
@@ -261,6 +337,7 @@ export async function compilePlanStep(
       context,
       deps,
       `plan.steps[${index}].selectors.source`,
+      priorStepIds,
       options,
     );
     const target = await resolvePlanSelectorInContext(
@@ -269,12 +346,13 @@ export async function compilePlanStep(
       context,
       deps,
       `plan.steps[${index}].selectors.target`,
+      priorStepIds,
       options,
     );
     compiled.payload = {
       ...payload,
-      sourceUid: source.uid,
-      targetUid: target.uid,
+      sourceUid: 'summary' in source ? ({ ref: toFlowSurfaceStepResultRefPath(source) } as any) : source.uid,
+      targetUid: 'summary' in target ? ({ ref: toFlowSurfaceStepResultRefPath(target) } as any) : target.uid,
     };
     compiled.resolvedSelectors.source = addUsedRef(source);
     compiled.resolvedSelectors.target = addUsedRef(target);
@@ -283,7 +361,7 @@ export async function compilePlanStep(
   }
 
   if (spec.executionKind === 'mutate') {
-    compiled.mutateOp = buildMutateOp(step.action as FlowSurfaceMutateOpType, compiled.payload);
+    compiled.mutateOp = buildMutateOp(step.action as FlowSurfaceMutateOpType, compiled.payload, step.id);
   }
 
   return compiled;

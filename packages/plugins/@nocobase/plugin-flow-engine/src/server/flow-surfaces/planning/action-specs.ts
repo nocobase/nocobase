@@ -9,7 +9,7 @@
 
 import type { FlowSurfaceMutateOpType } from '../types';
 
-export type FlowSurfacePlanSelectorMode = 'target' | 'rootUidTarget' | 'sourceTarget';
+export type FlowSurfacePlanSelectorMode = 'none' | 'target' | 'rootUidTarget' | 'sourceTarget';
 export type FlowSurfacePlanActionSpec = {
   selectorMode: FlowSurfacePlanSelectorMode;
 };
@@ -25,6 +25,10 @@ export type FlowSurfacePlanOnlyActionSpec = FlowSurfacePlanActionSpec & {
 export type FlowSurfaceResolvedPlanActionSpec = FlowSurfacePlanMutateActionSpec | FlowSurfacePlanOnlyActionSpec;
 
 const FLOW_SURFACE_PLAN_SELECTOR_REQUIREMENTS = {
+  none: {
+    requiresTarget: false,
+    requiresSource: false,
+  },
   target: {
     requiresTarget: true,
     requiresSource: false,
@@ -52,6 +56,14 @@ function defineFlowSurfacePlanActionSpecs<const T extends Record<string, FlowSur
 }
 
 export const FLOW_SURFACE_PLAN_ACTION_SPECS = defineFlowSurfacePlanActionSpecs({
+  createMenu: {
+    selectorMode: 'none',
+    executionKind: 'mutate',
+  },
+  createPage: {
+    selectorMode: 'none',
+    executionKind: 'mutate',
+  },
   compose: {
     selectorMode: 'target',
     executionKind: 'planOnly',

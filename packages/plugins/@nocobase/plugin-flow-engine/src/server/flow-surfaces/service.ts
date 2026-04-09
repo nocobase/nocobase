@@ -89,6 +89,8 @@ import {
   getChartUnsupportedPatternHints,
   getChartVisualMappingAliases,
 } from './chart-config';
+import { compileComposeExecutionPlan } from './compose-compiler';
+import { executeComposeRuntime } from './compose-runtime';
 import { SurfaceLocator } from './locator';
 import { isPageModelUse, isPopupHostUse } from './placement';
 import { FlowSurfaceRouteSync } from './route-sync';
@@ -202,6 +204,10 @@ import type {
   FlowSurfaceAtomicFlag,
   FlowSurfaceBindRef,
   FlowSurfaceCatalogItem,
+  FlowSurfaceCatalogResponse,
+  FlowSurfaceCatalogScenario,
+  FlowSurfaceCatalogSection,
+  FlowSurfaceCatalogValues,
   FlowSurfaceComposeMode,
   FlowSurfaceComposeValues,
   FlowSurfaceConfigureValues,
@@ -243,6 +249,19 @@ type FlowSurfaceSqlChartPreview = {
   riskyHints?: FlowSurfaceChartHint[];
 };
 
+const FLOW_SURFACE_CATALOG_SECTION_SET = new Set<FlowSurfaceCatalogSection>([
+  'blocks',
+  'fields',
+  'actions',
+  'recordActions',
+  'node',
+]);
+const FLOW_SURFACE_CATALOG_EXPAND_SET = new Set<FlowSurfaceCatalogExpand>([
+  'item.configureOptions',
+  'item.contracts',
+  'item.allowedContainerUses',
+  'node.contracts',
+]);
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel']);
 const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -898,9 +917,9 @@ export class FlowSurfacesService {
   }
 
   async catalog(
-    input: { target?: FlowSurfaceWriteTarget },
+    input: FlowSurfaceCatalogValues,
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
-  ) {
+  ): Promise<FlowSurfaceCatalogResponse> {
     if (
       _.isUndefined(input?.target) &&
       hasLegacyLocatorFields(input || {}, {
@@ -920,48 +939,287 @@ export class FlowSurfacesService {
       ? await this.resolvePopupBlockProfile(target.uid, resolved, node, options.transaction)
       : null;
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const fieldCatalog = target ? await this.buildFieldCatalog(target, options.transaction) : [];
-    const availableBlocks = filterAvailableCatalogItems(
-      this.surfaceContext.filterBlocksByTarget(node, resolved),
-      enabledPackages,
-    );
-    const recordActionContainerUse = getCatalogRecordActionContainerUse(node?.use);
-    const availableActions = node
-      ? getAvailableActionCatalogItems(node?.use, undefined, enabledPackages).filter((item) => item.scope !== 'record')
-      : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter((item) => item.scope !== 'record');
-    const availableRecordActions = node
-      ? recordActionContainerUse
-        ? getAvailableActionCatalogItems(recordActionContainerUse, 'record', enabledPackages)
-        : []
-      : getAvailableActionCatalogItems(undefined, 'record', enabledPackages);
+    const expand = new Set(this.normalizeCatalogExpand('catalog', input?.expand));
+    const requestedSections = _.isUndefined(input?.sections)
+      ? undefined
+      : this.normalizeCatalogSections('catalog', input?.sections);
+    const catalogAnalysis = await this.analyzeCatalogTarget({
+      target,
+      resolved,
+      node,
+      popupProfile,
+      requestedSections,
+      transaction: options.transaction,
+    });
+
+    const response: FlowSurfaceCatalogResponse = {
+      target: resolved || null,
+      scenario: catalogAnalysis.scenario,
+      selectedSections: catalogAnalysis.selectedSections,
+    };
+
+    if (catalogAnalysis.selectedSections.includes('blocks')) {
+      const availableBlocks = filterAvailableCatalogItems(
+        this.surfaceContext.filterBlocksByTarget(node, resolved),
+        enabledPackages,
+      );
+      response.blocks = availableBlocks
+        .filter((item) => this.isCatalogBlockVisibleForPopupProfile(item.use, popupProfile))
+        .map((item) => this.projectCatalogItem(this.buildCatalogBlockItem(item, popupProfile), expand));
+    }
+
+    if (catalogAnalysis.selectedSections.includes('fields')) {
+      const fieldCatalog = target
+        ? await this.buildFieldCatalog(target, {
+            transaction: options.transaction,
+            includeConfigureOptions: expand.has('item.configureOptions'),
+            includeContracts: expand.has('item.contracts'),
+          })
+        : [];
+      response.fields = fieldCatalog.map((item) => this.projectCatalogItem(item, expand));
+    }
+
+    if (catalogAnalysis.selectedSections.includes('actions')) {
+      const availableActions = node
+        ? getAvailableActionCatalogItems(node?.use, undefined, enabledPackages).filter(
+            (item) => item.scope !== 'record',
+          )
+        : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter(
+            (item) => item.scope !== 'record',
+          );
+      response.actions = availableActions.map((item) => this.projectCatalogItem(item, expand));
+    }
+
+    if (catalogAnalysis.selectedSections.includes('recordActions')) {
+      const availableRecordActions = node
+        ? catalogAnalysis.recordActionContainerUse
+          ? getAvailableActionCatalogItems(catalogAnalysis.recordActionContainerUse, 'record', enabledPackages)
+          : []
+        : getAvailableActionCatalogItems(undefined, 'record', enabledPackages);
+      response.recordActions = availableRecordActions.map((item) => this.projectCatalogItem(item, expand));
+    }
+
+    if (catalogAnalysis.selectedSections.includes('node')) {
+      response.node = this.projectCatalogNode(node, resolved, expand);
+    }
+
+    return response;
+  }
+
+  private async analyzeCatalogTarget(input: {
+    target?: FlowSurfaceWriteTarget;
+    resolved: FlowSurfaceResolvedTarget | null;
+    node: any;
+    popupProfile: FlowSurfacePopupBlockProfile | null;
+    requestedSections?: FlowSurfaceCatalogSection[];
+    transaction?: any;
+  }): Promise<{
+    scenario: FlowSurfaceCatalogScenario;
+    selectedSections: FlowSurfaceCatalogSection[];
+    recordActionContainerUse: string | null;
+  }> {
+    const targetSummary =
+      input.target && input.resolved ? this.buildReadTargetSummary(input.target, input.resolved) : null;
+    const fieldContainer = input.target
+      ? await this.surfaceContext.resolveFieldContainer(input.resolved!.uid, input.transaction).catch(() => null)
+      : null;
+    const actionContainer = input.target
+      ? await this.surfaceContext.resolveActionContainer(input.target, input.transaction).catch(() => null)
+      : null;
+    const recordActionContainerUse = getCatalogRecordActionContainerUse(input.node?.use);
+    let fieldContainerScenario: FlowSurfaceCatalogFieldContainerScenario | undefined;
+
+    if (fieldContainer?.ownerUse) {
+      const fieldContainerKind = normalizeFieldContainerKind(fieldContainer.ownerUse);
+      if (fieldContainerKind === 'filter-form') {
+        const targets = await this.surfaceContext.collectFilterFormTargets(fieldContainer.ownerUid, input.transaction);
+        fieldContainerScenario = {
+          kind: fieldContainerKind,
+          targetMode: targets.length > 1 ? 'multiple' : 'single',
+        };
+      } else if (fieldContainerKind) {
+        fieldContainerScenario = {
+          kind: fieldContainerKind,
+        };
+      }
+    }
+
+    const actionScope = getActionContainerScope(actionContainer?.ownerUse);
+    const scenario: FlowSurfaceCatalogScenario = {
+      surfaceKind: targetSummary?.kind || 'global',
+      ...(input.popupProfile?.isPopupSurface
+        ? {
+            popup: {
+              kind: input.popupProfile.popupKind || 'plainPopup',
+              scene: input.popupProfile.scene,
+              hasCurrentRecord: input.popupProfile.hasCurrentRecord,
+              hasAssociationContext: input.popupProfile.hasAssociationContext,
+            },
+          }
+        : {}),
+      ...(fieldContainerScenario ? { fieldContainer: fieldContainerScenario } : {}),
+      ...(actionScope
+        ? {
+            actionContainer: {
+              scope: actionScope,
+              ownerUse: actionContainer?.ownerUse,
+              ...(recordActionContainerUse ? { recordActionContainerUse } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const selectedSections = input.requestedSections
+      ? input.requestedSections
+      : this.inferDefaultCatalogSections({
+          hasTarget: !!input.target,
+          hasBlockSurface: !!filterAvailableCatalogItems(
+            this.surfaceContext.filterBlocksByTarget(input.node, input.resolved),
+            undefined,
+          ).length,
+          hasFieldContainer: !!fieldContainerScenario,
+          hasActionContainer: !!actionScope,
+          hasRecordActions: !!recordActionContainerUse || !input.target,
+        });
 
     return {
-      target: resolved || null,
-      blocks: availableBlocks
-        .filter((item) => this.isCatalogBlockVisibleForPopupProfile(item.use, popupProfile))
-        .map((item) => this.buildCatalogBlockItem(item, popupProfile)),
-      fields: fieldCatalog.map((item) => ({
-        ...item,
-        configureOptions: getConfigureOptionsForCatalogItem(item),
-      })),
-      actions: availableActions.map((item) => ({
-        ...item,
-        configureOptions: getConfigureOptionsForCatalogItem(item),
-      })),
-      recordActions: availableRecordActions.map((item) => ({
-        ...item,
-        configureOptions: getConfigureOptionsForCatalogItem(item),
-      })),
+      scenario,
+      selectedSections,
+      recordActionContainerUse,
+    };
+  }
+
+  private inferDefaultCatalogSections(input: {
+    hasTarget: boolean;
+    hasBlockSurface: boolean;
+    hasFieldContainer: boolean;
+    hasActionContainer: boolean;
+    hasRecordActions: boolean;
+  }): FlowSurfaceCatalogSection[] {
+    if (!input.hasTarget) {
+      return ['blocks', 'actions', 'recordActions'];
+    }
+    const sections: FlowSurfaceCatalogSection[] = [];
+    if (input.hasBlockSurface) {
+      sections.push('blocks');
+    }
+    if (input.hasFieldContainer) {
+      sections.push('fields');
+    }
+    if (input.hasActionContainer) {
+      sections.push('actions');
+    }
+    if (input.hasRecordActions) {
+      sections.push('recordActions');
+    }
+    sections.push('node');
+    return sections;
+  }
+
+  private normalizeCatalogSections(actionName: string, input: any): FlowSurfaceCatalogSection[] {
+    if (_.isUndefined(input)) {
+      return [];
+    }
+    if (!Array.isArray(input)) {
+      throwBadRequest(`flowSurfaces ${actionName} sections must be an array`);
+    }
+    const seen = new Set<FlowSurfaceCatalogSection>();
+    return input
+      .map((value, index) => {
+        const normalized = String(value || '').trim() as FlowSurfaceCatalogSection;
+        if (!FLOW_SURFACE_CATALOG_SECTION_SET.has(normalized)) {
+          throwBadRequest(`flowSurfaces ${actionName} sections[${index}] '${String(value || '')}' is not supported`);
+        }
+        if (seen.has(normalized)) {
+          return null;
+        }
+        seen.add(normalized);
+        return normalized;
+      })
+      .filter(Boolean) as FlowSurfaceCatalogSection[];
+  }
+
+  private normalizeCatalogExpand(actionName: string, input: any): FlowSurfaceCatalogExpand[] {
+    if (_.isUndefined(input)) {
+      return [];
+    }
+    if (!Array.isArray(input)) {
+      throwBadRequest(`flowSurfaces ${actionName} expand must be an array`);
+    }
+    const seen = new Set<FlowSurfaceCatalogExpand>();
+    return input
+      .map((value, index) => {
+        const normalized = String(value || '').trim() as FlowSurfaceCatalogExpand;
+        if (!FLOW_SURFACE_CATALOG_EXPAND_SET.has(normalized)) {
+          throwBadRequest(`flowSurfaces ${actionName} expand[${index}] '${String(value || '')}' is not supported`);
+        }
+        if (seen.has(normalized)) {
+          return null;
+        }
+        seen.add(normalized);
+        return normalized;
+      })
+      .filter(Boolean) as FlowSurfaceCatalogExpand[];
+  }
+
+  private projectCatalogNode(
+    node: any,
+    resolved: FlowSurfaceResolvedTarget | null,
+    expand: Set<FlowSurfaceCatalogExpand>,
+  ) {
+    const projected: Record<string, any> = {
       editableDomains: this.getEditableDomains(node?.use),
       configureOptions: getConfigureOptionsForResolvedNode({
         kind: resolved?.kind,
         use: node?.use,
       }),
-      settingsSchema: getSettingsSchemaForUse(node?.use),
-      settingsContract: getNodeContract(node?.use).domains,
-      eventCapabilities: getNodeContract(node?.use).eventCapabilities,
-      layoutCapabilities: getNodeContract(node?.use).layoutCapabilities,
     };
+    if (expand.has('node.contracts')) {
+      const contract = getNodeContract(node?.use);
+      projected.settingsSchema = getSettingsSchemaForUse(node?.use);
+      projected.settingsContract = contract?.domains;
+      projected.eventCapabilities = contract?.eventCapabilities;
+      projected.layoutCapabilities = contract?.layoutCapabilities;
+    }
+    return projected;
+  }
+
+  private projectCatalogItem(item: Record<string, any>, expand: Set<FlowSurfaceCatalogExpand>) {
+    const projected: Record<string, any> = _.pick(item, [
+      'key',
+      'label',
+      'use',
+      'kind',
+      'scope',
+      'scene',
+      'requiredInitParams',
+      'createSupported',
+      'fieldUse',
+      'wrapperUse',
+      'associationPathName',
+      'defaultTargetUid',
+      'targetBlockUid',
+      'type',
+      'renderer',
+    ]);
+    if (item.resourceBindings?.length) {
+      projected.resourceBindings = item.resourceBindings;
+    }
+    if (expand.has('item.allowedContainerUses') && item.allowedContainerUses?.length) {
+      projected.allowedContainerUses = item.allowedContainerUses;
+    }
+    if (expand.has('item.configureOptions')) {
+      projected.configureOptions = item.configureOptions || getConfigureOptionsForCatalogItem(item);
+    }
+    if (expand.has('item.contracts')) {
+      const contract = getNodeContract(item.use);
+      projected.editableDomains = item.editableDomains || this.getEditableDomains(item.use);
+      projected.settingsSchema = item.settingsSchema || getSettingsSchemaForUse(item.use);
+      projected.settingsContract = item.settingsContract || contract?.domains;
+      projected.eventCapabilities = item.eventCapabilities || contract?.eventCapabilities;
+      projected.layoutCapabilities = item.layoutCapabilities || contract?.layoutCapabilities;
+    }
+    return _.pickBy(projected, (value) => !_.isUndefined(value));
   }
 
   private buildCatalogBlockItem(item: any, popupProfile: FlowSurfacePopupBlockProfile | null) {
@@ -971,7 +1229,6 @@ export class FlowSurfacesService {
         : undefined;
     return {
       ...item,
-      configureOptions: getConfigureOptionsForCatalogItem(item),
       ...(resourceBindings?.length ? { resourceBindings } : {}),
     };
   }
@@ -3671,15 +3928,6 @@ export class FlowSurfacesService {
     });
     const existingItems = _.castArray(initialGrid?.subModels?.items || []).filter((item: any) => item?.uid);
 
-    if (mode === 'replace') {
-      for (const item of existingItems) {
-        await this.removeNodeTreeWithBindings(item.uid, options.transaction);
-      }
-    }
-
-    const createdBlocks: Array<Record<string, any>> = [];
-    const keyRefs: Record<string, any> = {};
-
     for (const blockSpec of normalizedBlocks) {
       if (!blockSpec.template && blockSpec.resource?.kind !== 'semantic') {
         this.assertRequiredBlockResourceInit({
@@ -3690,210 +3938,71 @@ export class FlowSurfacesService {
           blockDescriptor: this.describeComposeBlock(blockSpec),
         });
       }
-      const created = await this.addBlock(
-        {
-          target: {
-            uid: gridUid,
-          },
-          ...(blockSpec.type ? { type: blockSpec.type } : {}),
-          ...(blockSpec.resource?.kind === 'semantic' ? { resource: blockSpec.resource.value } : {}),
-          ...(blockSpec.resource?.kind === 'raw' ? { resourceInit: blockSpec.resource.value } : {}),
-          ...(blockSpec.template ? { template: blockSpec.template } : {}),
-        },
-        {
+    }
+
+    const plan = compileComposeExecutionPlan({
+      gridUid,
+      mode,
+      normalizedBlocks,
+      existingItemUids: existingItems.map((item: any) => item.uid),
+      layout: values.layout,
+    });
+
+    return executeComposeRuntime(plan, {
+      removeExistingItem: async (uid) => this.removeNodeTreeWithBindings(uid, options.transaction),
+      createBlock: async (payload) =>
+        this.addBlock(payload, {
           ...options,
           deferAutoLayout: true,
           enabledPackages,
-        },
-      );
-
-      createdBlocks.push({
-        spec: blockSpec,
-        result: created,
-      });
-      keyRefs[blockSpec.key] = {
-        uid: created.uid,
-        type: blockSpec.type,
-        gridUid: created.gridUid,
-        itemUid: created.itemUid,
-        itemGridUid: created.itemGridUid,
-        actionsColumnUid: created.actionsColumnUid,
-      };
-    }
-
-    for (const block of createdBlocks) {
-      await this.applyInlineNodeSettings('compose block', block.result.uid, block.spec.settings, options);
-    }
-
-    for (const block of createdBlocks) {
-      const fieldResults: Array<Record<string, any>> = [];
-      for (const fieldSpec of block.spec.fields) {
-        const createdField = await this.addField(
-          {
-            target: {
-              uid: this.resolveComposeFieldContainerUid(block.spec, block.result),
-            },
-            ...(fieldSpec.fieldPath ? { fieldPath: fieldSpec.fieldPath } : {}),
-            ...(fieldSpec.associationPathName ? { associationPathName: fieldSpec.associationPathName } : {}),
-            ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
-            ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
-            ...(fieldSpec.target
-              ? { defaultTargetUid: this.resolveComposeTargetRef(fieldSpec.target, keyRefs, 'field') }
-              : {}),
-            ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
-          },
-          options,
-        );
-
-        await this.applyInlineFieldSettings('compose field', createdField, fieldSpec.settings, options);
-
-        fieldResults.push({
-          key: fieldSpec.key,
-          uid: createdField.uid,
-          ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
-          ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
-          fieldPath: fieldSpec.fieldPath,
-          associationPathName: fieldSpec.associationPathName,
-          wrapperUid: createdField.wrapperUid,
-          fieldUid: createdField.fieldUid,
-          innerFieldUid: createdField.innerFieldUid,
-          popupPageUid: createdField.popupPageUid,
-          popupTabUid: createdField.popupTabUid,
-          popupGridUid: createdField.popupGridUid,
-          ...(fieldSpec.target ? { target: fieldSpec.target } : {}),
-        });
-      }
-      block.fieldResults = fieldResults;
-    }
-
-    for (const block of createdBlocks) {
-      const actionResults: Array<Record<string, any>> = [];
-      for (const actionSpec of block.spec.actions) {
-        const containerUid = this.resolveComposeActionContainerUid(block.spec, block.result);
-        const createdAction = await this.addAction(
-          {
-            target: {
-              uid: containerUid,
-            },
-            type: actionSpec.type,
-          },
-          {
-            ...options,
-            enabledPackages,
-          },
-        );
-
-        await this.applyInlineNodeSettings('compose action', createdAction.uid, actionSpec.settings, options);
-        await this.applyInlineActionPopup('compose action', createdAction.uid, actionSpec.popup, options);
-
-        const actionRefs = await this.collectComposeActionRefs(createdAction.uid, options.transaction);
-
-        actionResults.push({
-          key: actionSpec.key,
-          type: actionSpec.type,
-          scope: createdAction.scope,
-          uid: createdAction.uid,
-          parentUid: createdAction.parentUid,
-          ...actionRefs,
-        });
-      }
-      block.actionResults = actionResults;
-    }
-
-    for (const block of createdBlocks) {
-      const recordActionResults: Array<Record<string, any>> = [];
-      for (const actionSpec of block.spec.recordActions) {
-        const createdAction = await this.addRecordAction(
-          {
-            target: {
-              uid: block.result.uid,
-            },
-            type: actionSpec.type,
-          },
-          {
-            ...options,
-            enabledPackages,
-          },
-        );
-        if (block.spec.type === 'table' && !block.result.actionsColumnUid) {
-          block.result.actionsColumnUid = createdAction.parentUid;
+        }),
+      applyNodeSettings: async (actionName, targetUid, settings) => {
+        if (!targetUid) {
+          return;
         }
-
-        await this.applyInlineNodeSettings('compose recordAction', createdAction.uid, actionSpec.settings, options);
-        await this.applyInlineActionPopup('compose recordAction', createdAction.uid, actionSpec.popup, options);
-
-        const actionRefs = await this.collectComposeActionRefs(createdAction.uid, options.transaction);
-
-        recordActionResults.push({
-          key: actionSpec.key,
-          type: actionSpec.type,
-          scope: createdAction.scope,
-          uid: createdAction.uid,
-          parentUid: createdAction.parentUid,
-          ...actionRefs,
-        });
-      }
-      block.recordActionResults = recordActionResults;
-    }
-
-    let layoutResult: any = null;
-    const finalGrid = await this.repository.findModelById(gridUid, {
-      transaction: options.transaction,
-      includeAsyncNode: true,
-    });
-    const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
-    if (values.layout?.rows || mode === 'replace') {
-      const layoutPayload = this.buildComposeLayoutPayload({
-        layout: values.layout,
-        createdByKey: keyRefs,
-        finalItems,
-      });
-      layoutResult = await this.setLayout(
-        {
-          target: {
-            uid: gridUid,
-          },
-          ...layoutPayload,
-        },
-        options,
-      );
-    } else if (mode === 'append' && createdBlocks.length) {
-      const layoutPayload = this.buildAppendGridLayoutPayload({
-        initialGrid,
-        finalGrid,
-        appendedItemUids: createdBlocks.map((block) => block.result.uid),
-      });
-      layoutResult = await this.setLayout(
-        {
-          target: {
-            uid: gridUid,
-          },
-          ...layoutPayload,
-        },
-        options,
-      );
-    }
-
-    return {
-      target: {
-        uid: gridUid,
+        await this.applyInlineNodeSettings(actionName, targetUid, settings, options);
       },
-      mode,
-      keyToUid: Object.fromEntries(Object.entries(keyRefs).map(([key, value]) => [key, value.uid])),
-      blocks: createdBlocks.map((item) => ({
-        key: item.spec.key,
-        type: item.spec.type,
-        uid: item.result.uid,
-        gridUid: item.result.gridUid,
-        itemUid: item.result.itemUid,
-        itemGridUid: item.result.itemGridUid,
-        actionsColumnUid: item.result.actionsColumnUid,
-        fields: item.fieldResults || [],
-        actions: item.actionResults || [],
-        recordActions: item.recordActionResults || [],
-      })),
-      ...(layoutResult ? { layout: layoutResult } : {}),
-    };
+      createField: async (payload) => this.addField(payload, options),
+      applyFieldSettings: async (actionName, fieldResult, settings) =>
+        this.applyInlineFieldSettings(actionName, fieldResult, settings, options),
+      createAction: async (payload) =>
+        this.addAction(payload, {
+          ...options,
+          enabledPackages,
+        }),
+      createRecordAction: async (payload) =>
+        this.addRecordAction(payload, {
+          ...options,
+          enabledPackages,
+        }),
+      applyActionPopup: async (actionName, actionUid, popup) =>
+        this.applyInlineActionPopup(actionName, actionUid, popup, options),
+      collectActionRefs: async (actionUid) => this.collectComposeActionRefs(actionUid, options.transaction),
+      buildExplicitLayoutPayload: async (input) => {
+        const finalGrid = await this.repository.findModelById(input.gridUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+        const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
+        return this.buildComposeLayoutPayload({
+          layout: input.layout,
+          createdByKey: input.createdByKey,
+          finalItems,
+        });
+      },
+      buildAppendLayoutPayload: async (input) => {
+        const finalGrid = await this.repository.findModelById(input.gridUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+        return this.buildAppendGridLayoutPayload({
+          initialGrid,
+          finalGrid,
+          appendedItemUids: input.appendedItemUids,
+        });
+      },
+      setLayout: async (payload) => this.setLayout(payload, options),
+    });
   }
 
   async configure(values: FlowSurfaceConfigureValues, options: { transaction?: any } = {}) {
@@ -9305,17 +9414,26 @@ export class FlowSurfacesService {
     );
   }
 
-  private async buildFieldCatalog(target: FlowSurfaceWriteTarget, transaction?: any) {
-    const resolved = await this.locator.resolve(target, { transaction });
-    const container = await this.surfaceContext.resolveFieldContainer(resolved.uid, transaction).catch(() => null);
+  private async buildFieldCatalog(
+    target: FlowSurfaceWriteTarget,
+    options: {
+      transaction?: any;
+      includeConfigureOptions?: boolean;
+      includeContracts?: boolean;
+    } = {},
+  ) {
+    const resolved = await this.locator.resolve(target, { transaction: options.transaction });
+    const container = await this.surfaceContext
+      .resolveFieldContainer(resolved.uid, options.transaction)
+      .catch(() => null);
     if (!container) {
       return [];
     }
     if (container.wrapperUse === 'FilterFormItemModel') {
-      const targets = await this.surfaceContext.collectFilterFormTargets(container.ownerUid, transaction);
+      const targets = await this.surfaceContext.collectFilterFormTargets(container.ownerUid, options.transaction);
       if (!targets.length) {
         const resourceContext = await this.locator
-          .resolveCollectionContext(container.ownerUid, transaction)
+          .resolveCollectionContext(container.ownerUid, options.transaction)
           .catch(() => null);
         if (!resourceContext?.resourceInit) {
           return [];
@@ -9324,6 +9442,8 @@ export class FlowSurfacesService {
           ownerUse: container.ownerUse,
           resourceInit: resourceContext.resourceInit,
           requireDefaultTargetUid: false,
+          includeConfigureOptions: options.includeConfigureOptions,
+          includeContracts: options.includeContracts,
         });
       }
       return targets.flatMap((targetBlock) =>
@@ -9334,16 +9454,20 @@ export class FlowSurfacesService {
           targetLabel: targetBlock.label,
           multiTarget: targets.length > 1,
           requireDefaultTargetUid: targets.length > 1,
+          includeConfigureOptions: options.includeConfigureOptions,
+          includeContracts: options.includeContracts,
         }),
       );
     }
-    const resourceContext = await this.locator.resolveCollectionContext(container.ownerUid, transaction);
+    const resourceContext = await this.locator.resolveCollectionContext(container.ownerUid, options.transaction);
     if (!resourceContext?.resourceInit) {
       return [];
     }
     return this.buildFieldCatalogEntriesForResource({
       ownerUse: container.ownerUse,
       resourceInit: resourceContext.resourceInit,
+      includeConfigureOptions: options.includeConfigureOptions,
+      includeContracts: options.includeContracts,
     });
   }
 
@@ -9563,6 +9687,25 @@ export class FlowSurfacesService {
     );
   }
 
+  private buildCatalogItemOptionalFields(
+    use: string,
+    options: {
+      includeConfigureOptions?: boolean;
+      includeContracts?: boolean;
+    } = {},
+  ) {
+    return buildDefinedPayload({
+      ...(options.includeContracts
+        ? {
+            editableDomains: this.getEditableDomains(use),
+            settingsSchema: getSettingsSchemaForUse(use),
+            settingsContract: getNodeContract(use).domains,
+          }
+        : {}),
+      ...(options.includeConfigureOptions ? { configureOptions: getConfigureOptionsForUse(use) } : {}),
+    });
+  }
+
   private buildFieldCatalogEntriesForResource(input: {
     ownerUse: string;
     resourceInit: Record<string, any>;
@@ -9570,6 +9713,8 @@ export class FlowSurfacesService {
     targetLabel?: string;
     multiTarget?: boolean;
     requireDefaultTargetUid?: boolean;
+    includeConfigureOptions?: boolean;
+    includeContracts?: boolean;
   }) {
     const containerKind = normalizeFieldContainerKind(input.ownerUse);
     const targetPrefix = input.multiTarget && input.targetLabel ? `${input.targetLabel} / ` : '';
@@ -9631,10 +9776,7 @@ export class FlowSurfacesService {
               : wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
                 ? ['fieldPath', 'defaultTargetUid']
                 : ['fieldPath'],
-            editableDomains: this.getEditableDomains(use),
-            configureOptions: getConfigureOptionsForUse(use),
-            settingsSchema: getSettingsSchemaForUse(use),
-            settingsContract: getNodeContract(use).domains,
+            ...this.buildCatalogItemOptionalFields(use, input),
           });
         };
 
@@ -9654,10 +9796,7 @@ export class FlowSurfacesService {
           fieldUse: 'JSColumnModel',
           type: 'jsColumn',
           requiredInitParams: [],
-          editableDomains: this.getEditableDomains('JSColumnModel'),
-          configureOptions: getConfigureOptionsForUse('JSColumnModel'),
-          settingsSchema: getSettingsSchemaForUse('JSColumnModel'),
-          settingsContract: getNodeContract('JSColumnModel').domains,
+          ...this.buildCatalogItemOptionalFields('JSColumnModel', input),
         });
       }
 
@@ -9670,10 +9809,7 @@ export class FlowSurfacesService {
           fieldUse: 'JSItemModel',
           type: 'jsItem',
           requiredInitParams: [],
-          editableDomains: this.getEditableDomains('JSItemModel'),
-          configureOptions: getConfigureOptionsForUse('JSItemModel'),
-          settingsSchema: getSettingsSchemaForUse('JSItemModel'),
-          settingsContract: getNodeContract('JSItemModel').domains,
+          ...this.buildCatalogItemOptionalFields('JSItemModel', input),
         });
       }
 
@@ -9690,6 +9826,8 @@ export class FlowSurfacesService {
     targetLabel?: string;
     multiTarget?: boolean;
     requireDefaultTargetUid?: boolean;
+    includeConfigureOptions?: boolean;
+    includeContracts?: boolean;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     const getFields = (targetCollection: any) => getCollectionFields(targetCollection);
@@ -9777,10 +9915,7 @@ export class FlowSurfacesService {
               : fieldCapability.wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
                 ? ['fieldPath', 'defaultTargetUid']
                 : ['fieldPath'],
-            editableDomains: this.getEditableDomains(use),
-            configureOptions: getConfigureOptionsForUse(use),
-            settingsSchema: getSettingsSchemaForUse(use),
-            settingsContract: getNodeContract(use).domains,
+            ...this.buildCatalogItemOptionalFields(use, input),
           });
         };
 
@@ -9800,10 +9935,7 @@ export class FlowSurfacesService {
         fieldUse: 'JSColumnModel',
         type: 'jsColumn',
         requiredInitParams: [],
-        editableDomains: this.getEditableDomains('JSColumnModel'),
-        configureOptions: getConfigureOptionsForUse('JSColumnModel'),
-        settingsSchema: getSettingsSchemaForUse('JSColumnModel'),
-        settingsContract: getNodeContract('JSColumnModel').domains,
+        ...this.buildCatalogItemOptionalFields('JSColumnModel', input),
       });
     }
 
@@ -9816,10 +9948,7 @@ export class FlowSurfacesService {
         fieldUse: 'JSItemModel',
         type: 'jsItem',
         requiredInitParams: [],
-        editableDomains: this.getEditableDomains('JSItemModel'),
-        configureOptions: getConfigureOptionsForUse('JSItemModel'),
-        settingsSchema: getSettingsSchemaForUse('JSItemModel'),
-        settingsContract: getNodeContract('JSItemModel').domains,
+        ...this.buildCatalogItemOptionalFields('JSItemModel', input),
       });
     }
 

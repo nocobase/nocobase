@@ -1,0 +1,187 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import _ from 'lodash';
+import type {
+  FlowSurfaceCatalogExpandFlags,
+  FlowSurfaceCatalogItemOptionalFieldsOptions,
+  FlowSurfaceCatalogItemOptionalFieldsProviders,
+  FlowSurfaceCatalogNodeProjectInput,
+  FlowSurfaceCatalogNodeProjectResult,
+  FlowSurfaceCatalogProjectItemOptions,
+  FlowSurfaceCatalogProjectedItem,
+  FlowSurfaceFieldCatalogLightCandidate,
+} from './catalog-smart.types';
+
+const LIGHT_CATALOG_ITEM_KEYS = [
+  'key',
+  'label',
+  'use',
+  'kind',
+  'scope',
+  'scene',
+  'fieldUse',
+  'wrapperUse',
+  'associationPathName',
+  'defaultTargetUid',
+  'targetBlockUid',
+  'requiredInitParams',
+  'createSupported',
+  'renderer',
+  'type',
+] as const;
+
+function pickLightCatalogItem(item: Record<string, any>): FlowSurfaceCatalogProjectedItem {
+  const projected = _.pick(item, LIGHT_CATALOG_ITEM_KEYS);
+
+  if (item.resourceBindings?.length) {
+    projected.resourceBindings = item.resourceBindings;
+  }
+
+  return _.pickBy(projected, (value) => !_.isUndefined(value)) as FlowSurfaceCatalogProjectedItem;
+}
+
+function createNodeContractResolver(
+  item: Record<string, any>,
+  options: Pick<FlowSurfaceCatalogProjectItemOptions, 'getNodeContract'>,
+) {
+  let loaded = false;
+  let cached: ReturnType<FlowSurfaceCatalogProjectItemOptions['getNodeContract']> | undefined;
+
+  return () => {
+    if (!loaded) {
+      cached = options.getNodeContract(item.use);
+      loaded = true;
+    }
+    return cached;
+  };
+}
+
+export function buildCatalogItemOptionalFields(
+  use: string | undefined,
+  options: FlowSurfaceCatalogItemOptionalFieldsOptions = {},
+  providers: FlowSurfaceCatalogItemOptionalFieldsProviders,
+) {
+  const projected: Record<string, any> = {};
+
+  if (options.includeContracts) {
+    const contract = providers.getNodeContract(use);
+    projected.editableDomains = providers.getEditableDomains(use);
+    projected.settingsSchema = providers.getSettingsSchema(use);
+    projected.settingsContract = contract?.domains;
+    projected.eventCapabilities = contract?.eventCapabilities;
+    projected.layoutCapabilities = contract?.layoutCapabilities;
+  }
+
+  if (options.includeConfigureOptions) {
+    projected.configureOptions = providers.getConfigureOptions(use);
+  }
+
+  return _.pickBy(projected, (value) => !_.isUndefined(value));
+}
+
+export function buildFieldCatalogLightCandidate(item: Record<string, any>): FlowSurfaceFieldCatalogLightCandidate {
+  return pickLightCatalogItem({
+    ...item,
+    kind: 'field',
+  });
+}
+
+export const buildFieldCatalogCandidate = buildFieldCatalogLightCandidate;
+
+export function projectCatalogItem(
+  item: Record<string, any>,
+  expand: FlowSurfaceCatalogExpandFlags,
+  options: FlowSurfaceCatalogProjectItemOptions,
+): FlowSurfaceCatalogProjectedItem {
+  const projected = pickLightCatalogItem(item);
+
+  if (expand.includeItemAllowedContainerUses && item.allowedContainerUses?.length) {
+    projected.allowedContainerUses = item.allowedContainerUses;
+  }
+
+  if (expand.includeItemConfigureOptions) {
+    projected.configureOptions = !_.isUndefined(item.configureOptions)
+      ? item.configureOptions
+      : options.getConfigureOptions(item);
+  }
+
+  if (expand.includeItemContracts) {
+    const resolveContract = createNodeContractResolver(item, options);
+    projected.editableDomains = !_.isUndefined(item.editableDomains)
+      ? item.editableDomains
+      : options.getEditableDomains(item.use);
+    projected.settingsSchema = !_.isUndefined(item.settingsSchema)
+      ? item.settingsSchema
+      : options.getSettingsSchema(item.use);
+    projected.settingsContract = !_.isUndefined(item.settingsContract)
+      ? item.settingsContract
+      : resolveContract()?.domains;
+    projected.eventCapabilities = !_.isUndefined(item.eventCapabilities)
+      ? item.eventCapabilities
+      : resolveContract()?.eventCapabilities;
+    projected.layoutCapabilities = !_.isUndefined(item.layoutCapabilities)
+      ? item.layoutCapabilities
+      : resolveContract()?.layoutCapabilities;
+  }
+
+  return _.pickBy(projected, (value) => !_.isUndefined(value)) as FlowSurfaceCatalogProjectedItem;
+}
+
+export function expandFieldCatalogCandidate(
+  item: Record<string, any>,
+  expand: FlowSurfaceCatalogExpandFlags,
+  options: FlowSurfaceCatalogProjectItemOptions,
+): FlowSurfaceCatalogProjectedItem {
+  return projectCatalogItem(buildFieldCatalogLightCandidate(item), expand, options);
+}
+
+export const decorateFieldCatalogCandidate = expandFieldCatalogCandidate;
+
+export function projectCatalogNode(input: FlowSurfaceCatalogNodeProjectInput): FlowSurfaceCatalogNodeProjectResult;
+export function projectCatalogNode(
+  node: any,
+  resolved: FlowSurfaceCatalogNodeProjectInput['resolved'],
+  expand: FlowSurfaceCatalogExpandFlags,
+  options: FlowSurfaceCatalogNodeProjectInput['options'],
+): FlowSurfaceCatalogNodeProjectResult;
+export function projectCatalogNode(
+  inputOrNode: FlowSurfaceCatalogNodeProjectInput | any,
+  resolved?: FlowSurfaceCatalogNodeProjectInput['resolved'],
+  expand?: FlowSurfaceCatalogExpandFlags,
+  options?: FlowSurfaceCatalogNodeProjectInput['options'],
+): FlowSurfaceCatalogNodeProjectResult {
+  const input =
+    arguments.length === 1
+      ? (inputOrNode as FlowSurfaceCatalogNodeProjectInput)
+      : ({
+          node: inputOrNode,
+          resolved: resolved || null,
+          expand: expand!,
+          options: options!,
+        } satisfies FlowSurfaceCatalogNodeProjectInput);
+
+  const projected: FlowSurfaceCatalogNodeProjectResult = {
+    editableDomains: input.options.getEditableDomains(input.node?.use),
+    configureOptions: input.options.getConfigureOptionsForResolvedNode({
+      kind: input.resolved?.kind,
+      use: input.node?.use,
+    }),
+  };
+
+  if (input.expand.includeNodeContracts) {
+    const contract = input.options.getNodeContract(input.node?.use);
+    projected.settingsSchema = input.options.getSettingsSchema(input.node?.use);
+    projected.settingsContract = contract.domains;
+    projected.eventCapabilities = contract.eventCapabilities;
+    projected.layoutCapabilities = contract.layoutCapabilities;
+  }
+
+  return projected;
+}

@@ -195,7 +195,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.refs.$ref).toBe(
       '#/components/schemas/FlowSurfaceRefsMap',
     );
-    expect(schemas.FlowSurfaceValidatePlanRequest.required).toEqual(['surface', 'plan']);
+    expect(schemas.FlowSurfaceValidatePlanRequest.required).toEqual(['plan']);
+    expect(schemas.FlowSurfacePlanSelector.oneOf).toEqual(
+      expect.arrayContaining([
+        { $ref: '#/components/schemas/FlowSurfacePlanSelectorByRef' },
+        { $ref: '#/components/schemas/FlowSurfacePlanSelectorByLocator' },
+        { $ref: '#/components/schemas/FlowSurfacePlanSelectorByStep' },
+      ]),
+    );
     expect(schemas.FlowSurfaceValidatePlanResponse.properties.compiledSteps.items.$ref).toBe(
       '#/components/schemas/FlowSurfacePlanCompiledStep',
     );
@@ -234,13 +241,23 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogItem',
     );
-    expect(schemas.FlowSurfaceCatalogResponse.properties.configureOptions.$ref).toBe(
-      '#/components/schemas/FlowSurfaceConfigureOptions',
+    expect(schemas.FlowSurfaceCatalogResponse.properties.scenario.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCatalogScenario',
     );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.selectedSections.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCatalogSection',
+    );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.node.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCatalogNodeInfo',
+    );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.configureOptions).toBeUndefined();
     expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
     );
     expect(schemas.FlowSurfaceCatalogItem.properties.configureOptions.$ref).toBe(
+      '#/components/schemas/FlowSurfaceConfigureOptions',
+    );
+    expect(schemas.FlowSurfaceCatalogNodeInfo.properties.configureOptions.$ref).toBe(
       '#/components/schemas/FlowSurfaceConfigureOptions',
     );
     expect(schemas.FlowSurfaceCatalogItem.properties.resourceBindings.items.$ref).toBe(

@@ -10,10 +10,12 @@
 import type {
   FlowSurfaceMutateOp,
   FlowSurfacePlanSelector,
+  FlowSurfacePlanStepRef,
   FlowSurfacePlanStepAction,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
+  FlowSurfaceSurfaceSelector,
 } from '../types';
 
 export type FlowSurfaceResolvedRef = {
@@ -27,24 +29,30 @@ export type FlowSurfaceResolvedRef = {
 };
 
 export type FlowSurfaceResolvedSelectorSummary = {
-  uid: string;
-  kind: string;
+  uid?: string;
+  kind?: string;
   ref?: string;
-  source: FlowSurfaceResolvedRef['source'];
+  step?: string;
+  path?: string;
+  source: FlowSurfaceResolvedRef['source'] | 'step';
 };
 
 export type FlowSurfacePlanSurfaceContext = {
-  surfaceSelector: FlowSurfacePlanSelector;
-  surfaceTarget: FlowSurfaceReadLocator;
-  surfaceResolved: FlowSurfaceResolvedTarget;
-  rawTree: any;
-  publicTree: any;
+  surfaceSelector?: FlowSurfaceSurfaceSelector;
+  surfaceTarget?: FlowSurfaceReadLocator;
+  surfaceResolved?: FlowSurfaceResolvedTarget;
+  rawTree?: any;
+  publicTree?: any;
   publicNodeMap: Record<string, any>;
-  targetSummary: FlowSurfaceReadTarget;
-  fingerprint: string;
+  targetSummary: FlowSurfaceReadTarget | null;
+  fingerprint: string | null;
   uidSet: Set<string>;
   refMap: Map<string, FlowSurfaceResolvedRef>;
   requestRefMap: Map<string, FlowSurfaceResolvedRef>;
+};
+
+export type FlowSurfaceCompiledPlanStepSelectorRef = FlowSurfacePlanStepRef & {
+  summary: FlowSurfaceResolvedSelectorSummary;
 };
 
 export type FlowSurfaceCompiledPlanStep = {
@@ -52,7 +60,9 @@ export type FlowSurfaceCompiledPlanStep = {
   id?: string;
   action: FlowSurfacePlanStepAction;
   payload: Record<string, any>;
+  executionPayload?: Record<string, any>;
   resolvedSelectors: Partial<Record<'target' | 'source', FlowSurfaceResolvedSelectorSummary>>;
   usedRefs: FlowSurfaceResolvedRef[];
+  usedStepRefs: FlowSurfaceCompiledPlanStepSelectorRef[];
   mutateOp?: FlowSurfaceMutateOp;
 };

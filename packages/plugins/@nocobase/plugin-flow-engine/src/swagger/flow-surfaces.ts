@@ -886,8 +886,28 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfacePlanSelector: {
+  FlowSurfacePlanSelectorByStep: {
+    type: 'object',
+    required: ['step'],
+    properties: {
+      step: {
+        type: 'string',
+      },
+      path: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceSurfaceSelector: {
     oneOf: [ref('FlowSurfacePlanSelectorByRef'), ref('FlowSurfacePlanSelectorByLocator')],
+  },
+  FlowSurfacePlanSelector: {
+    oneOf: [
+      ref('FlowSurfacePlanSelectorByRef'),
+      ref('FlowSurfacePlanSelectorByLocator'),
+      ref('FlowSurfacePlanSelectorByStep'),
+    ],
   },
   FlowSurfaceBindRef: {
     type: 'object',
@@ -942,7 +962,13 @@ const schemas = {
       },
       source: {
         type: 'string',
-        enum: ['declared', 'request', 'system'],
+        enum: ['declared', 'request', 'system', 'step'],
+      },
+      step: {
+        type: 'string',
+      },
+      path: {
+        type: 'string',
       },
     },
     additionalProperties: false,
@@ -1134,6 +1160,10 @@ const schemas = {
         type: 'string',
         enum: ['page', 'tab', 'block', 'field', 'action'],
       },
+      scope: {
+        type: 'string',
+        enum: ['block', 'record', 'form', 'filterForm', 'actionPanel'],
+      },
       scene: {
         type: 'string',
       },
@@ -1192,6 +1222,106 @@ const schemas = {
       },
     },
     additionalProperties: true,
+  },
+  FlowSurfaceCatalogSection: {
+    type: 'string',
+    enum: ['blocks', 'fields', 'actions', 'recordActions', 'node'],
+  },
+  FlowSurfaceCatalogExpand: {
+    type: 'string',
+    enum: ['item.configureOptions', 'item.contracts', 'item.allowedContainerUses', 'node.contracts'],
+  },
+  FlowSurfaceCatalogPopupScenario: {
+    type: 'object',
+    required: ['kind', 'scene', 'hasCurrentRecord', 'hasAssociationContext'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['plainPopup', 'recordPopup', 'associationPopup'],
+      },
+      scene: {
+        type: 'string',
+        enum: ['new', 'one', 'many', 'select', 'subForm', 'bulkEditForm', 'generic'],
+      },
+      hasCurrentRecord: {
+        type: 'boolean',
+      },
+      hasAssociationContext: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogFieldContainerScenario: {
+    type: 'object',
+    required: ['kind'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['form', 'details', 'table', 'filter-form'],
+      },
+      targetMode: {
+        type: 'string',
+        enum: ['single', 'multiple'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogActionContainerScenario: {
+    type: 'object',
+    required: ['scope'],
+    properties: {
+      scope: {
+        type: 'string',
+        enum: ['block', 'record', 'form', 'filterForm', 'actionPanel'],
+      },
+      ownerUse: {
+        type: 'string',
+      },
+      recordActionContainerUse: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogScenario: {
+    type: 'object',
+    required: ['surfaceKind'],
+    properties: {
+      surfaceKind: {
+        type: 'string',
+        enum: ['global', 'page', 'tab', 'grid', 'block', 'node'],
+      },
+      popup: ref('FlowSurfaceCatalogPopupScenario'),
+      fieldContainer: ref('FlowSurfaceCatalogFieldContainerScenario'),
+      actionContainer: ref('FlowSurfaceCatalogActionContainerScenario'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogNodeInfo: {
+    type: 'object',
+    required: ['editableDomains', 'configureOptions'],
+    properties: {
+      editableDomains: {
+        type: 'array',
+        items: ref('FlowSurfaceNodeDomain'),
+      },
+      configureOptions: ref('FlowSurfaceConfigureOptions'),
+      settingsSchema: ANY_OBJECT_SCHEMA,
+      settingsContract: {
+        type: 'object',
+        properties: {
+          props: ref('FlowSurfaceDomainContract'),
+          decoratorProps: ref('FlowSurfaceDomainContract'),
+          stepParams: ref('FlowSurfaceDomainContract'),
+          flowRegistry: ref('FlowSurfaceDomainContract'),
+        },
+        additionalProperties: false,
+      },
+      eventCapabilities: ref('FlowSurfaceEventCapabilities'),
+      layoutCapabilities: ref('FlowSurfaceLayoutCapabilities'),
+    },
+    additionalProperties: false,
   },
   FlowSurfaceGetTreeNode: {
     type: 'object',
@@ -1451,6 +1581,14 @@ const schemas = {
     type: 'object',
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
+      sections: {
+        type: 'array',
+        items: ref('FlowSurfaceCatalogSection'),
+      },
+      expand: {
+        type: 'array',
+        items: ref('FlowSurfaceCatalogExpand'),
+      },
     },
     additionalProperties: false,
   },
@@ -1460,6 +1598,11 @@ const schemas = {
       target: {
         allOf: [ref('FlowSurfaceResolvedTarget')],
         nullable: true,
+      },
+      scenario: ref('FlowSurfaceCatalogScenario'),
+      selectedSections: {
+        type: 'array',
+        items: ref('FlowSurfaceCatalogSection'),
       },
       blocks: {
         type: 'array',
@@ -1480,24 +1623,7 @@ const schemas = {
           'Public record/item-level actions exposed for record-capable targets such as table/details/list/gridCard.',
         items: ref('FlowSurfaceCatalogItem'),
       },
-      editableDomains: {
-        type: 'array',
-        items: ref('FlowSurfaceNodeDomain'),
-      },
-      configureOptions: ref('FlowSurfaceConfigureOptions'),
-      settingsSchema: ANY_OBJECT_SCHEMA,
-      settingsContract: {
-        type: 'object',
-        properties: {
-          props: ref('FlowSurfaceDomainContract'),
-          decoratorProps: ref('FlowSurfaceDomainContract'),
-          stepParams: ref('FlowSurfaceDomainContract'),
-          flowRegistry: ref('FlowSurfaceDomainContract'),
-        },
-        additionalProperties: false,
-      },
-      eventCapabilities: ref('FlowSurfaceEventCapabilities'),
-      layoutCapabilities: ref('FlowSurfaceLayoutCapabilities'),
+      node: ref('FlowSurfaceCatalogNodeInfo'),
     },
     additionalProperties: false,
   },
@@ -2145,9 +2271,9 @@ const schemas = {
   },
   FlowSurfaceValidatePlanRequest: {
     type: 'object',
-    required: ['surface', 'plan'],
+    required: ['plan'],
     properties: {
-      surface: ref('FlowSurfacePlanSelector'),
+      surface: ref('FlowSurfaceSurfaceSelector'),
       expectedFingerprint: {
         type: 'string',
       },
@@ -2162,9 +2288,13 @@ const schemas = {
   FlowSurfaceValidatePlanResponse: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceReadTarget'),
+      target: {
+        allOf: [ref('FlowSurfaceReadTarget')],
+        nullable: true,
+      },
       fingerprint: {
         type: 'string',
+        nullable: true,
       },
       refs: ref('FlowSurfaceRefsMap'),
       compiledSteps: {
@@ -2180,12 +2310,17 @@ const schemas = {
   FlowSurfaceExecutePlanResponse: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceReadTarget'),
+      target: {
+        allOf: [ref('FlowSurfaceReadTarget')],
+        nullable: true,
+      },
       fingerprintBefore: {
         type: 'string',
+        nullable: true,
       },
       surfaceExistsAfterExecute: {
         type: 'boolean',
+        nullable: true,
       },
       refs: ref('FlowSurfaceRefsMap'),
       compiledSteps: {
