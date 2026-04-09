@@ -94,11 +94,9 @@ import {
   buildCatalogExpandFlags,
   normalizeCatalogExpand as normalizeSmartCatalogExpand,
   normalizeCatalogSections as normalizeSmartCatalogSections,
-} from './catalog-smart';
-import {
   projectCatalogItem as projectSmartCatalogItem,
   projectCatalogNode as projectSmartCatalogNode,
-} from './catalog-smart.projector';
+} from './catalog-smart';
 import { compileComposeExecutionPlan } from './compose-compiler';
 import { executeComposeRuntime } from './compose-runtime';
 import { SurfaceLocator } from './locator';

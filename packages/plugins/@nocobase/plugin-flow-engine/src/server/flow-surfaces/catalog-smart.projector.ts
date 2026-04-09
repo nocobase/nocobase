@@ -93,8 +93,6 @@ export function buildFieldCatalogLightCandidate(item: Record<string, any>): Flow
   });
 }
 
-export const buildFieldCatalogCandidate = buildFieldCatalogLightCandidate;
-
 export function projectCatalogItem(
   item: Record<string, any>,
   expand: FlowSurfaceCatalogExpandFlags,
@@ -141,10 +139,6 @@ export function expandFieldCatalogCandidate(
 ): FlowSurfaceCatalogProjectedItem {
   return projectCatalogItem(buildFieldCatalogLightCandidate(item), expand, options);
 }
-
-export const decorateFieldCatalogCandidate = expandFieldCatalogCandidate;
-
-export function projectCatalogNode(input: FlowSurfaceCatalogNodeProjectInput): FlowSurfaceCatalogNodeProjectResult;
 export function projectCatalogNode(
   node: any,
   resolved: FlowSurfaceCatalogNodeProjectInput['resolved'],
@@ -152,26 +146,17 @@ export function projectCatalogNode(
   options: FlowSurfaceCatalogNodeProjectInput['options'],
 ): FlowSurfaceCatalogNodeProjectResult;
 export function projectCatalogNode(
-  inputOrNode: FlowSurfaceCatalogNodeProjectInput | any,
-  resolved?: FlowSurfaceCatalogNodeProjectInput['resolved'],
-  expand?: FlowSurfaceCatalogExpandFlags,
-  options?: FlowSurfaceCatalogNodeProjectInput['options'],
+  node: any,
+  resolved: FlowSurfaceCatalogNodeProjectInput['resolved'],
+  expand: FlowSurfaceCatalogExpandFlags,
+  options: FlowSurfaceCatalogNodeProjectInput['options'],
 ): FlowSurfaceCatalogNodeProjectResult {
-  let input: FlowSurfaceCatalogNodeProjectInput;
-
-  if (arguments.length === 1) {
-    input = inputOrNode as FlowSurfaceCatalogNodeProjectInput;
-  } else {
-    if (!expand || !options) {
-      throw new TypeError('projectCatalogNode requires expand and options');
-    }
-    input = {
-      node: inputOrNode,
-      resolved: resolved || null,
-      expand,
-      options,
-    };
-  }
+  const input: FlowSurfaceCatalogNodeProjectInput = {
+    node,
+    resolved: resolved || null,
+    expand,
+    options,
+  };
 
   const projected: FlowSurfaceCatalogNodeProjectResult = {
     editableDomains: input.options.getEditableDomains(input.node?.use),

@@ -29,6 +29,7 @@ import type {
 
 export * from './catalog-smart.types';
 export {
+  buildCatalogItemOptionalFields,
   buildFieldCatalogLightCandidate,
   expandFieldCatalogCandidate,
   projectCatalogItem,
@@ -234,6 +235,3 @@ export function analyzeCatalogTarget(
     recordActionContainerUse,
   };
 }
-
-export const buildCatalogScenario = scenario;
-export const selectCatalogSections = selectedSections;

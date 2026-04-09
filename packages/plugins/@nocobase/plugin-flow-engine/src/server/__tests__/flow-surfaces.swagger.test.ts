@@ -255,6 +255,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogResponse.properties.selectedSections.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogSection',
     );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.selectedSections.description).toContain(
+      'server smart-selects sections for the current target scenario',
+    );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.selectedSections.description).toContain(
+      'treat this field as authoritative',
+    );
     expect(schemas.FlowSurfaceCatalogResponse.properties.node.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogNodeInfo',
     );
@@ -892,6 +898,8 @@ describe('flowSurfaces swagger', () => {
 
     const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
     expect(catalogPath.description).toContain('truly available public capabilities');
+    expect(catalogPath.description).toContain('When `sections` is omitted');
+    expect(catalogPath.description).toContain('`selectedSections` in the response as the final authoritative result');
     expect(catalogPath.description).toContain('`loggedIn`');
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
     expect(composePath.description).toContain('low-level building primitive');
