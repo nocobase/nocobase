@@ -1,7 +1,7 @@
 ---
 scope: GENERAL
 name: data-query
-description: Using tools to query data or counting data from specified datasource
+description: Inspect schemas, retrieve records, and run aggregate queries on specified datasources
 tools:
   - getDataSources
   - getCollectionNames

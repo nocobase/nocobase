@@ -36,7 +36,7 @@ export type ToolsOptions = {
       hideOkButton?: boolean;
       useOnOk?: (
         decisions: ToolsUIProperties['decisions'],
-        adjustArgs: Record<string, any> | unknown,
+        adjustArgs: Record<string, any>,
       ) => {
         onOk: () => void | Promise<void>;
       };

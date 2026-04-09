@@ -13,11 +13,38 @@ import { BarChartOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design
 import { css, keyframes } from '@emotion/css';
 import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { useT } from '../../../locale';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 import { BusinessReport, BusinessReportRenderState } from './report-utils';
 
-const autoOpenedToolIds = new Set<string>();
+class BoundedSet<T> {
+  private readonly items = new Set<T>();
+
+  constructor(private readonly maxSize: number) {}
+
+  has(value: T) {
+    return this.items.has(value);
+  }
+
+  add(value: T) {
+    if (this.items.has(value)) {
+      return this;
+    }
+
+    if (this.items.size >= this.maxSize) {
+      const oldestValue = this.items.values().next().value as T | undefined;
+      if (oldestValue !== undefined) {
+        this.items.delete(oldestValue);
+      }
+    }
+
+    this.items.add(value);
+    return this;
+  }
+}
+
+const autoOpenedToolIds = new BoundedSet<string>(200);
 const loadingBar = keyframes`
   0% {
     transform: translateX(-100%);
@@ -30,6 +57,7 @@ const loadingBar = keyframes`
 export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = ({ messageId, toolCall }) => {
   const t = useT();
   const { token } = useToken();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   const messages = useChatMessagesStore.use.messages();
   const responseLoading = useChatMessagesStore.use.responseLoading();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
@@ -79,12 +107,22 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
     if (!(toolCall.status === 'success' && toolCall.invokeStatus === 'done')) {
       return;
     }
-    if (autoOpenedToolIds.has(toolCall.id)) {
+    const autoOpenKey = `${currentConversation || 'global'}:${toolCall.id}`;
+    if (autoOpenedToolIds.has(autoOpenKey)) {
       return;
     }
-    autoOpenedToolIds.add(toolCall.id);
+    autoOpenedToolIds.add(autoOpenKey);
     openModal();
-  }, [latestMessageId, messageId, openModal, responseLoading, toolCall.id, toolCall.status, toolCall.invokeStatus]);
+  }, [
+    currentConversation,
+    latestMessageId,
+    messageId,
+    openModal,
+    responseLoading,
+    toolCall.id,
+    toolCall.status,
+    toolCall.invokeStatus,
+  ]);
 
   useEffect(() => {
     if (!hasLiveContent) {
