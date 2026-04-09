@@ -6153,10 +6153,6 @@ export class FlowSurfacesService {
     return !hasFlowSurfaceInlinePopupTemplate(popup) && !hasFlowSurfaceInlinePopupBlocks(popup);
   }
 
-  private isNonLocalPopupTarget(openView: any, hostUid?: string) {
-    return !!this.resolveExternalPopupHostUid(hostUid, openView);
-  }
-
   private shouldAutoCompleteDefaultActionPopup(
     actionNode: any,
     popup: Record<string, any> | undefined,
@@ -6169,7 +6165,7 @@ export class FlowSurfacesService {
       return false;
     }
     const openView = this.resolvePopupHostOpenView(actionNode);
-    if (this.isNonLocalPopupTarget(openView, actionNode?.uid)) {
+    if (this.isExternalPopupOpenView(openView, actionNode?.uid)) {
       return false;
     }
     if (!_.isUndefined(popup) && !this.isSemanticallyEmptyInlinePopup(popup)) {
@@ -6359,16 +6355,7 @@ export class FlowSurfacesService {
       return;
     }
     const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultActionPopup(actionNode, popup, options);
-    const isNonLocalPopupTarget = this.isNonLocalPopupTarget(openView, actionNode?.uid);
     if (_.isUndefined(popup) && !shouldAutoCompleteDefaultPopup) {
-      return;
-    }
-    if (
-      !_.isUndefined(popup) &&
-      isNonLocalPopupTarget &&
-      !shouldAutoCompleteDefaultPopup &&
-      this.isSemanticallyEmptyInlinePopup(popup)
-    ) {
       return;
     }
 
