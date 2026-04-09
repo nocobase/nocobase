@@ -33,7 +33,8 @@ import {
   buildPersistedRootPageModel,
   buildPopupPageTree,
 } from './builder';
-import { buildAutoLayout, compileApplySpec } from './compiler';
+import { compileApplySpec } from './apply/compiler';
+import { buildAutoLayout } from './apply/layout';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import {
   FlowSurfaceBadRequestError,
@@ -59,7 +60,7 @@ import {
   assertRequestRefsPersistable as assertPlanningRequestRefsPersistable,
   persistDeclaredRefForNode as persistPlanningDeclaredRefForNode,
 } from './planning/ref-persistence';
-import { validatePlanPayloadShape as validatePlanningPayloadShape } from './planning/payload-shape';
+import { validateFlowSurfacePayloadShape } from './payload-shape';
 import type { FlowSurfacePlanSurfaceContext } from './planning/types';
 import {
   MULTI_VALUE_ASSOCIATION_INTERFACES,
@@ -2148,6 +2149,9 @@ export class FlowSurfacesService {
       case 'convertTemplateToCopy':
         return this.convertTemplateToCopy(payload, options);
     }
+
+    const unsupportedAction: never = action;
+    throwInternalError(`flowSurfaces plan-only action '${unsupportedAction}' is not supported`);
   }
 
   private isSurfaceReadbackMissingError(error: unknown) {
@@ -6199,7 +6203,7 @@ export class FlowSurfacesService {
       popupTemplateHostUid?: string;
     } = {},
   ) {
-    validatePlanningPayloadShape('updateSettings', values, 'values');
+    validateFlowSurfacePayloadShape('updateSettings', values, 'values');
     const writeTarget = this.normalizeWriteTarget('updateSettings', values?.target, values);
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
@@ -6804,7 +6808,7 @@ export class FlowSurfacesService {
 
   async apply(values: FlowSurfaceApplyValues, options: { transaction?: any } = {}) {
     this.assertApplyMode(values.mode);
-    validatePlanningPayloadShape('apply', values?.spec, 'spec');
+    validateFlowSurfacePayloadShape('apply', values?.spec, 'spec');
     const target = this.normalizeWriteTarget('apply', values?.target, values);
     const spec = values.spec as FlowSurfaceApplySpec;
     const readback = await this.get(target, options);

@@ -8,12 +8,12 @@
  */
 
 import _ from 'lodash';
-import { throwBadRequest } from '../errors';
-import { FLOW_SURFACE_INTERNAL_META_KEY } from './ref-registry';
+import { throwBadRequest } from './errors';
+import { FLOW_SURFACE_INTERNAL_META_KEY } from './planning/ref-registry';
 
-export function validatePlanPayloadShape(actionName: string, value: any, path: string) {
+export function validateFlowSurfacePayloadShape(actionName: string, value: any, path: string) {
   if (Array.isArray(value)) {
-    value.forEach((item, index) => validatePlanPayloadShape(actionName, item, `${path}[${index}]`));
+    value.forEach((item, index) => validateFlowSurfacePayloadShape(actionName, item, `${path}[${index}]`));
     return;
   }
   if (!_.isPlainObject(value)) {
@@ -33,5 +33,5 @@ export function validatePlanPayloadShape(actionName: string, value: any, path: s
   ) {
     throwBadRequest(`flowSurfaces ${actionName} ${path} cannot mix template with local popup content`);
   }
-  Object.entries(value).forEach(([key, child]) => validatePlanPayloadShape(actionName, child, `${path}.${key}`));
+  Object.entries(value).forEach(([key, child]) => validateFlowSurfacePayloadShape(actionName, child, `${path}.${key}`));
 }

@@ -27,7 +27,7 @@ type NormalizePlanSelectorDeps = {
 };
 
 type NormalizePlanStepsDeps = NormalizePlanSelectorDeps & {
-  validatePlanPayloadShape: (actionName: string, value: any, path: string) => void;
+  validatePayloadShape: (actionName: string, value: any, path: string) => void;
 };
 
 type CompilePlanStepDeps = NormalizePlanSelectorDeps & {
@@ -104,7 +104,7 @@ export function normalizePlanSteps(
         )}; use selectors`,
       );
     }
-    deps.validatePlanPayloadShape(actionName, stepValues, `plan.steps[${index}].values`);
+    deps.validatePayloadShape(actionName, stepValues, `plan.steps[${index}].values`);
     return {
       id: typeof rawStep.id === 'string' && rawStep.id.trim() ? rawStep.id.trim() : undefined,
       action: action as FlowSurfacePlanStep['action'],

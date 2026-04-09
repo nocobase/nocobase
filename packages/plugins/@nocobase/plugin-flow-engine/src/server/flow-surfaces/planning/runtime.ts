@@ -35,7 +35,7 @@ import {
   collectRequestRefsToPersist,
   normalizeBindRefs as normalizePlanningBindRefs,
 } from './ref-registry';
-import { validatePlanPayloadShape as validatePlanningPayloadShape } from './payload-shape';
+import { validateFlowSurfacePayloadShape } from '../payload-shape';
 import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
 
 type FlowSurfacePlanningRuntimeDeps = {
@@ -159,7 +159,7 @@ function normalizePlanSteps(
 ) {
   return normalizePlanningSteps(actionName, values, {
     normalizeGetTarget: deps.normalizeGetTarget,
-    validatePlanPayloadShape: validatePlanningPayloadShape,
+    validatePayloadShape: validateFlowSurfacePayloadShape,
   });
 }
 

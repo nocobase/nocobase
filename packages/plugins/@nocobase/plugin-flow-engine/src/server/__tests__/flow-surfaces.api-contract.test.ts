@@ -473,6 +473,76 @@ describe('flowSurfaces API contract', () => {
     }
   });
 
+  it('should reject ambiguous duplicate apply matches unless callers provide explicit uid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Duplicate apply matching page',
+      tabTitle: 'Duplicate apply matching tab',
+    });
+
+    const firstMarkdown = await addBlockData(rootAgent, {
+      target: {
+        uid: page.gridUid,
+      },
+      type: 'markdown',
+    });
+    await addBlockData(rootAgent, {
+      target: {
+        uid: page.gridUid,
+      },
+      type: 'markdown',
+    });
+
+    const ambiguousApplyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        spec: {
+          subModels: {
+            grid: {
+              use: 'BlockGridModel',
+              subModels: {
+                items: [{ use: 'MarkdownBlockModel' }],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(ambiguousApplyRes.status).toBe(400);
+    expect(readErrorMessage(ambiguousApplyRes)).toContain(
+      "cannot safely match duplicate 'MarkdownBlockModel' nodes under 'BlockGridModel.items'",
+    );
+
+    const explicitApplyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        spec: {
+          subModels: {
+            grid: {
+              use: 'BlockGridModel',
+              subModels: {
+                items: [{ uid: firstMarkdown.uid, use: 'MarkdownBlockModel' }],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(explicitApplyRes.status).toBe(200);
+
+    const updatedTab = await getSurface(rootAgent, {
+      tabSchemaUid: page.tabSchemaUid,
+    });
+    expect(_.castArray(updatedTab.tree?.subModels?.grid?.subModels?.items || []).map((item) => item.uid)).toEqual([
+      firstMarkdown.uid,
+    ]);
+  });
+
   it('should treat missing mutate atomic as v1 atomic execution and reject atomic=false', async () => {
     const rollbackPageSchemaUid = 'default_atomic_page_schema_uid';
     const rollbackTabSchemaUid = 'default_atomic_tab_schema_uid';
