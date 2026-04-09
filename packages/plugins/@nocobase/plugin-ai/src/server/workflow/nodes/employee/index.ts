@@ -11,6 +11,7 @@ import { FlowNodeModel, Instruction, InstructionResult, JOB_STATUS, Processor } 
 import _ from 'lodash';
 import PluginAIServer from '../../../plugin';
 import { AIEmployee } from '../../../ai-employees/ai-employee';
+import { Model, Transactionable } from '@nocobase/database';
 
 export class AIEmployeeInstruction extends Instruction {
   run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
@@ -189,3 +190,36 @@ export class AIEmployeeInstruction extends Instruction {
     return job;
   }
 }
+
+export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
+  plugin.db.on('aiWorkflowTasks.beforeSave', async (model: Model, options: Transactionable) => {
+    if (!model.isNewRecord && !model.changed('status')) {
+      return;
+    }
+    const values = model.toJSON();
+    options.transaction.afterCommit(async () => {
+      const assignees = await plugin.db.getRepository('usersAiWorkflowTasks').find({
+        filter: {
+          aiWorkflowTaskId: values.id,
+        },
+      });
+      if (!assignees?.length) {
+        return;
+      }
+
+      for (const assignee of assignees) {
+        plugin.app.emit('ws:sendToUser', {
+          userId: assignee.userId,
+          message: {
+            type: 'ai-employee-tasks:status',
+            payload: {
+              taskId: values.id,
+              sessionId: values.sessionId,
+              status: values.status,
+            },
+          },
+        });
+      }
+    });
+  });
+};

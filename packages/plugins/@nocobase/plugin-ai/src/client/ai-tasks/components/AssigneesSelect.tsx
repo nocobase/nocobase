@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RemoteSelect, Variable } from '@nocobase/client';
 import { useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
 
@@ -20,6 +20,11 @@ function isUserKeyField(field) {
 
 export function AssigneesSelect({ multiple = false, value = [], onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
+
+  const handler = useMemo(
+    () => (multiple ? (v) => onChange(v) : (v) => onChange(v != null ? [v] : [])),
+    [multiple, onChange],
+  );
 
   return (
     <Variable.Input
@@ -39,9 +44,7 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
         }}
         manual={false}
         value={value[0]}
-        onChange={(v) => {
-          onChange(v != null ? [v] : []);
-        }}
+        onChange={handler}
         multiple={multiple}
       />
     </Variable.Input>

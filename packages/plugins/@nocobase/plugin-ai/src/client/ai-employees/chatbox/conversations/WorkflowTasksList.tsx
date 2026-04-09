@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Badge, Card, List, Spin, Tag, theme } from 'antd';
-import { useAPIClient, useRequest } from '@nocobase/client';
+import { useAPIClient, useApp, useRequest } from '@nocobase/client';
 import { ListEmpty, WorkflowTask } from './common';
 
 type UseWorkflowTasksListOptions = {
@@ -123,7 +123,16 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
 export type WorkflowTasksListController = ReturnType<typeof useWorkflowTasksList>;
 
 export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListController }> = ({ controller }) => {
+  const app = useApp();
   const { token } = theme.useToken();
+
+  const onAIEmployeeTaskStatusUpdate = useMemo(() => controller.refresh, [controller.refresh]);
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    };
+  }, [app.eventBus, onAIEmployeeTaskStatusUpdate]);
 
   if (controller.loading && !controller.workflowTasks.length) {
     return (
