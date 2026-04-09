@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { Badge, Card, List, Spin, Tag, theme } from 'antd';
-import { useAPIClient, useApp, useRequest } from '@nocobase/client';
-import { ListEmpty, WorkflowTask } from './common';
+import { ListEmpty } from './common';
+import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string) => void;
@@ -31,89 +31,31 @@ const getStatusTagColor = (status: string) => {
 };
 
 export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksListOptions) => {
-  const api = useAPIClient();
-  const keywordRef = useRef('');
-
-  const workflowTasksService = useRequest<{ data: WorkflowTask[] }>(
-    async (search = '') => {
-      const filter: any = {};
-      if (search) {
-        filter.$or = [
-          { workflowTitle: { $includes: search } },
-          { nodeTitle: { $includes: search } },
-          { status: { $includes: search } },
-        ];
-      }
-
-      const res = await api.resource('aiWorkflowTasks').list({
-        sort: ['-updatedAt'],
-        pageSize: 50,
-        filter,
-      });
-      return res?.data;
-    },
-    {
-      manual: false,
-    },
-  );
-
-  const unreadWorkflowTaskCountService = useRequest<{ count: number }>(
-    async () => {
-      const res = await api.resource('aiWorkflowTasks').unreadCount();
-      return res?.data?.data ?? res?.data;
-    },
-    {
-      manual: false,
-    },
-  );
+  const { loading, workflowTasks, unreadCount, runSearch, refresh, acceptWorkflowTask, getWorkflowTaskBySession } =
+    useWorkflowTasks();
 
   const onSelectWorkflowTask = useCallback(
     async (sessionId: string) => {
-      await api
-        .resource('aiWorkflowTasks')
-        .accept({
-          values: {
-            sessionId,
-          },
-        })
-        .catch(() => undefined);
+      await acceptWorkflowTask(sessionId);
 
       let username: string | undefined;
       try {
-        const res = await api.resource('aiWorkflowTasks').getBySession({
-          values: {
-            sessionId,
-          },
-        });
-        username = res?.data?.data?.config?.username ?? res?.data?.config?.username;
+        const task = await getWorkflowTaskBySession(sessionId);
+        username = task?.config?.username;
       } catch {
         username = undefined;
       }
 
-      unreadWorkflowTaskCountService.run();
-      workflowTasksService.run(keywordRef.current || '');
+      refresh();
       onOpenConversation(sessionId, username);
     },
-    [api, onOpenConversation, unreadWorkflowTaskCountService, workflowTasksService],
+    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh],
   );
-
-  const runSearch = useCallback(
-    (keyword = '') => {
-      keywordRef.current = keyword;
-      workflowTasksService.run(keyword);
-    },
-    [workflowTasksService],
-  );
-
-  const refresh = useCallback(() => {
-    workflowTasksService.run(keywordRef.current || '');
-    unreadWorkflowTaskCountService.run();
-  }, [workflowTasksService, unreadWorkflowTaskCountService]);
 
   return {
-    loading: workflowTasksService.loading,
-    workflowTasks: workflowTasksService.data?.data || [],
-    unreadCount: unreadWorkflowTaskCountService.data?.count || 0,
+    loading,
+    workflowTasks,
+    unreadCount,
     onSelectWorkflowTask,
     runSearch,
     refresh,
@@ -123,16 +65,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
 export type WorkflowTasksListController = ReturnType<typeof useWorkflowTasksList>;
 
 export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListController }> = ({ controller }) => {
-  const app = useApp();
   const { token } = theme.useToken();
-
-  const onAIEmployeeTaskStatusUpdate = useMemo(() => controller.refresh, [controller.refresh]);
-  useEffect(() => {
-    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
-    return () => {
-      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
-    };
-  }, [app.eventBus, onAIEmployeeTaskStatusUpdate]);
 
   if (controller.loading && !controller.workflowTasks.length) {
     return (
