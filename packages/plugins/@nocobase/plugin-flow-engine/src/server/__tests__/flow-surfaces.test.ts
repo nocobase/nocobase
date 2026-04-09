@@ -849,6 +849,7 @@ describe('flowSurfaces resource', () => {
       title: 'Catalog page',
       tabTitle: 'Catalog tab',
     });
+    const catalogExpand = ['item.configureOptions', 'item.contracts', 'node.contracts'];
 
     const tabCatalog = await getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -856,6 +857,7 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: page.tabSchemaUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
@@ -881,7 +883,7 @@ describe('flowSurfaces resource', () => {
     expect(tabCatalog.blocks.find((item: any) => item.key === 'form')).toBeUndefined();
     expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
     expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
-    expect(tabCatalog.configureOptions).toMatchObject({
+    expect(tabCatalog.node.configureOptions).toMatchObject({
       title: {
         type: 'string',
       },
@@ -892,7 +894,7 @@ describe('flowSurfaces resource', () => {
         type: 'string',
       },
     });
-    expect(tabCatalog.settingsContract?.stepParams?.groups?.pageTabSettings?.allowedPaths).toEqual(
+    expect(tabCatalog.node.settingsContract?.stepParams?.groups?.pageTabSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['tab.title', 'tab.icon', 'tab.documentTitle']),
     );
     expect(
@@ -975,11 +977,12 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: tableBlockUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
-    expect(tableCatalog.blocks).toEqual([]);
-    expect(tableCatalog.configureOptions).toMatchObject({
+    expect(tableCatalog.blocks).toBeUndefined();
+    expect(tableCatalog.node.configureOptions).toMatchObject({
       title: {
         type: 'string',
       },
@@ -1028,7 +1031,7 @@ describe('flowSurfaces resource', () => {
         'triggerWorkflow',
       ]),
     );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.resourceSettings?.allowedPaths).toEqual(
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.resourceSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
         'init.dataSourceKey',
         'init.collectionName',
@@ -1036,7 +1039,7 @@ describe('flowSurfaces resource', () => {
         'init.associationPathName',
       ]),
     );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).toEqual(
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
         'quickEdit.editable',
         'showRowNumbers.showIndex',
@@ -1050,18 +1053,26 @@ describe('flowSurfaces resource', () => {
         'dragSortBy.dragSortBy',
       ]),
     );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('quickEdit');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('quickEdit.*');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('dataScope');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('dataScope.*');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+      'quickEdit',
+    );
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+      'quickEdit.*',
+    );
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+      'dataScope',
+    );
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+      'dataScope.*',
+    );
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
       'defaultSorting',
     );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
       'defaultSorting.*',
     );
     expect(
-      tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.pathSchemas?.['dataScope.filter'],
+      tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.pathSchemas?.['dataScope.filter'],
     ).toMatchObject({
       type: 'object',
       required: expect.arrayContaining(['logic', 'items']),
@@ -1076,7 +1087,8 @@ describe('flowSurfaces resource', () => {
       'x-flowSurfaceFormat': 'filter-group',
     });
     expect(
-      tableCatalog.settingsSchema?.stepParams?.properties?.tableSettings?.properties?.dataScope?.properties?.filter,
+      tableCatalog.node.settingsSchema?.stepParams?.properties?.tableSettings?.properties?.dataScope?.properties
+        ?.filter,
     ).toMatchObject({
       type: 'object',
       required: expect.arrayContaining(['logic', 'items']),
@@ -1090,7 +1102,7 @@ describe('flowSurfaces resource', () => {
       },
       'x-flowSurfaceFormat': 'filter-group',
     });
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.eventBindingSteps).toEqual(
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.eventBindingSteps).toEqual(
       expect.arrayContaining([
         'quickEdit',
         'showRowNumbers',
@@ -1104,7 +1116,7 @@ describe('flowSurfaces resource', () => {
         'dragSortBy',
       ]),
     );
-    expect(tableCatalog.settingsContract?.stepParams?.allowedKeys).not.toContain('paginationSettings');
+    expect(tableCatalog.node.settingsContract?.stepParams?.allowedKeys).not.toContain('paginationSettings');
     expect(tableCatalog.fields.some((item: any) => item.key === 'nickname')).toBe(true);
     expect(tableCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
     expect(tableCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
@@ -1151,6 +1163,7 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: actionsColumnUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
@@ -1192,7 +1205,7 @@ describe('flowSurfaces resource', () => {
         type: 'object',
       },
     });
-    expect(rowActionCatalog.settingsContract?.props?.allowedKeys).toEqual(
+    expect(rowActionCatalog.node.settingsContract?.props?.allowedKeys).toEqual(
       expect.arrayContaining(['title', 'tooltip', 'width', 'fixed']),
     );
 
@@ -1206,14 +1219,15 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: createFormUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
-    expect(createFormCatalog.blocks).toEqual([]);
+    expect(createFormCatalog.blocks).toBeUndefined();
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'js', 'jsItem', 'triggerWorkflow']),
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
         'layout.layout',
         'layout.labelAlign',
@@ -1223,29 +1237,29 @@ describe('flowSurfaces resource', () => {
         'assignRules.value',
       ]),
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'layout',
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'layout.*',
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'assignRules',
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'assignRules.*',
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['linkageRules.value']),
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
       'linkageRules',
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
       'linkageRules.*',
     );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual([]);
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual([]);
+    expect(createFormCatalog.node.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
       expect.arrayContaining(['init', 'refresh']),
     );
     expect(
@@ -1275,11 +1289,12 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: editFormUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
-    expect(editFormCatalog.blocks).toEqual([]);
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
+    expect(editFormCatalog.blocks).toBeUndefined();
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
         'layout.layout',
         'layout.labelAlign',
@@ -1289,35 +1304,37 @@ describe('flowSurfaces resource', () => {
         'assignRules.value',
       ]),
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'layout',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'layout.*',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'assignRules',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
       'assignRules.*',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['linkageRules.value']),
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
       'linkageRules',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
       'linkageRules.*',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['dataScope.filter']),
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain('dataScope');
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain(
+      'dataScope',
+    );
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain(
       'dataScope.*',
     );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
+    expect(editFormCatalog.node.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
       expect.arrayContaining(['init', 'dataScope', 'refresh']),
     );
     expect(editFormCatalog.fields.find((item: any) => item.key === 'department.title')).toMatchObject({
@@ -1342,10 +1359,11 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: detailsUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
-    expect(detailsCatalog.blocks).toEqual([]);
+    expect(detailsCatalog.blocks).toBeUndefined();
     expect(detailsCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'view',
@@ -1359,29 +1377,31 @@ describe('flowSurfaces resource', () => {
         'triggerWorkflow',
       ]),
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).toEqual(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['layout.layout', 'dataScope.filter', 'defaultSorting.sort', 'linkageRules.value']),
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain('layout');
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'layout',
+    );
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'layout.*',
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'dataScope',
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'dataScope.*',
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'defaultSorting',
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'defaultSorting.*',
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'linkageRules',
     );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+    expect(detailsCatalog.node.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'linkageRules.*',
     );
     expect(detailsCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
@@ -1401,6 +1421,7 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: listUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
@@ -1419,6 +1440,7 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: gridCardUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
@@ -1439,14 +1461,17 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: filterFormUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
-    expect(filterFormCatalog.blocks).toEqual([]);
+    expect(filterFormCatalog.blocks).toBeUndefined();
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'reset', 'js']),
     );
-    expect(filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths).toEqual(
+    expect(
+      filterFormCatalog.node.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+    ).toEqual(
       expect.arrayContaining([
         'layout.layout',
         'layout.labelAlign',
@@ -1457,16 +1482,16 @@ describe('flowSurfaces resource', () => {
       ]),
     );
     expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+      filterFormCatalog.node.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
     ).not.toContain('layout');
     expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+      filterFormCatalog.node.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
     ).not.toContain('layout.*');
     expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+      filterFormCatalog.node.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
     ).not.toContain('defaultValues');
     expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+      filterFormCatalog.node.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
     ).not.toContain('defaultValues.*');
     expect(
       tableCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
@@ -3565,6 +3590,66 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRes)).toContain('external openView.uid');
   });
 
+  it('should preserve empty action popup payload semantics for external popup targets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'External action popup replace page',
+      tabTitle: 'External action popup replace tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const externalPopupAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'details',
+                type: 'details',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const replaceRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'view',
+        settings: {
+          openView: {
+            uid: externalPopupAction.uid,
+          },
+        },
+        popup: {},
+      },
+    });
+    expect(replaceRes.status).toBe(200);
+    expect(getData(replaceRes).popupPageUid).toBeTruthy();
+
+    const externalPopupReadback = await getSurface(rootAgent, {
+      uid: externalPopupAction.uid,
+    });
+    const externalPopupBlock = _.castArray(
+      externalPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(externalPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(externalPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+  });
+
   it('should reject openView uid when it points to a popup page node', async () => {
     const page = await createPage(rootAgent, {
       title: 'Invalid popup uid page',
@@ -3886,11 +3971,22 @@ describe('flowSurfaces resource', () => {
       settings: {
         title: 'Create New',
       },
+      popup: {},
     });
     expect(addNewAction.uid).toBeTruthy();
 
-    await addRecordAction(rootAgent, tableBlockUid, 'view');
-    await addRecordAction(rootAgent, tableBlockUid, 'edit');
+    const viewAction = await addRecordAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        mode: 'replace',
+      },
+    });
+    const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
+      popup: {
+        layout: {
+          rows: [[{ key: 'defaultEditForm', span: 10 }]],
+        },
+      },
+    });
     await addRecordAction(rootAgent, tableBlockUid, 'popup');
     await addRecordAction(rootAgent, tableBlockUid, 'delete');
 
@@ -3949,8 +4045,177 @@ describe('flowSurfaces resource', () => {
         'field.department.title.wrapper',
       ]),
     );
-    expect(bundle.refs['field.nickname.wrapper'].uid).toBe(nicknameField.wrapperUid);
-    expect(bundle.refs['field.status.wrapper'].uid).toBe(statusField.wrapperUid);
+    expect(Object.values(bundle.refs).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
+    expect(Object.values(bundle.refs).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
+
+    const addNewReadback = await getSurface(rootAgent, {
+      uid: addNewAction.uid,
+    });
+    const addNewPopupTab = _.castArray(addNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const addNewPopupBlock = _.castArray(addNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const addNewPopupFieldPaths = _.castArray(addNewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(addNewPopupTab?.props?.title).toBe('Create New');
+    expect(addNewPopupBlock?.use).toBe('CreateFormModel');
+    expect(addNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(addNewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(addNewPopupFieldPaths).not.toEqual(
+      expect.arrayContaining(['createdAt', 'updatedAt', 'departmentId', 'tasks', 'logs', 'skills']),
+    );
+    expect(_.castArray(addNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    const viewReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const viewPopupTab = _.castArray(viewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const viewPopupBlock = _.castArray(viewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const viewPopupFieldPaths = _.castArray(viewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(viewPopupTab?.props?.title).toBe('Details');
+    expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department', 'createdAt', 'updatedAt']));
+    expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
+
+    const editReadback = await getSurface(rootAgent, {
+      uid: editAction.uid,
+    });
+    const editPopupTab = _.castArray(editReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const editPopupBlock = _.castArray(editPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const editPopupFieldPaths = _.castArray(editPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(editPopupTab?.props?.title).toBe('Edit');
+    expect(editPopupBlock?.use).toBe('EditFormModel');
+    expect(editPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(editPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(editPopupFieldPaths).not.toEqual(
+      expect.arrayContaining(['createdAt', 'updatedAt', 'departmentId', 'tasks', 'logs', 'skills']),
+    );
+    expect(_.castArray(editPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+  });
+
+  it('should auto-complete omitted popup payloads for direct action APIs and inherit custom popup tab titles', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Implicit popup action page',
+      tabTitle: 'Implicit popup action tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const addNewAction = await addAction(rootAgent, tableBlockUid, 'addNew', {
+      settings: {
+        title: 'Create Employee',
+      },
+    });
+    const viewAction = await addRecordAction(rootAgent, tableBlockUid, 'view', {
+      settings: {
+        title: 'Inspect Employee',
+      },
+    });
+    const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
+      settings: {
+        title: 'Modify Employee',
+      },
+    });
+
+    const readActionPopup = async (actionUid: string) => {
+      const actionReadback = await getSurface(rootAgent, {
+        uid: actionUid,
+      });
+      const popupTab = _.castArray(actionReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+      const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+      const popupFieldPaths = _.castArray(popupBlock?.subModels?.grid?.subModels?.items || []).map(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+      );
+      return {
+        popupTab,
+        popupBlock,
+        popupFieldPaths,
+      };
+    };
+
+    expect(addNewAction.popupPageUid).toBeTruthy();
+    expect(addNewAction.popupTabUid).toBeTruthy();
+    expect(addNewAction.popupGridUid).toBeTruthy();
+    const addNewPopup = await readActionPopup(addNewAction.uid);
+    expect(addNewPopup.popupTab?.props?.title).toBe('Create Employee');
+    expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
+    expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(addNewPopup.popupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(addNewPopup.popupFieldPaths).not.toEqual(
+      expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']),
+    );
+    expect(_.castArray(addNewPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    expect(viewAction.popupPageUid).toBeTruthy();
+    expect(viewAction.popupTabUid).toBeTruthy();
+    expect(viewAction.popupGridUid).toBeTruthy();
+    const viewPopup = await readActionPopup(viewAction.uid);
+    expect(viewPopup.popupTab?.props?.title).toBe('Inspect Employee');
+    expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(viewPopup.popupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(viewPopup.popupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
+
+    expect(editAction.popupPageUid).toBeTruthy();
+    expect(editAction.popupTabUid).toBeTruthy();
+    expect(editAction.popupGridUid).toBeTruthy();
+    const editPopup = await readActionPopup(editAction.uid);
+    expect(editPopup.popupTab?.props?.title).toBe('Modify Employee');
+    expect(editPopup.popupBlock?.use).toBe('EditFormModel');
+    expect(editPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(editPopup.popupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(editPopup.popupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
+    expect(_.castArray(editPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+  });
+
+  it('should keep plain popup action empty payloads composable', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Plain popup empty payload page',
+      tabTitle: 'Plain popup empty payload tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const popupActionRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: tableBlockUid,
+        },
+        type: 'popup',
+        popup: {},
+      },
+    });
+    expect(popupActionRes.status).toBe(200);
+    const popupActionData = getData(popupActionRes);
+    expect(popupActionData.popupPageUid).toBeTruthy();
+    expect(popupActionData.popupTabUid).toBeTruthy();
+    expect(popupActionData.popupGridUid).toBeTruthy();
+
+    const popupReadback = await getSurface(rootAgent, {
+      uid: popupActionData.uid,
+    });
+    expect(popupReadback.tree.subModels?.page?.uid).toBe(popupActionData.popupPageUid);
+    expect(_.castArray(popupReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.uid).toBe(
+      popupActionData.popupTabUid,
+    );
   });
 
   it('should support nested popup surfaces to depth 3', async () => {
@@ -4320,7 +4585,7 @@ describe('flowSurfaces resource', () => {
     const clearedFieldReadback = await getSurface(rootAgent, {
       uid: clickableField.fieldUid,
     });
-    expect(clearedFieldReadback.tree.stepParams?.popupSettings).toEqual({});
+    expect(clearedFieldReadback.tree.stepParams?.popupSettings).toBeUndefined();
   });
 
   it('should require explicit filter targets and persist default filter field props plus filterManager bindings', async () => {

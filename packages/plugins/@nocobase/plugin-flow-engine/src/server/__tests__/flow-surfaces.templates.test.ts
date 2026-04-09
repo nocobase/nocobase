@@ -640,6 +640,66 @@ describe('flowSurfaces templates', () => {
     expect(destroyTemplateRes.status).toBe(200);
   });
 
+  it('should reject empty popup payloads when settings target a popup template reference', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup template empty payload page',
+      tabTitle: 'Popup template empty payload tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const sourceAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'details',
+                type: 'details',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const template = await saveTemplate(rootAgent, {
+      target: { uid: sourceAction.uid },
+      name: 'Popup template empty payload guard',
+      description: 'Reusable popup template for validating empty popup payload rejection.',
+      saveMode: 'duplicate',
+    });
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'view',
+        settings: {
+          openView: {
+            template: {
+              uid: template.uid,
+              mode: 'reference',
+            },
+          },
+        },
+        popup: {},
+      },
+    });
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('popup template reference');
+  });
+
   it('should support field popup templates through saveTemplate addField addFields configure and convertTemplateToCopy', async () => {
     const page = await createPage(rootAgent, {
       title: 'Field popup template page',

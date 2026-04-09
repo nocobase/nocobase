@@ -210,9 +210,8 @@ describe('flowSurfaces compose runtime helpers', () => {
           fields: [],
           actions: [
             {
-              key: 'view',
-              type: 'view',
-              popup: {},
+              key: 'addNew',
+              type: 'addNew',
             },
           ],
           recordActions: [],
@@ -371,6 +370,10 @@ describe('flowSurfaces compose runtime helpers', () => {
         expect.objectContaining({
           actionName: 'compose action',
           actionUid: 'action-1',
+        }),
+        expect.objectContaining({
+          actionName: 'compose recordAction',
+          actionUid: 'record-action-1',
         }),
       ]),
     );
@@ -569,6 +572,7 @@ describe('flowSurfaces compose runtime helpers', () => {
         uid: 'record-action-1',
         parentUid: 'actions-column-1',
       }),
+      applyActionPopup: async () => undefined,
       buildExplicitLayoutPayload: async (input) => {
         explicitLayoutInputs.push(input as Record<string, unknown>);
         return {

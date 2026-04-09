@@ -2316,8 +2316,33 @@ describe('flowSurfaces API contract', () => {
               collectionName: 'users',
             },
             fields: ['username', 'nickname'],
-            actions: ['filter', 'addNew', 'refresh'],
-            recordActions: ['view', 'edit', 'delete'],
+            actions: [
+              'filter',
+              {
+                type: 'addNew',
+                popup: {
+                  mode: 'replace',
+                },
+              },
+              'refresh',
+            ],
+            recordActions: [
+              {
+                type: 'view',
+                popup: {
+                  blocks: [],
+                },
+              },
+              {
+                type: 'edit',
+                popup: {
+                  layout: {
+                    rows: [[{ key: 'defaultEditForm', span: 10 }]],
+                  },
+                },
+              },
+              'delete',
+            ],
           },
         ],
         layout: {
@@ -2372,6 +2397,44 @@ describe('flowSurfaces API contract', () => {
     });
     expect(_.castArray(rowActionsReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
       expect.arrayContaining(['ViewActionModel', 'EditActionModel', 'DeleteActionModel']),
+    );
+
+    const composedTableBlock = composed.blocks.find((item: any) => item.key === 'table');
+    const composedAddNewAction = composedTableBlock?.actions?.find((item: any) => item.type === 'addNew');
+    const composedViewAction = composedTableBlock?.recordActions?.find((item: any) => item.type === 'view');
+    const composedEditAction = composedTableBlock?.recordActions?.find((item: any) => item.type === 'edit');
+
+    const addNewPopupReadback = await getSurface(rootAgent, {
+      uid: composedAddNewAction.uid,
+    });
+    const addNewPopupBlock = _.castArray(
+      addNewPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(addNewPopupBlock?.use).toBe('CreateFormModel');
+    expect(addNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
+    expect(_.castArray(addNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    const viewPopupReadback = await getSurface(rootAgent, {
+      uid: composedViewAction.uid,
+    });
+    const viewPopupBlock = _.castArray(
+      viewPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
+
+    const editPopupReadback = await getSurface(rootAgent, {
+      uid: composedEditAction.uid,
+    });
+    const editPopupBlock = _.castArray(
+      editPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(editPopupBlock?.use).toBe('EditFormModel');
+    expect(editPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
+    expect(_.castArray(editPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
     );
 
     const filterReadback = await getSurface(rootAgent, {
@@ -2489,6 +2552,27 @@ describe('flowSurfaces API contract', () => {
         popupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
       ).map((item: any) => item?.use),
     ).toEqual(expect.arrayContaining(['DetailsBlockModel']));
+
+    const defaultViewAction = listBlock.recordActions.find((item: any) => item.type === 'view');
+    const defaultEditAction = listBlock.recordActions.find((item: any) => item.type === 'edit');
+    const defaultViewReadback = await getSurface(rootAgent, {
+      uid: defaultViewAction.uid,
+    });
+    const defaultViewPopupBlock = _.castArray(
+      defaultViewReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(defaultViewPopupBlock?.use).toBe('DetailsBlockModel');
+
+    const defaultEditReadback = await getSurface(rootAgent, {
+      uid: defaultEditAction.uid,
+    });
+    const defaultEditPopupBlock = _.castArray(
+      defaultEditReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(defaultEditPopupBlock?.use).toBe('EditFormModel');
+    expect(_.castArray(defaultEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
   });
 
   it('should compose a grid-card block with item fields block actions and record actions', async () => {
@@ -3091,6 +3175,20 @@ describe('flowSurfaces API contract', () => {
             },
           },
           {
+            key: 'implicitAddNew',
+            type: 'addNew',
+            popup: {
+              blocks: [],
+            },
+          },
+          {
+            key: 'implicitAddNewWithMode',
+            type: 'addNew',
+            popup: {
+              mode: 'replace',
+            },
+          },
+          {
             key: 'refresh-with-popup',
             type: 'refresh',
             popup: {
@@ -3112,14 +3210,34 @@ describe('flowSurfaces API contract', () => {
     });
     expect(addActionsRes.status).toBe(200);
     const addActionsData = getData(addActionsRes);
-    expect(addActionsData.successCount).toBe(1);
+    expect(addActionsData.successCount).toBe(3);
     expect(addActionsData.errorCount).toBe(1);
     expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
-    expectStructuredError(addActionsData.actions[1].error, {
+    expect(addActionsData.actions[1].result.popupGridUid).toBeTruthy();
+    expect(addActionsData.actions[2].result.popupGridUid).toBeTruthy();
+    expectStructuredError(addActionsData.actions[3].error, {
       status: 400,
       type: 'bad_request',
     });
-    expect(addActionsData.actions[1].error.message).toContain(`type 'refresh' does not support popup`);
+    expect(addActionsData.actions[3].error.message).toContain(`type 'refresh' does not support popup`);
+
+    const implicitAddNewReadback = await getSurface(rootAgent, {
+      uid: addActionsData.actions[1].result.uid,
+    });
+    const implicitAddNewPopupTab = _.castArray(implicitAddNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const implicitAddNewPopupBlock = _.castArray(implicitAddNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
+    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+    const implicitAddNewWithModeReadback = await getSurface(rootAgent, {
+      uid: addActionsData.actions[2].result.uid,
+    });
+    const implicitAddNewWithModePopupBlock = _.castArray(
+      implicitAddNewWithModeReadback.tree.subModels?.page?.subModels?.tabs || [],
+    )[0]?.subModels?.grid?.subModels?.items?.[0];
+    expect(implicitAddNewWithModePopupBlock?.use).toBe('CreateFormModel');
 
     const addRecordActionsRes = await rootAgent.resource('flowSurfaces').addRecordActions({
       values: {
@@ -3159,14 +3277,49 @@ describe('flowSurfaces API contract', () => {
               confirm: true,
             },
           },
+          {
+            key: 'implicitEdit',
+            type: 'edit',
+            popup: {},
+          },
+          {
+            key: 'implicitViewWithLayout',
+            type: 'view',
+            popup: {
+              layout: {
+                rows: [[{ key: 'defaultDetails', span: 10 }]],
+              },
+            },
+          },
         ],
       },
     });
     expect(addRecordActionsRes.status).toBe(200);
     const addRecordActionsData = getData(addRecordActionsRes);
-    expect(addRecordActionsData.successCount).toBe(2);
+    expect(addRecordActionsData.successCount).toBe(4);
     expect(addRecordActionsData.errorCount).toBe(0);
     expect(addRecordActionsData.recordActions[0].result.popupGridUid).toBeTruthy();
+    expect(addRecordActionsData.recordActions[2].result.popupGridUid).toBeTruthy();
+    expect(addRecordActionsData.recordActions[3].result.popupGridUid).toBeTruthy();
+
+    const implicitEditReadback = await getSurface(rootAgent, {
+      uid: addRecordActionsData.recordActions[2].result.uid,
+    });
+    const implicitEditPopupTab = _.castArray(implicitEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const implicitEditPopupBlock = _.castArray(implicitEditPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
+    expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    const implicitViewWithLayoutReadback = await getSurface(rootAgent, {
+      uid: addRecordActionsData.recordActions[3].result.uid,
+    });
+    const implicitViewWithLayoutPopupBlock = _.castArray(
+      implicitViewWithLayoutReadback.tree.subModels?.page?.subModels?.tabs || [],
+    )[0]?.subModels?.grid?.subModels?.items?.[0];
+    expect(implicitViewWithLayoutPopupBlock?.use).toBe('DetailsBlockModel');
 
     const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -3182,6 +3335,111 @@ describe('flowSurfaces API contract', () => {
     expect(addFieldRawUnknownRes.status).toBe(400);
     expect(readErrorMessage(addFieldRawUnknownRes)).toContain('settings invalid');
     expect(readErrorMessage(addFieldRawUnknownRes)).toContain('supported configureOptions');
+  });
+
+  it('should auto-complete omitted popup payloads in batch action APIs and inherit custom popup tab titles', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Implicit batch popup page',
+      tabTitle: 'Implicit batch popup tab',
+    });
+
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const addActionsRes = await rootAgent.resource('flowSurfaces').addActions({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        actions: [
+          {
+            key: 'implicitAddNew',
+            type: 'addNew',
+            settings: {
+              title: 'Create employee',
+            },
+          },
+        ],
+      },
+    });
+    expect(addActionsRes.status).toBe(200);
+    const addActionsData = getData(addActionsRes);
+    expect(addActionsData.successCount).toBe(1);
+    expect(addActionsData.errorCount).toBe(0);
+    expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
+    expect(addActionsData.actions[0].result.popupTabUid).toBeTruthy();
+    expect(addActionsData.actions[0].result.popupGridUid).toBeTruthy();
+
+    const implicitAddNewReadback = await getSurface(rootAgent, {
+      uid: addActionsData.actions[0].result.uid,
+    });
+    const implicitAddNewPopupTab = _.castArray(implicitAddNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const implicitAddNewPopupBlock = _.castArray(implicitAddNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    expect(implicitAddNewPopupTab?.props?.title).toBe('Create employee');
+    expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
+    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    const addRecordActionsRes = await rootAgent.resource('flowSurfaces').addRecordActions({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        recordActions: [
+          {
+            key: 'implicitView',
+            type: 'view',
+            settings: {
+              title: 'Inspect employee',
+            },
+          },
+          {
+            key: 'implicitEdit',
+            type: 'edit',
+            settings: {
+              title: 'Modify employee',
+            },
+          },
+        ],
+      },
+    });
+    expect(addRecordActionsRes.status).toBe(200);
+    const addRecordActionsData = getData(addRecordActionsRes);
+    expect(addRecordActionsData.successCount).toBe(2);
+    expect(addRecordActionsData.errorCount).toBe(0);
+    expect(addRecordActionsData.recordActions[0].result.popupPageUid).toBeTruthy();
+    expect(addRecordActionsData.recordActions[1].result.popupPageUid).toBeTruthy();
+
+    const implicitViewReadback = await getSurface(rootAgent, {
+      uid: addRecordActionsData.recordActions[0].result.uid,
+    });
+    const implicitViewPopupTab = _.castArray(implicitViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const implicitViewPopupBlock = _.castArray(implicitViewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    expect(implicitViewPopupTab?.props?.title).toBe('Inspect employee');
+    expect(implicitViewPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+
+    const implicitEditReadback = await getSurface(rootAgent, {
+      uid: addRecordActionsData.recordActions[1].result.uid,
+    });
+    const implicitEditPopupTab = _.castArray(implicitEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const implicitEditPopupBlock = _.castArray(implicitEditPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    expect(implicitEditPopupTab?.props?.title).toBe('Modify employee');
+    expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
+    expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
   });
 
   it('should keep batch addBlocks partial-success semantics when filter payload is invalid', async () => {

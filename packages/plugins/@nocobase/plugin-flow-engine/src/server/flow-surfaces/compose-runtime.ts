@@ -8,6 +8,7 @@
  */
 
 import { throwConflict } from './errors';
+import { isFlowSurfaceDefaultActionPopupType } from './default-action-popup';
 import {
   resolveComposeTargetRef,
   type FlowSurfaceCompiledComposePlan,
@@ -171,6 +172,10 @@ export function createComposeRuntimeState(): FlowSurfaceComposeRuntimeState {
   };
 }
 
+function shouldApplyActionPopupAfterEffect(spec: FlowSurfaceComposeNormalizedActionSpec) {
+  return hasPopupAfterEffect(spec.popup) || isFlowSurfaceDefaultActionPopupType(spec.type);
+}
+
 function assertComposeRuntimeDeps(plan: FlowSurfaceCompiledComposePlan, deps: FlowSurfaceComposeRuntimeDeps) {
   if (plan.mode === 'replace' && plan.existingItemUids.length) {
     requireComposeRuntimeDep('removeExistingItem', deps.removeExistingItem, 'replace');
@@ -183,13 +188,13 @@ function assertComposeRuntimeDeps(plan: FlowSurfaceCompiledComposePlan, deps: Fl
   }
   if (
     [...plan.actions, ...plan.recordActions].some(
-      (action) => hasInlineSettings(action.spec.settings) || hasPopupAfterEffect(action.spec.popup),
+      (action) => hasInlineSettings(action.spec.settings) || shouldApplyActionPopupAfterEffect(action.spec),
     )
   ) {
     if ([...plan.actions, ...plan.recordActions].some((action) => hasInlineSettings(action.spec.settings))) {
       requireComposeRuntimeDep('applyNodeSettings', deps.applyNodeSettings, 'action settings');
     }
-    if ([...plan.actions, ...plan.recordActions].some((action) => hasPopupAfterEffect(action.spec.popup))) {
+    if ([...plan.actions, ...plan.recordActions].some((action) => shouldApplyActionPopupAfterEffect(action.spec))) {
       requireComposeRuntimeDep('applyActionPopup', deps.applyActionPopup, 'action popup');
     }
   }
@@ -263,7 +268,8 @@ async function createFields(
 ) {
   for (const fieldTask of plan.fields) {
     const block = requireBlockState(fieldTask.blockKey, state);
-    const targetUid = fieldTask.containerSource === 'item' ? block.result.itemUid || block.result.uid : block.result.uid;
+    const targetUid =
+      fieldTask.containerSource === 'item' ? block.result.itemUid || block.result.uid : block.result.uid;
     const createdField = await deps.createField(
       {
         target: {
@@ -307,7 +313,7 @@ async function createActions(
     if (deps.applyNodeSettings && hasInlineSettings(actionTask.spec.settings)) {
       await deps.applyNodeSettings('compose action', createdAction.uid, actionTask.spec.settings);
     }
-    if (deps.applyActionPopup && hasPopupAfterEffect(actionTask.spec.popup)) {
+    if (deps.applyActionPopup && shouldApplyActionPopupAfterEffect(actionTask.spec)) {
       await deps.applyActionPopup('compose action', createdAction.uid, actionTask.spec.popup);
     }
 
@@ -345,7 +351,7 @@ async function createRecordActions(
     if (deps.applyNodeSettings && hasInlineSettings(recordActionTask.spec.settings)) {
       await deps.applyNodeSettings('compose recordAction', createdAction.uid, recordActionTask.spec.settings);
     }
-    if (deps.applyActionPopup && hasPopupAfterEffect(recordActionTask.spec.popup)) {
+    if (deps.applyActionPopup && shouldApplyActionPopupAfterEffect(recordActionTask.spec)) {
       await deps.applyActionPopup('compose recordAction', createdAction.uid, recordActionTask.spec.popup);
     }
 
@@ -401,7 +407,10 @@ async function applyComposeLayout(
 function requireBlockState(blockKey: string, state: FlowSurfaceComposeRuntimeState) {
   const matched = state.blocks.find((block) => block.spec.key === blockKey);
   if (!matched) {
-    throwConflict(`flowSurfaces compose block '${blockKey}' is missing from runtime state`, 'FLOW_SURFACE_COMPOSE_BLOCK_MISSING');
+    throwConflict(
+      `flowSurfaces compose block '${blockKey}' is missing from runtime state`,
+      'FLOW_SURFACE_COMPOSE_BLOCK_MISSING',
+    );
   }
   return matched;
 }
