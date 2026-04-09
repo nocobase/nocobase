@@ -45,13 +45,17 @@ import {
   throwInternalError,
 } from './errors';
 import { executeMutateOps } from './executor';
-import { getFlowSurfacePlanActionSpec } from './planning/action-specs';
+import { isFlowSurfacePlanOnlyAction, type FlowSurfacePlanOnlyActionName } from './planning/action-specs';
 import { buildPlanSurfaceContext as buildPlanningSurfaceContext } from './planning/context';
 import {
   compilePlanStep as compilePlanningStep,
   normalizePlanSelector as normalizePlanningSelector,
   normalizePlanSteps as normalizePlanningSteps,
 } from './planning/compiler';
+import {
+  assertBindRefKind as assertPlanningBindRefKind,
+  buildPlanRefKind as buildPlanningRefKind,
+} from './planning/ref-kind';
 import {
   annotateTreeRef as annotatePlanningTreeRef,
   buildSurfaceFingerprintRefsObject as buildPlanningSurfaceFingerprintRefsObject,
@@ -76,6 +80,13 @@ import {
   normalizeFieldContainerKind,
   shouldUseAssociationTitleTextDisplay,
 } from './field-semantics';
+import {
+  ACTION_BUTTON_USES,
+  COLLECTION_BLOCK_USES,
+  FIELD_WRAPPER_USES,
+  JS_BLOCK_USES,
+  STANDALONE_FIELD_NODE_USES,
+} from './node-use-sets';
 import {
   buildChartConfigureFromSemanticChanges,
   canonicalizeChartConfigure,
@@ -245,18 +256,6 @@ type FlowSurfaceSqlChartPreview = {
   riskyHints?: FlowSurfaceChartHint[];
 };
 
-const COLLECTION_BLOCK_USES = new Set([
-  'TableBlockModel',
-  'CreateFormModel',
-  'EditFormModel',
-  'FormBlockModel',
-  'DetailsBlockModel',
-  'FilterFormBlockModel',
-  'ListBlockModel',
-  'GridCardBlockModel',
-  'MapBlockModel',
-  'CommentsBlockModel',
-]);
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel']);
 const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -270,13 +269,6 @@ const OPEN_VIEW_MODE_ALIASES = {
   page: 'embed',
 } as const;
 const OPEN_VIEW_SUPPORTED_MODES = new Set(['drawer', 'dialog', 'embed']);
-const STATIC_CONTENT_BLOCK_USES = new Set([
-  'MarkdownBlockModel',
-  'IframeBlockModel',
-  'ChartBlockModel',
-  'ActionPanelBlockModel',
-  'JSBlockModel',
-]);
 const FILTER_TARGET_BLOCK_USES = new Set([
   'TableBlockModel',
   'DetailsBlockModel',
@@ -286,15 +278,7 @@ const FILTER_TARGET_BLOCK_USES = new Set([
   'MapBlockModel',
   'CommentsBlockModel',
 ]);
-const FIELD_WRAPPER_USES = new Set([
-  'FormItemModel',
-  'FormAssociationItemModel',
-  'DetailsItemModel',
-  'FilterFormItemModel',
-  'TableColumnModel',
-]);
 const EDITABLE_FIELD_WRAPPER_USES = new Set(['FormItemModel', 'FilterFormItemModel']);
-const STANDALONE_FIELD_NODE_USES = new Set(['JSColumnModel', 'JSItemModel', 'FormJSFieldItemModel']);
 const DISPLAY_FIELD_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
 const DISPLAY_COMPONENT_FIELD_WRAPPER_USES = new Set([
   'DetailsItemModel',
@@ -318,45 +302,6 @@ const UI_FIELD_MENU_FORM_OWNER_USES = new Set([
   'FormGridModel',
   'AssignFormGridModel',
 ]);
-const ACTION_BUTTON_USES = new Set([
-  'AddNewActionModel',
-  'ViewActionModel',
-  'EditActionModel',
-  'PopupCollectionActionModel',
-  'DeleteActionModel',
-  'BulkDeleteActionModel',
-  'BulkEditActionModel',
-  'UpdateRecordActionModel',
-  'BulkUpdateActionModel',
-  'DuplicateActionModel',
-  'AddChildActionModel',
-  'FilterActionModel',
-  'ExpandCollapseActionModel',
-  'FormSubmitActionModel',
-  'FilterFormSubmitActionModel',
-  'FilterFormResetActionModel',
-  'FilterFormCollapseActionModel',
-  'RefreshActionModel',
-  'LinkActionModel',
-  'ExportActionModel',
-  'ExportAttachmentActionModel',
-  'ImportActionModel',
-  'UploadActionModel',
-  'TemplatePrintCollectionActionModel',
-  'TemplatePrintRecordActionModel',
-  'CollectionTriggerWorkflowActionModel',
-  'RecordTriggerWorkflowActionModel',
-  'FormTriggerWorkflowActionModel',
-  'WorkbenchTriggerWorkflowActionModel',
-  'MailSendActionModel',
-  'JSCollectionActionModel',
-  'JSRecordActionModel',
-  'JSFormActionModel',
-  'JSItemActionModel',
-  'FilterFormJSActionModel',
-  'JSActionModel',
-]);
-const JS_BLOCK_USES = new Set(['JSBlockModel']);
 const JS_ACTION_USES = new Set([
   'JSCollectionActionModel',
   'JSRecordActionModel',
@@ -2125,91 +2070,10 @@ export class FlowSurfacesService {
     return result;
   }
 
-  private buildPlanRefKind(node: any, resolvedKind?: string) {
-    const use = String(node?.use || '').trim();
-    if (use === 'RootPageModel' || resolvedKind === 'page') {
-      return 'page';
-    }
-    if (use === 'RootPageTabModel' || resolvedKind === 'tab') {
-      return 'tab';
-    }
-    if (use === 'ChildPageModel') {
-      return 'popupPage';
-    }
-    if (use === 'ChildPageTabModel') {
-      return 'popupTab';
-    }
-    if (use === 'BlockGridModel' || resolvedKind === 'grid') {
-      return 'grid';
-    }
-    if (isPopupHostUse(use)) {
-      return 'popupHost';
-    }
-    if (ACTION_BUTTON_USES.has(use)) {
-      return 'action';
-    }
-    if (FIELD_WRAPPER_USES.has(use) || STANDALONE_FIELD_NODE_USES.has(use) || isFieldNodeUse(use)) {
-      return 'fieldHost';
-    }
-    if (
-      COLLECTION_BLOCK_USES.has(use) ||
-      STATIC_CONTENT_BLOCK_USES.has(use) ||
-      JS_BLOCK_USES.has(use) ||
-      use.endsWith('BlockModel')
-    ) {
-      return 'block';
-    }
-    return resolvedKind || 'node';
-  }
-
-  private assertBindRefKind(actionName: string, bindRef: FlowSurfaceBindRef, node: any, resolvedKind?: string) {
-    if (!bindRef.expectedKind) {
-      return;
-    }
-    const actualKind = this.buildPlanRefKind(node, resolvedKind);
-    const expectedKind = String(bindRef.expectedKind || '').trim();
-    const matched =
-      expectedKind === 'node' ||
-      expectedKind === actualKind ||
-      (expectedKind === 'block' && actualKind === 'block') ||
-      (expectedKind === 'fieldHost' && actualKind === 'fieldHost') ||
-      (expectedKind === 'popupHost' && actualKind === 'popupHost') ||
-      (expectedKind === 'popupTab' && actualKind === 'popupTab') ||
-      (expectedKind === 'action' && actualKind === 'action');
-    if (matched) {
-      return;
-    }
-    throwBadRequest(
-      `flowSurfaces ${actionName} bindRefs ref '${bindRef.ref}' expected kind '${expectedKind}', got '${actualKind}'`,
-    );
-  }
-
-  private normalizePlanSelector(actionName: string, selector: any, fieldName = 'selector'): FlowSurfacePlanSelector {
-    return normalizePlanningSelector(
-      actionName,
-      selector,
-      {
-        normalizeGetTarget: (value) => this.normalizeGetTarget(value),
-      },
-      fieldName,
-    );
-  }
-
   private normalizeBindRefs(actionName: string, bindRefs: any): FlowSurfaceBindRef[] {
     return normalizePlanningBindRefs(actionName, bindRefs, {
       normalizeGetTarget: (value) => this.normalizeGetTarget(value),
     });
-  }
-
-  private collectDeclaredRefsFromTree(node: any, carry = new Map<string, FlowSurfaceResolvedRef>()) {
-    return collectPlanningDeclaredRefsFromTree(
-      node,
-      {
-        actionName: 'describeSurface',
-        buildPlanRefKind: (currentNode, resolvedKind) => this.buildPlanRefKind(currentNode, resolvedKind),
-      },
-      carry,
-    );
   }
 
   private annotateTreeRef(tree: any, refByUid: Map<string, string>) {
@@ -2245,7 +2109,14 @@ export class FlowSurfacesService {
     return buildPlanningSurfaceContext(
       {
         actionName,
-        surfaceSelector: this.normalizePlanSelector(actionName, surfaceSelectorInput, 'surface'),
+        surfaceSelector: normalizePlanningSelector(
+          actionName,
+          surfaceSelectorInput,
+          {
+            normalizeGetTarget: (value) => this.normalizeGetTarget(value),
+          },
+          'surface',
+        ),
         bindRefs: this.normalizeBindRefs(actionName, bindRefsInput),
       },
       {
@@ -2258,15 +2129,14 @@ export class FlowSurfacesService {
         stripInternalSurfaceMetaFromNodeTree: (node) => this.stripInternalSurfaceMetaFromNodeTree(node),
         buildReadTargetSummary: (target, resolved) => this.buildReadTargetSummary(target, resolved),
         buildSurfaceContextFingerprint: (context) => this.buildSurfaceContextFingerprint(context),
-        buildPlanRefKind: (node, resolvedKind) => this.buildPlanRefKind(node, resolvedKind),
-        assertBindRefKind: (currentActionName, bindRef, node, resolvedKind) =>
-          this.assertBindRefKind(currentActionName, bindRef, node, resolvedKind),
+        buildPlanRefKind: buildPlanningRefKind,
+        assertBindRefKind: assertPlanningBindRefKind,
         collectDeclaredRefsFromTree: (node) =>
           collectPlanningDeclaredRefsFromTree(
             node,
             {
               actionName,
-              buildPlanRefKind: (currentNode, resolvedKind) => this.buildPlanRefKind(currentNode, resolvedKind),
+              buildPlanRefKind: buildPlanningRefKind,
             },
             new Map<string, FlowSurfaceResolvedRef>(),
           ),
@@ -2372,27 +2242,30 @@ export class FlowSurfacesService {
       {
         normalizeGetTarget: (value) => this.normalizeGetTarget(value),
         resolveLocator: (target, resolveOptions) => this.locator.resolve(target, resolveOptions),
-        buildPlanRefKind: (node, resolvedKind) => this.buildPlanRefKind(node, resolvedKind),
+        buildPlanRefKind: buildPlanningRefKind,
       },
       options,
     );
   }
 
   private async dispatchPlanAction(
-    action: FlowSurfacePlanStep['action'],
+    action: FlowSurfacePlanOnlyActionName,
     payload: Record<string, any>,
     transaction?: any,
   ) {
-    const spec = getFlowSurfacePlanActionSpec(action);
-    if (!spec || spec.executionKind !== 'planOnly') {
-      throwBadRequest(`flowSurfaces executePlan action '${action}' is not supported`);
-    }
     const options = { transaction };
-    const handler = (this as any)[spec.planOnlyMethod];
-    if (typeof handler !== 'function') {
-      throwInternalError(`flowSurfaces executePlan action '${action}' is misconfigured`);
+    switch (action) {
+      case 'compose':
+        return this.compose(payload as FlowSurfaceComposeValues, options);
+      case 'configure':
+        return this.configure(payload as FlowSurfaceConfigureValues, options);
+      case 'convertTemplateToCopy':
+        return this.convertTemplateToCopy(payload, options);
+      default: {
+        const exhaustiveAction: never = action;
+        throwInternalError(`flowSurfaces executePlan action '${exhaustiveAction}' is misconfigured`);
+      }
     }
-    return handler.call(this, payload, options);
   }
 
   private getPersistableDeclaredRef(node: any) {
@@ -2426,7 +2299,10 @@ export class FlowSurfacesService {
       );
       return mutateResults[0]?.result;
     }
-    return this.dispatchPlanAction(compiled.action, compiled.planPayload || compiled.payload, transaction);
+    if (!isFlowSurfacePlanOnlyAction(compiled.action)) {
+      throwInternalError(`flowSurfaces executePlan action '${compiled.action}' is not supported`);
+    }
+    return this.dispatchPlanAction(compiled.action, compiled.payload, transaction);
   }
 
   private assertRefPersistable(actionName: string, refInfo: FlowSurfaceResolvedRef, node: any) {

@@ -12,13 +12,14 @@ import { throwBadRequest } from '../errors';
 import { buildDefinedPayload } from '../service-utils';
 import type {
   FlowSurfaceMutateOp,
+  FlowSurfaceMutateOpType,
   FlowSurfacePlanSelector,
   FlowSurfacePlanStep,
   FlowSurfaceReadLocator,
   FlowSurfaceResolvedTarget,
   FlowSurfaceValidatePlanValues,
 } from '../types';
-import { getFlowSurfacePlanActionSpec } from './action-specs';
+import { getFlowSurfacePlanActionSpec, getFlowSurfacePlanSelectorRequirements } from './action-specs';
 import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
 
 type NormalizePlanSelectorDeps = {
@@ -159,20 +160,16 @@ async function resolvePlanSelectorInContext(
   };
 }
 
-function buildMutateOp(
-  type: string,
-  payloadProjection: 'target' | 'uid' | 'sourceTargetUids',
-  payload: Record<string, any>,
-): FlowSurfaceMutateOp {
-  if (payloadProjection === 'target') {
+function buildMutateOp(type: FlowSurfaceMutateOpType, payload: Record<string, any>): FlowSurfaceMutateOp {
+  if (_.isPlainObject(payload.target)) {
     return {
-      type: type as FlowSurfaceMutateOp['type'],
+      type,
       target: payload.target,
       values: _.omit(payload, ['target']),
     };
   }
   return {
-    type: type as FlowSurfaceMutateOp['type'],
+    type,
     values: payload,
   };
 }
@@ -209,18 +206,19 @@ export async function compilePlanStep(
   if (!spec) {
     throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
   }
-  if (spec.requiresTarget && !step.selectors?.target) {
+  const selectorRequirements = getFlowSurfacePlanSelectorRequirements(spec.selectorMode);
+  if (selectorRequirements.requiresTarget && !step.selectors?.target) {
     throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
   }
-  if (!spec.requiresTarget && step.selectors?.target) {
+  if (!selectorRequirements.requiresTarget && step.selectors?.target) {
     throwBadRequest(
       `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.target`,
     );
   }
-  if (spec.requiresSource && !step.selectors?.source) {
+  if (selectorRequirements.requiresSource && !step.selectors?.source) {
     throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source`);
   }
-  if (!spec.requiresSource && step.selectors?.source) {
+  if (!selectorRequirements.requiresSource && step.selectors?.source) {
     throwBadRequest(
       `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.source`,
     );
@@ -285,9 +283,7 @@ export async function compilePlanStep(
   }
 
   if (spec.executionKind === 'mutate') {
-    compiled.mutateOp = buildMutateOp(spec.mutateOpType, spec.payloadProjection, compiled.payload);
-  } else {
-    compiled.planPayload = compiled.payload;
+    compiled.mutateOp = buildMutateOp(step.action as FlowSurfaceMutateOpType, compiled.payload);
   }
 
   return compiled;

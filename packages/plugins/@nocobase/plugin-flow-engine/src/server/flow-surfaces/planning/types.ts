@@ -55,5 +55,4 @@ export type FlowSurfaceCompiledPlanStep = {
   resolvedSelectors: Partial<Record<'target' | 'source', FlowSurfaceResolvedSelectorSummary>>;
   usedRefs: FlowSurfaceResolvedRef[];
   mutateOp?: FlowSurfaceMutateOp;
-  planPayload?: Record<string, any>;
 };
