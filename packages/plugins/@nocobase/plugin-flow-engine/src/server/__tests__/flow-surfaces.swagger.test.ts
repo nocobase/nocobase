@@ -202,7 +202,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.results.items.$ref).toBe(
       '#/components/schemas/FlowSurfacePlanResultItem',
     );
-    expect(schemas.FlowSurfaceExecutePlanResponse.properties.fingerprintAfter.nullable).toBe(true);
+    expect(schemas.FlowSurfacePersistedRefResult.properties.skipped.enum).toEqual(['not_found']);
+    expect(schemas.FlowSurfaceExecutePlanResponse.properties.fingerprintAfter).toBeUndefined();
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.surfaceExistsAfterExecute.type).toBe('boolean');
 
     const catalogRequest = swaggerDocument.paths['/flowSurfaces:catalog'].post.requestBody.content['application/json'];

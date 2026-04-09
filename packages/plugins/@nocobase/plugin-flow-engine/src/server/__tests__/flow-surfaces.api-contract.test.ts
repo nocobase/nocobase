@@ -5528,6 +5528,25 @@ describe('flowSurfaces API contract', () => {
     );
     expect(describedAgain.refs.employeesTable.uid).toBe(table.uid);
     expect(describedAgain.refs.unusedTable).toBeUndefined();
+    const describeWithBindRefAfterPersist = getData(
+      await rootAgent.resource('flowSurfaces').describeSurface({
+        values: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+          bindRefs: [
+            {
+              ref: 'employeesTable',
+              locator: {
+                uid: table.uid,
+              },
+              expectedKind: 'block',
+            },
+          ],
+        },
+      }),
+    );
+    expect(describeWithBindRefAfterPersist.fingerprint).toBe(describedAgain.fingerprint);
 
     const publicTableReadback = await getSurface(rootAgent, {
       uid: table.uid,
@@ -5540,7 +5559,110 @@ describe('flowSurfaces API contract', () => {
     expect(_.get(rawTable, ['stepParams', '__flowSurfaceMeta', 'declaredRef'])).toBe('employeesTable');
   });
 
-  it('should reject reserved or duplicated bindRefs and report missing after-state when executePlan removes the surface', async () => {
+  it('should ignore reserved declared refs and persist surface.ref when anchoring a persistable surface', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Surface anchor page',
+      tabTitle: 'Surface anchor tab',
+    });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const pageGridUid = getRouteBackedTabs(pageReadback)[0]?.subModels?.grid?.uid;
+    expect(pageGridUid).toBeTruthy();
+
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: pageGridUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const rawTableBeforePollution = await flowRepo.findModelById(table.uid, {
+      includeAsyncNode: true,
+    });
+    await flowRepo.patch({
+      uid: table.uid,
+      stepParams: {
+        ...(rawTableBeforePollution?.stepParams || {}),
+        __flowSurfaceMeta: {
+          declaredRef: 'surface',
+        },
+      },
+    });
+
+    const describedWithReservedDeclaredRef = getData(
+      await rootAgent.resource('flowSurfaces').describeSurface({
+        values: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+      }),
+    );
+    expect(describedWithReservedDeclaredRef.refs.surface.uid).toBe(page.pageUid);
+    expect(describedWithReservedDeclaredRef.refs.surface.uid).not.toBe(table.uid);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          ref: 'employeesTable',
+        },
+        bindRefs: [
+          {
+            ref: 'employeesTable',
+            locator: {
+              uid: table.uid,
+            },
+            expectedKind: 'block',
+          },
+        ],
+        plan: {
+          steps: [
+            {
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'surface',
+                },
+              },
+              values: {
+                changes: {
+                  pageSize: 30,
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+    expect(getData(executeRes).persistedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'employeesTable',
+          uid: table.uid,
+          persisted: true,
+        }),
+      ]),
+    );
+
+    const describedAgain = getData(
+      await rootAgent.resource('flowSurfaces').describeSurface({
+        values: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+      }),
+    );
+    expect(describedAgain.refs.employeesTable.uid).toBe(table.uid);
+  });
+
+  it('should reject reserved or duplicated bindRefs, reject route-backed refs, and report missing after-state when executePlan removes the surface', async () => {
     const page = await createPage(rootAgent, {
       title: 'Ref guard page',
       tabTitle: 'Ref guard tab',
@@ -5604,6 +5726,86 @@ describe('flowSurfaces API contract', () => {
     expect(duplicateRefRes.status).toBe(400);
     expect(readErrorMessage(duplicateRefRes)).toContain('duplicated');
 
+    const validateRouteBackedRefRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        bindRefs: [
+          {
+            ref: 'pageRoot',
+            locator: {
+              uid: page.pageUid,
+            },
+            expectedKind: 'page',
+          },
+        ],
+        plan: {
+          steps: [
+            {
+              action: 'addTab',
+              selectors: {
+                target: {
+                  ref: 'pageRoot',
+                },
+              },
+              values: {
+                title: 'Should fail',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRouteBackedRefRes.status).toBe(400);
+    expectStructuredError(readErrorItem(validateRouteBackedRefRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorItem(validateRouteBackedRefRes).code).toBe('FLOW_SURFACE_REF_NOT_PERSISTABLE');
+
+    const executeRouteBackedRefRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        bindRefs: [
+          {
+            ref: 'pageRoot',
+            locator: {
+              uid: page.pageUid,
+            },
+            expectedKind: 'page',
+          },
+        ],
+        plan: {
+          steps: [
+            {
+              action: 'addTab',
+              selectors: {
+                target: {
+                  ref: 'pageRoot',
+                },
+              },
+              values: {
+                title: 'Should fail',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRouteBackedRefRes.status).toBe(400);
+    expectStructuredError(readErrorItem(executeRouteBackedRefRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorItem(executeRouteBackedRefRes).code).toBe('FLOW_SURFACE_REF_NOT_PERSISTABLE');
+
     const destroyPageRes = await rootAgent.resource('flowSurfaces').executePlan({
       values: {
         surface: {
@@ -5630,7 +5832,6 @@ describe('flowSurfaces API contract', () => {
     expect(destroyPageRes.status).toBe(200);
     expect(getData(destroyPageRes)).toMatchObject({
       surfaceExistsAfterExecute: false,
-      fingerprintAfter: null,
       refs: {},
     });
   });

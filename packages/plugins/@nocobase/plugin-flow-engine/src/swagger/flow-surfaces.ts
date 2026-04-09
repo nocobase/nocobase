@@ -235,7 +235,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read surface tree with stable refs and fingerprint',
     description: valuesCompatibilityNote(
-      `Reads the current surface together with request-scoped bind refs, persisted declared refs, and a stable fingerprint for optimistic plan execution. The fingerprint is computed from the public surface tree together with the resolved refs map, while the public readback strips the internal declared-ref metadata path from node.stepParams. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Reads the current surface together with request-scoped bind refs, persisted declared refs, and an optimistic-concurrency fingerprint. The fingerprint is computed from the public surface tree together with the resolved ref bindings and ignores ref source differences such as \`request\` vs \`declared\`. The public readback strips the internal declared-ref metadata path from node.stepParams. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
     responses: responses('FlowSurfaceDescribeSurfaceResponse'),
@@ -244,7 +244,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Resolve plan selectors and preview the compiled low-level calls',
     description: valuesCompatibilityNote(
-      `Validates a high-level plan against the current surface fingerprint, resolves { ref | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved refs map. When \`surface\` uses { ref }, that ref must also appear in \`bindRefs\` so the server can anchor the current surface root. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Validates a high-level plan against the current surface fingerprint, resolves { ref | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved ref bindings. When \`surface\` uses { ref }, that ref must also appear in \`bindRefs\` so the server can anchor the current surface root. Used request refs must also be persistable; route-backed page/tab roots are rejected. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceValidatePlanRequest', examples.validatePlan),
     responses: responses('FlowSurfaceValidatePlanResponse'),
@@ -253,7 +253,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute a high-level plan and persist used bind refs as declared refs',
     description: valuesCompatibilityNote(
-      'Executes validated high-level plan steps by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Only the request-scoped bind refs that are actually used by selectors are persisted back as declared refs. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false`, `fingerprintAfter=null`, and an empty refs map. When `surface` uses { ref }, that ref must also appear in `bindRefs`.',
+      'Executes validated high-level plan steps by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Request-scoped bind refs used by selectors, plus `surface: { ref }` when it anchors the current surface, are persisted back as declared refs. Used request refs must be persistable; route-backed page/tab roots are rejected. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false` and an empty refs map. Clients that need a fresh fingerprint for the next round should call `describeSurface` again.',
     ),
     requestBody: requestBody('FlowSurfaceExecutePlanRequest', examples.executePlan),
     responses: responses('FlowSurfaceExecutePlanResponse'),
@@ -2138,6 +2138,7 @@ const schemas = {
       },
       skipped: {
         type: 'string',
+        enum: ['not_found'],
       },
     },
     additionalProperties: false,
@@ -2182,10 +2183,6 @@ const schemas = {
       target: ref('FlowSurfaceReadTarget'),
       fingerprintBefore: {
         type: 'string',
-      },
-      fingerprintAfter: {
-        type: 'string',
-        nullable: true,
       },
       surfaceExistsAfterExecute: {
         type: 'boolean',

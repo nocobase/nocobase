@@ -559,6 +559,7 @@ const FLOW_SURFACE_SYSTEM_REF = 'surface';
 const FLOW_SURFACE_RESERVED_REFS = new Set([FLOW_SURFACE_SYSTEM_REF]);
 const FLOW_SURFACE_INTERNAL_META_KEY = '__flowSurfaceMeta';
 const FLOW_SURFACE_DECLARED_REF_KEY = 'declaredRef';
+const FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE = 'FLOW_SURFACE_REF_NOT_PERSISTABLE';
 const FLOW_SURFACE_PLAN_ACTION_SET = new Set<string>(FLOW_SURFACE_PLAN_STEP_ACTIONS as readonly string[]);
 const FLOW_SURFACE_PLAN_TARGET_ACTIONS = new Set<string>([
   'compose',
@@ -2267,7 +2268,7 @@ export class FlowSurfacesService {
     }
     if (node.uid) {
       const declaredRef = this.getDeclaredRefFromNode(node);
-      if (declaredRef) {
+      if (declaredRef && !FLOW_SURFACE_RESERVED_REFS.has(declaredRef)) {
         const existing = carry.get(declaredRef);
         if (existing && existing.uid !== node.uid) {
           throwConflict(
@@ -2330,7 +2331,6 @@ export class FlowSurfacesService {
         {
           uid: info.uid,
           kind: info.kind,
-          source: info.source,
         },
       ]),
     );
@@ -2408,17 +2408,15 @@ export class FlowSurfacesService {
     }
 
     requestRefMap.forEach((value, key) => refMap.set(key, value));
-    if (!refMap.has(FLOW_SURFACE_SYSTEM_REF)) {
-      refMap.set(FLOW_SURFACE_SYSTEM_REF, {
-        ref: FLOW_SURFACE_SYSTEM_REF,
+    refMap.set(FLOW_SURFACE_SYSTEM_REF, {
+      ref: FLOW_SURFACE_SYSTEM_REF,
+      uid: surfaceResolved.uid,
+      source: 'system',
+      kind: this.buildPlanRefKind(publicTree, surfaceResolved.kind),
+      locator: {
         uid: surfaceResolved.uid,
-        source: 'system',
-        kind: this.buildPlanRefKind(publicTree, surfaceResolved.kind),
-        locator: {
-          uid: surfaceResolved.uid,
-        },
-      });
-    }
+      },
+    });
 
     const targetSummary = this.buildReadTargetSummary(surfaceTarget, surfaceResolved);
     const fingerprint = this.buildSurfaceContextFingerprint({
@@ -2776,6 +2774,64 @@ export class FlowSurfacesService {
     }
   }
 
+  private getSurfaceSelectorRequestRef(context: FlowSurfacePlanSurfaceContext) {
+    if (!('ref' in context.surfaceSelector)) {
+      return undefined;
+    }
+    return context.requestRefMap.get(context.surfaceSelector.ref);
+  }
+
+  private collectRequestRefsToPersist(
+    context: FlowSurfacePlanSurfaceContext,
+    compiledSteps: Array<Record<string, any>>,
+  ): Map<string, FlowSurfaceResolvedRef> {
+    const refs = new Map<string, FlowSurfaceResolvedRef>();
+    const surfaceRequestRef = this.getSurfaceSelectorRequestRef(context);
+    if (surfaceRequestRef) {
+      refs.set(surfaceRequestRef.ref, surfaceRequestRef);
+    }
+    for (const compiled of compiledSteps) {
+      for (const refInfo of compiled.usedRefs as FlowSurfaceResolvedRef[]) {
+        if (refInfo.source === 'request') {
+          refs.set(refInfo.ref, refInfo);
+        }
+      }
+    }
+    return refs;
+  }
+
+  private assertRefPersistable(actionName: string, refInfo: FlowSurfaceResolvedRef, node: any) {
+    if (FLOW_SURFACE_RESERVED_REFS.has(refInfo.ref)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ref '${refInfo.ref}' is reserved and cannot be persisted`,
+        FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE,
+      );
+    }
+    if (node?.use === 'RootPageModel' || node?.use === 'RootPageTabModel') {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ref '${refInfo.ref}' cannot be persisted on route-backed surface '${refInfo.uid}'; use locator or system ref '${FLOW_SURFACE_SYSTEM_REF}' instead`,
+        FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE,
+      );
+    }
+  }
+
+  private async assertRequestRefsPersistable(
+    actionName: string,
+    refs: Map<string, FlowSurfaceResolvedRef>,
+    transaction?: any,
+  ) {
+    for (const refInfo of refs.values()) {
+      const node = await this.repository.findModelById(refInfo.uid, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      if (!node?.uid) {
+        continue;
+      }
+      this.assertRefPersistable(actionName, refInfo, node);
+    }
+  }
+
   private async clearDeclaredRefForNode(uid: string, transaction?: any) {
     const node = await this.repository.findModelById(uid, {
       transaction,
@@ -2818,14 +2874,7 @@ export class FlowSurfacesService {
         skipped: 'not_found',
       };
     }
-    if (node.use === 'RootPageModel' || node.use === 'RootPageTabModel') {
-      return {
-        ref: refInfo.ref,
-        uid: refInfo.uid,
-        persisted: false,
-        skipped: 'route_backed_surface',
-      };
-    }
+    this.assertRefPersistable('executePlan', refInfo, node);
     if (refInfo.reboundFromUid && refInfo.reboundFromUid !== refInfo.uid) {
       await this.clearDeclaredRefForNode(refInfo.reboundFromUid, transaction);
     }
@@ -2870,6 +2919,9 @@ export class FlowSurfacesService {
     for (const [index, step] of steps.entries()) {
       compiledSteps.push(await this.compilePlanStep('validatePlan', step, index, context, options));
     }
+    const requestRefsToPersist = this.collectRequestRefsToPersist(context, compiledSteps);
+    await this.assertRequestRefsPersistable('validatePlan', requestRefsToPersist, options.transaction);
+
     return {
       target: context.targetSummary,
       fingerprint: context.fingerprint,
@@ -2895,9 +2947,10 @@ export class FlowSurfacesService {
     for (const [index, step] of steps.entries()) {
       compiledSteps.push(await this.compilePlanStep('executePlan', step, index, context, options));
     }
+    const requestRefsToPersist = this.collectRequestRefsToPersist(context, compiledSteps);
+    await this.assertRequestRefsPersistable('executePlan', requestRefsToPersist, options.transaction);
 
     const results = [] as Array<Record<string, any>>;
-    const usedRequestRefs = new Map<string, FlowSurfaceResolvedRef>();
     for (const compiled of compiledSteps) {
       const result = await this.dispatchPlanAction(compiled.action, compiled.payload, options.transaction);
       results.push({
@@ -2906,15 +2959,10 @@ export class FlowSurfacesService {
         action: compiled.action,
         result,
       });
-      for (const refInfo of compiled.usedRefs as FlowSurfaceResolvedRef[]) {
-        if (refInfo.source === 'request') {
-          usedRequestRefs.set(refInfo.ref, refInfo);
-        }
-      }
     }
 
     const persistedRefs = [] as Array<Record<string, any>>;
-    for (const refInfo of usedRequestRefs.values()) {
+    for (const refInfo of requestRefsToPersist.values()) {
       persistedRefs.push(await this.persistDeclaredRefForNode(refInfo, options.transaction));
     }
 
@@ -2939,7 +2987,6 @@ export class FlowSurfacesService {
     return {
       target: context.targetSummary,
       fingerprintBefore: context.fingerprint,
-      fingerprintAfter: afterDescribe?.fingerprint || null,
       surfaceExistsAfterExecute,
       refs: afterDescribe?.refs || {},
       compiledSteps: compiledSteps.map((item) => ({
