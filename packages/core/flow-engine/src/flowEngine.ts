@@ -855,13 +855,6 @@ export class FlowEngine {
     return result;
   }
 
-  public async getSubclassesOfAsync(
-    baseClass: string | ModelConstructor,
-    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
-  ): Promise<Map<string, ModelConstructor>> {
-    return this.getSubclassesOf(baseClass, filter);
-  }
-
   /**
    * Asynchronously get all subclasses of a base class, including those registered via model loaders.
    * Merges results from already-loaded classes (_modelClasses) and async loader entries with matching `extends` declarations.
