@@ -68,10 +68,11 @@ export const nodesOptions = {
     const { instructions } = usePlugin(WorkflowPlugin);
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
+    const context = { upstreams, instructions };
     const result: VariableOption[] = [];
     upstreams.forEach((node) => {
       const instruction = instructions.get(node.type);
-      const subOption = instruction.useVariables?.(node, options);
+      const subOption = instruction.useVariables?.(node, options, context);
       if (subOption) {
         result.push(subOption);
       }
@@ -444,4 +445,139 @@ export const HideVariableContext = createContext(false);
  */
 export function useHideVariable() {
   return useContext(HideVariableContext);
+}
+
+// ─── Variable children inference helpers ───────────────────────────────────
+// These are pure functions (no React hooks) for inferring or resolving
+// VariableOption children from a variable node's config.value.
+
+const MAX_INFER_DEPTH = 4;
+const MAX_ARRAY_SAMPLE = 3;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+/**
+ * Recursively merge multiple shape trees. Shapes are `Record<string, childShape | null>`.
+ * Null childShape means "may be any shape".
+ */
+function mergeShape(
+  target: Record<string, Record<string, unknown> | null> | null,
+  source: Record<string, Record<string, unknown> | null> | null,
+): Record<string, Record<string, unknown> | null> | null {
+  if (!source) return target;
+  const result = target ?? {};
+  for (const [key, value] of Object.entries(source)) {
+    result[key] = mergeShape(result[key] ?? null, value);
+  }
+  return result;
+}
+
+/**
+ * Infer a shape tree from a runtime value up to `depth` levels.
+ * - Array: samples first N items, merges their shapes.
+ * - Plain object: recurses into own enumerable keys.
+ * - Other: returns null (leaf / scalar).
+ */
+function inferShape(value: unknown, depth = MAX_INFER_DEPTH): Record<string, Record<string, unknown> | null> | null {
+  if (depth <= 0) return null;
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, MAX_ARRAY_SAMPLE)
+      .reduce<Record<string, Record<string, unknown> | null> | null>(
+        (acc, item) => mergeShape(acc, inferShape(item, depth)),
+        null,
+      );
+  }
+  if (!isPlainObject(value)) return null;
+  const result: Record<string, Record<string, unknown> | null> = {};
+  for (const [key, item] of Object.entries(value)) {
+    result[key] = inferShape(item, depth - 1);
+  }
+  return result;
+}
+
+/** Convert a shape tree back to VariableOption children. */
+function shapeToChildren(
+  shape: Record<string, Record<string, unknown> | null> | null,
+  fieldNames: { label?: string; value?: string; children?: string },
+): VariableOption[] | null {
+  if (!shape || !Object.keys(shape).length) return null;
+  const labelKey = fieldNames.label ?? 'label';
+  const valueKey = fieldNames.value ?? 'value';
+  const childrenKey = fieldNames.children ?? 'children';
+  return Object.entries(shape).map(([key, childShape]) => {
+    const children = shapeToChildren(childShape, fieldNames);
+    return {
+      key,
+      [valueKey]: key,
+      [labelKey]: key,
+      [childrenKey]: children,
+      isLeaf: !children?.length,
+    };
+  });
+}
+
+/**
+ * Infer VariableOption children from a JSON constant value.
+ * Returns null for scalars, null items, or empty arrays.
+ */
+export function inferVariableChildren(value: unknown, fieldNames = defaultFieldNames): VariableOption[] | null {
+  const shape = inferShape(value);
+  return shapeToChildren(shape, fieldNames);
+}
+
+/** Parse a template value like "{{$jobsMapByNodeKey.xxx}}" and extract the variable key. */
+function extractVariableKey(value: string): string | null {
+  // Must start with {{ and end with }} and be a single variable reference (no dots inside braces)
+  const matched = value.match(/^\s*\{\{\s*([^{}]+)\s*\}\}\s*$/);
+  if (!matched) return null;
+  const path = matched[1].trim(); // e.g. "$jobsMapByNodeKey.nodeKey"
+  const segments = path.split('.');
+  // The key is always the last segment
+  return segments[segments.length - 1];
+}
+
+/**
+ * Resolve VariableOption children by tracing `config.value` as a variable reference.
+ *
+ * config.value examples:
+ *   "{{$jobsMapByNodeKey.xxx}}"  → resolve to upstream node xxx's useVariables children
+ *   "[1, 2, 3]"                 → null (primitive array, no inferrable fields)
+ *   "hello"                      → null
+ */
+export function resolveChildrenFromConfigValue(
+  configValue: string,
+  upstreamNodes: Array<{ key: string; type: string; config: Record<string, unknown> }>,
+  instructions: Map<string, { useVariables?: (node: any, options?: any) => any }>,
+  options: UseVariableOptions,
+): VariableOption[] | null {
+  if (typeof configValue !== 'string') return null;
+
+  // Try variable reference first: "{{$jobsMapByNodeKey.xxx}}"
+  const variableKey = extractVariableKey(configValue);
+  if (variableKey) {
+    const targetNode = upstreamNodes.find((n) => n.key === variableKey);
+    if (targetNode) {
+      const instruction = instructions.get(targetNode.type);
+      const upstreamOption = instruction?.useVariables?.(targetNode, options);
+      return upstreamOption?.[options.fieldNames?.children ?? 'children'] ?? null;
+    }
+  }
+
+  // Fallback: try parsing as JSON/JS literal constant (useTypedConstant scenario)
+  // Note: config.value may contain unquoted keys like [{a:1,b:1}] which is not valid JSON
+  try {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(configValue);
+    } catch {
+      // Unquoted keys are not valid JSON but valid JS literals
+      parsed = new Function(`return (${configValue})`)();
+    }
+    return inferVariableChildren(parsed, options.fieldNames);
+  } catch {
+    return null;
+  }
 }

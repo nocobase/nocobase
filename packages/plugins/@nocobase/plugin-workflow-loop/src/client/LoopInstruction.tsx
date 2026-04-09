@@ -186,7 +186,13 @@ function useScopeVariables(node, options) {
 
     const found = findOption(targetOptions, paths);
 
-    targetOption = Object.assign({}, found, targetOption);
+    targetOption = Object.assign({}, found, {
+      ...targetOption,
+      [fieldNames.children]: found?.[fieldNames.children] ?? targetOption[fieldNames.children],
+      isLeaf: found?.isLeaf,
+      loadChildren: found?.loadChildren,
+      disabled: found?.disabled,
+    });
   }
 
   return [

@@ -25,6 +25,8 @@ import {
   defaultFieldNames,
   useAvailableUpstreams,
   useNodeContext,
+  inferVariableChildren,
+  resolveChildrenFromConfigValue,
 } from '@nocobase/plugin-workflow/client';
 import { Space, createStyles, useCollectionDataSource } from '@nocobase/client';
 
@@ -139,12 +141,29 @@ export default class extends Instruction {
     WorkflowVariableInput,
     VariableTargetSelect,
   };
-  useVariables({ key, title, config }, { types, fieldNames = defaultFieldNames }) {
-    return config?.target
-      ? null
-      : {
-          [fieldNames.value]: key,
-          [fieldNames.label]: title,
-        };
+  useVariables(
+    { key, title, config },
+    { types, fieldNames = defaultFieldNames },
+    context?: { upstreams?: any[]; instructions?: Map<string, any> },
+  ) {
+    if (config?.target) return null;
+
+    let children = null;
+    if (context?.upstreams && context?.instructions) {
+      children = resolveChildrenFromConfigValue(config.value, context.upstreams, context.instructions, {
+        types,
+        fieldNames,
+      });
+    }
+    // useTypedConstant stores value as actual type (array/object), not a JSON string
+    if (!children && config.value != null) {
+      children = inferVariableChildren(config.value, fieldNames);
+    }
+
+    return {
+      [fieldNames.value]: key,
+      [fieldNames.label]: title,
+      [fieldNames.children]: children,
+    };
   }
 }

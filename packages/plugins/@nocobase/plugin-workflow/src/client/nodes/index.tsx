@@ -91,7 +91,11 @@ export abstract class Instruction {
   createDefaultConfig?(): Config {
     return {};
   }
-  useVariables?(node, options?: UseVariableOptions): VariableOption;
+  useVariables?(
+    node,
+    options?: UseVariableOptions,
+    context?: { upstreams?: any[]; instructions?: Map<string, any> },
+  ): VariableOption;
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
   /**
