@@ -1572,14 +1572,19 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 }
 
-function getCurrentTimezone(ctx: Context) {
-  return (
+function getCurrentTimezone(ctx: Context): string | undefined {
+  const value =
     ctx.get?.('x-timezone') ||
     ctx.request?.get?.('x-timezone') ||
     ctx.request?.header?.['x-timezone'] ||
     ctx.req?.headers?.['x-timezone'] ||
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return typeof value === 'string' ? value : undefined;
 }
 
 function getCurrentDateTimeForPrompt(locale: string | undefined, timezone?: string) {

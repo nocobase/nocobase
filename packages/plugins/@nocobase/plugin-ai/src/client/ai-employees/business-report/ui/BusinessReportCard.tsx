@@ -15,7 +15,7 @@ import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { useT } from '../../../locale';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
-import { BusinessReport } from './report-utils';
+import { BusinessReport, BusinessReportRenderState } from './report-utils';
 
 const autoOpenedToolIds = new Set<string>();
 const loadingBar = keyframes`
@@ -35,7 +35,10 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
-  const report = useMemo(() => toolCall.args || {}, [toolCall.args]);
+  const report = useMemo<Partial<BusinessReportRenderState>>(
+    () => (toolCall.args as BusinessReport) || {},
+    [toolCall.args],
+  );
   const isGenerating = !['done', 'confirmed'].includes(toolCall.invokeStatus);
   const isReady = toolCall.status === 'success' && ['done', 'confirmed'].includes(toolCall.invokeStatus);
   const latestMessageId = messages[messages.length - 1]?.content?.messageId;
@@ -94,7 +97,7 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
     };
   }, [hasLiveContent, report]);
 
-  const displayReport = hasLiveContent ? report : lastStableContentRef.current;
+  const displayReport: Partial<BusinessReportRenderState> = hasLiveContent ? report : lastStableContentRef.current;
 
   const summary =
     displayReport?.summary ||

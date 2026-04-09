@@ -26,6 +26,25 @@ import {
 
 const REPORT_PANEL_HEIGHT = 'calc(100vh - 420px)';
 
+type BusinessReportModalState = {
+  t: ReturnType<typeof useT>;
+  token: ReturnType<typeof useToken>['token'];
+  displayReport: BusinessReportRenderState;
+  isGenerating: boolean;
+  markdown: string;
+  fileName: string;
+  htmlPreview: string;
+  previewMessage: {
+    content: string;
+    type: 'text';
+    messageId: string;
+  };
+  title: string;
+  locale?: string;
+  invalid: boolean;
+  loading: boolean;
+};
+
 function useBusinessReportState(tool: ToolCall<BusinessReport>) {
   const t = useT();
   const { token } = useToken();
@@ -100,33 +119,7 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>) {
     };
   }, [displayReport, locale]);
 
-  if (!hasRenderableContent && isGenerating) {
-    return (
-      <Result
-        icon={<LoadingOutlined spin />}
-        title={t('Generating business analysis report...')}
-        subTitle={t('The report modal will update in real time as new content arrives.')}
-      />
-    );
-  }
-
-  if (!displayReport?.title && !displayReport?.markdown && !isGenerating) {
-    return {
-      t,
-      token,
-      displayReport,
-      isGenerating,
-      markdown,
-      fileName,
-      htmlPreview,
-      previewMessage,
-      title,
-      locale,
-      invalid: true,
-    };
-  }
-
-  return {
+  const baseState: BusinessReportModalState = {
     t,
     token,
     displayReport,
@@ -136,14 +129,41 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>) {
     htmlPreview,
     previewMessage,
     title,
-    locale,
+    locale: typeof locale === 'string' ? locale : undefined,
     invalid: false,
+    loading: false,
   };
+
+  if (!hasRenderableContent && isGenerating) {
+    return {
+      ...baseState,
+      loading: true,
+    };
+  }
+
+  if (!displayReport?.title && !displayReport?.markdown && !isGenerating) {
+    return {
+      ...baseState,
+      invalid: true,
+    };
+  }
+
+  return baseState;
 }
 
 const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> = ({ tool }) => {
   const state = useBusinessReportState(tool);
-  const { t, token, previewMessage, htmlPreview, displayReport, isGenerating, title, invalid } = state;
+  const { t, token, previewMessage, htmlPreview, displayReport, isGenerating, title, invalid, loading } = state;
+
+  if (loading) {
+    return (
+      <Result
+        icon={<LoadingOutlined spin />}
+        title={t('Generating business analysis report...')}
+        subTitle={t('The report modal will update in real time as new content arrives.')}
+      />
+    );
+  }
 
   if (invalid) {
     return <Alert type="error" showIcon message={t('Invalid report definition')} />;

@@ -504,12 +504,13 @@ function normalizeLanguageTag(input?: string) {
     return null;
   }
 
-  try {
-    return Intl.getCanonicalLocales(value)[0] || null;
-  } catch (error) {
-    if (/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(value)) {
-      return value;
-    }
+  if (!/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(value)) {
     return null;
+  }
+
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([value])[0] || value;
+  } catch (error) {
+    return value;
   }
 }
