@@ -16,6 +16,8 @@ import defineMyInAppMessages from './defineMyInAppMessages';
 import defineMyInAppChannels from './defineMyInAppChannels';
 
 export default class InAppNotificationChannel extends BaseNotificationChannel {
+  private static readonly SLOW_SEND_THRESHOLD_MS = 200;
+
   private getMessagePayload(message: any) {
     return typeof message?.toJSON === 'function' ? message.toJSON() : message;
   }
@@ -39,7 +41,16 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
 
     setImmediate(() => {
       try {
+        const startedAt = Date.now();
         this.emitMessageEvents(type, messages);
+        const elapsed = Date.now() - startedAt;
+        if (elapsed >= InAppNotificationChannel.SLOW_SEND_THRESHOLD_MS) {
+          this.app.logger.warn('in-app notification websocket dispatch is slow', {
+            type,
+            count: messages.length,
+            elapsed,
+          });
+        }
       } catch (error) {
         this.app.logger.error(`failed to emit in-app message events: ${error.message}`, {
           error,
@@ -69,15 +80,18 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   };
 
   send: SendFnType<InAppMessageFormValues> = async (params) => {
-    const { channel, message, receivers } = params;
+    const startedAt = Date.now();
+    const { channel, message, receivers, transaction } = params;
     let userIds: number[];
     const { content, title, options = {} } = message;
     const userRepo = this.app.db.getRepository('users');
+    const resolveReceiversStartedAt = Date.now();
     if (receivers?.type === 'userId') {
       userIds = receivers.value;
     } else {
-      userIds = (await parseUserSelectionConf(message.receivers, userRepo)).map((i) => parseInt(i));
+      userIds = (await parseUserSelectionConf(message.receivers, userRepo, { transaction })).map((i) => parseInt(i));
     }
+    const resolveReceiversMs = Date.now() - resolveReceiversStartedAt;
 
     const uniqueUserIds = [...new Set(userIds)];
     if (!uniqueUserIds.length) {
@@ -97,12 +111,25 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     }));
 
     const MessageModel = this.app.db.getModel(MessagesDefinition.name);
+    const persistStartedAt = Date.now();
     await MessageModel.bulkCreate(messages, {
       hooks: false,
+      transaction,
       validate: false,
       returning: false,
     });
+    const persistMs = Date.now() - persistStartedAt;
     this.scheduleMessageEvents('created', messages);
+    const totalMs = Date.now() - startedAt;
+    if (totalMs >= InAppNotificationChannel.SLOW_SEND_THRESHOLD_MS) {
+      this.app.logger.warn('in-app notification send is slow', {
+        channelName: channel.name,
+        userCount: messages.length,
+        resolveReceiversMs,
+        persistMs,
+        totalMs,
+      });
+    }
     return { status: 'success', message };
   };
 

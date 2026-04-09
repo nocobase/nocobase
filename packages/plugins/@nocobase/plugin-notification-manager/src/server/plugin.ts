@@ -15,6 +15,10 @@ export class PluginNotificationManagerServer extends Plugin {
   private manager: NotificationManager;
   logger: Logger;
 
+  get sendQueueChannel() {
+    return `${this.name}.send`;
+  }
+
   get channelTypes() {
     return this.manager.channelTypes;
   }
@@ -42,8 +46,8 @@ export class PluginNotificationManagerServer extends Plugin {
   async beforeLoad() {
     this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
       const sendOptions = ctx.action?.params?.values as SendOptions;
-      this.manager.send(sendOptions);
-      next();
+      await this.manager.send(sendOptions);
+      await next();
     });
     this.app.acl.registerSnippet({
       name: 'pm.notification.channels',
@@ -55,15 +59,27 @@ export class PluginNotificationManagerServer extends Plugin {
     });
   }
 
-  async load() {}
+  async load() {
+    this.app.eventQueue.subscribe(this.sendQueueChannel, {
+      concurrency: 1,
+      idle: () => true,
+      process: async (message) => {
+        await this.manager.sendNow(message);
+      },
+    });
+  }
 
   async install() {}
 
   async afterEnable() {}
 
-  async afterDisable() {}
+  async afterDisable() {
+    this.app.eventQueue.unsubscribe(this.sendQueueChannel);
+  }
 
-  async remove() {}
+  async remove() {
+    this.app.eventQueue.unsubscribe(this.sendQueueChannel);
+  }
 }
 
 export default PluginNotificationManagerServer;

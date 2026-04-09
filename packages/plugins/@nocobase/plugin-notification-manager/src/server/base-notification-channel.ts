@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Transactionable } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { ChannelOptions, ReceiversOptions } from './types';
 
@@ -16,5 +17,6 @@ export abstract class BaseNotificationChannel<Message = any> {
     channel: ChannelOptions;
     message: Message;
     receivers?: ReceiversOptions;
+    transaction?: Transactionable['transaction'];
   }): Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 }

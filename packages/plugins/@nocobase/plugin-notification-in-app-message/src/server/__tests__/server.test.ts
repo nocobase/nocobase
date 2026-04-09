@@ -211,6 +211,7 @@ describe('inapp message channels', () => {
   test('send should bypass bulk hooks and dispatch websocket events asynchronously', async () => {
     const bulkCreate = vi.fn().mockResolvedValue(undefined);
     const emit = vi.fn();
+    const transaction = { id: 'tx-1' };
     const logger = {
       error: vi.fn(),
     };
@@ -241,6 +242,7 @@ describe('inapp message channels', () => {
         type: 'userId',
         value: [1, 1, 2],
       },
+      transaction: transaction as any,
     });
 
     expect(bulkCreate).toHaveBeenCalledTimes(1);
@@ -258,6 +260,7 @@ describe('inapp message channels', () => {
     expect(messages[0].id).toBeTypeOf('string');
     expect(bulkCreateOptions).toMatchObject({
       hooks: false,
+      transaction,
       validate: false,
       returning: false,
     });
