@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client';
+import { Application, NocoBaseBuildInPluginV2, Plugin } from '@nocobase/client-v2';
+import { CollectionPluginV2 } from './CollectionPluginV2';
 
 function offsetToTimeZone(offset) {
   const hours = Math.floor(Math.abs(offset));
@@ -39,15 +40,32 @@ function getBasenameOfNewMultiApp(app: Application) {
   return match?.[0];
 }
 
-export class NocoBaseClientPresetPlugin extends Plugin {
+export class NocoBaseClientPresetPluginV2 extends Plugin<any, Application> {
+  getHostname() {
+    // 优先使用环境变量中的 API_BASE_URL
+    if (process.env.API_BASE_URL) {
+      try {
+        const url = new URL(process.env.API_BASE_URL);
+        return url.hostname;
+      } catch (error) {
+        // URL 解析失败时回退到 window.location.hostname
+      }
+    }
+    // 回退到当前页面的 hostname
+    return window?.location?.hostname;
+  }
+
   async afterAdd() {
     this.router.setType('browser');
     this.router.setBasename(getBasename(this.app) || getBasenameOfNewMultiApp(this.app) || this.app.getPublicPath());
     this.app.apiClient.axios.interceptors.request.use((config) => {
-      config.headers['X-Hostname'] = this.app.apiClient.getHostname();
+      config.headers['X-Hostname'] = this.getHostname();
       config.headers['X-Timezone'] = getCurrentTimezone();
       return config;
     });
-    await this.app.pm.add(NocoBaseBuildInPlugin);
+    await this.app.pm.add(CollectionPluginV2, { name: 'builtin-collection-v2' });
+    await this.app.pm.add(NocoBaseBuildInPluginV2);
   }
 }
+
+export default NocoBaseClientPresetPluginV2;

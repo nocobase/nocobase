@@ -9,7 +9,7 @@
 
 import { Application } from '@nocobase/client-v2';
 import devDynamicImport from './.plugins';
-import { NocoBaseClientPresetPluginV2 } from '@nocobase/preset-nocobase/client';
+import { NocoBaseClientPresetPluginV2 } from '@nocobase/preset-nocobase/client-v2';
 
 declare global {
   interface Window {
