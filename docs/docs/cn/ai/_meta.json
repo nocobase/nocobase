@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "AI 搭建",
+    "link": "/ai/ai-building"
+  },
+  {
+    "type": "custom-link",
+    "label": "AI 员工",
+    "link": "/ai-employees"
+  },
+  {
+    "type": "custom-link",
+    "label": "AI 开发",
+    "link": "/ai/ai-development"
+  }
+]
