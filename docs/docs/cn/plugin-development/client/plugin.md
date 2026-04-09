@@ -122,3 +122,4 @@ async load() {
 - [Component 组件开发](./component/index.md) — 路由挂载的 React 组件怎么写
 - [Context 上下文](./ctx/index.md) — 通过上下文使用 NocoBase 内置能力
 - [FlowEngine](./flow-engine/index.md) — 注册区块、字段、操作等可视化配置组件
+- [编写第一个插件](../write-your-first-plugin.md) — 从零创建插件

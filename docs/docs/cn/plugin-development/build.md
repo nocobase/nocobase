@@ -83,3 +83,4 @@ export default defineConfig({
 - [项目目录结构](./project-structure.md) — 了解 `packages/plugins`、`storage/tar` 等目录的作用
 - [依赖管理](./dependency-management.md) — 插件的依赖声明与全局依赖
 - [插件开发概述](./index.md) — 插件开发整体介绍
+- [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包文件上传到目标环境

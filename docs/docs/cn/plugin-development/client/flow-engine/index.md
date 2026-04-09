@@ -241,3 +241,5 @@ NocoBase 提供了多个 FlowModel 基类，根据你要扩展的类型选择：
 - [FlowDefinition 流定义](../../../flow-engine/definitions/flow-definition.md) — registerFlow 的完整参数说明和事件类型列表
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考
 - [FlowEngine 快速开始](../../../flow-engine/quickstart) — 从零构建一个可编排的按钮组件
+- [插件开发概述](../../index.md) — 插件开发整体介绍
+- [UI Schema](../../../flow-engine/ui-schema) — uiSchema 语法参考

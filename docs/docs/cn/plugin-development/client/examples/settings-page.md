@@ -336,3 +336,5 @@ yarn pm enable @my-project/plugin-settings-page
 - [Context → 常用能力](../ctx/common-capabilities) — ctx.api、ctx.t 等
 - [Component 组件开发](../component/index.md) — React 组件写法
 - [服务端开发概述](../../server) — 定义后端接口
+- [i18n 国际化](../component/i18n) — 翻译文件写法
+- [i18n 国际化（服务端）](../../server/i18n) — 服务端翻译

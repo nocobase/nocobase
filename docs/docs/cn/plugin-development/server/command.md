@@ -112,7 +112,7 @@ nocobase echo --version
 - **`preload()`**
   在执行命令前预加载应用配置，相当于执行 `app.load()`。适用于依赖配置或插件上下文的命令。
 
-更多 API 方法可以参考 [AppCommand](/api/server/app-command)。
+更多 API 方法可以参考 [AppCommand API](../../api/server/app-command.md)。
 
 ## 常见示例
 
@@ -160,3 +160,4 @@ Application.registerStaticCommand((app) => {
 - [Test 测试](./test.md) — 如何编写服务端插件测试
 - [Migration 迁移](./migration.md) — 数据迁移与升级脚本
 - [插件开发概述](../index.md) — 插件开发整体介绍
+- [AppCommand API](../../api/server/app-command.md) — AppCommand 的完整 API 参考

@@ -137,6 +137,12 @@ yarn nocobase tar @my-project/plugin-hello
 
 构建完成后，打包文件默认位于 `storage/tar/@my-project/plugin-hello.tar.gz`。
 
+:::tip 提示
+
+插件发布前建议编写测试用例验证核心逻辑，NocoBase 提供了完整的服务端测试工具链。详见 [Test 测试](./server/test.md)。
+
+:::
+
 ## 第 5 步：上传到其他 NocoBase 应用
 
 把打包文件上传并解压到目标应用的 `./storage/plugins` 目录。详细步骤见 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
@@ -148,3 +154,7 @@ yarn nocobase tar @my-project/plugin-hello
 - [服务端开发概述](./server/index.md) — 服务端插件的整体介绍与核心概念
 - [客户端开发概述](./client/index.md) — 客户端插件的整体介绍与核心概念
 - [构建与打包](./build.md) — 插件的构建、打包与分发流程
+- [Test 测试](./server/test.md) — 编写服务端插件测试用例
+- [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app) — NocoBase 安装方式之一
+- [从 Git 源码安装](../get-started/installation/git) — 从源码安装 NocoBase
+- [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包后的插件上传到其他环境

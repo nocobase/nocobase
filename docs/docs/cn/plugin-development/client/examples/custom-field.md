@@ -166,4 +166,6 @@ yarn pm enable @my-project/plugin-field-simple
 - [FlowEngine → 字段扩展](../flow-engine/field) — FieldModel、ClickableFieldModel、bindModelToInterface
 - [FlowEngine → 区块扩展](../flow-engine/block) — 自定义区块
 - [Component vs FlowModel](../component-vs-flow-model) — 什么时候用 FlowModel
+- [Plugin 插件](../plugin) — 插件入口和 load() 生命周期
+- [i18n 国际化](../component/i18n) — 翻译文件写法和 tExpr 用法
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考

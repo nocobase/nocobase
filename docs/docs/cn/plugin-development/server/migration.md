@@ -142,7 +142,7 @@ export default class extends Migration {
 }
 ```
 
-除了上面列出的常用属性，Migration 还提供更多 API，详细用法见 [Migration API](/api/server/migration)。
+除了上面列出的常用属性，Migration 还提供更多 API，详细用法见 [Migration API](../../api/server/migration.md)。
 
 ## 触发 Migration
 
@@ -206,3 +206,4 @@ describe('Migration Test', () => {
 - [Plugin 插件](./plugin.md) — Migration 文件在插件中的组织与加载方式
 - [Command 命令行](./command.md) — 通过 `nocobase upgrade` 和 `create-migration` 命令触发迁移
 - [Test 测试](./test.md) — 使用 Mock Server 测试 Migration 的执行结果
+- [Migration API](../../api/server/migration.md) — Migration 类的完整 API 参考

@@ -28,3 +28,4 @@ keywords: "插件示例,实战案例,完整插件,NocoBase"
 - [客户端开发概述](../index.md) — 学习路径和快速索引
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法和 registerFlow
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考
+- [Component vs FlowModel](../component-vs-flow-model) — 选择组件还是 FlowModel

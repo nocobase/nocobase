@@ -480,3 +480,7 @@ FlowModel 是 NocoBase 可视化配置体系的核心——如果你的组件需
 - [Component 组件开发](../component/index.md) — useFlowContext 在组件中的用法
 - [Router 路由](../router) — 路由注册和导航
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — 完整的 FlowEngine 参考
+- [i18n 国际化](../component/i18n) — 翻译文件写法、tExpr、useT
+- [语言列表](../../languages) — NocoBase 支持的语言代码
+- [做一个插件设置页](../examples/settings-page) — ctx.api 的完整使用示例
+- [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法

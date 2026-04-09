@@ -255,3 +255,6 @@ export default PostListPage;
 - [Context 上下文](../ctx/index.md) — useFlowContext 的完整能力介绍
 - [Styles & Themes 样式与主题](./styles-themes) — createStyles、主题 token 等
 - [FlowEngine](../flow-engine/index.md) — 需要可视化配置时使用 FlowModel
+- [Observable 响应式机制](../../../flow-engine/observable) — FlowEngine 的响应式状态管理
+- [Context → 常用能力](../ctx/common-capabilities) — ctx.api、ctx.t 等内置能力
+- [Component vs FlowModel](../component-vs-flow-model) — 选择组件还是 FlowModel

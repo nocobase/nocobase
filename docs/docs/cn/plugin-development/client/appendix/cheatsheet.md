@@ -96,4 +96,13 @@ plugin-name/
 - [客户端开发概述](../index.md) — 学习路径和快速索引
 - [Plugin 插件](../plugin) — 插件入口和生命周期
 - [常见问题 & 排错指南](./faq) — 踩坑排查
+- [Router 路由](../router) — 页面路由注册
+- [FlowEngine → 区块扩展](../flow-engine/block) — BlockModel 系列基类
+- [FlowEngine → 字段扩展](../flow-engine/field) — FieldModel 开发
+- [FlowEngine → 操作扩展](../flow-engine/action) — ActionModel 开发
+- [Collections 数据表](../../server/collections) — defineCollection 和字段类型
+- [i18n 国际化](../component/i18n) — 翻译文件写法
+- [ResourceManager 资源管理](../../server/resource-manager) — 自定义 REST API
+- [ACL 权限控制](../../server/acl) — 权限配置
+- [Plugin 插件（服务端）](../../server/plugin) — 服务端插件生命周期
 - [编写第一个插件](../../write-your-first-plugin) — 插件骨架创建

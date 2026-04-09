@@ -490,4 +490,10 @@ yarn pm enable @my-project/plugin-data-block
 - [服务端开发概述](../../server) — 服务端插件基础
 - [服务端 → Collections 数据表](../../server/collections) — defineCollection 和 addCollection
 - [Resource API 速查表](../../../api/flow-engine/resource.md) — MultiRecordResource / SingleRecordResource 的完整方法签名
+- [Plugin 插件](../plugin) — 插件入口和 load() 生命周期
+- [i18n 国际化](../component/i18n) — 翻译文件写法和 tExpr 用法
+- [服务端 → ACL 权限控制](../../server/acl) — 权限配置
+- [服务端 → Plugin 插件](../../server/plugin) — 服务端插件生命周期
+- [Context → 常用能力](../ctx/common-capabilities) — ctx.viewer、ctx.message 等
+- [Component 组件开发](../component/index.md) — Antd Form 等组件用法
 - [FlowEngine 完整文档](../../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考

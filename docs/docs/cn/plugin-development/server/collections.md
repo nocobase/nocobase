@@ -203,6 +203,8 @@ yarn nocobase upgrade
 yarn nocobase install -f
 ```
 
+如果插件升级时需要对已有数据做迁移——比如重命名字段、拆分表、回填默认值等——应该通过 [Migration 升级脚本](./migration.md) 来处理，而不是手动改数据库。
+
 ## 让 Collection 出现在 UI 数据表列表中
 
 通过 `defineCollection` 定义的表是服务端内部表，默认**不会出现**在「数据源管理」的列表中，也不会出现在「添加区块」时的数据表选择列表里。如果你的插件需要让用户在界面上选到这张表（比如添加区块时绑定数据表），需要在**客户端插件**的 `load()` 中通过 `addCollection` 手动注册：
@@ -245,7 +247,7 @@ export class MyPlugin extends Plugin {
 
 ## 自动生成资源（Resource）
 
-定义 Collection 后，系统会自动为其生成对应的资源（Resource），你可以直接通过 API 对该资源执行增删改查操作。详见 [ResourceManager 资源管理](./resource-manager.md)。
+定义 Collection 后，NocoBase 会自动为其生成对应的 REST API 资源，开箱即用的增删改查接口（`list`、`get`、`create`、`update`、`destroy`）不需要额外编写。如果内置的 CRUD 操作不够用——比如你需要一个"批量导入"或"统计汇总"接口——可以通过 `resourceManager` 注册自定义 action。详见 [ResourceManager 资源管理](./resource-manager.md)。
 
 ## 相关链接
 
@@ -253,4 +255,6 @@ export class MyPlugin extends Plugin {
 - [DataSourceManager 数据源管理](./data-source-manager.md) — 管理多个数据源及其集合
 - [Migration 数据迁移](./migration.md) — 插件升级时的数据迁移脚本
 - [Plugin 插件](./plugin.md) — 插件类的生命周期、成员方法和 `app` 对象
+- [ResourceManager 资源管理](./resource-manager.md) — 自定义 REST API 和操作处理器
+- [做一个前后端联动的数据管理插件](../client/examples/fullstack-plugin.md) — defineCollection + addCollection 的完整示例
 - [项目目录结构](../project-structure.md) — `src/server/collections` 目录约定说明
