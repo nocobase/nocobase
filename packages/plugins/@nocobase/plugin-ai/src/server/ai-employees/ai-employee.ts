@@ -102,7 +102,9 @@ export class AIEmployee {
   }
 
   async getFormatMessages(userMessages: AIMessageInput[]) {
-    const { provider } = await this.getLLMService();
+    const { provider } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const { messages } = await this.aiChatConversation.getChatContext({
       userMessages,
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
@@ -409,9 +411,6 @@ export class AIEmployee {
 
           await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIMessage = await conversation.addMessages(values);
-            if (toolCalls?.length) {
-              await this.initToolCall(transaction, result.messageId, toolCalls as any);
-            }
           });
         }
       } catch (e) {
