@@ -273,7 +273,7 @@
       },
       {
         "type": "custom-link",
-        "label": "构建",
+        "label": "构建与打包",
         "link": "/plugin-development/build"
       }
     ]
