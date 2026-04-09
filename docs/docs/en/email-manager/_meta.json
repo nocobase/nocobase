@@ -51,6 +51,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Email Alias",
+        "link": "/email-manager/usage/alias"
+      },
+      {
+        "type": "custom-link",
         "label": "Email Template",
         "link": "/email-manager/usage/template"
       }
