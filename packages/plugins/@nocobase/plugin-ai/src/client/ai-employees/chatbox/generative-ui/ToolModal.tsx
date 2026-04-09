@@ -31,9 +31,10 @@ export const ToolModal: React.FC = observer(() => {
   const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
 
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   useEffect(() => {
-    aiConfigRepository.getAITools();
-  }, [aiConfigRepository]);
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
 
   const open = useChatToolsStore.use.openToolModal();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
@@ -42,8 +43,6 @@ export const ToolModal: React.FC = observer(() => {
   const activeMessageId = useChatToolsStore.use.activeMessageId();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByName = useChatToolsStore.use.toolsByName();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
 
   const { updateToolArgs, messagesService } = useChatMessageActions();
 

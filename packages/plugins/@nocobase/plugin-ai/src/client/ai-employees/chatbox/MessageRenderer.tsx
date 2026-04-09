@@ -151,9 +151,10 @@ export const AIMessage: React.FC<{
   const toolsLoading = aiConfigRepository.aiToolsLoading;
   const tools = aiConfigRepository.aiTools;
   const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   useEffect(() => {
-    aiConfigRepository.getAITools();
-  }, [aiConfigRepository]);
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
   const hasCustomRenderer = !!provider?.components?.MessageRenderer;
@@ -173,8 +174,6 @@ export const AIMessage: React.FC<{
   };
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
 
   const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;

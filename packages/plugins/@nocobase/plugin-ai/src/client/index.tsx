@@ -49,6 +49,7 @@ import {
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
 import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
+import { aiEmployeeWorkflowTaskOutputTool } from './ai-employees/workflow-tasks/tools';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
@@ -184,6 +185,7 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...getCodeSnippetTool);
     this.ai.toolsManager.registerTools(...suggestionsTool);
     this.ai.toolsManager.registerTools(...dispatchSubAgentTaskTool);
+    this.ai.toolsManager.registerTools(...aiEmployeeWorkflowTaskOutputTool);
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);

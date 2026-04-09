@@ -123,6 +123,63 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       await next();
     },
+    getByToolCall: async (ctx: Context, next: Next) => {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const toolCallId = ctx.action.params.values?.toolCallId;
+      if (!toolCallId) {
+        return ctx.throw(400, 'toolCallId is required');
+      }
+
+      const toolMessage = await ctx.db.getRepository('aiToolMessages').findOne({
+        filter: {
+          toolCallId,
+        },
+      });
+      if (!toolMessage) {
+        return ctx.throw(404, 'tool message not found');
+      }
+
+      const task = await ctx.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          sessionId: toolMessage.sessionId,
+          'users.id': userId,
+        },
+      });
+      if (!task) {
+        return ctx.throw(404, 'workflow task not found');
+      }
+
+      const message = await ctx.db.getRepository('aiMessages').findOne({
+        filter: {
+          messageId: toolMessage.messageId,
+        },
+      });
+      const toolCalls = message?.get?.('toolCalls') ?? message?.toolCalls ?? [];
+      const toolCall = Array.isArray(toolCalls) ? toolCalls.find((item: any) => item?.id === toolCallId) : null;
+      if (!toolCall) {
+        return ctx.throw(404, 'tool call not found');
+      }
+
+      const node = await ctx.db.getRepository('flow_nodes').findOne({
+        filter: {
+          id: task.nodeId,
+        },
+      });
+
+      ctx.body = {
+        toolCallId,
+        workflowTitle: task.workflowTitle,
+        nodeTitle: task.nodeTitle,
+        structuredOutputSchema: node?.config?.structuredOutput?.schema ?? null,
+        args: toolCall.args ?? null,
+      };
+
+      await next();
+    },
     accept: async (ctx: Context, next: Next) => {
       const userId = ctx.auth?.user.id;
       if (!userId) {
