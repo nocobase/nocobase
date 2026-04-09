@@ -58,6 +58,21 @@ describe('FieldAssignValueInput path resolve', () => {
     ).toBe('RecordSelectFieldModel');
   });
 
+  it('maps file relation upload binding to record select in assign context', () => {
+    expect(
+      resolveAssignValueFieldModelUse({
+        itemModel: null,
+        fieldModelUse: 'UploadFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+          targetCollection: {
+            template: 'file',
+          },
+        } as any,
+      }),
+    ).toBe('RecordSelectFieldModel');
+  });
+
   it('uses custom field model when form item has no bound collection field', () => {
     const model = {
       getStepParams: (flowKey: string, stepKey: string) => {

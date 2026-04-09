@@ -465,20 +465,39 @@ export function resolveAssignValueFieldPath(itemModel: any): string | undefined 
 export function resolveAssignValueFieldModelUse(options: {
   itemModel: any;
   fieldModelUse?: string;
+  collectionField?: CollectionField | null;
   preferFormItemFieldModel?: boolean;
 }): string | undefined {
-  const { itemModel, fieldModelUse, preferFormItemFieldModel } = options;
-  if (!itemModel) return fieldModelUse;
-
+  const { itemModel, fieldModelUse, collectionField, preferFormItemFieldModel } = options;
   const subField = itemModel?.subModels?.field;
   const subFieldUse = subField && !Array.isArray(subField) ? subField.use : undefined;
   const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
   const customFieldModelUse = customFieldSettings?.fieldModel || itemModel?.customFieldModelInstance?.use;
 
+  const normalizeForAssignContext = (modelUse?: string): string | undefined => {
+    if (!modelUse) return modelUse;
+
+    // 字段赋值/字段默认值等“值编辑”场景中，文件关系字段更适合使用 RecordSelect，
+    // 而不是默认的 UploadFieldModel（上传器语义不适合“直接赋值已有记录”）。
+    if (modelUse === 'UploadFieldModel' && collectionField?.targetCollection?.template === 'file') {
+      return 'RecordSelectFieldModel';
+    }
+
+    return modelUse;
+  };
+
+  const fallbackAssociationModelUse = collectionField?.isAssociationField?.() ? 'RecordSelectFieldModel' : undefined;
+
   if (preferFormItemFieldModel) {
     return subFieldUse || customFieldModelUse || fieldModelUse;
   }
-  return fieldModelUse || subFieldUse || customFieldModelUse;
+
+  return (
+    normalizeForAssignContext(fieldModelUse) ||
+    customFieldModelUse ||
+    normalizeForAssignContext(subFieldUse) ||
+    fallbackAssociationModelUse
+  );
 }
 
 /**
@@ -781,6 +800,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const effectiveFieldModelUse = resolveAssignValueFieldModelUse({
       itemModel,
       fieldModelUse,
+      collectionField: (f as CollectionField | undefined) || effectiveCollectionField || cf,
       preferFormItemFieldModel,
     });
     if (!effectiveFieldModelUse) return;
@@ -811,8 +831,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       subModels: {
         fields: [
           {
-            // 字段赋值编辑器默认应回到 collection field 的可编辑绑定；
-            // 仅在 preferFormItemFieldModel=true（如筛选表单默认值）时，才复用当前表单字段模型。
+            // 字段赋值编辑器优先使用“值编辑”场景下更合适的模型：
+            // - 常规情况回到字段绑定的可编辑模型
+            // - 文件关系等特殊场景改用 RecordSelectFieldModel
+            // - 仅在 preferFormItemFieldModel=true（如筛选表单默认值）时，才复用当前表单字段模型
             use: effectiveFieldModelUse,
             stepParams: tempFieldStepParams,
             props: {
