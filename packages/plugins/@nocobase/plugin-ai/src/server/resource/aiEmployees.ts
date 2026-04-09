@@ -37,19 +37,17 @@ export const list = async (ctx: Context, next: Next) => {
       data.map((it) => it.knowledgeBase?.knowledgeBaseKeys ?? []).flatMap((it) => it),
     );
     const knowledgeBaseList = await plugin.features.knowledgeBase.getKnowledgeBase(knowledgeBaseKeys);
-    if (knowledgeBaseList?.length) {
-      const existedKnowledgeBaseKeys = knowledgeBaseList.map((it) => it.key);
-      for (const row of data as AIEmployee[]) {
-        row.missingKnowledgeBaseKeys = [];
-        if (!row.knowledgeBase?.knowledgeBaseKeys?.length) {
+    const existedKnowledgeBaseKeys = knowledgeBaseList?.map((it) => it.key) ?? [];
+    for (const row of data as AIEmployee[]) {
+      row.missingKnowledgeBaseKeys = [];
+      if (!row.knowledgeBase?.knowledgeBaseKeys?.length) {
+        continue;
+      }
+      for (const k of row.knowledgeBase.knowledgeBaseKeys) {
+        if (existedKnowledgeBaseKeys.includes(k)) {
           continue;
         }
-        for (const k of row.knowledgeBase.knowledgeBaseKeys) {
-          if (existedKnowledgeBaseKeys.includes(k)) {
-            continue;
-          }
-          row.missingKnowledgeBaseKeys.push(k);
-        }
+        row.missingKnowledgeBaseKeys.push(k);
       }
     }
   }
