@@ -20,6 +20,89 @@ export const flowSurfaceExamples = {
     path: 'record',
     maxDepth: 3,
   },
+  describeSurface: {
+    locator: {
+      pageSchemaUid: 'employees-page-schema',
+    },
+    bindRefs: [
+      {
+        ref: 'employeesTable',
+        locator: {
+          uid: 'employees-table-uid',
+        },
+        expectedKind: 'block',
+      },
+    ],
+  },
+  validatePlan: {
+    surface: {
+      locator: {
+        pageSchemaUid: 'employees-page-schema',
+      },
+    },
+    expectedFingerprint: 'a1b2c3d4e5f6',
+    bindRefs: [
+      {
+        ref: 'employeesTable',
+        locator: {
+          uid: 'employees-table-uid',
+        },
+        expectedKind: 'block',
+      },
+    ],
+    plan: {
+      steps: [
+        {
+          id: 'configureTable',
+          action: 'configure',
+          selectors: {
+            target: {
+              ref: 'employeesTable',
+            },
+          },
+          values: {
+            changes: {
+              pageSize: 20,
+            },
+          },
+        },
+      ],
+    },
+  },
+  executePlan: {
+    surface: {
+      locator: {
+        pageSchemaUid: 'employees-page-schema',
+      },
+    },
+    bindRefs: [
+      {
+        ref: 'employeesTable',
+        locator: {
+          uid: 'employees-table-uid',
+        },
+        expectedKind: 'block',
+      },
+    ],
+    plan: {
+      steps: [
+        {
+          id: 'configureTable',
+          action: 'configure',
+          selectors: {
+            target: {
+              ref: 'employeesTable',
+            },
+          },
+          values: {
+            changes: {
+              pageSize: 20,
+            },
+          },
+        },
+      ],
+    },
+  },
   compose: {
     target: {
       uid: 'page-grid-uid',

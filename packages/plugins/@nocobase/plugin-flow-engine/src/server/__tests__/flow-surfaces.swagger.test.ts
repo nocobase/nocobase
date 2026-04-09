@@ -10,6 +10,7 @@
 import swaggerDocument from '../../swagger';
 import {
   FLOW_SURFACE_MUTATE_OP_TYPES,
+  FLOW_SURFACE_PLAN_STEP_ACTIONS,
   FLOW_SURFACES_ACTION_METHODS,
   FLOW_SURFACES_ACTION_NAMES,
 } from '../flow-surfaces/constants';
@@ -37,8 +38,8 @@ describe('flowSurfaces swagger', () => {
   });
 
   it('should expose recursive tree schemas, flattened mutate schema and representative request examples', () => {
-    const schemas = swaggerDocument.components?.schemas || {};
-    const parameters = swaggerDocument.components?.parameters || {};
+    const schemas = (swaggerDocument.components?.schemas || {}) as Record<string, any>;
+    const parameters = (swaggerDocument.components?.parameters || {}) as Record<string, any>;
 
     expect(schemas.FlowSurfaceWriteTarget).toBeTruthy();
     expect(schemas.FlowSurfaceWriteTarget.required).toEqual(['uid']);
@@ -66,6 +67,17 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceContextVarInfo).toBeTruthy();
     expect(schemas.FlowSurfaceContextRequest).toBeTruthy();
     expect(schemas.FlowSurfaceContextResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceDescribeSurfaceRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceDescribeSurfaceResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceValidatePlanRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceValidatePlanResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceExecutePlanRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceExecutePlanResponse).toBeTruthy();
+    expect(schemas.FlowSurfacePlanSelector).toBeTruthy();
+    expect(schemas.FlowSurfaceBindRef).toBeTruthy();
+    expect(schemas.FlowSurfaceRefsMap).toBeTruthy();
+    expect(schemas.FlowSurfacePlanStep).toBeTruthy();
+    expect(schemas.FlowSurfacePlanCompiledStep).toBeTruthy();
     expect(schemas.FlowSurfaceCatalogItem).toBeTruthy();
     expect(schemas.FlowSurfaceNodeContract).toBeTruthy();
     expect(schemas.FlowSurfaceDomainContract).toBeTruthy();
@@ -176,8 +188,34 @@ describe('flowSurfaces swagger', () => {
     expect(parameters.flowSurfaceTargetTabSchemaUid.example).toBe('details-tab-schema');
     expect(parameters.flowSurfaceTargetRouteId.example).toBe('101');
 
+    expect(schemas.FlowSurfacePlanStep.properties.action.enum).toEqual([...FLOW_SURFACE_PLAN_STEP_ACTIONS]);
+    expect(schemas.FlowSurfacePlanCompiledStep.properties.action.enum).toEqual([...FLOW_SURFACE_PLAN_STEP_ACTIONS]);
+    expect(schemas.FlowSurfaceDescribeSurfaceRequest.required).toEqual(['locator']);
+    expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.fingerprint.type).toBe('string');
+    expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.refs.$ref).toBe(
+      '#/components/schemas/FlowSurfaceRefsMap',
+    );
+    expect(schemas.FlowSurfaceValidatePlanRequest.required).toEqual(['surface', 'plan']);
+    expect(schemas.FlowSurfaceValidatePlanResponse.properties.compiledSteps.items.$ref).toBe(
+      '#/components/schemas/FlowSurfacePlanCompiledStep',
+    );
+    expect(schemas.FlowSurfaceExecutePlanResponse.properties.results.items.$ref).toBe(
+      '#/components/schemas/FlowSurfacePlanResultItem',
+    );
+    expect(schemas.FlowSurfaceExecutePlanResponse.properties.fingerprintAfter.nullable).toBe(true);
+    expect(schemas.FlowSurfaceExecutePlanResponse.properties.surfaceExistsAfterExecute.type).toBe('boolean');
+
     const catalogRequest = swaggerDocument.paths['/flowSurfaces:catalog'].post.requestBody.content['application/json'];
     expect(catalogRequest.example?.target?.uid).toBe('table-block-uid');
+    const describeRequest =
+      swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
+    expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
+    const validateRequest =
+      swaggerDocument.paths['/flowSurfaces:validatePlan'].post.requestBody.content['application/json'];
+    expect(validateRequest.example?.plan?.steps?.[0]?.action).toBe('configure');
+    const executeRequest =
+      swaggerDocument.paths['/flowSurfaces:executePlan'].post.requestBody.content['application/json'];
+    expect(executeRequest.example?.plan?.steps?.[0]?.selectors?.target?.ref).toBe('employeesTable');
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
     expect(contextRequest.example?.path).toBe('record');
@@ -216,7 +254,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceGetResponse.properties.target.$ref).toBe('#/components/schemas/FlowSurfaceReadTarget');
     expect(schemas.FlowSurfaceGetResponse.properties.tabs).toBeUndefined();
     expect(schemas.FlowSurfaceGetResponse.properties.tabTrees).toBeUndefined();
-    expect(schemas.FlowSurfaceGetTreeNode.properties.template.$ref).toBe('#/components/schemas/FlowSurfaceBlockTemplateRef');
+    expect(schemas.FlowSurfaceGetTreeNode.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockTemplateRef',
+    );
     expect(schemas.FlowSurfaceGetTreeNode.properties.fieldsTemplate.$ref).toBe(
       '#/components/schemas/FlowSurfaceTemplateRef',
     );
@@ -912,7 +952,7 @@ describe('flowSurfaces swagger', () => {
     ]);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.required).toEqual(['title']);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceUpdateMenuRequest.required).toEqual(['menuRouteId']);
-    expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.properties.pageUid).toBeUndefined();
-    expect(swaggerDocument.components?.schemas?.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
+    expect(schemas.FlowSurfaceCreateMenuRequest.properties.pageUid).toBeUndefined();
+    expect(schemas.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
   });
 });

@@ -9,6 +9,7 @@
 
 import {
   FLOW_SURFACE_MUTATE_OP_TYPES,
+  FLOW_SURFACE_PLAN_STEP_ACTIONS,
   FLOW_SURFACES_ACTION_METHODS,
   FLOW_SURFACES_ACTION_NAMES,
 } from '../server/flow-surfaces/constants';
@@ -171,7 +172,7 @@ function valuesCompatibilityNote(description: string) {
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `validatePlan` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -229,6 +230,33 @@ const actionDocs: Record<string, any> = {
       parameterRef('flowSurfaceTargetRouteId'),
     ],
     responses: responses('FlowSurfaceGetResponse'),
+  },
+  describeSurface: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read surface tree with stable refs and fingerprint',
+    description: valuesCompatibilityNote(
+      `Reads the current surface together with request-scoped bind refs, persisted declared refs, and a stable fingerprint for optimistic plan execution. The fingerprint is computed from the public surface tree together with the resolved refs map, while the public readback strips the internal declared-ref metadata path from node.stepParams. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
+    responses: responses('FlowSurfaceDescribeSurfaceResponse'),
+  },
+  validatePlan: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Resolve plan selectors and preview the compiled low-level calls',
+    description: valuesCompatibilityNote(
+      `Validates a high-level plan against the current surface fingerprint, resolves { ref | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved refs map. When \`surface\` uses { ref }, that ref must also appear in \`bindRefs\` so the server can anchor the current surface root. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceValidatePlanRequest', examples.validatePlan),
+    responses: responses('FlowSurfaceValidatePlanResponse'),
+  },
+  executePlan: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Execute a high-level plan and persist used bind refs as declared refs',
+    description: valuesCompatibilityNote(
+      'Executes validated high-level plan steps by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Only the request-scoped bind refs that are actually used by selectors are persisted back as declared refs. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false`, `fingerprintAfter=null`, and an empty refs map. When `surface` uses { ref }, that ref must also appear in `bindRefs`.',
+    ),
+    requestBody: requestBody('FlowSurfaceExecutePlanRequest', examples.executePlan),
+    responses: responses('FlowSurfaceExecutePlanResponse'),
   },
   ...templateActionDocs,
   compose: {
@@ -836,6 +864,85 @@ const schemas = {
       kind: {
         type: 'string',
         enum: ['page', 'tab', 'grid', 'block', 'node'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanSelectorByRef: {
+    type: 'object',
+    required: ['ref'],
+    properties: {
+      ref: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanSelectorByLocator: {
+    type: 'object',
+    required: ['locator'],
+    properties: {
+      locator: ref('FlowSurfaceReadLocator'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanSelector: {
+    oneOf: [ref('FlowSurfacePlanSelectorByRef'), ref('FlowSurfacePlanSelectorByLocator')],
+  },
+  FlowSurfaceBindRef: {
+    type: 'object',
+    required: ['ref', 'locator'],
+    properties: {
+      ref: {
+        type: 'string',
+      },
+      locator: ref('FlowSurfaceReadLocator'),
+      expectedKind: {
+        type: 'string',
+        enum: ['page', 'tab', 'grid', 'block', 'fieldHost', 'action', 'popupHost', 'popupPage', 'popupTab', 'node'],
+      },
+      rebind: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRefInfo: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      kind: {
+        type: 'string',
+      },
+      source: {
+        type: 'string',
+        enum: ['declared', 'request', 'system'],
+      },
+      locator: ref('FlowSurfaceReadLocator'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRefsMap: {
+    type: 'object',
+    additionalProperties: ref('FlowSurfaceRefInfo'),
+  },
+  FlowSurfaceResolvedSelectorSummary: {
+    type: 'object',
+    properties: {
+      ref: {
+        type: 'string',
+      },
+      uid: {
+        type: 'string',
+      },
+      kind: {
+        type: 'string',
+      },
+      source: {
+        type: 'string',
+        enum: ['declared', 'request', 'system'],
       },
     },
     additionalProperties: false,
@@ -1448,6 +1555,18 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceDescribeSurfaceRequest: {
+    type: 'object',
+    required: ['locator'],
+    properties: {
+      locator: ref('FlowSurfaceReadLocator'),
+      bindRefs: {
+        type: 'array',
+        items: ref('FlowSurfaceBindRef'),
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceGetResponse: {
     type: 'object',
     properties: {
@@ -1456,6 +1575,21 @@ const schemas = {
       nodeMap: ref('FlowSurfaceNodeMap'),
       pageRoute: ref('FlowSurfaceRouteMeta'),
       route: ref('FlowSurfaceRouteMeta'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceDescribeSurfaceResponse: {
+    type: 'object',
+    properties: {
+      target: ref('FlowSurfaceReadTarget'),
+      tree: ref('FlowSurfaceGetTreeNode'),
+      nodeMap: ref('FlowSurfaceNodeMap'),
+      pageRoute: ref('FlowSurfaceRouteMeta'),
+      route: ref('FlowSurfaceRouteMeta'),
+      fingerprint: {
+        type: 'string',
+      },
+      refs: ref('FlowSurfaceRefsMap'),
     },
     additionalProperties: false,
   },
@@ -1911,6 +2045,164 @@ const schemas = {
         items: ref('FlowSurfaceComposeBlockResult'),
       },
       layout: ref('FlowSurfaceSetLayoutResult'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanStep: {
+    type: 'object',
+    required: ['action'],
+    properties: {
+      id: {
+        type: 'string',
+      },
+      action: {
+        type: 'string',
+        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
+      },
+      selectors: {
+        type: 'object',
+        properties: {
+          target: ref('FlowSurfacePlanSelector'),
+          source: ref('FlowSurfacePlanSelector'),
+        },
+        additionalProperties: false,
+      },
+      values: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanDocument: {
+    type: 'object',
+    required: ['steps'],
+    properties: {
+      steps: {
+        type: 'array',
+        items: ref('FlowSurfacePlanStep'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanCompiledStep: {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+      },
+      id: {
+        type: 'string',
+      },
+      action: {
+        type: 'string',
+        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
+      },
+      resolvedSelectors: {
+        type: 'object',
+        properties: {
+          target: ref('FlowSurfaceResolvedSelectorSummary'),
+          source: ref('FlowSurfaceResolvedSelectorSummary'),
+        },
+        additionalProperties: false,
+      },
+      payload: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanResultItem: {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+      },
+      id: {
+        type: 'string',
+      },
+      action: {
+        type: 'string',
+        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
+      },
+      result: {},
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePersistedRefResult: {
+    type: 'object',
+    properties: {
+      ref: {
+        type: 'string',
+      },
+      uid: {
+        type: 'string',
+      },
+      persisted: {
+        type: 'boolean',
+      },
+      skipped: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidatePlanRequest: {
+    type: 'object',
+    required: ['surface', 'plan'],
+    properties: {
+      surface: ref('FlowSurfacePlanSelector'),
+      expectedFingerprint: {
+        type: 'string',
+      },
+      bindRefs: {
+        type: 'array',
+        items: ref('FlowSurfaceBindRef'),
+      },
+      plan: ref('FlowSurfacePlanDocument'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidatePlanResponse: {
+    type: 'object',
+    properties: {
+      target: ref('FlowSurfaceReadTarget'),
+      fingerprint: {
+        type: 'string',
+      },
+      refs: ref('FlowSurfaceRefsMap'),
+      compiledSteps: {
+        type: 'array',
+        items: ref('FlowSurfacePlanCompiledStep'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecutePlanRequest: {
+    allOf: [ref('FlowSurfaceValidatePlanRequest')],
+  },
+  FlowSurfaceExecutePlanResponse: {
+    type: 'object',
+    properties: {
+      target: ref('FlowSurfaceReadTarget'),
+      fingerprintBefore: {
+        type: 'string',
+      },
+      fingerprintAfter: {
+        type: 'string',
+        nullable: true,
+      },
+      surfaceExistsAfterExecute: {
+        type: 'boolean',
+      },
+      refs: ref('FlowSurfaceRefsMap'),
+      compiledSteps: {
+        type: 'array',
+        items: ref('FlowSurfacePlanCompiledStep'),
+      },
+      results: {
+        type: 'array',
+        items: ref('FlowSurfacePlanResultItem'),
+      },
+      persistedRefs: {
+        type: 'array',
+        items: ref('FlowSurfacePersistedRefResult'),
+      },
     },
     additionalProperties: false,
   },

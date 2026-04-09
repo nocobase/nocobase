@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FLOW_SURFACE_MUTATE_OP_TYPES } from './constants';
+import { FLOW_SURFACE_MUTATE_OP_TYPES, FLOW_SURFACE_PLAN_STEP_ACTIONS } from './constants';
 
 export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
 export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
@@ -18,6 +18,31 @@ export type FlowSurfaceReadLocator = {
   pageSchemaUid?: string;
   tabSchemaUid?: string;
   routeId?: string;
+};
+
+export type FlowSurfacePlanSelector =
+  | {
+      ref: string;
+    }
+  | {
+      locator: FlowSurfaceReadLocator;
+    };
+
+export type FlowSurfaceBindRef = {
+  ref: string;
+  locator: FlowSurfaceReadLocator;
+  expectedKind?:
+    | 'page'
+    | 'tab'
+    | 'grid'
+    | 'block'
+    | 'fieldHost'
+    | 'action'
+    | 'popupHost'
+    | 'popupPage'
+    | 'popupTab'
+    | 'node';
+  rebind?: boolean;
 };
 
 export type FlowSurfaceWriteTarget = {
@@ -136,6 +161,7 @@ export type FlowSurfaceCatalogItem = {
 export type FlowSurfaceNodeSpec = {
   uid?: string;
   clientKey?: string;
+  sortIndex?: number;
   use: string;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
@@ -208,6 +234,34 @@ export type FlowSurfaceContextValues = {
 export type FlowSurfaceContextResponse = {
   vars: Record<string, FlowSurfaceContextVarInfo>;
 };
+
+export type FlowSurfaceDescribeValues = {
+  locator: FlowSurfaceReadLocator;
+  bindRefs?: FlowSurfaceBindRef[];
+};
+
+export type FlowSurfacePlanStepAction = (typeof FLOW_SURFACE_PLAN_STEP_ACTIONS)[number];
+
+export type FlowSurfacePlanStep = {
+  id?: string;
+  action: FlowSurfacePlanStepAction;
+  selectors?: {
+    target?: FlowSurfacePlanSelector;
+    source?: FlowSurfacePlanSelector;
+  };
+  values?: Record<string, any>;
+};
+
+export type FlowSurfaceValidatePlanValues = {
+  surface: FlowSurfacePlanSelector;
+  expectedFingerprint?: string;
+  bindRefs?: FlowSurfaceBindRef[];
+  plan: {
+    steps?: FlowSurfacePlanStep[];
+  };
+};
+
+export type FlowSurfaceExecutePlanValues = FlowSurfaceValidatePlanValues;
 
 export type FlowSurfaceMutateOpType = (typeof FLOW_SURFACE_MUTATE_OP_TYPES)[number];
 

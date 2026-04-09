@@ -27,7 +27,7 @@ import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from '
 
 describe('flowSurfaces API contract builders', () => {
   it('should keep persisted root page builder separate from synthetic tab and popup builders', async () => {
-    const persistedPage = buildPersistedRootPageModel({
+    const persistedPage: any = buildPersistedRootPageModel({
       pageUid: 'persisted-page',
       pageTitle: 'Persisted page',
       routeId: 1,
@@ -217,6 +217,27 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(contextRes.status).toBe(200);
+    const describeRes = await readerAgent.resource('flowSurfaces').describeSurface({
+      values: {
+        locator: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+      },
+    });
+    expect(describeRes.status).toBe(200);
+    const validateRes = await readerAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
 
     const deniedWriteRes = await readerAgent.resource('flowSurfaces').addTab({
       values: {
@@ -241,6 +262,38 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(allowedWriteRes.status).toBe(200);
+
+    const deniedExecutePlanRes = await readerAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              action: 'addTab',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: pageRootUid,
+                  },
+                },
+              },
+              values: {
+                title: 'Denied by executePlan',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(deniedExecutePlanRes.status).toBe(403);
+    expectStructuredError(readErrorItem(deniedExecutePlanRes), {
+      status: 403,
+      type: 'forbidden',
+    });
   });
 
   it('should keep route-backed tabs under tree.subModels.tabs and reject wrapped get locators', async () => {
@@ -1583,7 +1636,7 @@ describe('flowSurfaces API contract', () => {
   it('should only expose catalog blocks and actions backed by plugins enabled in the current app instance', async () => {
     await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_MINIMAL_TEST_PLUGINS);
     try {
-      const minimalRootAgent = await loginFlowSurfacesRootAgent(app);
+      const minimalRootAgent: any = await loginFlowSurfacesRootAgent(app);
 
       const page = await createPage(minimalRootAgent, {
         title: 'Minimal catalog page',
@@ -5347,6 +5400,239 @@ describe('flowSurfaces API contract', () => {
     expect(composeRes.status).toBe(400);
     expect(readErrorMessage(composeRes)).toContain('roles.hidden');
     expect(readErrorMessage(composeRes)).toContain('has no interface');
+  });
+
+  it('should persist only used bindRefs as declared refs and keep metadata hidden from public reads', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Ref persistence page',
+      tabTitle: 'Ref persistence tab',
+    });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const pageGridUid = getRouteBackedTabs(pageReadback)[0]?.subModels?.grid?.uid;
+    expect(pageGridUid).toBeTruthy();
+
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: pageGridUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const describeRes = await rootAgent.resource('flowSurfaces').describeSurface({
+      values: {
+        locator: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        bindRefs: [
+          {
+            ref: 'employeesTable',
+            locator: {
+              uid: table.uid,
+            },
+            expectedKind: 'block',
+          },
+        ],
+      },
+    });
+    expect(describeRes.status).toBe(200);
+    const describeData = getData(describeRes);
+    expect(describeData.refs.employeesTable.uid).toBe(table.uid);
+
+    const describeWithoutBindRefs = getData(
+      await rootAgent.resource('flowSurfaces').describeSurface({
+        values: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+      }),
+    );
+    expect(describeWithoutBindRefs.fingerprint).not.toBe(describeData.fingerprint);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        bindRefs: [
+          {
+            ref: 'employeesTable',
+            locator: {
+              uid: table.uid,
+            },
+            expectedKind: 'block',
+          },
+          {
+            ref: 'unusedTable',
+            locator: {
+              uid: table.uid,
+            },
+            expectedKind: 'block',
+          },
+        ],
+        plan: {
+          steps: [
+            {
+              id: 'configureTable',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'employeesTable',
+                },
+              },
+              values: {
+                changes: {
+                  pageSize: 25,
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+    const executeData = getData(executeRes);
+    expect(executeData.persistedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'employeesTable',
+          uid: table.uid,
+          persisted: true,
+        }),
+      ]),
+    );
+    expect(executeData.persistedRefs).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'unusedTable',
+        }),
+      ]),
+    );
+
+    const describedAgain = getData(
+      await rootAgent.resource('flowSurfaces').describeSurface({
+        values: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+      }),
+    );
+    expect(describedAgain.refs.employeesTable.uid).toBe(table.uid);
+    expect(describedAgain.refs.unusedTable).toBeUndefined();
+
+    const publicTableReadback = await getSurface(rootAgent, {
+      uid: table.uid,
+    });
+    expect(publicTableReadback.tree?.stepParams?.__flowSurfaceMeta).toBeUndefined();
+
+    const rawTable = await flowRepo.findModelById(table.uid, {
+      includeAsyncNode: true,
+    });
+    expect(_.get(rawTable, ['stepParams', '__flowSurfaceMeta', 'declaredRef'])).toBe('employeesTable');
+  });
+
+  it('should reject reserved or duplicated bindRefs and report missing after-state when executePlan removes the surface', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Ref guard page',
+      tabTitle: 'Ref guard tab',
+    });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const pageGridUid = getRouteBackedTabs(pageReadback)[0]?.subModels?.grid?.uid;
+    expect(pageGridUid).toBeTruthy();
+
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: pageGridUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const reservedRefRes = await rootAgent.resource('flowSurfaces').describeSurface({
+      values: {
+        locator: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        bindRefs: [
+          {
+            ref: 'surface',
+            locator: {
+              uid: table.uid,
+            },
+          },
+        ],
+      },
+    });
+    expect(reservedRefRes.status).toBe(400);
+    expect(readErrorMessage(reservedRefRes)).toContain('reserved');
+
+    const duplicateRefRes = await rootAgent.resource('flowSurfaces').describeSurface({
+      values: {
+        locator: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        bindRefs: [
+          {
+            ref: 'employeesTable',
+            locator: {
+              uid: table.uid,
+            },
+          },
+          {
+            ref: 'employeesTable',
+            locator: {
+              uid: table.uid,
+            },
+          },
+        ],
+      },
+    });
+    expect(duplicateRefRes.status).toBe(400);
+    expect(readErrorMessage(duplicateRefRes)).toContain('duplicated');
+
+    const destroyPageRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              action: 'destroyPage',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.pageUid,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(destroyPageRes.status).toBe(200);
+    expect(getData(destroyPageRes)).toMatchObject({
+      surfaceExistsAfterExecute: false,
+      fingerprintAfter: null,
+      refs: {},
+    });
   });
 });
 

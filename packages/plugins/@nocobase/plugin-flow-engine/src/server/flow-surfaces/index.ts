@@ -137,6 +137,17 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     get: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.get(getReadValues(ctx)));
     },
+    describeSurface: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.describeSurface(getValues(ctx)));
+    },
+    validatePlan: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.validatePlan(getValues(ctx)));
+    },
+    executePlan: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.executePlan(getValues(ctx), { transaction })),
+      );
+    },
     listTemplates: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.listTemplates(getValues(ctx)));
     },
