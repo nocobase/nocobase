@@ -33,6 +33,14 @@ describe('formatter', () => {
     await app.db.clean({ drop: true });
   });
 
+  test('should ignore invalid timezone header values', async () => {
+    const queryParser = createQueryParser(db);
+
+    expect(queryParser.formatter.getTimezoneByOffset(`UTC' || current_user || '`)).toBeUndefined();
+    expect(queryParser.formatter.getTimezoneByOffset('+05:30')).toBeTruthy();
+    expect(queryParser.formatter.getTimezoneByOffset('Asia/Tokyo')).toBe('Asia/Tokyo');
+  });
+
   test('datetime format with timezone', async () => {
     db.collection({
       name: 'chart_test',
