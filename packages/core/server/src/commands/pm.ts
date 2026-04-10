@@ -12,9 +12,42 @@
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
+import { PluginManager } from '../plugin-manager';
+import { findBuiltInPlugins, findLocalPlugins } from '../plugin-manager/findPackageNames';
 
 export default (app: Application) => {
   const pm = app.command('pm');
+
+  pm.command('list').action(async () => {
+    const plugins1 = await findBuiltInPlugins();
+    const plugins2 = await findLocalPlugins();
+    let enabledPlugins = [];
+    try {
+      enabledPlugins = (
+        await app.pm.repository.find({
+          filter: {
+            enabled: true,
+          },
+        })
+      ).map((item) => item.packageName);
+    } catch (error) {
+      // ignore error
+    }
+    const items = await Promise.all(
+      [...plugins1, ...plugins2].map(async (name) => {
+        const item = await PluginManager.parseName(name);
+        const json = await PluginManager.getPackageJson(item.packageName);
+        return {
+          displayName: json.displayName || name,
+          packageName: item.packageName,
+          enabled: enabledPlugins.includes(item.packageName),
+        };
+      }),
+    );
+    console.log('--- BEGIN_PLUGIN_LIST_JSON ---');
+    console.log(JSON.stringify(items));
+    console.log('--- END_PLUGIN_LIST_JSON ---');
+  });
 
   pm.command('create')
     .argument('plugin')
