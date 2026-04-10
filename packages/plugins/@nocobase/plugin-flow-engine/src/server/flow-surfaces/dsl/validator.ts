@@ -28,7 +28,6 @@ import {
   isFlowSurfaceDslDefaultCrudActionType,
 } from './utils';
 
-const FLOW_SURFACE_DSL_INTENTS = new Set(['management', 'detail', 'dashboard', 'portal', 'custom']);
 const FLOW_SURFACE_DSL_PATCH_OPS = new Set([
   'page.destroy',
   'tab.add',
@@ -56,6 +55,10 @@ function assertNonEmptyString(value: any, context: string) {
   if (typeof value !== 'string' || !value.trim()) {
     throwBadRequest(`${context} must be a non-empty string`);
   }
+}
+
+function hasOwn(input: any, key: string) {
+  return !!input && Object.prototype.hasOwnProperty.call(input, key);
 }
 
 function assertDslEntityRef(entityRef: any, context: string) {
@@ -99,8 +102,8 @@ function validateBlueprintDataSource(
     return;
   }
   if (dataSource.kind === 'binding') {
-    if (dataSource.scope !== 'popup') {
-      throwBadRequest(`${context}.scope only supports 'popup'`);
+    if (hasOwn(dataSource, 'scope')) {
+      throwBadRequest(`${context}.scope is no longer supported; binding dataSources are implicitly popup-scoped`);
     }
     assertNonEmptyString(dataSource.popupId, `${context}.popupId`);
     if (!popupIds.has(dataSource.popupId)) {
@@ -376,8 +379,8 @@ function validateBlueprint(blueprint: FlowSurfaceBlueprintDsl) {
   if (blueprint.version !== '1') {
     throwBadRequest(`flowSurfaces dsl blueprint version '${blueprint.version}' is not supported`);
   }
-  if (!FLOW_SURFACE_DSL_INTENTS.has(String(blueprint.intent || '').trim())) {
-    throwBadRequest(`flowSurfaces dsl blueprint intent '${(blueprint as any).intent || ''}' is not supported`);
+  if (hasOwn(blueprint, 'intent')) {
+    throwBadRequest(`flowSurfaces dsl blueprint intent is no longer supported`);
   }
   assertNonEmptyString(blueprint.title, `flowSurfaces dsl blueprint title`);
   if (!_.isPlainObject(blueprint.target)) {
@@ -479,6 +482,96 @@ function validateBlueprint(blueprint: FlowSurfaceBlueprintDsl) {
   validateBlueprintPopups(blueprint, popupUsages);
 }
 
+function validatePatchFieldSpec(field: FlowSurfaceDslField, context: string) {
+  if (!_.isPlainObject(field)) {
+    throwBadRequest(`${context} must be an object`);
+  }
+  if (!field.fieldPath && !field.type) {
+    throwBadRequest(`${context} requires fieldPath or type`);
+  }
+  if (field.fieldPath && field.type) {
+    throwBadRequest(`${context} cannot mix fieldPath with synthetic field type`);
+  }
+  if (!_.isUndefined(field.target)) {
+    if (typeof field.target === 'string') {
+      if (!field.target.trim()) {
+        throwBadRequest(`${context}.target must be a non-empty string when provided`);
+      }
+    } else if (
+      _.isPlainObject(field.target) &&
+      typeof field.target.blockId === 'string' &&
+      field.target.blockId.trim()
+    ) {
+      // pass
+    } else {
+      throwBadRequest(`${context}.target must be a block id string or { blockId }`);
+    }
+  }
+}
+
+function validatePatchActionSpec(
+  action: FlowSurfaceDslAction,
+  context: string,
+  popupIds: Set<string>,
+  popupUsages: Map<string, Set<string>>,
+) {
+  if (!_.isPlainObject(action)) {
+    throwBadRequest(`${context} must be an object`);
+  }
+  assertNonEmptyString(action.type, `${context}.type`);
+  if (!_.isUndefined(action.popupId)) {
+    assertNonEmptyString(action.popupId, `${context}.popupId`);
+    if (!popupIds.has(String(action.popupId).trim())) {
+      throwBadRequest(`${context}.popupId '${action.popupId}' is not defined in popups[]`);
+    }
+    const popupId = String(action.popupId).trim();
+    const types = popupUsages.get(popupId) || new Set<string>();
+    types.add(String(action.type).trim());
+    popupUsages.set(popupId, types);
+  }
+}
+
+function validatePatchRowsColumnsLayout(layout: any, context: string) {
+  if (!_.isPlainObject(layout)) {
+    throwBadRequest(`${context} must be an object`);
+  }
+  const kind = String(layout.kind || 'rows-columns').trim() || 'rows-columns';
+  if (kind !== 'rows-columns') {
+    throwBadRequest(`${context}.kind '${kind}' is not supported`);
+  }
+  const rows = _.castArray(layout.rows || []);
+  if (!rows.length) {
+    throwBadRequest(`${context}.rows must not be empty`);
+  }
+  const mentioned = new Set<string>();
+  rows.forEach((row, rowIndex) => {
+    if (!_.isPlainObject(row)) {
+      throwBadRequest(`${context}.rows[${rowIndex}] must be an object`);
+    }
+    const columns = _.castArray((row as any).columns || []);
+    if (!columns.length) {
+      throwBadRequest(`${context}.rows[${rowIndex}].columns must not be empty`);
+    }
+    columns.forEach((column, columnIndex) => {
+      if (!_.isPlainObject(column)) {
+        throwBadRequest(`${context}.rows[${rowIndex}].columns[${columnIndex}] must be an object`);
+      }
+      const items = _.castArray((column as any).items || [])
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+      if (!items.length) {
+        throwBadRequest(`${context}.rows[${rowIndex}].columns[${columnIndex}].items must not be empty`);
+      }
+      items.forEach((itemId) => {
+        if (mentioned.has(itemId)) {
+          throwBadRequest(`${context} item '${itemId}' is duplicated`);
+        }
+        mentioned.add(itemId);
+      });
+    });
+  });
+}
+
 function requiresPatchTarget(change: FlowSurfacePatchDslChange) {
   return !FLOW_SURFACE_DSL_PATCH_SURFACE_DEFAULT_TARGET_OPS.has(change.op);
 }
@@ -487,7 +580,16 @@ function requiresPatchSource(change: FlowSurfacePatchDslChange) {
   return ['tab.move', 'node.move'].includes(change.op);
 }
 
-function validatePatchChange(change: FlowSurfacePatchDslChange, index: number) {
+function validatePatchChange(
+  change: FlowSurfacePatchDslChange,
+  index: number,
+  deps: {
+    dataSourcesByKey: Map<string, FlowSurfaceDslDataSource>;
+    popupIds: Set<string>;
+    popupUsages: Map<string, Set<string>>;
+    addedBlockIds: Set<string>;
+  },
+) {
   const context = `flowSurfaces dsl patch changes[${index}]`;
   if (!_.isPlainObject(change)) {
     throwBadRequest(`${context} must be an object`);
@@ -510,6 +612,58 @@ function validatePatchChange(change: FlowSurfacePatchDslChange, index: number) {
   if (!_.isUndefined(change.values) && !_.isPlainObject(change.values)) {
     throwBadRequest(`${context}.values must be an object when provided`);
   }
+  const values = _.isPlainObject(change.values) ? change.values : {};
+
+  switch (change.op) {
+    case 'block.add': {
+      if (!_.isPlainObject(values.block)) {
+        throwBadRequest(`${context}.values.block is required`);
+      }
+      validateBlueprintBlock(
+        values.block as FlowSurfaceDslBlock,
+        `${context}.values.block`,
+        deps.dataSourcesByKey,
+        new Set<string>(),
+        deps.popupIds,
+        deps.popupUsages,
+        deps.addedBlockIds,
+      );
+      return;
+    }
+    case 'field.add': {
+      if (!_.isPlainObject(values.field)) {
+        throwBadRequest(`${context}.values.field is required`);
+      }
+      validatePatchFieldSpec(values.field as FlowSurfaceDslField, `${context}.values.field`);
+      return;
+    }
+    case 'action.add':
+    case 'recordAction.add': {
+      if (!_.isPlainObject(values.action)) {
+        throwBadRequest(`${context}.values.action is required`);
+      }
+      validatePatchActionSpec(
+        values.action as FlowSurfaceDslAction,
+        `${context}.values.action`,
+        deps.popupIds,
+        deps.popupUsages,
+      );
+      return;
+    }
+    case 'settings.update':
+      if (!_.isPlainObject(values.changes)) {
+        throwBadRequest(`${context}.values.changes is required`);
+      }
+      return;
+    case 'layout.replace':
+      if (!_.isPlainObject(values.layout)) {
+        throwBadRequest(`${context}.values.layout is required`);
+      }
+      validatePatchRowsColumnsLayout(values.layout, `${context}.values.layout`);
+      return;
+    default:
+      return;
+  }
 }
 
 function validatePatch(patch: FlowSurfacePatchDsl) {
@@ -526,7 +680,70 @@ function validatePatch(patch: FlowSurfacePatchDsl) {
   if (!patch.changes.length) {
     throwBadRequest(`flowSurfaces dsl patch changes must not be empty`);
   }
-  patch.changes.forEach((change, index) => validatePatchChange(change, index));
+  const popupIds = new Set<string>();
+  _.castArray(patch.popups || []).forEach((popup, index) => {
+    if (!_.isPlainObject(popup)) {
+      throwBadRequest(`flowSurfaces dsl patch popups[${index}] must be an object`);
+    }
+    assertNonEmptyString(popup.id, `flowSurfaces dsl patch popups[${index}].id`);
+    if (popupIds.has(popup.id)) {
+      throwBadRequest(`flowSurfaces dsl patch popup id '${popup.id}' is duplicated`);
+    }
+    popupIds.add(popup.id);
+  });
+
+  const dataSourcesByKey = new Map<string, FlowSurfaceDslDataSource>();
+  const dataSourceSeenKeys = new Set<string>();
+  _.castArray(patch.dataSources || []).forEach((dataSource, index) => {
+    validateBlueprintDataSource(dataSource, index, popupIds, dataSourceSeenKeys);
+    dataSourcesByKey.set(dataSource.key, dataSource);
+  });
+
+  const addedBlockIds = new Set<string>();
+  patch.changes.forEach((change, index) => {
+    const block = _.isPlainObject(change?.values?.block) ? change.values.block : null;
+    if (!block) {
+      return;
+    }
+    const context = `flowSurfaces dsl patch changes[${index}].values.block`;
+    assertNonEmptyString(block.id, `${context}.id`);
+    if (addedBlockIds.has(block.id)) {
+      throwBadRequest(`${context}.id '${block.id}' is duplicated`);
+    }
+    addedBlockIds.add(block.id);
+  });
+
+  const generatedRefs = new Set<string>();
+  const popupUsages = new Map<string, Set<string>>();
+  patch.changes.forEach((change, index) =>
+    validatePatchChange(change, index, {
+      dataSourcesByKey,
+      popupIds,
+      popupUsages,
+      addedBlockIds,
+    }),
+  );
+
+  _.castArray(patch.popups || []).forEach((popup, popupIndex) => {
+    _.castArray(popup.blocks || []).forEach((block, blockIndex) =>
+      validateBlueprintBlock(
+        block,
+        `flowSurfaces dsl patch popups[${popupIndex}].blocks[${blockIndex}]`,
+        dataSourcesByKey,
+        generatedRefs,
+        popupIds,
+        popupUsages,
+        addedBlockIds,
+        popup.id,
+      ),
+    );
+  });
+  validateBlueprintPopups(
+    {
+      popups: _.castArray(patch.popups || []),
+    } as FlowSurfaceBlueprintDsl,
+    popupUsages,
+  );
 }
 
 export function validateFlowSurfaceDslDocument(actionName: 'validateDsl' | 'executeDsl', dsl: FlowSurfaceDslDocument) {

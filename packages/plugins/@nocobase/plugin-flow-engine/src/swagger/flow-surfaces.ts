@@ -2496,7 +2496,7 @@ const schemas = {
       },
       {
         type: 'object',
-        required: ['key', 'kind', 'scope', 'popupId', 'binding'],
+        required: ['key', 'kind', 'popupId', 'binding'],
         properties: {
           key: {
             type: 'string',
@@ -2504,10 +2504,6 @@ const schemas = {
           kind: {
             type: 'string',
             enum: ['binding'],
-          },
-          scope: {
-            type: 'string',
-            enum: ['popup'],
           },
           popupId: {
             type: 'string',
@@ -2723,7 +2719,7 @@ const schemas = {
   },
   FlowSurfaceBlueprintDsl: {
     type: 'object',
-    required: ['version', 'intent', 'title', 'target', 'dataSources', 'layout', 'blocks', 'interactions', 'popups'],
+    required: ['version', 'title', 'target', 'dataSources', 'layout', 'blocks', 'interactions', 'popups'],
     properties: {
       version: {
         type: 'string',
@@ -2732,10 +2728,6 @@ const schemas = {
       kind: {
         type: 'string',
         enum: ['blueprint'],
-      },
-      intent: {
-        type: 'string',
-        enum: ['management', 'detail', 'dashboard', 'portal', 'custom'],
       },
       title: {
         type: 'string',
@@ -2802,7 +2794,12 @@ const schemas = {
       },
       target: ref('FlowSurfaceDslEntityRef'),
       source: ref('FlowSurfaceDslEntityRef'),
-      values: ANY_OBJECT_SCHEMA,
+      values: {
+        type: 'object',
+        description:
+          'Semantic patch payload. Use values.block / values.field / values.action / values.changes / values.layout instead of raw low-level flow-surfaces payloads.',
+        additionalProperties: true,
+      },
     },
     additionalProperties: false,
   },
@@ -2825,6 +2822,14 @@ const schemas = {
           locator: ref('FlowSurfaceReadLocator'),
         },
         additionalProperties: false,
+      },
+      dataSources: {
+        type: 'array',
+        items: ref('FlowSurfaceBlueprintDataSource'),
+      },
+      popups: {
+        type: 'array',
+        items: ref('FlowSurfaceBlueprintPopup'),
       },
       changes: {
         type: 'array',

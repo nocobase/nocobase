@@ -37,7 +37,6 @@ export const flowSurfaceExamples = {
   validateDsl: {
     dsl: {
       version: '1',
-      intent: 'management',
       title: 'Employees',
       target: {
         mode: 'create-page',
@@ -57,7 +56,6 @@ export const flowSurfaceExamples = {
         {
           key: 'employeeRecord',
           kind: 'binding',
-          scope: 'popup',
           popupId: 'employeeViewPopup',
           binding: 'currentRecord',
           collectionName: 'employees',
@@ -166,7 +164,6 @@ export const flowSurfaceExamples = {
     verificationMode: 'strict',
     dsl: {
       version: '1',
-      intent: 'management',
       title: 'Employees',
       target: {
         mode: 'create-page',

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { compileFlowSurfaceDslToPlanRequest } from './compiler';
 import { normalizeFlowSurfaceDslRequest } from './normalizer';
 import type { FlowSurfaceExecuteDslValues, FlowSurfacePreparedDslRequest, FlowSurfaceValidateDslValues } from './types';
 import { validateFlowSurfaceDslDocument } from './validator';
@@ -26,10 +25,5 @@ export function prepareFlowSurfaceDslRequest(
 ): FlowSurfacePreparedDslRequest {
   const prepared = normalizeFlowSurfaceDslRequest(actionName, values);
   validateFlowSurfaceDslDocument(actionName, prepared.dsl);
-  prepared.planValues = {
-    ...compileFlowSurfaceDslToPlanRequest(prepared.dsl),
-    ...(prepared.expectedFingerprint ? { expectedFingerprint: prepared.expectedFingerprint } : {}),
-    ...(prepared.bindRefs ? { bindRefs: prepared.bindRefs } : {}),
-  };
   return prepared;
 }

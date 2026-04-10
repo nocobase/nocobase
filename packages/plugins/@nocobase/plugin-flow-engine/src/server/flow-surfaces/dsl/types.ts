@@ -18,7 +18,6 @@ import type {
 export type FlowSurfaceDslKind = 'blueprint' | 'patch';
 export type FlowSurfaceDslVersion = '1';
 export type FlowSurfaceDslVerificationMode = 'none' | 'strict';
-export type FlowSurfaceDslIntent = 'management' | 'detail' | 'dashboard' | 'portal' | 'custom';
 export type FlowSurfaceDslPopupCompletion = 'completed' | 'shell-only';
 
 export type FlowSurfaceDslBlockSettings = Record<string, any>;
@@ -91,7 +90,6 @@ export type FlowSurfaceDslAssociationDataSource = {
 export type FlowSurfaceDslBindingDataSource = {
   key: string;
   kind: 'binding';
-  scope: 'popup';
   popupId: string;
   binding: FlowSurfaceResourceBindingKey;
   dataSourceKey?: string;
@@ -170,7 +168,6 @@ export type FlowSurfaceDslPopup = {
 export type FlowSurfaceBlueprintDsl = {
   version: FlowSurfaceDslVersion;
   kind?: 'blueprint';
-  intent: FlowSurfaceDslIntent;
   title: string;
   target: FlowSurfaceDslTarget;
   navigation?: FlowSurfaceDslNavigation;
@@ -224,6 +221,8 @@ export type FlowSurfacePatchDsl = {
   target: {
     locator: FlowSurfaceReadLocator;
   };
+  dataSources?: FlowSurfaceDslDataSource[];
+  popups?: FlowSurfaceDslPopup[];
   changes: FlowSurfacePatchDslChange[];
   assumptions: string[];
   unresolvedQuestions: string[];
@@ -245,11 +244,16 @@ export type FlowSurfaceExecuteDslValues = FlowSurfaceDslRequestBase & {
   verificationMode?: FlowSurfaceDslVerificationMode;
 };
 
+export type FlowSurfaceDslCompileContext = {
+  blueprintUpdatePageComposeTarget?: FlowSurfaceReadLocator;
+};
+
 export type FlowSurfacePreparedDslRequest = {
   dsl: FlowSurfaceDslDocument;
   expectedFingerprint?: string;
   bindRefs?: FlowSurfaceBindRef[];
   validation?: FlowSurfaceValidatePlanValidationOptions;
   verificationMode: FlowSurfaceDslVerificationMode;
+  compileContext?: FlowSurfaceDslCompileContext;
   planValues: FlowSurfacePlanRequestValues;
 };

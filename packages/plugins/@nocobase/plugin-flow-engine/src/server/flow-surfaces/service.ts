@@ -51,6 +51,7 @@ import {
   FLOW_SURFACE_INTERNAL_META_KEY,
   getDeclaredRefFromNode as getPlanningDeclaredRefFromNode,
 } from './planning/ref-registry';
+import { compileFlowSurfaceDslToPlanRequest } from './dsl/compiler';
 import { prepareFlowSurfaceDslRequest } from './dsl/runtime';
 import {
   describeSurface as describePlanningSurface,
@@ -59,6 +60,8 @@ import {
 } from './planning/runtime';
 import type {
   FlowSurfaceBlueprintDsl,
+  FlowSurfaceDslCompileContext,
+  FlowSurfaceDslDocument,
   FlowSurfaceDslAction,
   FlowSurfaceDslBlock,
   FlowSurfaceDslPopup,
@@ -2801,6 +2804,31 @@ export class FlowSurfacesService {
     return _.isPlainObject(readback?.nodeMap) ? readback.nodeMap : flattenModel(readback?.tree);
   }
 
+  private findExecuteDslLayoutGrid(node: any): any {
+    if (!_.isPlainObject(node)) {
+      return null;
+    }
+    if (String(node.use || '').endsWith('GridModel')) {
+      return node;
+    }
+    if (_.isPlainObject(node.subModels?.grid)) {
+      return node.subModels.grid;
+    }
+    const tabs = _.castArray(node.subModels?.tabs || []);
+    if (tabs.length === 1) {
+      return this.findExecuteDslLayoutGrid(tabs[0]);
+    }
+    return null;
+  }
+
+  private readExecuteDslLayoutPayload(node: any) {
+    const grid = this.findExecuteDslLayoutGrid(node);
+    if (!grid) {
+      return null;
+    }
+    return this.readGridLayout(grid);
+  }
+
   private assertExecuteDslNodeInSubtree(uid: string, subtreeNodeMap: Record<string, any> | undefined, context: string) {
     if (subtreeNodeMap?.[uid]) {
       return;
@@ -3076,7 +3104,11 @@ export class FlowSurfacesService {
           await this.assertExecuteDslMissing({ uid: result?.uid }, `${change.op} target`, options.transaction);
           break;
         case 'block.add':
-          await this.assertExecuteDslReadable({ uid: result?.uid }, `block '${stepId}'`, options.transaction);
+          await this.assertExecuteDslReadable(
+            { uid: result?.uid || result?.blocks?.[0]?.uid },
+            `block '${stepId}'`,
+            options.transaction,
+          );
           break;
         case 'field.add':
           await this.assertExecuteDslReadable(
@@ -3090,16 +3122,34 @@ export class FlowSurfacesService {
           await this.assertExecuteDslReadable({ uid: result?.uid }, `${change.op} '${stepId}'`, options.transaction);
           break;
         case 'layout.replace': {
-          const readback = await this.assertExecuteDslReadable(
-            _.isPlainObject(change.target?.locator) ? change.target.locator : patchDsl.target.locator,
-            `layout target`,
-            options.transaction,
-          );
-          const expectedLayout = _.isPlainObject(change.values?.layout) ? change.values.layout : change.values;
-          const actualRows = _.get(readback, ['tree', 'props', 'rows']);
-          if (_.isPlainObject(expectedLayout?.rows) && !_.isEqual(actualRows, expectedLayout.rows)) {
+          const target = result?.uid
+            ? { uid: result.uid }
+            : _.isPlainObject(change.target?.locator)
+              ? change.target.locator
+              : patchDsl.target.locator;
+          const readback = await this.assertExecuteDslReadable(target, `layout target`, options.transaction);
+          const actualLayout = this.readExecuteDslLayoutPayload(readback?.tree);
+          if (!actualLayout) {
+            throwConflict(
+              `flowSurfaces executeDsl verification failed to resolve layout payload`,
+              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+            );
+          }
+          if (_.isPlainObject(result?.rows) && !_.isEqual(actualLayout.rows, result.rows)) {
             throwConflict(
               `flowSurfaces executeDsl verification layout rows mismatch`,
+              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+            );
+          }
+          if (_.isPlainObject(result?.sizes) && !_.isEqual(actualLayout.sizes, result.sizes)) {
+            throwConflict(
+              `flowSurfaces executeDsl verification layout sizes mismatch`,
+              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+            );
+          }
+          if (Array.isArray(result?.rowOrder) && !_.isEqual(actualLayout.rowOrder, result.rowOrder)) {
+            throwConflict(
+              `flowSurfaces executeDsl verification layout rowOrder mismatch`,
               'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
             );
           }
@@ -3112,8 +3162,79 @@ export class FlowSurfacesService {
     }
   }
 
+  private async buildFlowSurfaceDslCompileContext(
+    dsl: FlowSurfaceDslDocument,
+    transaction?: any,
+  ): Promise<FlowSurfaceDslCompileContext | undefined> {
+    if (dsl.kind !== 'blueprint' || dsl.target.mode !== 'update-page') {
+      return undefined;
+    }
+    return {
+      blueprintUpdatePageComposeTarget: await this.resolveUpdatePageComposeTargetLocator(dsl, transaction),
+    };
+  }
+
+  private async resolveUpdatePageComposeTargetLocator(blueprint: FlowSurfaceBlueprintDsl, transaction?: any) {
+    const resolved = await this.locator.resolve(blueprint.target.locator, { transaction });
+
+    if (resolved.kind === 'page') {
+      if (!resolved.pageRoute) {
+        throwBadRequest(`flowSurfaces dsl blueprint update-page target must resolve to a route-backed page`);
+      }
+      const structure = await this.loadRouteBackedPageStructure(resolved.pageRoute, transaction);
+      if (structure.tabRoutes.length !== 1) {
+        throwBadRequest(
+          `flowSurfaces dsl blueprint update-page page target must resolve to exactly one route-backed tab, found ${structure.tabRoutes.length}`,
+        );
+      }
+      const onlyTabSchemaUid = this.readRouteField(structure.tabRoutes[0], 'schemaUid');
+      if (!onlyTabSchemaUid) {
+        throwBadRequest(`flowSurfaces dsl blueprint update-page page target is missing its only tab schema uid`);
+      }
+      return {
+        tabSchemaUid: String(onlyTabSchemaUid),
+      };
+    }
+
+    if (resolved.kind === 'tab') {
+      const tabSchemaUid = resolved.tabRoute?.get?.('schemaUid') || resolved.tabRoute?.schemaUid || resolved.uid;
+      return {
+        tabSchemaUid: String(tabSchemaUid),
+      };
+    }
+
+    if (!resolved.pageRoute) {
+      throwBadRequest(`flowSurfaces dsl blueprint update-page target must resolve inside a route-backed page`);
+    }
+
+    const blockGrid = await this.surfaceContext.findOwningBlockGrid(resolved.uid, transaction);
+    if (!blockGrid?.uid) {
+      throwBadRequest(`flowSurfaces dsl blueprint update-page target must resolve to page, tab or page content`);
+    }
+
+    return {
+      uid: blockGrid.uid,
+    };
+  }
+
+  private async compilePreparedFlowSurfaceDslRequest(
+    prepared: FlowSurfacePreparedDslRequest,
+    transaction?: any,
+  ): Promise<FlowSurfacePreparedDslRequest> {
+    prepared.compileContext = await this.buildFlowSurfaceDslCompileContext(prepared.dsl, transaction);
+    prepared.planValues = {
+      ...compileFlowSurfaceDslToPlanRequest(prepared.dsl, prepared.compileContext),
+      ...(prepared.expectedFingerprint ? { expectedFingerprint: prepared.expectedFingerprint } : {}),
+      ...(prepared.bindRefs ? { bindRefs: prepared.bindRefs } : {}),
+    };
+    return prepared;
+  }
+
   async validateDsl(values: FlowSurfaceValidateDslValues, options: { transaction?: any } = {}) {
-    const prepared = prepareFlowSurfaceDslRequest('validateDsl', values);
+    const prepared = await this.compilePreparedFlowSurfaceDslRequest(
+      prepareFlowSurfaceDslRequest('validateDsl', values),
+      options.transaction,
+    );
     const result = await this.validatePlan(
       {
         ...prepared.planValues,
@@ -3129,7 +3250,10 @@ export class FlowSurfacesService {
   }
 
   async executeDsl(values: FlowSurfaceExecuteDslValues, options: { transaction?: any } = {}) {
-    const prepared = prepareFlowSurfaceDslRequest('executeDsl', values);
+    const prepared = await this.compilePreparedFlowSurfaceDslRequest(
+      prepareFlowSurfaceDslRequest('executeDsl', values),
+      options.transaction,
+    );
     this.assertDslReadyForExecute(prepared);
 
     const result = await this.executePlan(prepared.planValues, options);

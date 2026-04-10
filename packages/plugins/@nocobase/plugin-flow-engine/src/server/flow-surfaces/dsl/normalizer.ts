@@ -52,6 +52,10 @@ export function normalizeFlowSurfaceDslDocument(actionName: string, input: any):
       kind: 'patch',
       version: String(input.version || '1').trim() as '1',
       target: _.isPlainObject(input.target) ? _.cloneDeep(input.target) : { locator: {} },
+      dataSources: _.castArray(input.dataSources || []).map((item) =>
+        _.isPlainObject(item) ? _.cloneDeep(item) : item,
+      ),
+      popups: _.castArray(input.popups || []).map((item) => (_.isPlainObject(item) ? _.cloneDeep(item) : item)),
       changes: _.castArray(input.changes || []).map((item) => (_.isPlainObject(item) ? _.cloneDeep(item) : item)),
       assumptions: normalizeStringArray(input.assumptions),
       unresolvedQuestions: normalizeStringArray(input.unresolvedQuestions),
