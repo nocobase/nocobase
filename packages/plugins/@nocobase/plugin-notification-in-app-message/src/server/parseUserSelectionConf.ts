@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Transactionable } from '@nocobase/database';
 import { Repository } from '@nocobase/database';
 import { isValidFilter } from '@nocobase/utils';
 export async function parseUserSelectionConf(
   userSelectionConfig: Array<Record<any, any> | string>,
   UserRepo: Repository,
+  options: Transactionable = {},
 ) {
   const SelectionConfigs = userSelectionConfig.flat().filter(Boolean);
   const users = new Set<string>();
@@ -23,6 +25,7 @@ export async function parseUserSelectionConf(
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
+        transaction: options.transaction,
       });
       result.forEach((item) => users.add(item.id));
     } else {

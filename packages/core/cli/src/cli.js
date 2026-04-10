@@ -14,6 +14,15 @@ const cli = new Command();
 
 cli.version(require('../package.json').version);
 
+const argv = process.argv.slice(2);
+const emptyArgs = argv.length === 0;
+const isPmListCommand = argv[0] === 'pm' && argv[1] === 'list';
+const hasSilentLikeFlag = argv.includes('--help') || argv.includes('-h') || argv.includes('--silent');
+
+if (emptyArgs || isPmListCommand || hasSilentLikeFlag) {
+  process.env.LOGGER_SILENT = 'true';
+}
+
 commands(cli);
 
 module.exports = cli;

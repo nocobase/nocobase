@@ -62,7 +62,31 @@ export interface InstallOptions {
 export class AddPresetError extends Error {}
 
 export class PluginManager {
-  static checkAndGetCompatible = checkAndGetCompatible;
+  private static compatibleCache = new Map<string, Awaited<ReturnType<typeof checkAndGetCompatible>>>();
+  private static compatiblePending = new Map<string, Promise<Awaited<ReturnType<typeof checkAndGetCompatible>>>>();
+
+  static async checkAndGetCompatible(packageName: string) {
+    if (this.compatibleCache.has(packageName)) {
+      return this.compatibleCache.get(packageName);
+    }
+
+    const pending = this.compatiblePending.get(packageName);
+    if (pending) {
+      return pending;
+    }
+
+    const task = checkAndGetCompatible(packageName)
+      .then((compatible) => {
+        this.compatibleCache.set(packageName, compatible);
+        return compatible;
+      })
+      .finally(() => {
+        this.compatiblePending.delete(packageName);
+      });
+
+    this.compatiblePending.set(packageName, task);
+    return task;
+  }
 
   /**
    * @internal
