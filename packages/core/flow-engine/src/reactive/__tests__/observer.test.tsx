@@ -208,4 +208,86 @@ describe('observer', () => {
     expect(screen.getByText('Count: 0')).toBeInTheDocument();
     expect(screen.queryByText('Count: 1')).not.toBeInTheDocument();
   });
+
+  it('should flush pending update without TDZ error when context becomes active before timer callback runs', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const model = observable({ count: 0 });
+      const pageActive = observable.ref(false);
+      const tabActive = observable.ref(true);
+
+      const context = {
+        pageActive,
+        tabActive,
+      };
+
+      (useFlowContext as any).mockReturnValue(context);
+
+      const Component = observer(() => <div>Count: {model.count}</div>);
+
+      render(<Component />);
+
+      expect(screen.getByText('Count: 0')).toBeInTheDocument();
+
+      act(() => {
+        model.count++;
+        pageActive.value = true;
+      });
+
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+
+      expect(screen.getByText('Count: 1')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should cleanup pending timer and listener on unmount', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const model = observable({ count: 0 });
+      const pageActive = observable.ref(false);
+      const tabActive = observable.ref(true);
+      const renderSpy = vi.fn();
+
+      const context = {
+        pageActive,
+        tabActive,
+      };
+
+      (useFlowContext as any).mockReturnValue(context);
+
+      const Component = observer(() => {
+        renderSpy(model.count);
+        return <div>Count: {model.count}</div>;
+      });
+
+      const { unmount } = render(<Component />);
+
+      expect(renderSpy).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Count: 0')).toBeInTheDocument();
+
+      act(() => {
+        model.count++;
+      });
+
+      unmount();
+
+      act(() => {
+        pageActive.value = true;
+      });
+
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+
+      expect(renderSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
