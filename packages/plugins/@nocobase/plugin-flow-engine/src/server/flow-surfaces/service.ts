@@ -45,7 +45,7 @@ import {
   throwForbidden,
   throwInternalError,
 } from './errors';
-import { executeMutateOps, resolveFlowSurfaceValueRefs } from './executor';
+import { executeMutateOps, inspectFlowSurfaceValueRef, resolveFlowSurfaceValueRefs } from './executor';
 import {
   buildSurfaceFingerprintRefsObject as buildPlanningSurfaceFingerprintRefsObject,
   FLOW_SURFACE_INTERNAL_META_KEY,
@@ -56,7 +56,12 @@ import {
   executePlan as executePlanningPlan,
   validatePlan as validatePlanningPlan,
 } from './planning/runtime';
-import { collectFlowSurfaceCreatedRefs } from './planning/created-refs';
+import {
+  collectFlowSurfaceCreatedRefs,
+  collectPersistableFlowSurfaceCreatedRefs,
+  isFlowSurfacePureRefObject,
+  registerFlowSurfaceCreatedRefs,
+} from './planning/created-refs';
 import {
   assertRequestRefsPersistable as assertPlanningRequestRefsPersistable,
   persistDeclaredRefForNode as persistPlanningDeclaredRefForNode,
@@ -2291,30 +2296,20 @@ export class FlowSurfacesService {
   ) {
     const refPersistenceDeps = this.getDeclaredRefPersistenceDeps();
     const createdRefs = collectFlowSurfaceCreatedRefs(actionName, values);
-    const persistedUidSet = new Set<string>();
-    for (const createdRef of createdRefs) {
-      const uid = _.get(result, createdRef.resultPath);
-      if (typeof uid !== 'string' || !uid.trim()) {
-        continue;
-      }
-      const normalizedUid = uid.trim();
-      if (persistedUidSet.has(normalizedUid)) {
-        continue;
-      }
+    for (const createdRef of collectPersistableFlowSurfaceCreatedRefs(result, createdRefs)) {
       await persistPlanningDeclaredRefForNode(
         {
           ref: createdRef.ref,
-          uid: normalizedUid,
+          uid: createdRef.uid,
           source: 'declared',
           kind: 'node',
           locator: {
-            uid: normalizedUid,
+            uid: createdRef.uid,
           },
         },
         refPersistenceDeps,
         transaction,
       );
-      persistedUidSet.add(normalizedUid);
     }
   }
 
@@ -2427,22 +2422,15 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(input)) {
       return null;
     }
-    if (Object.prototype.hasOwnProperty.call(input, 'ref')) {
+    if (isFlowSurfacePureRefObject(input)) {
       const refPath = typeof input.ref === 'string' ? input.ref.trim() : '';
       if (!refPath) {
         return {
           ref: String(input.ref || ''),
         };
       }
-      const [stepId, ...segments] = refPath.split('.');
-      if (!refs.has(stepId)) {
-        return {
-          ref: refPath,
-        };
-      }
-      const stepResult = refs.get(stepId);
-      const resolvedValue = segments.length ? _.get(stepResult, segments.join('.')) : stepResult;
-      if (typeof resolvedValue === 'undefined') {
+      const resolved = inspectFlowSurfaceValueRef(refPath, refs);
+      if (!resolved.found || typeof resolved.value === 'undefined') {
         return {
           ref: refPath,
         };
@@ -2657,9 +2645,10 @@ export class FlowSurfacesService {
           throwInternalError(`flowSurfaces validatePlan action '${compiled.action}' preview is not supported`);
         }
 
-        if (compiled.id && !_.isUndefined(result)) {
+        if (compiled.id) {
           execCtx.refs.set(compiled.id, result);
         }
+        registerFlowSurfaceCreatedRefs(result, compiled.createdRefs, execCtx.refs);
       }
 
       return issues;

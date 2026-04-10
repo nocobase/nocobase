@@ -57,18 +57,35 @@ export function resolveFlowSurfaceValueRefs(input: any, refs: Map<string, any>):
   return input;
 }
 
-function readRef(path: string, refs: Map<string, any>) {
+export function inspectFlowSurfaceValueRef(path: string, refs: Map<string, any>) {
   const trimmedPath = String(path || '').trim();
   if (!trimmedPath) {
     throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref cannot be empty`);
   }
   if (refs.has(trimmedPath)) {
-    return refs.get(trimmedPath);
+    return {
+      found: true as const,
+      value: refs.get(trimmedPath),
+    };
   }
   const [opId, ...segments] = trimmedPath.split('.');
   if (!refs.has(opId)) {
-    throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref '${opId}' not found`);
+    return {
+      found: false as const,
+      missingHead: opId,
+    };
   }
   const value = refs.get(opId);
-  return segments.length ? _.get(value, segments.join('.')) : value;
+  return {
+    found: true as const,
+    value: segments.length ? _.get(value, segments.join('.')) : value,
+  };
+}
+
+function readRef(path: string, refs: Map<string, any>) {
+  const resolved = inspectFlowSurfaceValueRef(path, refs);
+  if (!resolved.found) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref '${resolved.missingHead}' not found`);
+  }
+  return resolved.value;
 }

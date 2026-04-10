@@ -162,7 +162,7 @@ describe('flowSurfaces bootstrap planning', () => {
     });
   });
 
-  it('should resolve nested compose key-map refs across one bootstrap executePlan', async () => {
+  it('should resolve nested compose created refs across one bootstrap executePlan', async () => {
     const harness = createPlanningHarness();
 
     const data = await executePlan(

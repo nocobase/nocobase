@@ -218,15 +218,35 @@ export function registerFlowSurfaceCreatedRefs(
   specs: FlowSurfaceCreatedRefSpec[],
   refs: Map<string, any>,
 ) {
+  const registered = resolveFlowSurfaceCreatedRefResults(result, specs);
+  registered.forEach((item) => refs.set(item.ref, item.uid));
+  return registered;
+}
+
+export function collectPersistableFlowSurfaceCreatedRefs(result: any, specs: FlowSurfaceCreatedRefSpec[]) {
+  const persistedUidSet = new Set<string>();
+  const persisted: Array<{ ref: string; uid: string }> = [];
+  for (const item of resolveFlowSurfaceCreatedRefResults(result, specs)) {
+    if (persistedUidSet.has(item.uid)) {
+      continue;
+    }
+    persistedUidSet.add(item.uid);
+    persisted.push(item);
+  }
+  return persisted;
+}
+
+function resolveFlowSurfaceCreatedRefResults(result: any, specs: FlowSurfaceCreatedRefSpec[]) {
   const registered: Array<{ ref: string; uid: string }> = [];
   for (const spec of specs) {
     const value = _.get(result, spec.resultPath);
     if (typeof value !== 'string' || !value.trim()) {
       continue;
     }
-    const uid = value.trim();
-    refs.set(spec.ref, uid);
-    registered.push({ ref: spec.ref, uid });
+    registered.push({
+      ref: spec.ref,
+      uid: value.trim(),
+    });
   }
   return registered;
 }

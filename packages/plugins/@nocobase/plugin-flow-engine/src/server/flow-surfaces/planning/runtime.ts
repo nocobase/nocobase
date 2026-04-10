@@ -37,7 +37,7 @@ import {
   collectRequestRefsToPersist,
   normalizeBindRefs as normalizePlanningBindRefs,
 } from './ref-registry';
-import { registerFlowSurfaceCreatedRefs } from './created-refs';
+import { collectPersistableFlowSurfaceCreatedRefs, registerFlowSurfaceCreatedRefs } from './created-refs';
 import { validateFlowSurfacePayloadShape } from '../payload-shape';
 import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
 
@@ -427,6 +427,7 @@ export async function executePlan(
   for (const compiled of compiledSteps) {
     const result = await executeCompiledPlanStep(compiled, deps, execCtx, options.transaction);
     const createdRefs = registerFlowSurfaceCreatedRefs(result, compiled.createdRefs, execCtx.refs);
+    const persistedCreatedRefs = collectPersistableFlowSurfaceCreatedRefs(result, compiled.createdRefs);
     results.push({
       index: compiled.index,
       ...(compiled.id ? { id: compiled.id } : {}),
@@ -434,7 +435,7 @@ export async function executePlan(
       result,
       ...(createdRefs.length ? { createdRefs } : {}),
     });
-    createdRefs.forEach((item) => {
+    persistedCreatedRefs.forEach((item) => {
       persistedRefs.push({
         ref: item.ref,
         uid: item.uid,

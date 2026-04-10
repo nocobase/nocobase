@@ -23,6 +23,7 @@ import {
 describe('flowSurfaces plan contract', () => {
   let context: FlowSurfacesContractContext;
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
+  let routesRepo: FlowSurfacesContractContext['routesRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 
   function getComposeBlock(result: Record<string, any>, ref: string) {
@@ -45,7 +46,7 @@ describe('flowSurfaces plan contract', () => {
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
-    ({ flowRepo, rootAgent } = context);
+    ({ flowRepo, routesRepo, rootAgent } = context);
   }, 120000);
 
   afterAll(async () => {
@@ -467,6 +468,386 @@ describe('flowSurfaces plan contract', () => {
     });
     const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
     expect(gridItems).toHaveLength(0);
+  });
+
+  it('should not treat ref declarations as blocked dependencies after earlier field issues', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validate plan ref declarations page',
+      tabTitle: 'Validate plan ref declarations tab',
+    });
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'composeRoles',
+              action: 'compose',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'rolesDetails',
+                    type: 'details',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'roles',
+                    },
+                    fields: [{ ref: 'rolesDetails.hidden', fieldPath: 'hidden' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'addHelpBlock',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                ref: 'helpPanel',
+                type: 'markdown',
+                settings: {
+                  content: '# Preview help',
+                },
+              },
+            },
+            {
+              id: 'composeHelpPanel',
+              action: 'compose',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'profileHelp',
+                    type: 'markdown',
+                    settings: {
+                      content: 'Ref declarations should not block preview',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.validation).toEqual(
+      expect.objectContaining({
+        ok: false,
+        fieldIssues: [
+          expect.objectContaining({
+            stepId: 'composeRoles',
+            action: 'compose',
+            blockRef: 'rolesDetails',
+            fieldRef: 'rolesDetails.hidden',
+            fieldPath: 'hidden',
+            blocking: false,
+          }),
+        ],
+      }),
+    );
+    expect(validateData.validation.fieldIssues).toHaveLength(1);
+
+    const blockedStepIds = new Set(
+      _.castArray(validateData.validation.fieldIssues)
+        .filter((issue: any) => issue?.blocking)
+        .map((issue: any) => issue?.stepId),
+    );
+    expect(blockedStepIds.has('addHelpBlock')).toBe(false);
+    expect(blockedStepIds.has('composeHelpPanel')).toBe(false);
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
+    expect(gridItems).toHaveLength(0);
+  });
+
+  it('should still block downstream pure ref payloads after earlier field issues', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validate plan blocked pure ref page',
+      tabTitle: 'Validate plan blocked pure ref tab',
+    });
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'composeRoles',
+              action: 'compose',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'rolesDetails',
+                    type: 'details',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'roles',
+                    },
+                    fields: [{ ref: 'rolesDetails.hidden', fieldPath: 'hidden' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'configureMissingField',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'rolesDetails.hidden',
+                },
+              },
+              values: {
+                changes: {
+                  label: 'Blocked label',
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.validation).toEqual(
+      expect.objectContaining({
+        ok: false,
+        fieldIssues: [
+          expect.objectContaining({
+            stepId: 'composeRoles',
+            action: 'compose',
+            blockRef: 'rolesDetails',
+            fieldRef: 'rolesDetails.hidden',
+            fieldPath: 'hidden',
+            blocking: false,
+          }),
+          expect.objectContaining({
+            stepId: 'configureMissingField',
+            action: 'configure',
+            blocking: true,
+            code: 'FLOW_SURFACE_VALIDATE_PLAN_BLOCKED_BY_FIELD_ISSUE',
+          }),
+        ],
+      }),
+    );
+    expect(validateData.validation.fieldIssues).toHaveLength(2);
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
+    expect(gridItems).toHaveLength(0);
+  });
+
+  it('should validate a one-shot bootstrap plan by reusing created refs during preview collection', async () => {
+    const routeCountBefore = await routesRepo.count();
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        plan: {
+          steps: [
+            {
+              id: 'group',
+              action: 'createMenu',
+              values: {
+                title: 'Validate preview workspace',
+                type: 'group',
+              },
+            },
+            {
+              id: 'menu',
+              action: 'createMenu',
+              values: {
+                title: 'Validate preview users',
+                type: 'item',
+                parentMenuRouteId: {
+                  step: 'group',
+                  path: 'routeId',
+                },
+              },
+            },
+            {
+              id: 'page',
+              action: 'createPage',
+              values: {
+                menuRouteId: {
+                  step: 'menu',
+                  path: 'routeId',
+                },
+                ref: 'usersPage',
+                title: 'Validate preview users page',
+                tabTitle: 'Users',
+              },
+            },
+            {
+              id: 'composeMain',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'usersPage.tab',
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'usersTable',
+                    type: 'table',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'users',
+                    },
+                    fields: [{ ref: 'usersTable.username', fieldPath: 'username' }],
+                    recordActions: [{ ref: 'usersTable.viewUser', type: 'view' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'userPopupContent',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'usersTable.viewUser.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'userDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [{ ref: 'userDetails.username', fieldPath: 'username' }],
+                    recordActions: [{ ref: 'userDetails.editUser', type: 'edit' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'userEditPopupContent',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'userDetails.editUser.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'userEditForm',
+                    type: 'editForm',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [{ ref: 'userEditForm.username', fieldPath: 'username' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'composeMain',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'usersPage.tab',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'userPopupContent',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'usersTable.viewUser.popupGrid',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'userEditPopupContent',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'userDetails.editUser.popupGrid',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+    expect(validateData.validation).toEqual({
+      ok: true,
+      fieldIssues: [],
+    });
+    expect(await routesRepo.count()).toBe(routeCountBefore);
   });
 
   it('should execute a one-shot bootstrap plan for nested popup content by reusing created refs', async () => {
@@ -1062,6 +1443,106 @@ describe('flowSurfaces plan contract', () => {
       }),
     );
     expect(describedAgain.refs.employeesTable.uid).toBe(table.uid);
+  });
+
+  it('should report only truly persisted created refs when alias refs share the same uid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Execute plan persisted created refs page',
+      tabTitle: 'Execute plan persisted created refs tab',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'addDetails',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                type: 'details',
+                resourceInit: {
+                  dataSourceKey: 'main',
+                  collectionName: 'users',
+                },
+              },
+            },
+            {
+              id: 'addUsernameField',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                ref: 'profileUsername',
+                fieldPath: 'username',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+
+    const executeData = getData(executeRes);
+    const addUsernameFieldStep = executeData.results.find(
+      (item: Record<string, any>) => item.id === 'addUsernameField',
+    );
+    expect(addUsernameFieldStep).toBeTruthy();
+    expect(addUsernameFieldStep.createdRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'profileUsername',
+          uid: addUsernameFieldStep.result.uid,
+        }),
+        expect.objectContaining({
+          ref: 'profileUsername.field',
+          uid: addUsernameFieldStep.result.fieldUid,
+        }),
+        expect.objectContaining({
+          ref: 'profileUsername.innerField',
+          uid: addUsernameFieldStep.result.innerFieldUid,
+        }),
+      ]),
+    );
+    expect(addUsernameFieldStep.result.fieldUid).toBe(addUsernameFieldStep.result.innerFieldUid);
+    expect(executeData.persistedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'profileUsername',
+          uid: addUsernameFieldStep.result.uid,
+          persisted: true,
+        }),
+        expect.objectContaining({
+          ref: 'profileUsername.field',
+          uid: addUsernameFieldStep.result.fieldUid,
+          persisted: true,
+        }),
+      ]),
+    );
+    expect(executeData.persistedRefs).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'profileUsername.innerField',
+          uid: addUsernameFieldStep.result.innerFieldUid,
+          persisted: true,
+        }),
+      ]),
+    );
   });
 
   it('should reject reserved or duplicated bindRefs, allow route-backed refs, and report missing after-state when executePlan removes the surface', async () => {
