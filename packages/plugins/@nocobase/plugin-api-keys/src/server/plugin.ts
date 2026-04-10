@@ -14,7 +14,7 @@ export class PluginAPIKeysServer extends Plugin {
   resourceName = 'apiKeys';
 
   async generateAPIKey(values) {
-    const { username, role: roleName, expiresIn } = values;
+    const { name, username, role: roleName, expiresIn } = values;
     const user = await this.db.getRepository('users').findOne({
       filter: {
         username,
@@ -36,6 +36,15 @@ export class PluginAPIKeysServer extends Plugin {
     }
 
     const token = this.app.authManager.jwt.sign({ userId, roleName }, { expiresIn });
+
+    await this.db.getRepository(this.resourceName).create({
+      values: {
+        name,
+        roleName,
+        token,
+        expiresIn,
+      },
+    });
 
     return token;
   }

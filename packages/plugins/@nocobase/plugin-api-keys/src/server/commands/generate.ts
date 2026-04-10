@@ -14,9 +14,10 @@ export default function generateAPIKeyCommand(app: Application) {
   app
     .command('generate-api-key')
     .preload()
-    .requiredOption('--role [roleName]')
-    .requiredOption('--username [username]')
-    .option('--expires-in [expiresIn]', '', '30d')
+    .requiredOption('-n, --name <name>', 'The name of the API key')
+    .requiredOption('-r, --role <roleName>', 'The role of the API key')
+    .requiredOption('-u, --username <username>', 'The username of the API key')
+    .option('-e, --expires-in [expiresIn]', 'The expiration time of the API key', '30d')
     .action(async (options) => {
       const plugin = app.pm.get<PluginAPIKeysServer>('api-keys');
       const token = await plugin.generateAPIKey(options);
