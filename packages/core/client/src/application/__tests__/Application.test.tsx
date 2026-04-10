@@ -8,6 +8,7 @@
  */
 
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
+import { render as rtlRender } from '@testing-library/react';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
@@ -332,7 +333,7 @@ describe('Application', () => {
       app.addProviders([HelloProvider]);
 
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
 
       await waitFor(() => {
         expect(screen.getByText('HomeComponent')).toBeInTheDocument();
@@ -352,7 +353,7 @@ describe('Application', () => {
       };
 
       const Root = app.getRootComponent();
-      render(
+      rtlRender(
         <Root>
           <Demo />
         </Root>,
@@ -405,7 +406,7 @@ describe('Application', () => {
       app.pm.add(DemoPlugin, { name: 'demo' });
 
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
 
       await sleep(10);
       expect(screen.getByText('App error')).toBeInTheDocument();
@@ -418,7 +419,7 @@ describe('Application', () => {
         components: { AppSpin },
       });
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
       expect(screen.getByText('AppSpin')).toBeInTheDocument();
     });
 
@@ -443,7 +444,7 @@ describe('Application', () => {
       console.error = fn;
 
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
       await sleep(10);
       expect(fn).toBeCalled();
 
