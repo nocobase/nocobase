@@ -96,6 +96,7 @@ export const pattern = defineAction({
         disabled: false,
         titleField: (ctx.model.subModels?.field as any)?.props.fieldNames?.label || ctx.model.props.titleField,
       });
+      ctx.model.emitter?.emit('onSettingsChanged', { reason: 'pattern-changed', pattern: 'readPretty' });
       if (ctx.collectionField.isAssociationField())
         await ctx.model.setStepParams('editItemSettings', 'titleField', {
           titleField: (ctx.model.subModels.field as any).props?.fieldNames?.label || ctx.model.props.titleField,
@@ -105,6 +106,7 @@ export const pattern = defineAction({
         disabled: params.pattern === 'disabled',
         pattern: 'editable',
       });
+      ctx.model.emitter?.emit('onSettingsChanged', { reason: 'pattern-changed', pattern: params.pattern });
     }
   },
   handler(ctx, params) {
@@ -112,11 +114,13 @@ export const pattern = defineAction({
       ctx.model.setProps({
         pattern: 'readPretty',
       });
+      ctx.model.emitter?.emit('onSettingsChanged', { reason: 'pattern-changed', pattern: 'readPretty' });
     } else {
       ctx.model.setProps({
         disabled: params.pattern === 'disabled',
         pattern: null,
       });
+      ctx.model.emitter?.emit('onSettingsChanged', { reason: 'pattern-changed', pattern: params.pattern });
     }
   },
 });

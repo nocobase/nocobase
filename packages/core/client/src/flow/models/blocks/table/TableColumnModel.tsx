@@ -124,6 +124,27 @@ function getSavedAssociationTitleField(model: {
   return model.getStepParams?.('tableColumnSettings', 'fieldNames')?.label || model.props?.titleField;
 }
 
+export function resolveTableColumnReadPrettyValue(
+  cellValue: unknown,
+  columnFieldPath: string,
+  renderedFieldPath?: string,
+) {
+  if (cellValue == null || typeof cellValue !== 'object' || !renderedFieldPath) {
+    return cellValue;
+  }
+  if (renderedFieldPath === columnFieldPath) {
+    return cellValue;
+  }
+  const relativeFieldPath = renderedFieldPath.startsWith(`${columnFieldPath}.`)
+    ? renderedFieldPath.slice(columnFieldPath.length + 1)
+    : renderedFieldPath;
+  if (!relativeFieldPath) {
+    return cellValue;
+  }
+  const nestedValue = get(cellValue, relativeFieldPath);
+  return typeof nestedValue === 'undefined' ? cellValue : nestedValue;
+}
+
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -314,8 +335,22 @@ export class TableColumnModel extends DisplayItemModel {
             ? this.fieldPath.replace(`${this.context.prefixFieldPath}.`, '')
             : this.fieldPath;
           const value = get(record, namePath);
+          const renderedFieldPath =
+            field.getStepParams?.('fieldSettings', 'init')?.fieldPath || field.context?.fieldPath || namePath;
+          const readPrettyValue = resolveTableColumnReadPrettyValue(value, namePath, renderedFieldPath);
+          if (value && typeof value === 'object') {
+            fork.context.defineProperty('currentObject', {
+              get: () => value,
+              cache: false,
+            });
+          }
           return (
-            <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
+            <FormItem
+              key={field.uid}
+              {...omit(this.props, 'title')}
+              value={this.props.pattern === 'readPretty' ? readPrettyValue : value}
+              noStyle={true}
+            >
               <FieldModelRenderer model={fork} />
             </FormItem>
           );

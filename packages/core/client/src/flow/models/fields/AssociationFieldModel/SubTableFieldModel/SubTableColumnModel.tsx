@@ -9,7 +9,7 @@
 
 import { LockOutlined, QuestionCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { capitalize, debounce } from 'lodash';
+import { capitalize, debounce, get, omit } from 'lodash';
 import {
   DisplayItemModel,
   DragHandler,
@@ -32,8 +32,14 @@ import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo, useEffect } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
-import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
+import {
+  FieldDeletePlaceholder,
+  CustomWidth,
+  resolveTableColumnReadPrettyValue,
+} from '../../../blocks/table/TableColumnModel';
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
+import { pattern as patternAction } from '../../../../actions/pattern';
 
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
   React.useEffect(() => {
@@ -75,7 +81,6 @@ export function FieldWithoutPermissionPlaceholder({ targetModel }) {
     </Tooltip>
   );
 }
-
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, disabled, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
@@ -172,6 +177,218 @@ const handleModelName = (modelName) => {
   return modelName;
 };
 
+function getSubTableColumnSavedTitleField(model: {
+  props?: { titleField?: string };
+  getStepParams?: (flowKey: string, stepKey: string) => { label?: string } | undefined;
+}) {
+  return model?.getStepParams?.('subTableColumnSettings', 'fieldNames')?.label || model?.props?.titleField;
+}
+
+function getSubTableColumnTitleFieldName(
+  model: {
+    props?: { titleField?: string };
+    getStepParams?: (flowKey: string, stepKey: string) => { label?: string } | undefined;
+  },
+  collectionField?: { targetCollectionTitleFieldName?: string },
+) {
+  return getSubTableColumnSavedTitleField(model) || collectionField?.targetCollectionTitleFieldName;
+}
+
+function toSafeSubTableDisplayLabel(value: unknown): string | number | boolean | undefined {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => {
+        if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
+          return item;
+        }
+        if (item && typeof item === 'object') {
+          const nested = (item as Record<string, unknown>).label ?? (item as Record<string, unknown>).name;
+          if (typeof nested === 'string' || typeof nested === 'number' || typeof nested === 'boolean') {
+            return nested;
+          }
+        }
+        return undefined;
+      })
+      .filter((item): item is string | number | boolean => item !== undefined);
+
+    return parts.length ? parts.map(String).join(', ') : undefined;
+  }
+
+  if (value && typeof value === 'object') {
+    const nested = (value as Record<string, unknown>).label ?? (value as Record<string, unknown>).name;
+    if (typeof nested === 'string' || typeof nested === 'number' || typeof nested === 'boolean') {
+      return nested;
+    }
+  }
+
+  return undefined;
+}
+
+export function isSubTableColumnReadPretty(props?: { pattern?: string; readPretty?: boolean }) {
+  return props?.pattern === 'readPretty' || props?.readPretty === true;
+}
+
+export function canShowSubTableColumnTitleField(ctx: {
+  collectionField?: { isAssociationField?: () => boolean };
+  model?: {
+    getProps?: () => { pattern?: string; readPretty?: boolean };
+    subModels?: { field?: { disableTitleField?: boolean } };
+  };
+}) {
+  return !!(
+    ctx.collectionField?.isAssociationField?.() &&
+    isSubTableColumnReadPretty(ctx.model?.getProps?.()) &&
+    !(ctx.model?.subModels?.field as any)?.disableTitleField
+  );
+}
+
+export function syncSubTableColumnDisplayOnlySettings(ctx: {
+  flowKey?: string;
+  collectionField?: { isAssociationField?: () => boolean; targetCollectionTitleFieldName?: string };
+  model?: {
+    setStepParams?: (flowKey: string, stepKey: string, params: Record<string, any>) => void;
+    subModels?: { field?: { use?: string } };
+    props?: { titleField?: string };
+    getProps?: () => { pattern?: string; readPretty?: boolean };
+  };
+}) {
+  if (!ctx.flowKey || !ctx.model?.setStepParams) {
+    return;
+  }
+
+  const fieldModel = ctx.model.subModels?.field as FieldModel | undefined;
+  const bindingUse = getFieldBindingUse(fieldModel);
+  const currentUse = bindingUse ?? fieldModel?.use;
+
+  if (currentUse) {
+    ctx.model.setStepParams(ctx.flowKey, 'model', {
+      use: currentUse,
+    });
+  }
+
+  const titleField = getSubTableColumnTitleFieldName(ctx.model as any, ctx.collectionField);
+  if (titleField) {
+    ctx.model.setStepParams(ctx.flowKey, 'fieldNames', {
+      label: titleField,
+    });
+  }
+}
+
+export function syncSubTableColumnTitleFieldSelection(
+  ctx: {
+    flowKey?: string;
+    collectionField?: {
+      targetCollection?: { getField?: (name: string) => any };
+    };
+    model?: {
+      emitter?: { emit?: (eventName: string, payload?: Record<string, any>) => void };
+      parent?: {
+        setProps?: (props: Record<string, any>) => void;
+      };
+      setProps?: (props: Record<string, any>) => void;
+      setStepParams?: (flowKey: string, stepKey: string, params: Record<string, any>) => void;
+      subModels?: { field?: { use?: string } };
+    };
+  },
+  label?: string,
+) {
+  if (!label) {
+    return null;
+  }
+
+  const targetCollectionField = ctx.collectionField?.targetCollection?.getField?.(label);
+  if (!targetCollectionField) {
+    return null;
+  }
+
+  ctx.model?.setProps?.({
+    titleField: label,
+    ...targetCollectionField.getComponentProps?.(),
+  });
+  const settingsEmitter = (ctx as any)?.model?.emitter;
+  settingsEmitter?.emit('onSettingsChanged', { reason: 'title-field-changed', titleField: label });
+  ctx.model?.parent?.setProps?.({
+    __columnRenderKey: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  });
+
+  const binding = DisplayItemModel.getDefaultBindingByField(ctx as any, targetCollectionField);
+  const targetUse = binding?.modelName;
+  const fieldModel = ctx.model?.subModels?.field as FieldModel | undefined;
+  const currentUse = getFieldBindingUse(fieldModel) || fieldModel?.use;
+
+  if (ctx.flowKey && targetUse && targetUse !== currentUse) {
+    ctx.model?.setStepParams?.(ctx.flowKey, 'model', { use: targetUse });
+  }
+
+  return {
+    targetCollectionField,
+    binding,
+    targetUse,
+    currentUse,
+  };
+}
+
+export function getSubTableColumnRenderConfigKey(model: {
+  collectionField?: { targetCollectionTitleFieldName?: string };
+  getProps?: () => { pattern?: string; readPretty?: boolean; width?: number };
+  props?: { pattern?: string; readPretty?: boolean; width?: number; titleField?: string };
+  subModels?: { field?: { use?: string; getStepParams?: (flowKey: string, stepKey: string) => any } };
+  getStepParams?: (flowKey: string, stepKey: string) => any;
+}) {
+  const props = model.getProps?.() || model.props || {};
+  const fieldModel = model.subModels?.field as FieldModel | undefined;
+  const bindingUse = getFieldBindingUse(fieldModel);
+  const renderedFieldPath = resolveSubTableColumnRenderedFieldPath(model as any);
+
+  return JSON.stringify({
+    pattern: props.pattern,
+    readPretty: props.readPretty,
+    titleField: getSubTableColumnTitleFieldName(model as any, model.collectionField),
+    fieldUse: bindingUse ?? fieldModel?.use,
+    renderedFieldPath,
+    width: props.width,
+  });
+}
+
+export function resolveSubTableColumnCurrentObject(options: { value: any; record: any; isReadPretty: boolean }) {
+  const { value, record, isReadPretty } = options;
+  if (isReadPretty && value && typeof value === 'object') {
+    return value;
+  }
+  return record;
+}
+
+export function resolveSubTableColumnRenderedFieldPath(action: any) {
+  return (
+    action.subModels?.field?.getStepParams?.('fieldSettings', 'init')?.fieldPath ||
+    action.subModels?.field?.context?.fieldPath ||
+    action.getStepParams?.('fieldSettings', 'init')?.fieldPath ||
+    action.context?.fieldPath
+  );
+}
+
+export function resolveSubTableColumnReadPrettyDisplayValue(options: {
+  value: unknown;
+  parent: {
+    props?: { titleField?: string };
+    getStepParams?: (flowKey: string, stepKey: string) => { label?: string } | undefined;
+    collectionField?: { targetCollectionTitleFieldName?: string };
+  };
+  columnFieldPath: string;
+  renderedFieldPath?: string;
+}) {
+  const { value, parent, columnFieldPath, renderedFieldPath } = options;
+  const titleFieldName = getSubTableColumnTitleFieldName(parent, parent.collectionField);
+  if (titleFieldName && value && typeof value === 'object') {
+    return value;
+  }
+  return resolveTableColumnReadPrettyValue(value, columnFieldPath, renderedFieldPath);
+}
+
 const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
   return prev.value === next.value && prev.model === next.model;
 });
@@ -245,6 +462,7 @@ interface CellProps {
 const MemoCell: React.FC<CellProps> = React.memo(
   ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width }) => {
     const isNew = record?.__is_new__;
+    const isReadPretty = isSubTableColumnReadPretty(parent.props);
     return (
       <div
         style={{
@@ -281,9 +499,24 @@ const MemoCell: React.FC<CellProps> = React.memo(
         {parent.mapSubModels('field', (action: FieldModel) => {
           const fieldPath = action.context.fieldPath.split('.');
           const namePath = fieldPath.pop();
+          const renderedFieldPath = resolveSubTableColumnRenderedFieldPath(action) || namePath;
+          const readPrettyValue = resolveSubTableColumnReadPrettyDisplayValue({
+            value,
+            parent,
+            columnFieldPath: parent.context.fieldPath,
+            renderedFieldPath,
+          });
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', { get: () => record });
+          fork.context.defineProperty('currentObject', {
+            get: () =>
+              resolveSubTableColumnCurrentObject({
+                value,
+                record,
+                isReadPretty,
+              }),
+            cache: false,
+          });
           if (rowFork) {
             fork.context.defineProperty('item', {
               get: () => rowFork.context.item,
@@ -310,8 +543,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
             });
           }
 
-          if (parent.props.readPretty) {
-            fork.setProps({ value });
+          if (isReadPretty) {
+            fork.setProps({ value: readPrettyValue });
             return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
           }
 
@@ -319,7 +552,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
 
           return (
             <FormItem
-              {...parent.props}
+              {...omit(parent.props, ['titleField'])}
               key={id}
               name={buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex)}
               style={{ marginBottom: 0 }}
@@ -371,6 +604,46 @@ export class SubTableColumnModel<
   T extends SubTableColumnModelStructure = SubTableColumnModelStructure,
 > extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
+
+  getFieldSettingsInitParams() {
+    return (
+      this.getStepParams?.('fieldSettings', 'init') || {
+        dataSourceKey: this.collectionField?.dataSourceKey,
+        collectionName: this.context.blockModel?.collection?.name,
+        fieldPath: this.fieldPath,
+      }
+    );
+  }
+
+  getFieldComponentPropsForSubModel() {
+    const collectionField = this.collectionField;
+    if (!collectionField) {
+      return {};
+    }
+
+    const baseComponentProps = collectionField.getComponentProps?.() || {};
+    const savedTitleField =
+      collectionField.isAssociationField?.() && getSubTableColumnSavedTitleField(this)
+        ? getSubTableColumnSavedTitleField(this)
+        : undefined;
+
+    if (!savedTitleField) {
+      return baseComponentProps;
+    }
+
+    const titleCollectionField = collectionField.targetCollection?.getField?.(savedTitleField);
+    const titleFieldComponentProps = titleCollectionField?.getComponentProps?.() || {};
+
+    return {
+      ...baseComponentProps,
+      ...titleFieldComponentProps,
+      fieldNames: {
+        ...(baseComponentProps?.fieldNames || {}),
+        ...(titleFieldComponentProps?.fieldNames || {}),
+        label: savedTitleField,
+      },
+    };
+  }
 
   renderHiddenInConfig() {
     return <FieldWithoutPermissionPlaceholder targetModel={this} />;
@@ -434,11 +707,23 @@ export class SubTableColumnModel<
     this.context.defineProperty('actionName', {
       get: () => 'view',
     });
-    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
-      if (this.collectionField) {
-        subModel.setProps(this.collectionField.getComponentProps());
+    const syncFieldSubModelConfig = (subModel: FieldModel) => {
+      if (!subModel) {
+        return;
       }
+      const currentFieldSettingsInit = subModel.getStepParams?.('fieldSettings', 'init');
+      if (!currentFieldSettingsInit) {
+        subModel.setStepParams?.('fieldSettings', 'init', this.getFieldSettingsInitParams());
+      }
+      subModel.setProps(this.getFieldComponentPropsForSubModel());
+    };
+    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
+      syncFieldSubModelConfig(subModel);
     });
+    const fieldSubModel = this.subModels?.field as FieldModel | undefined;
+    if (fieldSubModel && !Array.isArray(fieldSubModel)) {
+      syncFieldSubModelConfig(fieldSubModel);
+    }
   }
 
   async afterAddAsSubModel() {
@@ -548,7 +833,8 @@ export class SubTableColumnModel<
       const baseFieldIndex = parentFieldIndex ?? (this.parent as any)?.context?.fieldIndex ?? this.context?.fieldIndex;
       const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
       const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
-      const rowForkKey = `row:${baseIndexKey}:${String(rowIdx)}`;
+      const renderConfigKey = getSubTableColumnRenderConfigKey(this);
+      const rowForkKey = `row:${baseIndexKey}:${String(rowIdx)}:${renderConfigKey}`;
       const rowFork: any = (() => {
         const fork = this.createFork({}, rowForkKey);
         const associationFieldPath =
@@ -837,12 +1123,78 @@ SubTableColumnModel.registerFlow({
       title: tExpr('Validation'),
       use: 'validation',
     },
+    fieldNames: {
+      use: 'titleField',
+      title: tExpr('Title field'),
+      hideInSettings(ctx) {
+        return !canShowSubTableColumnTitleField(ctx as any);
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        if (!canShowSubTableColumnTitleField(ctx as any)) {
+          return null;
+        }
+        if (params.label === previousParams.label) {
+          return null;
+        }
+        const targetCollection = ctx.collectionField.targetCollection;
+        const syncResult = syncSubTableColumnTitleFieldSelection(ctx as any, params.label);
+        const targetCollectionField = syncResult?.targetCollectionField;
+        if (!targetCollectionField || !syncResult) {
+          return null;
+        }
+        const binding = syncResult.binding;
+        const fieldModel: any = ctx.model.subModels.field;
+        const currentUse = getFieldBindingUse(fieldModel) || fieldModel?.use;
+        const targetUse = syncResult.targetUse || currentUse;
+        const fieldSettingsInit = {
+          dataSourceKey: ctx.model.collectionField.dataSourceKey,
+          collectionName: targetCollection.name,
+          fieldPath: params.label,
+        };
+        const defaultProps =
+          typeof binding?.defaultProps === 'function'
+            ? binding.defaultProps(ctx, targetCollectionField)
+            : binding?.defaultProps;
+        if (targetUse && targetUse !== currentUse) {
+          await rebuildFieldSubModel({
+            parentModel: ctx.model as any,
+            targetUse,
+            defaultProps,
+            fieldSettingsInit,
+          });
+        } else if (fieldModel) {
+          fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
+          await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+        }
+      },
+      defaultParams: (ctx: any) => {
+        return {
+          label: getSubTableColumnTitleFieldName(ctx.model, ctx.model.context.collectionField),
+        };
+      },
+      handler(ctx, params) {
+        if (!canShowSubTableColumnTitleField(ctx as any)) {
+          return null;
+        }
+        syncSubTableColumnTitleFieldSelection(ctx as any, params.label);
+      },
+    },
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
     },
     pattern: {
       use: 'pattern',
+      async beforeParamsSave(ctx, params, previousParams) {
+        await patternAction.beforeParamsSave?.(ctx as any, params, previousParams);
+      },
+      async afterParamsSave(ctx, params, previousParams) {
+        await patternAction.afterParamsSave?.(ctx as any, params, previousParams);
+        syncSubTableColumnDisplayOnlySettings(ctx as any);
+      },
+      handler(ctx, params) {
+        patternAction.handler?.(ctx as any, params);
+      },
     },
     fixed: {
       title: tExpr('Fixed'),
