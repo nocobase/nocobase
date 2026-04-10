@@ -26,5 +26,5 @@ export class TreeFilterBlockMenuModel extends FilterBlockModel {
 
 TreeFilterBlockMenuModel.define({
   label: tExpr('Tree'),
-  sort: 480,
+  sort: 1100,
 });

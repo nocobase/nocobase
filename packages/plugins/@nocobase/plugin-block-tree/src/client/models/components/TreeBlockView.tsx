@@ -54,6 +54,7 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
   const fieldNames = model.getFieldNames();
   const titleField = fieldNames.title;
   const collectionField = collection?.getField?.(titleField);
+  const titleFieldModel = model.subModels.field as any;
   const filterFieldInterface = collectionField?.interface
     ? model.context.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface)
     : null;
@@ -125,6 +126,43 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
     [fieldNames.key, model, resource],
   );
 
+  const renderNodeTitle = useCallback<NonNullable<TreeProps['renderNodeTitle']>>(
+    (value, node) => {
+      if (value === null || value === undefined || value === '') {
+        return 'N/A';
+      }
+
+      if (!titleFieldModel?.createFork || !collectionField) {
+        return String(value);
+      }
+
+      const nodeKey = node?.[fieldNames.key] ?? `${titleField}-${String(value)}`;
+      const fieldModel = titleFieldModel.createFork({}, String(nodeKey));
+
+      fieldModel.context.defineProperty('collectionField', {
+        get: () => collectionField,
+        cache: false,
+      });
+
+      fieldModel.context.defineProperty('record', {
+        get: () => node,
+        cache: false,
+      });
+
+      fieldModel.setProps({
+        ...collectionField.getComponentProps(),
+        value,
+        clickToOpen: false,
+      });
+
+      const rendered =
+        typeof fieldModel.renderComponent === 'function' ? fieldModel.renderComponent(value) : fieldModel.render?.();
+
+      return <span style={{ pointerEvents: 'none' }}>{rendered ?? String(value)}</span>;
+    },
+    [collectionField, fieldNames.key, titleField, titleFieldModel],
+  );
+
   const containerStyle =
     model.decoratorProps?.heightMode === 'specifyValue' || model.decoratorProps?.heightMode === 'fullHeight'
       ? { height: '100%', overflow: 'auto' as const }
@@ -145,6 +183,7 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
         onSearch={onSearch}
         onSelect={onSelect}
         FilterComponent={FilterComponent}
+        renderNodeTitle={renderNodeTitle}
       />
     </div>
   );
