@@ -263,6 +263,9 @@ export const useChatMessageActions = () => {
                   ...t,
                   invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
                   status: data.body?.status ?? t.status,
+                  invokeStartTime: data.body?.invokeStartTime ?? t.invokeStartTime,
+                  invokeEndTime: data.body?.invokeEndTime ?? t.invokeEndTime,
+                  content: data.body?.content ?? t.content,
                 }
               : t,
           );

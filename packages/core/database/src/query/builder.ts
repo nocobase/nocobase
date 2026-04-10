@@ -24,6 +24,7 @@ import { QueryField, QueryOptions } from './types';
 type QuerySelection = { field: QueryField; alias?: string };
 
 const ALLOWED_AGG_FUNCS = ['sum', 'count', 'avg', 'min', 'max'];
+const ALLOWED_ORDER_DIRECTIONS = ['ASC', 'DESC'];
 
 function createQueryFormatter(database: Database): QueryFormatter {
   switch (database.sequelize.getDialect()) {
@@ -189,7 +190,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
   const order: Order = orders.map((item: any) => {
     const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
     const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-    let sort = (item.order || 'ASC').toUpperCase();
+    let sort = ALLOWED_ORDER_DIRECTIONS.includes(item.order?.toUpperCase()) ? item.order.toUpperCase() : 'ASC';
     if (item.nulls === 'first') {
       sort += ' NULLS FIRST';
     }

@@ -81,4 +81,18 @@ describe('query builder', () => {
       }),
     ).toThrow('Invalid aggregation function: if(1=2,sleep(1),sleep(3)) and sum');
   });
+
+  it('should sanitize invalid order direction', () => {
+    const { queryOptions } = buildQuery(db, db.getCollection('users'), {
+      orders: [
+        {
+          field: ['createdAt'],
+          alias: 'createdAt',
+          order: `ASC'); SELECT pg_sleep(1)--` as any,
+        },
+      ],
+    });
+
+    expect(queryOptions.order).toEqual([[db.sequelize.col('users.created_at'), 'ASC']]);
+  });
 });

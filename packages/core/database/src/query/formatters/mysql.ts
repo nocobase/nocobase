@@ -22,10 +22,11 @@ export class MySQLQueryFormatter extends QueryFormatter {
 
   formatDate(field: Col, format: string, timezone?: string) {
     const fmt = this.convertFormat(format);
-    if (timezone) {
+    const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    if (resolvedTimezone) {
       return this.sequelize.fn(
         'date_format',
-        this.sequelize.fn('convert_tz', field, process.env.TZ || 'UTC', timezone),
+        this.sequelize.fn('convert_tz', field, process.env.TZ || 'UTC', resolvedTimezone),
         fmt,
       );
     }
@@ -35,15 +36,16 @@ export class MySQLQueryFormatter extends QueryFormatter {
   formatUnixTimestamp(field: string, format: string, accuracy: 'second' | 'millisecond' = 'second', timezone?: string) {
     const fmt = this.convertFormat(format);
     const quoted = this.sequelize.getQueryInterface().quoteIdentifiers(field);
+    const resolvedTimezone = this.getTimezoneByOffset(timezone);
     const timestamp =
       accuracy === 'millisecond'
         ? this.sequelize.fn('from_unixtime', this.sequelize.literal(`ROUND(${quoted} / 1000)`))
         : this.sequelize.fn('from_unixtime', this.sequelize.col(field));
 
-    if (timezone) {
+    if (resolvedTimezone) {
       return this.sequelize.fn(
         'date_format',
-        this.sequelize.fn('convert_tz', timestamp, process.env.TZ || 'UTC', timezone),
+        this.sequelize.fn('convert_tz', timestamp, process.env.TZ || 'UTC', resolvedTimezone),
         fmt,
       );
     }
