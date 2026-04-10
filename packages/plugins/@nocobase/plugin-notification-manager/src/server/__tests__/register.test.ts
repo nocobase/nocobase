@@ -302,6 +302,36 @@ describe('notification manager server', () => {
     );
   });
 
+  test('plugin sendNow should bypass queue and perform actual sending', async () => {
+    const plugin = app.pm.get('notification-manager') as PluginNotificationManagerServer;
+    const sendNow = vi.spyOn((plugin as any).manager, 'sendNow').mockResolvedValue({
+      status: 'success',
+      triggerFrom: 'workflow',
+      channelName: testChannelData.name,
+    });
+
+    const result = await plugin.sendNow({
+      channelName: testChannelData.name,
+      message: { content: 'test' },
+      triggerFrom: 'workflow',
+      transaction: {
+        afterCommit: vi.fn(),
+      } as any,
+    });
+
+    expect(sendNow).toHaveBeenCalledWith({
+      channelName: testChannelData.name,
+      message: { content: 'test' },
+      triggerFrom: 'workflow',
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        channelName: testChannelData.name,
+      }),
+    );
+  });
+
   test('plugin should reuse channels cache after initial load', async () => {
     const plugin = app.pm.get('notification-manager') as PluginNotificationManagerServer;
     const repository = app.db.getRepository(COLLECTION_NAME.channels);

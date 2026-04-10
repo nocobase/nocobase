@@ -56,7 +56,7 @@ export default class extends Instruction {
     };
     const notificationServer = this.workflow.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
     try {
-      const result = await notificationServer.send(sendParams);
+      const result = await notificationServer.sendNow(sendParams);
       if (result.status === 'success') {
         return {
           status: JOB_STATUS.RESOLVED,

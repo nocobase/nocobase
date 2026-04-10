@@ -76,6 +76,11 @@ export class PluginNotificationManagerServer extends Plugin {
     return await this.manager.send(options);
   }
 
+  async sendNow(options: SendOptions) {
+    const { transaction, ...message } = options;
+    return await this.manager.sendNow(message);
+  }
+
   async sendToUsers(options: SendUserOptions) {
     return await this.manager.sendToUsers(options);
   }

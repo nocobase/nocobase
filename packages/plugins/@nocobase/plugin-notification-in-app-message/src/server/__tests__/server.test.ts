@@ -211,9 +211,16 @@ describe('inapp message channels', () => {
   test('send should bypass bulk hooks and dispatch websocket events asynchronously', async () => {
     const bulkCreate = vi.fn().mockResolvedValue(undefined);
     const emit = vi.fn();
-    const transaction = { id: 'tx-1' };
+    let afterCommitCallback;
+    const transaction = {
+      id: 'tx-1',
+      afterCommit: vi.fn((callback) => {
+        afterCommitCallback = callback;
+      }),
+    };
     const logger = {
       error: vi.fn(),
+      warn: vi.fn(),
     };
 
     const channel = new InAppNotificationChannel({
@@ -266,6 +273,11 @@ describe('inapp message channels', () => {
     });
     expect(emit).not.toHaveBeenCalled();
 
+    expect(transaction.afterCommit).toHaveBeenCalledTimes(1);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(emit).not.toHaveBeenCalled();
+
+    afterCommitCallback();
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(emit).toHaveBeenCalledTimes(2);
@@ -281,6 +293,55 @@ describe('inapp message channels', () => {
       message: {
         type: 'in-app-message:created',
         payload: messages[1],
+      },
+    });
+  });
+
+  test('model hooks should defer websocket events until transaction committed', async () => {
+    const emit = vi.fn();
+    let afterCommitCallback;
+    const logger = {
+      error: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const channel = new InAppNotificationChannel({
+      emit,
+      logger,
+    } as any);
+
+    channel.onMessageCreated(
+      {
+        toJSON: () => ({
+          id: 'msg-1',
+          userId: 1,
+          title: 'hello',
+        }),
+      },
+      {
+        transaction: {
+          afterCommit: vi.fn((callback) => {
+            afterCommitCallback = callback;
+          }),
+        },
+      } as any,
+    );
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(emit).not.toHaveBeenCalled();
+
+    afterCommitCallback();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(emit).toHaveBeenCalledWith('ws:sendToUser', {
+      userId: 1,
+      message: {
+        type: 'in-app-message:created',
+        payload: {
+          id: 'msg-1',
+          userId: 1,
+          title: 'hello',
+        },
       },
     });
   });

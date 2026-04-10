@@ -22,23 +22,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     return typeof message?.toJSON === 'function' ? message.toJSON() : message;
   }
 
-  private emitMessageEvents(type: 'created' | 'updated', messages: any[]) {
-    for (const message of messages) {
-      this.app.emit('ws:sendToUser', {
-        userId: message.userId,
-        message: {
-          type: `in-app-message:${type}`,
-          payload: message,
-        },
-      });
-    }
-  }
-
-  private scheduleMessageEvents(type: 'created', messages: any[]) {
-    if (!messages.length) {
-      return;
-    }
-
+  private emitMessageEventsAsync(type: 'created' | 'updated', messages: any[]) {
     setImmediate(() => {
       try {
         const startedAt = Date.now();
@@ -61,6 +45,37 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     });
   }
 
+  private scheduleMessageEvents(
+    type: 'created' | 'updated',
+    messages: any[],
+    transaction?: { afterCommit?: (callback: () => void) => void } | null,
+  ) {
+    if (!messages.length) {
+      return;
+    }
+
+    if (transaction?.afterCommit) {
+      transaction.afterCommit(() => {
+        this.emitMessageEventsAsync(type, messages);
+      });
+      return;
+    }
+
+    this.emitMessageEventsAsync(type, messages);
+  }
+
+  private emitMessageEvents(type: 'created' | 'updated', messages: any[]) {
+    for (const message of messages) {
+      this.app.emit('ws:sendToUser', {
+        userId: message.userId,
+        message: {
+          type: `in-app-message:${type}`,
+          payload: message,
+        },
+      });
+    }
+  }
+
   async load() {
     this.app.db.on(`${MessagesDefinition.name}.afterCreate`, this.onMessageCreated);
     this.app.db.on(`${MessagesDefinition.name}.afterBulkCreate`, this.onMessageCreated);
@@ -71,12 +86,12 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
 
   onMessageCreated = async (model, options) => {
     const messages = (Array.isArray(model) ? model : [model]).map((item) => this.getMessagePayload(item));
-    this.emitMessageEvents('created', messages);
+    this.scheduleMessageEvents('created', messages, options?.transaction);
   };
 
   onMessageUpdated = async (model, options) => {
     const messages = (Array.isArray(model) ? model : [model]).map((item) => this.getMessagePayload(item));
-    this.emitMessageEvents('updated', messages);
+    this.scheduleMessageEvents('updated', messages, options?.transaction);
   };
 
   send: SendFnType<InAppMessageFormValues> = async (params) => {
@@ -119,7 +134,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
       returning: false,
     });
     const persistMs = Date.now() - persistStartedAt;
-    this.scheduleMessageEvents('created', messages);
+    this.scheduleMessageEvents('created', messages, transaction);
     const totalMs = Date.now() - startedAt;
     if (totalMs >= InAppNotificationChannel.SLOW_SEND_THRESHOLD_MS) {
       this.app.logger.warn('in-app notification send is slow', {
