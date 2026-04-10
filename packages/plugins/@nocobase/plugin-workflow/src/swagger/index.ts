@@ -338,16 +338,11 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
+                description: 'Override fields for the new workflow/version',
                 properties: {
-                  values: {
-                    type: 'object',
-                    description: 'Override fields for the new workflow/version',
-                    properties: {
-                      title: { type: 'string', description: 'Override title' },
-                      enabled: { type: 'boolean', description: 'Override enabled state' },
-                      current: { type: 'boolean', description: 'Set as current version' },
-                    },
-                  },
+                  title: { type: 'string', description: 'Override title' },
+                  enabled: { type: 'boolean', description: 'Override enabled state' },
+                  current: { type: 'boolean', description: 'Set as current version' },
                 },
               },
             },
@@ -407,7 +402,7 @@ export default {
           '',
           '**Requirements:**',
           '- `filterByTk` (query param) is required.',
-          '- `values` (request body) is required — provide the context/input data the trigger expects.',
+          '- Request body is required — the **entire JSON body** is treated as trigger context/input.',
           '',
           '**autoRevision:** When set to `1`, if the workflow has never been executed',
           '(`executed === 0`), a new revision is created automatically after execution.',
@@ -435,13 +430,9 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['values'],
-                properties: {
-                  values: {
-                    type: 'object',
-                    description: 'Context/input data for the workflow trigger. Structure depends on the trigger type.',
-                  },
-                },
+                description:
+                  'Trigger context/input data. The body itself is mapped to `params.values` on the server. Structure depends on trigger type.',
+                additionalProperties: true,
               },
             },
           },
@@ -472,7 +463,7 @@ export default {
             },
           },
           400: {
-            description: 'Bad Request. `values` or `filterByTk` is missing, invalid, or workflow not triggered.',
+            description: 'Bad Request. Request body or `filterByTk` is missing/invalid, or workflow not triggered.',
           },
           404: { description: 'Not Found. Workflow does not exist.' },
         },
@@ -737,16 +728,11 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
+                description: 'Target position and optional config override for the new node',
                 properties: {
-                  values: {
-                    type: 'object',
-                    description: 'Target position and optional config override for the new node',
-                    properties: {
-                      upstreamId: { $ref: '#/components/schemas/node/properties/upstreamId' },
-                      branchIndex: { $ref: '#/components/schemas/node/properties/branchIndex' },
-                      config: { $ref: '#/components/schemas/node/properties/config' },
-                    },
-                  },
+                  upstreamId: { $ref: '#/components/schemas/node/properties/upstreamId' },
+                  branchIndex: { $ref: '#/components/schemas/node/properties/branchIndex' },
+                  config: { $ref: '#/components/schemas/node/properties/config' },
                 },
               },
             },
@@ -798,22 +784,17 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
+                description: 'Target position descriptor',
                 properties: {
-                  values: {
-                    type: 'object',
-                    description: 'Target position descriptor',
-                    properties: {
-                      upstreamId: {
-                        type: 'integer',
-                        nullable: true,
-                        description: 'Target upstream node ID. `null` = move to head position.',
-                      },
-                      branchIndex: {
-                        type: 'integer',
-                        nullable: true,
-                        description: 'Branch index at the target upstream. `null` = main chain.',
-                      },
-                    },
+                  upstreamId: {
+                    type: 'integer',
+                    nullable: true,
+                    description: 'Target upstream node ID. `null` = move to head position.',
+                  },
+                  branchIndex: {
+                    type: 'integer',
+                    nullable: true,
+                    description: 'Branch index at the target upstream. `null` = main chain.',
                   },
                 },
               },
@@ -854,16 +835,10 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['values'],
+                required: ['type', 'config'],
                 properties: {
-                  values: {
-                    type: 'object',
-                    required: ['type'],
-                    properties: {
-                      type: { $ref: '#/components/schemas/node/properties/type' },
-                      config: { $ref: '#/components/schemas/node/properties/config' },
-                    },
-                  },
+                  type: { $ref: '#/components/schemas/node/properties/type' },
+                  config: { $ref: '#/components/schemas/node/properties/config' },
                 },
               },
             },
@@ -1191,24 +1166,19 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
+                description: 'Fields to update on the job before resuming',
                 properties: {
-                  values: {
+                  status: {
+                    type: 'integer',
+                    description: 'Job status: 1=RESOLVED, -1=FAILED, -3=ABORTED, -4=CANCELED, -5=REJECTED',
+                  },
+                  result: {
                     type: 'object',
-                    description: 'Fields to update on the job before resuming',
-                    properties: {
-                      status: {
-                        type: 'integer',
-                        description: 'Job status: 1=RESOLVED, -1=FAILED, -3=ABORTED, -4=CANCELED, -5=REJECTED',
-                      },
-                      result: {
-                        type: 'object',
-                        description: 'Result data to store on the job',
-                      },
-                      meta: {
-                        type: 'object',
-                        description: 'Metadata to store on the job',
-                      },
-                    },
+                    description: 'Result data to store on the job',
+                  },
+                  meta: {
+                    type: 'object',
+                    description: 'Metadata to store on the job',
                   },
                 },
               },

@@ -139,6 +139,8 @@ export function createItemChainMetaFactory(options: {
   title: string;
   showIndex?: boolean;
   showParentIndex?: boolean;
+  disableValueBranch?: boolean;
+  valueBranchDisabledReason?: string;
   collectionAccessor: () => any;
   propertiesAccessor: (ctx: any) => any;
   parentCollectionAccessor?: () => any;
@@ -150,6 +152,8 @@ export function createItemChainMetaFactory(options: {
     title,
     showIndex,
     showParentIndex,
+    disableValueBranch,
+    valueBranchDisabledReason,
     collectionAccessor,
     propertiesAccessor,
     parentCollectionAccessor,
@@ -187,7 +191,16 @@ export function createItemChainMetaFactory(options: {
       properties.index = createIndexMeta();
       properties.length = createLengthMeta();
     }
-    properties.value = { ...(propertiesMeta as any), title: t('Attributes') };
+    properties.value = {
+      ...(propertiesMeta as any),
+      title: t('Attributes'),
+      ...(disableValueBranch
+        ? {
+            disabled: true,
+            disabledReason: valueBranchDisabledReason || t('Attributes are unavailable before selecting a record'),
+          }
+        : {}),
+    };
 
     if (parentItemMeta) {
       properties.parentItem = {
@@ -217,7 +230,7 @@ export function createItemChainMetaFactory(options: {
       buildVariablesParams: async (ctx: any) => {
         const out: Record<string, any> = {};
 
-        if (typeof buildVars === 'function') {
+        if (!disableValueBranch && typeof buildVars === 'function') {
           const built = await buildVars(ctx);
           if (built && typeof built === 'object' && Object.keys(built).length) {
             out.value = built;
@@ -244,6 +257,7 @@ export function createItemChainMetaFactory(options: {
 
 export function createItemChainResolver(options: {
   collectionAccessor: () => any;
+  disableValueBranch?: boolean;
   propertiesAccessor?: () => unknown;
   parentCollectionAccessor?: () => any;
   parentPropertiesAccessor?: () => unknown;
@@ -259,6 +273,7 @@ export function createItemChainResolver(options: {
     if (!raw) return false;
     if (raw === 'value') return false;
     if (raw.startsWith('value.')) {
+      if (options.disableValueBranch) return false;
       return base(raw.slice('value.'.length));
     }
     if (raw === 'parentItem') return false;
@@ -295,6 +310,8 @@ export type AssociationItemChainContextPropertyOptions = {
   title: string;
   showIndex?: boolean;
   showParentIndex?: boolean;
+  disableValueBranch?: boolean;
+  valueBranchDisabledReason?: string;
   collectionAccessor: () => any;
   propertiesAccessor: (ctx: any) => any;
   resolverPropertiesAccessor?: () => unknown;
@@ -317,6 +334,8 @@ export function createAssociationItemChainContextPropertyOptions(options: Associ
       title: options.title,
       showIndex: options.showIndex,
       showParentIndex: options.showParentIndex,
+      disableValueBranch: options.disableValueBranch,
+      valueBranchDisabledReason: options.valueBranchDisabledReason,
       collectionAccessor: options.collectionAccessor,
       propertiesAccessor: options.propertiesAccessor,
       parentCollectionAccessor: options.parentCollectionAccessor,
@@ -325,6 +344,7 @@ export function createAssociationItemChainContextPropertyOptions(options: Associ
     },
     resolverOptions: {
       collectionAccessor: options.collectionAccessor,
+      disableValueBranch: options.disableValueBranch,
       propertiesAccessor: options.resolverPropertiesAccessor,
       parentCollectionAccessor: options.parentCollectionAccessor,
       parentPropertiesAccessor,
