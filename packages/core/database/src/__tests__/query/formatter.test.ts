@@ -150,4 +150,81 @@ describe('query formatter', () => {
       }),
     ).toMatchObject([{ unixTsMs: '2023-01-01 10:04:56' }]);
   });
+
+  it('should support ordering aggregate queries by formatted datetime dimensions', async () => {
+    const repo = db.getRepository('query_format_test');
+    const dialect = db.sequelize.getDialect();
+    if (dialect === 'sqlite') {
+      await repo.create({
+        values: {
+          date: '2024-05-14 19:32:30.175 +00:00',
+          dateOnly: '2024-05-14',
+          datetimeNoTz: '2024-05-14 19:32:30',
+          unixTs: '2023-01-01T04:34:56Z',
+          unixTsMs: '2023-01-01T04:34:56Z',
+        },
+      });
+      await repo.create({
+        values: {
+          date: '2024-05-13 19:32:30.175 +00:00',
+          dateOnly: '2024-05-13',
+          datetimeNoTz: '2024-05-13 19:32:30',
+          unixTs: '2023-01-01T04:34:56Z',
+          unixTsMs: '2023-01-01T04:34:56Z',
+        },
+      });
+    } else if (dialect === 'postgres') {
+      await repo.create({
+        values: {
+          date: '2024-05-14 19:32:30.175+00',
+          dateOnly: '2024-05-14',
+          datetimeNoTz: '2024-05-14 19:32:30',
+          unixTs: '2023-01-01T04:34:56Z',
+          unixTsMs: '2023-01-01T04:34:56Z',
+        },
+      });
+      await repo.create({
+        values: {
+          date: '2024-05-13 19:32:30.175+00',
+          dateOnly: '2024-05-13',
+          datetimeNoTz: '2024-05-13 19:32:30',
+          unixTs: '2023-01-01T04:34:56Z',
+          unixTsMs: '2023-01-01T04:34:56Z',
+        },
+      });
+    } else if (dialect === 'mysql' || dialect === 'mariadb') {
+      await repo.create({
+        values: {
+          date: '2024-05-14T19:32:30Z',
+          dateOnly: '2024-05-14',
+          datetimeNoTz: '2024-05-14 19:32:30',
+          unixTs: '2023-01-01T04:34:56Z',
+          unixTsMs: '2023-01-01T04:34:56Z',
+        },
+      });
+      await repo.create({
+        values: {
+          date: '2024-05-13T19:32:30Z',
+          dateOnly: '2024-05-13',
+          datetimeNoTz: '2024-05-13 19:32:30',
+          unixTs: '2023-01-01T04:34:56Z',
+          unixTsMs: '2023-01-01T04:34:56Z',
+        },
+      });
+    } else {
+      return;
+    }
+
+    expect(
+      await repo.query({
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'orderCount' }],
+        dimensions: [{ field: ['date'], format: 'YYYY-MM-DD', alias: 'orderDate' }],
+        orders: [{ field: ['date'], alias: 'orderDate', order: 'asc' }],
+        timezone: '+00:00',
+      }),
+    ).toMatchObject([
+      { orderDate: '2024-05-13', orderCount: 1 },
+      { orderDate: '2024-05-14', orderCount: 1 },
+    ]);
+  });
 });

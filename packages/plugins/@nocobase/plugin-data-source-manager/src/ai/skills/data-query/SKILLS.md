@@ -24,9 +24,12 @@ This skill focuses on safe read-only data access.
 When the user does not provide an exact collection or field name:
 
 1. Call `getDataSources` if the target data source is unclear.
-2. Call `getCollectionNames` to find the right collection.
-3. Call `getCollectionMetadata` or `searchFieldMetadata` to confirm field names, relation paths, and data types.
-4. Only then run a data tool.
+2. If multiple data sources may contain relevant data, inspect each candidate before choosing the query scope.
+3. Do not silently default to `main` when other relevant data sources are available.
+4. If you intentionally limit the query to one data source, explain why that data source was chosen and why others were not used.
+5. Call `getCollectionNames` to find the right collection.
+6. Call `getCollectionMetadata` or `searchFieldMetadata` to confirm field names, relation paths, and data types.
+7. Only then run a data tool.
 
 Do not guess collection names, measure aliases, or dotted relation paths.
 
@@ -66,6 +69,10 @@ Use `dataSourceCounting` only for a simple total when grouped output is unnecess
 5. Use aliases when the user clearly needs stable output keys.
 6. For dotted relation fields, prefer the exact field path confirmed from metadata, such as `createdBy.nickname`.
 7. Default row limit is 50 and the tool caps the limit at 100.
+8. When you must generate explicit datetime filter values yourself, generate them in UTC using ISO 8601 timestamps with a trailing `Z`.
+9. Do not generate local offsets such as `+09:00` or `-05:00` in AI-authored datetime filter values.
+10. Do not provide a timezone parameter yourself.
+11. If a report depends on calendar boundaries such as "this month" or "April", state explicitly that the generated filter values are in UTC when it matters.
 
 # Available Tools
 

@@ -16,7 +16,7 @@ import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
-import { BusinessReport, BusinessReportRenderState } from './report-utils';
+import { BusinessReport, BusinessReportRenderState, normalizeBusinessReport } from './report-utils';
 
 class BoundedSet<T> {
   private readonly items = new Set<T>();
@@ -64,7 +64,7 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const report = useMemo<Partial<BusinessReportRenderState>>(
-    () => (toolCall.args as BusinessReport) || {},
+    () => normalizeBusinessReport((toolCall.args as BusinessReport) || {}),
     [toolCall.args],
   );
   const isGenerating = !['done', 'confirmed'].includes(toolCall.invokeStatus);
@@ -135,7 +135,9 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
     };
   }, [hasLiveContent, report]);
 
-  const displayReport: Partial<BusinessReportRenderState> = hasLiveContent ? report : lastStableContentRef.current;
+  const displayReport: Partial<BusinessReportRenderState> = normalizeBusinessReport(
+    hasLiveContent ? report : lastStableContentRef.current,
+  );
 
   const summary =
     displayReport?.summary ||

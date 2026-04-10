@@ -21,6 +21,7 @@ import {
   BusinessReportRenderState,
   downloadTextFile,
   getReportFileName,
+  normalizeBusinessReport,
   printReport,
 } from './report-utils';
 
@@ -52,7 +53,7 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>) {
   const locale = api.auth.getLocale();
   const report = useMemo(
     () =>
-      ({
+      normalizeBusinessReport({
         ...(tool?.args as BusinessReport),
         generatedAt: tool?.invokeEndTime,
       }) as BusinessReportRenderState,
