@@ -8,7 +8,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { resolveAssignValueFieldModelUse, resolveAssignValueFieldPath } from '../FieldAssignValueInput';
+import {
+  buildAssignValueFieldStepParams,
+  resolveAssignValueEditorFieldContext,
+  resolveAssignValueFieldModelUse,
+  resolveAssignValueFieldPath,
+  resolveAssignValueNestedAssociationField,
+} from '../FieldAssignValueInput';
 import { buildCustomFieldTargetPath } from '../../internal/utils/modelUtils';
 
 describe('FieldAssignValueInput path resolve', () => {
@@ -73,6 +79,56 @@ describe('FieldAssignValueInput path resolve', () => {
     ).toBe('RecordSelectFieldModel');
   });
 
+  it('does not fall back to current form item field model in assign context when binding is missing', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'PopupSubTableFieldModel',
+        },
+      },
+    };
+
+    expect(
+      resolveAssignValueFieldModelUse({
+        itemModel: model,
+        fieldModelUse: undefined,
+        collectionField: {
+          isAssociationField: () => true,
+          targetCollection: {
+            template: 'general',
+          },
+        } as any,
+      }),
+    ).toBe('RecordSelectFieldModel');
+  });
+
+  it('does not fall back to custom association field model in assign context when binding is missing', () => {
+    const model = {
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'formItemSettings' && stepKey === 'fieldSettings') {
+          return { fieldModel: 'PopupSubTableFieldModel' };
+        }
+        return undefined;
+      },
+      customFieldModelInstance: {
+        use: 'PopupSubTableFieldModel',
+      },
+    };
+
+    expect(
+      resolveAssignValueFieldModelUse({
+        itemModel: model,
+        fieldModelUse: undefined,
+        collectionField: {
+          isAssociationField: () => true,
+          targetCollection: {
+            template: 'general',
+          },
+        } as any,
+      }),
+    ).toBe('RecordSelectFieldModel');
+  });
+
   it('uses custom field model when form item has no bound collection field', () => {
     const model = {
       getStepParams: (flowKey: string, stepKey: string) => {
@@ -94,6 +150,27 @@ describe('FieldAssignValueInput path resolve', () => {
     ).toBe('DateTimeFilterFieldModel');
   });
 
+  it('uses custom field model for custom field when collection field is absent', () => {
+    const model = {
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'formItemSettings' && stepKey === 'fieldSettings') {
+          return { fieldModel: 'DateTimeFilterFieldModel' };
+        }
+        return undefined;
+      },
+      customFieldModelInstance: {
+        use: 'DateTimeFilterFieldModel',
+      },
+    };
+
+    expect(
+      resolveAssignValueFieldModelUse({
+        itemModel: model,
+        preferFormItemFieldModel: false,
+      }),
+    ).toBe('DateTimeFilterFieldModel');
+  });
+
   it('reuses current form item field model only when explicitly requested', () => {
     const model = {
       subModels: {
@@ -110,5 +187,199 @@ describe('FieldAssignValueInput path resolve', () => {
         preferFormItemFieldModel: true,
       }),
     ).toBe('PopupSubTableFieldModel');
+  });
+
+  it('overrides inherited fieldBinding.use with the resolved assign field model use', () => {
+    expect(
+      buildAssignValueFieldStepParams({
+        originStepParams: {
+          fieldBinding: {
+            use: 'PopupSubTableFieldModel',
+          },
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+              fieldPath: 'roles',
+            },
+          },
+        },
+        effectiveFieldModelUse: 'RecordSelectFieldModel',
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        fieldPath: 'roles',
+      }),
+    ).toEqual({
+      fieldBinding: {
+        use: 'RecordSelectFieldModel',
+      },
+      fieldSettings: {
+        init: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+          fieldPath: 'roles',
+        },
+      },
+    });
+  });
+
+  it('preserves custom field step params while filling resolved field binding use', () => {
+    expect(
+      buildAssignValueFieldStepParams({
+        originStepParams: {
+          selectSettings: {
+            fieldNames: {
+              label: 'title',
+              value: 'id',
+            },
+          },
+        },
+        effectiveFieldModelUse: 'RecordSelectFieldModel',
+      }),
+    ).toEqual({
+      fieldBinding: {
+        use: 'RecordSelectFieldModel',
+      },
+      selectSettings: {
+        fieldNames: {
+          label: 'title',
+          value: 'id',
+        },
+      },
+    });
+  });
+
+  it('resolves nested association target key path metadata', () => {
+    const roleIdField = {
+      name: 'id',
+      interface: 'integer',
+      type: 'integer',
+      isAssociationField: () => false,
+    };
+    const rolesCollection = {
+      name: 'roles',
+      filterTargetKey: 'id',
+      getField: (name: string) => (name === 'id' ? roleIdField : undefined),
+    };
+    const rolesField = {
+      name: 'roles',
+      interface: 'm2m',
+      type: 'belongsToMany',
+      targetCollection: rolesCollection,
+      targetKey: 'id',
+      isAssociationField: () => true,
+    };
+    const usersCollection = {
+      name: 'users',
+      getField: (name: string) => (name === 'roles' ? rolesField : undefined),
+    };
+
+    expect(resolveAssignValueNestedAssociationField(usersCollection, 'roles.id')).toEqual({
+      collection: rolesCollection,
+      fieldName: 'id',
+      collectionField: roleIdField,
+      associationPath: 'roles',
+      associationField: rolesField,
+      associationCollection: usersCollection,
+      isAssociationKeyPath: true,
+    });
+  });
+
+  it('keeps nested leaf field context when the resolved editor model is not an association editor', () => {
+    const roleIdField = {
+      name: 'id',
+      interface: 'integer',
+      type: 'integer',
+      isAssociationField: () => false,
+    };
+    const rolesCollection = {
+      name: 'roles',
+      getField: (name: string) => (name === 'id' ? roleIdField : undefined),
+    };
+    const rolesField = {
+      name: 'roles',
+      interface: 'm2m',
+      type: 'belongsToMany',
+      targetCollection: rolesCollection,
+      targetKey: 'id',
+      isAssociationField: () => true,
+    };
+    const usersCollection = {
+      name: 'users',
+    };
+
+    const nestedAssociation = {
+      collection: rolesCollection,
+      fieldName: 'id',
+      collectionField: roleIdField,
+      associationPath: 'roles',
+      associationField: rolesField,
+      associationCollection: usersCollection,
+      isAssociationKeyPath: true,
+    };
+
+    expect(
+      resolveAssignValueEditorFieldContext({
+        collection: rolesCollection,
+        fieldPath: 'id',
+        fieldName: 'id',
+        collectionField: roleIdField as any,
+        nestedAssociation: nestedAssociation as any,
+        effectiveFieldModelUse: 'InputFieldModel',
+      }),
+    ).toEqual({
+      collection: rolesCollection,
+      fieldPath: 'id',
+      fieldName: 'id',
+      collectionField: roleIdField,
+    });
+  });
+
+  it('switches to association field context when association editor resolves on target key path', () => {
+    const roleIdField = {
+      name: 'id',
+      interface: 'integer',
+      type: 'integer',
+      isAssociationField: () => false,
+    };
+    const rolesCollection = {
+      name: 'roles',
+      getField: (name: string) => (name === 'id' ? roleIdField : undefined),
+    };
+    const rolesField = {
+      name: 'roles',
+      interface: 'm2m',
+      type: 'belongsToMany',
+      targetCollection: rolesCollection,
+      targetKey: 'id',
+      isAssociationField: () => true,
+    };
+    const usersCollection = {
+      name: 'users',
+    };
+
+    expect(
+      resolveAssignValueEditorFieldContext({
+        collection: rolesCollection,
+        fieldPath: 'id',
+        fieldName: 'id',
+        collectionField: roleIdField as any,
+        nestedAssociation: {
+          collection: rolesCollection,
+          fieldName: 'id',
+          collectionField: roleIdField as any,
+          associationPath: 'roles',
+          associationField: rolesField as any,
+          associationCollection: usersCollection,
+          isAssociationKeyPath: true,
+        },
+        effectiveFieldModelUse: 'RecordSelectFieldModel',
+      }),
+    ).toEqual({
+      collection: usersCollection,
+      fieldPath: 'roles',
+      fieldName: 'roles',
+      collectionField: rolesField,
+    });
   });
 });
