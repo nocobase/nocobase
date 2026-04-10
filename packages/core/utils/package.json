@@ -5,6 +5,8 @@
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
+    "axios": "^1.7.0",
+    "ipaddr.js": "^1.9.1",
     "@budibase/handlebars-helpers": "0.14.0",
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",
