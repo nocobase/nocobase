@@ -136,6 +136,15 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       interface: 'm2o',
     },
   });
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'manager',
+      type: 'belongsTo',
+      target: 'employees',
+      foreignKey: 'managerId',
+      interface: 'm2o',
+    },
+  });
 
   await rootAgent.resource('collections').create({
     values: {
@@ -177,10 +186,28 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
     },
   });
 
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'opaque_targets',
+      title: 'Opaque targets',
+      fields: [{ name: 'meta', type: 'json', interface: 'json' }],
+    },
+  });
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'opaqueTarget',
+      type: 'belongsTo',
+      target: 'opaque_targets',
+      foreignKey: 'opaqueTargetId',
+      interface: 'm2o',
+    },
+  });
+
   await waitForFixtureCollectionsReady(db, {
-    employees: ['nickname', 'status', 'profileId'],
+    employees: ['nickname', 'status', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],
     skills: ['label'],
     employee_skills: ['id', 'employeeId', 'skillId'],
+    opaque_targets: ['meta'],
   });
 }

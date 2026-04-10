@@ -121,7 +121,6 @@ import {
   getCollectionFields,
   getCollectionName,
   getCollectionTitle,
-  getCollectionTitleFieldName,
   getFieldFilterable,
   getFieldInterface,
   getFieldName,
@@ -141,6 +140,11 @@ import {
   resolveFieldTargetCollection,
   toTemplatePlainRow,
 } from './service-helpers';
+import {
+  assertCollectionTitleFieldExists,
+  resolveAssociationSafeTitleField,
+  resolveAssociationTitleFieldTargetCollection,
+} from './association-title-field';
 import {
   buildFlowSurfaceDefaultActionPopupBlocks,
   getFlowSurfaceDefaultActionPopupConfigByUse,
@@ -311,7 +315,13 @@ const TITLE_FIELD_SUPPORTED_WRAPPER_USES = new Set([
   'DetailsItemModel',
   'TableColumnModel',
 ]);
-const AUTO_TITLE_FIELD_BINDING_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
+const AUTO_TITLE_FIELD_BINDING_WRAPPER_USES = new Set([
+  'FormItemModel',
+  'FormAssociationItemModel',
+  'DetailsItemModel',
+  'TableColumnModel',
+  'FilterFormItemModel',
+]);
 const UI_FIELD_MENU_TABLE_OWNER_USES = new Set(['TableBlockModel']);
 const UI_FIELD_MENU_DETAILS_OWNER_USES = new Set(['DetailsBlockModel', 'GridCardBlockModel', 'GridCardItemModel']);
 const UI_FIELD_MENU_FORM_OWNER_USES = new Set([
@@ -5588,6 +5598,15 @@ export class FlowSurfacesService {
       fieldPath: resolvedField.fieldPath,
       associationPathName: resolvedField.associationPathName,
     });
+    const titleFieldSyncDecision = await this.resolveTitleFieldSyncDecision({
+      wrapperUse: effectiveWrapperUse,
+      dataSourceKey: resolvedField.dataSourceKey,
+      collectionName: resolvedField.collectionName,
+      fieldPath: resolvedField.fieldPath,
+      associationPathName: resolvedField.associationPathName,
+      bindingChange: true,
+      hasExistingTitleField: false,
+    });
     const preferredCapabilityField = this.resolvePreferredFieldForCapability({
       containerUse: container.ownerUse,
       dataSourceKey: resolvedField.dataSourceKey,
@@ -5661,6 +5680,14 @@ export class FlowSurfacesService {
       boundFieldCapability.fieldUse,
       capabilityField,
     );
+    const defaultTitleField =
+      titleFieldSyncDecision.titleField ??
+      normalizedFieldBinding.defaultTitleField ??
+      fieldMenuCandidate?.defaultTitleField;
+    const wrapperShouldPersistTitleField =
+      !_.isUndefined(defaultTitleField) &&
+      TITLE_FIELD_SUPPORTED_WRAPPER_USES.has(boundFieldCapability.wrapperUse || '');
+    const fieldShouldPersistTitleField = !_.isUndefined(defaultTitleField);
 
     const tree = buildFieldTree({
       wrapperUse: boundFieldCapability.wrapperUse,
@@ -5673,17 +5700,13 @@ export class FlowSurfacesService {
       wrapperProps: _.merge(
         {},
         defaultFieldState.wrapperProps || {},
-        !_.isUndefined(normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField)
-          ? { titleField: normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField }
-          : {},
+        wrapperShouldPersistTitleField ? { titleField: defaultTitleField } : {},
         values.wrapperProps || {},
       ),
       fieldProps: _.merge(
         {},
         defaultFieldState.fieldProps || {},
-        !_.isUndefined(normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField)
-          ? { titleField: normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField }
-          : {},
+        fieldShouldPersistTitleField ? { titleField: defaultTitleField } : {},
         values.fieldProps || {},
       ),
     });
@@ -9393,16 +9416,20 @@ export class FlowSurfacesService {
     const canSyncTitleField = TITLE_FIELD_SUPPORTED_WRAPPER_USES.has(current?.use || '');
     const hasExistingTitleField =
       !_.isUndefined(current?.props?.titleField) || !_.isUndefined(innerField?.props?.titleField);
-    const shouldSyncTitleField =
-      (canSyncTitleField && hasOwnDefined(wrapperChanges, 'titleField')) ||
-      (AUTO_TITLE_FIELD_BINDING_WRAPPER_USES.has(current?.use || '') &&
-        bindingChange &&
-        (!_.isUndefined(normalizedBinding?.defaultTitleField) || hasExistingTitleField));
-    const syncedTitleField = shouldSyncTitleField
-      ? hasOwnDefined(wrapperChanges, 'titleField')
-        ? wrapperChanges.titleField
-        : normalizedBinding?.defaultTitleField ?? null
-      : undefined;
+    const titleFieldSyncDecision = await this.resolveTitleFieldSyncDecision({
+      wrapperUse: current?.use,
+      dataSourceKey: currentFieldInit.dataSourceKey,
+      collectionName: currentFieldInit.collectionName,
+      fieldPath: hasOwnDefined(wrapperChanges, 'fieldPath') ? wrapperChanges.fieldPath : currentFieldInit.fieldPath,
+      associationPathName: hasOwnDefined(wrapperChanges, 'associationPathName')
+        ? wrapperChanges.associationPathName
+        : currentFieldInit.associationPathName,
+      ...(hasOwnDefined(wrapperChanges, 'titleField') ? { explicitTitleField: wrapperChanges.titleField } : {}),
+      bindingChange,
+      hasExistingTitleField,
+    });
+    const shouldSyncTitleField = titleFieldSyncDecision.shouldSync;
+    const syncedTitleField = titleFieldSyncDecision.titleField;
 
     if (Object.keys(wrapperChanges).length) {
       await this.updateSettings(
@@ -9586,16 +9613,20 @@ export class FlowSurfacesService {
     const canSyncWrapperTitleField = TITLE_FIELD_SUPPORTED_WRAPPER_USES.has(parentWrapper?.use || '');
     const hasExistingTitleField =
       !_.isUndefined(parentWrapper?.props?.titleField) || !_.isUndefined(current?.props?.titleField);
-    const shouldSyncTitleField =
-      hasOwnDefined(changes, 'titleField') ||
-      (AUTO_TITLE_FIELD_BINDING_WRAPPER_USES.has(parentWrapper?.use || '') &&
-        bindingChange &&
-        (!_.isUndefined(normalizedBinding?.defaultTitleField) || hasExistingTitleField));
-    const syncedTitleField = shouldSyncTitleField
-      ? hasOwnDefined(changes, 'titleField')
-        ? changes.titleField
-        : normalizedBinding?.defaultTitleField ?? null
-      : undefined;
+    const titleFieldSyncDecision = await this.resolveTitleFieldSyncDecision({
+      wrapperUse: parentWrapper?.use,
+      dataSourceKey: currentFieldInit.dataSourceKey,
+      collectionName: currentFieldInit.collectionName,
+      fieldPath: hasOwnDefined(changes, 'fieldPath') ? changes.fieldPath : currentFieldInit.fieldPath,
+      associationPathName: hasOwnDefined(changes, 'associationPathName')
+        ? changes.associationPathName
+        : currentFieldInit.associationPathName,
+      ...(hasOwnDefined(changes, 'titleField') ? { explicitTitleField: changes.titleField } : {}),
+      bindingChange,
+      hasExistingTitleField,
+    });
+    const shouldSyncTitleField = titleFieldSyncDecision.shouldSync;
+    const syncedTitleField = titleFieldSyncDecision.titleField;
 
     if (parentWrapper?.uid && canSyncWrapperTitleField && shouldSyncTitleField) {
       await this.updateSettings(
@@ -11088,10 +11119,141 @@ export class FlowSurfacesService {
   }
 
   private getAssociationDefaultTitleFieldName(field: any, dataSourceKey: string) {
-    const targetCollection = resolveFieldTargetCollection(field, dataSourceKey, (resolvedDsKey, targetCollectionName) =>
+    const resolved = resolveAssociationSafeTitleField(field, dataSourceKey, (resolvedDsKey, targetCollectionName) =>
       this.getCollection(resolvedDsKey, targetCollectionName),
     );
-    return getCollectionTitleFieldName(targetCollection);
+    return resolved?.fieldName;
+  }
+
+  private getAssociationTitleFieldTargetCollection(field: any, dataSourceKey: string) {
+    return resolveAssociationTitleFieldTargetCollection(field, dataSourceKey, (resolvedDsKey, targetCollectionName) =>
+      this.getCollection(resolvedDsKey, targetCollectionName),
+    );
+  }
+
+  private buildAssociationTitleFieldUnavailableMessage(input: {
+    dataSourceKey: string;
+    collectionName: string;
+    fieldPath: string;
+    associationPathName?: string;
+    targetCollection?: any;
+  }) {
+    const normalizedFieldPath = normalizeFieldPath(input.fieldPath, input.associationPathName);
+    const targetCollectionName = getCollectionName(input.targetCollection) || 'unknown';
+    return `flowSurfaces association field '${input.collectionName}.${normalizedFieldPath}' target collection '${targetCollectionName}' has no usable titleField`;
+  }
+
+  private async resolveTitleFieldSyncDecision(input: {
+    wrapperUse?: string;
+    dataSourceKey: string;
+    collectionName: string;
+    fieldPath: string;
+    associationPathName?: string;
+    explicitTitleField?: any;
+    bindingChange?: boolean;
+    hasExistingTitleField?: boolean;
+  }) {
+    const wrapperUse = String(input.wrapperUse || '').trim();
+    const hasExplicitTitleField = Object.prototype.hasOwnProperty.call(input, 'explicitTitleField');
+    const shouldAutoSyncOnBindingChange = AUTO_TITLE_FIELD_BINDING_WRAPPER_USES.has(wrapperUse);
+
+    if (!hasExplicitTitleField && !input.bindingChange) {
+      return {
+        shouldSync: false,
+        titleField: undefined,
+      };
+    }
+
+    const resolvedField = await this.resolveFieldDefinition({
+      dataSourceKey: input.dataSourceKey,
+      collectionName: input.collectionName,
+      fieldPath: input.fieldPath,
+      associationPathName: input.associationPathName,
+    });
+    const isAssociation = isAssociationField(resolvedField.field);
+
+    if (hasExplicitTitleField) {
+      if (!isAssociation) {
+        throwBadRequest(
+          `flowSurfaces field '${input.collectionName}.${normalizeFieldPath(
+            input.fieldPath,
+            input.associationPathName,
+          )}' titleField is only supported for association fields`,
+        );
+      }
+
+      const normalizedExplicitTitleField =
+        typeof input.explicitTitleField === 'string'
+          ? input.explicitTitleField.trim()
+          : String(input.explicitTitleField || '').trim();
+      if (!normalizedExplicitTitleField) {
+        throwBadRequest('flowSurfaces association titleField must be a non-empty string');
+      }
+
+      const targetCollection = this.getAssociationTitleFieldTargetCollection(
+        resolvedField.field,
+        resolvedField.dataSourceKey,
+      );
+      if (!targetCollection) {
+        throwBadRequest(
+          `flowSurfaces association field '${input.collectionName}.${normalizeFieldPath(
+            input.fieldPath,
+            input.associationPathName,
+          )}' target collection is not available`,
+        );
+      }
+
+      assertCollectionTitleFieldExists(targetCollection, normalizedExplicitTitleField);
+      return {
+        shouldSync: true,
+        titleField: normalizedExplicitTitleField,
+      };
+    }
+
+    if (!shouldAutoSyncOnBindingChange || !input.bindingChange) {
+      return {
+        shouldSync: false,
+        titleField: undefined,
+      };
+    }
+
+    if (!isAssociation) {
+      return input.hasExistingTitleField
+        ? {
+            shouldSync: true,
+            titleField: null,
+          }
+        : {
+            shouldSync: false,
+            titleField: undefined,
+          };
+    }
+
+    const resolvedTitleField = resolveAssociationSafeTitleField(
+      resolvedField.field,
+      resolvedField.dataSourceKey,
+      (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
+    );
+    if (!resolvedTitleField?.fieldName) {
+      const targetCollection = this.getAssociationTitleFieldTargetCollection(
+        resolvedField.field,
+        resolvedField.dataSourceKey,
+      );
+      throwBadRequest(
+        this.buildAssociationTitleFieldUnavailableMessage({
+          dataSourceKey: resolvedField.dataSourceKey,
+          collectionName: input.collectionName,
+          fieldPath: input.fieldPath,
+          associationPathName: input.associationPathName,
+          targetCollection,
+        }),
+      );
+    }
+
+    return {
+      shouldSync: true,
+      titleField: resolvedTitleField.fieldName,
+    };
   }
 
   private resolvePreferredFieldForCapability(input: {
