@@ -195,7 +195,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.refs.$ref).toBe(
       '#/components/schemas/FlowSurfaceRefsMap',
     );
-    expect(schemas.FlowSurfaceValidatePlanRequest.required).toEqual(['plan']);
+    expect(schemas.FlowSurfacePlanRequestBase.required).toEqual(['plan']);
     expect(schemas.FlowSurfacePlanSelector.oneOf).toEqual(
       expect.arrayContaining([
         { $ref: '#/components/schemas/FlowSurfacePlanSelectorByRef' },
@@ -206,9 +206,30 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceValidatePlanResponse.properties.compiledSteps.items.$ref).toBe(
       '#/components/schemas/FlowSurfacePlanCompiledStep',
     );
+    expect(schemas.FlowSurfaceValidatePlanRequest.properties).toBeUndefined();
+    expect(schemas.FlowSurfaceValidatePlanRequest.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfacePlanRequestBase' },
+      { $ref: '#/components/schemas/FlowSurfaceValidatePlanRequestExtension' },
+    ]);
+    expect(schemas.FlowSurfaceValidatePlanRequestExtension.properties.validation.$ref).toBe(
+      '#/components/schemas/FlowSurfaceValidatePlanValidationRequest',
+    );
+    expect(schemas.FlowSurfaceValidatePlanValidationRequest.properties.collectFieldIssues.type).toBe('boolean');
+    expect(schemas.FlowSurfaceValidatePlanValidationRequest.properties.collectFieldIssues.description).toContain(
+      'same write permission as executePlan',
+    );
+    expect(schemas.FlowSurfaceValidatePlanResponse.properties.validation.$ref).toBe(
+      '#/components/schemas/FlowSurfaceValidatePlanValidationResult',
+    );
+    expect(schemas.FlowSurfaceValidatePlanValidationResult.properties.fieldIssues.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceValidatePlanFieldIssue',
+    );
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.results.items.$ref).toBe(
       '#/components/schemas/FlowSurfacePlanResultItem',
     );
+    expect(schemas.FlowSurfaceExecutePlanRequest.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfacePlanRequestBase' },
+    ]);
     expect(schemas.FlowSurfacePersistedRefResult.properties.skipped.enum).toEqual(['not_found']);
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.fingerprintAfter).toBeUndefined();
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.surfaceExistsAfterExecute.type).toBe('boolean');
@@ -220,10 +241,12 @@ describe('flowSurfaces swagger', () => {
     expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
     const validateRequest =
       swaggerDocument.paths['/flowSurfaces:validatePlan'].post.requestBody.content['application/json'];
+    expect(validateRequest.example?.validation?.collectFieldIssues).toBe(true);
     expect(validateRequest.example?.plan?.steps?.[0]?.action).toBe('configure');
     const executePath = swaggerDocument.paths['/flowSurfaces:executePlan'].post;
     const executeRequest = executePath.requestBody.content['application/json'];
     expect(executeRequest.example?.plan?.steps?.[0]?.action).toBe('createMenu');
+    expect(executeRequest.example?.validation).toBeUndefined();
     expect(executeRequest.example?.plan?.steps?.[1]?.values?.parentMenuRouteId).toEqual({
       step: 'group',
       path: 'routeId',
@@ -231,6 +254,13 @@ describe('flowSurfaces swagger', () => {
     expect(executeRequest.example?.plan?.steps?.[2]?.values?.menuRouteId).toEqual({
       step: 'menu',
       path: 'routeId',
+    });
+    expect(executeRequest.example?.plan?.steps?.[3]?.selectors?.target).toEqual({
+      step: 'page',
+      path: 'tabSchemaUid',
+    });
+    expect(executeRequest.example?.plan?.steps?.[4]?.selectors?.target).toEqual({
+      ref: 'viewUser.popupGrid',
     });
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
@@ -346,7 +376,7 @@ describe('flowSurfaces swagger', () => {
       '`select / subForm / bulkEditForm` scene',
     );
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
-    expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.key).toBe('filter');
+    expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.ref).toBe('filter');
     const filterTableBlock = composeRequest.examples.filterTable.value.blocks[1];
     expect(filterTableBlock.fields).toEqual(
       expect.arrayContaining([
@@ -397,8 +427,12 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
     );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.fieldsTemplate).toBeUndefined();
+    expect(schemas.FlowSurfaceComposeBlockSpec.required).toEqual(['ref']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[2].properties.type.enum).toEqual(['jsColumn', 'jsItem']);
+    expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeRecordActionSpec.oneOf[1].properties.ref.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
@@ -433,8 +467,22 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionResult',
     );
+    expect(schemas.FlowSurfaceComposeResult.properties.blocks.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeBlockResult',
+    );
+    expect(schemas.FlowSurfaceComposeResult.properties.blocksByKey).toBeUndefined();
+    expect(schemas.FlowSurfaceComposeResult.properties.keyToUid).toBeUndefined();
+    expect(schemas.FlowSurfaceComposeBlockResult.properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeFieldResult.properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeActionResult.properties.ref.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:validatePlan'].post.description).toContain(
+      'same write permission as `executePlan`',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      'Blocks, fields, and actions can declare stable `ref` values',
     );
     expect(schemas.FlowSurfaceComposeActionResult.properties.popupGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.assignFormUid.type).toBe('string');

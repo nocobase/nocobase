@@ -24,18 +24,19 @@ export type FlowSurfaceComposeNormalizedResource =
   | undefined;
 
 export type FlowSurfaceComposeNormalizedFieldSpec = {
-  key: string;
+  index?: number;
+  ref: string;
   fieldPath?: string;
   associationPathName?: string;
   renderer?: string;
   type?: string;
-  target?: string;
+  target?: string | Record<string, unknown>;
   settings?: FlowSurfaceComposeObject;
   popup?: FlowSurfaceComposeObject;
 };
 
 export type FlowSurfaceComposeNormalizedActionSpec = {
-  key: string;
+  ref: string;
   type: string;
   settings?: FlowSurfaceComposeObject;
   popup?: FlowSurfaceComposeObject;
@@ -43,7 +44,7 @@ export type FlowSurfaceComposeNormalizedActionSpec = {
 
 export type FlowSurfaceComposeNormalizedBlockSpec = {
   index?: number;
-  key: string;
+  ref: string;
   type?: string;
   catalogItem?: FlowSurfaceComposeObject | null;
   resource?: FlowSurfaceComposeNormalizedResource;
@@ -65,26 +66,26 @@ export type FlowSurfaceComposeBlockCreatePayload = {
 };
 
 export type FlowSurfaceCompiledComposeBlockTask = {
-  key: string;
+  ref: string;
   spec: FlowSurfaceComposeNormalizedBlockSpec;
   payload: FlowSurfaceComposeBlockCreatePayload;
 };
 
 export type FlowSurfaceCompiledComposeFieldTask = {
-  blockKey: string;
+  blockRef: string;
   spec: FlowSurfaceComposeNormalizedFieldSpec;
   containerSource: 'block' | 'item';
   payload: FlowSurfaceComposeObject;
 };
 
 export type FlowSurfaceCompiledComposeActionTask = {
-  blockKey: string;
+  blockRef: string;
   spec: FlowSurfaceComposeNormalizedActionSpec;
   payload: FlowSurfaceComposeObject;
 };
 
 export type FlowSurfaceCompiledComposeRecordActionTask = {
-  blockKey: string;
+  blockRef: string;
   spec: FlowSurfaceComposeNormalizedActionSpec;
   payload: FlowSurfaceComposeObject;
 };
@@ -147,7 +148,7 @@ function compileComposeBlockTasks(
   normalizedBlocks: FlowSurfaceComposeNormalizedBlockSpec[],
 ): FlowSurfaceCompiledComposeBlockTask[] {
   return normalizedBlocks.map((blockSpec) => ({
-    key: blockSpec.key,
+    ref: blockSpec.ref,
     spec: blockSpec,
     payload: buildComposeBlockCreatePayload(gridUid, blockSpec),
   }));
@@ -158,7 +159,7 @@ function compileComposeFieldTasks(
 ): FlowSurfaceCompiledComposeFieldTask[] {
   return normalizedBlocks.flatMap((blockSpec) =>
     blockSpec.fields.map((fieldSpec) => ({
-      blockKey: blockSpec.key,
+      blockRef: blockSpec.ref,
       spec: fieldSpec,
       containerSource: resolveComposeFieldContainerSource(blockSpec),
       payload: buildComposeFieldCreatePayload(fieldSpec),
@@ -171,7 +172,7 @@ function compileComposeActionTasks(
 ): FlowSurfaceCompiledComposeActionTask[] {
   return normalizedBlocks.flatMap((blockSpec) =>
     blockSpec.actions.map((actionSpec) => ({
-      blockKey: blockSpec.key,
+      blockRef: blockSpec.ref,
       spec: actionSpec,
       payload: buildComposeActionCreatePayload(actionSpec),
     })),
@@ -183,7 +184,7 @@ function compileComposeRecordActionTasks(
 ): FlowSurfaceCompiledComposeRecordActionTask[] {
   return normalizedBlocks.flatMap((blockSpec) =>
     blockSpec.recordActions.map((actionSpec) => ({
-      blockKey: blockSpec.key,
+      blockRef: blockSpec.ref,
       spec: actionSpec,
       payload: buildComposeRecordActionCreatePayload(actionSpec),
     })),
@@ -198,17 +199,17 @@ export function resolveComposeFieldContainerSource(
 
 export function resolveComposeTargetRef(
   targetRef: string,
-  keyRefs: Record<string, FlowSurfaceComposeTargetRef | undefined>,
+  refRefs: Record<string, FlowSurfaceComposeTargetRef | undefined>,
   kind: 'field' | 'layout',
 ) {
   const ref = String(targetRef || '').trim();
   if (!ref) {
     throwBadRequest(`flowSurfaces compose ${kind} target reference cannot be empty`);
   }
-  if (!keyRefs[ref]?.uid) {
+  if (!refRefs[ref]?.uid) {
     throwBadRequest(`flowSurfaces compose ${kind} target '${ref}' was not created in the current compose call`);
   }
-  return keyRefs[ref]?.uid as string;
+  return refRefs[ref]?.uid as string;
 }
 
 function buildComposeBlockCreatePayload(
@@ -219,6 +220,7 @@ function buildComposeBlockCreatePayload(
     target: {
       uid: gridUid,
     },
+    ...(blockSpec.ref ? { ref: blockSpec.ref } : {}),
     ...(blockSpec.type ? { type: blockSpec.type } : {}),
     ...(blockSpec.resource?.kind === 'semantic' ? { resource: blockSpec.resource.value } : {}),
     ...(blockSpec.resource?.kind === 'raw' ? { resourceInit: blockSpec.resource.value } : {}),
@@ -228,6 +230,7 @@ function buildComposeBlockCreatePayload(
 
 function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedFieldSpec): FlowSurfaceComposeObject {
   return {
+    ...(fieldSpec.ref ? { ref: fieldSpec.ref } : {}),
     ...(fieldSpec.fieldPath ? { fieldPath: fieldSpec.fieldPath } : {}),
     ...(fieldSpec.associationPathName ? { associationPathName: fieldSpec.associationPathName } : {}),
     ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
@@ -238,6 +241,7 @@ function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedF
 
 function buildComposeActionCreatePayload(actionSpec: FlowSurfaceComposeNormalizedActionSpec): FlowSurfaceComposeObject {
   return {
+    ...(actionSpec.ref ? { ref: actionSpec.ref } : {}),
     type: actionSpec.type,
   };
 }
@@ -246,6 +250,7 @@ function buildComposeRecordActionCreatePayload(
   actionSpec: FlowSurfaceComposeNormalizedActionSpec,
 ): FlowSurfaceComposeObject {
   return {
+    ...(actionSpec.ref ? { ref: actionSpec.ref } : {}),
     type: actionSpec.type,
   };
 }

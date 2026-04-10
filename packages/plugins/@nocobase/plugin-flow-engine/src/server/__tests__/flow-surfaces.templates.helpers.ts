@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Database } from '@nocobase/database';
 import { expect } from 'vitest';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
 export function getData(response: any) {
   expect(response.status).toBe(200);
@@ -106,7 +108,7 @@ export function getPopupOpenView(tree: any) {
   return tree?.stepParams?.popupSettings?.openView || tree?.stepParams?.selectExitRecordSettings?.openView;
 }
 
-export async function setupFixtureCollections(rootAgent: any) {
+export async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
       name: 'employees',
@@ -134,5 +136,10 @@ export async function setupFixtureCollections(rootAgent: any) {
       foreignKey: 'departmentId',
       interface: 'm2o',
     },
+  });
+
+  await waitForFixtureCollectionsReady(db, {
+    departments: ['title'],
+    employees: ['nickname', 'status', 'departmentId'],
   });
 }

@@ -13,11 +13,9 @@ import {
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
-  expectStructuredError,
   getData,
   getRouteBackedTabs,
   getSurface,
-  readErrorItem,
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
@@ -26,6 +24,24 @@ describe('flowSurfaces plan contract', () => {
   let context: FlowSurfacesContractContext;
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
+
+  function getComposeBlock(result: Record<string, any>, ref: string) {
+    const matched = _.castArray(result?.blocks || []).find((item: any) => item?.ref === ref);
+    expect(matched).toBeTruthy();
+    return matched;
+  }
+
+  function getComposeField(block: Record<string, any>, ref: string) {
+    const matched = _.castArray(block?.fields || []).find((item: any) => item?.ref === ref);
+    expect(matched).toBeTruthy();
+    return matched;
+  }
+
+  function getComposeAction(block: Record<string, any>, scope: 'actions' | 'recordActions', ref: string) {
+    const matched = _.castArray(block?.[scope] || []).find((item: any) => item?.ref === ref);
+    expect(matched).toBeTruthy();
+    return matched;
+  }
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
@@ -192,13 +208,13 @@ describe('flowSurfaces plan contract', () => {
                 mode: 'append',
                 blocks: [
                   {
-                    key: 'employeesTable',
+                    ref: 'employeesTable',
                     type: 'table',
                     resource: {
                       dataSourceKey: 'main',
                       collectionName: 'employees',
                     },
-                    fields: ['nickname'],
+                    fields: [{ ref: 'employeesTable.nickname', fieldPath: 'nickname' }],
                   },
                 ],
               },
@@ -229,15 +245,15 @@ describe('flowSurfaces plan contract', () => {
           id: 'composeTable',
           action: 'compose',
           result: expect.objectContaining({
-            keyToUid: expect.objectContaining({
-              employeesTable: expect.any(String),
-            }),
+            blocks: expect.arrayContaining([
+              expect.objectContaining({ ref: 'employeesTable', uid: expect.any(String) }),
+            ]),
           }),
         }),
       ]),
     );
 
-    const tableUid = executeData.results[0]?.result?.keyToUid?.employeesTable;
+    const tableUid = getComposeBlock(executeData.results[0]?.result, 'employeesTable').uid;
     const tableSurface = await getSurface(rootAgent, {
       uid: tableUid,
     });
@@ -245,6 +261,546 @@ describe('flowSurfaces plan contract', () => {
     expect(tableSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
+    });
+  });
+
+  it('should aggregate top-level addField issues during validatePlan dry-run and rollback the preview writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validate plan addField preview page',
+      tabTitle: 'Validate plan addField preview tab',
+    });
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'addRolesDetails',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                type: 'details',
+                resourceInit: {
+                  dataSourceKey: 'main',
+                  collectionName: 'roles',
+                },
+              },
+            },
+            {
+              id: 'addDefault',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addRolesDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                fieldPath: 'default',
+              },
+            },
+            {
+              id: 'addHidden',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addRolesDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                fieldPath: 'hidden',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.validation).toEqual(
+      expect.objectContaining({
+        ok: false,
+        fieldIssues: expect.arrayContaining([
+          expect.objectContaining({
+            stepId: 'addDefault',
+            action: 'addField',
+            fieldPath: 'default',
+            blocking: false,
+          }),
+          expect.objectContaining({
+            stepId: 'addHidden',
+            action: 'addField',
+            fieldPath: 'hidden',
+            blocking: false,
+          }),
+        ]),
+      }),
+    );
+    expect(validateData.validation.fieldIssues).toHaveLength(2);
+    expect(validateData.validation.fieldIssues[0].message).toContain('has no interface');
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
+    expect(gridItems).toHaveLength(0);
+  });
+
+  it('should aggregate compose field issues and report blocked downstream refs without mutating the surface', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validate plan compose preview page',
+      tabTitle: 'Validate plan compose preview tab',
+    });
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'composeRoles',
+              action: 'compose',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'rolesDetails',
+                    type: 'details',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'roles',
+                    },
+                    fields: [
+                      { ref: 'rolesDetails.title', fieldPath: 'title' },
+                      { ref: 'rolesDetails.hidden', fieldPath: 'hidden' },
+                      { ref: 'rolesDetails.default', fieldPath: 'default' },
+                    ],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'configureMissingField',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'rolesDetails.hidden',
+                },
+              },
+              values: {
+                changes: {
+                  label: 'Blocked label',
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.validation).toEqual(
+      expect.objectContaining({
+        ok: false,
+      }),
+    );
+    expect(validateData.validation.fieldIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          stepId: 'composeRoles',
+          action: 'compose',
+          blockRef: 'rolesDetails',
+          fieldRef: 'rolesDetails.hidden',
+          fieldPath: 'hidden',
+          blocking: false,
+        }),
+        expect.objectContaining({
+          stepId: 'composeRoles',
+          action: 'compose',
+          blockRef: 'rolesDetails',
+          fieldRef: 'rolesDetails.default',
+          fieldPath: 'default',
+          blocking: false,
+        }),
+        expect.objectContaining({
+          stepId: 'configureMissingField',
+          action: 'configure',
+          blocking: true,
+          code: 'FLOW_SURFACE_VALIDATE_PLAN_BLOCKED_BY_FIELD_ISSUE',
+        }),
+      ]),
+    );
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
+    expect(gridItems).toHaveLength(0);
+  });
+
+  it('should execute a one-shot bootstrap plan for nested popup content by reusing created refs', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        plan: {
+          steps: [
+            {
+              id: 'group',
+              action: 'createMenu',
+              values: {
+                title: 'One-shot workspace',
+                type: 'group',
+              },
+            },
+            {
+              id: 'menu',
+              action: 'createMenu',
+              values: {
+                title: 'One-shot users',
+                type: 'item',
+                parentMenuRouteId: {
+                  step: 'group',
+                  path: 'routeId',
+                },
+              },
+            },
+            {
+              id: 'page',
+              action: 'createPage',
+              values: {
+                menuRouteId: {
+                  step: 'menu',
+                  path: 'routeId',
+                },
+                ref: 'usersPage',
+                title: 'One-shot users page',
+                tabTitle: 'Users',
+              },
+            },
+            {
+              id: 'composeMain',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'usersPage.tab',
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'usersTable',
+                    type: 'table',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'users',
+                    },
+                    fields: [
+                      { ref: 'usersTable.username', fieldPath: 'username' },
+                      { ref: 'usersTable.nickname', fieldPath: 'nickname' },
+                      { ref: 'usersTable.rolesTitle', fieldPath: 'roles.title' },
+                    ],
+                    recordActions: [{ ref: 'usersTable.viewUser', type: 'view' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'userPopupContent',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'usersTable.viewUser.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'userDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [
+                      { ref: 'userDetails.username', fieldPath: 'username' },
+                      { ref: 'userDetails.nickname', fieldPath: 'nickname' },
+                    ],
+                    recordActions: [{ ref: 'userDetails.editUser', type: 'edit' }],
+                  },
+                  {
+                    ref: 'userRolesTable',
+                    type: 'table',
+                    resource: {
+                      binding: 'associatedRecords',
+                      associationField: 'roles',
+                    },
+                    fields: [
+                      { ref: 'userRolesTable.name', fieldPath: 'name' },
+                      { ref: 'userRolesTable.title', fieldPath: 'title' },
+                    ],
+                    recordActions: [{ ref: 'userRolesTable.viewRole', type: 'view' }],
+                  },
+                ],
+                layout: {
+                  rows: [
+                    [
+                      { ref: 'userDetails', span: 12 },
+                      { ref: 'userRolesTable', span: 12 },
+                    ],
+                  ],
+                },
+              },
+            },
+            {
+              id: 'userEditPopupContent',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'userDetails.editUser.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'userEditForm',
+                    type: 'editForm',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [
+                      { ref: 'userEditForm.username', fieldPath: 'username' },
+                      { ref: 'userEditForm.nickname', fieldPath: 'nickname' },
+                    ],
+                    actions: [{ ref: 'userEditForm.submit', type: 'submit' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'rolePopupContent',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'userRolesTable.viewRole.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'roleDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [
+                      { ref: 'roleDetails.name', fieldPath: 'name' },
+                      { ref: 'roleDetails.title', fieldPath: 'title' },
+                    ],
+                    recordActions: [{ ref: 'roleDetails.editRole', type: 'edit' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'roleEditPopupContent',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'roleDetails.editRole.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'roleEditForm',
+                    type: 'editForm',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [
+                      { ref: 'roleEditForm.name', fieldPath: 'name' },
+                      { ref: 'roleEditForm.title', fieldPath: 'title' },
+                    ],
+                    actions: [{ ref: 'roleEditForm.submit', type: 'submit' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+
+    const executeData = getData(executeRes);
+    expect(executeData.surfaceExistsAfterExecute).toBe(true);
+    expect(executeData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'userPopupContent',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'usersTable.viewUser.popupGrid',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'userEditPopupContent',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'userDetails.editUser.popupGrid',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'rolePopupContent',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'userRolesTable.viewRole.popupGrid',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'roleEditPopupContent',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'roleDetails.editRole.popupGrid',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const resultById = Object.fromEntries(
+      executeData.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
+    );
+    const mainUsersTable = getComposeBlock(resultById.composeMain, 'usersTable');
+    const mainViewUser = getComposeAction(mainUsersTable, 'recordActions', 'usersTable.viewUser');
+    expect(mainViewUser.popupGridUid).toBeTruthy();
+
+    const userDetails = getComposeBlock(resultById.userPopupContent, 'userDetails');
+    const userEditAction = getComposeAction(userDetails, 'recordActions', 'userDetails.editUser');
+    const userRolesTable = getComposeBlock(resultById.userPopupContent, 'userRolesTable');
+    const viewRoleAction = getComposeAction(userRolesTable, 'recordActions', 'userRolesTable.viewRole');
+    expect(userDetails.uid).toBeTruthy();
+    expect(userRolesTable.uid).toBeTruthy();
+    expect(resultById.userPopupContent.layout.sizes.row1).toEqual([12, 12]);
+    expect(userEditAction.popupGridUid).toBeTruthy();
+    expect(viewRoleAction.popupGridUid).toBeTruthy();
+
+    const userEditForm = getComposeBlock(resultById.userEditPopupContent, 'userEditForm');
+    const userEditSubmit = getComposeAction(userEditForm, 'actions', 'userEditForm.submit');
+    const roleDetails = getComposeBlock(resultById.rolePopupContent, 'roleDetails');
+    const roleEditAction = getComposeAction(roleDetails, 'recordActions', 'roleDetails.editRole');
+    const roleEditForm = getComposeBlock(resultById.roleEditPopupContent, 'roleEditForm');
+    const roleEditSubmit = getComposeAction(roleEditForm, 'actions', 'roleEditForm.submit');
+    expect(userEditForm.uid).toBeTruthy();
+    expect(roleDetails.uid).toBeTruthy();
+    expect(roleEditForm.uid).toBeTruthy();
+    expect(userEditSubmit.uid).toBeTruthy();
+    expect(roleEditAction.popupGridUid).toBeTruthy();
+    expect(roleEditSubmit.uid).toBeTruthy();
+
+    const mainTableSurface = await getSurface(rootAgent, {
+      uid: mainUsersTable.uid,
+    });
+    expect(mainTableSurface.tree.use).toBe('TableBlockModel');
+    expect(getComposeField(mainUsersTable, 'usersTable.rolesTitle').fieldPath).toBe('roles.title');
+
+    const userDetailsSurface = await getSurface(rootAgent, {
+      uid: userDetails.uid,
+    });
+    expect(userDetailsSurface.tree.use).toBe('DetailsBlockModel');
+
+    const userRolesTableSurface = await getSurface(rootAgent, {
+      uid: userRolesTable.uid,
+    });
+    expect(userRolesTableSurface.tree.use).toBe('TableBlockModel');
+    expect(userRolesTableSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+
+    const userEditFormSurface = await getSurface(rootAgent, {
+      uid: userEditForm.uid,
+    });
+    expect(userEditFormSurface.tree.use).toBe('EditFormModel');
+    expect(userEditFormSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+
+    const roleDetailsSurface = await getSurface(rootAgent, {
+      uid: roleDetails.uid,
+    });
+    expect(roleDetailsSurface.tree.use).toBe('DetailsBlockModel');
+    expect(roleDetailsSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const roleEditFormSurface = await getSurface(rootAgent, {
+      uid: roleEditForm.uid,
+    });
+    expect(roleEditFormSurface.tree.use).toBe('EditFormModel');
+    expect(roleEditFormSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
   });
 
@@ -508,7 +1064,7 @@ describe('flowSurfaces plan contract', () => {
     expect(describedAgain.refs.employeesTable.uid).toBe(table.uid);
   });
 
-  it('should reject reserved or duplicated bindRefs, reject route-backed refs, and report missing after-state when executePlan removes the surface', async () => {
+  it('should reject reserved or duplicated bindRefs, allow route-backed refs, and report missing after-state when executePlan removes the surface', async () => {
     const page = await createPage(rootAgent, {
       title: 'Ref guard page',
       tabTitle: 'Ref guard tab',
@@ -605,12 +1161,28 @@ describe('flowSurfaces plan contract', () => {
         },
       },
     });
-    expect(validateRouteBackedRefRes.status).toBe(400);
-    expectStructuredError(readErrorItem(validateRouteBackedRefRes), {
-      status: 400,
-      type: 'bad_request',
-    });
-    expect(readErrorItem(validateRouteBackedRefRes).code).toBe('FLOW_SURFACE_REF_NOT_PERSISTABLE');
+    expect(validateRouteBackedRefRes.status).toBe(200);
+    const validateRouteBackedData = getData(validateRouteBackedRefRes);
+    expect(validateRouteBackedData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'addTab',
+          payload: expect.objectContaining({
+            target: {
+              uid: page.pageUid,
+            },
+          }),
+          resolvedSelectors: {
+            target: {
+              ref: 'pageRoot',
+              source: 'request',
+              kind: 'page',
+              uid: page.pageUid,
+            },
+          },
+        }),
+      ]),
+    );
 
     const executeRouteBackedRefRes = await rootAgent.resource('flowSurfaces').executePlan({
       values: {
@@ -631,6 +1203,7 @@ describe('flowSurfaces plan contract', () => {
         plan: {
           steps: [
             {
+              id: 'addTabViaPageRef',
               action: 'addTab',
               selectors: {
                 target: {
@@ -645,12 +1218,26 @@ describe('flowSurfaces plan contract', () => {
         },
       },
     });
-    expect(executeRouteBackedRefRes.status).toBe(400);
-    expectStructuredError(readErrorItem(executeRouteBackedRefRes), {
-      status: 400,
-      type: 'bad_request',
+    expect(executeRouteBackedRefRes.status).toBe(200);
+    const executeRouteBackedData = getData(executeRouteBackedRefRes);
+    expect(executeRouteBackedData.persistedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'pageRoot',
+          uid: page.pageUid,
+          persisted: true,
+        }),
+      ]),
+    );
+    expect(executeRouteBackedData.refs.pageRoot.uid).toBe(page.pageUid);
+    const routeBackedResultById = Object.fromEntries(
+      executeRouteBackedData.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
+    );
+    expect(routeBackedResultById.addTabViaPageRef.pageUid).toBe(page.pageUid);
+    const updatedPageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
     });
-    expect(readErrorItem(executeRouteBackedRefRes).code).toBe('FLOW_SURFACE_REF_NOT_PERSISTABLE');
+    expect(getRouteBackedTabs(updatedPageSurface)).toHaveLength(2);
 
     const destroyPageRes = await rootAgent.resource('flowSurfaces').executePlan({
       values: {

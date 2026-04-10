@@ -10,6 +10,18 @@
 import { executePlan, validatePlan } from '../flow-surfaces/planning/runtime';
 
 describe('flowSurfaces bootstrap planning', () => {
+  function getComposeBlock(result: Record<string, any>, ref: string) {
+    const matched = (result?.blocks || []).find((item: any) => item?.ref === ref);
+    expect(matched).toBeTruthy();
+    return matched;
+  }
+
+  function getComposeAction(block: Record<string, any>, scope: 'actions' | 'recordActions', ref: string) {
+    const matched = (block?.[scope] || []).find((item: any) => item?.ref === ref);
+    expect(matched).toBeTruthy();
+    return matched;
+  }
+
   it('should validate bootstrap plan with createMenu/createPage and step refs in selectors and values', async () => {
     const harness = createPlanningHarness();
 
@@ -150,6 +162,173 @@ describe('flowSurfaces bootstrap planning', () => {
     });
   });
 
+  it('should resolve nested compose key-map refs across one bootstrap executePlan', async () => {
+    const harness = createPlanningHarness();
+
+    const data = await executePlan(
+      {
+        plan: {
+          steps: [
+            {
+              id: 'group',
+              action: 'createMenu',
+              values: {
+                title: 'Workspace',
+                type: 'group',
+              },
+            },
+            {
+              id: 'menu',
+              action: 'createMenu',
+              values: {
+                title: 'Users',
+                type: 'item',
+                parentMenuRouteId: {
+                  step: 'group',
+                  path: 'routeId',
+                },
+              },
+            },
+            {
+              id: 'page',
+              action: 'createPage',
+              values: {
+                menuRouteId: {
+                  step: 'menu',
+                  path: 'routeId',
+                },
+                ref: 'usersPage',
+                title: 'Users page',
+                tabTitle: 'Overview',
+              },
+            },
+            {
+              id: 'composeMain',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'usersPage.tab',
+                },
+              },
+              values: {
+                mode: 'append',
+                blocks: [
+                  {
+                    ref: 'usersTable',
+                    type: 'table',
+                    resource: {
+                      dataSourceKey: 'main',
+                      collectionName: 'users',
+                    },
+                    fields: [
+                      { ref: 'usersTable.username', fieldPath: 'username' },
+                      { ref: 'usersTable.nickname', fieldPath: 'nickname' },
+                    ],
+                    recordActions: [{ ref: 'usersTable.viewUser', type: 'view' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'composeUserPopup',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'usersTable.viewUser.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'userDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    recordActions: [{ ref: 'userDetails.editUser', type: 'edit' }],
+                  },
+                ],
+              },
+            },
+            {
+              id: 'composeEditPopup',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'userDetails.editUser.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'userEditForm',
+                    type: 'editForm',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [{ ref: 'userEditForm.username', fieldPath: 'username' }],
+                    actions: [{ ref: 'userEditForm.submit', type: 'submit' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      harness.deps,
+    );
+
+    expect(data.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'composeUserPopup',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'usersTable.viewUser.popupGrid',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          id: 'composeEditPopup',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'userDetails.editUser.popupGrid',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const resultById = Object.fromEntries(
+      data.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
+    );
+    const usersTable = getComposeBlock(resultById.composeMain, 'usersTable');
+    const viewUser = getComposeAction(usersTable, 'recordActions', 'usersTable.viewUser');
+    expect(viewUser.popupGridUid).toBeTruthy();
+    expect(resultById.composeUserPopup.target.uid).toBe(viewUser.popupGridUid);
+    const userDetails = getComposeBlock(resultById.composeUserPopup, 'userDetails');
+    const editUser = getComposeAction(userDetails, 'recordActions', 'userDetails.editUser');
+    expect(editUser.popupGridUid).toBeTruthy();
+    expect(resultById.composeEditPopup.target.uid).toBe(editUser.popupGridUid);
+    const userEditForm = getComposeBlock(resultById.composeEditPopup, 'userEditForm');
+    expect(getComposeAction(userEditForm, 'actions', 'userEditForm.submit').uid).toBeTruthy();
+    expect(data.target).toMatchObject({
+      locator: {
+        pageSchemaUid: resultById.page.pageSchemaUid,
+      },
+      uid: resultById.page.pageUid,
+      kind: 'page',
+    });
+  });
+
   it('should allow empty bindRefs and empty expectedFingerprint in bootstrap mode, but reject non-empty bindRefs', async () => {
     const harness = createPlanningHarness();
 
@@ -205,6 +384,37 @@ describe('flowSurfaces bootstrap planning', () => {
         harness.deps,
       ),
     ).rejects.toThrow('bindRefs require surface');
+  });
+
+  it('should keep validatePlan fail-fast shape by default and only call collect issues hook when opted in', async () => {
+    const harness = createPlanningHarness();
+    let collectCalls = 0;
+    harness.deps.collectValidatePlanIssues = async () => {
+      collectCalls += 1;
+      return {
+        ok: true,
+        fieldIssues: [],
+      };
+    };
+
+    const defaultData = await validatePlan(buildBootstrapPlanValues(), harness.deps);
+    expect(defaultData.validation).toBeUndefined();
+    expect(collectCalls).toBe(0);
+
+    const collectedData = await validatePlan(
+      {
+        ...buildBootstrapPlanValues(),
+        validation: {
+          collectFieldIssues: true,
+        },
+      },
+      harness.deps,
+    );
+    expect(collectCalls).toBe(1);
+    expect(collectedData.validation).toEqual({
+      ok: true,
+      fieldIssues: [],
+    });
   });
 
   it('should reject selector and value step refs that do not point to previous step ids', async () => {
@@ -372,6 +582,9 @@ function createPlanningHarness() {
     pageSeq: 1,
     tabSeq: 1,
     gridSeq: 1,
+    blockSeq: 1,
+    actionSeq: 1,
+    popupGridSeq: 1,
     tabNameSeq: 1,
     menusByRouteId: new Map<number, any>(),
     pagesBySchema: new Map<string, any>(),
@@ -582,6 +795,90 @@ function createPlanningHarness() {
     };
   };
 
+  const compose = (values: Record<string, any>) => {
+    const blocks = (values.blocks || []).map((block: any, blockIndex: number) => {
+      const fields = (block.fields || []).map((field: any, fieldIndex: number) => {
+        const normalized =
+          typeof field === 'string'
+            ? {
+                ref: field,
+                fieldPath: field,
+              }
+            : {
+                ref: field.ref || field.fieldPath || `field_${blockIndex + 1}_${fieldIndex + 1}`,
+                fieldPath: field.fieldPath,
+              };
+        const uid = `field_${state.blockSeq}_${fieldIndex + 1}`;
+        return {
+          ...normalized,
+          uid,
+          wrapperUid: `${uid}_wrapper`,
+          fieldUid: `${uid}_inner`,
+        };
+      });
+      const actions = (block.actions || []).map((action: any, actionIndex: number) => {
+        const normalized =
+          typeof action === 'string'
+            ? {
+                ref: action,
+                type: action,
+              }
+            : {
+                ref: action.ref || action.type || `action_${blockIndex + 1}_${actionIndex + 1}`,
+                type: action.type,
+              };
+        return {
+          ...normalized,
+          uid: `action_${state.actionSeq++}`,
+          popupGridUid: `popup_grid_${state.popupGridSeq++}`,
+        };
+      });
+      const recordActions = (block.recordActions || []).map((action: any, actionIndex: number) => {
+        const normalized =
+          typeof action === 'string'
+            ? {
+                ref: action,
+                type: action,
+              }
+            : {
+                ref: action.ref || action.type || `record_action_${blockIndex + 1}_${actionIndex + 1}`,
+                type: action.type,
+              };
+        return {
+          ...normalized,
+          uid: `record_action_${state.actionSeq++}`,
+          popupGridUid: `popup_grid_${state.popupGridSeq++}`,
+        };
+      });
+      const blockUid = `block_${state.blockSeq++}`;
+      const result = {
+        ref: block.ref,
+        type: block.type,
+        uid: blockUid,
+        fields,
+        actions,
+        recordActions,
+      };
+      return result;
+    });
+
+    return {
+      target: {
+        uid: values.target.uid,
+      },
+      mode: values.mode || 'append',
+      blocks,
+      ...(values.layout
+        ? {
+            layout: {
+              ok: true,
+              ...values.layout,
+            },
+          }
+        : {}),
+    };
+  };
+
   const deps: any = {
     normalizeGetTarget: (value: any) => value,
     resolveLocator: async (target: any) => {
@@ -653,6 +950,9 @@ function createPlanningHarness() {
     dispatchPlanOnlyAction: async (action: string, payload: Record<string, any>) => {
       if (action === 'configure') {
         return configure(payload);
+      }
+      if (action === 'compose') {
+        return compose(payload);
       }
       throw new Error(`unsupported plan-only action '${action}'`);
     },

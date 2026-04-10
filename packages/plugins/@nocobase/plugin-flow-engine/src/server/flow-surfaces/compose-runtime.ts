@@ -52,7 +52,7 @@ export type FlowSurfaceComposeRuntimeBlockState = {
 };
 
 export type FlowSurfaceComposeRuntimeState = {
-  keyRefs: Record<string, FlowSurfaceComposeTargetRef & Partial<FlowSurfaceComposeBlockResult>>;
+  refRefs: Record<string, FlowSurfaceComposeTargetRef & Partial<FlowSurfaceComposeBlockResult>>;
   blocks: FlowSurfaceComposeRuntimeBlockState[];
 };
 
@@ -61,9 +61,8 @@ export type FlowSurfaceComposeExecutionResult = {
     uid: string;
   };
   mode: FlowSurfaceCompiledComposePlan['mode'];
-  keyToUid: Record<string, string>;
   blocks: Array<{
-    key: string;
+    ref: string;
     type?: string;
     uid: string;
     gridUid?: string;
@@ -92,12 +91,18 @@ export type FlowSurfaceComposeRuntimeDeps = {
     payload: Record<string, unknown>,
     spec: FlowSurfaceComposeNormalizedFieldSpec,
     blockResult: FlowSurfaceComposeBlockResult,
-  ) => Promise<FlowSurfaceComposeFieldResult>;
+  ) => Promise<FlowSurfaceComposeFieldResult | null>;
   applyFieldSettings?: (
     actionName: string,
     result: FlowSurfaceComposeFieldResult,
     settings?: FlowSurfaceComposeObject,
   ) => Promise<void>;
+  onFieldError?: (input: {
+    error: unknown;
+    spec: FlowSurfaceComposeNormalizedFieldSpec;
+    blockSpec: FlowSurfaceComposeNormalizedBlockSpec;
+    blockResult: FlowSurfaceComposeBlockResult;
+  }) => Promise<'continue' | void> | 'continue' | void;
   createAction: (
     payload: Record<string, unknown>,
     spec: FlowSurfaceComposeNormalizedActionSpec,
@@ -112,7 +117,7 @@ export type FlowSurfaceComposeRuntimeDeps = {
   collectActionRefs?: (actionUid: string) => Promise<Record<string, unknown>>;
   buildExplicitLayoutPayload?: (input: {
     layout?: FlowSurfaceComposeObject;
-    createdByKey: Record<string, FlowSurfaceComposeTargetRef & Partial<FlowSurfaceComposeBlockResult>>;
+    createdByRef: Record<string, FlowSurfaceComposeTargetRef & Partial<FlowSurfaceComposeBlockResult>>;
     gridUid: string;
   }) => Promise<Record<string, unknown>> | Record<string, unknown>;
   buildAppendLayoutPayload?: (input: {
@@ -144,13 +149,8 @@ export async function executeComposeRuntime(
       uid: plan.gridUid,
     },
     mode: plan.mode,
-    keyToUid: Object.fromEntries(
-      Object.entries(state.keyRefs)
-        .map(([key, value]) => [key, value.uid])
-        .filter((entry): entry is [string, string] => !!entry[1]),
-    ),
     blocks: state.blocks.map((block) => ({
-      key: block.spec.key,
+      ref: block.spec.ref,
       type: block.spec.type,
       uid: block.result.uid,
       gridUid: block.result.gridUid,
@@ -167,7 +167,7 @@ export async function executeComposeRuntime(
 
 export function createComposeRuntimeState(): FlowSurfaceComposeRuntimeState {
   return {
-    keyRefs: {},
+    refRefs: {},
     blocks: [],
   };
 }
@@ -238,7 +238,7 @@ async function createBlocks(
       actionResults: [],
       recordActionResults: [],
     });
-    state.keyRefs[blockTask.key] = {
+    state.refRefs[blockTask.ref] = {
       uid: result.uid,
       gridUid: result.gridUid,
       itemUid: result.itemUid,
@@ -267,22 +267,47 @@ async function createFields(
   state: FlowSurfaceComposeRuntimeState,
 ) {
   for (const fieldTask of plan.fields) {
-    const block = requireBlockState(fieldTask.blockKey, state);
+    const block = requireBlockState(fieldTask.blockRef, state);
     const targetUid =
       fieldTask.containerSource === 'item' ? block.result.itemUid || block.result.uid : block.result.uid;
-    const createdField = await deps.createField(
-      {
-        target: {
-          uid: targetUid,
+    let createdField: FlowSurfaceComposeFieldResult | null;
+    try {
+      createdField = await deps.createField(
+        {
+          target: {
+            uid: targetUid,
+          },
+          ...fieldTask.payload,
+          ...(readComposeFieldTargetRef(fieldTask.spec.target)
+            ? {
+                defaultTargetUid: resolveComposeTargetRef(
+                  readComposeFieldTargetRef(fieldTask.spec.target) as string,
+                  state.refRefs,
+                  'field',
+                ),
+              }
+            : {}),
         },
-        ...fieldTask.payload,
-        ...(fieldTask.spec.target
-          ? { defaultTargetUid: resolveComposeTargetRef(fieldTask.spec.target, state.keyRefs, 'field') }
-          : {}),
-      },
-      fieldTask.spec,
-      block.result,
-    );
+        fieldTask.spec,
+        block.result,
+      );
+    } catch (error) {
+      const decision = deps.onFieldError
+        ? await deps.onFieldError({
+            error,
+            spec: fieldTask.spec,
+            blockSpec: block.spec,
+            blockResult: block.result,
+          })
+        : undefined;
+      if (decision === 'continue') {
+        continue;
+      }
+      throw error;
+    }
+    if (!createdField) {
+      continue;
+    }
 
     if (deps.applyFieldSettings && hasInlineSettings(fieldTask.spec.settings)) {
       await deps.applyFieldSettings('compose field', createdField, fieldTask.spec.settings);
@@ -298,7 +323,7 @@ async function createActions(
   state: FlowSurfaceComposeRuntimeState,
 ) {
   for (const actionTask of plan.actions) {
-    const block = requireBlockState(actionTask.blockKey, state);
+    const block = requireBlockState(actionTask.blockRef, state);
     const createdAction = await deps.createAction(
       {
         target: {
@@ -328,7 +353,7 @@ async function createRecordActions(
   state: FlowSurfaceComposeRuntimeState,
 ) {
   for (const recordActionTask of plan.recordActions) {
-    const block = requireBlockState(recordActionTask.blockKey, state);
+    const block = requireBlockState(recordActionTask.blockRef, state);
     const createdAction = await deps.createRecordAction(
       {
         target: {
@@ -342,8 +367,8 @@ async function createRecordActions(
 
     if (!block.result.actionsColumnUid && block.spec.type === 'table' && createdAction.parentUid) {
       block.result.actionsColumnUid = createdAction.parentUid;
-      state.keyRefs[recordActionTask.blockKey] = {
-        ...state.keyRefs[recordActionTask.blockKey],
+      state.refRefs[recordActionTask.blockRef] = {
+        ...state.refRefs[recordActionTask.blockRef],
         actionsColumnUid: createdAction.parentUid,
       };
     }
@@ -376,7 +401,7 @@ async function applyComposeLayout(
     requireComposeRuntimeDep('setLayout', setLayout, 'explicit layout');
     const layoutPayload = await buildExplicitLayoutPayload({
       layout: plan.layoutPlan.layout,
-      createdByKey: state.keyRefs,
+      createdByRef: state.refRefs,
       gridUid: plan.gridUid,
     });
     return setLayout({
@@ -404,11 +429,11 @@ async function applyComposeLayout(
   });
 }
 
-function requireBlockState(blockKey: string, state: FlowSurfaceComposeRuntimeState) {
-  const matched = state.blocks.find((block) => block.spec.key === blockKey);
+function requireBlockState(blockRef: string, state: FlowSurfaceComposeRuntimeState) {
+  const matched = state.blocks.find((block) => block.spec.ref === blockRef);
   if (!matched) {
     throwConflict(
-      `flowSurfaces compose block '${blockKey}' is missing from runtime state`,
+      `flowSurfaces compose block '${blockRef}' is missing from runtime state`,
       'FLOW_SURFACE_COMPOSE_BLOCK_MISSING',
     );
   }
@@ -420,7 +445,7 @@ function buildFieldResultSummary(
   createdField: FlowSurfaceComposeFieldResult,
 ) {
   return {
-    key: spec.key,
+    ref: spec.ref,
     uid: createdField.uid,
     ...(spec.type ? { type: spec.type } : {}),
     ...(spec.renderer ? { renderer: spec.renderer } : {}),
@@ -442,7 +467,7 @@ function buildActionResultSummary(
   actionRefs: Record<string, unknown>,
 ) {
   return {
-    key: spec.key,
+    ref: spec.ref,
     type: spec.type,
     scope: createdAction.scope,
     uid: createdAction.uid,
@@ -457,4 +482,17 @@ function hasInlineSettings(value: FlowSurfaceComposeObject | undefined) {
 
 function hasPopupAfterEffect(value: FlowSurfaceComposeObject | undefined) {
   return typeof value !== 'undefined';
+}
+
+function readComposeFieldTargetRef(target: FlowSurfaceComposeNormalizedFieldSpec['target']) {
+  if (typeof target === 'string') {
+    const normalized = target.trim();
+    return normalized || undefined;
+  }
+  if (!target || typeof target !== 'object') {
+    return undefined;
+  }
+  const ref = typeof (target as any).composeRef === 'string' ? (target as any).composeRef : (target as any).ref;
+  const normalized = typeof ref === 'string' ? ref.trim() : '';
+  return normalized || undefined;
 }

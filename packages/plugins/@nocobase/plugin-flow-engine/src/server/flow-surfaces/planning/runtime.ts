@@ -15,9 +15,11 @@ import type {
   FlowSurfaceExecutePlanValues,
   FlowSurfaceExecutorContext,
   FlowSurfaceMutateOp,
+  FlowSurfacePlanRequestValues,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
+  FlowSurfaceValidatePlanValidationResult,
   FlowSurfaceValidatePlanValues,
 } from '../types';
 import { isFlowSurfacePlanOnlyAction, type FlowSurfacePlanOnlyActionName } from './action-specs';
@@ -35,6 +37,7 @@ import {
   collectRequestRefsToPersist,
   normalizeBindRefs as normalizePlanningBindRefs,
 } from './ref-registry';
+import { registerFlowSurfaceCreatedRefs } from './created-refs';
 import { validateFlowSurfacePayloadShape } from '../payload-shape';
 import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
 
@@ -76,6 +79,11 @@ type FlowSurfacePlanningRuntimeDeps = {
     currentCtx: FlowSurfaceExecutorContext,
   ) => Promise<any>;
   isSurfaceReadbackMissingError: (error: unknown) => boolean;
+  collectValidatePlanIssues?: (
+    values: FlowSurfaceValidatePlanValues,
+    compiledSteps: FlowSurfaceCompiledPlanStep[],
+    options?: { transaction?: any },
+  ) => Promise<FlowSurfaceValidatePlanValidationResult | undefined>;
 };
 
 function assertPlanFingerprint(actionName: string, expectedFingerprint: any, actualFingerprint: string) {
@@ -192,7 +200,7 @@ async function buildDescribeSurfaceResponse(
 
 function normalizePlanSteps(
   actionName: string,
-  values: FlowSurfaceValidatePlanValues,
+  values: FlowSurfacePlanRequestValues,
   deps: FlowSurfacePlanningRuntimeDeps,
 ) {
   return normalizePlanningSteps(actionName, values, {
@@ -208,6 +216,7 @@ async function compilePlanStep(
   context: FlowSurfacePlanSurfaceContext,
   deps: FlowSurfacePlanningRuntimeDeps,
   priorStepIds: Set<string>,
+  priorCreatedRefs: Set<string>,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceCompiledPlanStep> {
   return compilePlanningStep(
@@ -221,6 +230,7 @@ async function compilePlanStep(
       buildPlanRefKind: buildPlanningRefKind,
     },
     priorStepIds,
+    priorCreatedRefs,
     options,
   );
 }
@@ -277,8 +287,8 @@ function assertBootstrapPlanConstraints(
       if (!selector) {
         continue;
       }
-      if (selector.source !== 'step') {
-        throwBadRequest(`flowSurfaces ${actionName} bootstrap plan only supports step selectors`);
+      if (selector.source !== 'step' && selector.source !== 'created') {
+        throwBadRequest(`flowSurfaces ${actionName} bootstrap plan only supports step or created-ref selectors`);
       }
     }
   }
@@ -327,10 +337,24 @@ export async function validatePlan(
   const steps = normalizePlanSteps('validatePlan', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
   const priorStepIds = new Set<string>();
+  const priorCreatedRefs = new Set<string>();
   for (const [index, step] of steps.entries()) {
-    compiledSteps.push(await compilePlanStep('validatePlan', step, index, context, deps, priorStepIds, options));
+    const compiled = await compilePlanStep(
+      'validatePlan',
+      step,
+      index,
+      context,
+      deps,
+      priorStepIds,
+      priorCreatedRefs,
+      options,
+    );
+    compiledSteps.push(compiled);
     if (step.id) {
       priorStepIds.add(step.id);
+    }
+    for (const createdRef of compiled.createdRefs) {
+      priorCreatedRefs.add(createdRef.ref);
     }
   }
   if (!context.surfaceSelector) {
@@ -338,12 +362,17 @@ export async function validatePlan(
   }
   const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
   await deps.assertRequestRefsPersistable('validatePlan', requestRefsToPersist, options.transaction);
+  const validation =
+    values.validation?.collectFieldIssues && deps.collectValidatePlanIssues
+      ? await deps.collectValidatePlanIssues(values, compiledSteps, options)
+      : undefined;
 
   return {
     target: context.targetSummary,
     fingerprint: context.fingerprint,
     refs: buildPlanningSurfaceRefsObject(context.refMap),
     compiledSteps: serializeCompiledPlanSteps(compiledSteps),
+    ...(validation ? { validation } : {}),
   };
 }
 
@@ -362,10 +391,24 @@ export async function executePlan(
   const steps = normalizePlanSteps('executePlan', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
   const priorStepIds = new Set<string>();
+  const priorCreatedRefs = new Set<string>();
   for (const [index, step] of steps.entries()) {
-    compiledSteps.push(await compilePlanStep('executePlan', step, index, context, deps, priorStepIds, options));
+    const compiled = await compilePlanStep(
+      'executePlan',
+      step,
+      index,
+      context,
+      deps,
+      priorStepIds,
+      priorCreatedRefs,
+      options,
+    );
+    compiledSteps.push(compiled);
     if (step.id) {
       priorStepIds.add(step.id);
+    }
+    for (const createdRef of compiled.createdRefs) {
+      priorCreatedRefs.add(createdRef.ref);
     }
   }
   if (!context.surfaceSelector) {
@@ -375,6 +418,7 @@ export async function executePlan(
   await deps.assertRequestRefsPersistable('executePlan', requestRefsToPersist, options.transaction);
 
   const results = [] as Array<Record<string, any>>;
+  const persistedRefs = [] as Array<Record<string, any>>;
   const execCtx: FlowSurfaceExecutorContext = {
     transaction: options.transaction,
     refs: new Map(),
@@ -382,15 +426,23 @@ export async function executePlan(
   };
   for (const compiled of compiledSteps) {
     const result = await executeCompiledPlanStep(compiled, deps, execCtx, options.transaction);
+    const createdRefs = registerFlowSurfaceCreatedRefs(result, compiled.createdRefs, execCtx.refs);
     results.push({
       index: compiled.index,
       ...(compiled.id ? { id: compiled.id } : {}),
       action: compiled.action,
       result,
+      ...(createdRefs.length ? { createdRefs } : {}),
+    });
+    createdRefs.forEach((item) => {
+      persistedRefs.push({
+        ref: item.ref,
+        uid: item.uid,
+        persisted: true,
+      });
     });
   }
 
-  const persistedRefs = [] as Array<Record<string, any>>;
   for (const refInfo of requestRefsToPersist.values()) {
     persistedRefs.push(await deps.persistDeclaredRefForNode(refInfo, options.transaction));
   }

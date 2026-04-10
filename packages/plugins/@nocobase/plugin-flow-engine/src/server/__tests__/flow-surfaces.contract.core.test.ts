@@ -237,6 +237,26 @@ describe('flowSurfaces API contract core', () => {
       },
     });
     expect(validateRes.status).toBe(200);
+    const deniedPreviewValidateRes = await readerAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [],
+        },
+      },
+    });
+    expect(deniedPreviewValidateRes.status).toBe(403);
+    expectStructuredError(readErrorItem(deniedPreviewValidateRes), {
+      status: 403,
+      type: 'forbidden',
+    });
 
     const deniedWriteRes = await readerAgent.resource('flowSurfaces').addTab({
       values: {
@@ -261,6 +281,22 @@ describe('flowSurfaces API contract core', () => {
       },
     });
     expect(allowedWriteRes.status).toBe(200);
+    const allowedPreviewValidateRes = await writerAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        validation: {
+          collectFieldIssues: true,
+        },
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [],
+        },
+      },
+    });
+    expect(allowedPreviewValidateRes.status).toBe(200);
 
     const deniedExecutePlanRes = await readerAgent.resource('flowSurfaces').executePlan({
       values: {

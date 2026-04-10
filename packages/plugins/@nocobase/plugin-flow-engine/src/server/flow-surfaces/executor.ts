@@ -44,7 +44,7 @@ export function resolveFlowSurfaceValueRefs(input: any, refs: Map<string, any>):
         `flowSurfaces mutate refs must use { ref: "op.path" }; "$ref" is no longer supported`,
       );
     }
-    if (Object.prototype.hasOwnProperty.call(input, 'ref')) {
+    if (Object.keys(input).length === 1 && Object.prototype.hasOwnProperty.call(input, 'ref')) {
       if (typeof input.ref !== 'string') {
         throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref must be a string`);
       }
@@ -61,6 +61,9 @@ function readRef(path: string, refs: Map<string, any>) {
   const trimmedPath = String(path || '').trim();
   if (!trimmedPath) {
     throw new FlowSurfaceBadRequestError(`flowSurfaces mutate ref cannot be empty`);
+  }
+  if (refs.has(trimmedPath)) {
+    return refs.get(trimmedPath);
   }
   const [opId, ...segments] = trimmedPath.split('.');
   if (!refs.has(opId)) {

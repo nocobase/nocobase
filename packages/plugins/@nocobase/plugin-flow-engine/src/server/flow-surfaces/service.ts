@@ -45,7 +45,7 @@ import {
   throwForbidden,
   throwInternalError,
 } from './errors';
-import { executeMutateOps } from './executor';
+import { executeMutateOps, resolveFlowSurfaceValueRefs } from './executor';
 import {
   buildSurfaceFingerprintRefsObject as buildPlanningSurfaceFingerprintRefsObject,
   FLOW_SURFACE_INTERNAL_META_KEY,
@@ -56,12 +56,13 @@ import {
   executePlan as executePlanningPlan,
   validatePlan as validatePlanningPlan,
 } from './planning/runtime';
+import { collectFlowSurfaceCreatedRefs } from './planning/created-refs';
 import {
   assertRequestRefsPersistable as assertPlanningRequestRefsPersistable,
   persistDeclaredRefForNode as persistPlanningDeclaredRefForNode,
 } from './planning/ref-persistence';
 import { validateFlowSurfacePayloadShape } from './payload-shape';
-import type { FlowSurfacePlanSurfaceContext } from './planning/types';
+import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext } from './planning/types';
 import {
   MULTI_VALUE_ASSOCIATION_INTERFACES,
   normalizeFieldContainerKind,
@@ -150,6 +151,7 @@ import {
   resolveFlowSurfaceDefaultActionPopupTabTitle,
 } from './default-action-popup';
 import {
+  assertFlowSurfaceComposeUniqueKeys,
   assertSupportedSimpleChanges,
   buildChartCardSettingsFromSemanticChanges,
   buildDefaultFieldState,
@@ -172,6 +174,7 @@ import {
   joinRequiredFieldPaths,
   normalizeChartCardSettings,
   normalizeChartCardHeightModeForWrite,
+  normalizeFlowSurfaceComposeRef,
   normalizeComposeActionSpec,
   normalizeComposeFieldSpec,
   normalizeGridCardColumns,
@@ -246,6 +249,8 @@ import type {
   FlowSurfaceResourceBindingOption,
   FlowSurfaceResourceBindingKey,
   FlowSurfaceSemanticResourceInput,
+  FlowSurfaceValidatePlanFieldIssue,
+  FlowSurfaceValidatePlanValidationResult,
   FlowSurfaceValidatePlanValues,
   FlowSurfaceWriteTarget,
 } from './types';
@@ -265,6 +270,10 @@ type FlowSurfaceSqlChartQueryOutput = {
 type FlowSurfaceSqlChartPreview = {
   queryOutputs?: FlowSurfaceSqlChartQueryOutput[];
   riskyHints?: FlowSurfaceChartHint[];
+};
+
+type FlowSurfaceValidatePlanPreviewRef = {
+  ref: string;
 };
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -1654,9 +1663,9 @@ export class FlowSurfacesService {
     );
   }
 
-  private describeComposeBlock(blockSpec: { index?: number; key?: string; type?: string }) {
+  private describeComposeBlock(blockSpec: { index?: number; ref?: string; type?: string }) {
     const index = Number(blockSpec.index || 0);
-    const quotedKey = JSON.stringify(String(blockSpec.key || ''));
+    const quotedKey = JSON.stringify(String(blockSpec.ref || ''));
     const quotedType = JSON.stringify(String(blockSpec.type || ''));
     return `block #${index} (${quotedKey}, type=${quotedType})`;
   }
@@ -2219,9 +2228,84 @@ export class FlowSurfacesService {
       findModelById: (uid: string, findOptions?: { transaction?: any; includeAsyncNode?: boolean }) =>
         this.repository.findModelById(uid, findOptions),
       patchModel: (values: Record<string, any>, patchOptions?: { transaction?: any }) =>
-        this.repository.patch(values, patchOptions),
+        this.patchDeclaredRefModel(values, patchOptions),
       getDeclaredRefFromNode: (node: any) => this.getDeclaredRefFromNode(node),
     };
+  }
+
+  private async patchDeclaredRefModel(values: Record<string, any>, options?: { transaction?: any }) {
+    const normalizedUid = String(values?.uid || '').trim();
+    if (!normalizedUid) {
+      return this.repository.patch(values, options);
+    }
+
+    const persisted = await this.repository.model.findByPk(normalizedUid, {
+      transaction: options?.transaction,
+    });
+    if (persisted) {
+      return this.repository.patch(values, options);
+    }
+
+    const currentNode = await this.repository
+      .findModelById(normalizedUid, {
+        transaction: options?.transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+    const tabRoute = await this.locator.findRouteBySchemaUid(normalizedUid, options?.transaction).catch(() => null);
+    const shouldCreateTabAnchor = currentNode?.use === 'RootPageTabModel' || (!!tabRoute && !currentNode?.use);
+
+    if (shouldCreateTabAnchor) {
+      await this.repository.upsertModel(
+        buildDefinedPayload({
+          uid: normalizedUid,
+          use: 'RootPageTabModel',
+          props: _.omit(_.cloneDeep(currentNode?.props || {}), ['route']),
+          decoratorProps: _.cloneDeep(currentNode?.decoratorProps || {}),
+          flowRegistry: _.cloneDeep(currentNode?.flowRegistry || {}),
+          stepParams: _.cloneDeep(values?.stepParams || currentNode?.stepParams || {}),
+        }),
+        { transaction: options?.transaction },
+      );
+      return;
+    }
+
+    return this.repository.patch(values, options);
+  }
+
+  private async persistCreatedRefsForAction(
+    actionName: 'createPage' | 'addTab' | 'addPopupTab' | 'addBlock' | 'addField' | 'addAction' | 'addRecordAction',
+    values: Record<string, any>,
+    result: Record<string, any>,
+    transaction?: any,
+  ) {
+    const refPersistenceDeps = this.getDeclaredRefPersistenceDeps();
+    const createdRefs = collectFlowSurfaceCreatedRefs(actionName, values);
+    const persistedUidSet = new Set<string>();
+    for (const createdRef of createdRefs) {
+      const uid = _.get(result, createdRef.resultPath);
+      if (typeof uid !== 'string' || !uid.trim()) {
+        continue;
+      }
+      const normalizedUid = uid.trim();
+      if (persistedUidSet.has(normalizedUid)) {
+        continue;
+      }
+      await persistPlanningDeclaredRefForNode(
+        {
+          ref: createdRef.ref,
+          uid: normalizedUid,
+          source: 'declared',
+          kind: 'node',
+          locator: {
+            uid: normalizedUid,
+          },
+        },
+        refPersistenceDeps,
+        transaction,
+      );
+      persistedUidSet.add(normalizedUid);
+    }
   }
 
   private buildPlanningRuntimeDeps() {
@@ -2262,6 +2346,318 @@ export class FlowSurfacesService {
         currentCtx: FlowSurfaceExecutorContext,
       ) => this.dispatchOp(op, resolvedValues, currentCtx),
       isSurfaceReadbackMissingError: (error: unknown) => this.isSurfaceReadbackMissingError(error),
+      collectValidatePlanIssues: (
+        values: FlowSurfaceValidatePlanValues,
+        compiledSteps: FlowSurfaceCompiledPlanStep[],
+        collectOptions?: { transaction?: any },
+      ) => this.collectValidatePlanIssues(values, compiledSteps, collectOptions),
+    };
+  }
+
+  private buildValidatePlanFieldIssue(input: {
+    compiled: FlowSurfaceCompiledPlanStep;
+    path: string;
+    error: unknown;
+    blocking: boolean;
+    blockRef?: string;
+    fieldRef?: string;
+    fieldPath?: string;
+    associationPathName?: string;
+  }): FlowSurfaceValidatePlanFieldIssue {
+    const normalized = normalizeFlowSurfaceError(input.error);
+    return buildDefinedPayload({
+      stepIndex: input.compiled.index,
+      stepId: input.compiled.id,
+      action: input.compiled.action,
+      path: input.path,
+      code: normalized.code,
+      message: normalized.message,
+      status: normalized.status,
+      type: normalized.type,
+      blocking: input.blocking,
+      blockRef: input.blockRef,
+      fieldRef: input.fieldRef,
+      fieldPath: input.fieldPath,
+      associationPathName: input.associationPathName,
+    }) as FlowSurfaceValidatePlanFieldIssue;
+  }
+
+  private buildValidatePlanBlockedIssue(
+    compiled: FlowSurfaceCompiledPlanStep,
+    missingRef: FlowSurfaceValidatePlanPreviewRef,
+  ): FlowSurfaceValidatePlanFieldIssue {
+    return {
+      stepIndex: compiled.index,
+      ...(compiled.id ? { stepId: compiled.id } : {}),
+      action: compiled.action,
+      path: `plan.steps[${compiled.index}]`,
+      code: 'FLOW_SURFACE_VALIDATE_PLAN_BLOCKED_BY_FIELD_ISSUE',
+      message: `flowSurfaces validatePlan step '${compiled.id || compiled.index}' is blocked because ref '${
+        missingRef.ref
+      }' is unavailable after earlier field issues`,
+      status: 400,
+      type: 'bad_request',
+      blocking: true,
+    };
+  }
+
+  private findMissingValidatePlanPayloadRef(
+    input: any,
+    refs: Map<string, any>,
+  ): FlowSurfaceValidatePlanPreviewRef | null {
+    if (Array.isArray(input)) {
+      for (const item of input) {
+        const matched = this.findMissingValidatePlanPayloadRef(item, refs);
+        if (matched) {
+          return matched;
+        }
+      }
+      return null;
+    }
+    if (!_.isPlainObject(input)) {
+      return null;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'ref')) {
+      const refPath = typeof input.ref === 'string' ? input.ref.trim() : '';
+      if (!refPath) {
+        return {
+          ref: String(input.ref || ''),
+        };
+      }
+      const [stepId, ...segments] = refPath.split('.');
+      if (!refs.has(stepId)) {
+        return {
+          ref: refPath,
+        };
+      }
+      const stepResult = refs.get(stepId);
+      const resolvedValue = segments.length ? _.get(stepResult, segments.join('.')) : stepResult;
+      if (typeof resolvedValue === 'undefined') {
+        return {
+          ref: refPath,
+        };
+      }
+      return null;
+    }
+    for (const value of Object.values(input)) {
+      const matched = this.findMissingValidatePlanPayloadRef(value, refs);
+      if (matched) {
+        return matched;
+      }
+    }
+    return null;
+  }
+
+  private async withValidatePlanPreviewTransaction<T>(
+    callback: (transaction: any) => Promise<T>,
+    options: { transaction?: any } = {},
+  ) {
+    const transaction = options.transaction
+      ? await this.db.sequelize.transaction({ transaction: options.transaction })
+      : await this.db.sequelize.transaction();
+    try {
+      return await callback(transaction);
+    } finally {
+      if ((transaction as any)?.finished !== 'rollback') {
+        await transaction.rollback();
+      }
+    }
+  }
+
+  private async previewComposeForValidatePlan(
+    values: FlowSurfaceComposeValues,
+    compiled: FlowSurfaceCompiledPlanStep,
+    fieldIssues: FlowSurfaceValidatePlanFieldIssue[],
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
+    const target = this.normalizeWriteTarget('compose', values?.target, values);
+    const mode = this.assertComposeMode(values?.mode);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
+    const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
+    const gridUid = blockParent.parentUid;
+    const initialGrid = await this.repository.findModelById(gridUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const existingItems = _.castArray(initialGrid?.subModels?.items || []).filter((item: any) => item?.uid);
+
+    for (const blockSpec of normalizedBlocks) {
+      if (!blockSpec.template && blockSpec.resource?.kind !== 'semantic') {
+        this.assertRequiredBlockResourceInit({
+          actionName: 'compose',
+          blockCatalogItem: blockSpec.catalogItem,
+          resourceInit: blockSpec.resource?.kind === 'raw' ? blockSpec.resource.value : {},
+          resourceField: 'resource',
+          blockDescriptor: this.describeComposeBlock(blockSpec),
+        });
+      }
+    }
+
+    const plan = compileComposeExecutionPlan({
+      gridUid,
+      mode,
+      normalizedBlocks,
+      existingItemUids: existingItems.map((item: any) => item.uid),
+      layout: values.layout,
+    });
+
+    return executeComposeRuntime(plan, {
+      removeExistingItem: async (uid) => this.removeNodeTreeWithBindings(uid, options.transaction),
+      createBlock: async (payload) =>
+        this.addBlock(payload, {
+          ...options,
+          deferAutoLayout: true,
+          enabledPackages,
+        }),
+      applyNodeSettings: async (actionName, targetUid, settings) => {
+        if (!targetUid) {
+          return;
+        }
+        await this.applyInlineNodeSettings(actionName, targetUid, settings, options);
+      },
+      createField: async (payload) => this.addField(payload, options),
+      applyFieldSettings: async (actionName, fieldResult, settings) =>
+        this.applyInlineFieldSettings(actionName, fieldResult, settings, options),
+      onFieldError: async ({ error, spec, blockSpec }) => {
+        if (!(error instanceof FlowSurfaceBadRequestError)) {
+          throw error;
+        }
+        fieldIssues.push(
+          this.buildValidatePlanFieldIssue({
+            compiled,
+            path: `plan.steps[${compiled.index}].values.blocks[${(blockSpec.index || 1) - 1}].fields[${
+              (spec.index || 1) - 1
+            }]`,
+            error,
+            blocking: false,
+            blockRef: (blockSpec as any).ref,
+            fieldRef: (spec as any).ref,
+            fieldPath: spec.fieldPath,
+            associationPathName: spec.associationPathName,
+          }),
+        );
+        return 'continue' as const;
+      },
+      createAction: async (payload) =>
+        this.addAction(payload, {
+          ...options,
+          enabledPackages,
+          autoCompleteDefaultPopup: false,
+        }),
+      createRecordAction: async (payload) =>
+        this.addRecordAction(payload, {
+          ...options,
+          enabledPackages,
+          autoCompleteDefaultPopup: false,
+        }),
+      applyActionPopup: async (actionName, actionUid, popup) =>
+        this.applyInlineActionPopup(actionName, actionUid, popup, options),
+      collectActionRefs: async (actionUid) => this.collectComposeActionRefs(actionUid, options.transaction),
+      buildExplicitLayoutPayload: async (input) => {
+        const finalGrid = await this.repository.findModelById(input.gridUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+        const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
+        return this.buildComposeLayoutPayload({
+          layout: input.layout,
+          createdByRef: input.createdByRef,
+          finalItems,
+        });
+      },
+      buildAppendLayoutPayload: async (input) => {
+        const finalGrid = await this.repository.findModelById(input.gridUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+        return this.buildAppendGridLayoutPayload({
+          initialGrid,
+          finalGrid,
+          appendedItemUids: input.appendedItemUids,
+        });
+      },
+      setLayout: async (payload) => this.setLayout(payload, options),
+    });
+  }
+
+  private async collectValidatePlanIssues(
+    _values: FlowSurfaceValidatePlanValues,
+    compiledSteps: FlowSurfaceCompiledPlanStep[],
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceValidatePlanValidationResult> {
+    const fieldIssues = await this.withValidatePlanPreviewTransaction(async (transaction) => {
+      const enabledPackages = await this.resolveEnabledPluginPackages({ transaction });
+      const execCtx: FlowSurfaceExecutorContext = {
+        transaction,
+        refs: new Map(),
+        clientKeyToUid: {},
+      };
+      const issues: FlowSurfaceValidatePlanFieldIssue[] = [];
+
+      for (const compiled of compiledSteps) {
+        const missingRef = issues.length
+          ? this.findMissingValidatePlanPayloadRef(compiled.payload, execCtx.refs)
+          : null;
+        if (missingRef) {
+          issues.push(this.buildValidatePlanBlockedIssue(compiled, missingRef));
+          continue;
+        }
+
+        const resolvedPayload = resolveFlowSurfaceValueRefs(_.cloneDeep(compiled.payload), execCtx.refs);
+        let result: any;
+
+        if (compiled.action === 'addField') {
+          try {
+            result = await this.addField(resolvedPayload, {
+              transaction,
+              enabledPackages,
+            });
+          } catch (error) {
+            if (error instanceof FlowSurfaceBadRequestError) {
+              issues.push(
+                this.buildValidatePlanFieldIssue({
+                  compiled,
+                  path: `plan.steps[${compiled.index}].values`,
+                  error,
+                  blocking: false,
+                  fieldPath: resolvedPayload?.fieldPath,
+                  associationPathName: resolvedPayload?.associationPathName,
+                }),
+              );
+              continue;
+            }
+            throw error;
+          }
+        } else if (compiled.action === 'compose') {
+          result = await this.previewComposeForValidatePlan(
+            resolvedPayload as FlowSurfaceComposeValues,
+            compiled,
+            issues,
+            {
+              transaction,
+              enabledPackages,
+            },
+          );
+        } else if (compiled.mutateOp) {
+          result = await this.dispatchOp(compiled.mutateOp, resolvedPayload, execCtx);
+        } else if (compiled.action === 'configure' || compiled.action === 'convertTemplateToCopy') {
+          result = await this.dispatchPlanOnlyAction(compiled.action, resolvedPayload, transaction);
+        } else {
+          throwInternalError(`flowSurfaces validatePlan action '${compiled.action}' preview is not supported`);
+        }
+
+        if (compiled.id && !_.isUndefined(result)) {
+          execCtx.refs.set(compiled.id, result);
+        }
+      }
+
+      return issues;
+    }, options);
+
+    return {
+      ok: fieldIssues.length === 0,
+      fieldIssues,
     };
   }
 
@@ -3794,9 +4190,7 @@ export class FlowSurfacesService {
     const target = this.normalizeWriteTarget('compose', values?.target, values);
     const mode = this.assertComposeMode(values?.mode);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const normalizedBlocks = _.castArray(values?.blocks || []).map((item, index) =>
-      this.normalizeComposeBlock(item, index, enabledPackages),
-    );
+    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
     const initialGrid = await this.repository.findModelById(gridUid, {
@@ -3865,7 +4259,7 @@ export class FlowSurfacesService {
         const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
         return this.buildComposeLayoutPayload({
           layout: input.layout,
-          createdByKey: input.createdByKey,
+          createdByRef: input.createdByRef,
           finalItems,
         });
       },
@@ -4125,14 +4519,17 @@ export class FlowSurfacesService {
   }
 
   async createPage(values: Record<string, any>, options: { transaction?: any } = {}) {
+    let result;
     if (!_.isNil(values.menuRouteId) && values.menuRouteId !== '') {
       const route = await this.assertMenuRouteBindable(values.menuRouteId, options.transaction);
-      return this.initializeFlowPageForRoute(route, values, options.transaction);
+      result = await this.initializeFlowPageForRoute(route, values, options.transaction);
+    } else {
+      const createdMenu = await this.createFlowMenuItem(values, options.transaction);
+      const route = await this.assertMenuRouteBindable(createdMenu.routeId, options.transaction);
+      result = await this.initializeFlowPageForRoute(route, values, options.transaction);
     }
-
-    const createdMenu = await this.createFlowMenuItem(values, options.transaction);
-    const route = await this.assertMenuRouteBindable(createdMenu.routeId, options.transaction);
-    return this.initializeFlowPageForRoute(route, values, options.transaction);
+    await this.persistCreatedRefsForAction('createPage', values, result, options.transaction);
+    return result;
   }
 
   async destroyPage(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -4220,13 +4617,15 @@ export class FlowSurfacesService {
     // Keep the persisted subtree aligned with frontend semantics by storing only the async grid child under the tab schema uid.
     const gridUid = await this.ensureGridChild(tabSchemaUid, 'BlockGridModel', options.transaction);
 
-    return {
+    const result = {
       pageUid: pageTarget.uid,
       tabSchemaUid,
       tabRouteId: route.get('id'),
       tabSchemaName,
       gridUid,
     };
+    await this.persistCreatedRefsForAction('addTab', values, result, options.transaction);
+    return result;
   }
 
   async updateTab(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -4398,11 +4797,13 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
-    return {
+    const result = {
       popupPageUid: popupPage.uid,
       popupTabUid: tree.uid,
       popupGridUid: tree.subModels?.grid?.uid,
     };
+    await this.persistCreatedRefsForAction('addPopupTab', values, result, options.transaction);
+    return result;
   }
 
   async updatePopupTab(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -4912,7 +5313,9 @@ export class FlowSurfacesService {
         })
       : null;
     if (templateRef) {
-      return this.addBlockFromTemplate(values, templateRef, options);
+      const result = await this.addBlockFromTemplate(values, templateRef, options);
+      await this.persistCreatedRefsForAction('addBlock', values, result, options.transaction);
+      return result;
     }
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
@@ -5040,6 +5443,7 @@ export class FlowSurfacesService {
         options,
       );
     }
+    await this.persistCreatedRefsForAction('addBlock', values, result, options.transaction);
     return result;
   }
 
@@ -5053,7 +5457,9 @@ export class FlowSurfacesService {
         })
       : null;
     if (templateRef) {
-      return this.addFieldFromTemplate(values, templateRef, options);
+      const result = await this.addFieldFromTemplate(values, templateRef, options);
+      await this.persistCreatedRefsForAction('addField', values, result, options.transaction);
+      return result;
     }
     const target = this.normalizeWriteTarget('addField', values?.target, values);
     ensureNoRawDirectAddKeys('addField', values, [
@@ -5111,6 +5517,7 @@ export class FlowSurfacesService {
         type: values.type,
       };
       await this.applyInlineStandaloneFieldSettings('addField', result.uid, inlineSettings, options);
+      await this.persistCreatedRefsForAction('addField', values, result, options.transaction);
       return result;
     }
 
@@ -5323,6 +5730,7 @@ export class FlowSurfacesService {
     };
     await this.applyInlineFieldSettings('addField', result, inlineSettings, options);
     await this.applyInlineFieldPopup('addField', result, inlinePopup, options);
+    await this.persistCreatedRefsForAction('addField', values, result, options.transaction);
     return result;
   }
 
@@ -5395,13 +5803,15 @@ export class FlowSurfacesService {
     await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
     await this.applyInlineActionPopup('addAction', created, inlinePopup, options);
     await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
-    return {
+    const result = {
       uid: created,
       parentUid: container.parentUid,
       subKey: container.subKey,
       scope: actionCatalogItem.scope,
       ...(await this.collectComposeActionRefs(created, options.transaction)),
     };
+    await this.persistCreatedRefsForAction('addAction', values, result, options.transaction);
+    return result;
   }
 
   async addRecordAction(
@@ -5463,13 +5873,15 @@ export class FlowSurfacesService {
     await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
     await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, options);
     await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
-    return {
+    const result = {
       uid: created,
       parentUid: container.parentUid,
       subKey: container.subKey,
       scope: actionCatalogItem.scope,
       ...(await this.collectComposeActionRefs(created, options.transaction)),
     };
+    await this.persistCreatedRefsForAction('addRecordAction', values, result, options.transaction);
+    return result;
   }
 
   async addBlocks(values: Record<string, any>) {
@@ -7748,8 +8160,11 @@ export class FlowSurfacesService {
 
     for (const [index, rawItem] of items.entries()) {
       const result: Record<string, any> = { index, ok: false };
-      if (_.isPlainObject(rawItem) && typeof rawItem.key === 'string' && rawItem.key.trim()) {
-        result.key = rawItem.key.trim();
+      if (_.isPlainObject(rawItem) && Object.prototype.hasOwnProperty.call(rawItem, 'key')) {
+        throwBadRequest(`flowSurfaces ${options.actionName} item #${index + 1} does not support key, use ref instead`);
+      }
+      if (_.isPlainObject(rawItem) && typeof rawItem.ref === 'string' && rawItem.ref.trim()) {
+        result.ref = rawItem.ref.trim();
       }
       try {
         if (!_.isPlainObject(rawItem)) {
@@ -7764,7 +8179,7 @@ export class FlowSurfacesService {
         }
         const itemValues = {
           target,
-          ..._.omit(rawItem, ['key']),
+          ...rawItem,
         };
         result.result = await this.transaction((transaction) =>
           options.invoke(itemValues, {
@@ -7792,10 +8207,16 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'key')) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} does not support key, use ref instead`);
+    }
     if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps || input.flowRegistry) {
       throwBadRequest('flowSurfaces compose only accepts public semantic block fields');
     }
-    const key = String(input.key || '').trim();
+    const ref = normalizeFlowSurfaceComposeRef(
+      String(input.ref || '').trim(),
+      `flowSurfaces compose block #${index + 1}`,
+    );
     const type = String(input.type || '').trim();
     const template = _.isUndefined(input.template)
       ? undefined
@@ -7816,8 +8237,8 @@ export class FlowSurfacesService {
         `flowSurfaces compose block #${index + 1} does not allow settings when template.mode is 'reference'`,
       );
     }
-    if (!key || (!type && !template)) {
-      throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and either type or template`);
+    if (!ref || (!type && !template)) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} requires ref and either type or template`);
     }
     const blockCatalogItem = type
       ? resolveSupportedBlockCatalogItem(
@@ -7835,6 +8256,12 @@ export class FlowSurfacesService {
     const recordActions = _.castArray(input.recordActions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
+    const fields = _.castArray(input.fields || []).map((field, fieldIndex) =>
+      normalizeComposeFieldSpec(field, fieldIndex),
+    );
+    assertFlowSurfaceComposeUniqueKeys(fields, `flowSurfaces compose block #${index + 1} fields`);
+    assertFlowSurfaceComposeUniqueKeys(actions, `flowSurfaces compose block #${index + 1} actions`);
+    assertFlowSurfaceComposeUniqueKeys(recordActions, `flowSurfaces compose block #${index + 1} recordActions`);
     if (!blockCatalogItem && (actions.length || recordActions.length)) {
       throwBadRequest(
         `flowSurfaces compose block #${index + 1} requires type when actions or recordActions are provided`,
@@ -7845,27 +8272,24 @@ export class FlowSurfacesService {
     }
     return {
       index: index + 1,
-      key,
+      ref,
       type,
       catalogItem: blockCatalogItem,
       resource: this.normalizeResourceInput(input.resource),
       settings: _.isPlainObject(input.settings) ? input.settings : {},
-      fields: _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex)),
+      fields,
       actions,
       recordActions,
       template,
     };
   }
 
-  private resolveComposeTargetRef(targetRef: string, keyRefs: Record<string, any>, kind: 'field' | 'layout') {
-    const ref = String(targetRef || '').trim();
-    if (!ref) {
-      throwBadRequest(`flowSurfaces compose ${kind} target reference cannot be empty`);
-    }
-    if (!keyRefs[ref]?.uid) {
-      throwBadRequest(`flowSurfaces compose ${kind} target '${ref}' was not created in the current compose call`);
-    }
-    return keyRefs[ref].uid;
+  private normalizeComposeBlocks(input: any, enabledPackages?: ReadonlySet<string>) {
+    const normalizedBlocks = _.castArray(input || []).map((item, index) =>
+      this.normalizeComposeBlock(item, index, enabledPackages),
+    );
+    assertFlowSurfaceComposeUniqueKeys(normalizedBlocks, 'flowSurfaces compose blocks');
+    return normalizedBlocks;
   }
 
   private resolveComposeActionContainerUid(blockSpec: any, blockResult: any) {
@@ -7893,7 +8317,7 @@ export class FlowSurfacesService {
     }
     if (!blockResult.itemUid) {
       throwConflict(
-        `flowSurfaces compose block '${blockSpec.key}' is missing its item subtree`,
+        `flowSurfaces compose block '${blockSpec.ref}' is missing its item subtree`,
         'FLOW_SURFACE_COMPOSE_ITEM_SUBTREE_MISSING',
       );
     }
@@ -7927,7 +8351,7 @@ export class FlowSurfacesService {
 
   private buildComposeLayoutPayload(input: {
     layout?: Record<string, any>;
-    createdByKey: Record<string, any>;
+    createdByRef: Record<string, any>;
     finalItems: any[];
   }) {
     const declaredRows = _.castArray(input.layout?.rows || []);
@@ -7956,14 +8380,20 @@ export class FlowSurfacesService {
       }
       const cells = row.map((cell: any) => {
         if (_.isPlainObject(cell)) {
-          const refKey = String(cell.key || '').trim();
+          const refKey = String(cell.composeRef || cell.ref || '').trim();
           if (!refKey) {
-            throwBadRequest(`flowSurfaces compose layout row #${index + 1} contains an empty key`);
+            if (typeof cell.uid === 'string' && cell.uid.trim()) {
+              return {
+                uid: cell.uid.trim(),
+                span: _.isNumber(cell.span) ? cell.span : undefined,
+              };
+            }
+            throwBadRequest(`flowSurfaces compose layout row #${index + 1} contains an empty ref`);
           }
-          const uid = input.createdByKey[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
+          const uid = input.createdByRef[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
           if (!uid) {
             throwBadRequest(
-              `flowSurfaces compose layout key '${refKey}' does not match a created block key or existing uid`,
+              `flowSurfaces compose layout ref '${refKey}' does not match a created block ref or existing uid`,
             );
           }
           return {
@@ -7972,10 +8402,10 @@ export class FlowSurfacesService {
           };
         }
         const refKey = String(cell || '').trim();
-        const uid = input.createdByKey[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
+        const uid = input.createdByRef[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
         if (!uid) {
           throwBadRequest(
-            `flowSurfaces compose layout key '${refKey}' does not match a created block key or existing uid`,
+            `flowSurfaces compose layout ref '${refKey}' does not match a created block ref or existing uid`,
           );
         }
         return { uid };

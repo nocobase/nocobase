@@ -8784,7 +8784,7 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
 async function waitForFixtureCollectionsReady(
   db: Database,
   requiredCollections: Record<string, string[]>,
-  timeoutMs = 15000,
+  timeoutMs = process.env.CI ? 60000 : 30000,
 ) {
   const deadline = Date.now() + timeoutMs;
   const queryInterface = db.sequelize.getQueryInterface();

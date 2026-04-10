@@ -11,6 +11,7 @@ import type { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 describe('flowSurfaces chart write paths', () => {
@@ -24,7 +25,7 @@ describe('flowSurfaces chart write paths', () => {
     db = app.db;
     flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
     rootAgent = await loginFlowSurfacesRootAgent(app);
-    await setupFixtureCollections(rootAgent);
+    await setupFixtureCollections(rootAgent, db);
   }, 120000);
 
   beforeEach(async () => {
@@ -561,7 +562,7 @@ chart.on('click', 'series', function(params) {
         target: { uid: page.gridUid },
         blocks: [
           {
-            key: 'chart',
+            ref: 'chart',
             type: 'chart',
             settings: {
               configure: {
@@ -583,7 +584,7 @@ chart.on('click', 'series', function(params) {
     });
     expect(composeRes.status).toBe(200);
 
-    const chartUid = getData(composeRes).keyToUid.chart;
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.ref === 'chart')?.uid;
     expect(chartUid).toBeTruthy();
 
     const surface = getData(
@@ -925,7 +926,7 @@ async function addField(rootAgent: any, targetUid: string, fieldPath: string, ex
   return getData(response);
 }
 
-async function setupFixtureCollections(rootAgent: any) {
+async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
       name: 'departments',
@@ -956,5 +957,10 @@ async function setupFixtureCollections(rootAgent: any) {
       foreignKey: 'departmentId',
       interface: 'm2o',
     },
+  });
+
+  await waitForFixtureCollectionsReady(db, {
+    departments: ['title', 'location'],
+    employees: ['nickname', 'status', 'departmentId'],
   });
 }

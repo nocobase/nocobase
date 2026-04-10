@@ -17,6 +17,7 @@ import type {
   FlowSurfaceResolvedTarget,
   FlowSurfaceSurfaceSelector,
 } from '../types';
+import type { FlowSurfaceCreatedRefSpec } from './created-refs';
 
 export type FlowSurfaceResolvedRef = {
   ref: string;
@@ -34,7 +35,7 @@ export type FlowSurfaceResolvedSelectorSummary = {
   ref?: string;
   step?: string;
   path?: string;
-  source: FlowSurfaceResolvedRef['source'] | 'step';
+  source: FlowSurfaceResolvedRef['source'] | 'step' | 'created';
 };
 
 export type FlowSurfacePlanSurfaceContext = {
@@ -64,5 +65,6 @@ export type FlowSurfaceCompiledPlanStep = {
   resolvedSelectors: Partial<Record<'target' | 'source', FlowSurfaceResolvedSelectorSummary>>;
   usedRefs: FlowSurfaceResolvedRef[];
   usedStepRefs: FlowSurfaceCompiledPlanStepSelectorRef[];
+  createdRefs: FlowSurfaceCreatedRefSpec[];
   mutateOp?: FlowSurfaceMutateOp;
 };

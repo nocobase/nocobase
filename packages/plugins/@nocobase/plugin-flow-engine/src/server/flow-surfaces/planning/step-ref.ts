@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import type { FlowSurfacePlanStepRef } from '../types';
+import { isFlowSurfacePureRefObject } from './created-refs';
 
 export function isFlowSurfacePlanStepRef(input: any): input is FlowSurfacePlanStepRef {
   return (
@@ -66,10 +67,11 @@ export function replaceFlowSurfacePlanStepRefs(
   input: any,
   path: string,
   knownStepIds?: Set<string>,
+  knownRuntimeRefs?: Set<string>,
 ): any {
   if (Array.isArray(input)) {
     return input.map((item, index) =>
-      replaceFlowSurfacePlanStepRefs(actionName, item, `${path}[${index}]`, knownStepIds),
+      replaceFlowSurfacePlanStepRefs(actionName, item, `${path}[${index}]`, knownStepIds, knownRuntimeRefs),
     );
   }
   if (!_.isPlainObject(input)) {
@@ -78,9 +80,6 @@ export function replaceFlowSurfacePlanStepRefs(
   if (Object.prototype.hasOwnProperty.call(input, '$ref')) {
     throwBadRequest(`flowSurfaces ${actionName} ${path} must use { step, path }; '$ref' is not supported`);
   }
-  if (Object.prototype.hasOwnProperty.call(input, 'ref')) {
-    throwBadRequest(`flowSurfaces ${actionName} ${path} must use { step, path }; raw { ref } is not supported`);
-  }
   if (isFlowSurfacePlanStepRef(input)) {
     const stepRef = normalizeFlowSurfacePlanStepRef(actionName, input, path);
     assertFlowSurfaceKnownPlanStepRef(actionName, stepRef, path, knownStepIds);
@@ -88,10 +87,23 @@ export function replaceFlowSurfacePlanStepRefs(
       ref: toFlowSurfaceStepResultRefPath(stepRef),
     };
   }
+  if (isFlowSurfacePureRefObject(input)) {
+    const runtimeRef = String(input.ref || '').trim();
+    if (!runtimeRef) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.ref cannot be empty`);
+    }
+    const [head] = runtimeRef.split('.');
+    if (!knownRuntimeRefs?.has(runtimeRef) && !knownStepIds?.has(head)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.ref '${runtimeRef}' is not defined`);
+    }
+    return {
+      ref: runtimeRef,
+    };
+  }
   return Object.fromEntries(
     Object.entries(input).map(([key, value]) => [
       key,
-      replaceFlowSurfacePlanStepRefs(actionName, value, `${path}.${key}`, knownStepIds),
+      replaceFlowSurfacePlanStepRefs(actionName, value, `${path}.${key}`, knownStepIds, knownRuntimeRefs),
     ]),
   );
 }

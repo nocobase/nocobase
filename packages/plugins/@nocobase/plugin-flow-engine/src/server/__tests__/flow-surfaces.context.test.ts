@@ -12,6 +12,7 @@ import { uid } from '@nocobase/utils';
 import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
 import { isBareFlowContextPath } from '../flow-surfaces/context';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 describe('flowSurfaces context', () => {
@@ -25,7 +26,7 @@ describe('flowSurfaces context', () => {
     db = app.db;
     flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
     rootAgent = await loginFlowSurfacesRootAgent(app);
-    await setupFixtureCollections(rootAgent);
+    await setupFixtureCollections(rootAgent, db);
   }, 120000);
 
   beforeEach(async () => {
@@ -637,7 +638,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(response);
 }
 
-async function setupFixtureCollections(rootAgent: any) {
+async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
       name: 'departments',
@@ -699,5 +700,11 @@ async function setupFixtureCollections(rootAgent: any) {
       foreignKey: 'employeeId',
       interface: 'o2m',
     },
+  });
+
+  await waitForFixtureCollectionsReady(db, {
+    departments: ['title', 'location'],
+    employees: ['nickname', 'status', 'departmentId'],
+    tasks: ['title', 'status', 'employeeId'],
   });
 }

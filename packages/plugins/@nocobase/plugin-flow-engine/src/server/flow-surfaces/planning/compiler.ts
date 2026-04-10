@@ -14,11 +14,11 @@ import type {
   FlowSurfaceMutateOp,
   FlowSurfaceMutateOpType,
   FlowSurfacePlanSelector,
+  FlowSurfacePlanRequestValues,
   FlowSurfacePlanStep,
   FlowSurfacePlanStepRef,
   FlowSurfaceReadLocator,
   FlowSurfaceResolvedTarget,
-  FlowSurfaceValidatePlanValues,
 } from '../types';
 import { getFlowSurfacePlanActionSpec, getFlowSurfacePlanSelectorRequirements } from './action-specs';
 import {
@@ -32,6 +32,11 @@ import type {
   FlowSurfacePlanSurfaceContext,
   FlowSurfaceResolvedRef,
 } from './types';
+import {
+  assertNoDuplicateFlowSurfaceCreatedRefs,
+  collectFlowSurfaceCreatedRefs,
+  normalizeComposeInlineRefsForPlan,
+} from './created-refs';
 
 type NormalizePlanSelectorDeps = {
   normalizeGetTarget: (value: any) => FlowSurfaceReadLocator;
@@ -86,7 +91,7 @@ export function normalizePlanSelector(
 
 export function normalizePlanSteps(
   actionName: string,
-  values: FlowSurfaceValidatePlanValues,
+  values: FlowSurfacePlanRequestValues,
   deps: NormalizePlanStepsDeps,
 ) {
   if (!_.isPlainObject(values?.plan) || !Array.isArray(values.plan.steps)) {
@@ -168,8 +173,13 @@ async function resolvePlanSelectorInContext(
   deps: CompilePlanStepDeps,
   fieldName: string,
   priorStepIds: Set<string>,
+  priorCreatedRefs: Set<string>,
   options: { transaction?: any } = {},
-): Promise<FlowSurfaceResolvedRef | FlowSurfaceCompiledPlanStepSelectorRef> {
+): Promise<
+  | FlowSurfaceResolvedRef
+  | FlowSurfaceCompiledPlanStepSelectorRef
+  | { ref: string; summary: { source: 'created'; ref: string } }
+> {
   const normalizedSelector = normalizePlanSelector(actionName, selector, deps, fieldName);
   if ('step' in normalizedSelector) {
     if (!priorStepIds.has(normalizedSelector.step)) {
@@ -184,10 +194,19 @@ async function resolvePlanSelectorInContext(
   }
   if ('ref' in normalizedSelector) {
     const refInfo = context.refMap.get(normalizedSelector.ref);
-    if (!refInfo) {
-      throwBadRequest(`flowSurfaces ${actionName} ${fieldName}.ref '${normalizedSelector.ref}' is not defined`);
+    if (refInfo) {
+      return refInfo;
     }
-    return refInfo;
+    if (priorCreatedRefs.has(normalizedSelector.ref)) {
+      return {
+        ref: normalizedSelector.ref,
+        summary: {
+          source: 'created',
+          ref: normalizedSelector.ref,
+        },
+      };
+    }
+    throwBadRequest(`flowSurfaces ${actionName} ${fieldName}.ref '${normalizedSelector.ref}' is not defined`);
   }
   const resolved = await deps.resolveLocator(normalizedSelector.locator, options);
   if (!context.surfaceResolved) {
@@ -242,14 +261,25 @@ export async function compilePlanStep(
   context: FlowSurfacePlanSurfaceContext,
   deps: CompilePlanStepDeps,
   priorStepIds: Set<string>,
+  priorCreatedRefs: Set<string>,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceCompiledPlanStep> {
+  const valuesForRuntimeRefs =
+    step.action === 'compose'
+      ? normalizeComposeInlineRefsForPlan(step.values || {}, `plan.steps[${index}].values`)
+      : _.cloneDeep(step.values || {});
   const payload = replaceFlowSurfacePlanStepRefs(
     actionName,
-    _.cloneDeep(step.values || {}),
+    valuesForRuntimeRefs,
     `plan.steps[${index}].values`,
     priorStepIds,
+    new Set<string>([...context.refMap.keys(), ...priorCreatedRefs]),
   );
+  const createdRefs = collectFlowSurfaceCreatedRefs(step.action, step.values || {});
+  assertNoDuplicateFlowSurfaceCreatedRefs(createdRefs, `flowSurfaces ${actionName} plan.steps[${index}]`, {
+    existingRefs: [...context.refMap.keys(), ...priorCreatedRefs],
+    reservedNames: [...priorStepIds, ...(step.id ? [step.id] : [])],
+  });
   const compiled: FlowSurfaceCompiledPlanStep = {
     index,
     ...(step.id ? { id: step.id } : {}),
@@ -258,10 +288,24 @@ export async function compilePlanStep(
     resolvedSelectors: {},
     usedRefs: [],
     usedStepRefs: [],
+    createdRefs,
   };
-  const addUsedRef = (refInfo: FlowSurfaceResolvedRef | FlowSurfaceCompiledPlanStepSelectorRef) => {
+  const addUsedRef = (
+    refInfo:
+      | FlowSurfaceResolvedRef
+      | FlowSurfaceCompiledPlanStepSelectorRef
+      | {
+          ref: string;
+          summary: {
+            source: 'created';
+            ref: string;
+          };
+        },
+  ) => {
     if ('summary' in refInfo) {
-      compiled.usedStepRefs.push(refInfo);
+      if (refInfo.summary.source === 'step') {
+        compiled.usedStepRefs.push(refInfo);
+      }
       return refInfo.summary;
     }
     if (refInfo.source === 'request' || refInfo.source === 'declared') {
@@ -306,12 +350,16 @@ export async function compilePlanStep(
       deps,
       `plan.steps[${index}].selectors.target`,
       priorStepIds,
+      priorCreatedRefs,
       options,
     );
     compiled.payload = {
       ...payload,
       target: {
-        uid: 'summary' in target ? ({ ref: toFlowSurfaceStepResultRefPath(target) } as any) : target.uid,
+        uid:
+          'summary' in target
+            ? ({ ref: 'step' in target ? toFlowSurfaceStepResultRefPath(target) : target.ref } as any)
+            : target.uid,
       },
     };
     compiled.resolvedSelectors.target = addUsedRef(target);
@@ -323,11 +371,15 @@ export async function compilePlanStep(
       deps,
       `plan.steps[${index}].selectors.target`,
       priorStepIds,
+      priorCreatedRefs,
       options,
     );
     compiled.payload = {
       ...payload,
-      uid: 'summary' in target ? ({ ref: toFlowSurfaceStepResultRefPath(target) } as any) : target.uid,
+      uid:
+        'summary' in target
+          ? ({ ref: 'step' in target ? toFlowSurfaceStepResultRefPath(target) : target.ref } as any)
+          : target.uid,
     };
     compiled.resolvedSelectors.target = addUsedRef(target);
   } else if (spec.selectorMode === 'sourceTarget') {
@@ -338,6 +390,7 @@ export async function compilePlanStep(
       deps,
       `plan.steps[${index}].selectors.source`,
       priorStepIds,
+      priorCreatedRefs,
       options,
     );
     const target = await resolvePlanSelectorInContext(
@@ -347,12 +400,19 @@ export async function compilePlanStep(
       deps,
       `plan.steps[${index}].selectors.target`,
       priorStepIds,
+      priorCreatedRefs,
       options,
     );
     compiled.payload = {
       ...payload,
-      sourceUid: 'summary' in source ? ({ ref: toFlowSurfaceStepResultRefPath(source) } as any) : source.uid,
-      targetUid: 'summary' in target ? ({ ref: toFlowSurfaceStepResultRefPath(target) } as any) : target.uid,
+      sourceUid:
+        'summary' in source
+          ? ({ ref: 'step' in source ? toFlowSurfaceStepResultRefPath(source) : source.ref } as any)
+          : source.uid,
+      targetUid:
+        'summary' in target
+          ? ({ ref: 'step' in target ? toFlowSurfaceStepResultRefPath(target) : target.ref } as any)
+          : target.uid,
     };
     compiled.resolvedSelectors.source = addUsedRef(source);
     compiled.resolvedSelectors.target = addUsedRef(target);

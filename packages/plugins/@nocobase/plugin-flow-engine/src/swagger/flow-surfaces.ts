@@ -174,6 +174,9 @@ function valuesCompatibilityNote(description: string) {
 const FLOW_SURFACES_READ_ACL_NOTE =
   'Read actions (`get` / `describeSurface` / `validatePlan` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
+const FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE =
+  '`validatePlan` is open to `loggedIn` by default for read-only selector compilation. When `validation.collectFieldIssues=true`, the rollback preview path requires the same write permission as `executePlan` (`ui.flowSurfaces`).';
+
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
   readAclNote: FLOW_SURFACES_READ_ACL_NOTE,
@@ -244,7 +247,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Resolve plan selectors and preview the compiled low-level calls',
     description: valuesCompatibilityNote(
-      `Validates a high-level plan against the current surface fingerprint, resolves { ref | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved ref bindings. When \`surface\` uses { ref }, that ref must also appear in \`bindRefs\` so the server can anchor the current surface root. Used request refs must also be persistable; route-backed page/tab roots are rejected. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Validates a high-level plan against the current surface fingerprint, resolves { ref | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved ref bindings. When \`surface\` uses { ref }, that ref must also appear in \`bindRefs\` so the server can anchor the current surface root. Used request refs must also be persistable; route-backed page/tab roots are rejected. When \`validation.collectFieldIssues=true\`, validatePlan additionally runs a rolled-back dry-run preview for field additions and returns aggregated \`validation.fieldIssues\` instead of stopping at the first field-addability error. Non-field preview errors still fail fast. ${FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceValidatePlanRequest', examples.validatePlan),
     responses: responses('FlowSurfaceValidatePlanResponse'),
@@ -253,7 +256,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute a high-level plan and persist used bind refs as declared refs',
     description: valuesCompatibilityNote(
-      'Executes validated high-level plan steps as the recommended orchestration entry for AI and automation callers by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Request-scoped bind refs used by selectors, plus `surface: { ref }` when it anchors the current surface, are persisted back as declared refs. Used request refs must be persistable; route-backed page/tab roots are rejected. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false` and an empty refs map. Clients that need a fresh fingerprint for the next round should call `describeSurface` again.',
+      'Executes validated high-level plan steps as the recommended orchestration entry for AI and automation callers by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Request-scoped bind refs used by selectors, plus `surface: { ref }` when it anchors the current surface, are persisted back as declared refs. Used request refs must be persistable. Same-run dependencies should use caller-side `{ step, path }` refs for scalar outputs, and explicit created refs for new nodes. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false` and an empty refs map. Clients that need a fresh fingerprint for the next round should call `describeSurface` again.',
     ),
     requestBody: requestBody('FlowSurfaceExecutePlanRequest', examples.executePlan),
     responses: responses('FlowSurfaceExecutePlanResponse'),
@@ -263,7 +266,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `ref` values, and the compose result returns the same refs so later plan steps can reference nested popup or form nodes through normal step-result paths. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
     ),
     requestBody: {
       required: true,
@@ -1749,9 +1752,12 @@ const schemas = {
       },
       {
         type: 'object',
-        required: ['key'],
+        required: ['ref'],
         properties: {
-          key: {
+          ref: {
+            type: 'string',
+          },
+          uid: {
             type: 'string',
           },
           span: {
@@ -1784,8 +1790,9 @@ const schemas = {
         type: 'object',
         required: ['fieldPath'],
         properties: {
-          key: {
+          ref: {
             type: 'string',
+            description: 'Optional stable field ref returned in compose results and usable in later plan steps.',
           },
           fieldPath: {
             type: 'string',
@@ -1799,8 +1806,8 @@ const schemas = {
             type: 'string',
           },
           target: {
-            type: 'string',
-            description: 'Reference to another compose block key, typically used by filter-form fields.',
+            oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateRef')],
+            description: 'Reference to another compose block ref, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceComposeFieldPopup'),
@@ -1811,8 +1818,9 @@ const schemas = {
         type: 'object',
         required: ['type'],
         properties: {
-          key: {
+          ref: {
             type: 'string',
+            description: 'Optional stable field ref returned in compose results and usable in later plan steps.',
           },
           type: {
             type: 'string',
@@ -1921,7 +1929,7 @@ const schemas = {
         type: 'object',
         required: ['type'],
         properties: {
-          key: {
+          ref: {
             type: 'string',
           },
           type: {
@@ -1944,7 +1952,7 @@ const schemas = {
         type: 'object',
         required: ['type'],
         properties: {
-          key: {
+          ref: {
             type: 'string',
           },
           type: {
@@ -1960,10 +1968,10 @@ const schemas = {
   },
   FlowSurfaceComposeBlockSpec: {
     type: 'object',
-    required: ['key'],
+    required: ['ref'],
     anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
-      key: {
+      ref: {
         type: 'string',
       },
       type: {
@@ -2025,7 +2033,7 @@ const schemas = {
   FlowSurfaceComposeFieldResult: {
     type: 'object',
     properties: {
-      key: {
+      ref: {
         type: 'string',
       },
       fieldPath: {
@@ -2073,7 +2081,7 @@ const schemas = {
   FlowSurfaceComposeActionResult: {
     type: 'object',
     properties: {
-      key: {
+      ref: {
         type: 'string',
       },
       type: {
@@ -2107,7 +2115,7 @@ const schemas = {
   FlowSurfaceComposeBlockResult: {
     type: 'object',
     properties: {
-      key: {
+      ref: {
         type: 'string',
       },
       type: {
@@ -2167,7 +2175,6 @@ const schemas = {
         type: 'string',
         enum: ['append', 'replace'],
       },
-      keyToUid: ref('FlowSurfaceClientKeyMap'),
       blocks: {
         type: 'array',
         items: ref('FlowSurfaceComposeBlockResult'),
@@ -2271,7 +2278,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceValidatePlanRequest: {
+  FlowSurfacePlanRequestBase: {
     type: 'object',
     required: ['plan'],
     properties: {
@@ -2284,6 +2291,89 @@ const schemas = {
         items: ref('FlowSurfaceBindRef'),
       },
       plan: ref('FlowSurfacePlanDocument'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidatePlanRequestExtension: {
+    type: 'object',
+    properties: {
+      validation: ref('FlowSurfaceValidatePlanValidationRequest'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidatePlanRequest: {
+    allOf: [ref('FlowSurfacePlanRequestBase'), ref('FlowSurfaceValidatePlanRequestExtension')],
+  },
+  FlowSurfaceValidatePlanValidationRequest: {
+    type: 'object',
+    properties: {
+      collectFieldIssues: {
+        type: 'boolean',
+        description:
+          'When true, validatePlan runs a rolled-back dry-run preview for addField/compose fields and returns aggregated fieldIssues. This preview mode requires the same write permission as executePlan.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidatePlanFieldIssue: {
+    type: 'object',
+    required: ['stepIndex', 'action', 'path', 'code', 'message', 'status', 'type', 'blocking'],
+    properties: {
+      stepIndex: {
+        type: 'number',
+      },
+      stepId: {
+        type: 'string',
+      },
+      action: {
+        type: 'string',
+        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
+      },
+      path: {
+        type: 'string',
+      },
+      code: {
+        type: 'string',
+      },
+      message: {
+        type: 'string',
+      },
+      status: {
+        type: 'number',
+      },
+      type: {
+        type: 'string',
+        enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
+      },
+      blocking: {
+        type: 'boolean',
+      },
+      blockRef: {
+        type: 'string',
+      },
+      fieldRef: {
+        type: 'string',
+      },
+      fieldPath: {
+        type: 'string',
+      },
+      associationPathName: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidatePlanValidationResult: {
+    type: 'object',
+    required: ['ok', 'fieldIssues'],
+    properties: {
+      ok: {
+        type: 'boolean',
+      },
+      fieldIssues: {
+        type: 'array',
+        items: ref('FlowSurfaceValidatePlanFieldIssue'),
+      },
     },
     additionalProperties: false,
   },
@@ -2303,11 +2393,12 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfacePlanCompiledStep'),
       },
+      validation: ref('FlowSurfaceValidatePlanValidationResult'),
     },
     additionalProperties: false,
   },
   FlowSurfaceExecutePlanRequest: {
-    allOf: [ref('FlowSurfaceValidatePlanRequest')],
+    allOf: [ref('FlowSurfacePlanRequestBase')],
   },
   FlowSurfaceExecutePlanResponse: {
     type: 'object',

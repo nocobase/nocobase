@@ -39,7 +39,7 @@ describe('flowSurfaces templates', () => {
     });
     expect(app.pm.get('ui-templates')).toBeTruthy();
     rootAgent = await loginFlowSurfacesRootAgent(app);
-    await setupFixtureCollections(rootAgent);
+    await setupFixtureCollections(rootAgent, app.db);
   }, 120000);
 
   afterAll(async () => {

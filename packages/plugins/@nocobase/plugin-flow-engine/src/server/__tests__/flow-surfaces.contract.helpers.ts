@@ -11,6 +11,7 @@ import type { Database, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 export type FlowSurfacesContractContext = {
@@ -27,7 +28,7 @@ export async function createFlowSurfacesContractContext(): Promise<FlowSurfacesC
   const flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
   const routesRepo = db.getRepository('desktopRoutes');
   const rootAgent = await loginFlowSurfacesRootAgent(app);
-  await setupFixtureCollections(rootAgent);
+  await setupFixtureCollections(rootAgent, db);
   return {
     app,
     db,
@@ -107,7 +108,7 @@ export async function addBlockData(rootAgent: any, values: Record<string, any>) 
   );
 }
 
-export async function setupFixtureCollections(rootAgent: any) {
+export async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
       name: 'employees',
@@ -174,5 +175,12 @@ export async function setupFixtureCollections(rootAgent: any) {
       otherKey: 'skillId',
       interface: 'm2m',
     },
+  });
+
+  await waitForFixtureCollectionsReady(db, {
+    employees: ['nickname', 'status', 'profileId'],
+    flow_surface_profiles: ['bio'],
+    skills: ['label'],
+    employee_skills: ['id', 'employeeId', 'skillId'],
   });
 }

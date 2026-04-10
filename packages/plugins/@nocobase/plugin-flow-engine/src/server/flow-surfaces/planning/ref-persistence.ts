@@ -14,7 +14,6 @@ import {
   FLOW_SURFACE_INTERNAL_META_KEY,
   FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE,
   FLOW_SURFACE_RESERVED_REFS,
-  FLOW_SURFACE_SYSTEM_REF,
 } from './ref-registry';
 import type { FlowSurfaceResolvedRef } from './types';
 
@@ -36,12 +35,6 @@ export function assertRefPersistable(actionName: string, refInfo: FlowSurfaceRes
   if (FLOW_SURFACE_RESERVED_REFS.has(refInfo.ref)) {
     throwBadRequest(
       `flowSurfaces ${actionName} ref '${refInfo.ref}' is reserved and cannot be persisted`,
-      FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE,
-    );
-  }
-  if (node?.use === 'RootPageModel' || node?.use === 'RootPageTabModel') {
-    throwBadRequest(
-      `flowSurfaces ${actionName} ref '${refInfo.ref}' cannot be persisted on route-backed surface '${refInfo.uid}'; use locator or system ref '${FLOW_SURFACE_SYSTEM_REF}' instead`,
       FLOW_SURFACE_REF_NOT_PERSISTABLE_CODE,
     );
   }
