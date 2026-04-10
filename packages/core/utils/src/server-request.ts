@@ -48,7 +48,14 @@ function matchesIpEntry(hostname: string, entry: string): boolean {
     }
 
     if (entry.includes('/')) {
-      return addr.match(ipaddr.parseCIDR(entry));
+      const cidr = ipaddr.parseCIDR(entry);
+      // parseCIDR returns [IPv4, number] | [IPv6, number]; match() overloads
+      // are not mutually compatible in the union, so we cast per kind.
+      if (addr.kind() !== cidr[0].kind()) return false;
+      if (addr.kind() === 'ipv4') {
+        return (addr as ipaddr.IPv4).match(cidr as [ipaddr.IPv4, number]);
+      }
+      return (addr as ipaddr.IPv6).match(cidr as [ipaddr.IPv6, number]);
     }
 
     // Exact IP comparison — normalise both sides first
