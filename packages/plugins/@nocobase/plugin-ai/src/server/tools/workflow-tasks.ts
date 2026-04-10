@@ -38,21 +38,38 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
 
   const processor = workflowPlugin.createProcessor(execution);
   const config = processor.getParsedValue(flowNode.config, flowNode.id);
+
+  let schema: any;
   if (!config?.structuredOutput?.schema) {
-    return;
+    schema = {
+      type: 'object',
+      properties: {
+        result: {
+          type: 'object',
+          properties: {
+            response: {
+              type: 'string',
+              description: 'The text message sent to the user can be in any format',
+            },
+          },
+        },
+      },
+      additionalProperties: false,
+    };
+  } else {
+    const result =
+      typeof config.structuredOutput.schema === 'string'
+        ? JSON.parse(config.structuredOutput.schema)
+        : config.structuredOutput.schema;
+    schema = {
+      type: 'object',
+      properties: {
+        result,
+      },
+      additionalProperties: false,
+    };
   }
 
-  const result =
-    typeof config.structuredOutput.schema === 'string'
-      ? JSON.parse(config.structuredOutput.schema)
-      : config.structuredOutput.schema;
-  const schema: any = {
-    type: 'object',
-    properties: {
-      result,
-    },
-    additionalProperties: false,
-  };
   if (config.requiresApproval === true) {
     schema.properties.requiresApproval = {
       type: 'boolean',

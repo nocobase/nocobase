@@ -45,8 +45,13 @@ export class AIEmployeeTaskModel extends FlowModel {
             },
             userId: {
               type: 'string',
-              title: tExpr('Users', { ns: namespace }),
+              title: tExpr('Operator', { ns: namespace }),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Complete the task using operator permissions', {
+                  ns: namespace,
+                }),
+              },
               'x-component': UsersSelect,
               'x-component-props': {
                 multiple: false,

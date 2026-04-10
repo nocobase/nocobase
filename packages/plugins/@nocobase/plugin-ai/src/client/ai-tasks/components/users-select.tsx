@@ -18,7 +18,7 @@ function isUserKeyField(field) {
   return field.collectionName === 'users' && field.name === 'id';
 }
 
-export function UsersSelect({ multiple = false, value, onChange }) {
+export function UsersSelect({ disabled = false, multiple = false, value, onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
   const handleSelectChanged = (v) => {
@@ -49,6 +49,7 @@ export function UsersSelect({ multiple = false, value, onChange }) {
         value={value}
         onChange={handleSelectChanged}
         multiple={multiple}
+        disabled={disabled}
       />
     </Variable.Input>
   );

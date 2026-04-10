@@ -11,9 +11,13 @@ import React from 'react';
 import { Instruction, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 import { UserOutlined } from '@ant-design/icons';
 import { Configuration } from './configuration';
+import { tExpr } from '@nocobase/flow-engine';
+import { namespace } from '../../../locale';
 
 export class AIEmployeeInstruction extends Instruction {
-  title = 'AI employee';
+  title = tExpr('AI employee', {
+    ns: namespace,
+  });
   type = 'ai-employee';
   group = 'ai';
   // @ts-ignore

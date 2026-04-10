@@ -202,7 +202,7 @@ export class AIEmployeeInstruction extends Instruction {
         transaction,
       });
 
-      if (assignees?.length) {
+      if (requiresApproval === true && assignees?.length) {
         await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
           values: assignees.map((userId) => ({
             userId,

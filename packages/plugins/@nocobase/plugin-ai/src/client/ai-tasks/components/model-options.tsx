@@ -66,6 +66,11 @@ export const ModelOptions: React.FC = () => {
             type: 'object',
             title: tExpr('Model', { ns: namespace }),
             'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip: tExpr('Select the LLM to be used for the task', {
+                ns: namespace,
+              }),
+            },
             'x-component': ModelSelect,
             required: true,
           },

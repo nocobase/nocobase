@@ -10,7 +10,8 @@
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
-import { useT } from '../../locale';
+import { namespace, useT } from '../../locale';
+import { tExpr } from '@nocobase/flow-engine';
 
 export const StructuredOutput: React.FC = () => {
   const t = useT();
@@ -24,7 +25,9 @@ export const StructuredOutput: React.FC = () => {
             type: 'object',
             properties: {
               schema: {
-                title: 'JSON Schema',
+                title: tExpr('Structured output', {
+                  ns: namespace,
+                }),
                 type: 'string',
                 description: (
                   <>
@@ -35,6 +38,9 @@ export const StructuredOutput: React.FC = () => {
                   </>
                 ),
                 'x-decorator': 'FormItem',
+                'x-decorator-props': {
+                  tooltip: tExpr('Define the data structure of the final output of the node', { ns: namespace }),
+                },
                 'x-component': 'WorkflowVariableJSON',
                 'x-component-props': {
                   json5: true,

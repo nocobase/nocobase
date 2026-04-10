@@ -61,6 +61,9 @@ export const WebSearchOptions: React.FC = () => {
             type: 'boolean',
             default: false,
             'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip: tExpr('Enable the LLM to use web search tools during task execution', { ns: namespace }),
+            },
             'x-component': WebSearchSwitch,
           },
         },

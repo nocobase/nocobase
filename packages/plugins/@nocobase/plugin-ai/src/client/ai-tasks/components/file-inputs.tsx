@@ -22,14 +22,16 @@ export const FileInputs: React.FC = () => {
         type: 'void',
         properties: {
           files: {
-            title: tExpr('Files', { ns: namespace }),
+            title: tExpr('Attachments', { ns: namespace }),
             type: 'array',
+            'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip: tExpr('Select the file or image to be sent to the LLM', { ns: namespace }),
+            },
             'x-component': 'ArrayCollapse',
             'x-component-props': {
               size: 'small',
-              bordered: false,
             },
-            'x-decorator': 'FormItem',
             items: {
               type: 'object',
               'x-component': 'ArrayCollapse.CollapsePanel',
@@ -37,6 +39,10 @@ export const FileInputs: React.FC = () => {
                 header: tExpr('Files', { ns: namespace }),
               },
               properties: {
+                index: {
+                  type: 'void',
+                  'x-component': 'ArrayCollapse.Index',
+                },
                 form: {
                   type: 'void',
                   'x-component': 'FormLayout',
@@ -45,21 +51,32 @@ export const FileInputs: React.FC = () => {
                   },
                   properties: {
                     type: {
-                      title: tExpr('Type', { ns: namespace }),
+                      title: tExpr('Attachment Type', { ns: namespace }),
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-component': 'Select',
                       enum: [
-                        { label: tExpr('File (attachment record ID)', { ns: namespace }), value: 'file_id' },
-                        { label: tExpr('File (send via URL)', { ns: namespace }), value: 'file_url' },
+                        { label: tExpr('File (load via Files collection)', { ns: namespace }), value: 'file_id' },
+                        { label: tExpr('File (load via URL)', { ns: namespace }), value: 'file_url' },
                       ],
                       default: 'file_id',
                     },
                     collection: {
                       type: 'string',
                       title: '{{t("Collection")}}',
-                      required: true,
-                      'x-reactions': [],
+                      'x-reactions': [
+                        {
+                          dependencies: ['.type'],
+                          fulfill: {
+                            schema: {
+                              'x-visible': '{{$deps[0] === "file_id"}}',
+                            },
+                            state: {
+                              required: '{{$deps[0] === "file_id"}}',
+                            },
+                          },
+                        },
+                      ],
                       'x-decorator': 'FormItem',
                       'x-component': 'DataSourceCollectionCascader',
                       'x-component-props': {
@@ -72,13 +89,24 @@ export const FileInputs: React.FC = () => {
                       },
                     },
                     value: {
-                      title: tExpr('Files', { ns: namespace }),
+                      title: tExpr('ID', { ns: namespace }),
                       type: 'string',
+                      'x-reactions': [
+                        {
+                          dependencies: ['.type'],
+                          fulfill: {
+                            schema: {
+                              title: `{{ $deps[0] === "file_url" ? t("URL") : t("ID") }}`,
+                            },
+                          },
+                        },
+                      ],
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
                       'x-component-props': {
                         changeOnSelect: true,
                       },
+                      required: true,
                     },
                   },
                 },

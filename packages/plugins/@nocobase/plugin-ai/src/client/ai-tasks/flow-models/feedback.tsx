@@ -32,15 +32,32 @@ export class AIEmployeeTaskFeedbackModel extends FlowModel {
               type: 'boolean',
               default: false,
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Whether user approval is required before the task outputs the final result', {
+                  ns: namespace,
+                }),
+              },
               'x-component': Switch,
             },
             assignees: {
               type: 'array',
               title: tExpr('Assignees', { ns: namespace }),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Users who can approve the final output result of the task', { ns: namespace }),
+              },
               'x-component': UsersSelect,
               'x-component-props': {
                 multiple: true,
+              },
+              'x-reactions': {
+                dependencies: ['requiresApproval'],
+                fulfill: {
+                  state: {
+                    disabled: '{{$deps[0] !== true}}',
+                    required: '{{$deps[0] === true}}',
+                  },
+                },
               },
               default: [],
             },

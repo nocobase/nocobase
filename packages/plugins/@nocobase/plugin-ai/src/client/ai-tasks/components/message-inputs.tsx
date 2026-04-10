@@ -39,6 +39,9 @@ export const MessageInputs: React.FC<{ aiEmployeesMap: any }> = ({ aiEmployeesMa
                 title: tExpr('Default user message', { ns: namespace }),
                 type: 'string',
                 'x-decorator': 'FormItem',
+                'x-decorator-props': {
+                  tooltip: tExpr('Enter the specific task description', { ns: namespace }),
+                },
                 'x-component': WorkflowVariableRawTextArea,
               },
             },
