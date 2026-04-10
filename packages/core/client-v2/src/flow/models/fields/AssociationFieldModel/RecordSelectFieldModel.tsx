@@ -29,6 +29,7 @@ import { AssociationFieldModel } from './AssociationFieldModel';
 import {
   buildOpenerUids,
   LabelByField,
+  normalizeAssociationFieldNames,
   resolveOptions,
   toSelectValue,
   type AssociationOption,
@@ -186,7 +187,7 @@ const useFieldPermissionMessage = (model, allowEdit) => {
 
 const LazySelect = (props: Readonly<LazySelectProps>) => {
   const {
-    fieldNames = { label: 'label', value: 'value' },
+    fieldNames,
     value,
     multiple,
     allowMultiple,
@@ -198,10 +199,14 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     allowEdit = true,
     ...others
   } = props;
+  const model: any = useFlowModel();
+  const normalizedFieldNames = normalizeAssociationFieldNames(
+    fieldNames,
+    model?.context?.collectionField?.targetCollection,
+  );
   const isMultiple = Boolean(multiple && allowMultiple);
   const shouldKeepOpenOnSelect = Boolean(keepDropdownOpenOnSelect && isMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
-  const model: any = useFlowModel();
   // 运行时状态挂在 model 上，避免值变化触发重渲染后本地状态丢失导致下拉收起
   const keepOpenRuntimeRef = useRef<{ open?: boolean; preventCloseOnSelect: boolean }>();
   if (!keepOpenRuntimeRef.current) {
@@ -225,8 +230,8 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
   useEffect(() => {
     const resource: any = model?.resource;
     if (!resource || typeof resource.get !== 'function') return;
-    const valueKey = fieldNames?.value;
-    const labelKey = fieldNames?.label;
+    const valueKey = normalizedFieldNames.value;
+    const labelKey = normalizedFieldNames.label;
     if (!valueKey || !labelKey) return;
 
     const current = value;
@@ -279,7 +284,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         }
       })();
     });
-  }, [fieldNames?.label, fieldNames?.value, isMultiple, model, onChange, value]);
+  }, [isMultiple, model, normalizedFieldNames.label, normalizedFieldNames.value, onChange, value]);
 
   const QuickAddContent = ({ searchText }) => {
     return (
@@ -349,9 +354,9 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         labelInValue
         //@ts-ignore
         onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
-        fieldNames={fieldNames}
+        fieldNames={normalizedFieldNames}
         options={realOptions}
-        value={toSelectValue(value, fieldNames, isMultiple)}
+        value={toSelectValue(value, normalizedFieldNames, isMultiple)}
         mode={isMultiple ? 'multiple' : undefined}
         open={shouldKeepOpenOnSelect ? dropdownOpen : undefined}
         onChange={(value, option) => {
@@ -385,7 +390,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
                 }
               }}
             >
-              <LabelByField option={data} fieldNames={fieldNames} />
+              <LabelByField option={data} fieldNames={normalizedFieldNames} />
             </div>
           );
         }}
@@ -406,7 +411,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
           );
         }}
         dropdownRender={(menu) => {
-          const isFullMatch = realOptions.some((v) => v[fieldNames.label] === others.searchText);
+          const isFullMatch = realOptions.some((v) => v[normalizedFieldNames.label] === others.searchText);
           return (
             <>
               {quickCreate === 'quickAdd' && allowCreate && allowEdit && others.searchText ? (
@@ -475,7 +480,10 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
   }
 
   getFilterValue() {
-    const fieldNames = this.props.fieldNames || { label: 'label', value: 'value' };
+    const fieldNames = normalizeAssociationFieldNames(
+      this.props.fieldNames,
+      this.context.collectionField?.targetCollection,
+    );
     return Array.isArray(this.props.value)
       ? this.props.value.map((item) => item[fieldNames.value])
       : this.props.value?.[fieldNames.value];
@@ -534,7 +542,10 @@ RecordSelectFieldModel.registerFlow({
   steps: {
     bindEvent: {
       handler(ctx, params) {
-        const labelFieldName = ctx.model.props.fieldNames.label;
+        const labelFieldName = normalizeAssociationFieldNames(
+          ctx.model.props.fieldNames,
+          ctx.model.collectionField?.targetCollection,
+        ).label;
         const searchGroupKey = getSearchGroupKey(labelFieldName);
 
         ctx.model.onDropdownVisibleChange = (open) => {
@@ -572,7 +583,10 @@ RecordSelectFieldModel.registerFlow({
   steps: {
     setScope: {
       async handler(ctx, params) {
-        const labelFieldValue = ctx.model.props.fieldNames.value;
+        const labelFieldValue = normalizeAssociationFieldNames(
+          ctx.model.props.fieldNames,
+          ctx.model.collectionField?.targetCollection,
+        ).value;
         const resource = ctx.model.resource;
         const options = ctx.model.getDataSource();
         resource.setPage(1);
@@ -643,8 +657,11 @@ RecordSelectFieldModel.registerFlow({
 async function originalHandler(ctx, params) {
   try {
     const targetCollection = ctx.model.collectionField.targetCollection;
-    const labelFieldName = ctx.model.props.fieldNames.label;
+    const labelFieldName = normalizeAssociationFieldNames(ctx.model.props.fieldNames, targetCollection).label;
     const targetLabelField = targetCollection.getField(labelFieldName);
+    if (!targetLabelField) {
+      return;
+    }
 
     const targetInterface = targetLabelField.getInterfaceOptions();
 
