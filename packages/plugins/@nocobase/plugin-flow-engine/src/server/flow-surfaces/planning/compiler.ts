@@ -275,7 +275,12 @@ export async function compilePlanStep(
     priorStepIds,
     new Set<string>([...context.refMap.keys(), ...priorCreatedRefs]),
   );
-  const createdRefs = collectFlowSurfaceCreatedRefs(step.action, step.values || {});
+  const createdRefs = collectFlowSurfaceCreatedRefs(step.action, step.values || {}, {
+    targetSelectorRef:
+      _.isPlainObject(step.selectors?.target) && typeof step.selectors.target.ref === 'string'
+        ? String(step.selectors.target.ref || '').trim()
+        : undefined,
+  });
   assertNoDuplicateFlowSurfaceCreatedRefs(createdRefs, `flowSurfaces ${actionName} plan.steps[${index}]`, {
     existingRefs: [...context.refMap.keys(), ...priorCreatedRefs],
     reservedNames: [...priorStepIds, ...(step.id ? [step.id] : [])],

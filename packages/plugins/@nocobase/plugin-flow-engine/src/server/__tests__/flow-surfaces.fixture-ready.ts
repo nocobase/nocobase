@@ -9,6 +9,20 @@
 
 import type { Database } from '@nocobase/database';
 
+function resolveFixtureTableName(db: Database, collectionName: string) {
+  const collection = db.getCollection(collectionName);
+
+  if (collection?.getTableNameWithSchema) {
+    return collection.getTableNameWithSchema() as any;
+  }
+
+  if (db.inDialect('postgres')) {
+    return db.utils.addSchema(collectionName, db.options.schema || 'public');
+  }
+
+  return collectionName;
+}
+
 export async function waitForFixtureCollectionsReady(
   db: Database,
   requiredCollections: Record<string, string[]>,
@@ -16,23 +30,28 @@ export async function waitForFixtureCollectionsReady(
 ) {
   const deadline = Date.now() + timeoutMs;
   const queryInterface = db.sequelize.getQueryInterface();
+  let pendingCollections: string[] = [];
 
   while (Date.now() < deadline) {
     let allReady = true;
+    pendingCollections = [];
 
     for (const [collectionName, requiredColumns] of Object.entries(requiredCollections)) {
-      const collection = db.getCollection(collectionName);
-      const tableName = collection?.model?.getTableName?.() || collection?.name || collectionName;
+      const tableName = resolveFixtureTableName(db, collectionName);
 
       try {
         const columns = await queryInterface.describeTable(tableName as any);
         const missingColumns = requiredColumns.filter((column) => !columns?.[column]);
         if (missingColumns.length) {
           allReady = false;
+          pendingCollections.push(`${collectionName}(${missingColumns.join(', ')})`);
           break;
         }
-      } catch {
+      } catch (error) {
         allReady = false;
+        pendingCollections.push(
+          `${collectionName}(${error instanceof Error ? error.message : 'describeTable failed'})`,
+        );
         break;
       }
     }
@@ -44,5 +63,5 @@ export async function waitForFixtureCollectionsReady(
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  throw new Error(`Fixture collections are not ready: ${Object.keys(requiredCollections).join(', ')}`);
+  throw new Error(`Fixture collections are not ready: ${pendingCollections.join(', ')}`);
 }

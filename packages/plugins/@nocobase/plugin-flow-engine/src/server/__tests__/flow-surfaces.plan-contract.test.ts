@@ -1185,6 +1185,547 @@ describe('flowSurfaces plan contract', () => {
     });
   });
 
+  it('should validate configure-created popup refs for same-plan popup composition without mutating the surface', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validate configure popup refs page',
+      tabTitle: 'Validate configure popup refs tab',
+    });
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'addDetails',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                type: 'details',
+                resourceInit: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+              },
+            },
+            {
+              id: 'addManagerField',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                ref: 'employeeManagerTitle',
+                fieldPath: 'manager.nickname',
+              },
+            },
+            {
+              id: 'configureManagerPopup',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'employeeManagerTitle.field',
+                },
+              },
+              values: {
+                ref: 'managerPopup',
+                changes: {
+                  openView: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                    associationName: 'employees.manager',
+                    mode: 'modal',
+                  },
+                },
+              },
+            },
+            {
+              id: 'composeManagerPopup',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'managerPopup.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'managerDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [{ ref: 'managerDetails.nickname', fieldPath: 'nickname' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'configureManagerPopup',
+          action: 'configure',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'employeeManagerTitle.field',
+              },
+            },
+            ref: 'managerPopup',
+          }),
+        }),
+        expect.objectContaining({
+          id: 'composeManagerPopup',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'managerPopup.popupGrid',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
+    expect(gridItems).toHaveLength(0);
+  });
+
+  it('should execute configure-created popup refs in the same plan and persist the popup refs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Execute configure popup refs page',
+      tabTitle: 'Execute configure popup refs tab',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'addDetails',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                type: 'details',
+                resourceInit: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+              },
+            },
+            {
+              id: 'addManagerField',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                ref: 'employeeManagerTitle',
+                fieldPath: 'manager.nickname',
+              },
+            },
+            {
+              id: 'configureManagerPopup',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'employeeManagerTitle.field',
+                },
+              },
+              values: {
+                ref: 'managerPopup',
+                changes: {
+                  openView: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                    associationName: 'employees.manager',
+                    mode: 'modal',
+                  },
+                },
+              },
+            },
+            {
+              id: 'composeManagerPopup',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'managerPopup.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'managerDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [
+                      { ref: 'managerDetails.nickname', fieldPath: 'nickname' },
+                      { ref: 'managerDetails.status', fieldPath: 'status' },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+
+    const executeData = getData(executeRes);
+    const resultById = Object.fromEntries(
+      executeData.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
+    );
+    const configureStep = executeData.results.find((item: Record<string, any>) => item.id === 'configureManagerPopup');
+    expect(configureStep).toBeTruthy();
+    expect(resultById.configureManagerPopup.popupPageUid).toBeTruthy();
+    expect(resultById.configureManagerPopup.popupTabUid).toBeTruthy();
+    expect(resultById.configureManagerPopup.popupGridUid).toBeTruthy();
+    expect(configureStep.createdRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'managerPopup.popupPage',
+          uid: resultById.configureManagerPopup.popupPageUid,
+        }),
+        expect.objectContaining({
+          ref: 'managerPopup.popupTab',
+          uid: resultById.configureManagerPopup.popupTabUid,
+        }),
+        expect.objectContaining({
+          ref: 'managerPopup.popupGrid',
+          uid: resultById.configureManagerPopup.popupGridUid,
+        }),
+      ]),
+    );
+    expect(executeData.persistedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'managerPopup.popupPage',
+          uid: resultById.configureManagerPopup.popupPageUid,
+          persisted: true,
+        }),
+        expect.objectContaining({
+          ref: 'managerPopup.popupTab',
+          uid: resultById.configureManagerPopup.popupTabUid,
+          persisted: true,
+        }),
+        expect.objectContaining({
+          ref: 'managerPopup.popupGrid',
+          uid: resultById.configureManagerPopup.popupGridUid,
+          persisted: true,
+        }),
+      ]),
+    );
+    expect(resultById.composeManagerPopup.target.uid).toBe(resultById.configureManagerPopup.popupGridUid);
+
+    const managerDetails = getComposeBlock(resultById.composeManagerPopup, 'managerDetails');
+    const managerDetailsSurface = await getSurface(rootAgent, {
+      uid: managerDetails.uid,
+    });
+    expect(managerDetailsSurface.tree.use).toBe('DetailsBlockModel');
+  });
+
+  it('should infer configure-created popup refs from a target field ref during validatePlan', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validate inferred configure popup refs page',
+      tabTitle: 'Validate inferred configure popup refs tab',
+    });
+
+    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'addDetails',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                type: 'details',
+                resourceInit: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+              },
+            },
+            {
+              id: 'addManagerField',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                ref: 'employeeManagerTitle',
+                fieldPath: 'manager.nickname',
+              },
+            },
+            {
+              id: 'configureManagerPopup',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'employeeManagerTitle.field',
+                },
+              },
+              values: {
+                changes: {
+                  openView: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                    associationName: 'employees.manager',
+                    mode: 'modal',
+                  },
+                },
+              },
+            },
+            {
+              id: 'composeManagerPopup',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'employeeManagerTitle.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'managerDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [{ ref: 'managerDetails.nickname', fieldPath: 'nickname' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validateRes.status).toBe(200);
+
+    const validateData = getData(validateRes);
+    expect(validateData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'composeManagerPopup',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'employeeManagerTitle.popupGrid',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const pageSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
+    expect(gridItems).toHaveLength(0);
+  });
+
+  it('should infer configure-created popup refs from a target field ref during executePlan and persist them', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Execute inferred configure popup refs page',
+      tabTitle: 'Execute inferred configure popup refs tab',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+      values: {
+        surface: {
+          locator: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+        },
+        plan: {
+          steps: [
+            {
+              id: 'addDetails',
+              action: 'addBlock',
+              selectors: {
+                target: {
+                  locator: {
+                    uid: page.tabSchemaUid,
+                  },
+                },
+              },
+              values: {
+                type: 'details',
+                resourceInit: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+              },
+            },
+            {
+              id: 'addManagerField',
+              action: 'addField',
+              selectors: {
+                target: {
+                  step: 'addDetails',
+                  path: 'uid',
+                },
+              },
+              values: {
+                ref: 'employeeManagerTitle',
+                fieldPath: 'manager.nickname',
+              },
+            },
+            {
+              id: 'configureManagerPopup',
+              action: 'configure',
+              selectors: {
+                target: {
+                  ref: 'employeeManagerTitle.field',
+                },
+              },
+              values: {
+                changes: {
+                  openView: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                    associationName: 'employees.manager',
+                    mode: 'modal',
+                  },
+                },
+              },
+            },
+            {
+              id: 'composeManagerPopup',
+              action: 'compose',
+              selectors: {
+                target: {
+                  ref: 'employeeManagerTitle.popupGrid',
+                },
+              },
+              values: {
+                mode: 'replace',
+                blocks: [
+                  {
+                    ref: 'managerDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: [
+                      { ref: 'managerDetails.nickname', fieldPath: 'nickname' },
+                      { ref: 'managerDetails.status', fieldPath: 'status' },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+
+    const executeData = getData(executeRes);
+    const resultById = Object.fromEntries(
+      executeData.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
+    );
+    const configureStep = executeData.results.find((item: Record<string, any>) => item.id === 'configureManagerPopup');
+    expect(configureStep).toBeTruthy();
+    expect(configureStep.createdRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'employeeManagerTitle.popupPage',
+          uid: resultById.configureManagerPopup.popupPageUid,
+        }),
+        expect.objectContaining({
+          ref: 'employeeManagerTitle.popupTab',
+          uid: resultById.configureManagerPopup.popupTabUid,
+        }),
+        expect.objectContaining({
+          ref: 'employeeManagerTitle.popupGrid',
+          uid: resultById.configureManagerPopup.popupGridUid,
+        }),
+      ]),
+    );
+    expect(executeData.persistedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'employeeManagerTitle.popupPage',
+          uid: resultById.configureManagerPopup.popupPageUid,
+          persisted: true,
+        }),
+        expect.objectContaining({
+          ref: 'employeeManagerTitle.popupTab',
+          uid: resultById.configureManagerPopup.popupTabUid,
+          persisted: true,
+        }),
+        expect.objectContaining({
+          ref: 'employeeManagerTitle.popupGrid',
+          uid: resultById.configureManagerPopup.popupGridUid,
+          persisted: true,
+        }),
+      ]),
+    );
+    expect(resultById.composeManagerPopup.target.uid).toBe(resultById.configureManagerPopup.popupGridUid);
+  });
+
   it('should persist only used bindRefs as declared refs and keep metadata hidden from public reads', async () => {
     const page = await createPage(rootAgent, {
       title: 'Ref persistence page',

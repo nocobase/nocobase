@@ -69,8 +69,16 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceContextResponse).toBeTruthy();
     expect(schemas.FlowSurfaceDescribeSurfaceRequest).toBeTruthy();
     expect(schemas.FlowSurfaceDescribeSurfaceResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceDslDocument).toBeTruthy();
+    expect(schemas.FlowSurfaceBlueprintDsl).toBeTruthy();
+    expect(schemas.FlowSurfacePatchDsl).toBeTruthy();
+    expect(schemas.FlowSurfaceDslEntityRef).toBeTruthy();
+    expect(schemas.FlowSurfaceValidateDslRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceValidateDslResponse).toBeTruthy();
     expect(schemas.FlowSurfaceValidatePlanRequest).toBeTruthy();
     expect(schemas.FlowSurfaceValidatePlanResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceExecuteDslRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceExecuteDslResponse).toBeTruthy();
     expect(schemas.FlowSurfaceExecutePlanRequest).toBeTruthy();
     expect(schemas.FlowSurfaceExecutePlanResponse).toBeTruthy();
     expect(schemas.FlowSurfacePlanSelector).toBeTruthy();
@@ -224,6 +232,22 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceValidatePlanValidationResult.properties.fieldIssues.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceValidatePlanFieldIssue',
     );
+    expect(schemas.FlowSurfaceValidateDslRequest.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceDslRequestBase' },
+      { $ref: '#/components/schemas/FlowSurfaceValidatePlanRequestExtension' },
+    ]);
+    expect(schemas.FlowSurfaceValidateDslResponse.properties.dsl.$ref).toBe(
+      '#/components/schemas/FlowSurfaceDslDocument',
+    );
+    expect(schemas.FlowSurfaceValidateDslResponse.properties.plan.$ref).toBe(
+      '#/components/schemas/FlowSurfacePlanDocument',
+    );
+    expect(schemas.FlowSurfaceExecuteDslRequest.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceDslRequestBase' },
+      { $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestExtension' },
+    ]);
+    expect(schemas.FlowSurfaceExecuteDslRequestExtension.properties.verificationMode.enum).toEqual(['strict', 'none']);
+    expect(schemas.FlowSurfaceExecuteDslResponse.properties.verificationMode.enum).toEqual(['strict', 'none']);
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.results.items.$ref).toBe(
       '#/components/schemas/FlowSurfacePlanResultItem',
     );
@@ -239,10 +263,16 @@ describe('flowSurfaces swagger', () => {
     const describeRequest =
       swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
     expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
+    const validateDslRequest =
+      swaggerDocument.paths['/flowSurfaces:validateDsl'].post.requestBody.content['application/json'];
+    expect(validateDslRequest.example?.dsl?.title).toBe('Employees');
     const validateRequest =
       swaggerDocument.paths['/flowSurfaces:validatePlan'].post.requestBody.content['application/json'];
     expect(validateRequest.example?.validation?.collectFieldIssues).toBe(true);
     expect(validateRequest.example?.plan?.steps?.[0]?.action).toBe('configure');
+    const executeDslRequest =
+      swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.content['application/json'];
+    expect(executeDslRequest.example?.verificationMode).toBe('strict');
     const executePath = swaggerDocument.paths['/flowSurfaces:executePlan'].post;
     const executeRequest = executePath.requestBody.content['application/json'];
     expect(executeRequest.example?.plan?.steps?.[0]?.action).toBe('createMenu');

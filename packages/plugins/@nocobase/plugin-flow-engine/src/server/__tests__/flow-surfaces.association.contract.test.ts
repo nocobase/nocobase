@@ -48,7 +48,7 @@ describe('flowSurfaces association contract', () => {
           },
           blocks: [
             {
-              key: 'filter',
+              ref: 'filter',
               type: 'filterForm',
               resource: {
                 dataSourceKey: 'main',
@@ -67,7 +67,7 @@ describe('flowSurfaces association contract', () => {
               actions: ['submit', 'reset'],
             },
             {
-              key: 'table',
+              ref: 'table',
               type: 'table',
               resource: {
                 dataSourceKey: 'main',
@@ -81,8 +81,8 @@ describe('flowSurfaces association contract', () => {
           layout: {
             rows: [
               [
-                { key: 'filter', span: 3 },
-                { key: 'table', span: 7 },
+                { ref: 'filter', span: 3 },
+                { ref: 'table', span: 7 },
               ],
             ],
           },
@@ -91,7 +91,7 @@ describe('flowSurfaces association contract', () => {
     );
 
     expect(composeRes.layout.sizes.row1).toEqual([7, 17]);
-    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const tableFields = composeRes.blocks.find((item: any) => item.ref === 'table')?.fields || [];
     const directRolesField = tableFields.find((item: any) => item.fieldPath === 'roles');
     const rolesTitleField = tableFields.find((item: any) => item.fieldPath === 'roles.title');
     expect(directRolesField?.wrapperUid).toBeTruthy();
@@ -503,7 +503,7 @@ describe('flowSurfaces association contract', () => {
           },
           blocks: [
             {
-              key: 'table',
+              ref: 'table',
               type: 'table',
               resource: {
                 dataSourceKey: 'main',
@@ -517,7 +517,7 @@ describe('flowSurfaces association contract', () => {
       }),
     );
 
-    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const tableFields = composeRes.blocks.find((item: any) => item.ref === 'table')?.fields || [];
     const usernameField = tableFields.find((item: any) => item.fieldPath === 'username');
     expect(usernameField?.wrapperUid).toBeTruthy();
     expect(usernameField?.fieldUid).toBeTruthy();
@@ -603,7 +603,7 @@ describe('flowSurfaces association contract', () => {
           },
           blocks: [
             {
-              key: 'table',
+              ref: 'table',
               type: 'table',
               resource: {
                 dataSourceKey: 'main',
@@ -617,7 +617,7 @@ describe('flowSurfaces association contract', () => {
       }),
     );
 
-    const table = composeRes.blocks.find((item: any) => item.key === 'table');
+    const table = composeRes.blocks.find((item: any) => item.ref === 'table');
     const tableViewAction = table?.recordActions?.[0];
     expect(tableViewAction?.uid).toBeTruthy();
 
@@ -730,7 +730,7 @@ describe('flowSurfaces association contract', () => {
           },
           blocks: [
             {
-              key: 'table',
+              ref: 'table',
               type: 'table',
               resource: {
                 dataSourceKey: 'main',
@@ -744,7 +744,7 @@ describe('flowSurfaces association contract', () => {
       }),
     );
 
-    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const tableFields = composeRes.blocks.find((item: any) => item.ref === 'table')?.fields || [];
     const directRolesField = tableFields.find((item: any) => item.fieldPath === 'roles');
     expect(directRolesField?.wrapperUid).toBeTruthy();
     expect(directRolesField?.fieldUid).toBeTruthy();
@@ -939,7 +939,7 @@ describe('flowSurfaces association contract', () => {
           },
           blocks: [
             {
-              key: 'editFormViaCompose',
+              ref: 'editFormViaCompose',
               type: 'editForm',
               resource: {
                 dataSourceKey: 'main',
@@ -951,7 +951,7 @@ describe('flowSurfaces association contract', () => {
         },
       }),
     );
-    const composedField = composeRes.blocks.find((item: any) => item.key === 'editFormViaCompose')?.fields?.[0];
+    const composedField = composeRes.blocks.find((item: any) => item.ref === 'editFormViaCompose')?.fields?.[0];
     expect(composedField?.wrapperUid).toBeTruthy();
     const composeWrapper = await getSurface(rootAgent, { uid: composedField.wrapperUid });
     const composeInner = await getSurface(rootAgent, { uid: composedField.fieldUid });
@@ -1103,8 +1103,8 @@ describe('flowSurfaces association contract', () => {
           uid: rolesTable.uid,
         },
         fields: [
-          { key: 'title', fieldPath: 'title' },
-          { key: 'hidden', fieldPath: 'hidden' },
+          { ref: 'title', fieldPath: 'title' },
+          { ref: 'hidden', fieldPath: 'hidden' },
         ],
       },
     });
@@ -1128,7 +1128,7 @@ describe('flowSurfaces association contract', () => {
         },
         blocks: [
           {
-            key: 'rolesDetails',
+            ref: 'rolesDetails',
             type: 'details',
             resource: {
               dataSourceKey: 'main',

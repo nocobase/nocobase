@@ -18,6 +18,7 @@ import {
 } from '../flow-surfaces/builder';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 describe('flowSurfaces resource builders', () => {
@@ -361,7 +362,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            key: 'details',
+            ref: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1647,7 +1648,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            key: 'details',
+            ref: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1681,7 +1682,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            key: 'details',
+            ref: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1715,7 +1716,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            key: 'details',
+            ref: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -3137,7 +3138,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              key: 'form',
+              ref: 'form',
               type: 'createForm',
               resource: {
                 binding: 'currentCollection',
@@ -3181,7 +3182,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              key: 'details',
+              ref: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -3265,7 +3266,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              key: 'details',
+              ref: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -3322,13 +3323,13 @@ describe('flowSurfaces resource', () => {
         },
         fields: [
           {
-            key: 'nickname',
+            ref: 'nickname',
             fieldPath: 'nickname',
             popup: {
               mode: 'replace',
               blocks: [
                 {
-                  key: 'details',
+                  ref: 'details',
                   type: 'details',
                   resource: {
                     binding: 'currentRecord',
@@ -3339,7 +3340,7 @@ describe('flowSurfaces resource', () => {
             },
           },
           {
-            key: 'status',
+            ref: 'status',
             fieldPath: 'status',
           },
         ],
@@ -3358,7 +3359,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            key: 'details',
+            ref: 'details',
             type: 'details',
             resource: {
               dataSourceKey: 'main',
@@ -3366,13 +3367,13 @@ describe('flowSurfaces resource', () => {
             },
             fields: [
               {
-                key: 'department',
+                ref: 'department',
                 fieldPath: 'department.title',
                 popup: {
                   mode: 'replace',
                   blocks: [
                     {
-                      key: 'departmentDetails',
+                      ref: 'departmentDetails',
                       type: 'details',
                       resource: {
                         binding: 'currentRecord',
@@ -3421,7 +3422,7 @@ describe('flowSurfaces resource', () => {
         },
         fields: [
           {
-            key: 'nickname',
+            ref: 'nickname',
             fieldPath: 'nickname',
             settings: {
               label: 'Employee nickname',
@@ -3575,7 +3576,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              key: 'details',
+              ref: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -3611,7 +3612,7 @@ describe('flowSurfaces resource', () => {
           popup: {
             blocks: [
               {
-                key: 'details',
+                ref: 'details',
                 type: 'details',
                 resource: {
                   binding: 'currentCollection',
@@ -4020,7 +4021,7 @@ describe('flowSurfaces resource', () => {
     const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
       popup: {
         layout: {
-          rows: [[{ key: 'defaultEditForm', span: 10 }]],
+          rows: [[{ ref: 'defaultEditForm', span: 10 }]],
         },
       },
     });
@@ -5505,7 +5506,7 @@ describe('flowSurfaces resource', () => {
           },
           blocks: [
             {
-              key: 'composedHero',
+              ref: 'composedHero',
               type: 'jsBlock',
               settings: {
                 title: 'Composed hero',
@@ -7624,14 +7625,14 @@ describe('flowSurfaces resource', () => {
           },
           blocks: [
             {
-              key: 'gamma',
+              ref: 'gamma',
               type: 'markdown',
               settings: {
                 content: 'Gamma',
               },
             },
             {
-              key: 'delta',
+              ref: 'delta',
               type: 'markdown',
               settings: {
                 content: 'Delta',
@@ -7723,7 +7724,7 @@ describe('flowSurfaces resource', () => {
         mode: 'append',
         blocks: [
           {
-            key: 'gamma',
+            ref: 'gamma',
             type: 'markdown',
             settings: {
               content: 'Gamma',
@@ -7735,11 +7736,12 @@ describe('flowSurfaces resource', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
+    const gammaBlock = getComposeBlock(composed, 'gamma');
     expect(composed.layout).toMatchObject({
       rowOrder: ['legacyRow', 'appendRow1'],
       rows: {
         legacyRow: [[firstBlockUid], [secondBlockUid]],
-        appendRow1: [[composed.keyToUid.gamma]],
+        appendRow1: [[gammaBlock.uid]],
       },
       sizes: {
         legacyRow: [8, 16],
@@ -7754,7 +7756,7 @@ describe('flowSurfaces resource', () => {
       rowOrder: ['legacyRow', 'appendRow1'],
       rows: {
         legacyRow: [[firstBlockUid], [secondBlockUid]],
-        appendRow1: [[composed.keyToUid.gamma]],
+        appendRow1: [[gammaBlock.uid]],
       },
       sizes: {
         legacyRow: [8, 16],
@@ -7819,7 +7821,7 @@ describe('flowSurfaces resource', () => {
         mode: 'append',
         blocks: [
           {
-            key: 'gamma',
+            ref: 'gamma',
             type: 'markdown',
             settings: {
               content: 'Gamma',
@@ -7831,6 +7833,7 @@ describe('flowSurfaces resource', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
+    const gammaBlock = getComposeBlock(composed, 'gamma');
     const readback = await getSurface(rootAgent, {
       uid: page.tabSchemaUid,
     });
@@ -7839,7 +7842,7 @@ describe('flowSurfaces resource', () => {
       rows: {
         autoRow1: [[firstBlockUid]],
         autoRow2: [[secondBlockUid]],
-        autoRow3: [[composed.keyToUid.gamma]],
+        autoRow3: [[gammaBlock.uid]],
       },
       sizes: {
         autoRow1: [24],
@@ -8433,6 +8436,12 @@ function getData(response: any) {
   return response.body.data;
 }
 
+function getComposeBlock(result: any, ref: string) {
+  const block = _.castArray(result?.blocks || []).find((item: any) => item?.ref === ref);
+  expect(block).toBeTruthy();
+  return block;
+}
+
 function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
 }
@@ -8738,6 +8747,7 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       tasks: ['title', 'status', 'employeeId'],
       employee_logs: ['content', 'employeeId'],
       skills: ['label'],
+      employee_skills: ['id', 'employeeId', 'skillId'],
     });
   }
 
@@ -8779,42 +8789,4 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       label: 'TypeScript',
     },
   });
-}
-
-async function waitForFixtureCollectionsReady(
-  db: Database,
-  requiredCollections: Record<string, string[]>,
-  timeoutMs = process.env.CI ? 60000 : 30000,
-) {
-  const deadline = Date.now() + timeoutMs;
-  const queryInterface = db.sequelize.getQueryInterface();
-
-  while (Date.now() < deadline) {
-    let allReady = true;
-
-    for (const [collectionName, requiredColumns] of Object.entries(requiredCollections)) {
-      const collection = db.getCollection(collectionName);
-      const tableName = collection?.model?.getTableName?.() || collection?.name || collectionName;
-
-      try {
-        const columns = await queryInterface.describeTable(tableName as any);
-        const missingColumns = requiredColumns.filter((column) => !columns?.[column]);
-        if (missingColumns.length) {
-          allReady = false;
-          break;
-        }
-      } catch {
-        allReady = false;
-        break;
-      }
-    }
-
-    if (allReady) {
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-
-  throw new Error(`Fixture collections are not ready: ${Object.keys(requiredCollections).join(', ')}`);
 }

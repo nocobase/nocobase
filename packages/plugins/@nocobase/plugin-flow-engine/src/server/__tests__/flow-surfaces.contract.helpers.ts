@@ -49,6 +49,12 @@ export function getData(response: any) {
   return response.body.data;
 }
 
+export function getComposeBlock(result: any, ref: string) {
+  const block = _.castArray(result?.blocks || []).find((item: any) => item?.ref === ref);
+  expect(block).toBeTruthy();
+  return block;
+}
+
 export function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
 }

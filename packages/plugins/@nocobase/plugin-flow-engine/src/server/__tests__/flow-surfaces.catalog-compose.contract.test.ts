@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import {
   addBlockData,
+  getComposeBlock,
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
@@ -180,7 +181,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'table',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: 'employees',
+        collectionName: 'users',
       },
     });
     const createForm = await addBlockData(rootAgent, {
@@ -357,7 +358,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'table',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: 'employees',
+        collectionName: 'users',
       },
     });
 
@@ -450,14 +451,13 @@ describe('flowSurfaces catalog + compose contract', () => {
           uid: recordPopup.uid,
         },
         type: 'details',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'employees',
+        resource: {
+          binding: 'currentCollection',
         },
       },
     });
     expect(invalidRaw.status).toBe(400);
-    expect(readErrorMessage(invalidRaw)).toContain(`resourceInit binding 'currentCollection'`);
+    expect(readErrorMessage(invalidRaw)).toContain(`resource.binding='currentCollection'`);
     expect(readErrorMessage(invalidRaw)).toContain('supported bindings:');
     expect(readErrorMessage(invalidRaw)).toContain('currentRecord');
 
@@ -673,7 +673,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         mode: 'append',
         blocks: [
           {
-            key: 'filter',
+            ref: 'filter',
             type: 'filterForm',
             resource: {
               dataSourceKey: 'main',
@@ -692,7 +692,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             actions: ['submit', 'reset'],
           },
           {
-            key: 'table',
+            ref: 'table',
             type: 'table',
             resource: {
               dataSourceKey: 'main',
@@ -720,7 +720,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                 type: 'edit',
                 popup: {
                   layout: {
-                    rows: [[{ key: 'defaultEditForm', span: 10 }]],
+                    rows: [[{ ref: 'defaultEditForm', span: 10 }]],
                   },
                 },
               },
@@ -731,8 +731,8 @@ describe('flowSurfaces catalog + compose contract', () => {
         layout: {
           rows: [
             [
-              { key: 'filter', span: 3 },
-              { key: 'table', span: 7 },
+              { ref: 'filter', span: 3 },
+              { ref: 'table', span: 7 },
             ],
           ],
         },
@@ -741,8 +741,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
-    expect(composed.keyToUid.filter).toBeTruthy();
-    expect(composed.keyToUid.table).toBeTruthy();
+    const filterBlock = getComposeBlock(composed, 'filter');
+    const tableBlock = getComposeBlock(composed, 'table');
+    expect(filterBlock.uid).toBeTruthy();
+    expect(tableBlock.uid).toBeTruthy();
     expect(composed.layout.sizes.row1).toEqual([7, 17]);
 
     const tabGrid = await flowRepo.findModelByParentId(page.tabSchemaUid, {
@@ -753,7 +755,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(tabGrid?.props?.rowOrder).toEqual(['row1']);
 
     const tableReadback = await getSurface(rootAgent, {
-      uid: composed.keyToUid.table,
+      uid: tableBlock.uid,
     });
     expect(tableReadback.tree.use).toBe('TableBlockModel');
     expect(tableReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
@@ -782,7 +784,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       expect.arrayContaining(['ViewActionModel', 'EditActionModel', 'DeleteActionModel']),
     );
 
-    const composedTableBlock = composed.blocks.find((item: any) => item.key === 'table');
+    const composedTableBlock = getComposeBlock(composed, 'table');
     const composedAddNewAction = composedTableBlock?.actions?.find((item: any) => item.type === 'addNew');
     const composedViewAction = composedTableBlock?.recordActions?.find((item: any) => item.type === 'view');
     const composedEditAction = composedTableBlock?.recordActions?.find((item: any) => item.type === 'edit');
@@ -821,7 +823,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
 
     const filterReadback = await getSurface(rootAgent, {
-      uid: composed.keyToUid.filter,
+      uid: filterBlock.uid,
     });
     expect(filterReadback.tree.use).toBe('FilterFormBlockModel');
     expect(_.castArray(filterReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
@@ -829,15 +831,13 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
 
     const usernameFilter = composed.blocks
-      .find((item: any) => item.key === 'filter')
+      .find((item: any) => item.ref === 'filter')
       ?.fields?.find((item: any) => item.fieldPath === 'username');
     expect(usernameFilter?.wrapperUid).toBeTruthy();
     const usernameFilterReadback = await getSurface(rootAgent, {
       uid: usernameFilter.wrapperUid,
     });
-    expect(usernameFilterReadback.tree.stepParams?.filterFormItemSettings?.init?.defaultTargetUid).toBe(
-      composed.keyToUid.table,
-    );
+    expect(usernameFilterReadback.tree.stepParams?.filterFormItemSettings?.init?.defaultTargetUid).toBe(tableBlock.uid);
   });
 
   it('should compose a list block with item fields block actions and record actions', async () => {
@@ -853,13 +853,13 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'employeesList',
+            ref: 'employeesList',
             type: 'list',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
-            fields: ['nickname', 'status'],
+            fields: ['username', 'nickname'],
             actions: ['addNew', 'refresh'],
             recordActions: [
               'view',
@@ -870,12 +870,12 @@ describe('flowSurfaces catalog + compose contract', () => {
                   mode: 'replace',
                   blocks: [
                     {
-                      key: 'details',
+                      ref: 'details',
                       type: 'details',
                       resource: {
                         binding: 'currentRecord',
                       },
-                      fields: ['nickname'],
+                      fields: ['username'],
                     },
                   ],
                 },
@@ -893,11 +893,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
-    const listBlock = composed.blocks.find((item: any) => item.key === 'employeesList');
+    const listBlock = composed.blocks.find((item: any) => item.ref === 'employeesList');
     expect(listBlock.uid).toBeTruthy();
     expect(listBlock.itemUid).toBeTruthy();
     expect(listBlock.itemGridUid).toBeTruthy();
-    expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['nickname', 'status']);
+    expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
     expect(listBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
     expect(listBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'popup', 'delete']);
     const popupActionResult = listBlock.recordActions.find((item: any) => item.type === 'popup');
@@ -918,7 +918,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       _.castArray(listReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.subModels?.field?.stepParams?.fieldSettings?.init?.fieldPath,
       ),
-    ).toEqual(expect.arrayContaining(['nickname', 'status']));
+    ).toEqual(expect.arrayContaining(['username', 'nickname']));
     expect(
       _.castArray(listReadback.tree.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use),
     ).toEqual(
@@ -971,13 +971,13 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'employeeCards',
+            ref: 'employeeCards',
             type: 'gridCard',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
-            fields: ['nickname', 'status'],
+            fields: ['username', 'nickname'],
             actions: ['addNew', 'refresh'],
             recordActions: ['view', 'edit', 'updateRecord', 'delete'],
             settings: {
@@ -992,11 +992,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
-    const gridCardBlock = composed.blocks.find((item: any) => item.key === 'employeeCards');
+    const gridCardBlock = composed.blocks.find((item: any) => item.ref === 'employeeCards');
     expect(gridCardBlock.uid).toBeTruthy();
     expect(gridCardBlock.itemUid).toBeTruthy();
     expect(gridCardBlock.itemGridUid).toBeTruthy();
-    expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['nickname', 'status']);
+    expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
     expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
     expect(gridCardBlock.recordActions.map((item: any) => item.type)).toEqual([
       'view',
@@ -1021,7 +1021,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       _.castArray(gridCardReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.subModels?.field?.stepParams?.fieldSettings?.init?.fieldPath,
       ),
-    ).toEqual(expect.arrayContaining(['nickname', 'status']));
+    ).toEqual(expect.arrayContaining(['username', 'nickname']));
     expect(
       _.castArray(gridCardReadback.tree.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use),
     ).toEqual(
@@ -1042,11 +1042,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'table',
+            ref: 'table',
             type: 'table',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
             actions: ['addNew', 'refresh'],
             recordActions: ['view', 'delete'],
@@ -1056,7 +1056,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(tableRecordActionsRes.status).toBe(200);
 
-    const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.key === 'table');
+    const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.ref === 'table');
     expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
     expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'delete']);
     expect(tableBlock.actionsColumnUid).toBeTruthy();
@@ -1075,11 +1075,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'details',
+            ref: 'details',
             type: 'details',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
             recordActions: ['view'],
           },
@@ -1087,7 +1087,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       },
     });
     expect(detailsRecordActionsRes.status).toBe(200);
-    const detailsBlock = getData(detailsRecordActionsRes).blocks.find((item: any) => item.key === 'details');
+    const detailsBlock = getData(detailsRecordActionsRes).blocks.find((item: any) => item.ref === 'details');
     expect(detailsBlock.recordActions.map((item: any) => item.type)).toEqual(['view']);
 
     const listBlockOnlyRes = await rootAgent.resource('flowSurfaces').compose({
@@ -1097,11 +1097,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'employeesList',
+            ref: 'employeesList',
             type: 'list',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
             actions: ['view'],
           },
@@ -1118,11 +1118,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'employeeCards',
+            ref: 'employeeCards',
             type: 'gridCard',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
             recordActions: ['addNew'],
           },
@@ -1146,7 +1146,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'table',
+            ref: 'table',
             type: 'table',
             resource: {
               dataSourceKey: 'main',
@@ -1174,7 +1174,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'table',
+            ref: 'table',
             type: 'table',
             resource: {
               dataSourceKey: 'main',
@@ -1210,7 +1210,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           },
           blocks: [
             {
-              key: 'table',
+              ref: 'table',
               type: 'table',
               resource: {
                 dataSourceKey: 'main',
@@ -1233,7 +1233,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         mode: 'replace',
         blocks: [
           {
-            key: 'form',
+            ref: 'form',
             type: 'createForm',
             resource: {
               dataSourceKey: 'main',
@@ -1247,16 +1247,18 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(replaceRes.status).toBe(200);
     const replaced = getData(replaceRes);
-    expect(replaced.keyToUid.form).toBeTruthy();
+    const replacedFormBlock = getComposeBlock(replaced, 'form');
+    const initialTableBlock = getComposeBlock(initialCompose, 'table');
+    expect(replacedFormBlock.uid).toBeTruthy();
 
     const tabGrid = await flowRepo.findModelByParentId(page.tabSchemaUid, {
       subKey: 'grid',
       includeAsyncNode: true,
     });
-    expect(_.castArray(tabGrid?.subModels?.items || []).map((item: any) => item.uid)).toEqual([replaced.keyToUid.form]);
-    expect(
-      _.castArray(tabGrid?.subModels?.items || []).some((item: any) => item.uid === initialCompose.keyToUid.table),
-    ).toBe(false);
+    expect(_.castArray(tabGrid?.subModels?.items || []).map((item: any) => item.uid)).toEqual([replacedFormBlock.uid]);
+    expect(_.castArray(tabGrid?.subModels?.items || []).some((item: any) => item.uid === initialTableBlock.uid)).toBe(
+      false,
+    );
     expect(tabGrid?.props?.sizes?.row1).toEqual([24]);
 
     const pageConfigure = await rootAgent.resource('flowSurfaces').configure({
@@ -1282,7 +1284,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       enableTabs: true,
     });
 
-    const formUid = replaced.keyToUid.form;
+    const formUid = replacedFormBlock.uid;
     const formGrid = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
     const formFieldWrapperUid = _.castArray(formGrid?.subModels?.grid?.subModels?.items || [])[0]?.uid;
     const formFieldInnerUid = _.castArray(formGrid?.subModels?.grid?.subModels?.items || [])[0]?.subModels?.field?.uid;
@@ -1422,7 +1424,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'bad',
+            ref: 'bad',
             type: 'table',
             use: 'TableBlockModel',
           },
@@ -1459,11 +1461,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'table',
+            ref: 'table',
             type: 'table',
             resourceInit: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName: 'users',
             },
             settings: {
               title: 'Employees table',
@@ -1471,7 +1473,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'notes',
+            ref: 'notes',
             type: 'markdown',
             settings: {
               content: '# Team notes',
@@ -1484,7 +1486,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const addBlocksData = getData(addBlocksRes);
     expect(addBlocksData.successCount).toBe(2);
     expect(addBlocksData.errorCount).toBe(0);
-    const tableUid = addBlocksData.blocks.find((item: any) => item.key === 'table')?.result?.uid;
+    const tableUid = addBlocksData.blocks.find((item: any) => item.ref === 'table')?.result?.uid;
     expect(tableUid).toBeTruthy();
 
     const addFieldsRes = await rootAgent.resource('flowSurfaces').addFields({
@@ -1494,16 +1496,16 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         fields: [
           {
-            key: 'nickname',
-            fieldPath: 'nickname',
+            ref: 'username',
+            fieldPath: 'username',
             settings: {
-              title: 'Employee nickname',
+              title: 'Username',
               width: 220,
             },
           },
           {
-            key: 'bad-field',
-            fieldPath: 'status',
+            ref: 'bad-field',
+            fieldPath: 'nickname',
             settings: {
               badSetting: true,
             },
@@ -1527,7 +1529,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const fieldReadback = await getSurface(rootAgent, {
       uid: addFieldsData.fields[0].result.wrapperUid,
     });
-    expect(fieldReadback.tree.props?.title).toBe('Employee nickname');
+    expect(fieldReadback.tree.props?.title).toBe('Username');
     expect(fieldReadback.tree.props?.width).toBe(220);
 
     const addActionsRes = await rootAgent.resource('flowSurfaces').addActions({
@@ -1537,7 +1539,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         actions: [
           {
-            key: 'addNew',
+            ref: 'addNew',
             type: 'addNew',
             settings: {
               title: 'Create employee',
@@ -1546,44 +1548,44 @@ describe('flowSurfaces catalog + compose contract', () => {
               mode: 'replace',
               blocks: [
                 {
-                  key: 'form',
+                  ref: 'form',
                   type: 'createForm',
                   resource: {
                     binding: 'currentCollection',
                   },
-                  fields: ['nickname'],
+                  fields: ['username'],
                   actions: ['submit'],
                 },
               ],
             },
           },
           {
-            key: 'implicitAddNew',
+            ref: 'implicitAddNew',
             type: 'addNew',
             popup: {
               blocks: [],
             },
           },
           {
-            key: 'implicitAddNewWithMode',
+            ref: 'implicitAddNewWithMode',
             type: 'addNew',
             popup: {
               mode: 'replace',
             },
           },
           {
-            key: 'refresh-with-popup',
+            ref: 'refresh-with-popup',
             type: 'refresh',
             popup: {
               mode: 'replace',
               blocks: [
                 {
-                  key: 'details',
+                  ref: 'details',
                   type: 'details',
                   resource: {
                     binding: 'currentRecord',
                   },
-                  fields: ['nickname'],
+                  fields: ['username'],
                 },
               ],
             },
@@ -1610,7 +1612,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const implicitAddNewPopupTab = _.castArray(implicitAddNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
     const implicitAddNewPopupBlock = _.castArray(implicitAddNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
-    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
@@ -1629,13 +1631,13 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         recordActions: [
           {
-            key: 'view',
+            ref: 'view',
             type: 'view',
             settings: {
               title: 'View employee',
               openView: {
                 dataSourceKey: 'main',
-                collectionName: 'employees',
+                collectionName: 'users',
                 mode: 'drawer',
               },
             },
@@ -1643,34 +1645,34 @@ describe('flowSurfaces catalog + compose contract', () => {
               mode: 'replace',
               blocks: [
                 {
-                  key: 'details',
+                  ref: 'details',
                   type: 'details',
                   resource: {
                     binding: 'currentRecord',
                   },
-                  fields: ['nickname'],
+                  fields: ['username'],
                 },
               ],
             },
           },
           {
-            key: 'delete',
+            ref: 'delete',
             type: 'delete',
             settings: {
               confirm: true,
             },
           },
           {
-            key: 'implicitEdit',
+            ref: 'implicitEdit',
             type: 'edit',
             popup: {},
           },
           {
-            key: 'implicitViewWithLayout',
+            ref: 'implicitViewWithLayout',
             type: 'view',
             popup: {
               layout: {
-                rows: [[{ key: 'defaultDetails', span: 10 }]],
+                rows: [[{ ref: 'defaultDetails', span: 10 }]],
               },
             },
           },
@@ -1691,7 +1693,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const implicitEditPopupTab = _.castArray(implicitEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
     const implicitEditPopupBlock = _.castArray(implicitEditPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
-    expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
@@ -1709,7 +1711,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         target: {
           uid: tableUid,
         },
-        fieldPath: 'status',
+        fieldPath: 'nickname',
         settings: {
           badSetting: true,
         },
@@ -1733,7 +1735,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'table',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: 'employees',
+        collectionName: 'users',
       },
     });
 
@@ -1744,7 +1746,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         actions: [
           {
-            key: 'implicitAddNew',
+            ref: 'implicitAddNew',
             type: 'addNew',
             settings: {
               title: 'Create employee',
@@ -1768,7 +1770,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const implicitAddNewPopupBlock = _.castArray(implicitAddNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitAddNewPopupTab?.props?.title).toBe('Create employee');
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
-    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
@@ -1780,14 +1782,14 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         recordActions: [
           {
-            key: 'implicitView',
+            ref: 'implicitView',
             type: 'view',
             settings: {
               title: 'Inspect employee',
             },
           },
           {
-            key: 'implicitEdit',
+            ref: 'implicitEdit',
             type: 'edit',
             settings: {
               title: 'Modify employee',
@@ -1810,7 +1812,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const implicitViewPopupBlock = _.castArray(implicitViewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitViewPopupTab?.props?.title).toBe('Inspect employee');
     expect(implicitViewPopupBlock?.use).toBe('DetailsBlockModel');
-    expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
 
     const implicitEditReadback = await getSurface(rootAgent, {
       uid: addRecordActionsData.recordActions[1].result.uid,
@@ -1819,7 +1821,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const implicitEditPopupBlock = _.castArray(implicitEditPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitEditPopupTab?.props?.title).toBe('Modify employee');
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
-    expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
@@ -1838,7 +1840,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'valid-table',
+            ref: 'valid-table',
             type: 'table',
             resourceInit: {
               dataSourceKey: 'main',
@@ -1849,7 +1851,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'invalid-filter-table',
+            ref: 'invalid-filter-table',
             type: 'table',
             resourceInit: {
               dataSourceKey: 'main',
@@ -1931,14 +1933,14 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'notes',
+            ref: 'notes',
             type: 'markdown',
             settings: {
               content: '# Team notes',
             },
           },
           {
-            key: 'employeesTable',
+            ref: 'employeesTable',
             type: 'table',
             resourceInit: {
               collectionName: 'employees',
@@ -1984,7 +1986,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         mode: 'append',
         blocks: [
           {
-            key: 'employeesTable',
+            ref: 'employeesTable',
             type: 'table',
             resource: {
               collectionName: 'employees',
@@ -2090,7 +2092,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         mode: 'append',
         blocks: [
           {
-            key: 'filterForm',
+            ref: 'filterForm',
             type: 'filterForm',
             actions: ['submit', 'reset'],
           },
@@ -2102,11 +2104,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     const composed = getData(composeRes);
     expect(composed.blocks).toHaveLength(1);
     expect(composed.blocks[0]).toMatchObject({
-      key: 'filterForm',
+      ref: 'filterForm',
       type: 'filterForm',
     });
     expect(composed.blocks[0].uid).toBeTruthy();
-    expect(composed.keyToUid.filterForm).toBe(composed.blocks[0].uid);
+    expect(getComposeBlock(composed, 'filterForm').uid).toBe(composed.blocks[0].uid);
 
     const readback = await getSurface(rootAgent, {
       uid: composed.blocks[0].uid,
@@ -2127,7 +2129,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'table',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: 'employees',
+        collectionName: 'users',
       },
     });
 
@@ -2188,14 +2190,14 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         actions: [
           {
-            key: 'valid',
+            ref: 'valid',
             type: 'addNew',
             settings: {
               title: 'Create employee',
             },
           },
           {
-            key: 'invalid-raw',
+            ref: 'invalid-raw',
             type: 'refresh',
             stepParams: {
               buttonSettings: {
@@ -2234,7 +2236,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
         blocks: [
           {
-            key: 'list',
+            ref: 'list',
             type: 'list',
             resource: {
               dataSourceKey: 'main',
@@ -2262,7 +2264,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'grid',
+            ref: 'grid',
             type: 'gridCard',
             resource: {
               dataSourceKey: 'main',
@@ -2291,14 +2293,14 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'markdown',
+            ref: 'markdown',
             type: 'markdown',
             settings: {
               content: '# Users handbook',
             },
           },
           {
-            key: 'iframe',
+            ref: 'iframe',
             type: 'iframe',
             settings: {
               mode: 'url',
@@ -2308,7 +2310,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'chart',
+            ref: 'chart',
             type: 'chart',
             settings: {
               query: {
@@ -2337,7 +2339,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'panel',
+            ref: 'panel',
             type: 'actionPanel',
             settings: {
               layout: 'list',
@@ -2362,12 +2364,12 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composed.layout.sizes.row2).toEqual([12, 12]);
     expect(composed.layout.sizes.row3).toEqual([12, 12]);
 
-    const listUid = composed.keyToUid.list;
-    const gridUid = composed.keyToUid.grid;
-    const markdownUid = composed.keyToUid.markdown;
-    const iframeUid = composed.keyToUid.iframe;
-    const chartUid = composed.keyToUid.chart;
-    const panelUid = composed.keyToUid.panel;
+    const listUid = getComposeBlock(composed, 'list').uid;
+    const gridUid = getComposeBlock(composed, 'grid').uid;
+    const markdownUid = getComposeBlock(composed, 'markdown').uid;
+    const iframeUid = getComposeBlock(composed, 'iframe').uid;
+    const chartUid = getComposeBlock(composed, 'chart').uid;
+    const panelUid = getComposeBlock(composed, 'panel').uid;
 
     const listInitial = await getSurface(rootAgent, { uid: listUid });
     expect(listInitial.tree.stepParams?.listSettings).toMatchObject({
@@ -2704,7 +2706,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         target: { uid: page.gridUid },
         blocks: [
           {
-            key: 'grid',
+            ref: 'grid',
             type: 'gridCard',
             resource: {
               dataSourceKey: 'main',
@@ -2720,7 +2722,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
-    const gridUid = composed.keyToUid.grid;
+    const gridUid = getComposeBlock(composed, 'grid').uid;
     expect(gridUid).toBeTruthy();
 
     const response = await rootAgent.resource('flowSurfaces').configure({
@@ -2755,7 +2757,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           },
           blocks: [
             {
-              key: 'form',
+              ref: 'form',
               type: 'createForm',
               resource: {
                 dataSourceKey: 'main',
@@ -2765,13 +2767,13 @@ describe('flowSurfaces catalog + compose contract', () => {
               actions: ['submit'],
             },
             {
-              key: 'table',
+              ref: 'table',
               type: 'table',
               resource: {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'manager'],
               actions: ['refresh'],
               recordActions: ['updateRecord'],
             },
@@ -2780,11 +2782,11 @@ describe('flowSurfaces catalog + compose contract', () => {
       }),
     );
 
-    const formBlock = composeRes.blocks.find((item: any) => item.key === 'form');
-    const tableBlock = composeRes.blocks.find((item: any) => item.key === 'table');
+    const formBlock = composeRes.blocks.find((item: any) => item.ref === 'form');
+    const tableBlock = composeRes.blocks.find((item: any) => item.ref === 'table');
     const formField = formBlock.fields.find((item: any) => item.fieldPath === 'bio');
     const formSubmitAction = formBlock.actions.find((item: any) => item.type === 'submit');
-    const tableField = tableBlock.fields.find((item: any) => item.fieldPath === 'nickname');
+    const tableField = tableBlock.fields.find((item: any) => item.fieldPath === 'manager');
     const updateRecordAction = tableBlock.recordActions.find((item: any) => item.type === 'updateRecord');
 
     expect(
@@ -2852,11 +2854,11 @@ describe('flowSurfaces catalog + compose contract', () => {
           values: {
             target: { uid: tableField.wrapperUid },
             changes: {
-              title: 'Employee nickname',
+              title: 'Employee manager',
               width: 280,
               fixed: 'left',
               editable: true,
-              dataIndex: 'nickname',
+              dataIndex: 'manager',
               titleField: 'nickname',
             },
           },
@@ -2928,14 +2930,14 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const tableWrapperReadback = await getSurface(rootAgent, { uid: tableField.wrapperUid });
     expect(tableWrapperReadback.tree.props).toMatchObject({
-      title: 'Employee nickname',
+      title: 'Employee manager',
       width: 280,
       fixed: 'left',
       editable: true,
-      dataIndex: 'nickname',
+      dataIndex: 'manager',
       titleField: 'nickname',
     });
-    expect(tableWrapperReadback.tree.stepParams?.tableColumnSettings?.title?.title).toBe('Employee nickname');
+    expect(tableWrapperReadback.tree.stepParams?.tableColumnSettings?.title?.title).toBe('Employee manager');
 
     const updateActionReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
     expect(updateActionReadback.tree.props).toMatchObject({

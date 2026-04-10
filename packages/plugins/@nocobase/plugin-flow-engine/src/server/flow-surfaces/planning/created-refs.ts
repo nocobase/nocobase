@@ -16,6 +16,10 @@ export type FlowSurfaceCreatedRefSpec = {
   resultPath: string;
 };
 
+type CollectFlowSurfaceCreatedRefsOptions = {
+  targetSelectorRef?: string;
+};
+
 export function normalizeFlowSurfaceCreatedRef(ref: any, context: string) {
   const normalized = typeof ref === 'string' ? ref.trim() : String(ref || '').trim();
   if (!normalized) {
@@ -27,7 +31,11 @@ export function normalizeFlowSurfaceCreatedRef(ref: any, context: string) {
   return normalized;
 }
 
-export function collectFlowSurfaceCreatedRefs(action: string, values: any): FlowSurfaceCreatedRefSpec[] {
+export function collectFlowSurfaceCreatedRefs(
+  action: string,
+  values: any,
+  options: CollectFlowSurfaceCreatedRefsOptions = {},
+): FlowSurfaceCreatedRefSpec[] {
   if (!_.isPlainObject(values)) {
     return [];
   }
@@ -57,14 +65,20 @@ export function collectFlowSurfaceCreatedRefs(action: string, values: any): Flow
         ['actionsColumn', 'actionsColumnUid'],
       ]);
     case 'addField':
-      return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
-        ['', 'uid'],
-        ['field', 'fieldUid'],
-        ['innerField', 'innerFieldUid'],
-        ['popupPage', 'popupPageUid'],
-        ['popupTab', 'popupTabUid'],
-        ['popupGrid', 'popupGridUid'],
-      ]);
+      return [
+        ...collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+          ['', 'uid'],
+          ['field', 'fieldUid'],
+          ['innerField', 'innerFieldUid'],
+        ]),
+        ...(shouldCollectAddFieldPopupRefs(values)
+          ? collectDerivedRef(values.ref, `flowSurfaces ${action}`, [
+              ['popupPage', 'popupPageUid'],
+              ['popupTab', 'popupTabUid'],
+              ['popupGrid', 'popupGridUid'],
+            ])
+          : []),
+      ];
     case 'addAction':
     case 'addRecordAction':
       return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
@@ -75,6 +89,8 @@ export function collectFlowSurfaceCreatedRefs(action: string, values: any): Flow
         ['popupTab', 'popupTabUid'],
         ['popupGrid', 'popupGridUid'],
       ]);
+    case 'configure':
+      return collectConfigureCreatedRefs(values, options);
     case 'compose':
       return collectComposeCreatedRefs(values);
     default:
@@ -95,6 +111,57 @@ function collectBaseRef(
     ref: suffix ? `${baseRef}.${suffix}` : baseRef,
     resultPath,
   }));
+}
+
+function collectDerivedRef(
+  refValue: any,
+  context: string,
+  defs: Array<[suffix: string, resultPath: string]>,
+): FlowSurfaceCreatedRefSpec[] {
+  if (_.isUndefined(refValue)) {
+    return [];
+  }
+  const baseRef = normalizeFlowSurfaceCreatedRef(refValue, context);
+  return defs.map(([suffix, resultPath]) => ({
+    ref: `${baseRef}.${suffix}`,
+    resultPath,
+  }));
+}
+
+function shouldCollectAddFieldPopupRefs(values: any) {
+  return !_.isUndefined(values?.popup);
+}
+
+function inferConfigureCreatedRefBase(targetSelectorRef: any) {
+  if (_.isUndefined(targetSelectorRef)) {
+    return undefined;
+  }
+  const normalizedRef = normalizeFlowSurfaceCreatedRef(targetSelectorRef, 'flowSurfaces configure target ref');
+  if (normalizedRef.endsWith('.innerField')) {
+    return normalizedRef.slice(0, -'.innerField'.length);
+  }
+  if (normalizedRef.endsWith('.field')) {
+    return normalizedRef.slice(0, -'.field'.length);
+  }
+  return undefined;
+}
+
+function collectConfigureCreatedRefs(
+  values: any,
+  options: CollectFlowSurfaceCreatedRefsOptions = {},
+): FlowSurfaceCreatedRefSpec[] {
+  if (!_.isPlainObject(values?.changes?.openView)) {
+    return [];
+  }
+  const refBase = !_.isUndefined(values.ref) ? values.ref : inferConfigureCreatedRefBase(options.targetSelectorRef);
+  if (_.isUndefined(refBase)) {
+    return [];
+  }
+  return collectDerivedRef(refBase, 'flowSurfaces configure', [
+    ['popupPage', 'popupPageUid'],
+    ['popupTab', 'popupTabUid'],
+    ['popupGrid', 'popupGridUid'],
+  ]);
 }
 
 function collectComposeCreatedRefs(values: any): FlowSurfaceCreatedRefSpec[] {

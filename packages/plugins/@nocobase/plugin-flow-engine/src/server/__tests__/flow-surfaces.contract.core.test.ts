@@ -1335,7 +1335,7 @@ describe('flowSurfaces API contract core', () => {
             mode: 'replace',
             blocks: [
               {
-                key: 'details',
+                ref: 'details',
                 type: 'details',
                 resource: {
                   binding: 'currentRecord',

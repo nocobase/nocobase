@@ -34,6 +34,96 @@ export const flowSurfaceExamples = {
       },
     ],
   },
+  validateDsl: {
+    dsl: {
+      version: '1',
+      intent: 'management',
+      title: 'Employees',
+      target: {
+        mode: 'create-page',
+      },
+      navigation: {
+        item: {
+          title: 'Employees',
+        },
+      },
+      dataSources: [
+        {
+          key: 'employees',
+          kind: 'collection',
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        {
+          key: 'employeeRecord',
+          kind: 'binding',
+          scope: 'popup',
+          popupId: 'employeeViewPopup',
+          binding: 'currentRecord',
+          collectionName: 'employees',
+        },
+      ],
+      layout: {
+        kind: 'rows-columns',
+        rows: [
+          {
+            key: 'main',
+            columns: [
+              { key: 'filter', width: 3, items: ['employeesFilter'] },
+              { key: 'table', width: 7, items: ['employeesTable'] },
+            ],
+          },
+        ],
+      },
+      blocks: [
+        {
+          id: 'employeesFilter',
+          type: 'filterForm',
+          title: 'Employee filter',
+          dataBound: true,
+          dataSourceKey: 'employees',
+          fields: [{ fieldPath: 'nickname' }],
+          actions: [{ id: 'search', type: 'submit', title: 'Search' }],
+        },
+        {
+          id: 'employeesTable',
+          type: 'table',
+          title: 'Employees',
+          dataBound: true,
+          dataSourceKey: 'employees',
+          fields: [{ fieldPath: 'nickname' }],
+          recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
+        },
+      ],
+      interactions: [
+        {
+          type: 'filter-target',
+          sourceBlockId: 'employeesFilter',
+          fieldPath: 'nickname',
+          targetBlockId: 'employeesTable',
+        },
+      ],
+      popups: [
+        {
+          id: 'employeeViewPopup',
+          title: 'View employee',
+          completion: 'completed',
+          blocks: [
+            {
+              id: 'employeeDetails',
+              type: 'details',
+              title: 'Employee details',
+              dataBound: true,
+              dataSourceKey: 'employeeRecord',
+              fields: [{ fieldPath: 'nickname' }],
+            },
+          ],
+        },
+      ],
+      assumptions: [],
+      unresolvedQuestions: [],
+    },
+  },
   validatePlan: {
     validation: {
       collectFieldIssues: true,
@@ -70,6 +160,49 @@ export const flowSurfaceExamples = {
           },
         },
       ],
+    },
+  },
+  executeDsl: {
+    verificationMode: 'strict',
+    dsl: {
+      version: '1',
+      intent: 'management',
+      title: 'Employees',
+      target: {
+        mode: 'create-page',
+      },
+      dataSources: [
+        {
+          key: 'employees',
+          kind: 'collection',
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+      ],
+      layout: {
+        kind: 'rows-columns',
+        rows: [
+          {
+            key: 'main',
+            columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
+          },
+        ],
+      },
+      blocks: [
+        {
+          id: 'employeesTable',
+          type: 'table',
+          title: 'Employees',
+          dataBound: true,
+          dataSourceKey: 'employees',
+          fields: [{ fieldPath: 'nickname' }],
+          actions: [{ id: 'addEmployee', type: 'addNew', title: 'Add employee' }],
+        },
+      ],
+      interactions: [],
+      popups: [],
+      assumptions: [],
+      unresolvedQuestions: [],
     },
   },
   executePlan: {
