@@ -289,5 +289,5 @@ export function hasFlowSurfaceInlinePopupTemplate(popup?: Record<string, any>) {
 }
 
 export function hasFlowSurfaceInlinePopupBlocks(popup?: Record<string, any>) {
-  return Array.isArray(popup?.blocks);
+  return Array.isArray(popup?.blocks) && popup.blocks.length > 0;
 }

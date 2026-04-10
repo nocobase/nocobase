@@ -241,61 +241,59 @@ function validateBlueprintBlock(
   );
 }
 
-function validateBlueprintLayout(blueprint: FlowSurfaceBlueprintDsl, pageBlockIds: Set<string>) {
-  if (!_.isPlainObject(blueprint.layout)) {
-    throwBadRequest(`flowSurfaces dsl blueprint layout must be an object`);
+function validateBlueprintRowsColumnsLayout(layout: any, context: string, blockIds: Set<string>) {
+  if (!_.isPlainObject(layout)) {
+    throwBadRequest(`${context} must be an object`);
   }
-  const kind = String(blueprint.layout.kind || 'rows-columns').trim() || 'rows-columns';
+  const kind = String(layout.kind || 'rows-columns').trim() || 'rows-columns';
   if (kind !== 'rows-columns') {
-    throwBadRequest(`flowSurfaces dsl blueprint layout.kind '${kind}' is not supported`);
+    throwBadRequest(`${context}.kind '${kind}' is not supported`);
   }
-  const rows = _.castArray(blueprint.layout.rows || []);
+  const rows = _.castArray(layout.rows || []);
   if (!rows.length) {
-    throwBadRequest(`flowSurfaces dsl blueprint layout.rows must not be empty`);
+    throwBadRequest(`${context}.rows must not be empty`);
   }
   const mentioned = new Set<string>();
   rows.forEach((row, rowIndex) => {
     if (!_.isPlainObject(row)) {
-      throwBadRequest(`flowSurfaces dsl blueprint layout.rows[${rowIndex}] must be an object`);
+      throwBadRequest(`${context}.rows[${rowIndex}] must be an object`);
     }
     const columns = _.castArray((row as any).columns || []);
     if (!columns.length) {
-      throwBadRequest(`flowSurfaces dsl blueprint layout.rows[${rowIndex}].columns must not be empty`);
+      throwBadRequest(`${context}.rows[${rowIndex}].columns must not be empty`);
     }
     columns.forEach((column, columnIndex) => {
       if (!_.isPlainObject(column)) {
-        throwBadRequest(
-          `flowSurfaces dsl blueprint layout.rows[${rowIndex}].columns[${columnIndex}] must be an object`,
-        );
+        throwBadRequest(`${context}.rows[${rowIndex}].columns[${columnIndex}] must be an object`);
       }
       const items = _.castArray((column as any).items || [])
         .map((item) => String(item || '').trim())
         .filter(Boolean);
       if (!items.length) {
-        throwBadRequest(
-          `flowSurfaces dsl blueprint layout.rows[${rowIndex}].columns[${columnIndex}].items must not be empty`,
-        );
+        throwBadRequest(`${context}.rows[${rowIndex}].columns[${columnIndex}].items must not be empty`);
       }
       if (items.length !== 1) {
-        throwBadRequest(
-          `flowSurfaces dsl blueprint layout.rows[${rowIndex}].columns[${columnIndex}] currently supports exactly one item`,
-        );
+        throwBadRequest(`${context}.rows[${rowIndex}].columns[${columnIndex}] currently supports exactly one item`);
       }
       items.forEach((blockId) => {
-        if (!pageBlockIds.has(blockId)) {
-          throwBadRequest(`flowSurfaces dsl blueprint layout item '${blockId}' is not defined in top-level blocks[]`);
+        if (!blockIds.has(blockId)) {
+          throwBadRequest(`${context} item '${blockId}' is not defined in blocks[]`);
         }
         if (mentioned.has(blockId)) {
-          throwBadRequest(`flowSurfaces dsl blueprint layout item '${blockId}' is duplicated`);
+          throwBadRequest(`${context} item '${blockId}' is duplicated`);
         }
         mentioned.add(blockId);
       });
     });
   });
-  const missing = [...pageBlockIds].filter((blockId) => !mentioned.has(blockId));
+  const missing = [...blockIds].filter((blockId) => !mentioned.has(blockId));
   if (missing.length) {
-    throwBadRequest(`flowSurfaces dsl blueprint layout is missing blocks: ${missing.join(', ')}`);
+    throwBadRequest(`${context} is missing blocks: ${missing.join(', ')}`);
   }
+}
+
+function validateBlueprintLayout(blueprint: FlowSurfaceBlueprintDsl, pageBlockIds: Set<string>) {
+  validateBlueprintRowsColumnsLayout(blueprint.layout, 'flowSurfaces dsl blueprint layout', pageBlockIds);
 }
 
 function validateBlueprintInteractions(
@@ -346,6 +344,16 @@ function validateBlueprintPopups(blueprint: FlowSurfaceBlueprintDsl, popupUsages
     }
     const inboundTypes = [...(popupUsages.get(popup.id) || new Set<string>())];
     const popupBlocks = _.castArray(popup.blocks || []);
+    if (!_.isUndefined(popup.layout)) {
+      if (!popupBlocks.length) {
+        throwBadRequest(`${context}.layout requires popup blocks`);
+      }
+      validateBlueprintRowsColumnsLayout(
+        popup.layout,
+        `${context}.layout`,
+        new Set(popupBlocks.map((block) => String(block?.id || '').trim()).filter(Boolean)),
+      );
+    }
     if (popup.completion === 'shell-only' && inboundTypes.some((type) => isFlowSurfaceDslDefaultCrudActionType(type))) {
       throwBadRequest(
         `${context}.completion 'shell-only' is not safe for default CRUD popup actions; provide explicit popup blocks instead`,

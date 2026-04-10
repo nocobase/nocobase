@@ -347,6 +347,91 @@ describe('flowSurfaces dsl contract', () => {
     expect(popupBlock?.use).toBe('DetailsBlockModel');
   });
 
+  it('should reject popup layouts that reference unknown popup blocks during DSL validation', async () => {
+    const validateRes = await rootAgent.resource('flowSurfaces').validateDsl({
+      values: {
+        dsl: {
+          version: '1',
+          intent: 'management',
+          title: 'Employees invalid popup layout',
+          target: {
+            mode: 'create-page',
+          },
+          dataSources: [
+            {
+              key: 'employees',
+              kind: 'collection',
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            {
+              key: 'employeeRecord',
+              kind: 'binding',
+              scope: 'popup',
+              popupId: 'employeeViewPopup',
+              binding: 'currentRecord',
+              collectionName: 'employees',
+            },
+          ],
+          layout: {
+            kind: 'rows-columns',
+            rows: [
+              {
+                key: 'main',
+                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
+              },
+            ],
+          },
+          blocks: [
+            {
+              id: 'employeesTable',
+              type: 'table',
+              title: 'Employees',
+              dataBound: true,
+              dataSourceKey: 'employees',
+              fields: [{ fieldPath: 'nickname' }],
+              recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
+            },
+          ],
+          interactions: [],
+          popups: [
+            {
+              id: 'employeeViewPopup',
+              title: 'Inspect employee',
+              completion: 'completed',
+              layout: {
+                kind: 'rows-columns',
+                rows: [
+                  {
+                    key: 'popup-main',
+                    columns: [{ key: 'details', width: 12, items: ['missingPopupBlock'] }],
+                  },
+                ],
+              },
+              blocks: [
+                {
+                  id: 'employeeDetails',
+                  type: 'details',
+                  title: 'Employee details',
+                  dataBound: true,
+                  dataSourceKey: 'employeeRecord',
+                  fields: [{ fieldPath: 'nickname' }],
+                },
+              ],
+            },
+          ],
+          assumptions: [],
+          unresolvedQuestions: [],
+        },
+      },
+    });
+
+    expect(validateRes.status).toBe(400);
+    expect(readErrorMessage(validateRes)).toContain(
+      "flowSurfaces dsl blueprint popups[0].layout item 'missingPopupBlock' is not defined in blocks[]",
+    );
+  });
+
   it('should execute patch DSL against an existing page and resolve newly created refs', async () => {
     const page = await createPage(rootAgent, {
       title: 'Patch DSL page',

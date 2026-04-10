@@ -2937,6 +2937,9 @@ export class FlowSurfacesService {
         );
         const fieldUid = this.readExecuteDslRefUid(refs, fieldRef, `field '${fieldRef}'`);
         await this.assertExecuteDslReadable({ uid: fieldUid }, `field '${fieldRef}'`, options.transaction);
+        if (options.subtreeNodeMap) {
+          this.assertExecuteDslNodeInSubtree(fieldUid, options.subtreeNodeMap, `field '${fieldRef}'`);
+        }
       }
 
       for (const [actionIndex, action] of _.castArray(block.actions || []).entries()) {
@@ -2946,6 +2949,9 @@ export class FlowSurfacesService {
         );
         const actionUid = this.readExecuteDslRefUid(refs, actionRef, `action '${actionRef}'`);
         await this.assertExecuteDslReadable({ uid: actionUid }, `action '${actionRef}'`, options.transaction);
+        if (options.subtreeNodeMap) {
+          this.assertExecuteDslNodeInSubtree(actionUid, options.subtreeNodeMap, `action '${actionRef}'`);
+        }
         await this.verifyExecuteDslPopupRef(actionRef, action, refs, options);
       }
 
@@ -2956,6 +2962,9 @@ export class FlowSurfacesService {
         );
         const actionUid = this.readExecuteDslRefUid(refs, actionRef, `recordAction '${actionRef}'`);
         await this.assertExecuteDslReadable({ uid: actionUid }, `recordAction '${actionRef}'`, options.transaction);
+        if (options.subtreeNodeMap) {
+          this.assertExecuteDslNodeInSubtree(actionUid, options.subtreeNodeMap, `recordAction '${actionRef}'`);
+        }
         await this.verifyExecuteDslPopupRef(actionRef, action, refs, options);
       }
     }
