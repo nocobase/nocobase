@@ -36,17 +36,17 @@ export const DesignableSwitch = observer(() => {
 
   useHotkeys(
     'ctrl+shift+u',
-    async () => {
+    () => {
       if (isMobileLayout) {
         return;
       }
 
       if (designable) {
-        await flowEngine.flowSettings.disable();
+        flowEngine.flowSettings.disable();
         return;
       }
 
-      await flowEngine.flowSettings.enable();
+      flowEngine.flowSettings.enable();
     },
     [designable, flowEngine, isMobileLayout],
   );

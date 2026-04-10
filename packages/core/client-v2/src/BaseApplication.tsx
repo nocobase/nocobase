@@ -31,7 +31,7 @@ import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
 import type { Plugin } from './Plugin';
-import type { PluginType } from './PluginManager';
+import type { PluginManager, PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
 import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
@@ -84,7 +84,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {};
-  public pluginManager: any;
+  public pluginManager: PluginManager;
   public pluginSettingsManager: PluginSettingsManager<any>;
   public aiManager: AIManager;
   public headerActionsManager: HeaderActionsManager;
@@ -106,7 +106,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setMeta: (meta: Record<string, any>) => void;
     };
     pluginSettingsRouter: PluginSettingsManager<any>;
-    pluginManager: any;
+    pluginManager: PluginManager;
   };
   public systemSettings: SystemSettingsSource;
   maintained = false;
@@ -489,7 +489,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createApiClient(options: TOptions): APIClient;
   protected abstract createI18n(options: TOptions): i18next;
   protected abstract createRouterManager(options: TOptions): any;
-  protected abstract createPluginManager(options: TOptions): any;
+  protected abstract createPluginManager(options: TOptions): PluginManager;
   protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManager<any>;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws);
