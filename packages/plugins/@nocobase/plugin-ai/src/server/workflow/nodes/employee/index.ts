@@ -98,7 +98,7 @@ export class AIEmployeeInstruction extends Instruction {
 
       const attachmentPart: Record<string, any> = {};
       if (files?.length) {
-        const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow.db, job, attachmentPart);
+        const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, job, attachmentPart);
         await resolveAttachments(files);
         await resolveUrls(files);
       }
