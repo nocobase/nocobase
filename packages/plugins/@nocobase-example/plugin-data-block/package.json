@@ -2,12 +2,11 @@
   "private": true,
   "name": "@nocobase-example/plugin-data-block",
   "displayName": "Plugin example: Data block",
-  "description": "This plugin demonstrates how to create a fullstack data management plugin with TableBlockModel.",
+  "description": "This plugin demonstrates how to use the data block feature to create a data block.",
   "version": "2.1.0-alpha.14",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   }

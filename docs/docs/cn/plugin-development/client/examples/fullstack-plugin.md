@@ -37,10 +37,10 @@ keywords: "前后端联动,TableBlockModel,defineCollection,ActionModel,Clickabl
   <source src="https://static-docs.nocobase.com/iShot_2026-04-08_16.32.52.mp4" type="video/mp4">
 </video>
 
-完整源码见 [@nocobase-example/plugin-data-block](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-data-block)。如果你想直接在本地跑起来看效果：
+完整源码见 [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource)。如果你想直接在本地跑起来看效果：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-data-block
+yarn pm enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 下面从零开始，一步步搭建这个插件。
@@ -50,7 +50,7 @@ yarn pm enable @nocobase-example/plugin-data-block
 在仓库根目录执行：
 
 ```bash
-yarn pm create @my-project/plugin-data-block
+yarn pm create @my-project/plugin-custom-table-block-resource
 ```
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
@@ -443,7 +443,7 @@ export default PluginDataBlockClient;
 ## 第九步：启用插件
 
 ```bash
-yarn pm enable @my-project/plugin-data-block
+yarn pm enable @my-project/plugin-custom-table-block-resource
 ```
 
 启用后：
@@ -457,7 +457,7 @@ yarn pm enable @my-project/plugin-data-block
 
 ## 完整源码
 
-- [@nocobase-example/plugin-data-block](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-data-block) — 前后端联动数据管理插件完整示例
+- [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource) — 前后端联动数据管理插件完整示例
 
 ## 小结
 
