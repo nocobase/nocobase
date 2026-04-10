@@ -23,6 +23,34 @@ function resolveFixtureTableName(db: Database, collectionName: string) {
   return collectionName;
 }
 
+function toUnderscoredColumnName(columnName: string) {
+  return columnName
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[-\s]+/g, '_')
+    .toLowerCase();
+}
+
+function resolveFixtureColumnCandidates(db: Database, collectionName: string, requiredColumn: string) {
+  const collection = db.getCollection(collectionName);
+  const candidates = new Set<string>();
+
+  if (requiredColumn) {
+    candidates.add(requiredColumn);
+  }
+
+  const field = collection?.getField?.(requiredColumn);
+  const columnName = typeof field?.columnName === 'function' ? field.columnName() : undefined;
+  if (columnName) {
+    candidates.add(columnName);
+  }
+
+  if (db.options.underscored && requiredColumn) {
+    candidates.add(toUnderscoredColumnName(requiredColumn));
+  }
+
+  return Array.from(candidates).filter(Boolean);
+}
+
 export async function waitForFixtureCollectionsReady(
   db: Database,
   requiredCollections: Record<string, string[]>,
@@ -41,7 +69,10 @@ export async function waitForFixtureCollectionsReady(
 
       try {
         const columns = await queryInterface.describeTable(tableName as any);
-        const missingColumns = requiredColumns.filter((column) => !columns?.[column]);
+        const missingColumns = requiredColumns.filter((column) => {
+          const candidates = resolveFixtureColumnCandidates(db, collectionName, column);
+          return !candidates.some((candidate) => columns?.[candidate]);
+        });
         if (missingColumns.length) {
           allReady = false;
           pendingCollections.push(`${collectionName}(${missingColumns.join(', ')})`);
