@@ -9,15 +9,24 @@
 
 import React from 'react';
 import { render, waitFor, screen } from '@testing-library/react';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { sleep } from '../web';
 
 export * from './utils';
 export { renderHook } from '@testing-library/react-hooks';
 
 function customRender(ui: React.ReactElement, options = {}) {
+  const flowEngine = new FlowEngine();
+  const componentName =
+    // @ts-ignore
+    typeof ui?.type === 'function' ? ui.type.displayName || ui.type.name : typeof ui?.type === 'object' ? ui?.type : '';
+
+  if (componentName === 'Root') {
+    return render(ui, options);
+  }
+
   return render(ui, {
-    // wrap provider(s) here if needed
-    wrapper: ({ children }) => children,
+    wrapper: ({ children }) => <FlowEngineProvider engine={flowEngine}>{children}</FlowEngineProvider>,
     ...options,
   });
 }

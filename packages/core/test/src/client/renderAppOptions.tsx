@@ -8,14 +8,14 @@
  */
 
 import React from 'react';
-import { render } from '.';
+import { render as rtlRender } from '@testing-library/react';
 import { GetAppComponentOptions, addXReadPrettyToEachLayer, getAppComponent } from '../web';
 import { WaitApp } from './utils';
 
 export const renderAppOptions = async (options: GetAppComponentOptions) => {
   const App = getAppComponent(options);
 
-  const res = render(<App />);
+  const res = rtlRender(<App />);
 
   await WaitApp();
 

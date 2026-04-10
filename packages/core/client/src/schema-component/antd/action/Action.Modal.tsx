@@ -105,7 +105,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     }
 
     const container = React.useMemo(() => {
-      return document.querySelector('#nocobase-app-container') as HTMLElement;
+      return document.querySelector('#nocobase-app-container') || document.body;
     }, []);
 
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);

@@ -58,8 +58,10 @@ export const useCurrentRoles = () => {
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
   const app = useApp();
+  const flowEngine = useFlowEngine();
   const navigate = useNavigate();
   const location = useLocation();
+  const runtimeFlowEngine = app?.flowEngine || flowEngine;
   const result = useRequest<any>(() =>
     api
       .request({
@@ -72,12 +74,12 @@ export const CurrentUserProvider = (props) => {
           navigate('/signin?redirect=' + location.pathname + location.search);
         }
         const userMeta = createCollectionContextMeta(
-          () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
-          app.flowEngine.translate('Current user'),
+          () => runtimeFlowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
+          runtimeFlowEngine.translate('Current user'),
         );
         // 排序：用户优先显示
         userMeta.sort = 1000;
-        app.flowEngine.context.defineProperty('user', {
+        runtimeFlowEngine.context.defineProperty('user', {
           value: res?.data?.data,
           resolveOnServer: true,
           meta: userMeta,

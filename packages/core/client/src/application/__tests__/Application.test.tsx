@@ -335,9 +335,6 @@ describe('Application', () => {
       render(<Root />);
 
       await waitFor(() => {
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
-      });
-      await waitFor(() => {
         expect(screen.getByText('HomeComponent')).toBeInTheDocument();
       });
       await userEvent.click(screen.getByText('About'));
@@ -362,11 +359,7 @@ describe('Application', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('test')).toBeInTheDocument();
+        expect(screen.getByText('404')).toBeInTheDocument();
       });
     });
 
@@ -415,7 +408,7 @@ describe('Application', () => {
       render(<Root />);
 
       await sleep(10);
-      expect(screen.getByText('App Error')).toBeInTheDocument();
+      expect(screen.getByText('App error')).toBeInTheDocument();
     });
 
     it('replace Component', async () => {

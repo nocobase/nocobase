@@ -10,9 +10,12 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { cloneDeep, debounce } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDesignable } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
+import { useActionContext } from '../../antd/action/hooks';
+import { ActionContextProvider } from '../../antd/action/context';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
+import { SchemaComponentOptions } from '../../core/SchemaComponentOptions';
+import { useDesignable } from '../../hooks/useDesignable';
 import { popupSchema } from './schema';
 import { CollectionProvider, useCollection } from '../../../data-source';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
