@@ -19,7 +19,7 @@ import {
   createParentItemAccessorsFromInputArgs,
   resolveRecordPersistenceState,
 } from '../itemChain';
-import { injectRecordPickerPopupContext } from '@nocobase/client';
+import { injectRecordPickerPopupContext } from '@nocobase/client-v2';
 
 function createMockCollection() {
   return {
