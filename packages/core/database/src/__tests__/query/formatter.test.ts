@@ -9,6 +9,21 @@
 
 import { Database } from '../../database';
 import { createMockDatabase } from '../../mock-database';
+import { QueryFormatter, Col } from '../../query/formatter';
+
+class TestQueryFormatter extends QueryFormatter {
+  formatDate(field: Col) {
+    return field;
+  }
+
+  formatUnixTimestamp(field: string) {
+    return this.sequelize.col(field);
+  }
+
+  resolveTimezone(timezone?: string) {
+    return this.getTimezoneByOffset(timezone);
+  }
+}
 
 describe('query formatter', () => {
   let db: Database;
@@ -53,6 +68,14 @@ describe('query formatter', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should ignore invalid timezone header values', async () => {
+    const formatter = new TestQueryFormatter(db.sequelize);
+
+    expect(formatter.resolveTimezone(`UTC' || current_user || '`)).toBeUndefined();
+    expect(formatter.resolveTimezone('+05:30')).toBeTruthy();
+    expect(formatter.resolveTimezone('Asia/Tokyo')).toBe('Asia/Tokyo');
   });
 
   it('should format query dimensions by field type', async () => {

@@ -342,3 +342,31 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_FULL_TAGS }}
+  feishu-notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - publish-npm
+      - push-docker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Determine overall result
+        id: result
+        shell: bash
+        run: |
+          if [[ "${{ needs.publish-npm.result }}" == "success" && "${{ needs.push-docker.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+      - name: Send Feishu notification
+        shell: bash
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          VERSION: ${{ github.ref_name }}
+          STATUS: ${{ steps.result.outputs.status }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/feishu-release-notify.sh

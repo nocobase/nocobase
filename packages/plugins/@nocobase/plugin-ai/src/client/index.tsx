@@ -39,6 +39,7 @@ import { chartConfigWorkContext } from './ai-employees/data-visualization/contex
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 import { formFillerTool } from './ai-employees/form-filler/tools';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
+import { businessReportGeneratorTool } from './ai-employees/business-report/tools';
 import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
 import {
   getContextApisTool,
@@ -179,6 +180,7 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...defineCollectionsTool);
     this.ai.toolsManager.registerTools(...formFillerTool);
     this.ai.toolsManager.registerTools(...chartGeneratorTool);
+    this.ai.toolsManager.registerTools(...businessReportGeneratorTool);
     this.ai.toolsManager.registerTools(...listCodeSnippetTool);
     this.ai.toolsManager.registerTools(...getCodeSnippetTool);
     this.ai.toolsManager.registerTools(...suggestionsTool);

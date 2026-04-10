@@ -16,8 +16,8 @@ export class OracleQueryFormatter extends QueryFormatter {
 
   formatDate(field: Col, format: string, timezone?: string) {
     const fmt = this.convertFormat(format);
-    if (timezone) {
-      const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    if (resolvedTimezone) {
       const quoted = this.sequelize.getQueryInterface().quoteIdentifiers((field as any).col);
       return this.sequelize.fn(
         'to_char',
@@ -31,7 +31,8 @@ export class OracleQueryFormatter extends QueryFormatter {
   formatUnixTimestamp(field: string, format: string, accuracy: 'second' | 'millisecond' = 'second', timezone?: string) {
     const quoted = this.sequelize.getQueryInterface().quoteIdentifiers(field);
     const timestamp = accuracy === 'millisecond' ? `to_timestamp(ROUND(${quoted} / 1000))` : `to_timestamp(${quoted})`;
-    const literal = timezone ? `${timestamp} AT TIME ZONE '${this.getTimezoneByOffset(timezone)}'` : timestamp;
+    const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    const literal = resolvedTimezone ? `${timestamp} AT TIME ZONE '${resolvedTimezone}'` : timestamp;
     return this.sequelize.fn('to_char', this.sequelize.literal(literal), this.convertFormat(format));
   }
 }

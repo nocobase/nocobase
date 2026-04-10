@@ -197,4 +197,29 @@ describe('repository query', () => {
 
     expect(result).toMatchObject([{ name: 'u2', age: 20 }]);
   });
+
+  it('should default invalid order direction to ASC', async () => {
+    await db.getRepository('users').create({
+      values: [
+        { id: 1, name: 'u1', age: 10, createdAt: '2023-02-02' },
+        { id: 2, name: 'u2', age: 20, createdAt: '2023-01-01' },
+      ],
+    });
+
+    const result = await db.getRepository('users').query({
+      dimensions: [{ field: ['createdAt'], alias: 'createdAt' }],
+      orders: [
+        {
+          field: ['createdAt'],
+          alias: 'createdAt',
+          order: `DESC'); SELECT pg_sleep(1)--` as any,
+        },
+      ],
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].createdAt).toBeInstanceOf(Date);
+    expect(result[1].createdAt).toBeInstanceOf(Date);
+    expect(result[0].createdAt.getTime()).toBeLessThanOrEqual(result[1].createdAt.getTime());
+  });
 });
