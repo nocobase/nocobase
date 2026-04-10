@@ -18,5 +18,5 @@ export abstract class BaseNotificationChannel<Message = any> {
     message: Message;
     receivers?: ReceiversOptions;
     transaction?: Transactionable['transaction'];
-  }): Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
+  }): Promise<{ message: Message; status: 'success' | 'failure'; reason?: string }>;
 }

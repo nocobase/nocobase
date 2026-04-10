@@ -39,7 +39,7 @@ export type SendFnType<Message> = (args: {
   channel: ChannelOptions;
   receivers?: ReceiversOptions;
   transaction?: Transactionable['transaction'];
-}) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
+}) => Promise<{ message: Message; status: 'success' | 'failure'; reason?: string }>;
 
 export type ReceiversOptions =
   | { value: number[]; type: 'userId' }
