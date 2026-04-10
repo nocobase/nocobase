@@ -104,7 +104,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       useSetAriaLabelForModal(visible);
     }
 
-    const container = React.useMemo(() => {
+    const container: HTMLElement = React.useMemo(() => {
       return document.querySelector('#nocobase-app-container') || document.body;
     }, []);
 

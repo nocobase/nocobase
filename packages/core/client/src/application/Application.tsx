@@ -33,6 +33,7 @@ import { DataSourceManager, type DataSourceManagerOptions } from '../data-source
 import { SystemSettingsSource } from '@nocobase/client-v2';
 import { i18n } from '../i18n';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
+import { defineGlobalDeps } from './utils/globalDeps';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import { PluginManager, type PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
@@ -98,6 +99,13 @@ export class Application extends BaseApplication<ApplicationOptions> {
   locales = null;
 
   private readonly variables: Variable[] = [];
+
+  protected initRequireJs() {
+    super.initRequireJs();
+    if (this.requirejs) {
+      defineGlobalDeps(this.requirejs);
+    }
+  }
 
   protected defineObservableState() {
     super.defineObservableState();
