@@ -28,6 +28,14 @@ import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from '
 const FLOW_SURFACES_TEMPLATE_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-templates'] as const;
 const FLOW_SURFACES_TEMPLATE_TEST_PLUGIN_INSTALLS = [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, 'ui-templates'] as const;
 
+function buildSingleColumnLayout(itemUids: string[]) {
+  return {
+    rows: Object.fromEntries(itemUids.map((itemUid, index) => [`autoRow${index + 1}`, [[itemUid]]])),
+    sizes: Object.fromEntries(itemUids.map((_, index) => [`autoRow${index + 1}`, [24]])),
+    rowOrder: itemUids.map((_, index) => `autoRow${index + 1}`),
+  };
+}
+
 describe('flowSurfaces templates', () => {
   let app: MockServer;
   let rootAgent: any;
@@ -107,6 +115,20 @@ describe('flowSurfaces templates', () => {
     const copiedBlockUid = addBlocksRes.blocks[0].result.uid;
     const copiedBlockSurface = await getSurface(rootAgent, { uid: copiedBlockUid });
     expect(copiedBlockSurface.tree.template).toBeUndefined();
+    let pageSurface = await getSurface(rootAgent, { pageSchemaUid: page.pageSchemaUid });
+    let pageGrid = pageSurface.tree?.subModels?.tabs?.[0]?.subModels?.grid;
+    expect(pageGrid?.subModels?.items?.some((item: any) => item.uid === copiedBlockUid)).toBe(true);
+    expect(Object.values(pageGrid?.props?.rows || {}).flat(2)).toContain(copiedBlockUid);
+    getData(
+      await rootAgent.resource('flowSurfaces').setLayout({
+        values: {
+          target: { uid: page.gridUid },
+          rows: pageGrid?.props?.rows || {},
+          sizes: pageGrid?.props?.sizes || {},
+          rowOrder: pageGrid?.props?.rowOrder || [],
+        },
+      }),
+    );
     await expectTemplateUsage(rootAgent, template.uid, 0);
 
     const referencedBlock = await addBlockData(rootAgent, {
@@ -141,6 +163,10 @@ describe('flowSurfaces templates', () => {
     expect(convertedBlock.type).toBe('block');
     const convertedBlockSurface = await getSurface(rootAgent, { uid: referencedBlock.uid });
     expect(convertedBlockSurface.tree.template).toBeUndefined();
+    pageSurface = await getSurface(rootAgent, { pageSchemaUid: page.pageSchemaUid });
+    pageGrid = pageSurface.tree?.subModels?.tabs?.[0]?.subModels?.grid;
+    expect(pageGrid?.subModels?.items?.some((item: any) => item.uid === referencedBlock.uid)).toBe(true);
+    expect(Object.values(pageGrid?.props?.rows || {}).flat(2)).toContain(referencedBlock.uid);
     await expectTemplateUsage(rootAgent, template.uid, 0);
 
     const composed = getData(
@@ -369,6 +395,19 @@ describe('flowSurfaces templates', () => {
     expect(addFieldsResult.fields[0].ok).toBe(true);
     const addFieldsSurface = await getSurface(rootAgent, { uid: addFieldsBlock.uid });
     expect(addFieldsSurface.tree.fieldsTemplate).toBeUndefined();
+    const copiedFieldsGrid = addFieldsSurface.tree?.subModels?.grid;
+    expect(copiedFieldsGrid?.uid).toBeTruthy();
+    const copiedFieldsGridItemUids = (copiedFieldsGrid?.subModels?.items || []).map((item: any) => item.uid);
+    expect(copiedFieldsGridItemUids.length).toBeGreaterThan(0);
+    const copiedFieldsLayout = buildSingleColumnLayout(copiedFieldsGridItemUids);
+    getData(
+      await rootAgent.resource('flowSurfaces').setLayout({
+        values: {
+          target: { uid: copiedFieldsGrid.uid },
+          ...copiedFieldsLayout,
+        },
+      }),
+    );
     await expectTemplateUsage(rootAgent, template.uid, 2);
 
     getData(
@@ -390,6 +429,19 @@ describe('flowSurfaces templates', () => {
     expect(convertedFields.type).toBe('fields');
     referencedFieldsSurface = await getSurface(rootAgent, { uid: referencedFieldsBlock.uid });
     expect(referencedFieldsSurface.tree.fieldsTemplate).toBeUndefined();
+    const convertedFieldsGrid = referencedFieldsSurface.tree?.subModels?.grid;
+    expect(convertedFieldsGrid?.uid).toBeTruthy();
+    const convertedFieldsGridItemUids = (convertedFieldsGrid?.subModels?.items || []).map((item: any) => item.uid);
+    expect(convertedFieldsGridItemUids.length).toBeGreaterThan(0);
+    const convertedFieldsLayout = buildSingleColumnLayout(convertedFieldsGridItemUids);
+    getData(
+      await rootAgent.resource('flowSurfaces').setLayout({
+        values: {
+          target: { uid: convertedFieldsGrid.uid },
+          ...convertedFieldsLayout,
+        },
+      }),
+    );
     await expectTemplateUsage(rootAgent, template.uid, 0);
   });
 

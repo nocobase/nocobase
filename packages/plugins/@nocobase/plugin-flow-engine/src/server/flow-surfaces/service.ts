@@ -4372,8 +4372,26 @@ export class FlowSurfacesService {
   }
 
   private async duplicateDetachedFlowModelTree(actionName: string, rootUid: string, transaction?: any) {
-    const sourceNode = await this.repository.findModelById(rootUid, {
+    const duplicatedTree = await this.cloneFlowModelTree(actionName, rootUid, { transaction });
+    await this.repository.upsertModel(duplicatedTree, {
       transaction,
+    });
+    return this.repository.findModelById(String(duplicatedTree.uid || '').trim(), {
+      transaction,
+      includeAsyncNode: true,
+    });
+  }
+
+  private async cloneFlowModelTree(
+    actionName: string,
+    rootUid: string,
+    options: {
+      transaction?: any;
+      uidMap?: Record<string, string>;
+    } = {},
+  ) {
+    const sourceNode = await this.repository.findModelById(rootUid, {
+      transaction: options.transaction,
       includeAsyncNode: true,
     });
     if (!sourceNode?.uid) {
@@ -4382,22 +4400,17 @@ export class FlowSurfacesService {
         'FLOW_SURFACE_TEMPLATE_SOURCE_NOT_FOUND',
       );
     }
-    const uidMap = Object.fromEntries(
-      Array.from(collectFlowTemplateModelUids(sourceNode)).map((modelUid) => [modelUid, uid()]),
-    ) as Record<string, string>;
+    const uidMap = {
+      ...Object.fromEntries(Array.from(collectFlowTemplateModelUids(sourceNode)).map((modelUid) => [modelUid, uid()])),
+      ...(options.uidMap || {}),
+    } as Record<string, string>;
     const duplicatedTree = replaceFlowModelTreeUids(sourceNode, uidMap);
     this.stripInternalSurfaceMetaFromNodeTree(duplicatedTree);
     delete duplicatedTree.parent;
     delete duplicatedTree.parentId;
     delete duplicatedTree.subKey;
     delete duplicatedTree.subType;
-    await this.repository.upsertModel(duplicatedTree, {
-      transaction,
-    });
-    return this.repository.findModelById(String(duplicatedTree.uid || '').trim(), {
-      transaction,
-      includeAsyncNode: true,
-    });
+    return duplicatedTree;
   }
 
   async convertTemplateToCopy(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -4475,12 +4488,13 @@ export class FlowSurfacesService {
       };
     }
 
-    const duplicatedBlock = await this.duplicateDetachedFlowModelTree(
-      'convertTemplateToCopy',
-      resolved.targetUid,
-      options.transaction,
-    );
-    if (!duplicatedBlock?.uid) {
+    const clonedBlock = await this.cloneFlowModelTree('convertTemplateToCopy', resolved.targetUid, {
+      transaction: options.transaction,
+      uidMap: {
+        [resolved.targetUid]: node.uid,
+      },
+    });
+    if (!clonedBlock?.uid) {
       throwConflict(
         `flowSurfaces convertTemplateToCopy failed to duplicate template '${resolved.template.uid}'`,
         'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
@@ -4496,10 +4510,7 @@ export class FlowSurfacesService {
     await this.repository.remove(node.uid, { transaction: options.transaction });
     await this.repository.upsertModel(
       {
-        ...replaceFlowModelTreeUids(duplicatedBlock, {
-          [String(duplicatedBlock.uid || '')]: node.uid,
-        }),
-        uid: node.uid,
+        ...clonedBlock,
         parentId: node.parentId,
         subKey: node.subKey,
         subType: node.subType,
@@ -5539,8 +5550,10 @@ export class FlowSurfacesService {
       return { gridUid: currentGrid.uid };
     }
 
-    const duplicatedGrid = await this.duplicateDetachedFlowModelTree(actionName, templateGrid.uid, options.transaction);
-    if (!duplicatedGrid?.uid) {
+    const clonedGrid = await this.cloneFlowModelTree(actionName, templateGrid.uid, {
+      transaction: options.transaction,
+    });
+    if (!clonedGrid?.uid) {
       throwConflict(
         `flowSurfaces ${actionName} failed to duplicate fields template '${template.uid}'`,
         'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
@@ -5548,17 +5561,17 @@ export class FlowSurfacesService {
     }
 
     await this.repository.remove(currentGrid.uid, { transaction: options.transaction });
-    await this.repository.upsertModel(
+    const createdGridUid = await this.repository.upsertModel(
       {
-        ...this.patchCopiedTemplateGridFromRoot(templateRoot, duplicatedGrid),
+        ...this.patchCopiedTemplateGridFromRoot(templateRoot, clonedGrid),
         parentId: blockUid,
         subKey: 'grid',
         subType: 'object',
       },
       { transaction: options.transaction },
     );
-    await this.syncFlowTemplateUsagesForNodeTree(duplicatedGrid.uid, options.transaction);
-    return { gridUid: duplicatedGrid.uid };
+    await this.syncFlowTemplateUsagesForNodeTree(createdGridUid, options.transaction);
+    return { gridUid: createdGridUid };
   }
 
   private async addBlockFromFieldsTemplate(
@@ -5694,8 +5707,10 @@ export class FlowSurfacesService {
       return this.buildBlockCreateResult({ ...tree, uid: createdUid }, parentUid, subKey, popupSurface);
     }
 
-    const duplicated = await this.duplicateDetachedFlowModelTree('addBlock', template.targetUid, options.transaction);
-    if (!duplicated?.uid) {
+    const clonedTree = await this.cloneFlowModelTree('addBlock', template.targetUid, {
+      transaction: options.transaction,
+    });
+    if (!clonedTree?.uid) {
       throwConflict(
         `flowSurfaces addBlock failed to duplicate template '${template.uid}'`,
         'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
@@ -5704,7 +5719,7 @@ export class FlowSurfacesService {
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
     const createdUid = await this.repository.upsertModel(
       {
-        ...duplicated,
+        ...clonedTree,
         parentId: parentUid,
         subKey,
         subType,
@@ -5718,7 +5733,7 @@ export class FlowSurfacesService {
     if (!options.deferAutoLayout && initialGrid?.uid) {
       await this.appendAddedBlockLayout(parentUid, createdUid, initialGrid, options);
     }
-    return this.buildBlockCreateResult({ ...duplicated, uid: createdUid }, parentUid, subKey, popupSurface);
+    return this.buildBlockCreateResult({ ...clonedTree, uid: createdUid }, parentUid, subKey, popupSurface);
   }
 
   private async addFieldFromTemplate(

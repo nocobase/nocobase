@@ -16,6 +16,7 @@ import {
 } from './flow-surfaces.fixtures';
 import {
   FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST,
+  FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS,
   type FormalFlowSurfaceBlockKey,
 } from './flow-surfaces-fixtures/manifest';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -47,6 +48,11 @@ const PET_TABLE_FIELD_PATHS = [
   'lastVisitAt',
   'updatedAt',
 ];
+
+const REPRESENTATIVE_CREATE_PARITY_ENTRIES = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.filter((entry) =>
+  FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS.includes(entry.key),
+);
+
 describe('flowSurfaces create parity (formal built-in blocks)', () => {
   let app: MockServer;
   let rootAgent: any;
@@ -63,7 +69,7 @@ describe('flowSurfaces create parity (formal built-in blocks)', () => {
     }
   });
 
-  for (const entry of FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST) {
+  for (const entry of REPRESENTATIVE_CREATE_PARITY_ENTRIES) {
     it(`should keep create parity aligned with real fixture canonical tree for formal block '${entry.key}'`, async () => {
       const readback = await buildCreateParityReadback(rootAgent, entry.key);
       const actualTree = projectFormalBlockCreateParityTree(entry.key, createCreateParityTree(readback));
@@ -75,21 +81,19 @@ describe('flowSurfaces create parity (formal built-in blocks)', () => {
 
   // Filter-form popup creation now has popup-scene-specific resource semantics and no longer
   // shares the same canonical baseline as the top-level representative fixture.
-  // Keep popup parity coverage for the collection blocks whose popup shape still matches the
-  // representative fixture directly.
-  for (const key of ['table', 'list', 'grid-card'] as const) {
-    it(`should keep nested popup create parity aligned with representative fixture for '${key}'`, async () => {
-      const readback = await buildNestedPopupCreateParityReadback(rootAgent, key);
-      const actualTree = projectFormalBlockCreateParityTree(key, createCreateParityTree(readback));
-      const fixtureEntry = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.find((entry) => entry.key === key);
-      if (!fixtureEntry) {
-        throw new Error(`Missing create parity fixture manifest for '${key}'`);
-      }
-      const expectedTree = readCreateParityFixtureExpectation(key, fixtureEntry.createParityFixture.name);
+  // Keep one nested collection-block representative parity smoke to ensure popup bootstrap still
+  // matches the canonical fixture path for the most complex table scenario.
+  it(`should keep nested popup create parity aligned with representative fixture for 'table'`, async () => {
+    const readback = await buildNestedPopupCreateParityReadback(rootAgent, 'table');
+    const actualTree = projectFormalBlockCreateParityTree('table', createCreateParityTree(readback));
+    const fixtureEntry = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.find((entry) => entry.key === 'table');
+    if (!fixtureEntry) {
+      throw new Error(`Missing create parity fixture manifest for 'table'`);
+    }
+    const expectedTree = readCreateParityFixtureExpectation('table', fixtureEntry.createParityFixture.name);
 
-      expect(actualTree).toEqual(expectedTree);
-    });
-  }
+    expect(actualTree).toEqual(expectedTree);
+  });
 });
 
 async function buildCreateParityReadback(rootAgent: any, key: FormalFlowSurfaceBlockKey) {

@@ -1068,6 +1068,106 @@ describe('flowSurfaces association contract', () => {
     expect(profileInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
   });
 
+  it('should persist usable titleField defaults for association selectors and reject invalid overrides', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Employees association selector contract page',
+      tabTitle: 'Employees association selector contract tab',
+    });
+
+    const editForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'editForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const filterForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'filterForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const skillsField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: editForm.uid,
+          },
+          fieldPath: 'skills',
+        },
+      }),
+    );
+    const managerField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: editForm.uid,
+          },
+          fieldPath: 'manager',
+        },
+      }),
+    );
+    const filterManagerField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: filterForm.uid,
+          },
+          fieldPath: 'manager',
+        },
+      }),
+    );
+
+    const skillsWrapperReadback = await getSurface(rootAgent, { uid: skillsField.wrapperUid });
+    const skillsInnerReadback = await getSurface(rootAgent, { uid: skillsField.fieldUid });
+    expect(skillsWrapperReadback.tree.props?.titleField).toBe('label');
+    expect(skillsInnerReadback.tree.props?.titleField).toBe('label');
+
+    const managerWrapperReadback = await getSurface(rootAgent, { uid: managerField.wrapperUid });
+    const managerInnerReadback = await getSurface(rootAgent, { uid: managerField.fieldUid });
+    expect(managerWrapperReadback.tree.props?.titleField).toBe('nickname');
+    expect(managerInnerReadback.tree.props?.titleField).toBe('nickname');
+
+    const filterManagerWrapperReadback = await getSurface(rootAgent, { uid: filterManagerField.wrapperUid });
+    const filterManagerInnerReadback = await getSurface(rootAgent, { uid: filterManagerField.fieldUid });
+    expect(filterManagerWrapperReadback.tree.use).toBe('FilterFormItemModel');
+    expect(filterManagerInnerReadback.tree.use).toBe('FilterFormRecordSelectFieldModel');
+    expect(filterManagerWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
+    expect(filterManagerInnerReadback.tree.props?.titleField).toBe('nickname');
+
+    const opaqueRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: editForm.uid,
+        },
+        fieldPath: 'opaqueTarget',
+      },
+    });
+    expect(opaqueRes.status).toBe(400);
+    expect(readErrorMessage(opaqueRes)).toContain("target collection 'opaque_targets' has no usable titleField");
+
+    const invalidTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: managerField.fieldUid,
+        },
+        changes: {
+          titleField: 'missing',
+        },
+      },
+    });
+    expect(invalidTitleFieldRes.status).toBe(400);
+    expect(readErrorMessage(invalidTitleFieldRes)).toContain("collection 'employees' titleField 'missing' not found");
+  });
+
   it('should reject no-interface bound fields across addField addFields and compose', async () => {
     const page = await createPage(rootAgent, {
       title: 'No interface contract page',

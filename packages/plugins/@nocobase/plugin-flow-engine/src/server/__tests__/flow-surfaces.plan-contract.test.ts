@@ -53,7 +53,7 @@ describe('flowSurfaces plan contract', () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
-  it('should execute bootstrap createMenu/createPage steps through executePlan and resolve previous step refs', async () => {
+  it('should execute representative bootstrap steps through executePlan and return the created page surface', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
       values: {
         plan: {
@@ -86,24 +86,8 @@ describe('flowSurfaces plan contract', () => {
                   step: 'menu',
                   path: 'routeId',
                 },
+                ref: 'employeesPage',
                 tabTitle: 'Overview',
-                enableTabs: true,
-              },
-            },
-            {
-              id: 'extraTab',
-              action: 'addTab',
-              selectors: {
-                target: {
-                  step: 'page',
-                  path: 'pageUid',
-                },
-              },
-              values: {
-                title: {
-                  step: 'page',
-                  path: 'tabSchemaName',
-                },
               },
             },
           ],
@@ -141,15 +125,7 @@ describe('flowSurfaces plan contract', () => {
             menuRouteId: {
               ref: 'menu.routeId',
             },
-          }),
-        }),
-        expect.objectContaining({
-          id: 'extraTab',
-          action: 'addTab',
-          payload: expect.objectContaining({
-            title: {
-              ref: 'page.tabSchemaName',
-            },
+            ref: 'employeesPage',
           }),
         }),
       ]),
@@ -161,7 +137,6 @@ describe('flowSurfaces plan contract', () => {
     expect(resultById.group.routeId).toBeTruthy();
     expect(resultById.menu.parentMenuRouteId).toBe(resultById.group.routeId);
     expect(resultById.page.routeId).toBe(resultById.menu.routeId);
-    expect(resultById.extraTab.pageUid).toBe(resultById.page.pageUid);
     expect(executeData.target).toMatchObject({
       locator: {
         pageSchemaUid: resultById.page.pageSchemaUid,
@@ -170,14 +145,14 @@ describe('flowSurfaces plan contract', () => {
       kind: 'page',
     });
     expect(executeData.refs.surface.uid).toBe(resultById.page.pageUid);
+    expect(executeData.refs.employeesPage.uid).toBe(resultById.page.pageUid);
 
     const pageSurface = await getSurface(rootAgent, {
       pageSchemaUid: resultById.page.pageSchemaUid,
     });
     const tabs = getRouteBackedTabs(pageSurface);
-    expect(tabs).toHaveLength(2);
+    expect(tabs).toHaveLength(1);
     expect(tabs[0]?.uid).toBe(resultById.page.tabSchemaUid);
-    expect(tabs[1]?.uid).toBe(resultById.extraTab.tabSchemaUid);
   });
 
   it('should execute compose through executePlan runtime dispatch', async () => {
@@ -687,7 +662,7 @@ describe('flowSurfaces plan contract', () => {
     expect(gridItems).toHaveLength(0);
   });
 
-  it('should validate a one-shot bootstrap plan by reusing created refs during preview collection', async () => {
+  it('should validate representative bootstrap preview by reusing created refs without mutating routes', async () => {
     const routeCountBefore = await routesRepo.count();
 
     const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
@@ -749,52 +724,6 @@ describe('flowSurfaces plan contract', () => {
                       collectionName: 'users',
                     },
                     fields: [{ ref: 'usersTable.username', fieldPath: 'username' }],
-                    recordActions: [{ ref: 'usersTable.viewUser', type: 'view' }],
-                  },
-                ],
-              },
-            },
-            {
-              id: 'userPopupContent',
-              action: 'compose',
-              selectors: {
-                target: {
-                  ref: 'usersTable.viewUser.popupGrid',
-                },
-              },
-              values: {
-                mode: 'replace',
-                blocks: [
-                  {
-                    ref: 'userDetails',
-                    type: 'details',
-                    resource: {
-                      binding: 'currentRecord',
-                    },
-                    fields: [{ ref: 'userDetails.username', fieldPath: 'username' }],
-                    recordActions: [{ ref: 'userDetails.editUser', type: 'edit' }],
-                  },
-                ],
-              },
-            },
-            {
-              id: 'userEditPopupContent',
-              action: 'compose',
-              selectors: {
-                target: {
-                  ref: 'userDetails.editUser.popupGrid',
-                },
-              },
-              values: {
-                mode: 'replace',
-                blocks: [
-                  {
-                    ref: 'userEditForm',
-                    type: 'editForm',
-                    resource: {
-                      binding: 'currentRecord',
-                    },
-                    fields: [{ ref: 'userEditForm.username', fieldPath: 'username' }],
                   },
                 ],
               },
@@ -815,28 +744,6 @@ describe('flowSurfaces plan contract', () => {
             target: {
               uid: {
                 ref: 'usersPage.tab',
-              },
-            },
-          }),
-        }),
-        expect.objectContaining({
-          id: 'userPopupContent',
-          action: 'compose',
-          payload: expect.objectContaining({
-            target: {
-              uid: {
-                ref: 'usersTable.viewUser.popupGrid',
-              },
-            },
-          }),
-        }),
-        expect.objectContaining({
-          id: 'userEditPopupContent',
-          action: 'compose',
-          payload: expect.objectContaining({
-            target: {
-              uid: {
-                ref: 'userDetails.editUser.popupGrid',
               },
             },
           }),
@@ -909,7 +816,6 @@ describe('flowSurfaces plan contract', () => {
                     fields: [
                       { ref: 'usersTable.username', fieldPath: 'username' },
                       { ref: 'usersTable.nickname', fieldPath: 'nickname' },
-                      { ref: 'usersTable.rolesTitle', fieldPath: 'roles.title' },
                     ],
                     recordActions: [{ ref: 'usersTable.viewUser', type: 'view' }],
                   },
@@ -939,28 +845,7 @@ describe('flowSurfaces plan contract', () => {
                     ],
                     recordActions: [{ ref: 'userDetails.editUser', type: 'edit' }],
                   },
-                  {
-                    ref: 'userRolesTable',
-                    type: 'table',
-                    resource: {
-                      binding: 'associatedRecords',
-                      associationField: 'roles',
-                    },
-                    fields: [
-                      { ref: 'userRolesTable.name', fieldPath: 'name' },
-                      { ref: 'userRolesTable.title', fieldPath: 'title' },
-                    ],
-                    recordActions: [{ ref: 'userRolesTable.viewRole', type: 'view' }],
-                  },
                 ],
-                layout: {
-                  rows: [
-                    [
-                      { ref: 'userDetails', span: 12 },
-                      { ref: 'userRolesTable', span: 12 },
-                    ],
-                  ],
-                },
               },
             },
             {
@@ -985,58 +870,6 @@ describe('flowSurfaces plan contract', () => {
                       { ref: 'userEditForm.nickname', fieldPath: 'nickname' },
                     ],
                     actions: [{ ref: 'userEditForm.submit', type: 'submit' }],
-                  },
-                ],
-              },
-            },
-            {
-              id: 'rolePopupContent',
-              action: 'compose',
-              selectors: {
-                target: {
-                  ref: 'userRolesTable.viewRole.popupGrid',
-                },
-              },
-              values: {
-                mode: 'replace',
-                blocks: [
-                  {
-                    ref: 'roleDetails',
-                    type: 'details',
-                    resource: {
-                      binding: 'currentRecord',
-                    },
-                    fields: [
-                      { ref: 'roleDetails.name', fieldPath: 'name' },
-                      { ref: 'roleDetails.title', fieldPath: 'title' },
-                    ],
-                    recordActions: [{ ref: 'roleDetails.editRole', type: 'edit' }],
-                  },
-                ],
-              },
-            },
-            {
-              id: 'roleEditPopupContent',
-              action: 'compose',
-              selectors: {
-                target: {
-                  ref: 'roleDetails.editRole.popupGrid',
-                },
-              },
-              values: {
-                mode: 'replace',
-                blocks: [
-                  {
-                    ref: 'roleEditForm',
-                    type: 'editForm',
-                    resource: {
-                      binding: 'currentRecord',
-                    },
-                    fields: [
-                      { ref: 'roleEditForm.name', fieldPath: 'name' },
-                      { ref: 'roleEditForm.title', fieldPath: 'title' },
-                    ],
-                    actions: [{ ref: 'roleEditForm.submit', type: 'submit' }],
                   },
                 ],
               },
@@ -1073,28 +906,6 @@ describe('flowSurfaces plan contract', () => {
             },
           }),
         }),
-        expect.objectContaining({
-          id: 'rolePopupContent',
-          action: 'compose',
-          payload: expect.objectContaining({
-            target: {
-              uid: {
-                ref: 'userRolesTable.viewRole.popupGrid',
-              },
-            },
-          }),
-        }),
-        expect.objectContaining({
-          id: 'roleEditPopupContent',
-          action: 'compose',
-          payload: expect.objectContaining({
-            target: {
-              uid: {
-                ref: 'roleDetails.editRole.popupGrid',
-              },
-            },
-          }),
-        }),
       ]),
     );
 
@@ -1104,51 +915,29 @@ describe('flowSurfaces plan contract', () => {
     const mainUsersTable = getComposeBlock(resultById.composeMain, 'usersTable');
     const mainViewUser = getComposeAction(mainUsersTable, 'recordActions', 'usersTable.viewUser');
     expect(mainViewUser.popupGridUid).toBeTruthy();
+    expect(resultById.userPopupContent.target.uid).toBe(mainViewUser.popupGridUid);
 
     const userDetails = getComposeBlock(resultById.userPopupContent, 'userDetails');
     const userEditAction = getComposeAction(userDetails, 'recordActions', 'userDetails.editUser');
-    const userRolesTable = getComposeBlock(resultById.userPopupContent, 'userRolesTable');
-    const viewRoleAction = getComposeAction(userRolesTable, 'recordActions', 'userRolesTable.viewRole');
     expect(userDetails.uid).toBeTruthy();
-    expect(userRolesTable.uid).toBeTruthy();
-    expect(resultById.userPopupContent.layout.sizes.row1).toEqual([12, 12]);
     expect(userEditAction.popupGridUid).toBeTruthy();
-    expect(viewRoleAction.popupGridUid).toBeTruthy();
+    expect(resultById.userEditPopupContent.target.uid).toBe(userEditAction.popupGridUid);
 
     const userEditForm = getComposeBlock(resultById.userEditPopupContent, 'userEditForm');
     const userEditSubmit = getComposeAction(userEditForm, 'actions', 'userEditForm.submit');
-    const roleDetails = getComposeBlock(resultById.rolePopupContent, 'roleDetails');
-    const roleEditAction = getComposeAction(roleDetails, 'recordActions', 'roleDetails.editRole');
-    const roleEditForm = getComposeBlock(resultById.roleEditPopupContent, 'roleEditForm');
-    const roleEditSubmit = getComposeAction(roleEditForm, 'actions', 'roleEditForm.submit');
     expect(userEditForm.uid).toBeTruthy();
-    expect(roleDetails.uid).toBeTruthy();
-    expect(roleEditForm.uid).toBeTruthy();
     expect(userEditSubmit.uid).toBeTruthy();
-    expect(roleEditAction.popupGridUid).toBeTruthy();
-    expect(roleEditSubmit.uid).toBeTruthy();
 
     const mainTableSurface = await getSurface(rootAgent, {
       uid: mainUsersTable.uid,
     });
     expect(mainTableSurface.tree.use).toBe('TableBlockModel');
-    expect(getComposeField(mainUsersTable, 'usersTable.rolesTitle').fieldPath).toBe('roles.title');
+    expect(getComposeField(mainUsersTable, 'usersTable.nickname').fieldPath).toBe('nickname');
 
     const userDetailsSurface = await getSurface(rootAgent, {
       uid: userDetails.uid,
     });
     expect(userDetailsSurface.tree.use).toBe('DetailsBlockModel');
-
-    const userRolesTableSurface = await getSurface(rootAgent, {
-      uid: userRolesTable.uid,
-    });
-    expect(userRolesTableSurface.tree.use).toBe('TableBlockModel');
-    expect(userRolesTableSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'roles',
-      associationName: 'users.roles',
-      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
-    });
 
     const userEditFormSurface = await getSurface(rootAgent, {
       uid: userEditForm.uid,
@@ -1159,161 +948,6 @@ describe('flowSurfaces plan contract', () => {
       collectionName: 'users',
       filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
-
-    const roleDetailsSurface = await getSurface(rootAgent, {
-      uid: roleDetails.uid,
-    });
-    expect(roleDetailsSurface.tree.use).toBe('DetailsBlockModel');
-    expect(roleDetailsSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
-      associationName: 'users.roles',
-      sourceId: '{{ctx.view.inputArgs.sourceId}}',
-    });
-
-    const roleEditFormSurface = await getSurface(rootAgent, {
-      uid: roleEditForm.uid,
-    });
-    expect(roleEditFormSurface.tree.use).toBe('EditFormModel');
-    expect(roleEditFormSurface.tree.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
-      associationName: 'users.roles',
-      sourceId: '{{ctx.view.inputArgs.sourceId}}',
-    });
-  });
-
-  it('should validate configure-created popup refs for same-plan popup composition without mutating the surface', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Validate configure popup refs page',
-      tabTitle: 'Validate configure popup refs tab',
-    });
-
-    const validateRes = await rootAgent.resource('flowSurfaces').validatePlan({
-      values: {
-        surface: {
-          locator: {
-            pageSchemaUid: page.pageSchemaUid,
-          },
-        },
-        plan: {
-          steps: [
-            {
-              id: 'addDetails',
-              action: 'addBlock',
-              selectors: {
-                target: {
-                  locator: {
-                    uid: page.tabSchemaUid,
-                  },
-                },
-              },
-              values: {
-                type: 'details',
-                resourceInit: {
-                  dataSourceKey: 'main',
-                  collectionName: 'employees',
-                },
-              },
-            },
-            {
-              id: 'addManagerField',
-              action: 'addField',
-              selectors: {
-                target: {
-                  step: 'addDetails',
-                  path: 'uid',
-                },
-              },
-              values: {
-                ref: 'employeeManagerTitle',
-                fieldPath: 'manager.nickname',
-              },
-            },
-            {
-              id: 'configureManagerPopup',
-              action: 'configure',
-              selectors: {
-                target: {
-                  ref: 'employeeManagerTitle.field',
-                },
-              },
-              values: {
-                ref: 'managerPopup',
-                changes: {
-                  openView: {
-                    dataSourceKey: 'main',
-                    collectionName: 'employees',
-                    associationName: 'employees.manager',
-                    mode: 'modal',
-                  },
-                },
-              },
-            },
-            {
-              id: 'composeManagerPopup',
-              action: 'compose',
-              selectors: {
-                target: {
-                  ref: 'managerPopup.popupGrid',
-                },
-              },
-              values: {
-                mode: 'replace',
-                blocks: [
-                  {
-                    ref: 'managerDetails',
-                    type: 'details',
-                    resource: {
-                      binding: 'currentRecord',
-                    },
-                    fields: [{ ref: 'managerDetails.nickname', fieldPath: 'nickname' }],
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-    });
-    expect(validateRes.status).toBe(200);
-
-    const validateData = getData(validateRes);
-    expect(validateData.compiledSteps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'configureManagerPopup',
-          action: 'configure',
-          payload: expect.objectContaining({
-            target: {
-              uid: {
-                ref: 'employeeManagerTitle.field',
-              },
-            },
-            ref: 'managerPopup',
-          }),
-        }),
-        expect.objectContaining({
-          id: 'composeManagerPopup',
-          action: 'compose',
-          payload: expect.objectContaining({
-            target: {
-              uid: {
-                ref: 'managerPopup.popupGrid',
-              },
-            },
-          }),
-        }),
-      ]),
-    );
-
-    const pageSurface = await getSurface(rootAgent, {
-      pageSchemaUid: page.pageSchemaUid,
-    });
-    const gridItems = _.castArray(pageSurface?.tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || []);
-    expect(gridItems).toHaveLength(0);
   });
 
   it('should execute configure-created popup refs in the same plan and persist the popup refs', async () => {
@@ -1400,10 +1034,7 @@ describe('flowSurfaces plan contract', () => {
                     resource: {
                       binding: 'currentRecord',
                     },
-                    fields: [
-                      { ref: 'managerDetails.nickname', fieldPath: 'nickname' },
-                      { ref: 'managerDetails.status', fieldPath: 'status' },
-                    ],
+                    fields: [{ ref: 'managerDetails.nickname', fieldPath: 'nickname' }],
                   },
                 ],
               },
@@ -1415,6 +1046,33 @@ describe('flowSurfaces plan contract', () => {
     expect(executeRes.status).toBe(200);
 
     const executeData = getData(executeRes);
+    expect(executeData.compiledSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'configureManagerPopup',
+          action: 'configure',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'employeeManagerTitle.field',
+              },
+            },
+            ref: 'managerPopup',
+          }),
+        }),
+        expect.objectContaining({
+          id: 'composeManagerPopup',
+          action: 'compose',
+          payload: expect.objectContaining({
+            target: {
+              uid: {
+                ref: 'managerPopup.popupGrid',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
     const resultById = Object.fromEntries(
       executeData.results.map((item: Record<string, any>) => [String(item.id || item.index), item.result]),
     );

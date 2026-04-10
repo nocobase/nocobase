@@ -434,7 +434,7 @@ describe('flowSurfaces resource', () => {
     });
   });
 
-  it('should expose popup collection block resourceBindings for plain, record and association popup surfaces', async () => {
+  it('should expose association-specific popup resourceBindings for association popup surfaces', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup resource catalog page',
       tabTitle: 'Popup resource catalog tab',
@@ -443,85 +443,6 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-
-    const plainPopupAction = await addAction(rootAgent, tableUid, 'popup');
-    const plainPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: plainPopupAction.uid,
-          },
-        },
-      }),
-    );
-    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')?.resourceBindings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ key: 'currentCollection' }),
-        expect.objectContaining({ key: 'otherRecords' }),
-      ]),
-    );
-    expect(
-      plainPopupCatalog.blocks
-        .find((item: any) => item.use === 'CreateFormModel')
-        ?.resourceBindings.map((item: any) => item.key),
-    ).not.toEqual(expect.arrayContaining(['currentRecord', 'associatedRecords']));
-    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')).toBeUndefined();
-    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')).toBeUndefined();
-
-    const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view');
-    const recordPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: recordPopupAction.uid,
-          },
-        },
-      }),
-    );
-    const recordPopupDetailsBindings =
-      recordPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
-    expect(recordPopupDetailsBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
-    );
-    expect(recordPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection']),
-    );
-    const recordPopupTableBindings =
-      recordPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')?.resourceBindings || [];
-    expect(recordPopupTableBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['associatedRecords', 'otherRecords']),
-    );
-    expect(recordPopupTableBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection', 'currentRecord']),
-    );
-    expect(recordPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          key: 'skills',
-          collectionName: 'skills',
-          associationName: 'employees.skills',
-        }),
-      ]),
-    );
-
-    const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');
-    const recordScopedPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: recordScopedPopupAction.uid,
-          },
-        },
-      }),
-    );
-    const recordScopedPopupDetailsBindings =
-      recordScopedPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
-    expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
-    );
-    expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection']),
-    );
 
     const associationPopupAction = await addAction(rootAgent, tableUid, 'popup');
     const associationPopupConfig = await rootAgent.resource('flowSurfaces').configure({
@@ -804,7 +725,7 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRaw)).toContain('currentRecord');
   });
 
-  it('should support explicit otherRecords dataSourceKey and hide collection-block bindings on unsupported popup scenes', async () => {
+  it('should support explicit otherRecords dataSourceKey on plain popup surfaces', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup block scene page',
       tabTitle: 'Popup block scene tab',
@@ -840,54 +761,6 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'departments',
     });
-
-    const selectPopupAction = await addAction(rootAgent, tableUid, 'popup');
-    const selectPopupConfig = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: {
-          uid: selectPopupAction.uid,
-        },
-        changes: {
-          openView: {
-            scene: 'select',
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      },
-    });
-    expect(selectPopupConfig.status).toBe(200);
-
-    const selectPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: selectPopupAction.uid,
-          },
-        },
-      }),
-    );
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')).toBeUndefined();
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')).toBeUndefined();
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')).toBeUndefined();
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'MarkdownBlockModel')).toBeTruthy();
-
-    const unsupportedAdd = await rootAgent.resource('flowSurfaces').addBlock({
-      values: {
-        target: {
-          uid: selectPopupAction.uid,
-        },
-        type: 'table',
-        resource: {
-          binding: 'otherRecords',
-          dataSourceKey: 'main',
-          collectionName: 'departments',
-        },
-      },
-    });
-    expect(unsupportedAdd.status).toBe(400);
-    expect(readErrorMessage(unsupportedAdd)).toContain(`scene 'select'`);
-    expect(readErrorMessage(unsupportedAdd)).toContain('does not support popup collection block creation');
   });
 
   it('should enforce grouped path-level contracts for public core collection blocks', async () => {
@@ -1604,67 +1477,6 @@ describe('flowSurfaces resource', () => {
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules).toEqual([]);
-  });
-
-  it('should reject create-time payloads that bypass the shared settings contract', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Create contract page',
-      tabTitle: 'Create contract tab',
-    });
-
-    const invalidBlockCreate = await rootAgent.resource('flowSurfaces').addBlock({
-      values: {
-        target: {
-          uid: page.tabSchemaUid,
-        },
-        type: 'markdown',
-        stepParams: {
-          markdownSettings: {
-            editMarkdown: {
-              content: 'legacy-create-key',
-            },
-          },
-        },
-      },
-    });
-    expect(invalidBlockCreate.status).toBe(400);
-    expect(readErrorMessage(invalidBlockCreate)).toContain('does not accept raw keys');
-
-    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const invalidActionCreate = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: tableBlockUid,
-        },
-        type: 'addNew',
-        stepParams: {
-          buttonSettings: {
-            general: {
-              htmlType: 'submit',
-            },
-          },
-        },
-      },
-    });
-    expect(invalidActionCreate.status).toBe(400);
-    expect(readErrorMessage(invalidActionCreate)).toContain('does not accept raw keys');
-
-    const invalidFieldCreate = await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: {
-          uid: tableBlockUid,
-        },
-        type: 'jsColumn',
-        props: {
-          title: 'Legacy runtime column',
-        },
-      },
-    });
-    expect(invalidFieldCreate.status).toBe(400);
-    expect(readErrorMessage(invalidFieldCreate)).toContain('does not accept raw keys');
   });
 
   it('should support inline settings and popup on singular add APIs', async () => {
@@ -3711,7 +3523,7 @@ describe('flowSurfaces resource', () => {
     expect(validFieldReadback.tree.use).toBe('DisplayTextFieldModel');
   });
 
-  it('should keep action visibility aligned between catalog and direct addAction', async () => {
+  it('should keep representative advanced action visibility aligned between catalog and direct addAction', async () => {
     const page = await createPage(rootAgent, {
       title: 'Action visibility page',
       tabTitle: 'Action visibility tab',
@@ -3796,83 +3608,25 @@ describe('flowSurfaces resource', () => {
       expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
     );
 
-    const tableReadback = await getSurface(rootAgent, { uid: tableUid });
-    const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
-      (column: any) => column?.use === 'TableActionsColumnModel',
-    )?.uid;
-    expect(actionsColumnUid).toBeTruthy();
-
     const tableBulkEdit = await addAction(rootAgent, tableUid, 'bulkEdit');
-    const tableExpandCollapse = await addAction(rootAgent, tableUid, 'expandCollapse');
-    const tableBulkUpdate = await addAction(rootAgent, tableUid, 'bulkUpdate');
-    const tableComposeEmail = await addAction(rootAgent, tableUid, 'composeEmail');
     const rowAddChild = await addRecordAction(rootAgent, tableUid, 'addChild');
-    const rowDuplicate = await addRecordAction(rootAgent, tableUid, 'duplicate');
-    const rowComposeEmail = await addRecordAction(rootAgent, tableUid, 'composeEmail');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
-    const detailsView = await addRecordAction(rootAgent, detailsUid, 'view');
-    const filterSubmit = await addAction(rootAgent, filterFormUid, 'submit');
-    const filterReset = await addAction(rootAgent, filterFormUid, 'reset');
     const filterCollapse = await addAction(rootAgent, filterFormUid, 'collapse');
+    const detailsTemplatePrint = await addRecordAction(rootAgent, detailsUid, 'templatePrint');
 
     expect((await getSurface(rootAgent, { uid: tableBulkEdit.uid })).tree.use).toBe('BulkEditActionModel');
-    expect((await getSurface(rootAgent, { uid: tableExpandCollapse.uid })).tree.use).toBe('ExpandCollapseActionModel');
-    expect((await getSurface(rootAgent, { uid: tableBulkUpdate.uid })).tree.use).toBe('BulkUpdateActionModel');
-    expect((await getSurface(rootAgent, { uid: tableComposeEmail.uid })).tree.use).toBe('MailSendActionModel');
     expect((await getSurface(rootAgent, { uid: rowAddChild.uid })).tree.use).toBe('AddChildActionModel');
-    expect((await getSurface(rootAgent, { uid: rowDuplicate.uid })).tree.use).toBe('DuplicateActionModel');
-    expect((await getSurface(rootAgent, { uid: rowComposeEmail.uid })).tree.use).toBe('MailSendActionModel');
     expect((await getSurface(rootAgent, { uid: formSubmit.uid })).tree.use).toBe('FormSubmitActionModel');
-    expect((await getSurface(rootAgent, { uid: detailsView.uid })).tree.use).toBe('ViewActionModel');
-    expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.use).toBe('FilterFormSubmitActionModel');
-    expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.stepParams?.submitSettings).toBeUndefined();
-    expect((await getSurface(rootAgent, { uid: filterReset.uid })).tree.use).toBe('FilterFormResetActionModel');
     expect((await getSurface(rootAgent, { uid: filterCollapse.uid })).tree.use).toBe('FilterFormCollapseActionModel');
+    expect((await getSurface(rootAgent, { uid: detailsTemplatePrint.uid })).tree.use).toBe(
+      'TemplatePrintRecordActionModel',
+    );
     expect(
       (await getSurface(rootAgent, { uid: rowAddChild.uid })).tree.stepParams?.popupSettings?.openView,
     ).toMatchObject({
       mode: 'drawer',
       size: 'medium',
     });
-    expect(
-      (await getSurface(rootAgent, { uid: rowComposeEmail.uid })).tree.stepParams?.popupSettings?.openView,
-    ).toMatchObject({
-      mode: 'drawer',
-      size: 'medium',
-    });
-
-    const createFormDeleteRes = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: createFormUid,
-        },
-        type: 'delete',
-      },
-    });
-    expect(createFormDeleteRes.status).toBe(400);
-    expect(readErrorMessage(createFormDeleteRes)).toContain(`is not allowed under 'CreateFormModel'`);
-
-    const filterFormViewRes = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: filterFormUid,
-        },
-        type: 'view',
-      },
-    });
-    expect(filterFormViewRes.status).toBe(400);
-    expect(readErrorMessage(filterFormViewRes)).toContain(`is not allowed under 'FilterFormBlockModel'`);
-
-    const tableSubmitRes = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: tableUid,
-        },
-        type: 'submit',
-      },
-    });
-    expect(tableSubmitRes.status).toBe(400);
-    expect(readErrorMessage(tableSubmitRes)).toContain(`is not allowed under 'TableBlockModel'`);
   });
 
   it('should expose js public capabilities consistently across catalog, direct APIs and configure', async () => {

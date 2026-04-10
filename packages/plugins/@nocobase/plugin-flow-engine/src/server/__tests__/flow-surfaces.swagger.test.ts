@@ -40,85 +40,99 @@ describe('flowSurfaces swagger', () => {
   it('should expose recursive tree schemas, flattened mutate schema and representative request examples', () => {
     const schemas = (swaggerDocument.components?.schemas || {}) as Record<string, any>;
     const parameters = (swaggerDocument.components?.parameters || {}) as Record<string, any>;
+    const expectSchemas = (schemaNames: string[]) => {
+      for (const schemaName of schemaNames) {
+        expect(schemas[schemaName]).toBeTruthy();
+      }
+    };
+    const expectStringProperties = (schemaName: string, propertyNames: string[]) => {
+      for (const propertyName of propertyNames) {
+        expect(schemas[schemaName]?.properties?.[propertyName]?.type).toBe('string');
+      }
+    };
+    const expectUndefinedProperties = (schemaName: string, propertyNames: string[]) => {
+      for (const propertyName of propertyNames) {
+        expect(schemas[schemaName]?.properties?.[propertyName]).toBeUndefined();
+      }
+    };
 
-    expect(schemas.FlowSurfaceWriteTarget).toBeTruthy();
+    expectSchemas([
+      'FlowSurfaceWriteTarget',
+      'FlowSurfaceMutateWriteTarget',
+      'FlowSurfaceAddPopupTabRequest',
+      'FlowSurfaceAddPopupTabResult',
+      'FlowSurfaceUpdatePopupTabRequest',
+      'FlowSurfaceUpdatePopupTabResult',
+      'FlowSurfaceMovePopupTabRequest',
+      'FlowSurfaceMovePopupTabResult',
+      'FlowSurfaceRemovePopupTabRequest',
+      'FlowSurfaceRemovePopupTabResult',
+      'FlowSurfaceResolvedTarget',
+      'FlowSurfaceReadTarget',
+      'FlowSurfaceConfigureOption',
+      'FlowSurfaceConfigureOptions',
+      'FlowSurfaceContextVarInfo',
+      'FlowSurfaceContextRequest',
+      'FlowSurfaceContextResponse',
+      'FlowSurfaceDescribeSurfaceRequest',
+      'FlowSurfaceDescribeSurfaceResponse',
+      'FlowSurfaceDslDocument',
+      'FlowSurfaceBlueprintDsl',
+      'FlowSurfacePatchDsl',
+      'FlowSurfaceDslEntityRef',
+      'FlowSurfaceValidateDslRequest',
+      'FlowSurfaceValidateDslResponse',
+      'FlowSurfaceValidatePlanRequest',
+      'FlowSurfaceValidatePlanResponse',
+      'FlowSurfaceExecuteDslRequest',
+      'FlowSurfaceExecuteDslResponse',
+      'FlowSurfaceExecutePlanRequest',
+      'FlowSurfaceExecutePlanResponse',
+      'FlowSurfacePlanSelector',
+      'FlowSurfaceBindRef',
+      'FlowSurfaceRefsMap',
+      'FlowSurfacePlanStep',
+      'FlowSurfacePlanCompiledStep',
+      'FlowSurfaceCatalogItem',
+      'FlowSurfaceNodeContract',
+      'FlowSurfaceDomainContract',
+      'FlowSurfaceDomainGroupContract',
+      'FlowSurfaceFilterCondition',
+      'FlowSurfaceFilterGroup',
+      'FlowSurfaceNodeSpec',
+      'FlowSurfaceApplySpec',
+      'FlowSurfaceGetResponse',
+      'FlowSurfaceTemplateRow',
+      'FlowSurfaceListTemplatesRequest',
+      'FlowSurfaceListTemplatesResult',
+      'FlowSurfaceGetTemplateRequest',
+      'FlowSurfaceSaveTemplateRequest',
+      'FlowSurfaceUpdateTemplateRequest',
+      'FlowSurfaceDestroyTemplateRequest',
+      'FlowSurfaceDestroyTemplateResult',
+      'FlowSurfaceConvertTemplateToCopyRequest',
+      'FlowSurfaceConvertTemplateToCopyResult',
+      'FlowSurfacePopupSummary',
+      'FlowSurfaceTemplateRef',
+      'FlowSurfaceBlockTemplateRef',
+      'FlowSurfacePopupTemplateRef',
+      'FlowSurfaceComposeFieldPopup',
+      'FlowSurfaceComposeRequest',
+      'FlowSurfaceComposeResult',
+      'FlowSurfaceComposeRecordActionSpec',
+      'FlowSurfaceConfigureRequest',
+      'FlowSurfaceConfigureResult',
+      'FlowSurfaceMutateOpItem',
+      'FlowSurfaceMutateRef',
+      'FlowSurfaceMutationResponse',
+      'FlowSurfaceErrorResponse',
+    ]);
     expect(schemas.FlowSurfaceWriteTarget.required).toEqual(['uid']);
-    expect(schemas.FlowSurfaceMutateWriteTarget).toBeTruthy();
     expect(schemas.FlowSurfaceAddTabRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceUpdateTabRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceMoveTabRequest.required).toEqual(['sourceUid', 'targetUid']);
-    expect(schemas.FlowSurfaceAddPopupTabRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceAddPopupTabResult).toBeTruthy();
-    expect(schemas.FlowSurfaceAddPopupTabResult.properties.popupPageUid.type).toBe('string');
-    expect(schemas.FlowSurfaceAddPopupTabResult.properties.popupTabUid.type).toBe('string');
-    expect(schemas.FlowSurfaceAddPopupTabResult.properties.popupGridUid.type).toBe('string');
-    expect(schemas.FlowSurfaceAddPopupTabResult.properties.tabUid).toBeUndefined();
-    expect(schemas.FlowSurfaceAddPopupTabResult.properties.gridUid).toBeUndefined();
-    expect(schemas.FlowSurfaceUpdatePopupTabRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceUpdatePopupTabResult).toBeTruthy();
-    expect(schemas.FlowSurfaceMovePopupTabRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceMovePopupTabResult).toBeTruthy();
-    expect(schemas.FlowSurfaceRemovePopupTabRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceRemovePopupTabResult).toBeTruthy();
-    expect(schemas.FlowSurfaceResolvedTarget).toBeTruthy();
-    expect(schemas.FlowSurfaceReadTarget).toBeTruthy();
-    expect(schemas.FlowSurfaceConfigureOption).toBeTruthy();
-    expect(schemas.FlowSurfaceConfigureOptions).toBeTruthy();
-    expect(schemas.FlowSurfaceContextVarInfo).toBeTruthy();
-    expect(schemas.FlowSurfaceContextRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceContextResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceDescribeSurfaceRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceDescribeSurfaceResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceDslDocument).toBeTruthy();
-    expect(schemas.FlowSurfaceBlueprintDsl).toBeTruthy();
-    expect(schemas.FlowSurfacePatchDsl).toBeTruthy();
-    expect(schemas.FlowSurfaceDslEntityRef).toBeTruthy();
-    expect(schemas.FlowSurfaceValidateDslRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceValidateDslResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceValidatePlanRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceValidatePlanResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceExecuteDslRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceExecuteDslResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceExecutePlanRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceExecutePlanResponse).toBeTruthy();
-    expect(schemas.FlowSurfacePlanSelector).toBeTruthy();
-    expect(schemas.FlowSurfaceBindRef).toBeTruthy();
-    expect(schemas.FlowSurfaceRefsMap).toBeTruthy();
-    expect(schemas.FlowSurfacePlanStep).toBeTruthy();
-    expect(schemas.FlowSurfacePlanCompiledStep).toBeTruthy();
-    expect(schemas.FlowSurfaceCatalogItem).toBeTruthy();
-    expect(schemas.FlowSurfaceNodeContract).toBeTruthy();
-    expect(schemas.FlowSurfaceDomainContract).toBeTruthy();
-    expect(schemas.FlowSurfaceDomainGroupContract).toBeTruthy();
-    expect(schemas.FlowSurfaceFilterCondition).toBeTruthy();
-    expect(schemas.FlowSurfaceFilterGroup).toBeTruthy();
-    expect(schemas.FlowSurfaceNodeSpec).toBeTruthy();
-    expect(schemas.FlowSurfaceApplySpec).toBeTruthy();
-    expect(schemas.FlowSurfaceGetResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceTemplateRow).toBeTruthy();
-    expect(schemas.FlowSurfaceListTemplatesRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceListTemplatesResult).toBeTruthy();
-    expect(schemas.FlowSurfaceGetTemplateRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceSaveTemplateRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceUpdateTemplateRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceDestroyTemplateRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceDestroyTemplateResult).toBeTruthy();
-    expect(schemas.FlowSurfaceConvertTemplateToCopyRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceConvertTemplateToCopyResult).toBeTruthy();
-    expect(schemas.FlowSurfacePopupSummary).toBeTruthy();
-    expect(schemas.FlowSurfaceTemplateRef).toBeTruthy();
-    expect(schemas.FlowSurfaceBlockTemplateRef).toBeTruthy();
-    expect(schemas.FlowSurfacePopupTemplateRef).toBeTruthy();
-    expect(schemas.FlowSurfaceComposeFieldPopup).toBeTruthy();
-    expect(schemas.FlowSurfaceComposeRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceComposeResult).toBeTruthy();
-    expect(schemas.FlowSurfaceComposeRecordActionSpec).toBeTruthy();
-    expect(schemas.FlowSurfaceConfigureRequest).toBeTruthy();
-    expect(schemas.FlowSurfaceConfigureResult).toBeTruthy();
-    expect(schemas.FlowSurfaceMutateOpItem).toBeTruthy();
-    expect(schemas.FlowSurfaceMutateRef).toBeTruthy();
-    expect(schemas.FlowSurfaceMutationResponse).toBeTruthy();
-    expect(schemas.FlowSurfaceErrorResponse).toBeTruthy();
+    expectStringProperties('FlowSurfaceAddPopupTabResult', ['popupPageUid', 'popupTabUid', 'popupGridUid']);
+    expectUndefinedProperties('FlowSurfaceAddPopupTabResult', ['tabUid', 'gridUid']);
     expect(schemas.FlowSurfaceErrorResponse.example).toMatchObject({
       errors: [
         {
