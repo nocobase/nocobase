@@ -297,7 +297,7 @@ export class AIConversationsManager {
     };
   }
 
-  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | null> {
+  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | undefined> {
     const allInterruptedToolCall = await this.aiToolMessagesRepo.find({
       filter: {
         messageId,
@@ -306,7 +306,7 @@ export class AIConversationsManager {
       order: [['interruptActionOrder', 'ASC']],
     });
     if (!allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting')) {
-      return null;
+      return;
     }
 
     const message = await this.aiMessagesRepo.findOne({

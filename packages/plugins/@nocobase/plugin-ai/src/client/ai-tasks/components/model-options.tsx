@@ -67,6 +67,7 @@ export const ModelOptions: React.FC = () => {
             title: tExpr('Model', { ns: namespace }),
             'x-decorator': 'FormItem',
             'x-component': ModelSelect,
+            required: true,
           },
         },
       }}

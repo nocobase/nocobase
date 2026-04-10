@@ -18,18 +18,21 @@ function isUserKeyField(field) {
   return field.collectionName === 'users' && field.name === 'id';
 }
 
-export function AssigneesSelect({ multiple = false, value = [], onChange }) {
+export function UsersSelect({ multiple = false, value, onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
-  const handler = useMemo(
-    () => (multiple ? (v) => onChange(v) : (v) => onChange(v != null ? [v] : [])),
-    [multiple, onChange],
-  );
+  const handleSelectChanged = (v) => {
+    if (multiple) {
+      onChange(Array.isArray(v) ? v : [v]);
+    } else {
+      onChange(v);
+    }
+  };
 
   return (
     <Variable.Input
       scope={scope}
-      value={value[0]}
+      value={value}
       onChange={(next) => {
         onChange([next]);
       }}
@@ -43,8 +46,8 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
           resource: 'users',
         }}
         manual={false}
-        value={value[0]}
-        onChange={handler}
+        value={value}
+        onChange={handleSelectChanged}
         multiple={multiple}
       />
     </Variable.Input>

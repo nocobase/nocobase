@@ -15,13 +15,15 @@ import { ModelOptions } from '../components/model-options';
 import { WebSearchOptions } from '../components/web-search-options';
 import { MessageInputs } from '../components/message-inputs';
 import { AIEmployeeSelect } from '../components/AIEmployeeSelect';
+import { FileInputs } from '../components/file-inputs';
 import { namespace } from '../../locale';
+import { UsersSelect } from '../components/users-select';
 
 export class AIEmployeeTaskModel extends FlowModel {
   public render() {
     return (
       <SchemaComponent
-        components={{ SkillSettings, ModelOptions, WebSearchOptions, AIEmployeeSelect }}
+        components={{ SkillSettings, ModelOptions, WebSearchOptions, AIEmployeeSelect, FileInputs }}
         schema={{
           type: 'void',
           properties: {
@@ -37,17 +39,31 @@ export class AIEmployeeTaskModel extends FlowModel {
               'x-component': AIEmployeeSelect,
               default: 'atlas',
             },
+            model: {
+              type: 'void',
+              'x-component': ModelOptions,
+            },
+            userId: {
+              type: 'string',
+              title: tExpr('Users', { ns: namespace }),
+              'x-decorator': 'FormItem',
+              'x-component': UsersSelect,
+              'x-component-props': {
+                multiple: false,
+              },
+              required: true,
+            },
             message: {
               type: 'void',
               'x-component': MessageInputs,
             },
+            files: {
+              type: 'void',
+              'x-component': FileInputs,
+            },
             skillSettings: {
               type: 'object',
               'x-component': () => <SkillSettings />,
-            },
-            model: {
-              type: 'void',
-              'x-component': ModelOptions,
             },
             webSearch: {
               type: 'void',

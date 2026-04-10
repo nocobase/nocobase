@@ -13,13 +13,13 @@ import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import { StructuredOutput } from '../components/structured-output';
 import { namespace } from '../../locale';
 import { Switch } from 'antd';
-import { AssigneesSelect } from '../components/AssigneesSelect';
+import { UsersSelect } from '../components/users-select';
 
 export class AIEmployeeTaskFeedbackModel extends FlowModel {
   public render() {
     return (
       <SchemaComponent
-        components={{ StructuredOutput, AssigneesSelect, Switch }}
+        components={{ StructuredOutput, UsersSelect, Switch }}
         schema={{
           type: 'void',
           properties: {
@@ -38,7 +38,7 @@ export class AIEmployeeTaskFeedbackModel extends FlowModel {
               type: 'array',
               title: tExpr('Assignees', { ns: namespace }),
               'x-decorator': 'FormItem',
-              'x-component': AssigneesSelect,
+              'x-component': UsersSelect,
               'x-component-props': {
                 multiple: true,
               },
