@@ -21,6 +21,7 @@ export * from './plugin-manager';
 export * from './pub-sub-manager';
 export * from './event-queue';
 export * from './worker-id-allocator';
+export * from './worker-mode';
 export * from './redis-connection-manager';
 export * from './main-data-source';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
