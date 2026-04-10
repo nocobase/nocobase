@@ -28,6 +28,7 @@ export class CodeFieldInterface extends CollectionFieldInterface {
       'x-component': 'CodeEditor',
     },
   };
+  availableTypes = ['text'];
   properties = {
     ...defaultProps,
     'uiSchema.x-component-props.language': {
