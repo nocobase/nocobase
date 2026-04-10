@@ -29,19 +29,22 @@ import {
   buildFlowSurfaceDslChangeStepId,
   buildFlowSurfaceDslEntityRefKey,
   buildFlowSurfaceDslFieldRef,
+  buildFlowSurfaceDslPopupScopePrefix,
+  buildFlowSurfaceDslPopupStepId,
+  buildFlowSurfaceDslScopedRef,
+  FLOW_SURFACE_DSL_PATCH_SURFACE_DEFAULT_TARGET_OPS,
 } from './utils';
 
 const DSL_MENU_GROUP_STEP_ID = 'dslMenuGroup';
 const DSL_MENU_ITEM_STEP_ID = 'dslMenuItem';
 const DSL_PAGE_STEP_ID = 'dslPage';
 const DSL_PAGE_COMPOSE_STEP_ID = 'dslPageCompose';
-const PATCH_SURFACE_DEFAULT_TARGET_OPS = new Set([
-  'page.destroy',
-  'tab.add',
-  'block.add',
-  'settings.update',
-  'layout.replace',
-]);
+
+type FlowSurfaceBlueprintCompileDeps = {
+  dataSourcesByKey: Map<string, FlowSurfaceDslDataSource>;
+  popupById: Map<string, FlowSurfaceDslPopup>;
+  interactionTargets: Map<string, string>;
+};
 
 function compilePlanSelectorFromEntityRef(
   entityRef: FlowSurfaceDslEntityRef,
@@ -123,14 +126,40 @@ function resolveBlueprintFieldTarget(
   return undefined;
 }
 
+function resolveBlueprintBlockRef(block: FlowSurfaceDslBlock, scopePrefix?: string) {
+  return buildFlowSurfaceDslScopedRef(scopePrefix, block.id);
+}
+
+function resolveBlueprintFieldRef(
+  block: FlowSurfaceDslBlock,
+  field: FlowSurfaceDslField,
+  fieldIndex: number,
+  scopePrefix?: string,
+) {
+  return buildFlowSurfaceDslScopedRef(scopePrefix, buildFlowSurfaceDslFieldRef(block.id, field, fieldIndex));
+}
+
+function resolveBlueprintActionRef(
+  block: FlowSurfaceDslBlock,
+  action: FlowSurfaceDslAction,
+  actionIndex: number,
+  scope: 'actions' | 'recordActions',
+  scopePrefix?: string,
+) {
+  return buildFlowSurfaceDslScopedRef(scopePrefix, buildFlowSurfaceDslActionRef(block.id, scope, action, actionIndex));
+}
+
 function compileBlueprintField(
   block: FlowSurfaceDslBlock,
   field: FlowSurfaceDslField,
   fieldIndex: number,
   interactionTargets: Map<string, string>,
+  options: {
+    scopePrefix?: string;
+  } = {},
 ) {
   return buildDefinedPayload({
-    ref: buildFlowSurfaceDslFieldRef(block.id, field, fieldIndex),
+    ref: resolveBlueprintFieldRef(block, field, fieldIndex, options.scopePrefix),
     fieldPath: field.fieldPath,
     associationPathName: field.associationPathName,
     renderer: field.renderer,
@@ -140,30 +169,19 @@ function compileBlueprintField(
   });
 }
 
-function compileBlueprintPopupPayload(
-  action: FlowSurfaceDslAction,
-  popup: FlowSurfaceDslPopup | undefined,
-  deps: {
-    dataSourcesByKey: Map<string, FlowSurfaceDslDataSource>;
-    popupById: Map<string, FlowSurfaceDslPopup>;
-    interactionTargets: Map<string, string>;
-  },
-) {
+function compileBlueprintPopupPayload(popup: FlowSurfaceDslPopup | undefined) {
   if (!popup) {
     return undefined;
+  }
+  if (_.castArray(popup.blocks || []).length) {
+    return {
+      blocks: [],
+    };
   }
   if (popup.completion === 'shell-only') {
     return {};
   }
-  const popupBlocks = _.castArray(popup.blocks || []);
-  if (!popupBlocks.length) {
-    return undefined;
-  }
-  return buildDefinedPayload({
-    mode: 'replace',
-    blocks: popupBlocks.map((block) => compileBlueprintBlock(block, deps, popup.id)),
-    layout: _.isPlainObject(popup.layout) ? _.cloneDeep(popup.layout) : undefined,
-  });
+  return undefined;
 }
 
 function compileBlueprintAction(
@@ -171,29 +189,26 @@ function compileBlueprintAction(
   action: FlowSurfaceDslAction,
   actionIndex: number,
   scope: 'actions' | 'recordActions',
-  deps: {
-    dataSourcesByKey: Map<string, FlowSurfaceDslDataSource>;
-    popupById: Map<string, FlowSurfaceDslPopup>;
-    interactionTargets: Map<string, string>;
+  deps: FlowSurfaceBlueprintCompileDeps,
+  options: {
+    scopePrefix?: string;
   },
 ) {
   const popupId = typeof action.popupId === 'string' && action.popupId.trim() ? action.popupId.trim() : undefined;
   return buildDefinedPayload({
-    ref: buildFlowSurfaceDslActionRef(block.id, scope, action, actionIndex),
+    ref: resolveBlueprintActionRef(block, action, actionIndex, scope, options.scopePrefix),
     type: action.type,
     settings: mergeSemanticSettings(action.settings, 'title', action.title),
-    popup: compileBlueprintPopupPayload(action, popupId ? deps.popupById.get(popupId) : undefined, deps),
+    popup: compileBlueprintPopupPayload(popupId ? deps.popupById.get(popupId) : undefined),
   });
 }
 
 function compileBlueprintBlock(
   block: FlowSurfaceDslBlock,
-  deps: {
-    dataSourcesByKey: Map<string, FlowSurfaceDslDataSource>;
-    popupById: Map<string, FlowSurfaceDslPopup>;
-    interactionTargets: Map<string, string>;
+  deps: FlowSurfaceBlueprintCompileDeps,
+  options: {
+    scopePrefix?: string;
   },
-  currentPopupId?: string,
 ) {
   const dataSource =
     block.dataBound && block.dataSourceKey ? deps.dataSourcesByKey.get(block.dataSourceKey) : undefined;
@@ -203,31 +218,133 @@ function compileBlueprintBlock(
     );
   }
   return buildDefinedPayload({
-    ref: block.id,
+    ref: resolveBlueprintBlockRef(block, options.scopePrefix),
     type: block.type,
     resource: dataSource ? compileBlueprintDataSourceResource(dataSource) : undefined,
     settings: mergeSemanticSettings(block.settings, 'title', block.title),
     fields: _.castArray(block.fields || []).map((field, index) =>
-      compileBlueprintField(block, field, index, deps.interactionTargets),
+      compileBlueprintField(block, field, index, deps.interactionTargets, options),
     ),
     actions: _.castArray(block.actions || []).map((action, index) =>
-      compileBlueprintAction(block, action, index, 'actions', deps),
+      compileBlueprintAction(block, action, index, 'actions', deps, options),
     ),
     recordActions: _.castArray(block.recordActions || []).map((action, index) =>
-      compileBlueprintAction(block, action, index, 'recordActions', deps),
+      compileBlueprintAction(block, action, index, 'recordActions', deps, options),
     ),
   });
 }
 
-function compileBlueprintLayout(blueprint: FlowSurfaceBlueprintDsl) {
+function compileBlueprintLayoutRows(
+  layout: {
+    rows?: any[];
+  },
+  resolveItemRef: (itemId: string) => string,
+) {
   return {
-    rows: _.castArray(blueprint.layout.rows || []).map((row: any) =>
+    rows: _.castArray(layout.rows || []).map((row: any) =>
       _.castArray(row?.columns || []).map((column: any) => ({
-        ref: String(_.castArray(column?.items || [])[0] || '').trim(),
+        ref: resolveItemRef(String(_.castArray(column?.items || [])[0] || '').trim()),
         span: _.isNumber(column?.width) ? column.width : undefined,
       })),
     ),
   };
+}
+
+function compileBlueprintLayout(blueprint: FlowSurfaceBlueprintDsl) {
+  return compileBlueprintLayoutRows(blueprint.layout, (itemId) => itemId);
+}
+
+function compileBlueprintPopupLayout(popup: FlowSurfaceDslPopup, popupScopePrefix: string) {
+  if (!_.isPlainObject(popup.layout)) {
+    return undefined;
+  }
+  if (Array.isArray((popup.layout as any).rows)) {
+    return compileBlueprintLayoutRows(popup.layout as any, (itemId) =>
+      buildFlowSurfaceDslScopedRef(popupScopePrefix, itemId),
+    );
+  }
+  return _.cloneDeep(popup.layout);
+}
+
+function appendBlueprintPopupSteps(
+  steps: FlowSurfacePlanStep[],
+  blocks: FlowSurfaceDslBlock[],
+  deps: FlowSurfaceBlueprintCompileDeps,
+  options: {
+    scopePrefix?: string;
+    counters: {
+      popupStep: number;
+    };
+  },
+) {
+  const visitScope = (
+    block: FlowSurfaceDslBlock,
+    scope: 'actions' | 'recordActions',
+    actions: FlowSurfaceDslAction[],
+  ) => {
+    actions.forEach((action, actionIndex) => {
+      const popupId = String(action?.popupId || '').trim();
+      if (!popupId) {
+        return;
+      }
+      const popup = deps.popupById.get(popupId);
+      if (!popup) {
+        return;
+      }
+      const actionRef = resolveBlueprintActionRef(block, action, actionIndex, scope, options.scopePrefix);
+      if (popup.title) {
+        const popupStepIndex = options.counters.popupStep++;
+        steps.push({
+          id: buildFlowSurfaceDslPopupStepId('title', actionRef, popupId, popupStepIndex),
+          action: 'updatePopupTab',
+          selectors: {
+            target: {
+              ref: `${actionRef}.popupTab`,
+            },
+          },
+          values: {
+            title: popup.title,
+          },
+        });
+      }
+
+      const popupBlocks = _.castArray(popup.blocks || []);
+      if (!popupBlocks.length) {
+        return;
+      }
+
+      const popupScopePrefix = buildFlowSurfaceDslPopupScopePrefix(actionRef);
+      const popupStepIndex = options.counters.popupStep++;
+      steps.push({
+        id: buildFlowSurfaceDslPopupStepId('compose', actionRef, popupId, popupStepIndex),
+        action: 'compose',
+        selectors: {
+          target: {
+            ref: `${actionRef}.popupGrid`,
+          },
+        },
+        values: buildDefinedPayload({
+          mode: 'replace',
+          blocks: popupBlocks.map((popupBlock) =>
+            compileBlueprintBlock(popupBlock, deps, {
+              scopePrefix: popupScopePrefix,
+            }),
+          ),
+          layout: compileBlueprintPopupLayout(popup, popupScopePrefix),
+        }),
+      });
+
+      appendBlueprintPopupSteps(steps, popupBlocks, deps, {
+        scopePrefix: popupScopePrefix,
+        counters: options.counters,
+      });
+    });
+  };
+
+  blocks.forEach((block) => {
+    visitScope(block, 'actions', _.castArray(block.actions || []));
+    visitScope(block, 'recordActions', _.castArray(block.recordActions || []));
+  });
 }
 
 function buildBlueprintSteps(blueprint: FlowSurfaceBlueprintDsl): FlowSurfacePlanStep[] {
@@ -237,6 +354,11 @@ function buildBlueprintSteps(blueprint: FlowSurfaceBlueprintDsl): FlowSurfacePla
   const popupById = new Map<string, FlowSurfaceDslPopup>();
   blueprint.popups.forEach((popup) => popupById.set(popup.id, popup));
   const interactionTargets = buildBlueprintInteractionTargetMap(blueprint);
+  const compileDeps: FlowSurfaceBlueprintCompileDeps = {
+    dataSourcesByKey,
+    popupById,
+    interactionTargets,
+  };
   const orderedBlockIds = _.castArray(blueprint.layout.rows || []).flatMap((row: any) =>
     _.castArray(row?.columns || []).flatMap((column: any) =>
       _.castArray(column?.items || [])
@@ -251,11 +373,7 @@ function buildBlueprintSteps(blueprint: FlowSurfaceBlueprintDsl): FlowSurfacePla
     if (!block) {
       throwBadRequest(`flowSurfaces dsl blueprint block '${blockId}' is missing from blocks[]`);
     }
-    return compileBlueprintBlock(block, {
-      dataSourcesByKey,
-      popupById,
-      interactionTargets,
-    });
+    return compileBlueprintBlock(block, compileDeps, {});
   });
 
   let composeTarget: FlowSurfacePlanSelector;
@@ -338,6 +456,12 @@ function buildBlueprintSteps(blueprint: FlowSurfaceBlueprintDsl): FlowSurfacePla
     },
   });
 
+  appendBlueprintPopupSteps(steps, blueprint.blocks, compileDeps, {
+    counters: {
+      popupStep: 1,
+    },
+  });
+
   return steps;
 }
 
@@ -350,7 +474,7 @@ function compilePatchChange(
   const selectorFromChangeTarget = !_.isUndefined(change.target)
     ? compilePlanSelectorFromEntityRef(change.target, `flowSurfaces dsl patch changes[${index}].target`)
     : undefined;
-  const selectorFromSurface = PATCH_SURFACE_DEFAULT_TARGET_OPS.has(change.op)
+  const selectorFromSurface = FLOW_SURFACE_DSL_PATCH_SURFACE_DEFAULT_TARGET_OPS.has(change.op)
     ? {
         locator: _.cloneDeep(patch.target.locator),
       }

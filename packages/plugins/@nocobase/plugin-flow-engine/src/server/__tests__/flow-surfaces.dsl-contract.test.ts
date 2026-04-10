@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import {
   createFlowSurfacesContractContext,
   createPage,
@@ -187,6 +188,163 @@ describe('flowSurfaces dsl contract', () => {
     });
     const uses = new Set(Object.values(popupGridSurface.nodeMap || {}).map((node: any) => node?.use));
     expect(uses.has('DetailsBlockModel')).toBe(true);
+  });
+
+  it('should execute blueprint DSL with backend default edit popup title override and strict submit verification', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        dsl: {
+          version: '1',
+          intent: 'management',
+          title: 'Employees edit popup',
+          target: {
+            mode: 'create-page',
+          },
+          dataSources: [
+            {
+              key: 'employees',
+              kind: 'collection',
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+          ],
+          layout: {
+            kind: 'rows-columns',
+            rows: [
+              {
+                key: 'main',
+                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
+              },
+            ],
+          },
+          blocks: [
+            {
+              id: 'employeesTable',
+              type: 'table',
+              title: 'Employees',
+              dataBound: true,
+              dataSourceKey: 'employees',
+              fields: [{ fieldPath: 'nickname' }],
+              recordActions: [{ id: 'editEmployee', type: 'edit', title: 'Edit', popupId: 'employeeEditPopup' }],
+            },
+          ],
+          interactions: [],
+          popups: [
+            {
+              id: 'employeeEditPopup',
+              title: 'Modify employee',
+              completion: 'completed',
+            },
+          ],
+          assumptions: [],
+          unresolvedQuestions: [],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+    const executeData = getData(executeRes);
+
+    expect(executeData.refs.editEmployee.uid).toBeTruthy();
+    expect(executeData.refs['editEmployee.popupGrid'].uid).toBeTruthy();
+    expect(executeData.refs['editEmployee.popupTab'].uid).toBeTruthy();
+
+    const actionSurface = await getSurface(rootAgent, {
+      uid: executeData.refs.editEmployee.uid,
+    });
+    const popupTab = _.castArray(actionSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
+    const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const uses = new Set(Object.values(actionSurface.nodeMap || {}).map((node: any) => node?.use));
+
+    expect(popupTab?.props?.title).toBe('Modify employee');
+    expect(popupBlock?.use).toBe('EditFormModel');
+    expect(uses.has('FormSubmitActionModel')).toBe(true);
+  });
+
+  it('should execute blueprint DSL with explicit popup blocks and scoped popup refs', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        dsl: {
+          version: '1',
+          intent: 'management',
+          title: 'Employees explicit popup',
+          target: {
+            mode: 'create-page',
+          },
+          dataSources: [
+            {
+              key: 'employees',
+              kind: 'collection',
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            {
+              key: 'employeeRecord',
+              kind: 'binding',
+              scope: 'popup',
+              popupId: 'employeeViewPopup',
+              binding: 'currentRecord',
+              collectionName: 'employees',
+            },
+          ],
+          layout: {
+            kind: 'rows-columns',
+            rows: [
+              {
+                key: 'main',
+                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
+              },
+            ],
+          },
+          blocks: [
+            {
+              id: 'employeesTable',
+              type: 'table',
+              title: 'Employees',
+              dataBound: true,
+              dataSourceKey: 'employees',
+              fields: [{ fieldPath: 'nickname' }],
+              recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
+            },
+          ],
+          interactions: [],
+          popups: [
+            {
+              id: 'employeeViewPopup',
+              title: 'Inspect employee',
+              completion: 'completed',
+              blocks: [
+                {
+                  id: 'employeeDetails',
+                  type: 'details',
+                  title: 'Employee details',
+                  dataBound: true,
+                  dataSourceKey: 'employeeRecord',
+                  fields: [{ fieldPath: 'nickname' }],
+                },
+              ],
+            },
+          ],
+          assumptions: [],
+          unresolvedQuestions: [],
+        },
+      },
+    });
+    expect(executeRes.status).toBe(200);
+    const executeData = getData(executeRes);
+
+    expect(executeData.refs['viewEmployee.popupGrid'].uid).toBeTruthy();
+    expect(executeData.refs['viewEmployee.popup.employeeDetails'].uid).toBeTruthy();
+    expect(executeData.refs['viewEmployee.popup.employeeDetails__field__nickname'].uid).toBeTruthy();
+
+    const actionSurface = await getSurface(rootAgent, {
+      uid: executeData.refs.viewEmployee.uid,
+    });
+    const popupTab = _.castArray(actionSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
+    const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+
+    expect(popupTab?.props?.title).toBe('Inspect employee');
+    expect(popupBlock?.uid).toBe(executeData.refs['viewEmployee.popup.employeeDetails'].uid);
+    expect(popupBlock?.use).toBe('DetailsBlockModel');
   });
 
   it('should execute patch DSL against an existing page and resolve newly created refs', async () => {

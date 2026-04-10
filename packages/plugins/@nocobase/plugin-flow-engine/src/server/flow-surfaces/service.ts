@@ -70,6 +70,8 @@ import {
   buildFlowSurfaceDslActionRef,
   buildFlowSurfaceDslChangeStepId,
   buildFlowSurfaceDslFieldRef,
+  buildFlowSurfaceDslPopupScopePrefix,
+  buildFlowSurfaceDslScopedRef,
   isFlowSurfaceDslDefaultCrudActionType,
 } from './dsl/utils';
 import {
@@ -2795,6 +2797,37 @@ export class FlowSurfacesService {
     );
   }
 
+  private buildExecuteDslReadbackNodeMap(readback: any) {
+    return _.isPlainObject(readback?.nodeMap) ? readback.nodeMap : flattenModel(readback?.tree);
+  }
+
+  private assertExecuteDslNodeInSubtree(uid: string, subtreeNodeMap: Record<string, any> | undefined, context: string) {
+    if (subtreeNodeMap?.[uid]) {
+      return;
+    }
+    throwConflict(
+      `flowSurfaces executeDsl verification expected ${context} inside popup subtree`,
+      'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+    );
+  }
+
+  private async assertExecuteDslPopupTitle(
+    popupTabUid: string,
+    expectedTitle: string,
+    context: string,
+    transaction?: any,
+  ) {
+    const readback = await this.assertExecuteDslReadable({ uid: popupTabUid }, `${context} tab`, transaction);
+    const actualTitle = this.resolvePopupTabTitle(readback?.tree);
+    if (actualTitle === expectedTitle) {
+      return;
+    }
+    throwConflict(
+      `flowSurfaces executeDsl verification expected popup title '${expectedTitle}' in ${context}`,
+      'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+    );
+  }
+
   private async assertExecuteDslDefaultPopupCompleted(
     actionType: string,
     popupGridUid: string,
@@ -2802,27 +2835,78 @@ export class FlowSurfacesService {
     transaction?: any,
   ) {
     const readback = await this.assertExecuteDslReadable({ uid: popupGridUid }, context, transaction);
-    const nodeMap = _.isPlainObject(readback?.nodeMap) ? readback.nodeMap : flattenModel(readback?.tree);
+    const nodeMap = this.buildExecuteDslReadbackNodeMap(readback);
     const uses = new Set(
       Object.values(nodeMap || {})
         .map((node: any) => String(node?.use || '').trim())
         .filter(Boolean),
     );
-    if (actionType === 'view' && !uses.has('DetailsBlockModel')) {
-      throwConflict(
-        `flowSurfaces executeDsl verification expected DetailsBlockModel in ${context}`,
-        'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-      );
+    const popupBlock = _.castArray(readback?.tree?.subModels?.items || [])[0];
+    const popupResourceInit = _.get(popupBlock, ['stepParams', 'resourceSettings', 'init']);
+
+    if (actionType === 'view') {
+      if (!uses.has('DetailsBlockModel') || popupBlock?.use !== 'DetailsBlockModel') {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected DetailsBlockModel in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      if (!popupResourceInit?.filterByTk) {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected currentRecord binding in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      return;
     }
-    if (actionType === 'edit' && !uses.has('EditFormModel')) {
-      throwConflict(
-        `flowSurfaces executeDsl verification expected EditFormModel in ${context}`,
-        'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-      );
+
+    if (actionType === 'edit') {
+      if (!uses.has('EditFormModel') || popupBlock?.use !== 'EditFormModel') {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected EditFormModel in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      if (!uses.has('FormSubmitActionModel')) {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected FormSubmitActionModel in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      if (!popupResourceInit?.filterByTk) {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected currentRecord binding in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      return;
     }
-    if (actionType === 'addNew' && !uses.has('CreateFormModel')) {
+
+    if (actionType === 'addNew') {
+      if (!uses.has('CreateFormModel') || popupBlock?.use !== 'CreateFormModel') {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected CreateFormModel in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      if (!uses.has('FormSubmitActionModel')) {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected FormSubmitActionModel in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      if (popupResourceInit?.filterByTk || popupResourceInit?.sourceId) {
+        throwConflict(
+          `flowSurfaces executeDsl verification expected currentCollection binding in ${context}`,
+          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
+        );
+      }
+      return;
+    }
+
+    if (!popupBlock?.uid) {
       throwConflict(
-        `flowSurfaces executeDsl verification expected CreateFormModel in ${context}`,
+        `flowSurfaces executeDsl verification expected popup block in ${context}`,
         'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
       );
     }
@@ -2831,58 +2915,94 @@ export class FlowSurfacesService {
   private async verifyExecuteDslBlockRefs(
     blocks: FlowSurfaceDslBlock[],
     refs: Record<string, any> | undefined,
-    transaction?: any,
+    options: {
+      transaction?: any;
+      scopePrefix?: string;
+      subtreeNodeMap?: Record<string, any>;
+      popupById?: Map<string, FlowSurfaceDslPopup>;
+    } = {},
   ) {
     for (const block of blocks) {
-      const blockUid = this.readExecuteDslRefUid(refs, block.id, `block '${block.id}'`);
-      await this.assertExecuteDslReadable({ uid: blockUid }, `block '${block.id}'`, transaction);
+      const blockRef = buildFlowSurfaceDslScopedRef(options.scopePrefix, block.id);
+      const blockUid = this.readExecuteDslRefUid(refs, blockRef, `block '${blockRef}'`);
+      await this.assertExecuteDslReadable({ uid: blockUid }, `block '${blockRef}'`, options.transaction);
+      if (options.subtreeNodeMap) {
+        this.assertExecuteDslNodeInSubtree(blockUid, options.subtreeNodeMap, `block '${blockRef}'`);
+      }
 
       for (const [fieldIndex, field] of _.castArray(block.fields || []).entries()) {
-        const fieldRef = buildFlowSurfaceDslFieldRef(block.id, field, fieldIndex);
+        const fieldRef = buildFlowSurfaceDslScopedRef(
+          options.scopePrefix,
+          buildFlowSurfaceDslFieldRef(block.id, field, fieldIndex),
+        );
         const fieldUid = this.readExecuteDslRefUid(refs, fieldRef, `field '${fieldRef}'`);
-        await this.assertExecuteDslReadable({ uid: fieldUid }, `field '${fieldRef}'`, transaction);
+        await this.assertExecuteDslReadable({ uid: fieldUid }, `field '${fieldRef}'`, options.transaction);
       }
 
       for (const [actionIndex, action] of _.castArray(block.actions || []).entries()) {
-        const actionRef = buildFlowSurfaceDslActionRef(block.id, 'actions', action, actionIndex);
+        const actionRef = buildFlowSurfaceDslScopedRef(
+          options.scopePrefix,
+          buildFlowSurfaceDslActionRef(block.id, 'actions', action, actionIndex),
+        );
         const actionUid = this.readExecuteDslRefUid(refs, actionRef, `action '${actionRef}'`);
-        await this.assertExecuteDslReadable({ uid: actionUid }, `action '${actionRef}'`, transaction);
+        await this.assertExecuteDslReadable({ uid: actionUid }, `action '${actionRef}'`, options.transaction);
+        await this.verifyExecuteDslPopupRef(actionRef, action, refs, options);
       }
 
       for (const [actionIndex, action] of _.castArray(block.recordActions || []).entries()) {
-        const actionRef = buildFlowSurfaceDslActionRef(block.id, 'recordActions', action, actionIndex);
+        const actionRef = buildFlowSurfaceDslScopedRef(
+          options.scopePrefix,
+          buildFlowSurfaceDslActionRef(block.id, 'recordActions', action, actionIndex),
+        );
         const actionUid = this.readExecuteDslRefUid(refs, actionRef, `recordAction '${actionRef}'`);
-        await this.assertExecuteDslReadable({ uid: actionUid }, `recordAction '${actionRef}'`, transaction);
+        await this.assertExecuteDslReadable({ uid: actionUid }, `recordAction '${actionRef}'`, options.transaction);
+        await this.verifyExecuteDslPopupRef(actionRef, action, refs, options);
       }
     }
   }
 
-  private collectBlueprintPopupInboundActions(blueprint: FlowSurfaceBlueprintDsl) {
-    const popupInbounds = new Map<string, Array<{ ref: string; type: string }>>();
-    const visitBlocks = (blocks: FlowSurfaceDslBlock[]) => {
-      blocks.forEach((block) => {
-        const visitScope = (scope: 'actions' | 'recordActions', actions: FlowSurfaceDslAction[]) => {
-          actions.forEach((action, index) => {
-            const popupId = String(action?.popupId || '').trim();
-            if (!popupId) {
-              return;
-            }
-            const entries = popupInbounds.get(popupId) || [];
-            entries.push({
-              ref: buildFlowSurfaceDslActionRef(block.id, scope, action, index),
-              type: String(action.type || '').trim(),
-            });
-            popupInbounds.set(popupId, entries);
-          });
-        };
-        visitScope('actions', _.castArray(block.actions || []));
-        visitScope('recordActions', _.castArray(block.recordActions || []));
-      });
-    };
-
-    visitBlocks(blueprint.blocks);
-    blueprint.popups.forEach((popup) => visitBlocks(_.castArray(popup.blocks || [])));
-    return popupInbounds;
+  private async verifyExecuteDslPopupRef(
+    actionRef: string,
+    action: FlowSurfaceDslAction,
+    refs: Record<string, any> | undefined,
+    options: {
+      transaction?: any;
+      popupById?: Map<string, FlowSurfaceDslPopup>;
+    } = {},
+  ) {
+    const popupId = String(action?.popupId || '').trim();
+    if (!popupId) {
+      return;
+    }
+    const popup = options.popupById?.get(popupId);
+    const popupGridUid = this.readExecuteDslRefUid(refs, `${actionRef}.popupGrid`, `popup '${popupId}'`);
+    const popupReadback = await this.assertExecuteDslReadable(
+      { uid: popupGridUid },
+      `popup '${popupId}' grid`,
+      options.transaction,
+    );
+    if (popup?.title) {
+      const popupTabUid = this.readExecuteDslRefUid(refs, `${actionRef}.popupTab`, `popup '${popupId}' tab`);
+      await this.assertExecuteDslPopupTitle(popupTabUid, popup.title, `popup '${popupId}'`, options.transaction);
+    }
+    const popupBlocks = _.castArray(popup?.blocks || []);
+    if (!popupBlocks.length) {
+      if (popup?.completion === 'completed') {
+        await this.assertExecuteDslDefaultPopupCompleted(
+          String(action.type || '').trim(),
+          popupGridUid,
+          `popup '${popupId}'`,
+          options.transaction,
+        );
+      }
+      return;
+    }
+    await this.verifyExecuteDslBlockRefs(popupBlocks, refs, {
+      transaction: options.transaction,
+      scopePrefix: buildFlowSurfaceDslPopupScopePrefix(actionRef),
+      subtreeNodeMap: this.buildExecuteDslReadbackNodeMap(popupReadback),
+      popupById: options.popupById,
+    });
   }
 
   private async verifyBlueprintDslExecution(
@@ -2893,6 +3013,8 @@ export class FlowSurfacesService {
   ) {
     const blueprint = prepared.dsl as FlowSurfaceBlueprintDsl;
     const resultById = this.buildExecuteResultById(executeResult?.results);
+    const popupById = new Map<string, FlowSurfaceDslPopup>();
+    blueprint.popups.forEach((popup) => popupById.set(popup.id, popup));
     if (blueprint.target.mode === 'create-page') {
       const menuRouteId = resultById.dslMenuItem?.routeId;
       if (!menuRouteId || !(await this.findMenuRouteById(menuRouteId, options.transaction))) {
@@ -2913,27 +3035,10 @@ export class FlowSurfacesService {
       await this.assertExecuteDslReadable(blueprint.target.locator, `target page`, options.transaction);
     }
 
-    await this.verifyExecuteDslBlockRefs(blueprint.blocks, refs, options.transaction);
-
-    const popupInbounds = this.collectBlueprintPopupInboundActions(blueprint);
-    for (const popup of blueprint.popups) {
-      const inboundActions = popupInbounds.get(popup.id) || [];
-      for (const inboundAction of inboundActions) {
-        const popupGridUid = this.readExecuteDslRefUid(refs, `${inboundAction.ref}.popupGrid`, `popup '${popup.id}'`);
-        await this.assertExecuteDslReadable({ uid: popupGridUid }, `popup '${popup.id}' grid`, options.transaction);
-        if (popup.completion === 'completed' && !_.castArray(popup.blocks || []).length) {
-          await this.assertExecuteDslDefaultPopupCompleted(
-            inboundAction.type,
-            popupGridUid,
-            `popup '${popup.id}'`,
-            options.transaction,
-          );
-        }
-      }
-      if (_.castArray(popup.blocks || []).length) {
-        await this.verifyExecuteDslBlockRefs(_.castArray(popup.blocks || []), refs, options.transaction);
-      }
-    }
+    await this.verifyExecuteDslBlockRefs(blueprint.blocks, refs, {
+      transaction: options.transaction,
+      popupById,
+    });
   }
 
   private async verifyPatchDslExecution(
@@ -3018,7 +3123,6 @@ export class FlowSurfacesService {
     const prepared = prepareFlowSurfaceDslRequest('executeDsl', values);
     this.assertDslReadyForExecute(prepared);
 
-    await this.validatePlan(prepared.planValues, options);
     const result = await this.executePlan(prepared.planValues, options);
     const refs = this.buildExecuteDslRefsMap(result);
 

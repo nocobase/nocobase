@@ -24,6 +24,7 @@ import type {
 import {
   buildFlowSurfaceDslActionRef,
   buildFlowSurfaceDslFieldRef,
+  FLOW_SURFACE_DSL_PATCH_SURFACE_DEFAULT_TARGET_OPS,
   isFlowSurfaceDslDefaultCrudActionType,
 } from './utils';
 
@@ -44,14 +45,6 @@ const FLOW_SURFACE_DSL_PATCH_OPS = new Set([
   'node.remove',
   'template.detach',
 ]);
-const PATCH_SURFACE_DEFAULT_TARGET_OPS = new Set([
-  'page.destroy',
-  'tab.add',
-  'block.add',
-  'settings.update',
-  'layout.replace',
-]);
-
 function hasLocatorValue(locator: any) {
   return ['uid', 'pageSchemaUid', 'tabSchemaUid', 'routeId'].some((key) => {
     const value = locator?.[key];
@@ -479,7 +472,7 @@ function validateBlueprint(blueprint: FlowSurfaceBlueprintDsl) {
 }
 
 function requiresPatchTarget(change: FlowSurfacePatchDslChange) {
-  return !PATCH_SURFACE_DEFAULT_TARGET_OPS.has(change.op);
+  return !FLOW_SURFACE_DSL_PATCH_SURFACE_DEFAULT_TARGET_OPS.has(change.op);
 }
 
 function requiresPatchSource(change: FlowSurfacePatchDslChange) {

@@ -17,6 +17,13 @@ import type {
 } from './types';
 
 export const FLOW_SURFACE_DSL_DEFAULT_CRUD_ACTION_TYPES = new Set(['addNew', 'view', 'edit']);
+export const FLOW_SURFACE_DSL_PATCH_SURFACE_DEFAULT_TARGET_OPS = new Set([
+  'page.destroy',
+  'tab.add',
+  'block.add',
+  'settings.update',
+  'layout.replace',
+]);
 
 export function normalizeFlowSurfaceDslToken(value: any, fallback = 'item') {
   const normalized = String(value || '')
@@ -61,6 +68,31 @@ export function buildFlowSurfaceDslChangeStepId(change: FlowSurfacePatchDslChang
 
 export function isFlowSurfaceDslDefaultCrudActionType(type: any) {
   return FLOW_SURFACE_DSL_DEFAULT_CRUD_ACTION_TYPES.has(String(type || '').trim());
+}
+
+export function buildFlowSurfaceDslScopedRef(scopePrefix: string | undefined, ref: string) {
+  const normalizedRef = String(ref || '').trim();
+  if (!normalizedRef) {
+    return '';
+  }
+  const normalizedPrefix = String(scopePrefix || '').trim();
+  return normalizedPrefix ? `${normalizedPrefix}.${normalizedRef}` : normalizedRef;
+}
+
+export function buildFlowSurfaceDslPopupScopePrefix(actionRef: string) {
+  return buildFlowSurfaceDslScopedRef(actionRef, 'popup');
+}
+
+export function buildFlowSurfaceDslPopupStepId(
+  kind: 'title' | 'compose',
+  actionRef: string,
+  popupId: string,
+  index: number,
+) {
+  return `dslPopup__${kind}__${normalizeFlowSurfaceDslToken(
+    actionRef,
+    `popup_${index + 1}`,
+  )}__${normalizeFlowSurfaceDslToken(popupId, `popup_${index + 1}`)}__${index + 1}`;
 }
 
 export function buildFlowSurfaceDslEntityRefKey(entityRef: FlowSurfaceDslEntityRef) {
