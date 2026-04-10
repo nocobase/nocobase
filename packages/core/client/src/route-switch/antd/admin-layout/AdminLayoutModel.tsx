@@ -8,8 +8,9 @@
  */
 
 import React from 'react';
-import { AdminLayoutComponent, AdminLayoutModel } from '@nocobase/client-v2';
+import { AdminLayoutModel } from '@nocobase/client-v2';
 import { AdminShellProvider } from './AdminShellProvider';
+import { AdminLayoutComponent } from './AdminLayoutComponentV1';
 
 /**
  * 兼容旧 route-switch 入口的 Admin Layout 渲染包装类。
