@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import {
   createFlowSurfacesContractContext,
   createPage,
+  createMenu,
   destroyFlowSurfacesContractContext,
   getData,
   getRouteBackedTabs,
@@ -22,10 +24,48 @@ describe('flowSurfaces executeDsl contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
+  let routesRepo: FlowSurfacesContractContext['routesRepo'];
+
+  function collectDescendantNodes(node: any, predicate: (input: any) => boolean, bucket: any[] = []) {
+    if (!node || typeof node !== 'object') {
+      return bucket;
+    }
+    if (predicate(node)) {
+      bucket.push(node);
+    }
+    const subModels = _.isPlainObject(node.subModels) ? Object.values(node.subModels) : [];
+    subModels.forEach((subModel) => {
+      _.castArray(subModel).forEach((child) => {
+        collectDescendantNodes(child, predicate, bucket);
+      });
+    });
+    return bucket;
+  }
+
+  function collectFieldPaths(node: any) {
+    return collectDescendantNodes(node, (item) => !!item?.stepParams?.fieldSettings?.init?.fieldPath).map(
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+  }
+
+  function readNodeActionUses(node: any) {
+    return _.castArray(node?.subModels?.actions || []).map((item: any) => item?.use);
+  }
+
+  function readTableRecordActionUses(node: any) {
+    const actionsColumn = _.castArray(node?.subModels?.columns || []).find(
+      (column: any) => column?.use === 'TableActionsColumnModel',
+    );
+    return readNodeActionUses(actionsColumn);
+  }
+
+  function readCardItemRecordActionUses(node: any) {
+    return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
+  }
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
-    ({ rootAgent, flowRepo } = context);
+    ({ rootAgent, flowRepo, routesRepo } = context);
   }, 120000);
 
   afterAll(async () => {
@@ -185,6 +225,192 @@ describe('flowSurfaces executeDsl contract', () => {
     expect(data.surface.pageRoute.displayTitle).toBe(false);
   });
 
+  it('should reuse a unique same-title navigation group instead of creating a duplicate group', async () => {
+    const groupTitle = `Unique executeDsl group ${Date.now()}`;
+    const existingGroup = await createMenu(rootAgent, {
+      title: groupTitle,
+      type: 'group',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            title: groupTitle,
+          },
+          item: {
+            title: 'Employees under reused group',
+          },
+        },
+        page: {
+          title: 'Employees under reused group',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(String(data.surface.pageRoute.parentId)).toBe(String(existingGroup.routeId));
+
+    const matchedGroups = _.castArray(
+      await routesRepo.find({
+        filter: {
+          type: 'group',
+          title: groupTitle,
+        },
+      }),
+    );
+    expect(matchedGroups).toHaveLength(1);
+  });
+
+  it('should reject same-title navigation group reuse when group metadata is also provided', async () => {
+    const groupTitle = `Same-title metadata group ${Date.now()}`;
+    await createMenu(rootAgent, {
+      title: groupTitle,
+      type: 'group',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            title: groupTitle,
+            icon: 'UserOutlined',
+            tooltip: 'Should fail for reused group',
+          },
+          item: {
+            title: 'Employees with reused group metadata',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain(
+      `navigation.group.title '${groupTitle}' matched an existing menu group`,
+    );
+    expect(readErrorMessage(executeRes)).toContain('navigation.group.icon');
+    expect(readErrorMessage(executeRes)).toContain('navigation.group.tooltip');
+    expect(readErrorMessage(executeRes)).toContain('Same-title reuse is title-only');
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces:updateMenu');
+  });
+
+  it('should reject navigation.group.routeId when existing-group metadata is also provided', async () => {
+    const existingGroup = await createMenu(rootAgent, {
+      title: `Explicit group ${Date.now()}`,
+      type: 'group',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            routeId: existingGroup.routeId,
+            icon: 'UserOutlined',
+            hideInMenu: true,
+          },
+          item: {
+            title: 'Employees under explicit group',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('navigation.group.routeId');
+    expect(readErrorMessage(executeRes)).toContain('navigation.group.icon');
+    expect(readErrorMessage(executeRes)).toContain('navigation.group.hideInMenu');
+    expect(readErrorMessage(executeRes)).toContain('does not update existing menu-group metadata');
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces:updateMenu');
+  });
+
+  it('should reject ambiguous navigation group title reuse and ask for routeId explicitly', async () => {
+    const groupTitle = `Ambiguous executeDsl group ${Date.now()}`;
+    await createMenu(rootAgent, {
+      title: groupTitle,
+      type: 'group',
+    });
+    await createMenu(rootAgent, {
+      title: groupTitle,
+      type: 'group',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            title: groupTitle,
+          },
+          item: {
+            title: 'Ambiguous group page',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain(
+      `navigation.group.title '${groupTitle}' matches 2 existing menu groups`,
+    );
+    expect(readErrorMessage(executeRes)).toContain('navigation.group.routeId explicitly');
+  });
+
   it('should auto-generate a vertical grid layout when tab layout is omitted', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
       values: {
@@ -268,6 +494,419 @@ describe('flowSurfaces executeDsl contract', () => {
     expect(message).toContain(`flowSurfaces executeDsl tabs[0].layout.rows[0][0]`);
     expect(message).toContain(`references unknown block 'missingBlock'`);
     expect(message).not.toContain(`tabs['`);
+  });
+
+  it('should normalize currentRecord associationPathName resource shorthand into an associated-records popup table', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Association shorthand popup page',
+          },
+        },
+        page: {
+          title: 'Association shorthand popup page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          type: 'table',
+                          resource: {
+                            binding: 'currentRecord',
+                            associationPathName: 'roles',
+                            collectionName: 'roles',
+                          },
+                          fields: ['title', 'name'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    expect(viewAction?.uid).toBeTruthy();
+
+    const viewReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupBlock = _.castArray(viewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
+      ?.subModels?.items?.[0];
+
+    expect(popupBlock?.use).toBe('TableBlockModel');
+    expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+    });
+    expect(collectFieldPaths(popupBlock)).toEqual(expect.arrayContaining(['title', 'name']));
+  });
+
+  it('should reject multi-segment associationPathName when binding-centered shorthand tries to normalize it', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid multi-segment relation popup page',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          type: 'table',
+                          resource: {
+                            binding: 'currentRecord',
+                            associationPathName: 'manager.roles',
+                            collectionName: 'roles',
+                          },
+                          fields: ['title', 'name'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    const message = readErrorMessage(executeRes);
+    expect(message).toContain(`associationPathName 'manager.roles'`);
+    expect(message).toContain('single association field name');
+    expect(message).toContain('associationField');
+  });
+
+  it('should create the nested users-roles popup page structure and auto-promote record actions from details.actions', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Users popup page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Users popup page',
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'users',
+                fields: ['username', 'nickname', 'roles'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    title: '详情',
+                    popup: {
+                      layout: {
+                        rows: [
+                          [
+                            { key: 'userDetails', span: 12 },
+                            { key: 'userRoles', span: 12 },
+                          ],
+                        ],
+                      },
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username', 'nickname', 'email', 'roles'],
+                          actions: [
+                            {
+                              type: 'edit',
+                              title: '编辑用户',
+                              popup: {
+                                blocks: [
+                                  {
+                                    key: 'userEditForm',
+                                    type: 'editForm',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: 'users',
+                                    },
+                                    fields: ['username', 'nickname', 'email', 'roles'],
+                                    actions: ['submit'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                        {
+                          key: 'userRoles',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: 'roles',
+                          },
+                          fields: ['title', 'name'],
+                          recordActions: [
+                            {
+                              type: 'view',
+                              title: '查看角色',
+                              popup: {
+                                blocks: [
+                                  {
+                                    key: 'roleDetails',
+                                    type: 'details',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: 'roles',
+                                    },
+                                    fields: ['title', 'name'],
+                                    actions: [
+                                      {
+                                        type: 'edit',
+                                        title: '编辑角色',
+                                        popup: {
+                                          blocks: [
+                                            {
+                                              key: 'roleEditForm',
+                                              type: 'editForm',
+                                              resource: {
+                                                binding: 'currentRecord',
+                                                collectionName: 'roles',
+                                              },
+                                              fields: ['title', 'name'],
+                                              actions: ['submit'],
+                                            },
+                                          ],
+                                        },
+                                      },
+                                    ],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const pageTree = data.surface.tree;
+    const mainTable = collectDescendantNodes(pageTree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(mainTable?.uid).toBeTruthy();
+
+    const mainTableReadback = await getSurface(rootAgent, {
+      uid: mainTable.uid,
+    });
+    expect(mainTableReadback.tree.use).toBe('TableBlockModel');
+    expect(collectFieldPaths(mainTableReadback.tree)).toEqual(expect.arrayContaining(['roles']));
+
+    const mainViewAction = collectDescendantNodes(mainTableReadback.tree, (item) => item?.use === 'ViewActionModel')[0];
+    expect(mainViewAction?.uid).toBeTruthy();
+
+    const mainViewReadback = await getSurface(rootAgent, {
+      uid: mainViewAction.uid,
+    });
+    const popupItems = _.castArray(
+      _.castArray(mainViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items ||
+        [],
+    );
+    expect(popupItems).toHaveLength(2);
+    const userDetailsBlock = popupItems.find((item: any) => item?.use === 'DetailsBlockModel');
+    const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
+    expect(userDetailsBlock?.uid).toBeTruthy();
+    expect(userRolesTable?.uid).toBeTruthy();
+
+    const userDetailsReadback = await getSurface(rootAgent, {
+      uid: userDetailsBlock.uid,
+    });
+    expect(collectFieldPaths(userDetailsReadback.tree)).toEqual(expect.arrayContaining(['email', 'roles']));
+    expect(_.castArray(userDetailsReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'EditActionModel',
+    );
+    const userEditAction = _.castArray(userDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(userEditAction?.uid).toBeTruthy();
+
+    const userEditReadback = await getSurface(rootAgent, {
+      uid: userEditAction.uid,
+    });
+    const userEditForm = _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
+      ?.subModels?.items?.[0];
+    expect(userEditForm?.use).toBe('EditFormModel');
+    expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    const userRolesReadback = await getSurface(rootAgent, {
+      uid: userRolesTable.uid,
+    });
+    expect(userRolesReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+    });
+    expect(collectFieldPaths(userRolesReadback.tree)).toEqual(expect.arrayContaining(['title', 'name']));
+    const roleViewAction = collectDescendantNodes(userRolesReadback.tree, (item) => item?.use === 'ViewActionModel')[0];
+    expect(roleViewAction?.uid).toBeTruthy();
+
+    const roleViewReadback = await getSurface(rootAgent, {
+      uid: roleViewAction.uid,
+    });
+    const roleDetailsBlock = _.castArray(roleViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels
+      ?.grid?.subModels?.items?.[0];
+    expect(roleDetailsBlock?.use).toBe('DetailsBlockModel');
+
+    const roleDetailsReadback = await getSurface(rootAgent, {
+      uid: roleDetailsBlock.uid,
+    });
+    expect(_.castArray(roleDetailsReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'EditActionModel',
+    );
+    const roleEditAction = _.castArray(roleDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(roleEditAction?.uid).toBeTruthy();
+
+    const roleEditReadback = await getSurface(rootAgent, {
+      uid: roleEditAction.uid,
+    });
+    const roleEditForm = _.castArray(roleEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
+      ?.subModels?.items?.[0];
+    expect(roleEditForm?.use).toBe('EditFormModel');
+    expect(_.castArray(roleEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+  });
+
+  it('should auto-promote common record actions from actions to recordActions on table, list, and gridCard blocks', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Record action promotion page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Table',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                actions: ['refresh', { type: 'view', title: 'View row' }, { type: 'edit', title: 'Edit row' }],
+                recordActions: [{ type: 'delete', title: 'Delete row' }],
+              },
+            ],
+          },
+          {
+            title: 'List',
+            blocks: [
+              {
+                type: 'list',
+                collection: 'users',
+                fields: ['username'],
+                actions: ['refresh', { type: 'view', title: 'View row' }, { type: 'edit', title: 'Edit row' }],
+                recordActions: [{ type: 'delete', title: 'Delete row' }],
+              },
+            ],
+          },
+          {
+            title: 'Grid',
+            blocks: [
+              {
+                type: 'gridCard',
+                collection: 'users',
+                fields: ['username'],
+                actions: ['refresh', { type: 'view', title: 'View row' }, { type: 'edit', title: 'Edit row' }],
+                recordActions: [{ type: 'delete', title: 'Delete row' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const listBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ListBlockModel')[0];
+    const gridCardBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'GridCardBlockModel')[0];
+
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    const listReadback = await getSurface(rootAgent, { uid: listBlock?.uid });
+    const gridCardReadback = await getSurface(rootAgent, { uid: gridCardBlock?.uid });
+
+    expect(readNodeActionUses(tableReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
+      'DeleteActionModel',
+      'ViewActionModel',
+      'EditActionModel',
+    ]);
+
+    expect(readNodeActionUses(listReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readCardItemRecordActionUses(listReadback.tree)).toEqual([
+      'DeleteActionModel',
+      'ViewActionModel',
+      'EditActionModel',
+    ]);
+
+    expect(readNodeActionUses(gridCardReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readCardItemRecordActionUses(gridCardReadback.tree)).toEqual([
+      'DeleteActionModel',
+      'ViewActionModel',
+      'EditActionModel',
+    ]);
   });
 
   it('should reject unsupported executeDsl top-level keys', async () => {

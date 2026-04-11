@@ -12,6 +12,7 @@ import { throwBadRequest } from '../errors';
 import { buildDefinedPayload } from '../service-utils';
 import type { FlowSurfaceExecuteDslAssets, FlowSurfaceExecuteDslDocument } from './public-types';
 import {
+  EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS,
   assertNonEmptyString,
   assertOnlyAllowedKeys,
   assertPlainObject,
@@ -95,6 +96,18 @@ function normalizeNavigation(input: any) {
           }
           if (!_.isUndefined(routeId) && readString(input.group.title)) {
             throwBadRequest(`flowSurfaces executeDsl navigation.group cannot mix routeId with title`);
+          }
+          const routeMetadataKeys = EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS.filter(
+            (key) => !_.isUndefined(input.group[key]),
+          );
+          if (!_.isUndefined(routeId) && routeMetadataKeys.length) {
+            throwBadRequest(
+              `flowSurfaces executeDsl navigation.group.routeId cannot mix with ${routeMetadataKeys
+                .map((key) => `navigation.group.${key}`)
+                .join(
+                  ', ',
+                )}; executeDsl create mode does not update existing menu-group metadata. Use flowSurfaces:updateMenu separately if needed`,
+            );
           }
           const normalized = buildDefinedPayload({
             routeId: _.isUndefined(routeId) ? undefined : routeId,

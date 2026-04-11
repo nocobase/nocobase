@@ -256,7 +256,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute a simplified page-structure DSL to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page document and compiles it to FlowSurfaces plan steps internally. The public DSL only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). Internal planning details stay hidden. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps DSL tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public DSL; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. When layout is omitted, executeDsl auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      "Accepts one simplified JSON page document and compiles it to FlowSurfaces plan steps internally. The public DSL only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; executeDsl create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, executeDsl reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group's metadata must change, use low-level `updateMenu` instead of executeDsl create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps DSL tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public DSL; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. When layout is omitted, executeDsl auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.",
     ),
     requestBody: {
       required: true,
@@ -1587,6 +1587,8 @@ const schemas = {
       },
       associationField: {
         type: 'string',
+        description:
+          'Canonical association field name for popup `associatedRecords` binding. In executeDsl authoring, prefer `associationField`; `associationPathName` is only normalized to this field for convenience when it is a single association field name.',
       },
     },
     additionalProperties: false,
@@ -2329,13 +2331,17 @@ const schemas = {
     oneOf: [
       {
         type: 'string',
+        description: 'Local block key string in the current tab or popup scope.',
       },
       {
         type: 'object',
+        description:
+          'Layout cell object in the public executeDsl contract. Use only { key, span }; uid/ref/$ref selectors are not supported here.',
         required: ['key'],
         properties: {
           key: {
             type: 'string',
+            description: 'Local block key in the current tab or popup scope.',
           },
           span: {
             type: 'number',
@@ -2350,6 +2356,7 @@ const schemas = {
     properties: {
       rows: {
         type: 'array',
+        description: 'Two-dimensional layout grid. Each cell is either a block key string or an object { key, span }.',
         items: {
           type: 'array',
           items: ref('FlowSurfaceExecuteDslLayoutCell'),
@@ -2393,7 +2400,8 @@ const schemas = {
           label: { type: 'string' },
           target: {
             type: 'string',
-            description: 'String block key on the same tab or popup scope, typically used by filter-form fields.',
+            description:
+              'String block key on the same tab or popup scope, typically used by filter-form fields. Object selectors and ref/$ref forms are not supported.',
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceExecuteDslPopup'),
@@ -2416,7 +2424,9 @@ const schemas = {
           key: { type: 'string' },
           type: {
             type: 'string',
-            enum: NON_RECORD_ACTION_TYPE_ENUM,
+            enum: ACTION_TYPE_ENUM,
+            description:
+              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; executeDsl also auto-promotes them from `actions` for convenience.',
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -2441,6 +2451,8 @@ const schemas = {
           type: {
             type: 'string',
             enum: RECORD_ACTION_TYPE_ENUM,
+            description:
+              'Record-action type for record-capable blocks such as `table`, `details`, `list`, and `gridCard`.',
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -2459,14 +2471,26 @@ const schemas = {
       key: { type: 'string' },
       type: { type: 'string' },
       title: { type: 'string' },
-      collection: { type: 'string' },
+      collection: {
+        type: 'string',
+        description:
+          'Block-level shorthand collection name. When using the nested resource object instead, use resource.collectionName there.',
+      },
       dataSourceKey: { type: 'string' },
-      associationPathName: { type: 'string' },
+      associationPathName: {
+        type: 'string',
+        description:
+          "Association field path used by raw resource-init shorthand. For popup association tables, prefer `resource.binding='associatedRecords'` with `associationField`; executeDsl only normalizes `currentRecord|associatedRecords + associationPathName` to that canonical form when `associationPathName` is a single association field name.",
+      },
       binding: {
         type: 'string',
         enum: ['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'],
       },
-      associationField: { type: 'string' },
+      associationField: {
+        type: 'string',
+        description:
+          'Canonical association field name for popup `associatedRecords` binding. Prefer this over `associationPathName` when authoring relation tables inside record popups.',
+      },
       resource: ref('FlowSurfaceBlockResourceInput'),
       template: ref('FlowSurfaceBlockTemplateRef'),
       settings: ANY_OBJECT_SCHEMA,
@@ -2476,6 +2500,8 @@ const schemas = {
       },
       actions: {
         type: 'array',
+        description:
+          'Block-level actions. On record-capable blocks, `view`, `edit`, `updateRecord`, and `delete` should normally go to `recordActions`; executeDsl auto-promotes those common record actions when they are written here.',
         items: ref('FlowSurfaceExecuteDslActionSpec'),
       },
       recordActions: {
@@ -2511,11 +2537,31 @@ const schemas = {
   FlowSurfaceExecuteDslNavigationGroup: {
     type: 'object',
     properties: {
-      routeId: STRING_OR_INTEGER_SCHEMA,
-      title: { type: 'string' },
-      icon: { type: 'string' },
-      tooltip: { type: 'string' },
-      hideInMenu: { type: 'boolean' },
+      routeId: {
+        ...STRING_OR_INTEGER_SCHEMA,
+        description:
+          'Preferred existing menu-group route id for exact targeting. Do not mix it with title/icon/tooltip/hideInMenu. executeDsl create mode does not mutate existing group metadata; use low-level updateMenu separately when needed.',
+      },
+      title: {
+        type: 'string',
+        description:
+          "Group title for create mode. When `routeId` is omitted, executeDsl reuses a same-title group if the match is unique, creates one when no group exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group's metadata must change, use low-level updateMenu instead of executeDsl create.",
+      },
+      icon: {
+        type: 'string',
+        description:
+          'Group icon used only when create mode actually creates a new menu group. Not allowed together with routeId.',
+      },
+      tooltip: {
+        type: 'string',
+        description:
+          'Group tooltip used only when create mode actually creates a new menu group. Not allowed together with routeId.',
+      },
+      hideInMenu: {
+        type: 'boolean',
+        description:
+          'Group hidden-state used only when create mode actually creates a new menu group. Not allowed together with routeId.',
+      },
     },
     additionalProperties: false,
   },

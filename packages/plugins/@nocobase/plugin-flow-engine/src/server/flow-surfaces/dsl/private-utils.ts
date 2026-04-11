@@ -9,8 +9,11 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
+import { assertNoFlowSurfaceLegacyRef } from '../reference-guards';
 import { normalizeFlowSurfaceComposeKey } from '../service-utils';
 import type { FlowSurfaceExecuteDslAssetMap } from './public-types';
+
+export const EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS = ['icon', 'tooltip', 'hideInMenu'] as const;
 
 export function assertPlainObject(value: any, context: string) {
   if (!_.isPlainObject(value)) {
@@ -26,6 +29,15 @@ export function assertOnlyAllowedKeys(input: Record<string, any>, context: strin
   throwBadRequest(
     `${context} only accepts keys ${allowedKeys.join(', ')}; unsupported keys: ${unsupportedKeys.join(', ')}`,
   );
+}
+
+export function assertNoExecuteDslLegacyRef(input: any, context: string, allowed: string) {
+  assertNoFlowSurfaceLegacyRef(input, {
+    actionName: 'executeDsl',
+    path: context.replace(/^flowSurfaces executeDsl\s+/, ''),
+    dollarRefAllowed: allowed,
+    refAllowed: allowed,
+  });
 }
 
 export function normalizeExecuteDslToken(value: any, fallback = 'item') {

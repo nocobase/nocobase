@@ -265,12 +265,18 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.$ref).toBe(
       '#/components/schemas/FlowSurfaceExecuteDslLayout',
     );
+    expect(schemas.FlowSurfaceExecuteDslLayout.properties.rows.description).toContain('{ key, span }');
+    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[0].description).toContain('Local block key string');
+    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].description).toContain('uid/ref/$ref selectors');
     expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].properties.uid).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].required).toEqual(['key']);
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.ref).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.collectionName).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.association).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resourceBinding).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.collection.description).toContain(
+      'use resource.collectionName',
+    );
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
@@ -279,8 +285,43 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.targetBlock).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.openView).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.target.type).toBe('string');
+    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.target.description).toContain(
+      'Object selectors and ref/$ref forms are not supported',
+    );
     expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.enum).toEqual(
+      expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
+    );
+    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.description).toContain('auto-promotes');
     expect(schemas.FlowSurfaceExecuteDslRecordActionSpec.oneOf[1].properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.actions.description).toContain('auto-promotes');
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationPathName.description).toContain(
+      'associatedRecords',
+    );
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationPathName.description).toContain(
+      'single association field name',
+    );
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationField.description).toContain(
+      'Canonical association field name',
+    );
+    expect(schemas.FlowSurfaceSemanticResourceInput.properties.associationField.description).toContain(
+      'Canonical association field name',
+    );
+    expect(schemas.FlowSurfaceSemanticResourceInput.properties.associationField.description).toContain(
+      'single association field name',
+    );
+    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.routeId.description).toContain(
+      'Preferred existing menu-group route id',
+    );
+    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.title.description).toContain(
+      'reuses a same-title group if the match is unique',
+    );
+    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.title.description).toContain(
+      'Same-title reuse is title-only',
+    );
+    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.icon.description).toContain(
+      'actually creates a new menu group',
+    );
     expect(schemas.FlowSurfaceExecuteDslCreateRequest.allOf).toEqual(
       expect.arrayContaining([{ $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestBase' }]),
     );
@@ -334,6 +375,11 @@ describe('flowSurfaces swagger', () => {
     expect(executeDslPath.description).toContain('route-backed tab slots by index');
     expect(executeDslPath.description).toContain('removes trailing old tabs');
     expect(executeDslPath.description).toContain('appends extra new tabs');
+    expect(executeDslPath.description).toContain('navigation.group.routeId');
+    expect(executeDslPath.description).toContain('same-title group');
+    expect(executeDslPath.description).toContain('does not mutate existing group metadata');
+    expect(executeDslPath.description).toContain('Same-title reuse is title-only');
+    expect(executeDslPath.description).toContain('updateMenu');
     const executePath = swaggerDocument.paths['/flowSurfaces:executePlan'].post;
     const executeRequest = executePath.requestBody.content['application/json'];
     expect(executeRequest.example?.plan?.steps?.[0]?.action).toBe('createMenu');

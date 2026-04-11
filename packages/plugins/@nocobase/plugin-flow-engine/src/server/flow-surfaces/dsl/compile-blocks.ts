@@ -9,7 +9,6 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
-import { assertNoFlowSurfaceLegacyRef } from '../reference-guards';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
 import type { FlowSurfaceResourceBindingKey } from '../types';
 import {
@@ -32,6 +31,7 @@ import type {
 } from './public-types';
 import {
   assertNonEmptyString,
+  assertNoExecuteDslLegacyRef,
   assertOnlyAllowedKeys,
   buildExecuteDslTabPublicPath,
   buildScopedKey,
@@ -107,15 +107,100 @@ const EXECUTE_DSL_BLOCK_RESOURCE_SHORTHAND_KEYS = [
   'binding',
   'associationField',
 ];
+const EXECUTE_DSL_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
+const EXECUTE_DSL_RECORD_ACTION_TYPES = new Set(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild']);
 
-function assertNoExecuteDslLegacyRef(input: any, path: string, allowed: string) {
-  const normalizedPath = path.replace(/^flowSurfaces executeDsl\s+/, '');
-  assertNoFlowSurfaceLegacyRef(input, {
-    actionName: 'executeDsl',
-    path: normalizedPath,
-    dollarRefAllowed: allowed,
-    refAllowed: allowed,
+function readAssociationFieldFromSingleSegmentPath(value: any, context: string) {
+  const associationPathName = readOptionalString(value);
+  if (!associationPathName) {
+    return undefined;
+  }
+  const segments = associationPathName
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (!segments.length) {
+    throwBadRequest(`${context}.associationPathName must be a non-empty association field path`);
+  }
+  if (segments.length > 1) {
+    throwBadRequest(
+      `${context}.associationPathName '${associationPathName}' must be a single association field name when used with ${context}.binding; prefer ${context}.associationField for popup relation tables`,
+    );
+  }
+  return segments[0];
+}
+
+function normalizeAssociatedRecordsBindingFromAssociationPath(
+  input: Record<string, any>,
+  context: string,
+): {
+  binding: FlowSurfaceResourceBindingKey;
+  associationField?: string;
+} | null {
+  const binding = readOptionalString(input.binding) as FlowSurfaceResourceBindingKey | undefined;
+  const associationLeaf = readAssociationFieldFromSingleSegmentPath(input.associationPathName, context);
+  if (!binding || !associationLeaf) {
+    return null;
+  }
+  if (binding !== 'currentRecord' && binding !== 'associatedRecords') {
+    throwBadRequest(
+      `${context} cannot mix ${context}.binding='${binding}' with ${context}.associationPathName; use associatedRecords + associationField on popup collection blocks`,
+    );
+  }
+  const associationField = readOptionalString(input.associationField);
+  if (associationField && associationField !== associationLeaf) {
+    throwBadRequest(
+      `${context}.associationField '${associationField}' conflicts with ${context}.associationPathName '${readOptionalString(
+        input.associationPathName,
+      )}'`,
+    );
+  }
+  return {
+    binding: 'associatedRecords',
+    associationField: associationField || associationLeaf,
+  };
+}
+
+function readExecuteDslActionType(input: any) {
+  if (typeof input === 'string') {
+    return readString(input);
+  }
+  if (_.isPlainObject(input)) {
+    return readOptionalString(input.type);
+  }
+  return undefined;
+}
+
+function splitExecuteDslBlockActionsByScope(
+  block: FlowSurfaceExecuteDslBlockSpec,
+  context: string,
+): {
+  actions: any[];
+  recordActions: any[];
+} {
+  const rawActions = readOptionalItems(block.actions, `${context}.actions`);
+  const rawRecordActions = readOptionalItems(block.recordActions, `${context}.recordActions`);
+  const blockType = readOptionalString(block.type);
+  if (!blockType || !EXECUTE_DSL_RECORD_CAPABLE_BLOCK_TYPES.has(blockType)) {
+    return {
+      actions: rawActions,
+      recordActions: rawRecordActions,
+    };
+  }
+  const promotedRecordActions: any[] = [];
+  const remainingActions: any[] = [];
+  rawActions.forEach((action) => {
+    const actionType = readExecuteDslActionType(action);
+    if (actionType && EXECUTE_DSL_RECORD_ACTION_TYPES.has(actionType)) {
+      promotedRecordActions.push(action);
+      return;
+    }
+    remainingActions.push(action);
   });
+  return {
+    actions: remainingActions,
+    recordActions: [...rawRecordActions, ...promotedRecordActions],
+  };
 }
 
 function resolveAssetSettings(
@@ -170,8 +255,11 @@ function normalizeBlockResourceObject(input: Record<string, any>, context: strin
 
   const hasBinding = Object.prototype.hasOwnProperty.call(input, 'binding');
   if (hasBinding) {
-    const mixedRawKeys = EXECUTE_DSL_BLOCK_RESOURCE_RAW_ONLY_KEYS.filter((key) =>
-      Object.prototype.hasOwnProperty.call(input, key),
+    const normalizedAssociatedRecords = normalizeAssociatedRecordsBindingFromAssociationPath(input, context);
+    const mixedRawKeys = EXECUTE_DSL_BLOCK_RESOURCE_RAW_ONLY_KEYS.filter(
+      (key) =>
+        Object.prototype.hasOwnProperty.call(input, key) &&
+        !(normalizedAssociatedRecords && key === 'associationPathName'),
     );
     if (mixedRawKeys.length) {
       throwBadRequest(
@@ -179,10 +267,12 @@ function normalizeBlockResourceObject(input: Record<string, any>, context: strin
       );
     }
     return buildDefinedPayload({
-      binding: assertNonEmptyString(input.binding, `${context}.binding`) as FlowSurfaceResourceBindingKey,
+      binding:
+        normalizedAssociatedRecords?.binding ||
+        (assertNonEmptyString(input.binding, `${context}.binding`) as FlowSurfaceResourceBindingKey),
       dataSourceKey: readOptionalString(input.dataSourceKey),
       collectionName: readOptionalString(input.collectionName),
-      associationField: readOptionalString(input.associationField),
+      associationField: normalizedAssociatedRecords?.associationField || readOptionalString(input.associationField),
     }) as FlowSurfaceExecuteDslBlockResource;
   }
 
@@ -190,9 +280,10 @@ function normalizeBlockResourceObject(input: Record<string, any>, context: strin
     throwBadRequest(`${context}.associationField only works when ${context}.binding is provided`);
   }
 
+  const collectionName = readOptionalString(input.collectionName);
   const normalized = buildDefinedPayload({
-    dataSourceKey: readOptionalString(input.dataSourceKey),
-    collectionName: readOptionalString(input.collectionName),
+    dataSourceKey: readOptionalString(input.dataSourceKey) || (collectionName ? 'main' : undefined),
+    collectionName,
     associationName: readOptionalString(input.associationName),
     associationPathName: readOptionalString(input.associationPathName),
     sourceId: input.sourceId,
@@ -222,14 +313,18 @@ function buildBlockResource(block: FlowSurfaceExecuteDslBlockSpec, context: stri
 
   const binding = readOptionalString(block.binding) as FlowSurfaceResourceBindingKey | undefined;
   if (binding) {
-    if (Object.prototype.hasOwnProperty.call(block, 'associationPathName')) {
+    const normalizedAssociatedRecords = normalizeAssociatedRecordsBindingFromAssociationPath(
+      block as Record<string, any>,
+      context,
+    );
+    if (Object.prototype.hasOwnProperty.call(block, 'associationPathName') && !normalizedAssociatedRecords) {
       throwBadRequest(`${context} cannot mix ${context}.binding with ${context}.associationPathName`);
     }
     return buildDefinedPayload({
-      binding,
+      binding: normalizedAssociatedRecords?.binding || binding,
       dataSourceKey: readOptionalString(block.dataSourceKey),
       collectionName: readOptionalString(block.collection),
-      associationField: readOptionalString(block.associationField),
+      associationField: normalizedAssociatedRecords?.associationField || readOptionalString(block.associationField),
     });
   }
   if (Object.prototype.hasOwnProperty.call(block, 'associationField')) {
@@ -562,8 +657,7 @@ function compileBlocks(
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const fields = readOptionalItems(block.fields, `${blockContext}.fields`);
-    const actions = readOptionalItems(block.actions, `${blockContext}.actions`);
-    const recordActions = readOptionalItems(block.recordActions, `${blockContext}.recordActions`);
+    const { actions, recordActions } = splitExecuteDslBlockActionsByScope(block, blockContext);
     return buildDefinedPayload({
       key,
       type: readOptionalString(block.type),

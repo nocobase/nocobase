@@ -56,9 +56,11 @@ import {
   compileFlowSurfaceExecuteDslRequest,
   prepareFlowSurfaceExecuteDslDocument,
   resolveExecuteDslPageLocator,
+  type FlowSurfaceExecuteDslDocument,
   type FlowSurfaceExecuteDslProgram,
   type FlowSurfaceExecuteDslReplaceTargetInfo,
 } from './dsl/execute';
+import { EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS } from './dsl/private-utils';
 import {
   describeSurface as describePlanningSurface,
   executePlan as executePlanningPlan,
@@ -685,6 +687,22 @@ export class FlowSurfacesService {
       appends: ['children'],
       transaction,
     });
+  }
+
+  private async findMenuGroupRoutesByTitle(title: string, transaction?: any) {
+    const normalizedTitle = String(title || '').trim();
+    if (!normalizedTitle) {
+      return [];
+    }
+    return _.castArray(
+      await this.db.getRepository('desktopRoutes').find({
+        filter: {
+          type: 'group',
+          title: normalizedTitle,
+        },
+        transaction,
+      }),
+    );
   }
 
   private async assertMenuParentIsGroup(parentMenuRouteId: string | number | null | undefined, transaction?: any) {
@@ -2763,11 +2781,70 @@ export class FlowSurfacesService {
     };
   }
 
+  private async resolveExecuteDslCreateNavigationGroup(
+    document: FlowSurfaceExecuteDslDocument,
+    transaction?: any,
+  ): Promise<FlowSurfaceExecuteDslDocument> {
+    if (document.mode !== 'create' || !_.isPlainObject(document.navigation?.group)) {
+      return document;
+    }
+
+    if (!_.isUndefined(document.navigation.group.routeId)) {
+      return document;
+    }
+
+    const groupTitle = String(document.navigation.group.title || '').trim();
+    if (!groupTitle) {
+      return document;
+    }
+
+    const matchedRoutes = await this.findMenuGroupRoutesByTitle(groupTitle, transaction);
+    if (!matchedRoutes.length) {
+      return document;
+    }
+    if (matchedRoutes.length > 1) {
+      throwBadRequest(
+        `flowSurfaces executeDsl navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
+      );
+    }
+
+    const reusedMetadataFields = EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS.filter(
+      (key) => !_.isUndefined(document.navigation?.group?.[key]),
+    );
+    if (reusedMetadataFields.length) {
+      throwBadRequest(
+        `flowSurfaces executeDsl navigation.group.title '${groupTitle}' matched an existing menu group; do not also pass ${reusedMetadataFields
+          .map((key) => `navigation.group.${key}`)
+          .join(
+            ', ',
+          )} when reusing by title. Same-title reuse is title-only. Keep only navigation.group.title or use navigation.group.routeId for exact targeting, and call flowSurfaces:updateMenu separately if existing group metadata must change`,
+      );
+    }
+
+    const routeId = this.readRouteField(matchedRoutes[0], 'id');
+    if (_.isNil(routeId) || routeId === '') {
+      throwBadRequest(
+        `flowSurfaces executeDsl matched navigation group '${groupTitle}' is missing route id; pass navigation.group.routeId explicitly`,
+      );
+    }
+
+    return {
+      ...document,
+      navigation: {
+        ...document.navigation,
+        group: {
+          routeId,
+        },
+      },
+    };
+  }
+
   private async prepareExecuteDslRequest(
     values: Record<string, any>,
     transaction?: any,
   ): Promise<FlowSurfaceExecuteDslProgram> {
-    const document = prepareFlowSurfaceExecuteDslDocument(values);
+    const initialDocument = prepareFlowSurfaceExecuteDslDocument(values);
+    const document = await this.resolveExecuteDslCreateNavigationGroup(initialDocument, transaction);
     const replaceTarget =
       document.mode === 'replace' && document.target
         ? await this.resolveExecuteDslReplaceTargetInfo(document.target.pageSchemaUid, transaction)
@@ -6747,12 +6824,133 @@ export class FlowSurfacesService {
     });
   }
 
-  private buildDefaultActionPopupBlocks(actionNode: any, popupProfile: FlowSurfacePopupBlockProfile | null) {
+  private buildDefaultActionPopupNamespace(actionNode: any) {
+    if (!actionNode?.uid) {
+      return undefined;
+    }
+    return normalizeFlowSurfaceComposeKey(
+      `defaultPopup_${actionNode.uid}`,
+      `flowSurfaces default popup for action '${actionNode?.uid || 'unknown'}'`,
+    );
+  }
+
+  private buildDefaultActionPopupKeyMap(actionNode: any, namespace?: string) {
+    const actionConfig = getFlowSurfaceDefaultActionPopupConfigByUse(actionNode?.use);
+    if (!actionConfig || !namespace) {
+      return new Map<string, string>();
+    }
+    const keyMap = new Map<string, string>();
+    keyMap.set(actionConfig.blockKey, `${namespace}.${actionConfig.blockKey}`);
+    if (actionConfig.submitAction?.key) {
+      keyMap.set(actionConfig.submitAction.key, `${namespace}.${actionConfig.submitAction.key}`);
+    }
+    return keyMap;
+  }
+
+  private remapDefaultActionPopupField(field: any, namespace: string, context: string) {
+    if (typeof field === 'string') {
+      const fieldPath = field.trim();
+      if (!fieldPath) {
+        return field;
+      }
+      return {
+        key: normalizeFlowSurfaceComposeKey(`${namespace}.${fieldPath}`, `${context}.key`),
+        fieldPath,
+      };
+    }
+    if (!_.isPlainObject(field)) {
+      return _.cloneDeep(field);
+    }
+    const rawKey =
+      (typeof field.key === 'string' && field.key.trim()) ||
+      (typeof field.fieldPath === 'string' && field.fieldPath.trim()) ||
+      (typeof field.type === 'string' && field.type.trim()) ||
+      '';
+    if (!rawKey) {
+      return _.cloneDeep(field);
+    }
+    return {
+      ..._.cloneDeep(field),
+      key: normalizeFlowSurfaceComposeKey(`${namespace}.${rawKey}`, `${context}.key`),
+    };
+  }
+
+  private remapDefaultActionPopupBlocks(blocks: any[], keyMap: ReadonlyMap<string, string>, namespace?: string) {
+    return _.castArray(blocks || []).map((block) => {
+      const blockKey = typeof block?.key === 'string' ? block.key.trim() : '';
+      const remappedActions = _.castArray(block?.actions || []).map((action: any) => {
+        const actionKey = typeof action?.key === 'string' ? action.key.trim() : '';
+        if (!actionKey || !keyMap.has(actionKey)) {
+          return _.cloneDeep(action);
+        }
+        return {
+          ..._.cloneDeep(action),
+          key: keyMap.get(actionKey),
+        };
+      });
+      const remappedFields = _.castArray(block?.fields || []).map((field: any, fieldIndex: number) => {
+        if (!namespace) {
+          return _.cloneDeep(field);
+        }
+        return this.remapDefaultActionPopupField(
+          field,
+          namespace,
+          `flowSurfaces default popup block '${blockKey || block?.type || 'unknown'}' field #${fieldIndex + 1}`,
+        );
+      });
+      return _.pickBy(
+        {
+          ..._.cloneDeep(block),
+          key: blockKey && keyMap.has(blockKey) ? keyMap.get(blockKey) : block?.key,
+          fields: remappedFields.length ? remappedFields : undefined,
+          actions: remappedActions.length ? remappedActions : undefined,
+        },
+        (value) => !_.isUndefined(value),
+      );
+    });
+  }
+
+  private remapDefaultActionPopupLayout(layout: Record<string, any> | undefined, keyMap: ReadonlyMap<string, string>) {
+    if (!layout || !keyMap.size) {
+      return layout;
+    }
+    const nextLayout = _.cloneDeep(layout);
+    nextLayout.rows = _.castArray(nextLayout.rows || []).map((row: any) =>
+      _.castArray(row || []).map((cell: any) => {
+        if (typeof cell === 'string') {
+          const normalized = cell.trim();
+          return keyMap.get(normalized) || cell;
+        }
+        if (_.isPlainObject(cell) && typeof cell.key === 'string') {
+          const normalized = cell.key.trim();
+          if (keyMap.has(normalized)) {
+            return {
+              ...cell,
+              key: keyMap.get(normalized),
+            };
+          }
+        }
+        return cell;
+      }),
+    );
+    return nextLayout;
+  }
+
+  private buildDefaultActionPopupBlocks(
+    actionNode: any,
+    popupProfile: FlowSurfacePopupBlockProfile | null,
+    keyMap: ReadonlyMap<string, string>,
+    namespace?: string,
+  ) {
     const fieldPaths = this.buildDefaultActionPopupFieldPaths({
       actionUse: actionNode?.use,
       popupProfile,
     });
-    return buildFlowSurfaceDefaultActionPopupBlocks(actionNode?.use, fieldPaths);
+    return this.remapDefaultActionPopupBlocks(
+      buildFlowSurfaceDefaultActionPopupBlocks(actionNode?.use, fieldPaths),
+      keyMap,
+      namespace,
+    );
   }
 
   private buildDefaultActionPopupComposeValues(
@@ -6760,13 +6958,15 @@ export class FlowSurfacesService {
     popupProfile: FlowSurfacePopupBlockProfile,
     popup: Record<string, any> | undefined,
   ) {
+    const namespace = this.buildDefaultActionPopupNamespace(actionNode);
+    const keyMap = this.buildDefaultActionPopupKeyMap(actionNode, namespace);
     return {
       target: {
         uid: actionNode.uid,
       },
       mode: popup?.mode || 'replace',
-      blocks: this.buildDefaultActionPopupBlocks(actionNode, popupProfile),
-      layout: popup?.layout,
+      blocks: this.buildDefaultActionPopupBlocks(actionNode, popupProfile, keyMap, namespace),
+      layout: this.remapDefaultActionPopupLayout(popup?.layout, keyMap),
     };
   }
 

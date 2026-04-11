@@ -2488,8 +2488,8 @@ describe('flowSurfaces resource', () => {
         'field.department.title.wrapper',
       ]),
     );
-    expect(Object.values(bundle.keys).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
-    expect(Object.values(bundle.keys).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
+    expect(Object.values(bundle.refs).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
+    expect(Object.values(bundle.refs).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
 
     const addNewReadback = await getSurface(rootAgent, {
       uid: addNewAction.uid,
@@ -2521,6 +2521,7 @@ describe('flowSurfaces resource', () => {
     expect(viewPopupTab?.props?.title).toBe('Details');
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(viewPopupBlock?.subModels?.actions).toBeUndefined();
     expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
     expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
 
