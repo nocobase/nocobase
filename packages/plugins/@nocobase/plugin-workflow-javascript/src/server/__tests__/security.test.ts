@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import path from 'path';
+
 import winston from 'winston';
 
 import { JOB_STATUS } from '@nocobase/plugin-workflow';
@@ -453,7 +455,7 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
     const result = await ScriptInstruction.run(script, {}, { logger });
 
     expect(result.status).toBe(JOB_STATUS.RESOLVED);
-    expect(result.result.join).toBe('/a/b/c');
+    expect(result.result.join).toBe(path.join('/a', 'b', 'c'));
     expect(result.result.resolve).toBe(true);
     expect(result.result.constructorIsNull).toBe(true);
   });
