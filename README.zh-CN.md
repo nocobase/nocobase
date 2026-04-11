@@ -9,11 +9,12 @@ https://github.com/user-attachments/assets/7df65fa1-01e4-4a78-9b36-56b922da4f96
 
 ## 目录
 
-- [什么是 NocoBase](#什么是-nocobase)
-- [发布说明](#发布说明)
-- [特色功能](#特色功能)
+- [NocoBase 是什么](#nocobase-是什么)
+- [发布日志](#发布日志)
+- [与众不同之处](#与众不同之处)
 - [安装](#安装)
-- [NocoBase 的工作原理](#nocobase-的工作原理)
+- [NocoBase 如何工作](#nocobase-如何工作)
+
 
 ## NocoBase 是什么
 
