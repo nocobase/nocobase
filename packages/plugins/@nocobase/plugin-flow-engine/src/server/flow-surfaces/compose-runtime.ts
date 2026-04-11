@@ -10,13 +10,13 @@
 import { throwConflict } from './errors';
 import { isFlowSurfaceDefaultActionPopupType } from './default-action-popup';
 import {
-  resolveComposeTargetRef,
+  resolveComposeTargetKey,
   type FlowSurfaceCompiledComposePlan,
   type FlowSurfaceComposeNormalizedActionSpec,
   type FlowSurfaceComposeNormalizedBlockSpec,
   type FlowSurfaceComposeNormalizedFieldSpec,
   type FlowSurfaceComposeObject,
-  type FlowSurfaceComposeTargetRef,
+  type FlowSurfaceComposeTargetKey,
 } from './compose-compiler';
 
 export type FlowSurfaceComposeBlockResult = {
@@ -52,7 +52,7 @@ export type FlowSurfaceComposeRuntimeBlockState = {
 };
 
 export type FlowSurfaceComposeRuntimeState = {
-  refRefs: Record<string, FlowSurfaceComposeTargetRef & Partial<FlowSurfaceComposeBlockResult>>;
+  keyMap: Record<string, FlowSurfaceComposeTargetKey & Partial<FlowSurfaceComposeBlockResult>>;
   blocks: FlowSurfaceComposeRuntimeBlockState[];
 };
 
@@ -62,7 +62,7 @@ export type FlowSurfaceComposeExecutionResult = {
   };
   mode: FlowSurfaceCompiledComposePlan['mode'];
   blocks: Array<{
-    ref: string;
+    key: string;
     type?: string;
     uid: string;
     gridUid?: string;
@@ -114,10 +114,10 @@ export type FlowSurfaceComposeRuntimeDeps = {
     blockResult: FlowSurfaceComposeBlockResult,
   ) => Promise<FlowSurfaceComposeActionResult>;
   applyActionPopup?: (actionName: string, actionUid: string, popup?: FlowSurfaceComposeObject) => Promise<void>;
-  collectActionRefs?: (actionUid: string) => Promise<Record<string, unknown>>;
+  collectActionKeys?: (actionUid: string) => Promise<Record<string, unknown>>;
   buildExplicitLayoutPayload?: (input: {
     layout?: FlowSurfaceComposeObject;
-    createdByRef: Record<string, FlowSurfaceComposeTargetRef & Partial<FlowSurfaceComposeBlockResult>>;
+    createdByKey: Record<string, FlowSurfaceComposeTargetKey & Partial<FlowSurfaceComposeBlockResult>>;
     gridUid: string;
   }) => Promise<Record<string, unknown>> | Record<string, unknown>;
   buildAppendLayoutPayload?: (input: {
@@ -150,7 +150,7 @@ export async function executeComposeRuntime(
     },
     mode: plan.mode,
     blocks: state.blocks.map((block) => ({
-      ref: block.spec.ref,
+      key: block.spec.key,
       type: block.spec.type,
       uid: block.result.uid,
       gridUid: block.result.gridUid,
@@ -167,7 +167,7 @@ export async function executeComposeRuntime(
 
 export function createComposeRuntimeState(): FlowSurfaceComposeRuntimeState {
   return {
-    refRefs: {},
+    keyMap: {},
     blocks: [],
   };
 }
@@ -238,7 +238,7 @@ async function createBlocks(
       actionResults: [],
       recordActionResults: [],
     });
-    state.refRefs[blockTask.ref] = {
+    state.keyMap[blockTask.key] = {
       uid: result.uid,
       gridUid: result.gridUid,
       itemUid: result.itemUid,
@@ -267,7 +267,7 @@ async function createFields(
   state: FlowSurfaceComposeRuntimeState,
 ) {
   for (const fieldTask of plan.fields) {
-    const block = requireBlockState(fieldTask.blockRef, state);
+    const block = requireBlockState(fieldTask.blockKey, state);
     const targetUid =
       fieldTask.containerSource === 'item' ? block.result.itemUid || block.result.uid : block.result.uid;
     let createdField: FlowSurfaceComposeFieldResult | null;
@@ -278,11 +278,11 @@ async function createFields(
             uid: targetUid,
           },
           ...fieldTask.payload,
-          ...(readComposeFieldTargetRef(fieldTask.spec.target)
+          ...(readComposeFieldTargetKey(fieldTask.spec.target)
             ? {
-                defaultTargetUid: resolveComposeTargetRef(
-                  readComposeFieldTargetRef(fieldTask.spec.target) as string,
-                  state.refRefs,
+                defaultTargetUid: resolveComposeTargetKey(
+                  readComposeFieldTargetKey(fieldTask.spec.target) as string,
+                  state.keyMap,
                   'field',
                 ),
               }
@@ -323,7 +323,7 @@ async function createActions(
   state: FlowSurfaceComposeRuntimeState,
 ) {
   for (const actionTask of plan.actions) {
-    const block = requireBlockState(actionTask.blockRef, state);
+    const block = requireBlockState(actionTask.blockKey, state);
     const createdAction = await deps.createAction(
       {
         target: {
@@ -342,8 +342,8 @@ async function createActions(
       await deps.applyActionPopup('compose action', createdAction.uid, actionTask.spec.popup);
     }
 
-    const actionRefs = deps.collectActionRefs ? await deps.collectActionRefs(createdAction.uid) : {};
-    block.actionResults.push(buildActionResultSummary(actionTask.spec, createdAction, actionRefs));
+    const actionKeys = deps.collectActionKeys ? await deps.collectActionKeys(createdAction.uid) : {};
+    block.actionResults.push(buildActionResultSummary(actionTask.spec, createdAction, actionKeys));
   }
 }
 
@@ -353,7 +353,7 @@ async function createRecordActions(
   state: FlowSurfaceComposeRuntimeState,
 ) {
   for (const recordActionTask of plan.recordActions) {
-    const block = requireBlockState(recordActionTask.blockRef, state);
+    const block = requireBlockState(recordActionTask.blockKey, state);
     const createdAction = await deps.createRecordAction(
       {
         target: {
@@ -367,8 +367,8 @@ async function createRecordActions(
 
     if (!block.result.actionsColumnUid && block.spec.type === 'table' && createdAction.parentUid) {
       block.result.actionsColumnUid = createdAction.parentUid;
-      state.refRefs[recordActionTask.blockRef] = {
-        ...state.refRefs[recordActionTask.blockRef],
+      state.keyMap[recordActionTask.blockKey] = {
+        ...state.keyMap[recordActionTask.blockKey],
         actionsColumnUid: createdAction.parentUid,
       };
     }
@@ -380,8 +380,8 @@ async function createRecordActions(
       await deps.applyActionPopup('compose recordAction', createdAction.uid, recordActionTask.spec.popup);
     }
 
-    const actionRefs = deps.collectActionRefs ? await deps.collectActionRefs(createdAction.uid) : {};
-    block.recordActionResults.push(buildActionResultSummary(recordActionTask.spec, createdAction, actionRefs));
+    const actionKeys = deps.collectActionKeys ? await deps.collectActionKeys(createdAction.uid) : {};
+    block.recordActionResults.push(buildActionResultSummary(recordActionTask.spec, createdAction, actionKeys));
   }
 }
 
@@ -401,7 +401,7 @@ async function applyComposeLayout(
     requireComposeRuntimeDep('setLayout', setLayout, 'explicit layout');
     const layoutPayload = await buildExplicitLayoutPayload({
       layout: plan.layoutPlan.layout,
-      createdByRef: state.refRefs,
+      createdByKey: state.keyMap,
       gridUid: plan.gridUid,
     });
     return setLayout({
@@ -429,11 +429,11 @@ async function applyComposeLayout(
   });
 }
 
-function requireBlockState(blockRef: string, state: FlowSurfaceComposeRuntimeState) {
-  const matched = state.blocks.find((block) => block.spec.ref === blockRef);
+function requireBlockState(blockKey: string, state: FlowSurfaceComposeRuntimeState) {
+  const matched = state.blocks.find((block) => block.spec.key === blockKey);
   if (!matched) {
     throwConflict(
-      `flowSurfaces compose block '${blockRef}' is missing from runtime state`,
+      `flowSurfaces compose block '${blockKey}' is missing from runtime state`,
       'FLOW_SURFACE_COMPOSE_BLOCK_MISSING',
     );
   }
@@ -445,7 +445,7 @@ function buildFieldResultSummary(
   createdField: FlowSurfaceComposeFieldResult,
 ) {
   return {
-    ref: spec.ref,
+    key: spec.key,
     uid: createdField.uid,
     ...(spec.type ? { type: spec.type } : {}),
     ...(spec.renderer ? { renderer: spec.renderer } : {}),
@@ -464,15 +464,15 @@ function buildFieldResultSummary(
 function buildActionResultSummary(
   spec: FlowSurfaceComposeNormalizedActionSpec,
   createdAction: FlowSurfaceComposeActionResult,
-  actionRefs: Record<string, unknown>,
+  actionKeys: Record<string, unknown>,
 ) {
   return {
-    ref: spec.ref,
+    key: spec.key,
     type: spec.type,
     scope: createdAction.scope,
     uid: createdAction.uid,
     parentUid: createdAction.parentUid,
-    ...actionRefs,
+    ...actionKeys,
   };
 }
 
@@ -484,7 +484,7 @@ function hasPopupAfterEffect(value: FlowSurfaceComposeObject | undefined) {
   return typeof value !== 'undefined';
 }
 
-function readComposeFieldTargetRef(target: FlowSurfaceComposeNormalizedFieldSpec['target']) {
+function readComposeFieldTargetKey(target: FlowSurfaceComposeNormalizedFieldSpec['target']) {
   if (typeof target === 'string') {
     const normalized = target.trim();
     return normalized || undefined;
@@ -492,7 +492,7 @@ function readComposeFieldTargetRef(target: FlowSurfaceComposeNormalizedFieldSpec
   if (!target || typeof target !== 'object') {
     return undefined;
   }
-  const ref = typeof (target as any).composeRef === 'string' ? (target as any).composeRef : (target as any).ref;
-  const normalized = typeof ref === 'string' ? ref.trim() : '';
+  const key = typeof (target as any).composeKey === 'string' ? (target as any).composeKey : (target as any).key;
+  const normalized = typeof key === 'string' ? key.trim() : '';
   return normalized || undefined;
 }

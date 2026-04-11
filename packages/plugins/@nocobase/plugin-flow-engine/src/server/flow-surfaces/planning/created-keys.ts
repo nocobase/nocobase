@@ -9,55 +9,55 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
-import { FLOW_SURFACE_RESERVED_REFS } from './ref-registry';
+import { FLOW_SURFACE_RESERVED_KEYS } from './key-registry';
 
-export type FlowSurfaceCreatedRefSpec = {
-  ref: string;
+export type FlowSurfaceCreatedKeySpec = {
+  key: string;
   resultPath: string;
 };
 
-type CollectFlowSurfaceCreatedRefsOptions = {
-  targetSelectorRef?: string;
+type CollectFlowSurfaceCreatedKeysOptions = {
+  targetSelectorKey?: string;
 };
 
-export function normalizeFlowSurfaceCreatedRef(ref: any, context: string) {
-  const normalized = typeof ref === 'string' ? ref.trim() : String(ref || '').trim();
+export function normalizeFlowSurfaceCreatedKey(key: any, context: string) {
+  const normalized = typeof key === 'string' ? key.trim() : String(key || '').trim();
   if (!normalized) {
-    throwBadRequest(`${context} ref cannot be empty`);
+    throwBadRequest(`${context} key cannot be empty`);
   }
-  if (FLOW_SURFACE_RESERVED_REFS.has(normalized)) {
-    throwBadRequest(`${context} ref '${normalized}' is reserved`);
+  if (FLOW_SURFACE_RESERVED_KEYS.has(normalized)) {
+    throwBadRequest(`${context} key '${normalized}' is reserved`);
   }
   return normalized;
 }
 
-export function collectFlowSurfaceCreatedRefs(
+export function collectFlowSurfaceCreatedKeys(
   action: string,
   values: any,
-  options: CollectFlowSurfaceCreatedRefsOptions = {},
-): FlowSurfaceCreatedRefSpec[] {
+  options: CollectFlowSurfaceCreatedKeysOptions = {},
+): FlowSurfaceCreatedKeySpec[] {
   if (!_.isPlainObject(values)) {
     return [];
   }
   switch (action) {
     case 'createPage':
-      return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+      return collectBaseKey(values.key, `flowSurfaces ${action}`, [
         ['', 'pageUid'],
         ['tab', 'tabSchemaUid'],
         ['grid', 'gridUid'],
       ]);
     case 'addTab':
-      return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+      return collectBaseKey(values.key, `flowSurfaces ${action}`, [
         ['', 'tabSchemaUid'],
         ['grid', 'gridUid'],
       ]);
     case 'addPopupTab':
-      return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+      return collectBaseKey(values.key, `flowSurfaces ${action}`, [
         ['', 'popupTabUid'],
         ['grid', 'popupGridUid'],
       ]);
     case 'addBlock':
-      return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+      return collectBaseKey(values.key, `flowSurfaces ${action}`, [
         ['', 'uid'],
         ['grid', 'blockGridUid'],
         ['item', 'itemUid'],
@@ -66,13 +66,13 @@ export function collectFlowSurfaceCreatedRefs(
       ]);
     case 'addField':
       return [
-        ...collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+        ...collectBaseKey(values.key, `flowSurfaces ${action}`, [
           ['', 'uid'],
           ['field', 'fieldUid'],
           ['innerField', 'innerFieldUid'],
         ]),
-        ...(shouldCollectAddFieldPopupRefs(values)
-          ? collectDerivedRef(values.ref, `flowSurfaces ${action}`, [
+        ...(shouldCollectAddFieldPopupKeys(values)
+          ? collectDerivedKey(values.key, `flowSurfaces ${action}`, [
               ['popupPage', 'popupPageUid'],
               ['popupTab', 'popupTabUid'],
               ['popupGrid', 'popupGridUid'],
@@ -81,7 +81,7 @@ export function collectFlowSurfaceCreatedRefs(
       ];
     case 'addAction':
     case 'addRecordAction':
-      return collectBaseRef(values.ref, `flowSurfaces ${action}`, [
+      return collectBaseKey(values.key, `flowSurfaces ${action}`, [
         ['', 'uid'],
         ['assignForm', 'assignFormUid'],
         ['assignFormGrid', 'assignFormGridUid'],
@@ -90,88 +90,88 @@ export function collectFlowSurfaceCreatedRefs(
         ['popupGrid', 'popupGridUid'],
       ]);
     case 'configure':
-      return collectConfigureCreatedRefs(values, options);
+      return collectConfigureCreatedKeys(values, options);
     case 'compose':
-      return collectComposeCreatedRefs(values);
+      return collectComposeCreatedKeys(values);
     default:
       return [];
   }
 }
 
-function collectBaseRef(
-  refValue: any,
+function collectBaseKey(
+  keyValue: any,
   context: string,
   defs: Array<[suffix: string, resultPath: string]>,
-): FlowSurfaceCreatedRefSpec[] {
-  if (_.isUndefined(refValue)) {
+): FlowSurfaceCreatedKeySpec[] {
+  if (_.isUndefined(keyValue)) {
     return [];
   }
-  const baseRef = normalizeFlowSurfaceCreatedRef(refValue, context);
+  const baseKey = normalizeFlowSurfaceCreatedKey(keyValue, context);
   return defs.map(([suffix, resultPath]) => ({
-    ref: suffix ? `${baseRef}.${suffix}` : baseRef,
+    key: suffix ? `${baseKey}.${suffix}` : baseKey,
     resultPath,
   }));
 }
 
-function collectDerivedRef(
-  refValue: any,
+function collectDerivedKey(
+  keyValue: any,
   context: string,
   defs: Array<[suffix: string, resultPath: string]>,
-): FlowSurfaceCreatedRefSpec[] {
-  if (_.isUndefined(refValue)) {
+): FlowSurfaceCreatedKeySpec[] {
+  if (_.isUndefined(keyValue)) {
     return [];
   }
-  const baseRef = normalizeFlowSurfaceCreatedRef(refValue, context);
+  const baseKey = normalizeFlowSurfaceCreatedKey(keyValue, context);
   return defs.map(([suffix, resultPath]) => ({
-    ref: `${baseRef}.${suffix}`,
+    key: `${baseKey}.${suffix}`,
     resultPath,
   }));
 }
 
-function shouldCollectAddFieldPopupRefs(values: any) {
+function shouldCollectAddFieldPopupKeys(values: any) {
   return !_.isUndefined(values?.popup);
 }
 
-function inferConfigureCreatedRefBase(targetSelectorRef: any) {
-  if (_.isUndefined(targetSelectorRef)) {
+function inferConfigureCreatedKeyBase(targetSelectorKey: any) {
+  if (_.isUndefined(targetSelectorKey)) {
     return undefined;
   }
-  const normalizedRef = normalizeFlowSurfaceCreatedRef(targetSelectorRef, 'flowSurfaces configure target ref');
-  if (normalizedRef.endsWith('.innerField')) {
-    return normalizedRef.slice(0, -'.innerField'.length);
+  const normalizedKey = normalizeFlowSurfaceCreatedKey(targetSelectorKey, 'flowSurfaces configure target key');
+  if (normalizedKey.endsWith('.innerField')) {
+    return normalizedKey.slice(0, -'.innerField'.length);
   }
-  if (normalizedRef.endsWith('.field')) {
-    return normalizedRef.slice(0, -'.field'.length);
+  if (normalizedKey.endsWith('.field')) {
+    return normalizedKey.slice(0, -'.field'.length);
   }
   return undefined;
 }
 
-function collectConfigureCreatedRefs(
+function collectConfigureCreatedKeys(
   values: any,
-  options: CollectFlowSurfaceCreatedRefsOptions = {},
-): FlowSurfaceCreatedRefSpec[] {
+  options: CollectFlowSurfaceCreatedKeysOptions = {},
+): FlowSurfaceCreatedKeySpec[] {
   if (!_.isPlainObject(values?.changes?.openView)) {
     return [];
   }
-  const refBase = !_.isUndefined(values.ref) ? values.ref : inferConfigureCreatedRefBase(options.targetSelectorRef);
-  if (_.isUndefined(refBase)) {
+  const keyBase = !_.isUndefined(values.key) ? values.key : inferConfigureCreatedKeyBase(options.targetSelectorKey);
+  if (_.isUndefined(keyBase)) {
     return [];
   }
-  return collectDerivedRef(refBase, 'flowSurfaces configure', [
+  return collectDerivedKey(keyBase, 'flowSurfaces configure', [
     ['popupPage', 'popupPageUid'],
     ['popupTab', 'popupTabUid'],
     ['popupGrid', 'popupGridUid'],
   ]);
 }
 
-function collectComposeCreatedRefs(values: any): FlowSurfaceCreatedRefSpec[] {
+function collectComposeCreatedKeys(values: any): FlowSurfaceCreatedKeySpec[] {
   const blocks = _.castArray(values?.blocks || []);
-  const specs: FlowSurfaceCreatedRefSpec[] = [];
+  const specs: FlowSurfaceCreatedKeySpec[] = [];
   blocks.forEach((block: any, blockIndex: number) => {
     const blockContext = `flowSurfaces compose block #${blockIndex + 1}`;
-    if (_.isPlainObject(block) && !_.isUndefined(block.ref)) {
+    if (_.isPlainObject(block) && !_.isUndefined(block.key)) {
       specs.push(
-        ...collectBaseRef(block.ref, blockContext, [
+        ...collectBaseKey(block.key, blockContext, [
           ['', `blocks.${blockIndex}.uid`],
           ['grid', `blocks.${blockIndex}.gridUid`],
           ['item', `blocks.${blockIndex}.itemUid`],
@@ -181,12 +181,12 @@ function collectComposeCreatedRefs(values: any): FlowSurfaceCreatedRefSpec[] {
       );
     }
     _.castArray(block?.fields || []).forEach((field: any, fieldIndex: number) => {
-      const fieldRef = resolveComposeFieldRef(field, `${blockContext} field #${fieldIndex + 1}`);
-      if (!fieldRef) {
+      const fieldKey = resolveComposeFieldKey(field, `${blockContext} field #${fieldIndex + 1}`);
+      if (!fieldKey) {
         return;
       }
       specs.push(
-        ...collectBaseRef(fieldRef, `${blockContext} field #${fieldIndex + 1}`, [
+        ...collectBaseKey(fieldKey, `${blockContext} field #${fieldIndex + 1}`, [
           ['', `blocks.${blockIndex}.fields.${fieldIndex}.uid`],
           ['field', `blocks.${blockIndex}.fields.${fieldIndex}.fieldUid`],
           ['innerField', `blocks.${blockIndex}.fields.${fieldIndex}.innerFieldUid`],
@@ -197,12 +197,12 @@ function collectComposeCreatedRefs(values: any): FlowSurfaceCreatedRefSpec[] {
       );
     });
     _.castArray(block?.actions || []).forEach((action: any, actionIndex: number) => {
-      const actionRef = resolveComposeActionRef(action, `${blockContext} action #${actionIndex + 1}`);
-      if (!actionRef) {
+      const actionKey = resolveComposeActionKey(action, `${blockContext} action #${actionIndex + 1}`);
+      if (!actionKey) {
         return;
       }
       specs.push(
-        ...collectBaseRef(actionRef, `${blockContext} action #${actionIndex + 1}`, [
+        ...collectBaseKey(actionKey, `${blockContext} action #${actionIndex + 1}`, [
           ['', `blocks.${blockIndex}.actions.${actionIndex}.uid`],
           ['assignForm', `blocks.${blockIndex}.actions.${actionIndex}.assignFormUid`],
           ['assignFormGrid', `blocks.${blockIndex}.actions.${actionIndex}.assignFormGridUid`],
@@ -213,12 +213,12 @@ function collectComposeCreatedRefs(values: any): FlowSurfaceCreatedRefSpec[] {
       );
     });
     _.castArray(block?.recordActions || []).forEach((action: any, actionIndex: number) => {
-      const actionRef = resolveComposeActionRef(action, `${blockContext} recordAction #${actionIndex + 1}`);
-      if (!actionRef) {
+      const actionKey = resolveComposeActionKey(action, `${blockContext} recordAction #${actionIndex + 1}`);
+      if (!actionKey) {
         return;
       }
       specs.push(
-        ...collectBaseRef(actionRef, `${blockContext} recordAction #${actionIndex + 1}`, [
+        ...collectBaseKey(actionKey, `${blockContext} recordAction #${actionIndex + 1}`, [
           ['', `blocks.${blockIndex}.recordActions.${actionIndex}.uid`],
           ['assignForm', `blocks.${blockIndex}.recordActions.${actionIndex}.assignFormUid`],
           ['assignFormGrid', `blocks.${blockIndex}.recordActions.${actionIndex}.assignFormGridUid`],
@@ -232,9 +232,9 @@ function collectComposeCreatedRefs(values: any): FlowSurfaceCreatedRefSpec[] {
   return specs;
 }
 
-function resolveComposeFieldRef(field: any, context: string) {
+function resolveComposeFieldKey(field: any, context: string) {
   if (typeof field === 'string') {
-    return normalizeFlowSurfaceCreatedRef(field, context);
+    return normalizeFlowSurfaceCreatedKey(field, context);
   }
   if (!_.isPlainObject(field)) {
     return undefined;
@@ -242,58 +242,58 @@ function resolveComposeFieldRef(field: any, context: string) {
   const semanticType = String(field.type || '').trim();
   const fieldPath = String(field.fieldPath || '').trim();
   const renderer = typeof field.renderer === 'undefined' ? undefined : String(field.renderer || '').trim();
-  const rawRef = String(field.ref || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim();
-  return rawRef ? normalizeFlowSurfaceCreatedRef(rawRef, context) : undefined;
+  const rawKey = String(field.key || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim();
+  return rawKey ? normalizeFlowSurfaceCreatedKey(rawKey, context) : undefined;
 }
 
-function resolveComposeActionRef(action: any, context: string) {
+function resolveComposeActionKey(action: any, context: string) {
   if (typeof action === 'string') {
-    return normalizeFlowSurfaceCreatedRef(action, context);
+    return normalizeFlowSurfaceCreatedKey(action, context);
   }
   if (!_.isPlainObject(action)) {
     return undefined;
   }
-  const rawRef = String(action.ref || action.type || '').trim();
-  return rawRef ? normalizeFlowSurfaceCreatedRef(rawRef, context) : undefined;
+  const rawKey = String(action.key || action.type || '').trim();
+  return rawKey ? normalizeFlowSurfaceCreatedKey(rawKey, context) : undefined;
 }
 
-export function assertNoDuplicateFlowSurfaceCreatedRefs(
-  specs: FlowSurfaceCreatedRefSpec[],
+export function assertNoDuplicateFlowSurfaceCreatedKeys(
+  specs: FlowSurfaceCreatedKeySpec[],
   context: string,
-  options: { existingRefs?: Iterable<string>; reservedNames?: Iterable<string> } = {},
+  options: { existingKeys?: Iterable<string>; reservedNames?: Iterable<string> } = {},
 ) {
   const seen = new Map<string, number>();
-  const existing = new Set(options.existingRefs || []);
+  const existing = new Set(options.existingKeys || []);
   const reservedNames = new Set(options.reservedNames || []);
   specs.forEach((spec, index) => {
-    if (reservedNames.has(spec.ref)) {
-      throwBadRequest(`${context} ref '${spec.ref}' conflicts with an existing step id`);
+    if (reservedNames.has(spec.key)) {
+      throwBadRequest(`${context} key '${spec.key}' conflicts with an existing step id`);
     }
-    if (existing.has(spec.ref)) {
-      throwBadRequest(`${context} ref '${spec.ref}' is already defined`);
+    if (existing.has(spec.key)) {
+      throwBadRequest(`${context} key '${spec.key}' is already defined`);
     }
-    const previousIndex = seen.get(spec.ref);
+    const previousIndex = seen.get(spec.key);
     if (typeof previousIndex === 'number') {
-      throwBadRequest(`${context} ref '${spec.ref}' is duplicated at #${previousIndex + 1} and #${index + 1}`);
+      throwBadRequest(`${context} key '${spec.key}' is duplicated at #${previousIndex + 1} and #${index + 1}`);
     }
-    seen.set(spec.ref, index);
+    seen.set(spec.key, index);
   });
 }
 
-export function registerFlowSurfaceCreatedRefs(
+export function registerFlowSurfaceCreatedKeys(
   result: any,
-  specs: FlowSurfaceCreatedRefSpec[],
-  refs: Map<string, any>,
+  specs: FlowSurfaceCreatedKeySpec[],
+  keys: Map<string, any>,
 ) {
-  const registered = resolveFlowSurfaceCreatedRefResults(result, specs);
-  registered.forEach((item) => refs.set(item.ref, item.uid));
+  const registered = resolveFlowSurfaceCreatedKeyResults(result, specs);
+  registered.forEach((item) => keys.set(item.key, item.uid));
   return registered;
 }
 
-export function collectPersistableFlowSurfaceCreatedRefs(result: any, specs: FlowSurfaceCreatedRefSpec[]) {
+export function collectPersistableFlowSurfaceCreatedKeys(result: any, specs: FlowSurfaceCreatedKeySpec[]) {
   const persistedUidSet = new Set<string>();
-  const persisted: Array<{ ref: string; uid: string }> = [];
-  for (const item of resolveFlowSurfaceCreatedRefResults(result, specs)) {
+  const persisted: Array<{ key: string; uid: string }> = [];
+  for (const item of resolveFlowSurfaceCreatedKeyResults(result, specs)) {
     if (persistedUidSet.has(item.uid)) {
       continue;
     }
@@ -303,57 +303,56 @@ export function collectPersistableFlowSurfaceCreatedRefs(result: any, specs: Flo
   return persisted;
 }
 
-function resolveFlowSurfaceCreatedRefResults(result: any, specs: FlowSurfaceCreatedRefSpec[]) {
-  const registered: Array<{ ref: string; uid: string }> = [];
+function resolveFlowSurfaceCreatedKeyResults(result: any, specs: FlowSurfaceCreatedKeySpec[]) {
+  const registered: Array<{ key: string; uid: string }> = [];
   for (const spec of specs) {
     const value = _.get(result, spec.resultPath);
     if (typeof value !== 'string' || !value.trim()) {
       continue;
     }
     registered.push({
-      ref: spec.ref,
+      key: spec.key,
       uid: value.trim(),
     });
   }
   return registered;
 }
 
-export function isFlowSurfacePureRefObject(input: any): input is { ref: string } {
+export function isFlowSurfacePureKeyObject(input: any): input is { key: string } {
   return (
-    _.isPlainObject(input) && Object.keys(input).length === 1 && typeof input.ref === 'string' && !!input.ref.trim()
+    _.isPlainObject(input) && Object.keys(input).length === 1 && typeof input.key === 'string' && !!input.key.trim()
   );
 }
 
-export function normalizeComposeInlineRefsForPlan(values: any, contextPath: string) {
+export function normalizeComposeInlineKeysForPlan(values: any, contextPath: string) {
   if (!_.isPlainObject(values)) {
     return values;
   }
   const cloned = _.cloneDeep(values);
-  const blockRefs = new Set(
+  const blockKeys = new Set(
     _.castArray(cloned.blocks || [])
       .map((block: any, index: number) => {
-        if (!_.isPlainObject(block) || _.isUndefined(block.ref)) {
+        if (!_.isPlainObject(block) || _.isUndefined(block.key)) {
           return '';
         }
-        return normalizeFlowSurfaceCreatedRef(block.ref, `${contextPath}.blocks[${index}]`);
+        return normalizeFlowSurfaceCreatedKey(block.key, `${contextPath}.blocks[${index}]`);
       })
       .filter(Boolean),
   );
 
   _.castArray(cloned.blocks || []).forEach((block: any, blockIndex: number) => {
     _.castArray(block?.fields || []).forEach((field: any, fieldIndex: number) => {
-      if (isFlowSurfacePureRefObject(field?.target)) {
-        const targetRef = normalizeFlowSurfaceCreatedRef(
-          field.target.ref,
-          `${contextPath}.blocks[${blockIndex}].fields[${fieldIndex}].target`,
-        );
-        if (!blockRefs.has(targetRef)) {
-          throwBadRequest(
-            `flowSurfaces compose local field target ref '${targetRef}' must match a block ref in the same compose step`,
-          );
-        }
-        field.target = targetRef;
+      if (typeof field?.target !== 'string' || !field.target.trim()) {
+        return;
       }
+      const targetKey = normalizeFlowSurfaceCreatedKey(
+        field.target,
+        `${contextPath}.blocks[${blockIndex}].fields[${fieldIndex}].target`,
+      );
+      if (!blockKeys.has(targetKey)) {
+        return;
+      }
+      field.target = targetKey;
     });
   });
 
@@ -362,17 +361,20 @@ export function normalizeComposeInlineRefsForPlan(values: any, contextPath: stri
       return;
     }
     row.forEach((cell: any, cellIndex: number) => {
-      if (!_.isPlainObject(cell) || typeof cell.ref !== 'string' || !cell.ref.trim()) {
+      if (typeof cell === 'string') {
         return;
       }
-      const ref = normalizeFlowSurfaceCreatedRef(cell.ref, `${contextPath}.layout.rows[${rowIndex}][${cellIndex}]`);
-      if (!blockRefs.has(ref)) {
+      if (!_.isPlainObject(cell) || typeof cell.key !== 'string' || !cell.key.trim()) {
+        return;
+      }
+      const key = normalizeFlowSurfaceCreatedKey(cell.key, `${contextPath}.layout.rows[${rowIndex}][${cellIndex}]`);
+      if (!blockKeys.has(key)) {
         throwBadRequest(
-          `flowSurfaces compose local layout ref '${ref}' must match a block ref in the same compose step`,
+          `flowSurfaces compose local layout key '${key}' must match a block key in the same compose step`,
         );
       }
-      delete cell.ref;
-      cell.composeRef = ref;
+      delete cell.key;
+      cell.composeKey = key;
     });
   });
 

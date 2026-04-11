@@ -18,9 +18,9 @@ import {
 import { throwBadRequest } from '../errors';
 import { isPopupHostUse } from '../placement';
 import { isFieldNodeUse } from '../service-utils';
-import type { FlowSurfaceBindRef } from '../types';
+import type { FlowSurfaceBindKey } from '../types';
 
-export function buildPlanRefKind(node: any, resolvedKind?: string) {
+export function buildPlanKeyKind(node: any, resolvedKind?: string) {
   const use = String(node?.use || '').trim();
   if (use === 'RootPageModel' || resolvedKind === 'page') {
     return 'page';
@@ -57,12 +57,12 @@ export function buildPlanRefKind(node: any, resolvedKind?: string) {
   return resolvedKind || 'node';
 }
 
-export function assertBindRefKind(actionName: string, bindRef: FlowSurfaceBindRef, node: any, resolvedKind?: string) {
-  if (!bindRef.expectedKind) {
+export function assertBindKeyKind(actionName: string, bindKey: FlowSurfaceBindKey, node: any, resolvedKind?: string) {
+  if (!bindKey.expectedKind) {
     return;
   }
-  const actualKind = buildPlanRefKind(node, resolvedKind);
-  const expectedKind = String(bindRef.expectedKind || '').trim();
+  const actualKind = buildPlanKeyKind(node, resolvedKind);
+  const expectedKind = String(bindKey.expectedKind || '').trim();
   const matched =
     expectedKind === 'node' ||
     expectedKind === actualKind ||
@@ -75,6 +75,6 @@ export function assertBindRefKind(actionName: string, bindRef: FlowSurfaceBindRe
     return;
   }
   throwBadRequest(
-    `flowSurfaces ${actionName} bindRefs ref '${bindRef.ref}' expected kind '${expectedKind}', got '${actualKind}'`,
+    `flowSurfaces ${actionName} bindKeys key '${bindKey.key}' expected kind '${expectedKind}', got '${actualKind}'`,
   );
 }

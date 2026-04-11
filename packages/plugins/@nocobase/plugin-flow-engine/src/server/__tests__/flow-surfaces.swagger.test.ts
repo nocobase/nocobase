@@ -76,21 +76,18 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceContextResponse',
       'FlowSurfaceDescribeSurfaceRequest',
       'FlowSurfaceDescribeSurfaceResponse',
-      'FlowSurfaceDslDocument',
-      'FlowSurfaceBlueprintDsl',
-      'FlowSurfacePatchDsl',
-      'FlowSurfaceDslEntityRef',
-      'FlowSurfaceValidateDslRequest',
-      'FlowSurfaceValidateDslResponse',
       'FlowSurfaceValidatePlanRequest',
       'FlowSurfaceValidatePlanResponse',
+      'FlowSurfaceExecuteDslRequestBase',
+      'FlowSurfaceExecuteDslCreateRequest',
+      'FlowSurfaceExecuteDslReplaceRequest',
       'FlowSurfaceExecuteDslRequest',
       'FlowSurfaceExecuteDslResponse',
       'FlowSurfaceExecutePlanRequest',
       'FlowSurfaceExecutePlanResponse',
       'FlowSurfacePlanSelector',
-      'FlowSurfaceBindRef',
-      'FlowSurfaceRefsMap',
+      'FlowSurfaceBindKey',
+      'FlowSurfaceKeysMap',
       'FlowSurfacePlanStep',
       'FlowSurfacePlanCompiledStep',
       'FlowSurfaceCatalogItem',
@@ -123,7 +120,7 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceConfigureRequest',
       'FlowSurfaceConfigureResult',
       'FlowSurfaceMutateOpItem',
-      'FlowSurfaceMutateRef',
+      'FlowSurfaceMutateKey',
       'FlowSurfaceMutationResponse',
       'FlowSurfaceErrorResponse',
     ]);
@@ -194,13 +191,13 @@ describe('flowSurfaces swagger', () => {
       ]),
     );
 
-    expect(schemas.FlowSurfaceMutateRef.required).toEqual(['ref']);
-    expect(schemas.FlowSurfaceMutateRef.properties.ref.type).toBe('string');
-    expect(schemas.FlowSurfaceMutateRef.properties.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceMutateKey.required).toEqual(['key']);
+    expect(schemas.FlowSurfaceMutateKey.properties.key.type).toBe('string');
+    expect(schemas.FlowSurfaceMutateKey.properties.$ref).toBeUndefined();
     expect(schemas.FlowSurfaceMutateOpItem.required).toEqual(['type']);
     expect(schemas.FlowSurfaceMutateOpItem.properties.type.enum).toEqual([...FLOW_SURFACE_MUTATE_OP_TYPES]);
     expect(schemas.FlowSurfaceMutateOpItem.properties.values.additionalProperties).toBe(true);
-    expect(schemas.FlowSurfaceMutateOpItem.properties.values.description).toContain('{ ref:');
+    expect(schemas.FlowSurfaceMutateOpItem.properties.values.description).toContain('{ step:');
     expect(schemas.FlowSurfaceMutateOpItem.properties.type.enum).toEqual(
       expect.arrayContaining(['addPopupTab', 'updatePopupTab', 'movePopupTab', 'removePopupTab']),
     );
@@ -214,13 +211,13 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfacePlanCompiledStep.properties.action.enum).toEqual([...FLOW_SURFACE_PLAN_STEP_ACTIONS]);
     expect(schemas.FlowSurfaceDescribeSurfaceRequest.required).toEqual(['locator']);
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.fingerprint.type).toBe('string');
-    expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.refs.$ref).toBe(
-      '#/components/schemas/FlowSurfaceRefsMap',
+    expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.keys.$ref).toBe(
+      '#/components/schemas/FlowSurfaceKeysMap',
     );
     expect(schemas.FlowSurfacePlanRequestBase.required).toEqual(['plan']);
     expect(schemas.FlowSurfacePlanSelector.oneOf).toEqual(
       expect.arrayContaining([
-        { $ref: '#/components/schemas/FlowSurfacePlanSelectorByRef' },
+        { $ref: '#/components/schemas/FlowSurfacePlanSelectorByKey' },
         { $ref: '#/components/schemas/FlowSurfacePlanSelectorByLocator' },
         { $ref: '#/components/schemas/FlowSurfacePlanSelectorByStep' },
       ]),
@@ -246,29 +243,70 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceValidatePlanValidationResult.properties.fieldIssues.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceValidatePlanFieldIssue',
     );
-    expect(schemas.FlowSurfaceValidateDslRequest.allOf).toEqual([
-      { $ref: '#/components/schemas/FlowSurfaceDslRequestBase' },
-      { $ref: '#/components/schemas/FlowSurfaceValidatePlanRequestExtension' },
+    expect(schemas.FlowSurfaceExecuteDslRequest.oneOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceExecuteDslCreateRequest' },
+      { $ref: '#/components/schemas/FlowSurfaceExecuteDslReplaceRequest' },
     ]);
-    expect(schemas.FlowSurfaceValidateDslResponse.properties.dsl.$ref).toBe(
-      '#/components/schemas/FlowSurfaceDslDocument',
+    expect(schemas.FlowSurfaceExecuteDslRequestBase.required).toEqual(['version', 'mode', 'tabs']);
+    expect(schemas.FlowSurfaceExecuteDslRequestBase.properties.mode.enum).toEqual(['create', 'replace']);
+    expect(schemas.FlowSurfaceExecuteDslRequestBase.properties.tabs.minItems).toBe(1);
+    expect(schemas.FlowSurfaceExecuteDslRequestBase.properties.tabs.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExecuteDslTab',
     );
-    expect(schemas.FlowSurfaceValidateDslResponse.properties.plan.$ref).toBe(
-      '#/components/schemas/FlowSurfacePlanDocument',
+    expect(schemas.FlowSurfaceExecuteDslTab.required).toEqual(['blocks']);
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.blocks.minItems).toBe(1);
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.key.description).toContain('Optional local tab key');
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.key.description).toContain(
+      'not used to match existing route-backed tabs in replace mode',
     );
-    expect(schemas.FlowSurfaceExecuteDslRequest.allOf).toEqual([
-      { $ref: '#/components/schemas/FlowSurfaceDslRequestBase' },
-      { $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestExtension' },
-    ]);
-    expect(schemas.FlowSurfaceExecuteDslRequestExtension.properties.verificationMode.enum).toEqual(['strict', 'none']);
-    expect(schemas.FlowSurfaceExecuteDslResponse.properties.verificationMode.enum).toEqual(['strict', 'none']);
+    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExecuteDslLayout',
+    );
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExecuteDslLayout',
+    );
+    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].properties.uid).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].required).toEqual(['key']);
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.collectionName).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.association).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resourceBinding).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resource.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockResourceInput',
+    );
+    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.fieldPath).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.targetBlock).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.openView).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.target.type).toBe('string');
+    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslRecordActionSpec.oneOf[1].properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslCreateRequest.allOf).toEqual(
+      expect.arrayContaining([{ $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestBase' }]),
+    );
+    expect(schemas.FlowSurfaceExecuteDslReplaceRequest.allOf).toEqual(
+      expect.arrayContaining([{ $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestBase' }]),
+    );
+    expect(schemas.FlowSurfaceExecuteDslResponse.properties.surface.$ref).toBe(
+      '#/components/schemas/FlowSurfaceGetResponse',
+    );
+    expect(schemas.FlowSurfaceExecuteDslResponse.properties.keys).toBeUndefined();
+    expect(schemas.FlowSurfaceDslDocument).toBeUndefined();
+    expect(schemas.FlowSurfaceBlueprintDsl).toBeUndefined();
+    expect(schemas.FlowSurfacePatchDsl).toBeUndefined();
+    expect(schemas.FlowSurfaceDslEntityRef).toBeUndefined();
+    expect(schemas.FlowSurfaceValidateDslRequest).toBeUndefined();
+    expect(schemas.FlowSurfaceValidateDslResponse).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslResponse.properties.verificationMode).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslResponse.properties.compiledSteps).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslResponse.properties.results).toBeUndefined();
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.results.items.$ref).toBe(
       '#/components/schemas/FlowSurfacePlanResultItem',
     );
     expect(schemas.FlowSurfaceExecutePlanRequest.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfacePlanRequestBase' },
     ]);
-    expect(schemas.FlowSurfacePersistedRefResult.properties.skipped.enum).toEqual(['not_found']);
+    expect(schemas.FlowSurfacePersistedKeyResult.properties.skipped.enum).toEqual(['not_found']);
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.fingerprintAfter).toBeUndefined();
     expect(schemas.FlowSurfaceExecutePlanResponse.properties.surfaceExistsAfterExecute.type).toBe('boolean');
 
@@ -277,16 +315,25 @@ describe('flowSurfaces swagger', () => {
     const describeRequest =
       swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
     expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
-    const validateDslRequest =
-      swaggerDocument.paths['/flowSurfaces:validateDsl'].post.requestBody.content['application/json'];
-    expect(validateDslRequest.example?.dsl?.title).toBe('Employees');
+    expect(swaggerDocument.paths['/flowSurfaces:validateDsl']).toBeUndefined();
     const validateRequest =
       swaggerDocument.paths['/flowSurfaces:validatePlan'].post.requestBody.content['application/json'];
     expect(validateRequest.example?.validation?.collectFieldIssues).toBe(true);
     expect(validateRequest.example?.plan?.steps?.[0]?.action).toBe('configure');
     const executeDslRequest =
       swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.content['application/json'];
-    expect(executeDslRequest.example?.verificationMode).toBe('strict');
+    expect(executeDslRequest.examples?.createPage?.value?.mode).toBe('create');
+    expect(executeDslRequest.examples?.createPage?.value?.tabs?.[0]?.key).toBeUndefined();
+    expect(executeDslRequest.examples?.createPage?.value?.tabs?.[0]?.title).toBe('Overview');
+    expect(executeDslRequest.examples?.createPage?.value?.tabs?.[1]?.blocks?.[0]?.script).toBe('overviewBanner');
+    expect(executeDslRequest.examples?.replacePage?.value?.mode).toBe('replace');
+    expect(executeDslRequest.examples?.replacePage?.value?.target?.pageSchemaUid).toBe('employees-page-schema');
+    expect(executeDslRequest.examples?.replacePage?.value?.tabs?.[1]?.key).toBeUndefined();
+    expect(executeDslRequest.examples?.replacePage?.value?.tabs?.[1]?.title).toBe('Summary');
+    const executeDslPath = swaggerDocument.paths['/flowSurfaces:executeDsl'].post;
+    expect(executeDslPath.description).toContain('route-backed tab slots by index');
+    expect(executeDslPath.description).toContain('removes trailing old tabs');
+    expect(executeDslPath.description).toContain('appends extra new tabs');
     const executePath = swaggerDocument.paths['/flowSurfaces:executePlan'].post;
     const executeRequest = executePath.requestBody.content['application/json'];
     expect(executeRequest.example?.plan?.steps?.[0]?.action).toBe('createMenu');
@@ -304,7 +351,7 @@ describe('flowSurfaces swagger', () => {
       path: 'tabSchemaUid',
     });
     expect(executeRequest.example?.plan?.steps?.[4]?.selectors?.target).toEqual({
-      ref: 'viewUser.popupGrid',
+      key: 'viewUser.popupGrid',
     });
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
@@ -420,7 +467,7 @@ describe('flowSurfaces swagger', () => {
       '`select / subForm / bulkEditForm` scene',
     );
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
-    expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.ref).toBe('filter');
+    expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.key).toBe('filter');
     const filterTableBlock = composeRequest.examples.filterTable.value.blocks[1];
     expect(filterTableBlock.fields).toEqual(
       expect.arrayContaining([
@@ -471,12 +518,12 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
     );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.fieldsTemplate).toBeUndefined();
-    expect(schemas.FlowSurfaceComposeBlockSpec.required).toEqual(['ref']);
+    expect(schemas.FlowSurfaceComposeBlockSpec.required).toEqual(['key']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[2].properties.type.enum).toEqual(['jsColumn', 'jsItem']);
-    expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.ref.type).toBe('string');
-    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.ref.type).toBe('string');
-    expect(schemas.FlowSurfaceComposeRecordActionSpec.oneOf[1].properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.key.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.key.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeRecordActionSpec.oneOf[1].properties.key.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
@@ -516,9 +563,9 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceComposeResult.properties.blocksByKey).toBeUndefined();
     expect(schemas.FlowSurfaceComposeResult.properties.keyToUid).toBeUndefined();
-    expect(schemas.FlowSurfaceComposeBlockResult.properties.ref.type).toBe('string');
-    expect(schemas.FlowSurfaceComposeFieldResult.properties.ref.type).toBe('string');
-    expect(schemas.FlowSurfaceComposeActionResult.properties.ref.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeBlockResult.properties.key.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeFieldResult.properties.key.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeActionResult.properties.key.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
     );
@@ -526,7 +573,7 @@ describe('flowSurfaces swagger', () => {
       'same write permission as `executePlan`',
     );
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
-      'Blocks, fields, and actions can declare stable `ref` values',
+      'Blocks, fields, and actions can declare stable `key` values',
     );
     expect(schemas.FlowSurfaceComposeActionResult.properties.popupGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.assignFormUid.type).toBe('string');
@@ -907,8 +954,14 @@ describe('flowSurfaces swagger', () => {
 
     const mutateRequest = swaggerDocument.paths['/flowSurfaces:mutate'].post.requestBody.content['application/json'];
     expect(mutateRequest.example.atomic).toBe(true);
-    expect(mutateRequest.example.ops[1].values.menuRouteId.ref).toBe('menu.routeId');
-    expect(mutateRequest.example.ops[2].values.target.uid.ref).toBe('page.tabSchemaUid');
+    expect(mutateRequest.example.ops[1].values.menuRouteId).toEqual({
+      step: 'menu',
+      path: 'routeId',
+    });
+    expect(mutateRequest.example.ops[2].values.target.uid).toEqual({
+      step: 'page',
+      path: 'tabSchemaUid',
+    });
     expect(JSON.stringify(mutateRequest.example)).not.toContain('"$ref"');
     expect(schemas.FlowSurfaceMutateRequest.properties.target).toBeUndefined();
     expect(schemas.FlowSurfaceMutateRequest.properties.ops.items.$ref).toBe(

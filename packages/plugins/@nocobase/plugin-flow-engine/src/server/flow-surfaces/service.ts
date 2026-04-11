@@ -45,48 +45,35 @@ import {
   throwForbidden,
   throwInternalError,
 } from './errors';
-import { executeMutateOps, inspectFlowSurfaceValueRef, resolveFlowSurfaceValueRefs } from './executor';
+import { executeMutateOps, inspectFlowSurfaceValueKey, resolveFlowSurfaceValueKeys } from './executor';
+import { assertNoFlowSurfaceLegacyRef } from './reference-guards';
 import {
-  buildSurfaceFingerprintRefsObject as buildPlanningSurfaceFingerprintRefsObject,
+  buildSurfaceFingerprintKeysObject as buildPlanningSurfaceFingerprintKeysObject,
   FLOW_SURFACE_INTERNAL_META_KEY,
-  getDeclaredRefFromNode as getPlanningDeclaredRefFromNode,
-} from './planning/ref-registry';
-import { compileFlowSurfaceDslToPlanRequest } from './dsl/compiler';
-import { prepareFlowSurfaceDslRequest } from './dsl/runtime';
+  getDeclaredKeyFromNode as getPlanningDeclaredKeyFromNode,
+} from './planning/key-registry';
+import {
+  compileFlowSurfaceExecuteDslRequest,
+  prepareFlowSurfaceExecuteDslDocument,
+  resolveExecuteDslPageLocator,
+  type FlowSurfaceExecuteDslProgram,
+  type FlowSurfaceExecuteDslReplaceTargetInfo,
+} from './dsl/execute';
 import {
   describeSurface as describePlanningSurface,
   executePlan as executePlanningPlan,
   validatePlan as validatePlanningPlan,
 } from './planning/runtime';
-import type {
-  FlowSurfaceBlueprintDsl,
-  FlowSurfaceDslCompileContext,
-  FlowSurfaceDslDocument,
-  FlowSurfaceDslAction,
-  FlowSurfaceDslBlock,
-  FlowSurfaceDslPopup,
-  FlowSurfaceExecuteDslValues,
-  FlowSurfacePreparedDslRequest,
-  FlowSurfaceValidateDslValues,
-} from './dsl/types';
 import {
-  buildFlowSurfaceDslActionRef,
-  buildFlowSurfaceDslChangeStepId,
-  buildFlowSurfaceDslFieldRef,
-  buildFlowSurfaceDslPopupScopePrefix,
-  buildFlowSurfaceDslScopedRef,
-  isFlowSurfaceDslDefaultCrudActionType,
-} from './dsl/utils';
+  collectFlowSurfaceCreatedKeys,
+  collectPersistableFlowSurfaceCreatedKeys,
+  isFlowSurfacePureKeyObject,
+  registerFlowSurfaceCreatedKeys,
+} from './planning/created-keys';
 import {
-  collectFlowSurfaceCreatedRefs,
-  collectPersistableFlowSurfaceCreatedRefs,
-  isFlowSurfacePureRefObject,
-  registerFlowSurfaceCreatedRefs,
-} from './planning/created-refs';
-import {
-  assertRequestRefsPersistable as assertPlanningRequestRefsPersistable,
-  persistDeclaredRefForNode as persistPlanningDeclaredRefForNode,
-} from './planning/ref-persistence';
+  assertRequestKeysPersistable as assertPlanningRequestKeysPersistable,
+  persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode,
+} from './planning/key-persistence';
 import { validateFlowSurfacePayloadShape } from './payload-shape';
 import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext } from './planning/types';
 import {
@@ -204,7 +191,7 @@ import {
   joinRequiredFieldPaths,
   normalizeChartCardSettings,
   normalizeChartCardHeightModeForWrite,
-  normalizeFlowSurfaceComposeRef,
+  normalizeFlowSurfaceComposeKey,
   normalizeComposeActionSpec,
   normalizeComposeFieldSpec,
   normalizeGridCardColumns,
@@ -253,7 +240,7 @@ import type {
   FlowSurfaceApplySpec,
   FlowSurfaceApplyValues,
   FlowSurfaceAtomicFlag,
-  FlowSurfaceBindRef,
+  FlowSurfaceBindKey,
   FlowSurfaceCatalogItem,
   FlowSurfaceCatalogResponse,
   FlowSurfaceCatalogScenario,
@@ -302,8 +289,8 @@ type FlowSurfaceSqlChartPreview = {
   riskyHints?: FlowSurfaceChartHint[];
 };
 
-type FlowSurfaceValidatePlanPreviewRef = {
-  ref: string;
+type FlowSurfaceValidatePlanPreviewDependency = {
+  label: string;
 };
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -1699,9 +1686,9 @@ export class FlowSurfacesService {
     );
   }
 
-  private describeComposeBlock(blockSpec: { index?: number; ref?: string; type?: string }) {
+  private describeComposeBlock(blockSpec: { index?: number; key?: string; type?: string }) {
     const index = Number(blockSpec.index || 0);
-    const quotedKey = JSON.stringify(String(blockSpec.ref || ''));
+    const quotedKey = JSON.stringify(String((blockSpec as any).key || ''));
     const quotedType = JSON.stringify(String(blockSpec.type || ''));
     return `block #${index} (${quotedKey}, type=${quotedType})`;
   }
@@ -2191,8 +2178,8 @@ export class FlowSurfacesService {
     return createHash('sha1').update(this.buildStableFingerprintString(value)).digest('hex');
   }
 
-  private getDeclaredRefFromNode(node: any) {
-    return getPlanningDeclaredRefFromNode(node);
+  private getDeclaredKeyFromNode(node: any) {
+    return getPlanningDeclaredKeyFromNode(node);
   }
 
   private stripInternalSurfaceMetaFromNodeTree<T = any>(node: T): T {
@@ -2237,13 +2224,13 @@ export class FlowSurfacesService {
   }
 
   private buildSurfaceContextFingerprint(
-    context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'refMap'>,
+    context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'keyMap'>,
   ) {
     return this.buildSurfaceFingerprint({
       surface: {
         uid: context.surfaceResolved.uid,
       },
-      refs: buildPlanningSurfaceFingerprintRefsObject(context.refMap),
+      keys: buildPlanningSurfaceFingerprintKeysObject(context.keyMap),
       tree: context.publicTree,
     });
   }
@@ -2259,17 +2246,17 @@ export class FlowSurfacesService {
     return this.buildSurfaceReadPayload(target, resolved, publicNode, options);
   }
 
-  private getDeclaredRefPersistenceDeps() {
+  private getDeclaredKeyPersistenceDeps() {
     return {
       findModelById: (uid: string, findOptions?: { transaction?: any; includeAsyncNode?: boolean }) =>
         this.repository.findModelById(uid, findOptions),
       patchModel: (values: Record<string, any>, patchOptions?: { transaction?: any }) =>
-        this.patchDeclaredRefModel(values, patchOptions),
-      getDeclaredRefFromNode: (node: any) => this.getDeclaredRefFromNode(node),
+        this.patchDeclaredKeyModel(values, patchOptions),
+      getDeclaredKeyFromNode: (node: any) => this.getDeclaredKeyFromNode(node),
     };
   }
 
-  private async patchDeclaredRefModel(values: Record<string, any>, options?: { transaction?: any }) {
+  private async patchDeclaredKeyModel(values: Record<string, any>, options?: { transaction?: any }) {
     const normalizedUid = String(values?.uid || '').trim();
     if (!normalizedUid) {
       return this.repository.patch(values, options);
@@ -2309,33 +2296,33 @@ export class FlowSurfacesService {
     return this.repository.patch(values, options);
   }
 
-  private async persistCreatedRefsForAction(
+  private async persistCreatedKeysForAction(
     actionName: 'createPage' | 'addTab' | 'addPopupTab' | 'addBlock' | 'addField' | 'addAction' | 'addRecordAction',
     values: Record<string, any>,
     result: Record<string, any>,
     transaction?: any,
   ) {
-    const refPersistenceDeps = this.getDeclaredRefPersistenceDeps();
-    const createdRefs = collectFlowSurfaceCreatedRefs(actionName, values);
-    for (const createdRef of collectPersistableFlowSurfaceCreatedRefs(result, createdRefs)) {
-      await persistPlanningDeclaredRefForNode(
+    const keyPersistenceDeps = this.getDeclaredKeyPersistenceDeps();
+    const createdKeys = collectFlowSurfaceCreatedKeys(actionName, values);
+    for (const createdKey of collectPersistableFlowSurfaceCreatedKeys(result, createdKeys)) {
+      await persistPlanningDeclaredKeyForNode(
         {
-          ref: createdRef.ref,
-          uid: createdRef.uid,
+          key: createdKey.key,
+          uid: createdKey.uid,
           source: 'declared',
           kind: 'node',
           locator: {
-            uid: createdRef.uid,
+            uid: createdKey.uid,
           },
         },
-        refPersistenceDeps,
+        keyPersistenceDeps,
         transaction,
       );
     }
   }
 
   private buildPlanningRuntimeDeps() {
-    const refPersistenceDeps = this.getDeclaredRefPersistenceDeps();
+    const keyPersistenceDeps = this.getDeclaredKeyPersistenceDeps();
     return {
       normalizeGetTarget: (value: any) => this.normalizeGetTarget(value),
       resolveLocator: (target: FlowSurfaceReadLocator, resolveOptions?: { transaction?: any }) =>
@@ -2349,7 +2336,7 @@ export class FlowSurfacesService {
       buildReadTargetSummary: (target: FlowSurfaceReadLocator, resolved: FlowSurfaceResolvedTarget) =>
         this.buildReadTargetSummary(target, resolved),
       buildSurfaceContextFingerprint: (
-        context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'refMap'>,
+        context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'keyMap'>,
       ) => this.buildSurfaceContextFingerprint(context),
       buildSurfaceReadPayload: (
         target: FlowSurfaceReadLocator,
@@ -2357,10 +2344,10 @@ export class FlowSurfacesService {
         node: any,
         readOptions?: { transaction?: any },
       ) => this.buildSurfaceReadPayload(target, resolved, node, readOptions),
-      assertRequestRefsPersistable: (actionName: string, refs: Map<string, any>, transaction?: any) =>
-        assertPlanningRequestRefsPersistable(actionName, refs, refPersistenceDeps, transaction),
-      persistDeclaredRefForNode: (refInfo: any, transaction?: any) =>
-        persistPlanningDeclaredRefForNode(refInfo, refPersistenceDeps, transaction),
+      assertRequestKeysPersistable: (actionName: string, keys: Map<string, any>, transaction?: any) =>
+        assertPlanningRequestKeysPersistable(actionName, keys, keyPersistenceDeps, transaction),
+      persistDeclaredKeyForNode: (keyInfo: any, transaction?: any) =>
+        persistPlanningDeclaredKeyForNode(keyInfo, keyPersistenceDeps, transaction),
       dispatchPlanOnlyAction: (
         action: 'compose' | 'configure' | 'convertTemplateToCopy',
         payload: Record<string, any>,
@@ -2385,8 +2372,8 @@ export class FlowSurfacesService {
     path: string;
     error: unknown;
     blocking: boolean;
-    blockRef?: string;
-    fieldRef?: string;
+    blockKey?: string;
+    fieldKey?: string;
     fieldPath?: string;
     associationPathName?: string;
   }): FlowSurfaceValidatePlanFieldIssue {
@@ -2401,8 +2388,8 @@ export class FlowSurfacesService {
       status: normalized.status,
       type: normalized.type,
       blocking: input.blocking,
-      blockRef: input.blockRef,
-      fieldRef: input.fieldRef,
+      blockKey: input.blockKey,
+      fieldKey: input.fieldKey,
       fieldPath: input.fieldPath,
       associationPathName: input.associationPathName,
     }) as FlowSurfaceValidatePlanFieldIssue;
@@ -2410,7 +2397,7 @@ export class FlowSurfacesService {
 
   private buildValidatePlanBlockedIssue(
     compiled: FlowSurfaceCompiledPlanStep,
-    missingRef: FlowSurfaceValidatePlanPreviewRef,
+    missingDependency: FlowSurfaceValidatePlanPreviewDependency,
   ): FlowSurfaceValidatePlanFieldIssue {
     return {
       stepIndex: compiled.index,
@@ -2418,22 +2405,22 @@ export class FlowSurfacesService {
       action: compiled.action,
       path: `plan.steps[${compiled.index}]`,
       code: 'FLOW_SURFACE_VALIDATE_PLAN_BLOCKED_BY_FIELD_ISSUE',
-      message: `flowSurfaces validatePlan step '${compiled.id || compiled.index}' is blocked because ref '${
-        missingRef.ref
-      }' is unavailable after earlier field issues`,
+      message: `flowSurfaces validatePlan step '${compiled.id || compiled.index}' is blocked because ${
+        missingDependency.label
+      } is unavailable after earlier field issues`,
       status: 400,
       type: 'bad_request',
       blocking: true,
     };
   }
 
-  private findMissingValidatePlanPayloadRef(
+  private findMissingValidatePlanPayloadDependency(
     input: any,
-    refs: Map<string, any>,
-  ): FlowSurfaceValidatePlanPreviewRef | null {
+    keys: Map<string, any>,
+  ): FlowSurfaceValidatePlanPreviewDependency | null {
     if (Array.isArray(input)) {
       for (const item of input) {
-        const matched = this.findMissingValidatePlanPayloadRef(item, refs);
+        const matched = this.findMissingValidatePlanPayloadDependency(item, keys);
         if (matched) {
           return matched;
         }
@@ -2443,23 +2430,39 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(input)) {
       return null;
     }
-    if (isFlowSurfacePureRefObject(input)) {
-      const refPath = typeof input.ref === 'string' ? input.ref.trim() : '';
-      if (!refPath) {
+    if (isFlowSurfacePureKeyObject(input)) {
+      const key = typeof input.key === 'string' ? input.key.trim() : '';
+      if (!key) {
         return {
-          ref: String(input.ref || ''),
+          label: `key '${String(input.key || '')}'`,
         };
       }
-      const resolved = inspectFlowSurfaceValueRef(refPath, refs);
+      const resolved = inspectFlowSurfaceValueKey(key, keys);
       if (!resolved.found || typeof resolved.value === 'undefined') {
         return {
-          ref: refPath,
+          label: `key '${key}'`,
+        };
+      }
+      return null;
+    }
+    if (Object.keys(input).every((key) => ['step', 'path'].includes(key)) && typeof input.step === 'string') {
+      const step = String(input.step || '').trim();
+      if (!step || !keys.has(step)) {
+        return {
+          label: `step '${step || String(input.step || '')}'`,
+        };
+      }
+      const path = _.isUndefined(input.path) ? undefined : String(input.path || '').trim();
+      const value = keys.get(step);
+      if (path && typeof _.get(value, path) === 'undefined') {
+        return {
+          label: `step '${step}' path '${path}'`,
         };
       }
       return null;
     }
     for (const value of Object.values(input)) {
-      const matched = this.findMissingValidatePlanPayloadRef(value, refs);
+      const matched = this.findMissingValidatePlanPayloadDependency(value, keys);
       if (matched) {
         return matched;
       }
@@ -2550,8 +2553,8 @@ export class FlowSurfacesService {
             }]`,
             error,
             blocking: false,
-            blockRef: (blockSpec as any).ref,
-            fieldRef: (spec as any).ref,
+            blockKey: (blockSpec as any).key,
+            fieldKey: (spec as any).key,
             fieldPath: spec.fieldPath,
             associationPathName: spec.associationPathName,
           }),
@@ -2572,7 +2575,7 @@ export class FlowSurfacesService {
         }),
       applyActionPopup: async (actionName, actionUid, popup) =>
         this.applyInlineActionPopup(actionName, actionUid, popup, options),
-      collectActionRefs: async (actionUid) => this.collectComposeActionRefs(actionUid, options.transaction),
+      collectActionKeys: async (actionUid) => this.collectComposeActionKeys(actionUid, options.transaction),
       buildExplicitLayoutPayload: async (input) => {
         const finalGrid = await this.repository.findModelById(input.gridUid, {
           transaction: options.transaction,
@@ -2581,7 +2584,7 @@ export class FlowSurfacesService {
         const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
         return this.buildComposeLayoutPayload({
           layout: input.layout,
-          createdByRef: input.createdByRef,
+          createdByKey: input.createdByKey,
           finalItems,
         });
       },
@@ -2609,21 +2612,21 @@ export class FlowSurfacesService {
       const enabledPackages = await this.resolveEnabledPluginPackages({ transaction });
       const execCtx: FlowSurfaceExecutorContext = {
         transaction,
-        refs: new Map(),
+        keys: new Map(),
         clientKeyToUid: {},
       };
       const issues: FlowSurfaceValidatePlanFieldIssue[] = [];
 
       for (const compiled of compiledSteps) {
-        const missingRef = issues.length
-          ? this.findMissingValidatePlanPayloadRef(compiled.payload, execCtx.refs)
+        const missingDependency = issues.length
+          ? this.findMissingValidatePlanPayloadDependency(compiled.payload, execCtx.keys)
           : null;
-        if (missingRef) {
-          issues.push(this.buildValidatePlanBlockedIssue(compiled, missingRef));
+        if (missingDependency) {
+          issues.push(this.buildValidatePlanBlockedIssue(compiled, missingDependency));
           continue;
         }
 
-        const resolvedPayload = resolveFlowSurfaceValueRefs(_.cloneDeep(compiled.payload), execCtx.refs);
+        const resolvedPayload = resolveFlowSurfaceValueKeys(_.cloneDeep(compiled.payload), execCtx.keys);
         let result: any;
 
         if (compiled.action === 'addField') {
@@ -2667,9 +2670,9 @@ export class FlowSurfacesService {
         }
 
         if (compiled.id) {
-          execCtx.refs.set(compiled.id, result);
+          execCtx.keys.set(compiled.id, result);
         }
-        registerFlowSurfaceCreatedRefs(result, compiled.createdRefs, execCtx.refs);
+        registerFlowSurfaceCreatedKeys(result, compiled.createdKeys, execCtx.keys);
       }
 
       return issues;
@@ -2719,560 +2722,85 @@ export class FlowSurfacesService {
     return executePlanningPlan(values, this.buildPlanningRuntimeDeps(), options);
   }
 
-  private assertDslReadyForExecute(prepared: FlowSurfacePreparedDslRequest) {
-    if (_.castArray((prepared.dsl as any)?.unresolvedQuestions || []).length) {
-      throwBadRequest(`flowSurfaces executeDsl requires unresolvedQuestions to be empty before execution`);
-    }
-  }
-
-  private buildExecuteResultById(results: any) {
-    return Object.fromEntries(
-      _.castArray(results || []).map((item: any) => [String(item?.id || item?.index), item?.result]),
-    ) as Record<string, any>;
-  }
-
-  private buildExecuteDslRefsMap(executeResult: Record<string, any> | undefined) {
-    const refs = _.mapValues(_.isPlainObject(executeResult?.refs) ? executeResult.refs : {}, (value: any) =>
-      _.isPlainObject(value) ? _.cloneDeep(value) : value,
-    ) as Record<string, any>;
-
-    const register = (items: any[]) => {
-      for (const item of _.castArray(items || [])) {
-        const ref = String(item?.ref || '').trim();
-        const uid = String(item?.uid || '').trim();
-        if (!ref || !uid) {
-          continue;
-        }
-        refs[ref] = {
-          kind: 'node',
-          locator: {
-            uid,
-          },
-          ...(refs[ref] || {}),
-          uid,
-        };
-      }
-    };
-
-    register(_.flatMap(_.castArray(executeResult?.results || []), (item: any) => _.castArray(item?.createdRefs || [])));
-    register(_.castArray(executeResult?.persistedRefs || []));
-
-    return refs;
-  }
-
-  private readExecuteDslRefUid(refs: Record<string, any> | undefined, ref: string, context: string) {
-    const uid = refs?.[ref]?.uid;
-    if (typeof uid === 'string' && uid.trim()) {
-      return uid.trim();
-    }
-    throwConflict(
-      `flowSurfaces executeDsl verification missing ref '${ref}' for ${context}`,
-      'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-    );
-  }
-
-  private async assertExecuteDslReadable(target: Record<string, any>, context: string, transaction?: any) {
-    try {
-      return await this.get(target, { transaction });
-    } catch (error) {
-      throwConflict(
-        `flowSurfaces executeDsl verification failed to read ${context}`,
-        'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-      );
-    }
-  }
-
-  private async assertExecuteDslMissing(target: Record<string, any>, context: string, transaction?: any) {
-    try {
-      await this.get(target, { transaction });
-    } catch (error) {
-      if (this.isSurfaceReadbackMissingError(error)) {
-        return;
-      }
-      throwConflict(
-        `flowSurfaces executeDsl verification failed while checking removed ${context}`,
-        'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-      );
-    }
-    throwConflict(
-      `flowSurfaces executeDsl verification expected removed ${context}`,
-      'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-    );
-  }
-
-  private buildExecuteDslReadbackNodeMap(readback: any) {
-    return _.isPlainObject(readback?.nodeMap) ? readback.nodeMap : flattenModel(readback?.tree);
-  }
-
-  private findExecuteDslLayoutGrid(node: any): any {
-    if (!_.isPlainObject(node)) {
-      return null;
-    }
-    if (String(node.use || '').endsWith('GridModel')) {
-      return node;
-    }
-    if (_.isPlainObject(node.subModels?.grid)) {
-      return node.subModels.grid;
-    }
-    const tabs = _.castArray(node.subModels?.tabs || []);
-    if (tabs.length === 1) {
-      return this.findExecuteDslLayoutGrid(tabs[0]);
-    }
-    return null;
-  }
-
-  private readExecuteDslLayoutPayload(node: any) {
-    const grid = this.findExecuteDslLayoutGrid(node);
-    if (!grid) {
-      return null;
-    }
-    return this.readGridLayout(grid);
-  }
-
-  private assertExecuteDslNodeInSubtree(uid: string, subtreeNodeMap: Record<string, any> | undefined, context: string) {
-    if (subtreeNodeMap?.[uid]) {
-      return;
-    }
-    throwConflict(
-      `flowSurfaces executeDsl verification expected ${context} inside popup subtree`,
-      'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-    );
-  }
-
-  private async assertExecuteDslPopupTitle(
-    popupTabUid: string,
-    expectedTitle: string,
-    context: string,
+  private async resolveExecuteDslReplaceTargetInfo(
+    pageSchemaUid: string,
     transaction?: any,
-  ) {
-    const readback = await this.assertExecuteDslReadable({ uid: popupTabUid }, `${context} tab`, transaction);
-    const actualTitle = this.resolvePopupTabTitle(readback?.tree);
-    if (actualTitle === expectedTitle) {
-      return;
-    }
-    throwConflict(
-      `flowSurfaces executeDsl verification expected popup title '${expectedTitle}' in ${context}`,
-      'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-    );
-  }
-
-  private async assertExecuteDslDefaultPopupCompleted(
-    actionType: string,
-    popupGridUid: string,
-    context: string,
-    transaction?: any,
-  ) {
-    const readback = await this.assertExecuteDslReadable({ uid: popupGridUid }, context, transaction);
-    const nodeMap = this.buildExecuteDslReadbackNodeMap(readback);
-    const uses = new Set(
-      Object.values(nodeMap || {})
-        .map((node: any) => String(node?.use || '').trim())
-        .filter(Boolean),
-    );
-    const popupBlock = _.castArray(readback?.tree?.subModels?.items || [])[0];
-    const popupResourceInit = _.get(popupBlock, ['stepParams', 'resourceSettings', 'init']);
-
-    if (actionType === 'view') {
-      if (!uses.has('DetailsBlockModel') || popupBlock?.use !== 'DetailsBlockModel') {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected DetailsBlockModel in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      if (!popupResourceInit?.filterByTk) {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected currentRecord binding in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      return;
-    }
-
-    if (actionType === 'edit') {
-      if (!uses.has('EditFormModel') || popupBlock?.use !== 'EditFormModel') {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected EditFormModel in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      if (!uses.has('FormSubmitActionModel')) {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected FormSubmitActionModel in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      if (!popupResourceInit?.filterByTk) {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected currentRecord binding in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      return;
-    }
-
-    if (actionType === 'addNew') {
-      if (!uses.has('CreateFormModel') || popupBlock?.use !== 'CreateFormModel') {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected CreateFormModel in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      if (!uses.has('FormSubmitActionModel')) {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected FormSubmitActionModel in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      if (popupResourceInit?.filterByTk || popupResourceInit?.sourceId) {
-        throwConflict(
-          `flowSurfaces executeDsl verification expected currentCollection binding in ${context}`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      return;
-    }
-
-    if (!popupBlock?.uid) {
-      throwConflict(
-        `flowSurfaces executeDsl verification expected popup block in ${context}`,
-        'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-      );
-    }
-  }
-
-  private async verifyExecuteDslBlockRefs(
-    blocks: FlowSurfaceDslBlock[],
-    refs: Record<string, any> | undefined,
-    options: {
-      transaction?: any;
-      scopePrefix?: string;
-      subtreeNodeMap?: Record<string, any>;
-      popupById?: Map<string, FlowSurfaceDslPopup>;
-    } = {},
-  ) {
-    for (const block of blocks) {
-      const blockRef = buildFlowSurfaceDslScopedRef(options.scopePrefix, block.id);
-      const blockUid = this.readExecuteDslRefUid(refs, blockRef, `block '${blockRef}'`);
-      await this.assertExecuteDslReadable({ uid: blockUid }, `block '${blockRef}'`, options.transaction);
-      if (options.subtreeNodeMap) {
-        this.assertExecuteDslNodeInSubtree(blockUid, options.subtreeNodeMap, `block '${blockRef}'`);
-      }
-
-      for (const [fieldIndex, field] of _.castArray(block.fields || []).entries()) {
-        const fieldRef = buildFlowSurfaceDslScopedRef(
-          options.scopePrefix,
-          buildFlowSurfaceDslFieldRef(block.id, field, fieldIndex),
-        );
-        const fieldUid = this.readExecuteDslRefUid(refs, fieldRef, `field '${fieldRef}'`);
-        await this.assertExecuteDslReadable({ uid: fieldUid }, `field '${fieldRef}'`, options.transaction);
-        if (options.subtreeNodeMap) {
-          this.assertExecuteDslNodeInSubtree(fieldUid, options.subtreeNodeMap, `field '${fieldRef}'`);
-        }
-      }
-
-      for (const [actionIndex, action] of _.castArray(block.actions || []).entries()) {
-        const actionRef = buildFlowSurfaceDslScopedRef(
-          options.scopePrefix,
-          buildFlowSurfaceDslActionRef(block.id, 'actions', action, actionIndex),
-        );
-        const actionUid = this.readExecuteDslRefUid(refs, actionRef, `action '${actionRef}'`);
-        await this.assertExecuteDslReadable({ uid: actionUid }, `action '${actionRef}'`, options.transaction);
-        if (options.subtreeNodeMap) {
-          this.assertExecuteDslNodeInSubtree(actionUid, options.subtreeNodeMap, `action '${actionRef}'`);
-        }
-        await this.verifyExecuteDslPopupRef(actionRef, action, refs, options);
-      }
-
-      for (const [actionIndex, action] of _.castArray(block.recordActions || []).entries()) {
-        const actionRef = buildFlowSurfaceDslScopedRef(
-          options.scopePrefix,
-          buildFlowSurfaceDslActionRef(block.id, 'recordActions', action, actionIndex),
-        );
-        const actionUid = this.readExecuteDslRefUid(refs, actionRef, `recordAction '${actionRef}'`);
-        await this.assertExecuteDslReadable({ uid: actionUid }, `recordAction '${actionRef}'`, options.transaction);
-        if (options.subtreeNodeMap) {
-          this.assertExecuteDslNodeInSubtree(actionUid, options.subtreeNodeMap, `recordAction '${actionRef}'`);
-        }
-        await this.verifyExecuteDslPopupRef(actionRef, action, refs, options);
-      }
-    }
-  }
-
-  private async verifyExecuteDslPopupRef(
-    actionRef: string,
-    action: FlowSurfaceDslAction,
-    refs: Record<string, any> | undefined,
-    options: {
-      transaction?: any;
-      popupById?: Map<string, FlowSurfaceDslPopup>;
-    } = {},
-  ) {
-    const popupId = String(action?.popupId || '').trim();
-    if (!popupId) {
-      return;
-    }
-    const popup = options.popupById?.get(popupId);
-    const popupGridUid = this.readExecuteDslRefUid(refs, `${actionRef}.popupGrid`, `popup '${popupId}'`);
-    const popupReadback = await this.assertExecuteDslReadable(
-      { uid: popupGridUid },
-      `popup '${popupId}' grid`,
-      options.transaction,
-    );
-    if (popup?.title) {
-      const popupTabUid = this.readExecuteDslRefUid(refs, `${actionRef}.popupTab`, `popup '${popupId}' tab`);
-      await this.assertExecuteDslPopupTitle(popupTabUid, popup.title, `popup '${popupId}'`, options.transaction);
-    }
-    const popupBlocks = _.castArray(popup?.blocks || []);
-    if (!popupBlocks.length) {
-      if (popup?.completion === 'completed') {
-        await this.assertExecuteDslDefaultPopupCompleted(
-          String(action.type || '').trim(),
-          popupGridUid,
-          `popup '${popupId}'`,
-          options.transaction,
-        );
-      }
-      return;
-    }
-    await this.verifyExecuteDslBlockRefs(popupBlocks, refs, {
-      transaction: options.transaction,
-      scopePrefix: buildFlowSurfaceDslPopupScopePrefix(actionRef),
-      subtreeNodeMap: this.buildExecuteDslReadbackNodeMap(popupReadback),
-      popupById: options.popupById,
-    });
-  }
-
-  private async verifyBlueprintDslExecution(
-    prepared: FlowSurfacePreparedDslRequest,
-    executeResult: Record<string, any>,
-    refs: Record<string, any>,
-    options: { transaction?: any } = {},
-  ) {
-    const blueprint = prepared.dsl as FlowSurfaceBlueprintDsl;
-    const resultById = this.buildExecuteResultById(executeResult?.results);
-    const popupById = new Map<string, FlowSurfaceDslPopup>();
-    blueprint.popups.forEach((popup) => popupById.set(popup.id, popup));
-    if (blueprint.target.mode === 'create-page') {
-      const menuRouteId = resultById.dslMenuItem?.routeId;
-      if (!menuRouteId || !(await this.findMenuRouteById(menuRouteId, options.transaction))) {
-        throwConflict(
-          `flowSurfaces executeDsl verification missing created menu route`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      const pageSchemaUid = resultById.dslPage?.pageSchemaUid || executeResult?.target?.locator?.pageSchemaUid;
-      if (!pageSchemaUid) {
-        throwConflict(
-          `flowSurfaces executeDsl verification missing created pageSchemaUid`,
-          'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-        );
-      }
-      await this.assertExecuteDslReadable({ pageSchemaUid }, `created page`, options.transaction);
-    } else {
-      await this.assertExecuteDslReadable(blueprint.target.locator, `target page`, options.transaction);
-    }
-
-    await this.verifyExecuteDslBlockRefs(blueprint.blocks, refs, {
-      transaction: options.transaction,
-      popupById,
-    });
-  }
-
-  private async verifyPatchDslExecution(
-    prepared: FlowSurfacePreparedDslRequest,
-    executeResult: Record<string, any>,
-    options: { transaction?: any } = {},
-  ) {
-    const patchDsl = prepared.dsl as any;
-    const resultById = this.buildExecuteResultById(executeResult?.results);
-    for (const [index, change] of _.castArray(patchDsl.changes || []).entries()) {
-      const stepId = buildFlowSurfaceDslChangeStepId(change, index);
-      const result = resultById[stepId];
-      switch (change.op) {
-        case 'page.destroy':
-          await this.assertExecuteDslMissing(patchDsl.target.locator, `page`, options.transaction);
-          break;
-        case 'tab.add':
-          await this.assertExecuteDslReadable(
-            { uid: result?.tabSchemaUid || result?.uid },
-            `tab '${stepId}'`,
-            options.transaction,
-          );
-          break;
-        case 'tab.remove':
-        case 'node.remove':
-          await this.assertExecuteDslMissing({ uid: result?.uid }, `${change.op} target`, options.transaction);
-          break;
-        case 'block.add':
-          await this.assertExecuteDslReadable(
-            { uid: result?.uid || result?.blocks?.[0]?.uid },
-            `block '${stepId}'`,
-            options.transaction,
-          );
-          break;
-        case 'field.add':
-          await this.assertExecuteDslReadable(
-            { uid: result?.uid || result?.wrapperUid || result?.fieldUid || result?.innerFieldUid },
-            `field '${stepId}'`,
-            options.transaction,
-          );
-          break;
-        case 'action.add':
-        case 'recordAction.add':
-          await this.assertExecuteDslReadable({ uid: result?.uid }, `${change.op} '${stepId}'`, options.transaction);
-          break;
-        case 'layout.replace': {
-          const target = result?.uid
-            ? { uid: result.uid }
-            : _.isPlainObject(change.target?.locator)
-              ? change.target.locator
-              : patchDsl.target.locator;
-          const readback = await this.assertExecuteDslReadable(target, `layout target`, options.transaction);
-          const actualLayout = this.readExecuteDslLayoutPayload(readback?.tree);
-          if (!actualLayout) {
-            throwConflict(
-              `flowSurfaces executeDsl verification failed to resolve layout payload`,
-              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-            );
-          }
-          if (_.isPlainObject(result?.rows) && !_.isEqual(actualLayout.rows, result.rows)) {
-            throwConflict(
-              `flowSurfaces executeDsl verification layout rows mismatch`,
-              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-            );
-          }
-          if (_.isPlainObject(result?.sizes) && !_.isEqual(actualLayout.sizes, result.sizes)) {
-            throwConflict(
-              `flowSurfaces executeDsl verification layout sizes mismatch`,
-              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-            );
-          }
-          if (Array.isArray(result?.rowOrder) && !_.isEqual(actualLayout.rowOrder, result.rowOrder)) {
-            throwConflict(
-              `flowSurfaces executeDsl verification layout rowOrder mismatch`,
-              'FLOW_SURFACE_DSL_VERIFICATION_FAILED',
-            );
-          }
-          break;
-        }
-        default:
-          await this.assertExecuteDslReadable(patchDsl.target.locator, `patch target page`, options.transaction);
-          break;
-      }
-    }
-  }
-
-  private async buildFlowSurfaceDslCompileContext(
-    dsl: FlowSurfaceDslDocument,
-    transaction?: any,
-  ): Promise<FlowSurfaceDslCompileContext | undefined> {
-    if (dsl.kind !== 'blueprint' || dsl.target.mode !== 'update-page') {
-      return undefined;
-    }
-    return {
-      blueprintUpdatePageComposeTarget: await this.resolveUpdatePageComposeTargetLocator(dsl, transaction),
-    };
-  }
-
-  private async resolveUpdatePageComposeTargetLocator(blueprint: FlowSurfaceBlueprintDsl, transaction?: any) {
-    const resolved = await this.locator.resolve(blueprint.target.locator, { transaction });
-
-    if (resolved.kind === 'page') {
-      if (!resolved.pageRoute) {
-        throwBadRequest(`flowSurfaces dsl blueprint update-page target must resolve to a route-backed page`);
-      }
-      const structure = await this.loadRouteBackedPageStructure(resolved.pageRoute, transaction);
-      if (structure.tabRoutes.length !== 1) {
-        throwBadRequest(
-          `flowSurfaces dsl blueprint update-page page target must resolve to exactly one route-backed tab, found ${structure.tabRoutes.length}`,
-        );
-      }
-      const onlyTabSchemaUid = this.readRouteField(structure.tabRoutes[0], 'schemaUid');
-      if (!onlyTabSchemaUid) {
-        throwBadRequest(`flowSurfaces dsl blueprint update-page page target is missing its only tab schema uid`);
-      }
-      return {
-        tabSchemaUid: String(onlyTabSchemaUid),
-      };
-    }
-
-    if (resolved.kind === 'tab') {
-      const tabSchemaUid = resolved.tabRoute?.get?.('schemaUid') || resolved.tabRoute?.schemaUid || resolved.uid;
-      return {
-        tabSchemaUid: String(tabSchemaUid),
-      };
-    }
-
-    if (!resolved.pageRoute) {
-      throwBadRequest(`flowSurfaces dsl blueprint update-page target must resolve inside a route-backed page`);
-    }
-
-    const blockGrid = await this.surfaceContext.findOwningBlockGrid(resolved.uid, transaction);
-    if (!blockGrid?.uid) {
-      throwBadRequest(`flowSurfaces dsl blueprint update-page target must resolve to page, tab or page content`);
-    }
-
-    return {
-      uid: blockGrid.uid,
-    };
-  }
-
-  private async compilePreparedFlowSurfaceDslRequest(
-    prepared: FlowSurfacePreparedDslRequest,
-    transaction?: any,
-  ): Promise<FlowSurfacePreparedDslRequest> {
-    prepared.compileContext = await this.buildFlowSurfaceDslCompileContext(prepared.dsl, transaction);
-    prepared.planValues = {
-      ...compileFlowSurfaceDslToPlanRequest(prepared.dsl, prepared.compileContext),
-      ...(prepared.expectedFingerprint ? { expectedFingerprint: prepared.expectedFingerprint } : {}),
-      ...(prepared.bindRefs ? { bindRefs: prepared.bindRefs } : {}),
-    };
-    return prepared;
-  }
-
-  async validateDsl(values: FlowSurfaceValidateDslValues, options: { transaction?: any } = {}) {
-    const prepared = await this.compilePreparedFlowSurfaceDslRequest(
-      prepareFlowSurfaceDslRequest('validateDsl', values),
-      options.transaction,
-    );
-    const result = await this.validatePlan(
+  ): Promise<FlowSurfaceExecuteDslReplaceTargetInfo> {
+    const readback = await this.get(
       {
-        ...prepared.planValues,
-        ...(prepared.validation ? { validation: prepared.validation } : {}),
+        pageSchemaUid,
       },
-      options,
+      { transaction },
     );
+    const pageUid = readback?.target?.uid || readback?.tree?.uid;
+    if (typeof pageUid !== 'string' || !pageUid.trim()) {
+      throwBadRequest(`flowSurfaces executeDsl replace target page is missing page uid`);
+    }
+    const structure = readback?.pageRoute
+      ? await this.loadRouteBackedPageStructure(readback.pageRoute, transaction)
+      : { tabRoutes: _.castArray(readback?.tree?.subModels?.tabs || []) };
+    const tabs = _.castArray(structure.tabRoutes || []).map((tab: any, index: number) => {
+      const uid = String(this.readRouteField(tab, 'schemaUid') || tab?.uid || '').trim();
+      if (!uid) {
+        throwBadRequest(`flowSurfaces executeDsl replace target tab #${index + 1} is missing uid`);
+      }
+      return {
+        uid,
+      };
+    });
+    if (!tabs.length) {
+      throwBadRequest(`flowSurfaces executeDsl replace target page must contain at least one tab`);
+    }
+    const pageEnableTabs =
+      typeof readback?.pageRoute?.enableTabs === 'boolean' ? readback.pageRoute.enableTabs : undefined;
     return {
-      dsl: prepared.dsl,
-      plan: prepared.planValues.plan,
-      ...result,
+      locator: {
+        pageSchemaUid,
+      },
+      pageUid: pageUid.trim(),
+      pageEnableTabs,
+      tabs,
     };
   }
 
-  async executeDsl(values: FlowSurfaceExecuteDslValues, options: { transaction?: any } = {}) {
-    const prepared = await this.compilePreparedFlowSurfaceDslRequest(
-      prepareFlowSurfaceDslRequest('executeDsl', values),
-      options.transaction,
-    );
-    this.assertDslReadyForExecute(prepared);
-
-    const result = await this.executePlan(prepared.planValues, options);
-    const refs = this.buildExecuteDslRefsMap(result);
-
-    if (prepared.verificationMode === 'strict') {
-      if (prepared.dsl.kind === 'patch') {
-        await this.verifyPatchDslExecution(prepared, result, options);
-      } else {
-        await this.verifyBlueprintDslExecution(prepared, result, refs, options);
-      }
+  private async prepareExecuteDslRequest(
+    values: Record<string, any>,
+    transaction?: any,
+  ): Promise<FlowSurfaceExecuteDslProgram> {
+    const document = prepareFlowSurfaceExecuteDslDocument(values);
+    const replaceTarget =
+      document.mode === 'replace' && document.target
+        ? await this.resolveExecuteDslReplaceTargetInfo(document.target.pageSchemaUid, transaction)
+        : undefined;
+    if (
+      document.mode === 'replace' &&
+      document.tabs.length > 1 &&
+      typeof document.page?.enableTabs === 'undefined' &&
+      replaceTarget?.pageEnableTabs === false
+    ) {
+      throwBadRequest(
+        `flowSurfaces executeDsl replace mode requires page.enableTabs=true when tabs.length > 1 and the current page has enableTabs=false`,
+      );
     }
+    return compileFlowSurfaceExecuteDslRequest(document, {
+      replaceTarget,
+    });
+  }
+
+  async executeDsl(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const prepared = await this.prepareExecuteDslRequest(values, options.transaction);
+    const result = await this.executePlan(prepared.planValues, options);
+    const pageLocator = resolveExecuteDslPageLocator(prepared, result);
+    const surface = await this.get(pageLocator, options);
 
     return {
-      dsl: prepared.dsl,
-      plan: prepared.planValues.plan,
-      verificationMode: prepared.verificationMode,
-      ...result,
-      refs,
+      version: '1',
+      mode: prepared.document.mode,
+      target: buildDefinedPayload({
+        pageSchemaUid: pageLocator.pageSchemaUid,
+        pageUid: surface?.target?.uid,
+      }),
+      surface,
     };
   }
 
@@ -4838,7 +4366,7 @@ export class FlowSurfacesService {
         }),
       applyActionPopup: async (actionName, actionUid, popup) =>
         this.applyInlineActionPopup(actionName, actionUid, popup, options),
-      collectActionRefs: async (actionUid) => this.collectComposeActionRefs(actionUid, options.transaction),
+      collectActionKeys: async (actionUid) => this.collectComposeActionKeys(actionUid, options.transaction),
       buildExplicitLayoutPayload: async (input) => {
         const finalGrid = await this.repository.findModelById(input.gridUid, {
           transaction: options.transaction,
@@ -4847,7 +4375,7 @@ export class FlowSurfacesService {
         const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
         return this.buildComposeLayoutPayload({
           layout: input.layout,
-          createdByRef: input.createdByRef,
+          createdByKey: input.createdByKey,
           finalItems,
         });
       },
@@ -5116,7 +4644,7 @@ export class FlowSurfacesService {
       const route = await this.assertMenuRouteBindable(createdMenu.routeId, options.transaction);
       result = await this.initializeFlowPageForRoute(route, values, options.transaction);
     }
-    await this.persistCreatedRefsForAction('createPage', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('createPage', values, result, options.transaction);
     return result;
   }
 
@@ -5212,7 +4740,7 @@ export class FlowSurfacesService {
       tabSchemaName,
       gridUid,
     };
-    await this.persistCreatedRefsForAction('addTab', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('addTab', values, result, options.transaction);
     return result;
   }
 
@@ -5390,7 +4918,7 @@ export class FlowSurfacesService {
       popupTabUid: tree.uid,
       popupGridUid: tree.subModels?.grid?.uid,
     };
-    await this.persistCreatedRefsForAction('addPopupTab', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('addPopupTab', values, result, options.transaction);
     return result;
   }
 
@@ -5906,7 +5434,7 @@ export class FlowSurfacesService {
       : null;
     if (templateRef) {
       const result = await this.addBlockFromTemplate(values, templateRef, options);
-      await this.persistCreatedRefsForAction('addBlock', values, result, options.transaction);
+      await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
       return result;
     }
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
@@ -6035,7 +5563,7 @@ export class FlowSurfacesService {
         options,
       );
     }
-    await this.persistCreatedRefsForAction('addBlock', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
     return result;
   }
 
@@ -6050,7 +5578,7 @@ export class FlowSurfacesService {
       : null;
     if (templateRef) {
       const result = await this.addFieldFromTemplate(values, templateRef, options);
-      await this.persistCreatedRefsForAction('addField', values, result, options.transaction);
+      await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
       return result;
     }
     const target = this.normalizeWriteTarget('addField', values?.target, values);
@@ -6109,7 +5637,7 @@ export class FlowSurfacesService {
         type: values.type,
       };
       await this.applyInlineStandaloneFieldSettings('addField', result.uid, inlineSettings, options);
-      await this.persistCreatedRefsForAction('addField', values, result, options.transaction);
+      await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
       return result;
     }
 
@@ -6335,7 +5863,7 @@ export class FlowSurfacesService {
     };
     await this.applyInlineFieldSettings('addField', result, inlineSettings, options);
     await this.applyInlineFieldPopup('addField', result, inlinePopup, options);
-    await this.persistCreatedRefsForAction('addField', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
     return result;
   }
 
@@ -6413,9 +5941,9 @@ export class FlowSurfacesService {
       parentUid: container.parentUid,
       subKey: container.subKey,
       scope: actionCatalogItem.scope,
-      ...(await this.collectComposeActionRefs(created, options.transaction)),
+      ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
-    await this.persistCreatedRefsForAction('addAction', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('addAction', values, result, options.transaction);
     return result;
   }
 
@@ -6483,9 +6011,9 @@ export class FlowSurfacesService {
       parentUid: container.parentUid,
       subKey: container.subKey,
       scope: actionCatalogItem.scope,
-      ...(await this.collectComposeActionRefs(created, options.transaction)),
+      ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
-    await this.persistCreatedRefsForAction('addRecordAction', values, result, options.transaction);
+    await this.persistCreatedKeysForAction('addRecordAction', values, result, options.transaction);
     return result;
   }
 
@@ -7009,7 +6537,7 @@ export class FlowSurfacesService {
       return {};
     }
 
-    return this.collectPopupSurfaceRefs(
+    return this.collectPopupSurfaceKeys(
       fieldHostUid,
       options.transaction,
       await this.ensurePopupSurface(fieldHostUid, options.transaction),
@@ -7094,7 +6622,7 @@ export class FlowSurfacesService {
         },
         options,
       );
-      Object.assign(result, await this.collectPopupSurfaceRefs(fieldHostUid, options.transaction));
+      Object.assign(result, await this.collectPopupSurfaceKeys(fieldHostUid, options.transaction));
     } catch (error: any) {
       rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} popup invalid`);
     }
@@ -7999,7 +7527,7 @@ export class FlowSurfacesService {
     const ops = _.castArray(values.ops || []) as FlowSurfaceMutateOp[];
     const ctx: FlowSurfaceExecutorContext = {
       transaction: options.transaction,
-      refs: new Map(),
+      keys: new Map(),
       clientKeyToUid: {},
     };
     const results = await executeMutateOps(ops, ctx, async (op, resolvedValues, execCtx) => {
@@ -8765,11 +8293,14 @@ export class FlowSurfacesService {
 
     for (const [index, rawItem] of items.entries()) {
       const result: Record<string, any> = { index, ok: false };
-      if (_.isPlainObject(rawItem) && Object.prototype.hasOwnProperty.call(rawItem, 'key')) {
-        throwBadRequest(`flowSurfaces ${options.actionName} item #${index + 1} does not support key, use ref instead`);
-      }
-      if (_.isPlainObject(rawItem) && typeof rawItem.ref === 'string' && rawItem.ref.trim()) {
-        result.ref = rawItem.ref.trim();
+      assertNoFlowSurfaceLegacyRef(rawItem, {
+        actionName: options.actionName,
+        path: `item #${index + 1}`,
+        dollarRefAllowed: 'key',
+        refAllowed: 'key',
+      });
+      if (_.isPlainObject(rawItem) && typeof rawItem.key === 'string' && rawItem.key.trim()) {
+        result.key = rawItem.key.trim();
       }
       try {
         if (!_.isPlainObject(rawItem)) {
@@ -8812,14 +8343,17 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
     }
-    if (Object.prototype.hasOwnProperty.call(input, 'key')) {
-      throwBadRequest(`flowSurfaces compose block #${index + 1} does not support key, use ref instead`);
-    }
+    assertNoFlowSurfaceLegacyRef(input, {
+      actionName: 'compose',
+      path: `block #${index + 1}`,
+      dollarRefAllowed: 'key',
+      refAllowed: 'key',
+    });
     if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps || input.flowRegistry) {
       throwBadRequest('flowSurfaces compose only accepts public semantic block fields');
     }
-    const ref = normalizeFlowSurfaceComposeRef(
-      String(input.ref || '').trim(),
+    const key = normalizeFlowSurfaceComposeKey(
+      String(input.key || '').trim(),
       `flowSurfaces compose block #${index + 1}`,
     );
     const type = String(input.type || '').trim();
@@ -8842,8 +8376,8 @@ export class FlowSurfacesService {
         `flowSurfaces compose block #${index + 1} does not allow settings when template.mode is 'reference'`,
       );
     }
-    if (!ref || (!type && !template)) {
-      throwBadRequest(`flowSurfaces compose block #${index + 1} requires ref and either type or template`);
+    if (!key || (!type && !template)) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and either type or template`);
     }
     const blockCatalogItem = type
       ? resolveSupportedBlockCatalogItem(
@@ -8877,7 +8411,7 @@ export class FlowSurfacesService {
     }
     return {
       index: index + 1,
-      ref,
+      key,
       type,
       catalogItem: blockCatalogItem,
       resource: this.normalizeResourceInput(input.resource),
@@ -8922,7 +8456,7 @@ export class FlowSurfacesService {
     }
     if (!blockResult.itemUid) {
       throwConflict(
-        `flowSurfaces compose block '${blockSpec.ref}' is missing its item subtree`,
+        `flowSurfaces compose block '${blockSpec.key}' is missing its item subtree`,
         'FLOW_SURFACE_COMPOSE_ITEM_SUBTREE_MISSING',
       );
     }
@@ -8956,7 +8490,7 @@ export class FlowSurfacesService {
 
   private buildComposeLayoutPayload(input: {
     layout?: Record<string, any>;
-    createdByRef: Record<string, any>;
+    createdByKey: Record<string, any>;
     finalItems: any[];
   }) {
     const declaredRows = _.castArray(input.layout?.rows || []);
@@ -8985,20 +8519,20 @@ export class FlowSurfacesService {
       }
       const cells = row.map((cell: any) => {
         if (_.isPlainObject(cell)) {
-          const refKey = String(cell.composeRef || cell.ref || '').trim();
-          if (!refKey) {
+          const key = String(cell.composeKey || cell.key || '').trim();
+          if (!key) {
             if (typeof cell.uid === 'string' && cell.uid.trim()) {
               return {
                 uid: cell.uid.trim(),
                 span: _.isNumber(cell.span) ? cell.span : undefined,
               };
             }
-            throwBadRequest(`flowSurfaces compose layout row #${index + 1} contains an empty ref`);
+            throwBadRequest(`flowSurfaces compose layout row #${index + 1} contains an empty key`);
           }
-          const uid = input.createdByRef[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
+          const uid = input.createdByKey[key]?.uid || (finalUids.includes(key) ? key : null);
           if (!uid) {
             throwBadRequest(
-              `flowSurfaces compose layout ref '${refKey}' does not match a created block ref or existing uid`,
+              `flowSurfaces compose layout key '${key}' does not match a created block key or existing uid`,
             );
           }
           return {
@@ -9006,11 +8540,11 @@ export class FlowSurfacesService {
             span: _.isNumber(cell.span) ? cell.span : undefined,
           };
         }
-        const refKey = String(cell || '').trim();
-        const uid = input.createdByRef[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
+        const key = String(cell || '').trim();
+        const uid = input.createdByKey[key]?.uid || (finalUids.includes(key) ? key : null);
         if (!uid) {
           throwBadRequest(
-            `flowSurfaces compose layout ref '${refKey}' does not match a created block ref or existing uid`,
+            `flowSurfaces compose layout key '${key}' does not match a created block key or existing uid`,
           );
         }
         return { uid };
@@ -9121,7 +8655,7 @@ export class FlowSurfacesService {
     };
   }
 
-  private async collectComposeActionRefs(actionUid: string, transaction?: any) {
+  private async collectComposeActionKeys(actionUid: string, transaction?: any) {
     const actionNode = await this.repository.findModelById(actionUid, {
       transaction,
       includeAsyncNode: true,
@@ -9132,13 +8666,13 @@ export class FlowSurfacesService {
       {
         assignFormUid: assignForm?.uid,
         assignFormGridUid: assignFormGrid?.uid,
-        ...(await this.collectPopupSurfaceRefs(actionUid, transaction, undefined, actionNode)),
+        ...(await this.collectPopupSurfaceKeys(actionUid, transaction, undefined, actionNode)),
       },
       (value) => !!value,
     );
   }
 
-  private async collectPopupSurfaceRefs(
+  private async collectPopupSurfaceKeys(
     hostUid: string,
     transaction?: any,
     ensuredPopupSurface?: {
@@ -10348,7 +9882,7 @@ export class FlowSurfacesService {
           target.uid,
           options,
         )),
-        ...(await this.collectPopupSurfaceRefs(target.uid, options.transaction)),
+        ...(await this.collectPopupSurfaceKeys(target.uid, options.transaction)),
       };
     }
     return result;

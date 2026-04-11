@@ -100,7 +100,7 @@ describe('flowSurfaces templates', () => {
           target: { uid: page.gridUid },
           blocks: [
             {
-              ref: 'copy-form',
+              key: 'copy-form',
               template: {
                 uid: template.uid,
                 mode: 'copy',
@@ -175,7 +175,7 @@ describe('flowSurfaces templates', () => {
           target: { uid: page.gridUid },
           blocks: [
             {
-              ref: 'templated-form',
+              key: 'templated-form',
               template: {
                 uid: template.uid,
                 mode: 'reference',
@@ -466,7 +466,7 @@ describe('flowSurfaces templates', () => {
           popup: {
             blocks: [
               {
-                ref: 'details',
+                key: 'details',
                 type: 'details',
                 resource: {
                   dataSourceKey: 'main',
@@ -597,7 +597,7 @@ describe('flowSurfaces templates', () => {
           popup: {
             blocks: [
               {
-                ref: 'configurable-popup-details',
+                key: 'configurable-popup-details',
                 type: 'details',
                 resource: {
                   dataSourceKey: 'main',
@@ -706,7 +706,7 @@ describe('flowSurfaces templates', () => {
           popup: {
             blocks: [
               {
-                ref: 'details',
+                key: 'details',
                 type: 'details',
                 resource: {
                   dataSourceKey: 'main',
@@ -776,7 +776,7 @@ describe('flowSurfaces templates', () => {
           popup: {
             blocks: [
               {
-                ref: 'details',
+                key: 'details',
                 type: 'details',
                 resource: {
                   dataSourceKey: 'main',
@@ -863,7 +863,7 @@ describe('flowSurfaces templates', () => {
       popup: {
         blocks: [
           {
-            ref: 'employee-field-popup-details',
+            key: 'employee-field-popup-details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -976,7 +976,7 @@ describe('flowSurfaces templates', () => {
           target: { uid: batchDetails.uid },
           fields: [
             {
-              ref: 'batch-status',
+              key: 'batch-status',
               fieldPath: 'status',
               popup: {
                 template: {
@@ -1013,7 +1013,7 @@ describe('flowSurfaces templates', () => {
       popup: {
         blocks: [
           {
-            ref: 'employee-field-popup-alt-details',
+            key: 'employee-field-popup-alt-details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1157,7 +1157,7 @@ describe('flowSurfaces templates', () => {
           popup: {
             blocks: [
               {
-                ref: 'cleanup-popup-details',
+                key: 'cleanup-popup-details',
                 type: 'details',
                 resource: {
                   dataSourceKey: 'main',
@@ -1226,7 +1226,7 @@ describe('flowSurfaces templates', () => {
       popup: {
         blocks: [
           {
-            ref: 'nested-template-popup-details',
+            key: 'nested-template-popup-details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1318,7 +1318,7 @@ describe('flowSurfaces templates', () => {
       popup: {
         blocks: [
           {
-            ref: 'employee-record-popup-details',
+            key: 'employee-record-popup-details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1518,7 +1518,7 @@ describe('flowSurfaces templates', () => {
           popup: {
             blocks: [
               {
-                ref: 'employee-details',
+                key: 'employee-details',
                 type: 'details',
                 resource: {
                   dataSourceKey: 'main',
@@ -1630,7 +1630,7 @@ describe('flowSurfaces templates', () => {
       popup: {
         blocks: [
           {
-            ref: 'employee-field-popup-validation-details',
+            key: 'employee-field-popup-validation-details',
             type: 'details',
             resource: {
               binding: 'currentRecord',

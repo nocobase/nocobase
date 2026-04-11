@@ -21,25 +21,25 @@ export type FlowSurfaceReadLocator = {
   routeId?: string;
 };
 
-export type FlowSurfacePlanStepRef = {
+export type FlowSurfacePlanStepLink = {
   step: string;
   path?: string;
+};
+
+export type FlowSurfaceKeySelector = {
+  key: string;
 };
 
 export type FlowSurfaceLocatorSelector = {
   locator: FlowSurfaceReadLocator;
 };
 
-export type FlowSurfaceSurfaceSelector =
-  | {
-      ref: string;
-    }
-  | FlowSurfaceLocatorSelector;
+export type FlowSurfaceSurfaceSelector = FlowSurfaceKeySelector | FlowSurfaceLocatorSelector;
 
-export type FlowSurfacePlanSelector = FlowSurfaceSurfaceSelector | FlowSurfacePlanStepRef;
+export type FlowSurfacePlanSelector = FlowSurfaceSurfaceSelector | FlowSurfacePlanStepLink;
 
-export type FlowSurfaceBindRef = {
-  ref: string;
+export type FlowSurfaceBindKey = {
+  key: string;
   locator: FlowSurfaceReadLocator;
   expectedKind?:
     | 'page'
@@ -321,7 +321,7 @@ export type FlowSurfaceContextResponse = {
 
 export type FlowSurfaceDescribeValues = {
   locator: FlowSurfaceReadLocator;
-  bindRefs?: FlowSurfaceBindRef[];
+  bindKeys?: FlowSurfaceBindKey[];
 };
 
 export type FlowSurfacePlanStepAction = (typeof FLOW_SURFACE_PLAN_STEP_ACTIONS)[number];
@@ -350,8 +350,8 @@ export type FlowSurfaceValidatePlanFieldIssue = {
   status: number;
   type: string;
   blocking: boolean;
-  blockRef?: string;
-  fieldRef?: string;
+  blockKey?: string;
+  fieldKey?: string;
   fieldPath?: string;
   associationPathName?: string;
 };
@@ -364,7 +364,7 @@ export type FlowSurfaceValidatePlanValidationResult = {
 export type FlowSurfacePlanRequestValues = {
   surface?: FlowSurfaceSurfaceSelector;
   expectedFingerprint?: string;
-  bindRefs?: FlowSurfaceBindRef[];
+  bindKeys?: FlowSurfaceBindKey[];
   plan: {
     steps?: FlowSurfacePlanStep[];
   };
@@ -387,6 +387,6 @@ export type FlowSurfaceMutateOp = {
 
 export type FlowSurfaceExecutorContext = {
   transaction?: any;
-  refs: Map<string, any>;
+  keys: Map<string, any>;
   clientKeyToUid: Record<string, string>;
 };

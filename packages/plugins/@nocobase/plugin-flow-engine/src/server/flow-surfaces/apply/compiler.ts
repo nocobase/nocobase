@@ -67,7 +67,12 @@ type PopupShellBootstrapResult = {
 };
 
 function makeOpRef(path: string) {
-  return { ref: path };
+  const normalized = String(path || '').trim();
+  const [step, ...rest] = normalized.split('.');
+  return {
+    step,
+    ...(rest.length ? { path: rest.join('.') } : {}),
+  };
 }
 
 const FORM_GRID_USES = new Set(['FormGridModel', 'AssignFormGridModel']);

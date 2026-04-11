@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import { throwBadRequest, throwConflict, throwInternalError } from '../errors';
-import { executeMutateOps, resolveFlowSurfaceValueRefs } from '../executor';
+import { executeMutateOps, resolveFlowSurfaceValueKeys } from '../executor';
 import type {
   FlowSurfaceDescribeValues,
   FlowSurfaceExecutePlanValues,
@@ -29,17 +29,17 @@ import {
   normalizePlanSelector as normalizePlanningSelector,
   normalizePlanSteps as normalizePlanningSteps,
 } from './compiler';
-import { assertBindRefKind as assertPlanningBindRefKind, buildPlanRefKind as buildPlanningRefKind } from './ref-kind';
+import { assertBindKeyKind as assertPlanningBindKeyKind, buildPlanKeyKind as buildPlanningKeyKind } from './key-kind';
 import {
-  annotateTreeRef as annotatePlanningTreeRef,
-  buildSurfaceRefsObject as buildPlanningSurfaceRefsObject,
-  collectDeclaredRefsFromTree as collectPlanningDeclaredRefsFromTree,
-  collectRequestRefsToPersist,
-  normalizeBindRefs as normalizePlanningBindRefs,
-} from './ref-registry';
-import { collectPersistableFlowSurfaceCreatedRefs, registerFlowSurfaceCreatedRefs } from './created-refs';
+  annotateTreeKey as annotatePlanningTreeKey,
+  buildSurfaceKeysObject as buildPlanningSurfaceKeysObject,
+  collectDeclaredKeysFromTree as collectPlanningDeclaredKeysFromTree,
+  collectRequestKeysToPersist,
+  normalizeBindKeys as normalizePlanningBindKeys,
+} from './key-registry';
+import { collectPersistableFlowSurfaceCreatedKeys, registerFlowSurfaceCreatedKeys } from './created-keys';
 import { validateFlowSurfacePayloadShape } from '../payload-shape';
-import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
+import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedKey } from './types';
 
 type FlowSurfacePlanningRuntimeDeps = {
   normalizeGetTarget: (value: any) => FlowSurfaceReadLocator;
@@ -54,7 +54,7 @@ type FlowSurfacePlanningRuntimeDeps = {
     resolved: FlowSurfaceResolvedTarget,
   ) => FlowSurfaceReadTarget;
   buildSurfaceContextFingerprint: (
-    context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'refMap'>,
+    context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'keyMap'>,
   ) => string;
   buildSurfaceReadPayload: (
     target: FlowSurfaceReadLocator,
@@ -62,12 +62,12 @@ type FlowSurfacePlanningRuntimeDeps = {
     node: any,
     options?: { transaction?: any },
   ) => Promise<any>;
-  assertRequestRefsPersistable: (
+  assertRequestKeysPersistable: (
     actionName: string,
-    refs: Map<string, FlowSurfaceResolvedRef>,
+    keys: Map<string, FlowSurfaceResolvedKey>,
     transaction?: any,
   ) => Promise<void>;
-  persistDeclaredRefForNode: (refInfo: FlowSurfaceResolvedRef, transaction?: any) => Promise<Record<string, any>>;
+  persistDeclaredKeyForNode: (keyInfo: FlowSurfaceResolvedKey, transaction?: any) => Promise<Record<string, any>>;
   dispatchPlanOnlyAction: (
     action: FlowSurfacePlanOnlyActionName,
     payload: Record<string, any>,
@@ -99,19 +99,19 @@ function assertPlanFingerprint(actionName: string, expectedFingerprint: any, act
 
 async function buildPlanSurfaceContext(
   surfaceSelectorInput: any,
-  bindRefsInput: any,
+  bindKeysInput: any,
   actionName: string,
   deps: FlowSurfacePlanningRuntimeDeps,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfacePlanSurfaceContext> {
-  const bindRefs = normalizePlanningBindRefs(actionName, bindRefsInput, {
+  const bindKeys = normalizePlanningBindKeys(actionName, bindKeysInput, {
     normalizeGetTarget: deps.normalizeGetTarget,
   });
   if (_.isUndefined(surfaceSelectorInput) || _.isNil(surfaceSelectorInput)) {
     return buildPlanningSurfaceContext(
       {
         actionName,
-        bindRefs,
+        bindKeys,
       },
       {
         resolveLocator: deps.resolveLocator,
@@ -119,16 +119,16 @@ async function buildPlanSurfaceContext(
         stripInternalSurfaceMetaFromNodeTree: deps.stripInternalSurfaceMetaFromNodeTree,
         buildReadTargetSummary: deps.buildReadTargetSummary,
         buildSurfaceContextFingerprint: deps.buildSurfaceContextFingerprint,
-        buildPlanRefKind: buildPlanningRefKind,
-        assertBindRefKind: assertPlanningBindRefKind,
-        collectDeclaredRefsFromTree: (node) =>
-          collectPlanningDeclaredRefsFromTree(
+        buildPlanKeyKind: buildPlanningKeyKind,
+        assertBindKeyKind: assertPlanningBindKeyKind,
+        collectDeclaredKeysFromTree: (node) =>
+          collectPlanningDeclaredKeysFromTree(
             node,
             {
               actionName,
-              buildPlanRefKind: buildPlanningRefKind,
+              buildPlanKeyKind: buildPlanningKeyKind,
             },
-            new Map<string, FlowSurfaceResolvedRef>(),
+            new Map<string, FlowSurfaceResolvedKey>(),
           ),
       },
       options,
@@ -142,17 +142,17 @@ async function buildPlanSurfaceContext(
     },
     'surface',
     {
-      allowRef: true,
+      allowKey: true,
     },
   );
   if ('step' in normalizedSurfaceSelector) {
-    throwBadRequest(`flowSurfaces ${actionName} surface only supports { ref } or { locator }`);
+    throwBadRequest(`flowSurfaces ${actionName} surface only supports { key } or { locator }`);
   }
   return buildPlanningSurfaceContext(
     {
       actionName,
       surfaceSelector: normalizedSurfaceSelector,
-      bindRefs,
+      bindKeys,
     },
     {
       resolveLocator: deps.resolveLocator,
@@ -160,16 +160,16 @@ async function buildPlanSurfaceContext(
       stripInternalSurfaceMetaFromNodeTree: deps.stripInternalSurfaceMetaFromNodeTree,
       buildReadTargetSummary: deps.buildReadTargetSummary,
       buildSurfaceContextFingerprint: deps.buildSurfaceContextFingerprint,
-      buildPlanRefKind: buildPlanningRefKind,
-      assertBindRefKind: assertPlanningBindRefKind,
-      collectDeclaredRefsFromTree: (node) =>
-        collectPlanningDeclaredRefsFromTree(
+      buildPlanKeyKind: buildPlanningKeyKind,
+      assertBindKeyKind: assertPlanningBindKeyKind,
+      collectDeclaredKeysFromTree: (node) =>
+        collectPlanningDeclaredKeysFromTree(
           node,
           {
             actionName,
-            buildPlanRefKind: buildPlanningRefKind,
+            buildPlanKeyKind: buildPlanningKeyKind,
           },
-          new Map<string, FlowSurfaceResolvedRef>(),
+          new Map<string, FlowSurfaceResolvedKey>(),
         ),
     },
     options,
@@ -185,16 +185,16 @@ async function buildDescribeSurfaceResponse(
     throwBadRequest(`flowSurfaces describeSurface requires locator`);
   }
   const tree = _.cloneDeep(context.publicTree);
-  const refByUid = new Map<string, string>();
-  context.refMap.forEach((value, key) => {
-    if (!refByUid.has(value.uid)) {
-      refByUid.set(value.uid, key);
+  const keyByUid = new Map<string, string>();
+  context.keyMap.forEach((value, key) => {
+    if (!keyByUid.has(value.uid)) {
+      keyByUid.set(value.uid, key);
     }
   });
-  annotatePlanningTreeRef(tree, refByUid);
+  annotatePlanningTreeKey(tree, keyByUid);
   const result = await deps.buildSurfaceReadPayload(context.surfaceTarget, context.surfaceResolved, tree, options);
   result.fingerprint = context.fingerprint;
-  result.refs = buildPlanningSurfaceRefsObject(context.refMap);
+  result.keys = buildPlanningSurfaceKeysObject(context.keyMap);
   return result;
 }
 
@@ -216,7 +216,7 @@ async function compilePlanStep(
   context: FlowSurfacePlanSurfaceContext,
   deps: FlowSurfacePlanningRuntimeDeps,
   priorStepIds: Set<string>,
-  priorCreatedRefs: Set<string>,
+  priorCreatedKeys: Set<string>,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceCompiledPlanStep> {
   return compilePlanningStep(
@@ -227,10 +227,10 @@ async function compilePlanStep(
     {
       normalizeGetTarget: deps.normalizeGetTarget,
       resolveLocator: deps.resolveLocator,
-      buildPlanRefKind: buildPlanningRefKind,
+      buildPlanKeyKind: buildPlanningKeyKind,
     },
     priorStepIds,
-    priorCreatedRefs,
+    priorCreatedKeys,
     options,
   );
 }
@@ -262,11 +262,11 @@ async function executeCompiledPlanStep(
   }
   const result = await deps.dispatchPlanOnlyAction(
     compiled.action,
-    resolveFlowSurfaceValueRefs(_.cloneDeep(compiled.payload), execCtx.refs),
+    resolveFlowSurfaceValueKeys(_.cloneDeep(compiled.payload), execCtx.keys),
     transaction,
   );
   if (compiled.id) {
-    execCtx.refs.set(compiled.id, result);
+    execCtx.keys.set(compiled.id, result);
   }
   return result;
 }
@@ -276,8 +276,8 @@ function assertBootstrapPlanConstraints(
   values: FlowSurfaceValidatePlanValues,
   compiledSteps: FlowSurfaceCompiledPlanStep[],
 ) {
-  if (!_.isUndefined(values.bindRefs) && (!Array.isArray(values.bindRefs) || values.bindRefs.length > 0)) {
-    throwBadRequest(`flowSurfaces ${actionName} bindRefs require surface`);
+  if (!_.isUndefined(values.bindKeys) && (!Array.isArray(values.bindKeys) || values.bindKeys.length > 0)) {
+    throwBadRequest(`flowSurfaces ${actionName} bindKeys require surface`);
   }
   if (!_.isUndefined(values.expectedFingerprint) && String(values.expectedFingerprint || '').trim()) {
     throwBadRequest(`flowSurfaces ${actionName} expectedFingerprint requires surface`);
@@ -288,7 +288,7 @@ function assertBootstrapPlanConstraints(
         continue;
       }
       if (selector.source !== 'step' && selector.source !== 'created') {
-        throwBadRequest(`flowSurfaces ${actionName} bootstrap plan only supports step or created-ref selectors`);
+        throwBadRequest(`flowSurfaces ${actionName} bootstrap plan only supports step or created-key selectors`);
       }
     }
   }
@@ -318,7 +318,7 @@ export async function describeSurface(
     throwBadRequest(`flowSurfaces describeSurface requires locator`);
   }
   const locator = deps.normalizeGetTarget(values.locator);
-  const context = await buildPlanSurfaceContext({ locator }, values.bindRefs, 'describeSurface', deps, options);
+  const context = await buildPlanSurfaceContext({ locator }, values.bindKeys, 'describeSurface', deps, options);
   return buildDescribeSurfaceResponse(context, deps, options);
 }
 
@@ -330,14 +330,14 @@ export async function validatePlan(
   if (!_.isPlainObject(values)) {
     throwBadRequest(`flowSurfaces validatePlan requires plan`);
   }
-  const context = await buildPlanSurfaceContext(values.surface, values.bindRefs, 'validatePlan', deps, options);
+  const context = await buildPlanSurfaceContext(values.surface, values.bindKeys, 'validatePlan', deps, options);
   if (context.fingerprint) {
     assertPlanFingerprint('validatePlan', values.expectedFingerprint, context.fingerprint);
   }
   const steps = normalizePlanSteps('validatePlan', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
   const priorStepIds = new Set<string>();
-  const priorCreatedRefs = new Set<string>();
+  const priorCreatedKeys = new Set<string>();
   for (const [index, step] of steps.entries()) {
     const compiled = await compilePlanStep(
       'validatePlan',
@@ -346,22 +346,22 @@ export async function validatePlan(
       context,
       deps,
       priorStepIds,
-      priorCreatedRefs,
+      priorCreatedKeys,
       options,
     );
     compiledSteps.push(compiled);
     if (step.id) {
       priorStepIds.add(step.id);
     }
-    for (const createdRef of compiled.createdRefs) {
-      priorCreatedRefs.add(createdRef.ref);
+    for (const createdKey of compiled.createdKeys) {
+      priorCreatedKeys.add(createdKey.key);
     }
   }
   if (!context.surfaceSelector) {
     assertBootstrapPlanConstraints('validatePlan', values, compiledSteps);
   }
-  const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
-  await deps.assertRequestRefsPersistable('validatePlan', requestRefsToPersist, options.transaction);
+  const requestKeysToPersist = collectRequestKeysToPersist(context, compiledSteps);
+  await deps.assertRequestKeysPersistable('validatePlan', requestKeysToPersist, options.transaction);
   const validation =
     values.validation?.collectFieldIssues && deps.collectValidatePlanIssues
       ? await deps.collectValidatePlanIssues(values, compiledSteps, options)
@@ -370,7 +370,7 @@ export async function validatePlan(
   return {
     target: context.targetSummary,
     fingerprint: context.fingerprint,
-    refs: buildPlanningSurfaceRefsObject(context.refMap),
+    keys: buildPlanningSurfaceKeysObject(context.keyMap),
     compiledSteps: serializeCompiledPlanSteps(compiledSteps),
     ...(validation ? { validation } : {}),
   };
@@ -384,14 +384,14 @@ export async function executePlan(
   if (!_.isPlainObject(values)) {
     throwBadRequest(`flowSurfaces executePlan requires plan`);
   }
-  const context = await buildPlanSurfaceContext(values.surface, values.bindRefs, 'executePlan', deps, options);
+  const context = await buildPlanSurfaceContext(values.surface, values.bindKeys, 'executePlan', deps, options);
   if (context.fingerprint) {
     assertPlanFingerprint('executePlan', values.expectedFingerprint, context.fingerprint);
   }
   const steps = normalizePlanSteps('executePlan', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
   const priorStepIds = new Set<string>();
-  const priorCreatedRefs = new Set<string>();
+  const priorCreatedKeys = new Set<string>();
   for (const [index, step] of steps.entries()) {
     const compiled = await compilePlanStep(
       'executePlan',
@@ -400,52 +400,52 @@ export async function executePlan(
       context,
       deps,
       priorStepIds,
-      priorCreatedRefs,
+      priorCreatedKeys,
       options,
     );
     compiledSteps.push(compiled);
     if (step.id) {
       priorStepIds.add(step.id);
     }
-    for (const createdRef of compiled.createdRefs) {
-      priorCreatedRefs.add(createdRef.ref);
+    for (const createdKey of compiled.createdKeys) {
+      priorCreatedKeys.add(createdKey.key);
     }
   }
   if (!context.surfaceSelector) {
     assertBootstrapPlanConstraints('executePlan', values, compiledSteps);
   }
-  const requestRefsToPersist = collectRequestRefsToPersist(context, compiledSteps);
-  await deps.assertRequestRefsPersistable('executePlan', requestRefsToPersist, options.transaction);
+  const requestKeysToPersist = collectRequestKeysToPersist(context, compiledSteps);
+  await deps.assertRequestKeysPersistable('executePlan', requestKeysToPersist, options.transaction);
 
   const results = [] as Array<Record<string, any>>;
-  const persistedRefs = [] as Array<Record<string, any>>;
+  const persistedKeys = [] as Array<Record<string, any>>;
   const execCtx: FlowSurfaceExecutorContext = {
     transaction: options.transaction,
-    refs: new Map(),
+    keys: new Map(Array.from(context.keyMap.entries()).map(([key, info]) => [key, info.uid])),
     clientKeyToUid: {},
   };
   for (const compiled of compiledSteps) {
     const result = await executeCompiledPlanStep(compiled, deps, execCtx, options.transaction);
-    const createdRefs = registerFlowSurfaceCreatedRefs(result, compiled.createdRefs, execCtx.refs);
-    const persistedCreatedRefs = collectPersistableFlowSurfaceCreatedRefs(result, compiled.createdRefs);
+    const createdKeys = registerFlowSurfaceCreatedKeys(result, compiled.createdKeys, execCtx.keys);
+    const persistedCreatedKeys = collectPersistableFlowSurfaceCreatedKeys(result, compiled.createdKeys);
     results.push({
       index: compiled.index,
       ...(compiled.id ? { id: compiled.id } : {}),
       action: compiled.action,
       result,
-      ...(createdRefs.length ? { createdRefs } : {}),
+      ...(createdKeys.length ? { createdKeys } : {}),
     });
-    persistedCreatedRefs.forEach((item) => {
-      persistedRefs.push({
-        ref: item.ref,
+    persistedCreatedKeys.forEach((item) => {
+      persistedKeys.push({
+        key: item.key,
         uid: item.uid,
         persisted: true,
       });
     });
   }
 
-  for (const refInfo of requestRefsToPersist.values()) {
-    persistedRefs.push(await deps.persistDeclaredRefForNode(refInfo, options.transaction));
+  for (const keyInfo of requestKeysToPersist.values()) {
+    persistedKeys.push(await deps.persistDeclaredKeyForNode(keyInfo, options.transaction));
   }
 
   let afterDescribe: any = null;
@@ -475,9 +475,9 @@ export async function executePlan(
     target: afterDescribe?.target || context.targetSummary,
     fingerprintBefore: context.fingerprint,
     surfaceExistsAfterExecute,
-    refs: afterDescribe?.refs || {},
+    keys: afterDescribe?.keys || {},
     compiledSteps: serializeCompiledPlanSteps(compiledSteps),
     results,
-    persistedRefs,
+    persistedKeys,
   };
 }

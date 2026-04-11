@@ -15,7 +15,7 @@ export type FlowSurfaceDefaultActionPopupType = 'addNew' | 'view' | 'edit';
 export type FlowSurfaceDefaultActionPopupUse = 'AddNewActionModel' | 'ViewActionModel' | 'EditActionModel';
 
 type FlowSurfaceDefaultActionPopupSubmitAction = {
-  ref: string;
+  key: string;
   type: 'submit';
   settings: {
     title: string;
@@ -29,7 +29,7 @@ export type FlowSurfaceDefaultActionPopupConfig = {
   use: FlowSurfaceDefaultActionPopupUse;
   defaultButtonTitle: string;
   defaultPopupTabTitle: string;
-  blockRef: string;
+  blockKey: string;
   blockType: 'createForm' | 'editForm' | 'details';
   blockUse: 'CreateFormModel' | 'EditFormModel' | 'DetailsBlockModel';
   resourceBinding: 'currentCollection' | 'currentRecord';
@@ -67,7 +67,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
     use: 'AddNewActionModel',
     defaultButtonTitle: 'Add new',
     defaultPopupTabTitle: 'Add new',
-    blockRef: 'defaultCreateForm',
+    blockKey: 'defaultCreateForm',
     blockType: 'createForm',
     blockUse: 'CreateFormModel',
     resourceBinding: 'currentCollection',
@@ -77,7 +77,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       assignRules: [],
     },
     submitAction: {
-      ref: 'defaultSubmit',
+      key: 'defaultSubmit',
       type: 'submit',
       settings: {
         title: 'Save',
@@ -91,7 +91,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
     use: 'ViewActionModel',
     defaultButtonTitle: 'View',
     defaultPopupTabTitle: 'Details',
-    blockRef: 'defaultDetails',
+    blockKey: 'defaultDetails',
     blockType: 'details',
     blockUse: 'DetailsBlockModel',
     resourceBinding: 'currentRecord',
@@ -110,7 +110,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
     use: 'EditActionModel',
     defaultButtonTitle: 'Edit',
     defaultPopupTabTitle: 'Edit',
-    blockRef: 'defaultEditForm',
+    blockKey: 'defaultEditForm',
     blockType: 'editForm',
     blockUse: 'EditFormModel',
     resourceBinding: 'currentRecord',
@@ -124,7 +124,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       },
     },
     submitAction: {
-      ref: 'defaultSubmit',
+      key: 'defaultSubmit',
       type: 'submit',
       settings: {
         title: 'Save Changes',
@@ -270,7 +270,7 @@ export function buildFlowSurfaceDefaultActionPopupBlocks(use: string | undefined
   return [
     _.pickBy(
       {
-        ref: actionConfig.blockRef,
+        key: actionConfig.blockKey,
         type: actionConfig.blockType,
         resource: {
           binding: actionConfig.resourceBinding,

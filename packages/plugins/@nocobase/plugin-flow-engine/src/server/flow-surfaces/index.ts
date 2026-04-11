@@ -175,10 +175,6 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     describeSurface: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.describeSurface(getValues(ctx)));
     },
-    validateDsl: async (ctx, next) => {
-      ensureValidatePlanPreviewWritePermission(ctx);
-      await runFlowSurfaceAction(ctx, next, () => service.validateDsl(getValues(ctx)));
-    },
     validatePlan: async (ctx, next) => {
       ensureValidatePlanPreviewWritePermission(ctx);
       await runFlowSurfaceAction(ctx, next, () => service.validatePlan(getValues(ctx)));

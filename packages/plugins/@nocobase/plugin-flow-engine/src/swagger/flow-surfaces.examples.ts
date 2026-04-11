@@ -24,103 +24,15 @@ export const flowSurfaceExamples = {
     locator: {
       pageSchemaUid: 'employees-page-schema',
     },
-    bindRefs: [
+    bindKeys: [
       {
-        ref: 'employeesTable',
+        key: 'employeesTable',
         locator: {
           uid: 'employees-table-uid',
         },
         expectedKind: 'block',
       },
     ],
-  },
-  validateDsl: {
-    dsl: {
-      version: '1',
-      title: 'Employees',
-      target: {
-        mode: 'create-page',
-      },
-      navigation: {
-        item: {
-          title: 'Employees',
-        },
-      },
-      dataSources: [
-        {
-          key: 'employees',
-          kind: 'collection',
-          dataSourceKey: 'main',
-          collectionName: 'employees',
-        },
-        {
-          key: 'employeeRecord',
-          kind: 'binding',
-          popupId: 'employeeViewPopup',
-          binding: 'currentRecord',
-          collectionName: 'employees',
-        },
-      ],
-      layout: {
-        kind: 'rows-columns',
-        rows: [
-          {
-            key: 'main',
-            columns: [
-              { key: 'filter', width: 3, items: ['employeesFilter'] },
-              { key: 'table', width: 7, items: ['employeesTable'] },
-            ],
-          },
-        ],
-      },
-      blocks: [
-        {
-          id: 'employeesFilter',
-          type: 'filterForm',
-          title: 'Employee filter',
-          dataBound: true,
-          dataSourceKey: 'employees',
-          fields: [{ fieldPath: 'nickname' }],
-          actions: [{ id: 'search', type: 'submit', title: 'Search' }],
-        },
-        {
-          id: 'employeesTable',
-          type: 'table',
-          title: 'Employees',
-          dataBound: true,
-          dataSourceKey: 'employees',
-          fields: [{ fieldPath: 'nickname' }],
-          recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
-        },
-      ],
-      interactions: [
-        {
-          type: 'filter-target',
-          sourceBlockId: 'employeesFilter',
-          fieldPath: 'nickname',
-          targetBlockId: 'employeesTable',
-        },
-      ],
-      popups: [
-        {
-          id: 'employeeViewPopup',
-          title: 'View employee',
-          completion: 'completed',
-          blocks: [
-            {
-              id: 'employeeDetails',
-              type: 'details',
-              title: 'Employee details',
-              dataBound: true,
-              dataSourceKey: 'employeeRecord',
-              fields: [{ fieldPath: 'nickname' }],
-            },
-          ],
-        },
-      ],
-      assumptions: [],
-      unresolvedQuestions: [],
-    },
   },
   validatePlan: {
     validation: {
@@ -132,9 +44,9 @@ export const flowSurfaceExamples = {
       },
     },
     expectedFingerprint: 'a1b2c3d4e5f6',
-    bindRefs: [
+    bindKeys: [
       {
-        ref: 'employeesTable',
+        key: 'employeesTable',
         locator: {
           uid: 'employees-table-uid',
         },
@@ -148,7 +60,7 @@ export const flowSurfaceExamples = {
           action: 'configure',
           selectors: {
             target: {
-              ref: 'employeesTable',
+              key: 'employeesTable',
             },
           },
           values: {
@@ -161,46 +73,106 @@ export const flowSurfaceExamples = {
     },
   },
   executeDsl: {
-    verificationMode: 'strict',
-    dsl: {
-      version: '1',
-      title: 'Employees',
-      target: {
-        mode: 'create-page',
+    version: '1',
+    mode: 'create',
+    navigation: {
+      group: {
+        title: 'Workspace',
       },
-      dataSources: [
-        {
-          key: 'employees',
-          kind: 'collection',
-          dataSourceKey: 'main',
-          collectionName: 'employees',
+      item: {
+        title: 'Employees',
+      },
+    },
+    page: {
+      title: 'Employees',
+      documentTitle: 'Employees workspace',
+      enableHeader: true,
+      displayTitle: true,
+    },
+    assets: {
+      scripts: {
+        overviewBanner: {
+          version: '1.0.0',
+          code: "ctx.render('<div>Employees overview</div>');",
         },
-      ],
-      layout: {
-        kind: 'rows-columns',
-        rows: [
+      },
+    },
+    tabs: [
+      {
+        title: 'Overview',
+        blocks: [
           {
-            key: 'main',
-            columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
+            type: 'table',
+            collection: 'employees',
+            fields: ['nickname', 'department.title'],
+            recordActions: [
+              {
+                type: 'view',
+                title: 'View',
+                popup: {
+                  title: 'Employee details',
+                  blocks: [
+                    {
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                        collectionName: 'employees',
+                      },
+                      fields: ['nickname', 'department.title'],
+                    },
+                  ],
+                },
+              },
+            ],
           },
         ],
       },
-      blocks: [
-        {
-          id: 'employeesTable',
-          type: 'table',
-          title: 'Employees',
-          dataBound: true,
-          dataSourceKey: 'employees',
-          fields: [{ fieldPath: 'nickname' }],
-          actions: [{ id: 'addEmployee', type: 'addNew', title: 'Add employee' }],
-        },
-      ],
-      interactions: [],
-      popups: [],
-      assumptions: [],
-      unresolvedQuestions: [],
+      {
+        title: 'Summary',
+        blocks: [
+          {
+            type: 'jsBlock',
+            title: 'Overview banner',
+            script: 'overviewBanner',
+          },
+        ],
+      },
+    ],
+  },
+  executeDslReplace: {
+    version: '1',
+    mode: 'replace',
+    target: {
+      pageSchemaUid: 'employees-page-schema',
     },
+    page: {
+      title: 'Employees workspace',
+      documentTitle: 'Employees replace flow',
+      displayTitle: false,
+      enableTabs: true,
+    },
+    tabs: [
+      {
+        title: 'Overview',
+        blocks: [
+          {
+            type: 'table',
+            collection: 'employees',
+            fields: ['nickname', 'department.title'],
+          },
+        ],
+      },
+      {
+        title: 'Summary',
+        blocks: [
+          {
+            type: 'details',
+            collection: 'employees',
+            fields: ['nickname', 'status'],
+          },
+        ],
+      },
+    ],
   },
   executePlan: {
     plan: {
@@ -251,14 +223,14 @@ export const flowSurfaceExamples = {
             mode: 'append',
             blocks: [
               {
-                ref: 'usersTable',
+                key: 'usersTable',
                 type: 'table',
                 resource: {
                   dataSourceKey: 'main',
                   collectionName: 'users',
                 },
                 fields: ['username', 'nickname'],
-                recordActions: [{ ref: 'viewUser', type: 'view' }],
+                recordActions: [{ key: 'viewUser', type: 'view' }],
               },
             ],
           },
@@ -268,14 +240,14 @@ export const flowSurfaceExamples = {
           action: 'compose',
           selectors: {
             target: {
-              ref: 'viewUser.popupGrid',
+              key: 'viewUser.popupGrid',
             },
           },
           values: {
             mode: 'replace',
             blocks: [
               {
-                ref: 'userDetails',
+                key: 'userDetails',
                 type: 'details',
                 resource: {
                   binding: 'currentRecord',
@@ -295,7 +267,7 @@ export const flowSurfaceExamples = {
     mode: 'append',
     blocks: [
       {
-        ref: 'filter',
+        key: 'filter',
         type: 'filterForm',
         resource: {
           dataSourceKey: 'main',
@@ -314,7 +286,7 @@ export const flowSurfaceExamples = {
         actions: ['submit', 'reset', 'collapse'],
       },
       {
-        ref: 'table',
+        key: 'table',
         type: 'table',
         resource: {
           dataSourceKey: 'main',
@@ -331,7 +303,7 @@ export const flowSurfaceExamples = {
               mode: 'replace',
               blocks: [
                 {
-                  ref: 'details',
+                  key: 'details',
                   type: 'details',
                   resource: {
                     dataSourceKey: 'main',
@@ -351,11 +323,11 @@ export const flowSurfaceExamples = {
       rows: [
         [
           {
-            ref: 'filter',
+            key: 'filter',
             span: 3,
           },
           {
-            ref: 'table',
+            key: 'table',
             span: 7,
           },
         ],
@@ -368,14 +340,14 @@ export const flowSurfaceExamples = {
     },
     blocks: [
       {
-        ref: 'markdown',
+        key: 'markdown',
         type: 'markdown',
         settings: {
           content: '# Team handbook',
         },
       },
       {
-        ref: 'iframe',
+        key: 'iframe',
         type: 'iframe',
         settings: {
           mode: 'url',
@@ -384,7 +356,7 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        ref: 'panel',
+        key: 'panel',
         type: 'actionPanel',
         settings: {
           layout: 'list',
@@ -402,7 +374,7 @@ export const flowSurfaceExamples = {
     },
     blocks: [
       {
-        ref: 'employeesList',
+        key: 'employeesList',
         type: 'list',
         resource: {
           dataSourceKey: 'main',
@@ -424,7 +396,7 @@ export const flowSurfaceExamples = {
               mode: 'replace',
               blocks: [
                 {
-                  ref: 'details',
+                  key: 'details',
                   type: 'details',
                   resource: {
                     dataSourceKey: 'main',
@@ -450,7 +422,7 @@ export const flowSurfaceExamples = {
     },
     blocks: [
       {
-        ref: 'employeeCards',
+        key: 'employeeCards',
         type: 'gridCard',
         resource: {
           dataSourceKey: 'main',
@@ -478,7 +450,7 @@ export const flowSurfaceExamples = {
     },
     blocks: [
       {
-        ref: 'customHero',
+        key: 'customHero',
         type: 'jsBlock',
         settings: {
           title: 'Custom hero',
@@ -707,7 +679,7 @@ export const flowSurfaceExamples = {
     mode: 'replace',
     blocks: [
       {
-        ref: 'details',
+        key: 'details',
         type: 'details',
         resource: {
           binding: 'currentRecord',
@@ -723,7 +695,7 @@ export const flowSurfaceExamples = {
     mode: 'replace',
     blocks: [
       {
-        ref: 'employees',
+        key: 'employees',
         type: 'table',
         resource: {
           binding: 'associatedRecords',
@@ -894,7 +866,7 @@ export const flowSurfaceExamples = {
       mode: 'replace',
       blocks: [
         {
-          ref: 'departmentDetails',
+          key: 'departmentDetails',
           type: 'details',
           resource: {
             binding: 'currentRecord',
@@ -1000,7 +972,7 @@ export const flowSurfaceExamples = {
       mode: 'replace',
       blocks: [
         {
-          ref: 'details',
+          key: 'details',
           type: 'details',
           resource: {
             dataSourceKey: 'main',
@@ -1029,7 +1001,7 @@ export const flowSurfaceExamples = {
     },
     blocks: [
       {
-        ref: 'usersTable',
+        key: 'usersTable',
         type: 'table',
         resourceInit: {
           dataSourceKey: 'main',
@@ -1041,7 +1013,7 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        ref: 'teamNotes',
+        key: 'teamNotes',
         type: 'markdown',
         settings: {
           content: '# Team notes',
@@ -1055,7 +1027,7 @@ export const flowSurfaceExamples = {
     },
     fields: [
       {
-        ref: 'username',
+        key: 'username',
         fieldPath: 'username',
         settings: {
           title: 'User name',
@@ -1065,7 +1037,7 @@ export const flowSurfaceExamples = {
           mode: 'replace',
           blocks: [
             {
-              ref: 'details',
+              key: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -1076,7 +1048,7 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        ref: 'nickname',
+        key: 'nickname',
         fieldPath: 'nickname',
         renderer: 'js',
         settings: {
@@ -1093,7 +1065,7 @@ export const flowSurfaceExamples = {
     },
     actions: [
       {
-        ref: 'submit',
+        key: 'submit',
         type: 'submit',
         settings: {
           title: 'Search',
@@ -1101,7 +1073,7 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        ref: 'reset',
+        key: 'reset',
         type: 'reset',
         settings: {
           title: 'Reset filters',
@@ -1115,7 +1087,7 @@ export const flowSurfaceExamples = {
     },
     recordActions: [
       {
-        ref: 'view',
+        key: 'view',
         type: 'view',
         settings: {
           title: 'View user',
@@ -1129,7 +1101,7 @@ export const flowSurfaceExamples = {
           mode: 'replace',
           blocks: [
             {
-              ref: 'details',
+              key: 'details',
               type: 'details',
               resource: {
                 dataSourceKey: 'main',
@@ -1141,14 +1113,14 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        ref: 'edit',
+        key: 'edit',
         type: 'edit',
         settings: {
           title: 'Edit user',
         },
       },
       {
-        ref: 'delete',
+        key: 'delete',
         type: 'delete',
         settings: {
           title: 'Delete user',
@@ -1235,7 +1207,8 @@ export const flowSurfaceExamples = {
         type: 'createPage',
         values: {
           menuRouteId: {
-            ref: 'menu.routeId',
+            step: 'menu',
+            path: 'routeId',
           },
           tabTitle: 'Overview',
         },
@@ -1246,7 +1219,8 @@ export const flowSurfaceExamples = {
         values: {
           target: {
             uid: {
-              ref: 'page.tabSchemaUid',
+              step: 'page',
+              path: 'tabSchemaUid',
             },
           },
           type: 'table',
@@ -1261,7 +1235,8 @@ export const flowSurfaceExamples = {
         values: {
           target: {
             uid: {
-              ref: 'table.uid',
+              step: 'table',
+              path: 'uid',
             },
           },
           fieldPath: 'nickname',

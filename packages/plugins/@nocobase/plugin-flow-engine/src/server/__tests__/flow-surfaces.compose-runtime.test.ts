@@ -9,7 +9,7 @@
 
 import {
   compileComposeExecutionPlan,
-  resolveComposeTargetRef,
+  resolveComposeTargetKey,
   type FlowSurfaceComposeNormalizedBlockSpec,
 } from '../flow-surfaces/compose-compiler';
 import { executeComposeRuntime } from '../flow-surfaces/compose-runtime';
@@ -18,14 +18,14 @@ describe('flowSurfaces compose runtime helpers', () => {
   it('should compile list fields against item containers and preserve append layout strategy', () => {
     const normalizedBlocks: FlowSurfaceComposeNormalizedBlockSpec[] = [
       {
-        ref: 'employeeCards',
+        key: 'employeeCards',
         type: 'gridCard',
         settings: {
           title: 'Employees',
         },
         fields: [
           {
-            ref: 'nickname',
+            key: 'nickname',
             fieldPath: 'nickname',
           },
         ],
@@ -44,10 +44,10 @@ describe('flowSurfaces compose runtime helpers', () => {
     expect(plan.fields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          blockRef: 'employeeCards',
+          blockKey: 'employeeCards',
           containerSource: 'item',
           payload: expect.objectContaining({
-            ref: 'nickname',
+            key: 'nickname',
             fieldPath: 'nickname',
           }),
         }),
@@ -79,7 +79,7 @@ describe('flowSurfaces compose runtime helpers', () => {
       existingItemUids: ['old-1', 'old-2'],
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           fields: [],
           actions: [],
@@ -156,14 +156,14 @@ describe('flowSurfaces compose runtime helpers', () => {
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           settings: {
             title: 'Employees',
           },
           fields: [
             {
-              ref: 'nickname',
+              key: 'nickname',
               fieldPath: 'nickname',
               settings: {
                 title: 'Nickname',
@@ -206,12 +206,12 @@ describe('flowSurfaces compose runtime helpers', () => {
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           fields: [],
           actions: [
             {
-              ref: 'addNew',
+              key: 'addNew',
               type: 'addNew',
             },
           ],
@@ -250,20 +250,20 @@ describe('flowSurfaces compose runtime helpers', () => {
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           settings: {
             title: 'Employees',
           },
           fields: [
             {
-              ref: 'nickname',
+              key: 'nickname',
               fieldPath: 'nickname',
             },
           ],
           actions: [
             {
-              ref: 'refresh',
+              key: 'refresh',
               type: 'refresh',
               settings: {
                 title: 'Refresh',
@@ -275,7 +275,7 @@ describe('flowSurfaces compose runtime helpers', () => {
           ],
           recordActions: [
             {
-              ref: 'view',
+              key: 'view',
               type: 'view',
               settings: {
                 title: 'View',
@@ -328,7 +328,7 @@ describe('flowSurfaces compose runtime helpers', () => {
       applyActionPopup: async (actionName, actionUid, popup) => {
         calls.actionPopup.push({ actionName, actionUid, popup });
       },
-      collectActionRefs: async (actionUid) => ({
+      collectActionKeys: async (actionUid) => ({
         popupPageUid: `${actionUid}-popup-page`,
       }),
       buildAppendLayoutPayload: async (input) => {
@@ -386,24 +386,24 @@ describe('flowSurfaces compose runtime helpers', () => {
         mode: 'append',
         blocks: [
           expect.objectContaining({
-            ref: 'table',
+            key: 'table',
             uid: 'block-1',
             actionsColumnUid: 'actions-column-1',
             fields: [
               expect.objectContaining({
-                ref: 'nickname',
+                key: 'nickname',
                 fieldUid: 'field-1',
               }),
             ],
             actions: [
               expect.objectContaining({
-                ref: 'refresh',
+                key: 'refresh',
                 popupPageUid: 'action-1-popup-page',
               }),
             ],
             recordActions: [
               expect.objectContaining({
-                ref: 'view',
+                key: 'view',
                 popupPageUid: 'record-action-1-popup-page',
               }),
             ],
@@ -422,11 +422,11 @@ describe('flowSurfaces compose runtime helpers', () => {
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'employeeCards',
+          key: 'employeeCards',
           type: 'gridCard',
           fields: [
             {
-              ref: 'nickname',
+              key: 'nickname',
               fieldPath: 'nickname',
             },
           ],
@@ -477,21 +477,21 @@ describe('flowSurfaces compose runtime helpers', () => {
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'details',
+          key: 'details',
           type: 'details',
           fields: [
             {
-              ref: 'title',
+              key: 'title',
               fieldPath: 'title',
             },
             {
-              ref: 'hidden',
+              key: 'hidden',
               fieldPath: 'hidden',
             },
           ],
           actions: [
             {
-              ref: 'refresh',
+              key: 'refresh',
               type: 'refresh',
             },
           ],
@@ -509,25 +509,25 @@ describe('flowSurfaces compose runtime helpers', () => {
         uid: 'block-1',
       }),
       createField: async (_payload, spec) => {
-        fieldOrder.push(spec.ref);
-        if (spec.ref === 'hidden') {
+        fieldOrder.push(spec.key);
+        if (spec.key === 'hidden') {
           throw new Error('hidden is not addable');
         }
         return {
-          uid: `${spec.ref}-wrapper`,
-          wrapperUid: `${spec.ref}-wrapper`,
-          fieldUid: `${spec.ref}-field`,
-          innerFieldUid: `${spec.ref}-field`,
+          uid: `${spec.key}-wrapper`,
+          wrapperUid: `${spec.key}-wrapper`,
+          fieldUid: `${spec.key}-field`,
+          innerFieldUid: `${spec.key}-field`,
         };
       },
       onFieldError: async ({ error, spec }) => {
-        capturedErrors.push(`${spec.ref}:${(error as Error).message}`);
+        capturedErrors.push(`${spec.key}:${(error as Error).message}`);
         return 'continue' as const;
       },
       createAction: async (_payload, spec) => {
-        actionOrder.push(spec.ref);
+        actionOrder.push(spec.key);
         return {
-          uid: `${spec.ref}-action`,
+          uid: `${spec.key}-action`,
         };
       },
       createRecordAction: async () => ({
@@ -546,36 +546,36 @@ describe('flowSurfaces compose runtime helpers', () => {
     expect(actionOrder).toEqual(['refresh']);
     expect(result.blocks[0].fields).toEqual([
       expect.objectContaining({
-        ref: 'title',
+        key: 'title',
         fieldUid: 'title-field',
       }),
     ]);
     expect(result.blocks[0].actions[0]).toEqual(
       expect.objectContaining({
-        ref: 'refresh',
+        key: 'refresh',
         uid: 'refresh-action',
       }),
     );
   });
 
-  it('should resolve cross-block field target refs during runtime', async () => {
+  it('should resolve cross-block field target keys during runtime', async () => {
     const plan = compileComposeExecutionPlan({
       gridUid: 'grid-1',
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           fields: [],
           actions: [],
           recordActions: [],
         },
         {
-          ref: 'filter',
+          key: 'filter',
           type: 'filterForm',
           fields: [
             {
-              ref: 'status',
+              key: 'status',
               fieldPath: 'status',
               target: 'table',
             },
@@ -589,7 +589,7 @@ describe('flowSurfaces compose runtime helpers', () => {
     const fieldPayloads: Array<Record<string, unknown>> = [];
     await executeComposeRuntime(plan, {
       createBlock: async (_payload, spec) => ({
-        uid: `${spec.ref}-uid`,
+        uid: `${spec.key}-uid`,
       }),
       createField: async (payload) => {
         fieldPayloads.push(payload);
@@ -613,26 +613,26 @@ describe('flowSurfaces compose runtime helpers', () => {
 
     expect(fieldPayloads[0]).toEqual(
       expect.objectContaining({
-        ref: 'status',
+        key: 'status',
         defaultTargetUid: 'table-uid',
       }),
     );
   });
 
-  it('should pass full created refs to explicit layout builder', async () => {
+  it('should pass full created keys to explicit layout builder', async () => {
     const explicitLayoutInputs: Array<Record<string, unknown>> = [];
     const plan = compileComposeExecutionPlan({
       gridUid: 'grid-1',
       mode: 'replace',
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           fields: [],
           actions: [],
           recordActions: [
             {
-              ref: 'view',
+              key: 'view',
               type: 'view',
             },
           ],
@@ -673,7 +673,7 @@ describe('flowSurfaces compose runtime helpers', () => {
     expect(explicitLayoutInputs[0]).toEqual(
       expect.objectContaining({
         gridUid: 'grid-1',
-        createdByRef: expect.objectContaining({
+        createdByKey: expect.objectContaining({
           table: expect.objectContaining({
             uid: 'block-1',
             itemUid: 'item-1',
@@ -684,11 +684,11 @@ describe('flowSurfaces compose runtime helpers', () => {
     );
   });
 
-  it('should reject empty or unknown target refs', () => {
-    expect(() => resolveComposeTargetRef('', {}, 'field')).toThrow(
-      `flowSurfaces compose field target reference cannot be empty`,
+  it('should reject empty or unknown target keys', () => {
+    expect(() => resolveComposeTargetKey('', {}, 'field')).toThrow(
+      `flowSurfaces compose field target key cannot be empty`,
     );
-    expect(() => resolveComposeTargetRef('missing', {}, 'layout')).toThrow(
+    expect(() => resolveComposeTargetKey('missing', {}, 'layout')).toThrow(
       `flowSurfaces compose layout target 'missing' was not created in the current compose call`,
     );
   });
@@ -699,7 +699,7 @@ describe('flowSurfaces compose runtime helpers', () => {
       mode: 'append',
       normalizedBlocks: [
         {
-          ref: 'table',
+          key: 'table',
           type: 'table',
           fields: [],
           actions: [],

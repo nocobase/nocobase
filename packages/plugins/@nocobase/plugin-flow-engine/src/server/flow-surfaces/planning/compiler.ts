@@ -16,34 +16,30 @@ import type {
   FlowSurfacePlanSelector,
   FlowSurfacePlanRequestValues,
   FlowSurfacePlanStep,
-  FlowSurfacePlanStepRef,
+  FlowSurfacePlanStepLink,
   FlowSurfaceReadLocator,
   FlowSurfaceResolvedTarget,
 } from '../types';
 import { getFlowSurfacePlanActionSpec, getFlowSurfacePlanSelectorRequirements } from './action-specs';
-import {
-  normalizeFlowSurfacePlanStepRef,
-  replaceFlowSurfacePlanStepRefs,
-  toFlowSurfaceStepResultRefPath,
-} from './step-ref';
+import { normalizeFlowSurfacePlanStepLink, replaceFlowSurfacePlanStepLinks } from './step-link';
 import type {
   FlowSurfaceCompiledPlanStep,
-  FlowSurfaceCompiledPlanStepSelectorRef,
+  FlowSurfaceCompiledPlanStepSelectorLink,
   FlowSurfacePlanSurfaceContext,
-  FlowSurfaceResolvedRef,
+  FlowSurfaceResolvedKey,
 } from './types';
 import {
-  assertNoDuplicateFlowSurfaceCreatedRefs,
-  collectFlowSurfaceCreatedRefs,
-  normalizeComposeInlineRefsForPlan,
-} from './created-refs';
+  assertNoDuplicateFlowSurfaceCreatedKeys,
+  collectFlowSurfaceCreatedKeys,
+  normalizeComposeInlineKeysForPlan,
+} from './created-keys';
 
 type NormalizePlanSelectorDeps = {
   normalizeGetTarget: (value: any) => FlowSurfaceReadLocator;
 };
 
 type NormalizePlanSelectorOptions = {
-  allowRef?: boolean;
+  allowKey?: boolean;
 };
 
 type NormalizePlanStepsDeps = NormalizePlanSelectorDeps & {
@@ -55,8 +51,18 @@ type CompilePlanStepDeps = NormalizePlanSelectorDeps & {
     target: FlowSurfaceReadLocator,
     options?: { transaction?: any },
   ) => Promise<FlowSurfaceResolvedTarget>;
-  buildPlanRefKind: (node: any, resolvedKind?: string) => string;
+  buildPlanKeyKind: (node: any, resolvedKind?: string) => string;
 };
+
+type FlowSurfaceCreatedKeySelector = {
+  key: string;
+  summary: { source: 'created'; key: string };
+};
+
+type FlowSurfaceResolvedSelector =
+  | FlowSurfaceResolvedKey
+  | FlowSurfaceCompiledPlanStepSelectorLink
+  | FlowSurfaceCreatedKeySelector;
 
 export function normalizePlanSelector(
   actionName: string,
@@ -65,13 +71,13 @@ export function normalizePlanSelector(
   fieldName = 'selector',
   options: NormalizePlanSelectorOptions = {},
 ): FlowSurfacePlanSelector {
-  const allowRef = options.allowRef !== false;
+  const allowKey = options.allowKey !== false;
   if (!_.isPlainObject(selector)) {
     throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be an object`);
   }
-  if (allowRef && Object.keys(selector).length === 1 && typeof selector.ref === 'string' && selector.ref.trim()) {
+  if (allowKey && Object.keys(selector).length === 1 && typeof selector.key === 'string' && selector.key.trim()) {
     return {
-      ref: selector.ref.trim(),
+      key: selector.key.trim(),
     };
   }
   if (Object.keys(selector).length === 1 && _.isPlainObject(selector.locator)) {
@@ -80,11 +86,11 @@ export function normalizePlanSelector(
     };
   }
   if (Object.keys(selector).every((key) => ['step', 'path'].includes(key)) && typeof selector.step === 'string') {
-    return normalizeFlowSurfacePlanStepRef(actionName, selector, fieldName);
+    return normalizeFlowSurfacePlanStepLink(actionName, selector, fieldName);
   }
   throwBadRequest(
     `flowSurfaces ${actionName} ${fieldName} must be ${
-      allowRef ? 'either { ref }, { locator } or { step }' : 'either { locator } or { step }'
+      allowKey ? 'either { key }, { locator } or { step }' : 'either { locator } or { step }'
     }`,
   );
 }
@@ -158,11 +164,11 @@ export function normalizePlanSteps(
   });
 }
 
-function buildPlanStepSelectorSummary(stepRef: FlowSurfacePlanStepRef) {
+function buildPlanStepSelectorSummary(stepLink: FlowSurfacePlanStepLink) {
   return {
     source: 'step' as const,
-    step: stepRef.step,
-    ...(stepRef.path ? { path: stepRef.path } : {}),
+    step: stepLink.step,
+    ...(stepLink.path ? { path: stepLink.path } : {}),
   };
 }
 
@@ -173,13 +179,9 @@ async function resolvePlanSelectorInContext(
   deps: CompilePlanStepDeps,
   fieldName: string,
   priorStepIds: Set<string>,
-  priorCreatedRefs: Set<string>,
+  priorCreatedKeys: Set<string>,
   options: { transaction?: any } = {},
-): Promise<
-  | FlowSurfaceResolvedRef
-  | FlowSurfaceCompiledPlanStepSelectorRef
-  | { ref: string; summary: { source: 'created'; ref: string } }
-> {
+): Promise<FlowSurfaceResolvedSelector> {
   const normalizedSelector = normalizePlanSelector(actionName, selector, deps, fieldName);
   if ('step' in normalizedSelector) {
     if (!priorStepIds.has(normalizedSelector.step)) {
@@ -192,22 +194,24 @@ async function resolvePlanSelectorInContext(
       summary: buildPlanStepSelectorSummary(normalizedSelector),
     };
   }
-  if ('ref' in normalizedSelector) {
-    const refInfo = context.refMap.get(normalizedSelector.ref);
-    if (refInfo) {
-      return refInfo;
+
+  if ('key' in normalizedSelector) {
+    const keyInfo = context.keyMap.get(normalizedSelector.key);
+    if (keyInfo) {
+      return keyInfo;
     }
-    if (priorCreatedRefs.has(normalizedSelector.ref)) {
+    if (priorCreatedKeys.has(normalizedSelector.key)) {
       return {
-        ref: normalizedSelector.ref,
+        key: normalizedSelector.key,
         summary: {
           source: 'created',
-          ref: normalizedSelector.ref,
+          key: normalizedSelector.key,
         },
       };
     }
-    throwBadRequest(`flowSurfaces ${actionName} ${fieldName}.ref '${normalizedSelector.ref}' is not defined`);
+    throwBadRequest(`flowSurfaces ${actionName} ${fieldName}.key '${normalizedSelector.key}' is not defined`);
   }
+
   const resolved = await deps.resolveLocator(normalizedSelector.locator, options);
   if (!context.surfaceResolved) {
     throwBadRequest(`flowSurfaces ${actionName} ${fieldName} locator requires surface`);
@@ -221,10 +225,10 @@ async function resolvePlanSelectorInContext(
     context.publicNodeMap[resolved.uid] ||
     (resolved.uid === context.surfaceResolved.uid ? context.publicTree : undefined);
   return {
-    ref: '',
+    key: '',
     uid: resolved.uid,
     source: 'system',
-    kind: deps.buildPlanRefKind(node, resolved.kind),
+    kind: deps.buildPlanKeyKind(node, resolved.kind),
     locator: buildDefinedPayload({
       uid: normalizedSelector.locator.uid,
       pageSchemaUid: normalizedSelector.locator.pageSchemaUid,
@@ -254,6 +258,21 @@ function buildMutateOp(
   };
 }
 
+function buildSelectorRuntimeValue(selector: FlowSurfaceResolvedSelector) {
+  if ('summary' in selector) {
+    if ('step' in selector) {
+      return {
+        step: selector.step,
+        ...(selector.path ? { path: selector.path } : {}),
+      };
+    }
+    return {
+      key: selector.key,
+    };
+  }
+  return selector.uid;
+}
+
 export async function compilePlanStep(
   actionName: string,
   step: FlowSurfacePlanStep,
@@ -261,68 +280,62 @@ export async function compilePlanStep(
   context: FlowSurfacePlanSurfaceContext,
   deps: CompilePlanStepDeps,
   priorStepIds: Set<string>,
-  priorCreatedRefs: Set<string>,
+  priorCreatedKeys: Set<string>,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceCompiledPlanStep> {
-  const valuesForRuntimeRefs =
+  const runtimeValues =
     step.action === 'compose'
-      ? normalizeComposeInlineRefsForPlan(step.values || {}, `plan.steps[${index}].values`)
+      ? normalizeComposeInlineKeysForPlan(step.values || {}, `plan.steps[${index}].values`)
       : _.cloneDeep(step.values || {});
-  const payload = replaceFlowSurfacePlanStepRefs(
+  const payload = replaceFlowSurfacePlanStepLinks(
     actionName,
-    valuesForRuntimeRefs,
+    runtimeValues,
     `plan.steps[${index}].values`,
     priorStepIds,
-    new Set<string>([...context.refMap.keys(), ...priorCreatedRefs]),
+    new Set<string>([...context.keyMap.keys(), ...priorCreatedKeys]),
   );
-  const createdRefs = collectFlowSurfaceCreatedRefs(step.action, step.values || {}, {
-    targetSelectorRef:
-      _.isPlainObject(step.selectors?.target) && typeof step.selectors.target.ref === 'string'
-        ? String(step.selectors.target.ref || '').trim()
-        : undefined,
+
+  const targetSelectorKey =
+    _.isPlainObject(step.selectors?.target) && typeof step.selectors?.target?.key === 'string'
+      ? String(step.selectors.target.key || '').trim()
+      : undefined;
+  const createdKeys = collectFlowSurfaceCreatedKeys(step.action, step.values || {}, {
+    targetSelectorKey,
   });
-  assertNoDuplicateFlowSurfaceCreatedRefs(createdRefs, `flowSurfaces ${actionName} plan.steps[${index}]`, {
-    existingRefs: [...context.refMap.keys(), ...priorCreatedRefs],
+  assertNoDuplicateFlowSurfaceCreatedKeys(createdKeys, `flowSurfaces ${actionName} plan.steps[${index}]`, {
+    existingKeys: [...context.keyMap.keys(), ...priorCreatedKeys],
     reservedNames: [...priorStepIds, ...(step.id ? [step.id] : [])],
   });
+
   const compiled: FlowSurfaceCompiledPlanStep = {
     index,
     ...(step.id ? { id: step.id } : {}),
     action: step.action,
     payload,
     resolvedSelectors: {},
-    usedRefs: [],
-    usedStepRefs: [],
-    createdRefs,
+    usedKeys: [],
+    usedStepLinks: [],
+    createdKeys,
   };
-  const addUsedRef = (
-    refInfo:
-      | FlowSurfaceResolvedRef
-      | FlowSurfaceCompiledPlanStepSelectorRef
-      | {
-          ref: string;
-          summary: {
-            source: 'created';
-            ref: string;
-          };
-        },
-  ) => {
-    if ('summary' in refInfo) {
-      if (refInfo.summary.source === 'step') {
-        compiled.usedStepRefs.push(refInfo);
+
+  const addUsedKey = (selector: FlowSurfaceResolvedSelector) => {
+    if ('summary' in selector) {
+      if (selector.summary.source === 'step') {
+        compiled.usedStepLinks.push(selector);
       }
-      return refInfo.summary;
+      return selector.summary;
     }
-    if (refInfo.source === 'request' || refInfo.source === 'declared') {
-      compiled.usedRefs.push(refInfo);
+    if (selector.source === 'request' || selector.source === 'declared') {
+      compiled.usedKeys.push(selector);
     }
     return {
-      uid: refInfo.uid,
-      kind: refInfo.kind,
-      ...(refInfo.ref ? { ref: refInfo.ref } : {}),
-      source: refInfo.source,
+      uid: selector.uid,
+      kind: selector.kind,
+      ...(selector.key ? { key: selector.key } : {}),
+      source: selector.source,
     };
   };
+
   const spec = getFlowSurfacePlanActionSpec(step.action);
   if (!spec) {
     throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
@@ -348,79 +361,80 @@ export async function compilePlanStep(
   if (spec.selectorMode === 'none') {
     compiled.payload = payload;
   } else if (spec.selectorMode === 'target') {
+    const targetSelector = step.selectors?.target;
+    if (!targetSelector) {
+      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
+    }
     const target = await resolvePlanSelectorInContext(
       actionName,
-      step.selectors!.target!,
+      targetSelector,
       context,
       deps,
       `plan.steps[${index}].selectors.target`,
       priorStepIds,
-      priorCreatedRefs,
+      priorCreatedKeys,
       options,
     );
     compiled.payload = {
       ...payload,
       target: {
-        uid:
-          'summary' in target
-            ? ({ ref: 'step' in target ? toFlowSurfaceStepResultRefPath(target) : target.ref } as any)
-            : target.uid,
+        uid: buildSelectorRuntimeValue(target),
       },
     };
-    compiled.resolvedSelectors.target = addUsedRef(target);
+    compiled.resolvedSelectors.target = addUsedKey(target);
   } else if (spec.selectorMode === 'rootUidTarget') {
+    const targetSelector = step.selectors?.target;
+    if (!targetSelector) {
+      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
+    }
     const target = await resolvePlanSelectorInContext(
       actionName,
-      step.selectors!.target!,
+      targetSelector,
       context,
       deps,
       `plan.steps[${index}].selectors.target`,
       priorStepIds,
-      priorCreatedRefs,
+      priorCreatedKeys,
       options,
     );
     compiled.payload = {
       ...payload,
-      uid:
-        'summary' in target
-          ? ({ ref: 'step' in target ? toFlowSurfaceStepResultRefPath(target) : target.ref } as any)
-          : target.uid,
+      uid: buildSelectorRuntimeValue(target),
     };
-    compiled.resolvedSelectors.target = addUsedRef(target);
+    compiled.resolvedSelectors.target = addUsedKey(target);
   } else if (spec.selectorMode === 'sourceTarget') {
+    const sourceSelector = step.selectors?.source;
+    const targetSelector = step.selectors?.target;
+    if (!sourceSelector || !targetSelector) {
+      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source and selectors.target`);
+    }
     const source = await resolvePlanSelectorInContext(
       actionName,
-      step.selectors!.source!,
+      sourceSelector,
       context,
       deps,
       `plan.steps[${index}].selectors.source`,
       priorStepIds,
-      priorCreatedRefs,
+      priorCreatedKeys,
       options,
     );
     const target = await resolvePlanSelectorInContext(
       actionName,
-      step.selectors!.target!,
+      targetSelector,
       context,
       deps,
       `plan.steps[${index}].selectors.target`,
       priorStepIds,
-      priorCreatedRefs,
+      priorCreatedKeys,
       options,
     );
     compiled.payload = {
       ...payload,
-      sourceUid:
-        'summary' in source
-          ? ({ ref: 'step' in source ? toFlowSurfaceStepResultRefPath(source) : source.ref } as any)
-          : source.uid,
-      targetUid:
-        'summary' in target
-          ? ({ ref: 'step' in target ? toFlowSurfaceStepResultRefPath(target) : target.ref } as any)
-          : target.uid,
+      sourceUid: buildSelectorRuntimeValue(source),
+      targetUid: buildSelectorRuntimeValue(target),
     };
-    compiled.resolvedSelectors.source = addUsedRef(source);
-    compiled.resolvedSelectors.target = addUsedRef(target);
+    compiled.resolvedSelectors.source = addUsedKey(source);
+    compiled.resolvedSelectors.target = addUsedKey(target);
   } else {
     throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
   }

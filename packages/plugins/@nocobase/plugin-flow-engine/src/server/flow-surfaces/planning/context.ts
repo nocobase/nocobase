@@ -11,14 +11,14 @@ import _ from 'lodash';
 import { throwBadRequest, throwConflict } from '../errors';
 import { flattenModel } from '../service-utils';
 import type {
-  FlowSurfaceBindRef,
+  FlowSurfaceBindKey,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
   FlowSurfaceSurfaceSelector,
 } from '../types';
-import { FLOW_SURFACE_SYSTEM_REF } from './ref-registry';
-import type { FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedRef } from './types';
+import { FLOW_SURFACE_SYSTEM_KEY } from './key-registry';
+import type { FlowSurfacePlanSurfaceContext, FlowSurfaceResolvedKey } from './types';
 
 type BuildPlanSurfaceContextDeps = {
   resolveLocator: (
@@ -32,43 +32,43 @@ type BuildPlanSurfaceContextDeps = {
     resolved: FlowSurfaceResolvedTarget,
   ) => FlowSurfaceReadTarget;
   buildSurfaceContextFingerprint: (
-    context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'refMap'>,
+    context: Pick<FlowSurfacePlanSurfaceContext, 'surfaceResolved' | 'publicTree' | 'keyMap'>,
   ) => string;
-  buildPlanRefKind: (node: any, resolvedKind?: string) => string;
-  assertBindRefKind: (actionName: string, bindRef: FlowSurfaceBindRef, node: any, resolvedKind?: string) => void;
-  collectDeclaredRefsFromTree: (node: any) => Map<string, FlowSurfaceResolvedRef>;
+  buildPlanKeyKind: (node: any, resolvedKind?: string) => string;
+  assertBindKeyKind: (actionName: string, bindKey: FlowSurfaceBindKey, node: any, resolvedKind?: string) => void;
+  collectDeclaredKeysFromTree: (node: any) => Map<string, FlowSurfaceResolvedKey>;
 };
 
 export async function buildPlanSurfaceContext(
   input: {
     actionName: string;
     surfaceSelector?: FlowSurfaceSurfaceSelector;
-    bindRefs: FlowSurfaceBindRef[];
+    bindKeys: FlowSurfaceBindKey[];
   },
   deps: BuildPlanSurfaceContextDeps,
   options: { transaction?: any } = {},
 ): Promise<FlowSurfacePlanSurfaceContext> {
-  const { actionName, surfaceSelector, bindRefs } = input;
+  const { actionName, surfaceSelector, bindKeys } = input;
   if (!surfaceSelector) {
-    if (bindRefs.length) {
-      throwBadRequest(`flowSurfaces ${actionName} bindRefs require surface`);
+    if (bindKeys.length) {
+      throwBadRequest(`flowSurfaces ${actionName} bindKeys require surface`);
     }
     return {
       publicNodeMap: {},
       targetSummary: null,
       fingerprint: null,
       uidSet: new Set<string>(),
-      refMap: new Map<string, FlowSurfaceResolvedRef>(),
-      requestRefMap: new Map<string, FlowSurfaceResolvedRef>(),
+      keyMap: new Map<string, FlowSurfaceResolvedKey>(),
+      requestKeyMap: new Map<string, FlowSurfaceResolvedKey>(),
     };
   }
   let surfaceTarget: FlowSurfaceReadLocator;
-  if ('ref' in surfaceSelector) {
-    const matchedBindRef = bindRefs.find((item) => item.ref === surfaceSelector.ref);
-    if (!matchedBindRef) {
-      throwBadRequest(`flowSurfaces ${actionName} surface.ref '${surfaceSelector.ref}' must also appear in bindRefs`);
+  if ('key' in surfaceSelector) {
+    const matchedBindKey = bindKeys.find((item) => item.key === surfaceSelector.key);
+    if (!matchedBindKey) {
+      throwBadRequest(`flowSurfaces ${actionName} surface.key '${surfaceSelector.key}' must also appear in bindKeys`);
     }
-    surfaceTarget = matchedBindRef.locator;
+    surfaceTarget = matchedBindKey.locator;
   } else {
     surfaceTarget = surfaceSelector.locator;
   }
@@ -78,44 +78,44 @@ export async function buildPlanSurfaceContext(
   const publicTree = deps.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawTree));
   const publicNodeMap = flattenModel(publicTree);
   const uidSet = new Set<string>([surfaceResolved.uid, ...Object.keys(publicNodeMap)]);
-  const refMap = deps.collectDeclaredRefsFromTree(rawTree);
-  const requestRefMap = new Map<string, FlowSurfaceResolvedRef>();
+  const keyMap = deps.collectDeclaredKeysFromTree(rawTree);
+  const requestKeyMap = new Map<string, FlowSurfaceResolvedKey>();
 
-  for (const bindRef of bindRefs) {
-    const resolved = await deps.resolveLocator(bindRef.locator, options);
+  for (const bindKey of bindKeys) {
+    const resolved = await deps.resolveLocator(bindKey.locator, options);
     if (!uidSet.has(resolved.uid)) {
       throwBadRequest(
-        `flowSurfaces ${actionName} bindRefs ref '${bindRef.ref}' must resolve inside the current surface '${surfaceResolved.uid}'`,
+        `flowSurfaces ${actionName} bindKeys key '${bindKey.key}' must resolve inside the current surface '${surfaceResolved.uid}'`,
       );
     }
     const node = publicNodeMap[resolved.uid] || (resolved.uid === surfaceResolved.uid ? publicTree : undefined);
-    deps.assertBindRefKind(actionName, bindRef, node, resolved.kind);
-    const existing = requestRefMap.get(bindRef.ref) || refMap.get(bindRef.ref);
-    if (existing && existing.uid !== resolved.uid && !bindRef.rebind) {
+    deps.assertBindKeyKind(actionName, bindKey, node, resolved.kind);
+    const existing = requestKeyMap.get(bindKey.key) || keyMap.get(bindKey.key);
+    if (existing && existing.uid !== resolved.uid && !bindKey.rebind) {
       throwConflict(
-        `flowSurfaces ${actionName} ref '${bindRef.ref}' is already bound to '${existing.uid}', set rebind=true to move it`,
-        'FLOW_SURFACE_DECLARED_REF_CONFLICT',
+        `flowSurfaces ${actionName} key '${bindKey.key}' is already bound to '${existing.uid}', set rebind=true to move it`,
+        'FLOW_SURFACE_DECLARED_KEY_CONFLICT',
       );
     }
-    requestRefMap.set(bindRef.ref, {
-      ref: bindRef.ref,
+    requestKeyMap.set(bindKey.key, {
+      key: bindKey.key,
       uid: resolved.uid,
       source: 'request',
-      kind: deps.buildPlanRefKind(node, resolved.kind),
+      kind: deps.buildPlanKeyKind(node, resolved.kind),
       locator: {
         uid: resolved.uid,
       },
-      rebind: bindRef.rebind === true,
+      rebind: bindKey.rebind === true,
       reboundFromUid: existing && existing.uid !== resolved.uid ? existing.uid : undefined,
     });
   }
 
-  requestRefMap.forEach((value, key) => refMap.set(key, value));
-  refMap.set(FLOW_SURFACE_SYSTEM_REF, {
-    ref: FLOW_SURFACE_SYSTEM_REF,
+  requestKeyMap.forEach((value, key) => keyMap.set(key, value));
+  keyMap.set(FLOW_SURFACE_SYSTEM_KEY, {
+    key: FLOW_SURFACE_SYSTEM_KEY,
     uid: surfaceResolved.uid,
     source: 'system',
-    kind: deps.buildPlanRefKind(publicTree, surfaceResolved.kind),
+    kind: deps.buildPlanKeyKind(publicTree, surfaceResolved.kind),
     locator: {
       uid: surfaceResolved.uid,
     },
@@ -125,7 +125,7 @@ export async function buildPlanSurfaceContext(
   const fingerprint = deps.buildSurfaceContextFingerprint({
     surfaceResolved,
     publicTree,
-    refMap,
+    keyMap,
   });
 
   return {
@@ -138,7 +138,7 @@ export async function buildPlanSurfaceContext(
     targetSummary,
     fingerprint,
     uidSet,
-    refMap,
-    requestRefMap,
+    keyMap,
+    requestKeyMap,
   };
 }

@@ -10,17 +10,17 @@
 import type {
   FlowSurfaceMutateOp,
   FlowSurfacePlanSelector,
-  FlowSurfacePlanStepRef,
+  FlowSurfacePlanStepLink,
   FlowSurfacePlanStepAction,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
   FlowSurfaceSurfaceSelector,
 } from '../types';
-import type { FlowSurfaceCreatedRefSpec } from './created-refs';
+import type { FlowSurfaceCreatedKeySpec } from './created-keys';
 
-export type FlowSurfaceResolvedRef = {
-  ref: string;
+export type FlowSurfaceResolvedKey = {
+  key: string;
   uid: string;
   source: 'declared' | 'request' | 'system';
   kind: string;
@@ -32,10 +32,10 @@ export type FlowSurfaceResolvedRef = {
 export type FlowSurfaceResolvedSelectorSummary = {
   uid?: string;
   kind?: string;
-  ref?: string;
+  key?: string;
   step?: string;
   path?: string;
-  source: FlowSurfaceResolvedRef['source'] | 'step' | 'created';
+  source: FlowSurfaceResolvedKey['source'] | 'step' | 'created';
 };
 
 export type FlowSurfacePlanSurfaceContext = {
@@ -48,11 +48,11 @@ export type FlowSurfacePlanSurfaceContext = {
   targetSummary: FlowSurfaceReadTarget | null;
   fingerprint: string | null;
   uidSet: Set<string>;
-  refMap: Map<string, FlowSurfaceResolvedRef>;
-  requestRefMap: Map<string, FlowSurfaceResolvedRef>;
+  keyMap: Map<string, FlowSurfaceResolvedKey>;
+  requestKeyMap: Map<string, FlowSurfaceResolvedKey>;
 };
 
-export type FlowSurfaceCompiledPlanStepSelectorRef = FlowSurfacePlanStepRef & {
+export type FlowSurfaceCompiledPlanStepSelectorLink = FlowSurfacePlanStepLink & {
   summary: FlowSurfaceResolvedSelectorSummary;
 };
 
@@ -63,8 +63,8 @@ export type FlowSurfaceCompiledPlanStep = {
   payload: Record<string, any>;
   executionPayload?: Record<string, any>;
   resolvedSelectors: Partial<Record<'target' | 'source', FlowSurfaceResolvedSelectorSummary>>;
-  usedRefs: FlowSurfaceResolvedRef[];
-  usedStepRefs: FlowSurfaceCompiledPlanStepSelectorRef[];
-  createdRefs: FlowSurfaceCreatedRefSpec[];
+  usedKeys: FlowSurfaceResolvedKey[];
+  usedStepLinks: FlowSurfaceCompiledPlanStepSelectorLink[];
+  createdKeys: FlowSurfaceCreatedKeySpec[];
   mutateOp?: FlowSurfaceMutateOp;
 };

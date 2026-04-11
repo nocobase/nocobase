@@ -172,7 +172,7 @@ function valuesCompatibilityNote(description: string) {
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `validateDsl` / `validatePlan` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `validatePlan` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE =
   '`validatePlan` is open to `loggedIn` by default for read-only selector compilation. When `validation.collectFieldIssues=true`, the rollback preview path requires the same write permission as `executePlan` (`ui.flowSurfaces`).';
@@ -236,45 +236,53 @@ const actionDocs: Record<string, any> = {
   },
   describeSurface: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Read surface tree with stable refs and fingerprint',
+    summary: 'Read surface tree with stable keys and fingerprint',
     description: valuesCompatibilityNote(
-      `Reads the current surface together with request-scoped bind refs, persisted declared refs, and an optimistic-concurrency fingerprint. The fingerprint is computed from the public surface tree together with the resolved ref bindings and ignores ref source differences such as \`request\` vs \`declared\`. The public readback strips the internal declared-ref metadata path from node.stepParams. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Reads the current surface together with request-scoped bind keys, persisted declared keys, and an optimistic-concurrency fingerprint. The fingerprint is computed from the public surface tree together with the resolved key bindings and ignores key source differences such as \`request\` vs \`declared\`. The public readback strips the internal declared-key metadata path from node.stepParams. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
     responses: responses('FlowSurfaceDescribeSurfaceResponse'),
-  },
-  validateDsl: {
-    tags: [FLOW_SURFACES_TAG],
-    summary: 'Normalize and validate a UI-builder DSL document, then preview compiled plan calls',
-    description: valuesCompatibilityNote(
-      `Validates a blueprint / patch DSL document, normalizes it into a canonical DSL payload, compiles it into \`plan.steps[]\`, and then runs the existing \`validatePlan\` flow to resolve selectors and preview compiled calls without mutating data. This is the recommended entry for AI callers that already speak the higher-level UI-builder DSL. \`validateDsl\` accepts the same optional \`validation.collectFieldIssues\` preview as \`validatePlan\`, and that preview path requires the same write permission as \`executePlan\`. ${FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE}`,
-    ),
-    requestBody: requestBody('FlowSurfaceValidateDslRequest', examples.validateDsl),
-    responses: responses('FlowSurfaceValidateDslResponse'),
   },
   validatePlan: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Resolve plan selectors and preview the compiled low-level calls',
     description: valuesCompatibilityNote(
-      `Validates a high-level plan against the current surface fingerprint, resolves { ref | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved ref bindings. When \`surface\` uses { ref }, that ref must also appear in \`bindRefs\` so the server can anchor the current surface root. Used request refs must also be persistable; route-backed page/tab roots are rejected. When \`validation.collectFieldIssues=true\`, validatePlan additionally runs a rolled-back dry-run preview for field additions and returns aggregated \`validation.fieldIssues\` instead of stopping at the first field-addability error. Non-field preview errors still fail fast. ${FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE}`,
+      `Validates a high-level plan against the current surface fingerprint, resolves { key | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved key bindings. When \`surface\` uses { key }, that key must also appear in \`bindKeys\` so the server can anchor the current surface root. Used request keys must also be persistable; route-backed page/tab roots are rejected. When \`validation.collectFieldIssues=true\`, validatePlan additionally runs a rolled-back dry-run preview for field additions and returns aggregated \`validation.fieldIssues\` instead of stopping at the first field-addability error. Non-field preview errors still fail fast. ${FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceValidatePlanRequest', examples.validatePlan),
     responses: responses('FlowSurfaceValidatePlanResponse'),
   },
   executeDsl: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Execute a UI-builder DSL document through normalize -> compile -> validate -> execute -> verify',
+    summary: 'Execute a simplified page-structure DSL to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Executes a blueprint / patch DSL document by normalizing it, compiling it into `plan.steps[]`, validating the compiled plan, executing the plan in one transaction, and then performing strict readback verification by default. This is the recommended write entry for AI callers that use the higher-level UI-builder DSL instead of hand-authoring `plan.steps[]`.',
+      'Accepts one simplified JSON page document and compiles it to FlowSurfaces plan steps internally. The public DSL only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). Internal planning details stay hidden. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps DSL tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public DSL; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. When layout is omitted, executeDsl auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
-    requestBody: requestBody('FlowSurfaceExecuteDslRequest', examples.executeDsl),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceExecuteDslRequest'),
+          examples: {
+            createPage: {
+              summary: 'Create one Modern page from the simplified page-structure DSL',
+              value: examples.executeDsl,
+            },
+            replacePage: {
+              summary: 'Replace one existing Modern page by pageSchemaUid',
+              value: examples.executeDslReplace,
+            },
+          },
+        },
+      },
+    },
     responses: responses('FlowSurfaceExecuteDslResponse'),
   },
   executePlan: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Execute a high-level plan and persist used bind refs as declared refs',
+    summary: 'Execute a high-level plan and persist used bind keys as declared keys',
     description: valuesCompatibilityNote(
-      'Executes validated high-level plan steps as the recommended orchestration entry for AI and automation callers by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Request-scoped bind refs used by selectors, plus `surface: { ref }` when it anchors the current surface, are persisted back as declared refs. Used request refs must be persistable. Same-run dependencies should use caller-side `{ step, path }` refs for scalar outputs, and explicit created refs for new nodes. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false` and an empty refs map. Clients that need a fresh fingerprint for the next round should call `describeSurface` again.',
+      'Executes validated high-level plan steps as the recommended orchestration entry for AI and automation callers by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Request-scoped bind keys used by selectors, plus `surface: { key }` when it anchors the current surface, are persisted back as declared keys. Used request keys must be persistable. Same-run dependencies should use caller-side `{ step, path }` values for scalar outputs, and explicit created keys for new nodes. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false` and an empty keys map. Clients that need a fresh fingerprint for the next round should call `describeSurface` again.',
     ),
     requestBody: requestBody('FlowSurfaceExecutePlanRequest', examples.executePlan),
     responses: responses('FlowSurfaceExecutePlanResponse'),
@@ -284,7 +292,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `ref` values, and the compose result returns the same refs so later plan steps can reference nested popup or form nodes through normal step-result paths. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
     ),
     requestBody: {
       required: true,
@@ -736,7 +744,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute multiple operations atomically',
     description: valuesCompatibilityNote(
-      'Executes `ops[]` in order and supports `opId` plus `{ref:"<opId>.<field>"}` references to earlier results. V1 only supports `atomic=true`.',
+      'Executes `ops[]` in order and supports `opId` plus `{ step: "<opId>", path: "<field>" }` references to earlier results. `{ key: "<opId>" }` reads the whole previous result object. V1 only supports `atomic=true`.',
     ),
     requestBody: requestBody('FlowSurfaceMutateRequest', examples.mutate),
     responses: responses('FlowSurfaceMutationResponse'),
@@ -796,22 +804,22 @@ const parameters = {
 };
 
 const schemas = {
-  FlowSurfaceMutateRef: {
+  FlowSurfaceMutateKey: {
     type: 'object',
-    required: ['ref'],
+    required: ['key'],
     properties: {
-      ref: {
+      key: {
         type: 'string',
-        description: 'Reference to a previous mutate op result field, for example `page.tabSchemaUid`.',
+        description: 'Reference to a previously created runtime key, for example a prior mutate `opId`.',
       },
     },
     additionalProperties: false,
   },
   FlowSurfaceResolvableString: {
-    oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateRef')],
+    oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateKey'), ref('FlowSurfacePlanSelectorByStep')],
   },
   FlowSurfaceResolvableIdentifier: {
-    oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceMutateRef')],
+    oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceMutateKey'), ref('FlowSurfacePlanSelectorByStep')],
   },
   FlowSurfaceWriteTarget: {
     type: 'object',
@@ -889,11 +897,11 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfacePlanSelectorByRef: {
+  FlowSurfacePlanSelectorByKey: {
     type: 'object',
-    required: ['ref'],
+    required: ['key'],
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
     },
@@ -921,20 +929,20 @@ const schemas = {
     additionalProperties: false,
   },
   FlowSurfaceSurfaceSelector: {
-    oneOf: [ref('FlowSurfacePlanSelectorByRef'), ref('FlowSurfacePlanSelectorByLocator')],
+    oneOf: [ref('FlowSurfacePlanSelectorByKey'), ref('FlowSurfacePlanSelectorByLocator')],
   },
   FlowSurfacePlanSelector: {
     oneOf: [
-      ref('FlowSurfacePlanSelectorByRef'),
+      ref('FlowSurfacePlanSelectorByKey'),
       ref('FlowSurfacePlanSelectorByLocator'),
       ref('FlowSurfacePlanSelectorByStep'),
     ],
   },
-  FlowSurfaceBindRef: {
+  FlowSurfaceBindKey: {
     type: 'object',
-    required: ['ref', 'locator'],
+    required: ['key', 'locator'],
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
       locator: ref('FlowSurfaceReadLocator'),
@@ -948,7 +956,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceRefInfo: {
+  FlowSurfaceKeyInfo: {
     type: 'object',
     properties: {
       uid: {
@@ -965,20 +973,20 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceRefsMap: {
+  FlowSurfaceKeysMap: {
     type: 'object',
-    additionalProperties: ref('FlowSurfaceRefInfo'),
+    additionalProperties: ref('FlowSurfaceKeyInfo'),
   },
   FlowSurfaceResolvedSelectorSummary: {
     type: 'object',
     properties: {
-      ref: {
-        type: 'string',
-      },
       uid: {
         type: 'string',
       },
       kind: {
+        type: 'string',
+      },
+      key: {
         type: 'string',
       },
       source: {
@@ -1709,9 +1717,9 @@ const schemas = {
     required: ['locator'],
     properties: {
       locator: ref('FlowSurfaceReadLocator'),
-      bindRefs: {
+      bindKeys: {
         type: 'array',
-        items: ref('FlowSurfaceBindRef'),
+        items: ref('FlowSurfaceBindKey'),
       },
     },
     additionalProperties: false,
@@ -1738,7 +1746,7 @@ const schemas = {
       fingerprint: {
         type: 'string',
       },
-      refs: ref('FlowSurfaceRefsMap'),
+      keys: ref('FlowSurfaceKeysMap'),
     },
     additionalProperties: false,
   },
@@ -1770,9 +1778,9 @@ const schemas = {
       },
       {
         type: 'object',
-        required: ['ref'],
+        anyOf: [{ required: ['key'] }, { required: ['uid'] }],
         properties: {
-          ref: {
+          key: {
             type: 'string',
           },
           uid: {
@@ -1808,9 +1816,9 @@ const schemas = {
         type: 'object',
         required: ['fieldPath'],
         properties: {
-          ref: {
+          key: {
             type: 'string',
-            description: 'Optional stable field ref returned in compose results and usable in later plan steps.',
+            description: 'Optional stable field key returned in compose results.',
           },
           fieldPath: {
             type: 'string',
@@ -1824,8 +1832,8 @@ const schemas = {
             type: 'string',
           },
           target: {
-            oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateRef')],
-            description: 'Reference to another compose block ref, typically used by filter-form fields.',
+            type: 'string',
+            description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceComposeFieldPopup'),
@@ -1836,9 +1844,9 @@ const schemas = {
         type: 'object',
         required: ['type'],
         properties: {
-          ref: {
+          key: {
             type: 'string',
-            description: 'Optional stable field ref returned in compose results and usable in later plan steps.',
+            description: 'Optional stable field key returned in compose results.',
           },
           type: {
             type: 'string',
@@ -1947,7 +1955,7 @@ const schemas = {
         type: 'object',
         required: ['type'],
         properties: {
-          ref: {
+          key: {
             type: 'string',
           },
           type: {
@@ -1970,7 +1978,7 @@ const schemas = {
         type: 'object',
         required: ['type'],
         properties: {
-          ref: {
+          key: {
             type: 'string',
           },
           type: {
@@ -1986,10 +1994,10 @@ const schemas = {
   },
   FlowSurfaceComposeBlockSpec: {
     type: 'object',
-    required: ['ref'],
+    required: ['key'],
     anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
       type: {
@@ -2051,7 +2059,7 @@ const schemas = {
   FlowSurfaceComposeFieldResult: {
     type: 'object',
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
       fieldPath: {
@@ -2099,12 +2107,15 @@ const schemas = {
   FlowSurfaceComposeActionResult: {
     type: 'object',
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
       type: {
         type: 'string',
         enum: ACTION_TYPE_ENUM,
+      },
+      scope: {
+        type: 'string',
       },
       uid: {
         type: 'string',
@@ -2133,7 +2144,7 @@ const schemas = {
   FlowSurfaceComposeBlockResult: {
     type: 'object',
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
       type: {
@@ -2274,13 +2285,17 @@ const schemas = {
         enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
       },
       result: {},
+      createdKeys: {
+        type: 'array',
+        items: ref('FlowSurfacePersistedKeyResult'),
+      },
     },
     additionalProperties: false,
   },
-  FlowSurfacePersistedRefResult: {
+  FlowSurfacePersistedKeyResult: {
     type: 'object',
     properties: {
-      ref: {
+      key: {
         type: 'string',
       },
       uid: {
@@ -2296,651 +2311,339 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceDslEntityRefById: {
+  FlowSurfaceExecuteDslAssets: {
     type: 'object',
-    required: ['id'],
     properties: {
-      id: {
+      scripts: {
+        type: 'object',
+        additionalProperties: ANY_OBJECT_SCHEMA,
+      },
+      charts: {
+        type: 'object',
+        additionalProperties: ANY_OBJECT_SCHEMA,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslLayoutCell: {
+    oneOf: [
+      {
         type: 'string',
       },
-      anchor: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceDslEntityRefByLocator: {
-    type: 'object',
-    required: ['locator'],
-    properties: {
-      locator: ref('FlowSurfaceReadLocator'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceDslEntityRef: {
-    oneOf: [ref('FlowSurfaceDslEntityRefById'), ref('FlowSurfaceDslEntityRefByLocator')],
-  },
-  FlowSurfaceBlueprintTarget: {
-    oneOf: [
       {
         type: 'object',
-        required: ['mode'],
-        properties: {
-          mode: {
-            type: 'string',
-            enum: ['create-page'],
-          },
-        },
-        additionalProperties: false,
-      },
-      {
-        type: 'object',
-        required: ['mode', 'locator'],
-        properties: {
-          mode: {
-            type: 'string',
-            enum: ['update-page'],
-          },
-          locator: ref('FlowSurfaceReadLocator'),
-        },
-        additionalProperties: false,
-      },
-    ],
-  },
-  FlowSurfaceBlueprintNavigationParent: {
-    oneOf: [
-      {
-        type: 'object',
-        required: ['createGroup'],
-        properties: {
-          createGroup: {
-            type: 'object',
-            required: ['title'],
-            properties: {
-              title: {
-                type: 'string',
-              },
-              icon: {
-                type: 'string',
-              },
-              tooltip: {
-                type: 'string',
-              },
-              hideInMenu: {
-                type: 'boolean',
-              },
-            },
-            additionalProperties: false,
-          },
-        },
-        additionalProperties: false,
-      },
-      {
-        type: 'object',
-        required: ['routeId'],
-        properties: {
-          routeId: STRING_OR_INTEGER_SCHEMA,
-        },
-        additionalProperties: false,
-      },
-    ],
-  },
-  FlowSurfaceBlueprintNavigation: {
-    type: 'object',
-    properties: {
-      parent: ref('FlowSurfaceBlueprintNavigationParent'),
-      item: {
-        type: 'object',
-        properties: {
-          title: {
-            type: 'string',
-          },
-          icon: {
-            type: 'string',
-          },
-          tooltip: {
-            type: 'string',
-          },
-          hideInMenu: {
-            type: 'boolean',
-          },
-        },
-        additionalProperties: false,
-      },
-      page: {
-        type: 'object',
-        properties: {
-          title: {
-            type: 'string',
-          },
-          icon: {
-            type: 'string',
-          },
-          documentTitle: {
-            type: 'string',
-          },
-          enableHeader: {
-            type: 'boolean',
-          },
-          enableTabs: {
-            type: 'boolean',
-          },
-          displayTitle: {
-            type: 'boolean',
-          },
-        },
-        additionalProperties: false,
-      },
-      initialTab: {
-        type: 'object',
-        properties: {
-          title: {
-            type: 'string',
-          },
-          icon: {
-            type: 'string',
-          },
-          documentTitle: {
-            type: 'string',
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintDataSource: {
-    oneOf: [
-      {
-        type: 'object',
-        required: ['key', 'kind', 'collectionName'],
+        required: ['key'],
         properties: {
           key: {
             type: 'string',
           },
-          kind: {
-            type: 'string',
-            enum: ['collection'],
-          },
-          dataSourceKey: {
-            type: 'string',
-          },
-          collectionName: {
-            type: 'string',
-          },
-        },
-        additionalProperties: false,
-      },
-      {
-        type: 'object',
-        required: ['key', 'kind', 'collectionName', 'associationPathName'],
-        properties: {
-          key: {
-            type: 'string',
-          },
-          kind: {
-            type: 'string',
-            enum: ['association'],
-          },
-          dataSourceKey: {
-            type: 'string',
-          },
-          collectionName: {
-            type: 'string',
-          },
-          associationPathName: {
-            type: 'string',
-          },
-        },
-        additionalProperties: false,
-      },
-      {
-        type: 'object',
-        required: ['key', 'kind', 'popupId', 'binding'],
-        properties: {
-          key: {
-            type: 'string',
-          },
-          kind: {
-            type: 'string',
-            enum: ['binding'],
-          },
-          popupId: {
-            type: 'string',
-          },
-          binding: {
-            type: 'string',
-            enum: ['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'],
-          },
-          dataSourceKey: {
-            type: 'string',
-          },
-          collectionName: {
-            type: 'string',
-          },
-          associationField: {
-            type: 'string',
+          span: {
+            type: 'number',
           },
         },
         additionalProperties: false,
       },
     ],
   },
-  FlowSurfaceBlueprintField: {
+  FlowSurfaceExecuteDslLayout: {
     type: 'object',
     properties: {
-      id: {
-        type: 'string',
+      rows: {
+        type: 'array',
+        items: {
+          type: 'array',
+          items: ref('FlowSurfaceExecuteDslLayoutCell'),
+        },
       },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslPopup: {
+    type: 'object',
+    properties: {
       title: {
         type: 'string',
       },
-      fieldPath: {
+      mode: {
+        type: 'string',
+        enum: ['append', 'replace'],
+      },
+      template: ref('FlowSurfacePopupTemplateRef'),
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceExecuteDslBlockSpec'),
+      },
+      layout: ref('FlowSurfaceExecuteDslLayout'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslFieldSpec: {
+    oneOf: [
+      {
         type: 'string',
       },
-      associationPathName: {
-        type: 'string',
-      },
-      renderer: {
-        type: 'string',
-      },
-      type: {
-        type: 'string',
-      },
-      target: {
-        oneOf: [
-          {
+      {
+        type: 'object',
+        properties: {
+          key: { type: 'string' },
+          field: { type: 'string' },
+          associationPathName: { type: 'string' },
+          renderer: { type: 'string' },
+          type: { type: 'string' },
+          label: { type: 'string' },
+          target: {
             type: 'string',
+            description: 'String block key on the same tab or popup scope, typically used by filter-form fields.',
           },
-          {
-            type: 'object',
-            required: ['blockId'],
-            properties: {
-              blockId: {
-                type: 'string',
-              },
-            },
-            additionalProperties: false,
-          },
-        ],
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceExecuteDslPopup'),
+          script: { type: 'string' },
+          chart: { type: 'string' },
+        },
+        additionalProperties: false,
       },
+    ],
+  },
+  FlowSurfaceExecuteDslActionSpec: {
+    oneOf: [
+      {
+        type: 'string',
+      },
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          key: { type: 'string' },
+          type: {
+            type: 'string',
+            enum: NON_RECORD_ACTION_TYPE_ENUM,
+          },
+          title: { type: 'string' },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceExecuteDslPopup'),
+          script: { type: 'string' },
+          chart: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceExecuteDslRecordActionSpec: {
+    oneOf: [
+      {
+        type: 'string',
+      },
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          key: { type: 'string' },
+          type: {
+            type: 'string',
+            enum: RECORD_ACTION_TYPE_ENUM,
+          },
+          title: { type: 'string' },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceExecuteDslPopup'),
+          script: { type: 'string' },
+          chart: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceExecuteDslBlockSpec: {
+    type: 'object',
+    anyOf: [{ required: ['type'] }, { required: ['template'] }],
+    properties: {
+      key: { type: 'string' },
+      type: { type: 'string' },
+      title: { type: 'string' },
+      collection: { type: 'string' },
+      dataSourceKey: { type: 'string' },
+      associationPathName: { type: 'string' },
+      binding: {
+        type: 'string',
+        enum: ['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'],
+      },
+      associationField: { type: 'string' },
+      resource: ref('FlowSurfaceBlockResourceInput'),
+      template: ref('FlowSurfaceBlockTemplateRef'),
       settings: ANY_OBJECT_SCHEMA,
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintAction: {
-    type: 'object',
-    required: ['type'],
-    properties: {
-      id: {
-        type: 'string',
-      },
-      type: {
-        type: 'string',
-        enum: ACTION_TYPE_ENUM,
-      },
-      title: {
-        type: 'string',
-      },
-      popupId: {
-        type: 'string',
-      },
-      settings: ANY_OBJECT_SCHEMA,
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintBlock: {
-    type: 'object',
-    required: ['id', 'type', 'dataBound'],
-    properties: {
-      id: {
-        type: 'string',
-      },
-      type: {
-        type: 'string',
-      },
-      title: {
-        type: 'string',
-      },
-      dataBound: {
-        type: 'boolean',
-      },
-      dataSourceKey: {
-        type: 'string',
-      },
       fields: {
         type: 'array',
-        items: ref('FlowSurfaceBlueprintField'),
+        items: ref('FlowSurfaceExecuteDslFieldSpec'),
       },
       actions: {
         type: 'array',
-        items: ref('FlowSurfaceBlueprintAction'),
+        items: ref('FlowSurfaceExecuteDslActionSpec'),
       },
       recordActions: {
         type: 'array',
-        items: ref('FlowSurfaceBlueprintAction'),
+        items: ref('FlowSurfaceExecuteDslRecordActionSpec'),
       },
-      settings: ANY_OBJECT_SCHEMA,
+      script: { type: 'string' },
+      chart: { type: 'string' },
     },
     additionalProperties: false,
   },
-  FlowSurfaceBlueprintInteraction: {
+  FlowSurfaceExecuteDslTab: {
     type: 'object',
-    required: ['type', 'sourceBlockId', 'fieldPath', 'targetBlockId'],
-    properties: {
-      type: {
-        type: 'string',
-        enum: ['filter-target'],
-      },
-      sourceBlockId: {
-        type: 'string',
-      },
-      fieldPath: {
-        type: 'string',
-      },
-      associationPathName: {
-        type: 'string',
-      },
-      targetBlockId: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintPopup: {
-    type: 'object',
-    required: ['id', 'completion'],
-    properties: {
-      id: {
-        type: 'string',
-      },
-      title: {
-        type: 'string',
-      },
-      completion: {
-        type: 'string',
-        enum: ['completed', 'shell-only'],
-      },
-      blocks: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintBlock'),
-      },
-      layout: ANY_OBJECT_SCHEMA,
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintLayoutColumn: {
-    type: 'object',
-    required: ['items'],
+    required: ['blocks'],
     properties: {
       key: {
         type: 'string',
-      },
-      width: {
-        type: 'number',
-      },
-      items: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintLayoutRow: {
-    type: 'object',
-    required: ['columns'],
-    properties: {
-      key: {
-        type: 'string',
-      },
-      columns: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintLayoutColumn'),
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintLayout: {
-    type: 'object',
-    required: ['rows'],
-    properties: {
-      kind: {
-        type: 'string',
-        enum: ['rows-columns'],
-      },
-      rows: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintLayoutRow'),
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceBlueprintDsl: {
-    type: 'object',
-    required: ['version', 'title', 'target', 'dataSources', 'layout', 'blocks', 'interactions', 'popups'],
-    properties: {
-      version: {
-        type: 'string',
-        enum: ['1'],
-      },
-      kind: {
-        type: 'string',
-        enum: ['blueprint'],
-      },
-      title: {
-        type: 'string',
-      },
-      target: ref('FlowSurfaceBlueprintTarget'),
-      navigation: ref('FlowSurfaceBlueprintNavigation'),
-      dataSources: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintDataSource'),
-      },
-      layout: ref('FlowSurfaceBlueprintLayout'),
-      blocks: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintBlock'),
-      },
-      interactions: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintInteraction'),
-      },
-      popups: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintPopup'),
-      },
-      assumptions: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-      },
-      unresolvedQuestions: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePatchChange: {
-    type: 'object',
-    required: ['op'],
-    properties: {
-      id: {
-        type: 'string',
-      },
-      op: {
-        type: 'string',
-        enum: [
-          'page.destroy',
-          'tab.add',
-          'tab.update',
-          'tab.move',
-          'tab.remove',
-          'block.add',
-          'field.add',
-          'action.add',
-          'recordAction.add',
-          'settings.update',
-          'layout.replace',
-          'node.move',
-          'node.remove',
-          'template.detach',
-        ],
-      },
-      target: ref('FlowSurfaceDslEntityRef'),
-      source: ref('FlowSurfaceDslEntityRef'),
-      values: {
-        type: 'object',
         description:
-          'Semantic patch payload. Use values.block / values.field / values.action / values.changes / values.layout instead of raw low-level flow-surfaces payloads.',
-        additionalProperties: true,
+          'Optional local tab key used only inside the current executeDsl document for layout or in-document references. It is not used to match existing route-backed tabs in replace mode. When omitted, the server generates one.',
       },
+      title: { type: 'string' },
+      icon: { type: 'string' },
+      documentTitle: { type: 'string' },
+      blocks: {
+        type: 'array',
+        minItems: 1,
+        items: ref('FlowSurfaceExecuteDslBlockSpec'),
+      },
+      layout: ref('FlowSurfaceExecuteDslLayout'),
     },
     additionalProperties: false,
   },
-  FlowSurfacePatchDsl: {
+  FlowSurfaceExecuteDslNavigationGroup: {
     type: 'object',
-    required: ['version', 'kind', 'target', 'changes'],
     properties: {
-      version: {
-        type: 'string',
-        enum: ['1'],
-      },
-      kind: {
-        type: 'string',
-        enum: ['patch'],
-      },
-      target: {
+      routeId: STRING_OR_INTEGER_SCHEMA,
+      title: { type: 'string' },
+      icon: { type: 'string' },
+      tooltip: { type: 'string' },
+      hideInMenu: { type: 'boolean' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslNavigation: {
+    type: 'object',
+    properties: {
+      group: ref('FlowSurfaceExecuteDslNavigationGroup'),
+      item: {
         type: 'object',
-        required: ['locator'],
         properties: {
-          locator: ref('FlowSurfaceReadLocator'),
+          title: { type: 'string' },
+          icon: { type: 'string' },
+          tooltip: { type: 'string' },
+          hideInMenu: { type: 'boolean' },
         },
         additionalProperties: false,
       },
-      dataSources: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintDataSource'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslPage: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      icon: { type: 'string' },
+      documentTitle: { type: 'string' },
+      enableHeader: { type: 'boolean' },
+      enableTabs: { type: 'boolean' },
+      displayTitle: { type: 'boolean' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslTarget: {
+    type: 'object',
+    required: ['pageSchemaUid'],
+    properties: {
+      pageSchemaUid: { type: 'string' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslRequestBase: {
+    type: 'object',
+    required: ['version', 'mode', 'tabs'],
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
       },
-      popups: {
-        type: 'array',
-        items: ref('FlowSurfaceBlueprintPopup'),
+      mode: {
+        type: 'string',
+        enum: ['create', 'replace'],
       },
-      changes: {
+      target: ref('FlowSurfaceExecuteDslTarget'),
+      navigation: ref('FlowSurfaceExecuteDslNavigation'),
+      page: ref('FlowSurfaceExecuteDslPage'),
+      tabs: {
         type: 'array',
-        items: ref('FlowSurfacePatchChange'),
+        minItems: 1,
+        items: ref('FlowSurfaceExecuteDslTab'),
       },
-      assumptions: {
-        type: 'array',
-        items: {
-          type: 'string',
+      assets: ref('FlowSurfaceExecuteDslAssets'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExecuteDslCreateRequest: {
+    allOf: [
+      ref('FlowSurfaceExecuteDslRequestBase'),
+      {
+        type: 'object',
+        properties: {
+          mode: {
+            type: 'string',
+            enum: ['create'],
+          },
+        },
+        not: {
+          required: ['target'],
         },
       },
-      unresolvedQuestions: {
-        type: 'array',
-        items: {
-          type: 'string',
+    ],
+  },
+  FlowSurfaceExecuteDslReplaceRequest: {
+    allOf: [
+      ref('FlowSurfaceExecuteDslRequestBase'),
+      {
+        type: 'object',
+        required: ['target'],
+        properties: {
+          mode: {
+            type: 'string',
+            enum: ['replace'],
+          },
+        },
+        not: {
+          required: ['navigation'],
         },
       },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceDslDocument: {
-    oneOf: [ref('FlowSurfaceBlueprintDsl'), ref('FlowSurfacePatchDsl')],
-  },
-  FlowSurfaceDslRequestBase: {
-    type: 'object',
-    required: ['dsl'],
-    properties: {
-      expectedFingerprint: {
-        type: 'string',
-      },
-      bindRefs: {
-        type: 'array',
-        items: ref('FlowSurfaceBindRef'),
-      },
-      dsl: ref('FlowSurfaceDslDocument'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceValidateDslRequest: {
-    allOf: [ref('FlowSurfaceDslRequestBase'), ref('FlowSurfaceValidatePlanRequestExtension')],
-  },
-  FlowSurfaceValidateDslResponse: {
-    type: 'object',
-    properties: {
-      dsl: ref('FlowSurfaceDslDocument'),
-      plan: ref('FlowSurfacePlanDocument'),
-      target: {
-        allOf: [ref('FlowSurfaceReadTarget')],
-        nullable: true,
-      },
-      fingerprint: {
-        type: 'string',
-        nullable: true,
-      },
-      refs: ref('FlowSurfaceRefsMap'),
-      compiledSteps: {
-        type: 'array',
-        items: ref('FlowSurfacePlanCompiledStep'),
-      },
-      validation: ref('FlowSurfaceValidatePlanValidationResult'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceExecuteDslRequestExtension: {
-    type: 'object',
-    properties: {
-      verificationMode: {
-        type: 'string',
-        enum: ['strict', 'none'],
-        description: 'Readback verification mode. `strict` is the default.',
-      },
-    },
-    additionalProperties: false,
+    ],
   },
   FlowSurfaceExecuteDslRequest: {
-    allOf: [ref('FlowSurfaceDslRequestBase'), ref('FlowSurfaceExecuteDslRequestExtension')],
+    oneOf: [ref('FlowSurfaceExecuteDslCreateRequest'), ref('FlowSurfaceExecuteDslReplaceRequest')],
+  },
+  FlowSurfaceExecuteDslResponseTarget: {
+    type: 'object',
+    properties: {
+      pageSchemaUid: {
+        type: 'string',
+      },
+      pageUid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
   },
   FlowSurfaceExecuteDslResponse: {
     type: 'object',
+    required: ['version', 'mode', 'target', 'surface'],
     properties: {
-      dsl: ref('FlowSurfaceDslDocument'),
-      plan: ref('FlowSurfacePlanDocument'),
-      verificationMode: {
+      version: {
         type: 'string',
-        enum: ['strict', 'none'],
+        enum: ['1'],
       },
-      target: {
-        allOf: [ref('FlowSurfaceReadTarget')],
-        nullable: true,
-      },
-      fingerprintBefore: {
+      mode: {
         type: 'string',
-        nullable: true,
+        enum: ['create', 'replace'],
       },
-      surfaceExistsAfterExecute: {
-        type: 'boolean',
-        nullable: true,
-      },
-      refs: ref('FlowSurfaceRefsMap'),
-      compiledSteps: {
-        type: 'array',
-        items: ref('FlowSurfacePlanCompiledStep'),
-      },
-      results: {
-        type: 'array',
-        items: ref('FlowSurfacePlanResultItem'),
-      },
-      persistedRefs: {
-        type: 'array',
-        items: ref('FlowSurfacePersistedRefResult'),
-      },
+      target: ref('FlowSurfaceExecuteDslResponseTarget'),
+      surface: ref('FlowSurfaceGetResponse'),
     },
     additionalProperties: false,
   },
@@ -2952,9 +2655,9 @@ const schemas = {
       expectedFingerprint: {
         type: 'string',
       },
-      bindRefs: {
+      bindKeys: {
         type: 'array',
-        items: ref('FlowSurfaceBindRef'),
+        items: ref('FlowSurfaceBindKey'),
       },
       plan: ref('FlowSurfacePlanDocument'),
     },
@@ -3014,10 +2717,10 @@ const schemas = {
       blocking: {
         type: 'boolean',
       },
-      blockRef: {
+      blockKey: {
         type: 'string',
       },
-      fieldRef: {
+      fieldKey: {
         type: 'string',
       },
       fieldPath: {
@@ -3054,7 +2757,7 @@ const schemas = {
         type: 'string',
         nullable: true,
       },
-      refs: ref('FlowSurfaceRefsMap'),
+      keys: ref('FlowSurfaceKeysMap'),
       compiledSteps: {
         type: 'array',
         items: ref('FlowSurfacePlanCompiledStep'),
@@ -3081,7 +2784,7 @@ const schemas = {
         type: 'boolean',
         nullable: true,
       },
-      refs: ref('FlowSurfaceRefsMap'),
+      keys: ref('FlowSurfaceKeysMap'),
       compiledSteps: {
         type: 'array',
         items: ref('FlowSurfacePlanCompiledStep'),
@@ -3090,9 +2793,9 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfacePlanResultItem'),
       },
-      persistedRefs: {
+      persistedKeys: {
         type: 'array',
-        items: ref('FlowSurfacePersistedRefResult'),
+        items: ref('FlowSurfacePersistedKeyResult'),
       },
     },
     additionalProperties: false,
@@ -4480,7 +4183,7 @@ const schemas = {
       values: {
         ...ANY_OBJECT_SCHEMA,
         description:
-          'Business payload for the corresponding `/flowSurfaces:<type>` action. Nested refs must use `{ ref: "<opId>.<path>" }`.',
+          'Business payload for the corresponding `/flowSurfaces:<type>` action. Nested runtime values must use `{ step: "<opId>", path: "<field>" }` or `{ key: "<opId>" }`.',
       },
     },
     additionalProperties: false,

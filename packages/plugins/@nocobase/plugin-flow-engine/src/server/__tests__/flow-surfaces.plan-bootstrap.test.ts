@@ -10,26 +10,26 @@
 import { executePlan, validatePlan } from '../flow-surfaces/planning/runtime';
 
 describe('flowSurfaces bootstrap planning', () => {
-  function getComposeBlock(result: Record<string, any>, ref: string) {
-    const matched = (result?.blocks || []).find((item: any) => item?.ref === ref);
+  function getComposeBlock(result: Record<string, any>, key: string) {
+    const matched = (result?.blocks || []).find((item: any) => item?.key === key);
     expect(matched).toBeTruthy();
     return matched;
   }
 
-  function getComposeAction(block: Record<string, any>, scope: 'actions' | 'recordActions', ref: string) {
-    const matched = (block?.[scope] || []).find((item: any) => item?.ref === ref);
+  function getComposeAction(block: Record<string, any>, scope: 'actions' | 'recordActions', key: string) {
+    const matched = (block?.[scope] || []).find((item: any) => item?.key === key);
     expect(matched).toBeTruthy();
     return matched;
   }
 
-  it('should validate bootstrap plan with createMenu/createPage and step refs in selectors and values', async () => {
+  it('should validate bootstrap plan with createMenu/createPage and step links in selectors and values', async () => {
     const harness = createPlanningHarness();
 
     const data = await validatePlan(buildBootstrapPlanValues(), harness.deps);
 
     expect(data.target).toBeNull();
     expect(data.fingerprint).toBeNull();
-    expect(data.refs).toEqual({});
+    expect(data.keys).toEqual({});
     expect(data.compiledSteps).toEqual([
       expect.objectContaining({
         index: 0,
@@ -48,7 +48,8 @@ describe('flowSurfaces bootstrap planning', () => {
           title: 'Employees',
           type: 'item',
           parentMenuRouteId: {
-            ref: 'group.routeId',
+            step: 'group',
+            path: 'routeId',
           },
         }),
       }),
@@ -58,7 +59,8 @@ describe('flowSurfaces bootstrap planning', () => {
         action: 'createPage',
         payload: expect.objectContaining({
           menuRouteId: {
-            ref: 'menu.routeId',
+            step: 'menu',
+            path: 'routeId',
           },
           tabTitle: 'Overview',
           enableTabs: true,
@@ -78,11 +80,13 @@ describe('flowSurfaces bootstrap planning', () => {
         payload: expect.objectContaining({
           target: {
             uid: {
-              ref: 'page.pageUid',
+              step: 'page',
+              path: 'pageUid',
             },
           },
           title: {
-            ref: 'page.tabSchemaName',
+            step: 'page',
+            path: 'tabSchemaName',
           },
         }),
       }),
@@ -100,13 +104,15 @@ describe('flowSurfaces bootstrap planning', () => {
         payload: expect.objectContaining({
           target: {
             uid: {
-              ref: 'page.tabSchemaUid',
+              step: 'page',
+              path: 'tabSchemaUid',
             },
           },
           changes: {
             title: 'Overview (planned)',
             documentTitle: {
-              ref: 'extraTab.tabSchemaUid',
+              step: 'extraTab',
+              path: 'tabSchemaUid',
             },
           },
         }),
@@ -114,15 +120,15 @@ describe('flowSurfaces bootstrap planning', () => {
     ]);
   });
 
-  it('should execute bootstrap plan and resolve previous step refs across mutate and plan-only actions', async () => {
+  it('should execute bootstrap plan and resolve previous step links across mutate and plan-only actions', async () => {
     const harness = createPlanningHarness();
 
     const data = await executePlan(buildBootstrapPlanValues(), harness.deps);
 
     expect(data.fingerprintBefore).toBeNull();
     expect(data.surfaceExistsAfterExecute).toBe(true);
-    expect(data.persistedRefs).toEqual([]);
-    expect(data.refs).toMatchObject({
+    expect(data.persistedKeys).toEqual([]);
+    expect(data.keys).toMatchObject({
       surface: {
         uid: expect.any(String),
         kind: 'page',
@@ -162,7 +168,7 @@ describe('flowSurfaces bootstrap planning', () => {
     });
   });
 
-  it('should resolve nested compose created refs across one bootstrap executePlan', async () => {
+  it('should resolve nested compose created keys across one bootstrap executePlan', async () => {
     const harness = createPlanningHarness();
 
     const data = await executePlan(
@@ -197,7 +203,7 @@ describe('flowSurfaces bootstrap planning', () => {
                   step: 'menu',
                   path: 'routeId',
                 },
-                ref: 'usersPage',
+                key: 'usersPage',
                 title: 'Users page',
                 tabTitle: 'Overview',
               },
@@ -207,24 +213,24 @@ describe('flowSurfaces bootstrap planning', () => {
               action: 'compose',
               selectors: {
                 target: {
-                  ref: 'usersPage.tab',
+                  key: 'usersPage.tab',
                 },
               },
               values: {
                 mode: 'append',
                 blocks: [
                   {
-                    ref: 'usersTable',
+                    key: 'usersTable',
                     type: 'table',
                     resource: {
                       dataSourceKey: 'main',
                       collectionName: 'users',
                     },
                     fields: [
-                      { ref: 'usersTable.username', fieldPath: 'username' },
-                      { ref: 'usersTable.nickname', fieldPath: 'nickname' },
+                      { key: 'usersTable.username', fieldPath: 'username' },
+                      { key: 'usersTable.nickname', fieldPath: 'nickname' },
                     ],
-                    recordActions: [{ ref: 'usersTable.viewUser', type: 'view' }],
+                    recordActions: [{ key: 'usersTable.viewUser', type: 'view' }],
                   },
                 ],
               },
@@ -234,19 +240,19 @@ describe('flowSurfaces bootstrap planning', () => {
               action: 'compose',
               selectors: {
                 target: {
-                  ref: 'usersTable.viewUser.popupGrid',
+                  key: 'usersTable.viewUser.popupGrid',
                 },
               },
               values: {
                 mode: 'replace',
                 blocks: [
                   {
-                    ref: 'userDetails',
+                    key: 'userDetails',
                     type: 'details',
                     resource: {
                       binding: 'currentRecord',
                     },
-                    recordActions: [{ ref: 'userDetails.editUser', type: 'edit' }],
+                    recordActions: [{ key: 'userDetails.editUser', type: 'edit' }],
                   },
                 ],
               },
@@ -256,20 +262,20 @@ describe('flowSurfaces bootstrap planning', () => {
               action: 'compose',
               selectors: {
                 target: {
-                  ref: 'userDetails.editUser.popupGrid',
+                  key: 'userDetails.editUser.popupGrid',
                 },
               },
               values: {
                 mode: 'replace',
                 blocks: [
                   {
-                    ref: 'userEditForm',
+                    key: 'userEditForm',
                     type: 'editForm',
                     resource: {
                       binding: 'currentRecord',
                     },
-                    fields: [{ ref: 'userEditForm.username', fieldPath: 'username' }],
-                    actions: [{ ref: 'userEditForm.submit', type: 'submit' }],
+                    fields: [{ key: 'userEditForm.username', fieldPath: 'username' }],
+                    actions: [{ key: 'userEditForm.submit', type: 'submit' }],
                   },
                 ],
               },
@@ -288,7 +294,7 @@ describe('flowSurfaces bootstrap planning', () => {
           payload: expect.objectContaining({
             target: {
               uid: {
-                ref: 'usersTable.viewUser.popupGrid',
+                key: 'usersTable.viewUser.popupGrid',
               },
             },
           }),
@@ -299,7 +305,7 @@ describe('flowSurfaces bootstrap planning', () => {
           payload: expect.objectContaining({
             target: {
               uid: {
-                ref: 'userDetails.editUser.popupGrid',
+                key: 'userDetails.editUser.popupGrid',
               },
             },
           }),
@@ -329,13 +335,13 @@ describe('flowSurfaces bootstrap planning', () => {
     });
   });
 
-  it('should allow empty bindRefs and empty expectedFingerprint in bootstrap mode, but reject non-empty bindRefs', async () => {
+  it('should allow empty bindKeys and empty expectedFingerprint in bootstrap mode, but reject non-empty bindKeys', async () => {
     const harness = createPlanningHarness();
 
     await expect(
       validatePlan(
         {
-          bindRefs: [],
+          bindKeys: [],
           expectedFingerprint: '',
           plan: {
             steps: [
@@ -360,9 +366,9 @@ describe('flowSurfaces bootstrap planning', () => {
     await expect(
       validatePlan(
         {
-          bindRefs: [
+          bindKeys: [
             {
-              ref: 'menuRoot',
+              key: 'menuRoot',
               locator: {
                 uid: 'missing',
               },
@@ -383,7 +389,7 @@ describe('flowSurfaces bootstrap planning', () => {
         },
         harness.deps,
       ),
-    ).rejects.toThrow('bindRefs require surface');
+    ).rejects.toThrow('bindKeys require surface');
   });
 
   it('should keep validatePlan fail-fast shape by default and only call collect issues hook when opted in', async () => {
@@ -417,7 +423,7 @@ describe('flowSurfaces bootstrap planning', () => {
     });
   });
 
-  it('should reject selector and value step refs that do not point to previous step ids', async () => {
+  it('should reject selector and value step links that do not point to previous step ids', async () => {
     const harness = createPlanningHarness();
 
     await expect(
@@ -499,7 +505,7 @@ describe('flowSurfaces bootstrap planning', () => {
 
 function buildBootstrapPlanValues() {
   return {
-    bindRefs: [],
+    bindKeys: [],
     expectedFingerprint: '',
     plan: {
       steps: [
@@ -801,11 +807,11 @@ function createPlanningHarness() {
         const normalized =
           typeof field === 'string'
             ? {
-                ref: field,
+                key: field,
                 fieldPath: field,
               }
             : {
-                ref: field.ref || field.fieldPath || `field_${blockIndex + 1}_${fieldIndex + 1}`,
+                key: field.key || field.fieldPath || `field_${blockIndex + 1}_${fieldIndex + 1}`,
                 fieldPath: field.fieldPath,
               };
         const uid = `field_${state.blockSeq}_${fieldIndex + 1}`;
@@ -820,11 +826,11 @@ function createPlanningHarness() {
         const normalized =
           typeof action === 'string'
             ? {
-                ref: action,
+                key: action,
                 type: action,
               }
             : {
-                ref: action.ref || action.type || `action_${blockIndex + 1}_${actionIndex + 1}`,
+                key: action.key || action.type || `action_${blockIndex + 1}_${actionIndex + 1}`,
                 type: action.type,
               };
         return {
@@ -837,11 +843,11 @@ function createPlanningHarness() {
         const normalized =
           typeof action === 'string'
             ? {
-                ref: action,
+                key: action,
                 type: action,
               }
             : {
-                ref: action.ref || action.type || `record_action_${blockIndex + 1}_${actionIndex + 1}`,
+                key: action.key || action.type || `record_action_${blockIndex + 1}_${actionIndex + 1}`,
                 type: action.type,
               };
         return {
@@ -852,7 +858,7 @@ function createPlanningHarness() {
       });
       const blockUid = `block_${state.blockSeq++}`;
       const result = {
-        ref: block.ref,
+        key: block.key,
         type: block.type,
         uid: blockUid,
         fields,
@@ -931,8 +937,8 @@ function createPlanningHarness() {
       uid: resolved.uid,
       kind: resolved.kind,
     }),
-    buildSurfaceContextFingerprint: ({ surfaceResolved, refMap }: any) =>
-      `fp:${surfaceResolved?.uid || 'none'}:${refMap.size}`,
+    buildSurfaceContextFingerprint: ({ surfaceResolved, keyMap }: any) =>
+      `fp:${surfaceResolved?.uid || 'none'}:${keyMap.size}`,
     buildSurfaceReadPayload: async (target: any, resolved: any, node: any) => ({
       target: {
         locator: target,
@@ -941,10 +947,10 @@ function createPlanningHarness() {
       },
       tree: node,
     }),
-    assertRequestRefsPersistable: async () => undefined,
-    persistDeclaredRefForNode: async (refInfo: any) => ({
-      ref: refInfo.ref,
-      uid: refInfo.uid,
+    assertRequestKeysPersistable: async () => undefined,
+    persistDeclaredKeyForNode: async (keyInfo: any) => ({
+      key: keyInfo.key,
+      uid: keyInfo.uid,
       persisted: true,
     }),
     dispatchPlanOnlyAction: async (action: string, payload: Record<string, any>) => {

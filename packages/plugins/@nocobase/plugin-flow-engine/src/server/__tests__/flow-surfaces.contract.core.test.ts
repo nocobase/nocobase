@@ -600,7 +600,8 @@ describe('flowSurfaces API contract core', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'page.gridUid',
+                  step: 'page',
+                  path: 'gridUid',
                 },
               },
               type: 'details',
@@ -615,7 +616,8 @@ describe('flowSurfaces API contract core', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'block.uid',
+                  step: 'block',
+                  path: 'uid',
                 },
               },
               fieldPath: 'not_exists',
@@ -655,7 +657,8 @@ describe('flowSurfaces API contract core', () => {
               clientKey: 'details-block',
               target: {
                 uid: {
-                  ref: 'page.gridUid',
+                  step: 'page',
+                  path: 'gridUid',
                 },
               },
               type: 'details',
@@ -728,8 +731,8 @@ describe('flowSurfaces API contract core', () => {
             values: {
               pageSchemaUid: 'legacy_ref_contract_page_schema_uid',
               tabSchemaUid: 'legacy_ref_contract_tab_schema_uid',
-              title: 'Legacy ref contract page',
-              tabTitle: 'Legacy ref contract tab',
+              title: 'Legacy $ref contract page',
+              tabTitle: 'Legacy $ref contract tab',
             },
           },
           {
@@ -1335,7 +1338,7 @@ describe('flowSurfaces API contract core', () => {
             mode: 'replace',
             blocks: [
               {
-                ref: 'details',
+                key: 'details',
                 type: 'details',
                 resource: {
                   binding: 'currentRecord',

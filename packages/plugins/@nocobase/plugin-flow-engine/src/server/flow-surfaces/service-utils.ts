@@ -20,19 +20,19 @@ import {
 } from './errors';
 import { getFieldInterface } from './service-helpers';
 import type { FlowSurfaceNodeSpec, FlowSurfaceNodeSubModel } from './types';
-import { FLOW_SURFACE_RESERVED_REFS } from './planning/ref-registry';
+import { FLOW_SURFACE_RESERVED_KEYS } from './planning/key-registry';
 
 export function buildDefinedPayload(payload: Record<string, any>) {
   return _.pickBy(payload, (value) => !_.isUndefined(value));
 }
 
-export function normalizeFlowSurfaceComposeRef(ref: any, context: string) {
-  const normalized = typeof ref === 'string' ? ref.trim() : String(ref || '').trim();
+export function normalizeFlowSurfaceComposeKey(key: any, context: string) {
+  const normalized = typeof key === 'string' ? key.trim() : String(key || '').trim();
   if (!normalized) {
-    throwBadRequest(`${context} ref cannot be empty`);
+    throwBadRequest(`${context} key cannot be empty`);
   }
-  if (FLOW_SURFACE_RESERVED_REFS.has(normalized)) {
-    throwBadRequest(`${context} ref '${normalized}' is reserved`);
+  if (FLOW_SURFACE_RESERVED_KEYS.has(normalized)) {
+    throwBadRequest(`${context} key '${normalized}' is reserved`);
   }
   return normalized;
 }
@@ -40,19 +40,18 @@ export function normalizeFlowSurfaceComposeRef(ref: any, context: string) {
 export function assertFlowSurfaceComposeUniqueKeys(
   items: Array<{
     key?: string;
-    ref?: string;
   }>,
   context: string,
 ) {
   const seen = new Map<string, number>();
   items.forEach((item, index) => {
-    const key = typeof item?.ref === 'string' ? item.ref.trim() : typeof item?.key === 'string' ? item.key.trim() : '';
+    const key = typeof item?.key === 'string' ? item.key.trim() : '';
     if (!key) {
       return;
     }
     const previousIndex = seen.get(key);
     if (previousIndex) {
-      throwBadRequest(`${context} ref '${key}' is duplicated at #${previousIndex} and #${index + 1}`);
+      throwBadRequest(`${context} key '${key}' is duplicated at #${previousIndex} and #${index + 1}`);
     }
     seen.set(key, index + 1);
   });
@@ -294,7 +293,7 @@ export function normalizeComposeFieldSpec(input: any, index: number) {
     }
     return {
       index: index + 1,
-      ref: fieldPath,
+      key: fieldPath,
       fieldPath,
       settings: {},
       popup: undefined,
@@ -302,9 +301,6 @@ export function normalizeComposeFieldSpec(input: any, index: number) {
   }
   if (!_.isPlainObject(input)) {
     throwBadRequest(`flowSurfaces compose field #${index + 1} must be a string or object`);
-  }
-  if (Object.prototype.hasOwnProperty.call(input, 'key')) {
-    throwBadRequest(`flowSurfaces compose field #${index + 1} does not support key, use ref instead`);
   }
   if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps) {
     throwBadRequest('flowSurfaces compose field only accepts public semantic field fields');
@@ -323,21 +319,19 @@ export function normalizeComposeFieldSpec(input: any, index: number) {
       `flowSurfaces compose field #${index + 1} cannot mix fieldPath with synthetic field type '${semanticType}'`,
     );
   }
-  const rawRef = String(input.ref || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim();
-  const ref = normalizeFlowSurfaceComposeRef(rawRef, `flowSurfaces compose field #${index + 1}`);
+  if (!_.isUndefined(input.target) && typeof input.target !== 'string') {
+    throwBadRequest(`flowSurfaces compose field #${index + 1} target must be a string block key`);
+  }
+  const rawKey = String(input.key || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim();
+  const key = normalizeFlowSurfaceComposeKey(rawKey, `flowSurfaces compose field #${index + 1}`);
   return {
     index: index + 1,
-    ref,
+    key,
     ...(fieldPath ? { fieldPath } : {}),
     associationPathName: String(input.associationPathName || '').trim() || undefined,
     ...(renderer ? { renderer } : {}),
     ...(semanticType ? { type: semanticType } : {}),
-    target:
-      typeof input.target === 'string'
-        ? String(input.target || '').trim() || undefined
-        : _.isPlainObject(input.target)
-          ? _.cloneDeep(input.target)
-          : undefined,
+    target: typeof input.target === 'string' ? String(input.target || '').trim() || undefined : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
   };
@@ -350,7 +344,7 @@ export function normalizeComposeActionSpec(input: any, index: number) {
       throwBadRequest(`flowSurfaces compose action #${index + 1} cannot be empty`);
     }
     return {
-      ref: type,
+      key: type,
       type,
       settings: {},
       popup: undefined,
@@ -358,9 +352,6 @@ export function normalizeComposeActionSpec(input: any, index: number) {
   }
   if (!_.isPlainObject(input)) {
     throwBadRequest(`flowSurfaces compose action #${index + 1} must be a string or object`);
-  }
-  if (Object.prototype.hasOwnProperty.call(input, 'key')) {
-    throwBadRequest(`flowSurfaces compose action #${index + 1} does not support key, use ref instead`);
   }
   if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps || input.flowRegistry) {
     throwBadRequest('flowSurfaces compose action only accepts public semantic action fields');
@@ -372,12 +363,12 @@ export function normalizeComposeActionSpec(input: any, index: number) {
   if (!_.isUndefined(input.scope)) {
     throwBadRequest(`flowSurfaces compose action #${index + 1} does not support scope, use actions or recordActions`);
   }
-  const ref = normalizeFlowSurfaceComposeRef(
-    String(input.ref || type).trim(),
+  const key = normalizeFlowSurfaceComposeKey(
+    String(input.key || type).trim(),
     `flowSurfaces compose action #${index + 1}`,
   );
   return {
-    ref,
+    key,
     type,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,

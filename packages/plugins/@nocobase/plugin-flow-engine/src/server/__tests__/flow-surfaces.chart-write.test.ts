@@ -565,7 +565,7 @@ chart.on('click', 'series', function(params) {
         target: { uid: page.gridUid },
         blocks: [
           {
-            ref: 'chart',
+            key: 'chart',
             type: 'chart',
             settings: {
               configure: {
@@ -587,7 +587,7 @@ chart.on('click', 'series', function(params) {
     });
     expect(composeRes.status).toBe(200);
 
-    const chartUid = getData(composeRes).blocks.find((block: any) => block.ref === 'chart')?.uid;
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'chart')?.uid;
     expect(chartUid).toBeTruthy();
 
     const surface = getData(

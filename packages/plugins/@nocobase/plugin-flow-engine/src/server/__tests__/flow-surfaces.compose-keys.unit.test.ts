@@ -10,28 +10,28 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertFlowSurfaceComposeUniqueKeys,
-  normalizeFlowSurfaceComposeRef,
+  normalizeFlowSurfaceComposeKey,
   normalizeComposeActionSpec,
   normalizeComposeFieldSpec,
 } from '../flow-surfaces/service-utils';
 
-describe('flowSurfaces compose ref guards', () => {
-  it('should allow dotted refs and reject empty refs', () => {
-    expect(normalizeFlowSurfaceComposeRef('users.table', 'flowSurfaces compose block #1')).toBe('users.table');
-    expect(() => normalizeFlowSurfaceComposeRef('', 'flowSurfaces compose block #1')).toThrow('ref cannot be empty');
+describe('flowSurfaces compose key guards', () => {
+  it('should allow dotted keys and reject empty keys', () => {
+    expect(normalizeFlowSurfaceComposeKey('users.table', 'flowSurfaces compose block #1')).toBe('users.table');
+    expect(() => normalizeFlowSurfaceComposeKey('', 'flowSurfaces compose block #1')).toThrow('key cannot be empty');
   });
 
-  it('should reject duplicate refs inside a compose collection', () => {
+  it('should reject duplicate keys inside a compose collection', () => {
     expect(() =>
       assertFlowSurfaceComposeUniqueKeys(
-        [{ ref: 'viewUser' }, { ref: 'viewUser' }],
+        [{ key: 'viewUser' }, { key: 'viewUser' }],
         'flowSurfaces compose block #1 recordActions',
       ),
-    ).toThrow("ref 'viewUser' is duplicated");
+    ).toThrow("key 'viewUser' is duplicated");
   });
 
-  it('should reject compose actions that still use key', () => {
-    expect(() =>
+  it('should normalize compose actions with explicit keys', () => {
+    expect(
       normalizeComposeActionSpec(
         {
           key: 'view.user',
@@ -39,25 +39,14 @@ describe('flowSurfaces compose ref guards', () => {
         },
         0,
       ),
-    ).toThrow('does not support key, use ref instead');
+    ).toMatchObject({
+      key: 'view.user',
+      type: 'view',
+    });
   });
 
-  it('should allow dotted field refs and reject legacy key fields', () => {
+  it('should derive field keys from fieldPath and reject object-style target selectors', () => {
     expect(
-      normalizeComposeFieldSpec(
-        {
-          ref: 'roles.title',
-          fieldPath: 'roles.title',
-        },
-        0,
-      ),
-    ).toMatchObject({
-      index: 1,
-      ref: 'roles.title',
-      fieldPath: 'roles.title',
-    });
-
-    expect(() =>
       normalizeComposeFieldSpec(
         {
           key: 'roles.title',
@@ -65,6 +54,22 @@ describe('flowSurfaces compose ref guards', () => {
         },
         0,
       ),
-    ).toThrow('does not support key, use ref instead');
+    ).toMatchObject({
+      index: 1,
+      key: 'roles.title',
+      fieldPath: 'roles.title',
+    });
+
+    expect(() =>
+      normalizeComposeFieldSpec(
+        {
+          fieldPath: 'roles.title',
+          target: {
+            key: 'details',
+          },
+        },
+        0,
+      ),
+    ).toThrow('target must be a string block key');
   });
 });

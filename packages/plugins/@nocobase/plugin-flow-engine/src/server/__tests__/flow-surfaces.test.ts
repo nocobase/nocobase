@@ -173,7 +173,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            ref: 'details',
+            key: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -504,7 +504,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            ref: 'details',
+            key: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -538,7 +538,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            ref: 'details',
+            key: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -572,7 +572,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            ref: 'details',
+            key: 'details',
             type: 'details',
             resource: {
               binding: 'currentRecord',
@@ -1543,7 +1543,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              ref: 'form',
+              key: 'form',
               type: 'createForm',
               resource: {
                 binding: 'currentCollection',
@@ -1587,7 +1587,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              ref: 'details',
+              key: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -1671,7 +1671,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              ref: 'details',
+              key: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -1728,13 +1728,13 @@ describe('flowSurfaces resource', () => {
         },
         fields: [
           {
-            ref: 'nickname',
+            key: 'nickname',
             fieldPath: 'nickname',
             popup: {
               mode: 'replace',
               blocks: [
                 {
-                  ref: 'details',
+                  key: 'details',
                   type: 'details',
                   resource: {
                     binding: 'currentRecord',
@@ -1745,7 +1745,7 @@ describe('flowSurfaces resource', () => {
             },
           },
           {
-            ref: 'status',
+            key: 'status',
             fieldPath: 'status',
           },
         ],
@@ -1764,7 +1764,7 @@ describe('flowSurfaces resource', () => {
         mode: 'replace',
         blocks: [
           {
-            ref: 'details',
+            key: 'details',
             type: 'details',
             resource: {
               dataSourceKey: 'main',
@@ -1772,13 +1772,13 @@ describe('flowSurfaces resource', () => {
             },
             fields: [
               {
-                ref: 'department',
+                key: 'department',
                 fieldPath: 'department.title',
                 popup: {
                   mode: 'replace',
                   blocks: [
                     {
-                      ref: 'departmentDetails',
+                      key: 'departmentDetails',
                       type: 'details',
                       resource: {
                         binding: 'currentRecord',
@@ -1827,7 +1827,7 @@ describe('flowSurfaces resource', () => {
         },
         fields: [
           {
-            ref: 'nickname',
+            key: 'nickname',
             fieldPath: 'nickname',
             settings: {
               label: 'Employee nickname',
@@ -1981,7 +1981,7 @@ describe('flowSurfaces resource', () => {
           mode: 'replace',
           blocks: [
             {
-              ref: 'details',
+              key: 'details',
               type: 'details',
               resource: {
                 binding: 'currentRecord',
@@ -2017,7 +2017,7 @@ describe('flowSurfaces resource', () => {
           popup: {
             blocks: [
               {
-                ref: 'details',
+                key: 'details',
                 type: 'details',
                 resource: {
                   binding: 'currentCollection',
@@ -2426,7 +2426,7 @@ describe('flowSurfaces resource', () => {
     const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
       popup: {
         layout: {
-          rows: [[{ ref: 'defaultEditForm', span: 10 }]],
+          rows: [[{ key: 'defaultEditForm', span: 10 }]],
         },
       },
     });
@@ -2488,8 +2488,8 @@ describe('flowSurfaces resource', () => {
         'field.department.title.wrapper',
       ]),
     );
-    expect(Object.values(bundle.refs).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
-    expect(Object.values(bundle.refs).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
+    expect(Object.values(bundle.keys).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
+    expect(Object.values(bundle.keys).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
 
     const addNewReadback = await getSurface(rootAgent, {
       uid: addNewAction.uid,
@@ -3661,7 +3661,7 @@ describe('flowSurfaces resource', () => {
           },
           blocks: [
             {
-              ref: 'composedHero',
+              key: 'composedHero',
               type: 'jsBlock',
               settings: {
                 title: 'Composed hero',
@@ -4525,7 +4525,7 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidFieldUseApply)).toContain(`fieldUse 'DisplayTextFieldModel'`);
   });
 
-  it('should support mutate ref chain rollback apply replace subtree and stable get readback', async () => {
+  it('should support mutate key chain rollback apply replace subtree and stable get readback', async () => {
     const pageSchemaUid = 'rollback_page_schema_uid';
     const tabSchemaUid = 'rollback_tab_schema_uid';
     const rollbackRes = await rootAgent.resource('flowSurfaces').mutate({
@@ -4548,7 +4548,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'page.tabSchemaUid',
+                  key: 'page.tabSchemaUid',
                 },
               },
               type: 'details',
@@ -4563,7 +4563,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'block.uid',
+                  key: 'block.uid',
                 },
               },
               fieldPath: 'not_exists',
@@ -5780,14 +5780,14 @@ describe('flowSurfaces resource', () => {
           },
           blocks: [
             {
-              ref: 'gamma',
+              key: 'gamma',
               type: 'markdown',
               settings: {
                 content: 'Gamma',
               },
             },
             {
-              ref: 'delta',
+              key: 'delta',
               type: 'markdown',
               settings: {
                 content: 'Delta',
@@ -5879,7 +5879,7 @@ describe('flowSurfaces resource', () => {
         mode: 'append',
         blocks: [
           {
-            ref: 'gamma',
+            key: 'gamma',
             type: 'markdown',
             settings: {
               content: 'Gamma',
@@ -5976,7 +5976,7 @@ describe('flowSurfaces resource', () => {
         mode: 'append',
         blocks: [
           {
-            ref: 'gamma',
+            key: 'gamma',
             type: 'markdown',
             settings: {
               content: 'Gamma',
@@ -6591,8 +6591,8 @@ function getData(response: any) {
   return response.body.data;
 }
 
-function getComposeBlock(result: any, ref: string) {
-  const block = _.castArray(result?.blocks || []).find((item: any) => item?.ref === ref);
+function getComposeBlock(result: any, key: string) {
+  const block = _.castArray(result?.blocks || []).find((item: any) => item?.key === key);
   expect(block).toBeTruthy();
   return block;
 }

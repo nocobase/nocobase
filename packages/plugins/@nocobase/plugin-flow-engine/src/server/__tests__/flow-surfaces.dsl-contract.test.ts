@@ -7,928 +7,1144 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
 import {
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
   getData,
+  getRouteBackedTabs,
   getSurface,
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
 
-describe('flowSurfaces dsl contract', () => {
+describe('flowSurfaces executeDsl contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
+  let flowRepo: FlowSurfacesContractContext['flowRepo'];
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
-    ({ rootAgent } = context);
+    ({ rootAgent, flowRepo } = context);
   }, 120000);
 
   afterAll(async () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
-  it('should validate blueprint DSL and preview compiled bootstrap plan steps', async () => {
-    const validateRes = await rootAgent.resource('flowSurfaces').validateDsl({
+  it('should create one page from the simplified structure DSL and return only target/surface', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
       values: {
-        dsl: {
-          version: '1',
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            title: 'Workspace',
+          },
+          item: {
+            title: 'Employees',
+          },
+        },
+        page: {
           title: 'Employees',
-          target: {
-            mode: 'create-page',
-          },
-          navigation: {
-            item: {
-              title: 'Employees',
-            },
-          },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-            {
-              key: 'employeeRecord',
-              kind: 'binding',
-              popupId: 'employeeViewPopup',
-              binding: 'currentRecord',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'employeesTable',
-              type: 'table',
-              title: 'Employees',
-              dataBound: true,
-              dataSourceKey: 'employees',
-              fields: [{ fieldPath: 'nickname' }],
-              recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeViewPopup',
-              title: 'View employee',
-              completion: 'completed',
-              blocks: [
-                {
-                  id: 'employeeDetails',
-                  type: 'details',
-                  title: 'Employee details',
-                  dataBound: true,
-                  dataSourceKey: 'employeeRecord',
-                  fields: [{ fieldPath: 'nickname' }],
-                },
-              ],
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
+          documentTitle: 'Employees workspace',
+          enableHeader: true,
+          displayTitle: true,
         },
-      },
-    });
-    expect(validateRes.status).toBe(200);
-    const validateData = getData(validateRes);
-
-    expect(validateData.plan.steps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'dslMenuItem', action: 'createMenu' }),
-        expect.objectContaining({ id: 'dslPage', action: 'createPage' }),
-        expect.objectContaining({ id: 'dslPageCompose', action: 'compose' }),
-      ]),
-    );
-    expect(validateData.compiledSteps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'dslMenuItem', action: 'createMenu' }),
-        expect.objectContaining({ id: 'dslPage', action: 'createPage' }),
-        expect.objectContaining({ id: 'dslPageCompose', action: 'compose' }),
-      ]),
-    );
-  });
-
-  it('should execute blueprint DSL with backend default popup completion and strict verification', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Employees default popup',
-          target: {
-            mode: 'create-page',
+        assets: {
+          scripts: {
+            overviewBanner: {
+              version: '1.0.0',
+              code: "ctx.render('<div>Employees overview</div>');",
+            },
           },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'employeesTable',
-              type: 'table',
-              title: 'Employees',
-              dataBound: true,
-              dataSourceKey: 'employees',
-              fields: [{ fieldPath: 'nickname' }],
-              recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeViewPopup',
-              title: 'View employee',
-              completion: 'completed',
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
         },
-      },
-    });
-    expect(executeRes.status).toBe(200);
-    const executeData = getData(executeRes);
-
-    expect(executeData.verificationMode).toBe('strict');
-    expect(executeData.target?.locator?.pageSchemaUid).toBeTruthy();
-    expect(executeData.refs.employeesTable.uid).toBeTruthy();
-    expect(executeData.refs['viewEmployee.popupGrid'].uid).toBeTruthy();
-
-    const popupGridSurface = await getSurface(rootAgent, {
-      uid: executeData.refs['viewEmployee.popupGrid'].uid,
-    });
-    const uses = new Set(Object.values(popupGridSurface.nodeMap || {}).map((node: any) => node?.use));
-    expect(uses.has('DetailsBlockModel')).toBe(true);
-  });
-
-  it('should execute blueprint DSL with backend default edit popup title override and strict submit verification', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Employees edit popup',
-          target: {
-            mode: 'create-page',
-          },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
               {
-                key: 'main',
-                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'employeesTable',
-              type: 'table',
-              title: 'Employees',
-              dataBound: true,
-              dataSourceKey: 'employees',
-              fields: [{ fieldPath: 'nickname' }],
-              recordActions: [{ id: 'editEmployee', type: 'edit', title: 'Edit', popupId: 'employeeEditPopup' }],
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeEditPopup',
-              title: 'Modify employee',
-              completion: 'completed',
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
-      },
-    });
-    expect(executeRes.status).toBe(200);
-    const executeData = getData(executeRes);
-
-    expect(executeData.refs.editEmployee.uid).toBeTruthy();
-    expect(executeData.refs['editEmployee.popupGrid'].uid).toBeTruthy();
-    expect(executeData.refs['editEmployee.popupTab'].uid).toBeTruthy();
-
-    const actionSurface = await getSurface(rootAgent, {
-      uid: executeData.refs.editEmployee.uid,
-    });
-    const popupTab = _.castArray(actionSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
-    const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
-    const uses = new Set(Object.values(actionSurface.nodeMap || {}).map((node: any) => node?.use));
-
-    expect(popupTab?.props?.title).toBe('Modify employee');
-    expect(popupBlock?.use).toBe('EditFormModel');
-    expect(uses.has('FormSubmitActionModel')).toBe(true);
-  });
-
-  it('should execute blueprint DSL with explicit popup blocks and scoped popup refs', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Employees explicit popup',
-          target: {
-            mode: 'create-page',
-          },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-            {
-              key: 'employeeRecord',
-              kind: 'binding',
-              popupId: 'employeeViewPopup',
-              binding: 'currentRecord',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'employeesTable',
-              type: 'table',
-              title: 'Employees',
-              dataBound: true,
-              dataSourceKey: 'employees',
-              fields: [{ fieldPath: 'nickname' }],
-              recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeViewPopup',
-              title: 'Inspect employee',
-              completion: 'completed',
-              blocks: [
-                {
-                  id: 'employeeDetails',
-                  type: 'details',
-                  title: 'Employee details',
-                  dataBound: true,
-                  dataSourceKey: 'employeeRecord',
-                  fields: [{ fieldPath: 'nickname' }],
-                },
-              ],
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
-      },
-    });
-    expect(executeRes.status).toBe(200);
-    const executeData = getData(executeRes);
-
-    expect(executeData.refs['viewEmployee.popupGrid'].uid).toBeTruthy();
-    expect(executeData.refs['viewEmployee.popup.employeeDetails'].uid).toBeTruthy();
-    expect(executeData.refs['viewEmployee.popup.employeeDetails__field__nickname'].uid).toBeTruthy();
-
-    const actionSurface = await getSurface(rootAgent, {
-      uid: executeData.refs.viewEmployee.uid,
-    });
-    const popupTab = _.castArray(actionSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
-    const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
-
-    expect(popupTab?.props?.title).toBe('Inspect employee');
-    expect(popupBlock?.uid).toBe(executeData.refs['viewEmployee.popup.employeeDetails'].uid);
-    expect(popupBlock?.use).toBe('DetailsBlockModel');
-  });
-
-  it('should reject popup layouts that reference unknown popup blocks during DSL validation', async () => {
-    const validateRes = await rootAgent.resource('flowSurfaces').validateDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Employees invalid popup layout',
-          target: {
-            mode: 'create-page',
-          },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-            {
-              key: 'employeeRecord',
-              kind: 'binding',
-              popupId: 'employeeViewPopup',
-              binding: 'currentRecord',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'employeesTable',
-              type: 'table',
-              title: 'Employees',
-              dataBound: true,
-              dataSourceKey: 'employees',
-              fields: [{ fieldPath: 'nickname' }],
-              recordActions: [{ id: 'viewEmployee', type: 'view', title: 'View', popupId: 'employeeViewPopup' }],
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeViewPopup',
-              title: 'Inspect employee',
-              completion: 'completed',
-              layout: {
-                kind: 'rows-columns',
-                rows: [
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                recordActions: [
                   {
-                    key: 'popup-main',
-                    columns: [{ key: 'details', width: 12, items: ['missingPopupBlock'] }],
+                    type: 'view',
+                    title: 'View',
+                    popup: {
+                      title: 'Employee details',
+                      blocks: [
+                        {
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'employees',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                    },
                   },
                 ],
               },
-              blocks: [
-                {
-                  id: 'employeeDetails',
-                  type: 'details',
-                  title: 'Employee details',
-                  dataBound: true,
-                  dataSourceKey: 'employeeRecord',
-                  fields: [{ fieldPath: 'nickname' }],
-                },
-              ],
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
-      },
-    });
-
-    expect(validateRes.status).toBe(400);
-    expect(readErrorMessage(validateRes)).toContain(
-      "flowSurfaces dsl blueprint popups[0].layout item 'missingPopupBlock' is not defined in blocks[]",
-    );
-  });
-
-  it('should reject removed blueprint intent and binding scope fields', async () => {
-    const intentRes = await rootAgent.resource('flowSurfaces').validateDsl({
-      values: {
-        dsl: {
-          version: '1',
-          intent: 'management',
-          title: 'Legacy intent blueprint',
-          target: {
-            mode: 'create-page',
+            ],
           },
-          dataSources: [],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
+          {
+            title: 'Summary',
+            blocks: [
               {
-                key: 'main',
-                columns: [{ key: 'markdown', width: 12, items: ['content'] }],
+                type: 'jsBlock',
+                title: 'Overview banner',
+                script: 'overviewBanner',
               },
             ],
           },
-          blocks: [
-            {
-              id: 'content',
-              type: 'markdown',
-              title: 'Content',
-              dataBound: false,
-            },
-          ],
-          interactions: [],
-          popups: [],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
+        ],
       },
     });
-    expect(intentRes.status).toBe(400);
-    expect(readErrorMessage(intentRes)).toContain('intent is no longer supported');
 
-    const scopeRes = await rootAgent.resource('flowSurfaces').validateDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Legacy scope blueprint',
-          target: {
-            mode: 'create-page',
-          },
-          dataSources: [
-            {
-              key: 'employeeRecord',
-              kind: 'binding',
-              scope: 'popup',
-              popupId: 'employeeViewPopup',
-              binding: 'currentRecord',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'markdown', width: 12, items: ['content'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'content',
-              type: 'markdown',
-              title: 'Content',
-              dataBound: false,
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeViewPopup',
-              title: 'View employee',
-              completion: 'completed',
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
-      },
-    });
-    expect(scopeRes.status).toBe(400);
-    expect(readErrorMessage(scopeRes)).toContain('scope is no longer supported');
-  });
-
-  it('should execute update-page blueprint on a single-tab page target with replace semantics', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Update page root target',
-      tabTitle: 'Overview',
-    });
-    const legacyBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'markdown',
-          settings: {
-            title: 'Legacy block',
-            content: 'legacy',
-          },
-        },
-      }),
-    );
-
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Update page root target',
-          target: {
-            mode: 'update-page',
-            locator: {
-              pageSchemaUid: page.pageSchemaUid,
-            },
-          },
-          dataSources: [],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'content', width: 12, items: ['replacementMarkdown'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'replacementMarkdown',
-              type: 'markdown',
-              title: 'Replacement block',
-              dataBound: false,
-              settings: {
-                content: 'replacement',
-              },
-            },
-          ],
-          interactions: [],
-          popups: [],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
-      },
-    });
     expect(executeRes.status).toBe(200);
-    const executeData = getData(executeRes);
+    const data = getData(executeRes);
 
-    expect(executeData.plan.steps.find((step: any) => step.id === 'dslPageCompose')?.values?.mode).toBe('replace');
-
-    const readback = await getSurface(rootAgent, {
-      pageSchemaUid: page.pageSchemaUid,
-    });
-    const tab = _.castArray(readback.tree?.subModels?.tabs || [])[0];
-    const gridItems = _.castArray(tab?.subModels?.grid?.subModels?.items || []);
-
-    expect(gridItems).toHaveLength(1);
-    expect(gridItems[0]?.uid).toBe(executeData.refs.replacementMarkdown.uid);
-    expect(gridItems[0]?.uid).not.toBe(legacyBlock.uid);
-    expect(gridItems[0]?.use).toBe('MarkdownBlockModel');
-  });
-
-  it('should execute update-page blueprint on a tab target with replace semantics', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Update tab target',
-      tabTitle: 'Overview',
-    });
-    const legacyBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'markdown',
-          settings: {
-            title: 'Legacy tab block',
-            content: 'legacy tab',
-          },
-        },
-      }),
-    );
-
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Update tab target',
-          target: {
-            mode: 'update-page',
-            locator: {
-              tabSchemaUid: page.tabSchemaUid,
-            },
-          },
-          dataSources: [],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
-              {
-                key: 'main',
-                columns: [{ key: 'content', width: 12, items: ['updatedTabMarkdown'] }],
-              },
-            ],
-          },
-          blocks: [
-            {
-              id: 'updatedTabMarkdown',
-              type: 'markdown',
-              title: 'Updated tab block',
-              dataBound: false,
-              settings: {
-                content: 'updated tab',
-              },
-            },
-          ],
-          interactions: [],
-          popups: [],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
+    expect(data).toMatchObject({
+      version: '1',
+      mode: 'create',
+      target: {
+        pageSchemaUid: expect.any(String),
+        pageUid: expect.any(String),
       },
     });
-    expect(executeRes.status).toBe(200);
-    const executeData = getData(executeRes);
+    expect(data.dsl).toBeUndefined();
+    expect(data.plan).toBeUndefined();
+    expect(data.compiledSteps).toBeUndefined();
+    expect(data.results).toBeUndefined();
+    expect(data.verificationMode).toBeUndefined();
+    expect(data.keys).toBeUndefined();
 
-    const tabReadback = await getSurface(rootAgent, {
-      tabSchemaUid: page.tabSchemaUid,
-    });
-    const gridItems = _.castArray(tabReadback.tree?.subModels?.grid?.subModels?.items || []);
-
-    expect(gridItems).toHaveLength(1);
-    expect(gridItems[0]?.uid).toBe(executeData.refs.updatedTabMarkdown.uid);
-    expect(gridItems[0]?.uid).not.toBe(legacyBlock.uid);
+    expect(getRouteBackedTabs(data.surface).map((tab: any) => tab?.props?.title)).toEqual(['Overview', 'Summary']);
+    expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
-  it('should reject update-page blueprint page target when multiple route-backed tabs exist', async () => {
+  it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Update multi-tab page',
-      tabTitle: 'Overview',
+      title: 'Legacy employees',
+      tabTitle: 'Legacy overview',
+      enableTabs: true,
     });
     const addTabRes = await rootAgent.resource('flowSurfaces').addTab({
       values: {
         target: {
           uid: page.pageUid,
         },
-        title: 'Details',
+        title: 'Legacy extra',
       },
     });
     expect(addTabRes.status).toBe(200);
 
-    const validateRes = await rootAgent.resource('flowSurfaces').validateDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
       values: {
-        dsl: {
-          version: '1',
-          title: 'Update multi-tab page',
-          target: {
-            mode: 'update-page',
-            locator: {
-              pageSchemaUid: page.pageSchemaUid,
-            },
-          },
-          dataSources: [],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        page: {
+          title: 'Employees workspace',
+          documentTitle: 'Employees replace flow',
+          displayTitle: false,
+          enableTabs: false,
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
               {
-                key: 'main',
-                columns: [{ key: 'content', width: 12, items: ['replacementMarkdown'] }],
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
               },
             ],
           },
-          blocks: [
-            {
-              id: 'replacementMarkdown',
-              type: 'markdown',
-              title: 'Replacement block',
-              dataBound: false,
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+
+    expect(data).toMatchObject({
+      version: '1',
+      mode: 'replace',
+      target: {
+        pageSchemaUid: page.pageSchemaUid,
+        pageUid: page.pageUid,
+      },
+    });
+    expect(data.keys).toBeUndefined();
+    expect(getRouteBackedTabs(data.surface)).toHaveLength(1);
+    expect(data.surface.pageRoute.displayTitle).toBe(false);
+  });
+
+  it('should auto-generate a vertical grid layout when tab layout is omitted', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Auto layout page',
+          },
+        },
+        page: {
+          title: 'Auto layout page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+              {
+                type: 'details',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const firstTab = getRouteBackedTabs(data.surface)[0];
+    const tabGrid = await flowRepo.findModelByParentId(firstTab.uid, {
+      subKey: 'grid',
+      includeAsyncNode: true,
+    });
+    const gridItems = Array.isArray(tabGrid?.subModels?.items) ? tabGrid.subModels.items : [];
+
+    expect(gridItems).toHaveLength(2);
+    expect(tabGrid?.props?.rowOrder).toEqual(['row1', 'row2']);
+    expect(tabGrid?.props?.rows?.row1).toEqual([[gridItems[0]?.uid]]);
+    expect(tabGrid?.props?.rows?.row2).toEqual([[gridItems[1]?.uid]]);
+    expect(tabGrid?.props?.sizes?.row1).toEqual([24]);
+    expect(tabGrid?.props?.sizes?.row2).toEqual([24]);
+  });
+
+  it('should report layout errors with index-based tab paths instead of generated tab keys', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Layout error page',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+            layout: {
+              rows: [['missingBlock']],
             },
-          ],
-          interactions: [],
-          popups: [],
-          assumptions: [],
-          unresolvedQuestions: [],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    const message = readErrorMessage(executeRes);
+    expect(message).toContain(`flowSurfaces executeDsl tabs[0].layout.rows[0][0]`);
+    expect(message).toContain(`references unknown block 'missingBlock'`);
+    expect(message).not.toContain(`tabs['`);
+  });
+
+  it('should reject unsupported executeDsl top-level keys', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        dsl: {
+          version: '1',
+          title: 'unsupported',
         },
       },
     });
-    expect(validateRes.status).toBe(400);
-    expect(readErrorMessage(validateRes)).toContain('exactly one route-backed tab');
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain('only accepts top-level keys');
+    expect(readErrorMessage(res)).toContain('unsupported keys: dsl');
   });
 
-  it('should execute semantic patch DSL and resolve newly created refs', async () => {
+  it.each([
+    [
+      'reject create mode target',
+      {
+        version: '1',
+        mode: 'create',
+        target: {
+          pageSchemaUid: 'employees-page-schema',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', collection: 'employees', fields: ['nickname'] }],
+          },
+        ],
+      },
+      'create mode does not accept target',
+    ],
+    [
+      'reject replace mode without target',
+      {
+        version: '1',
+        mode: 'replace',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', collection: 'employees', fields: ['nickname'] }],
+          },
+        ],
+      },
+      'replace mode requires target.pageSchemaUid',
+    ],
+    [
+      'reject replace navigation',
+      {
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: 'employees-page-schema',
+        },
+        navigation: {
+          item: {
+            title: 'Employees',
+          },
+        },
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', collection: 'employees', fields: ['nickname'] }],
+          },
+        ],
+      },
+      'replace mode does not accept navigation',
+    ],
+    [
+      'reject empty tabs',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [],
+      },
+      'tabs must be a non-empty array',
+    ],
+    [
+      'reject empty tab blocks',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [],
+          },
+        ],
+      },
+      'tabs[0].blocks must be a non-empty array',
+    ],
+    [
+      'reject unsupported blueprint-style key',
+      {
+        version: '1',
+        kind: 'blueprint',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', collection: 'employees', fields: ['nickname'] }],
+          },
+        ],
+      },
+      'unsupported keys: kind',
+      undefined,
+    ],
+    [
+      'reject block collectionName alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', collectionName: 'employees', fields: ['nickname'] }],
+          },
+        ],
+      },
+      'collectionName is unsupported; use collection',
+      'flowSurfaces executeDsl tabs[0].blocks[0].collectionName',
+    ],
+    [
+      'reject block resourceBinding alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', resourceBinding: 'currentCollection' }],
+          },
+        ],
+      },
+      'resourceBinding is unsupported; use binding',
+      'flowSurfaces executeDsl tabs[0].blocks[0].resourceBinding',
+    ],
+    [
+      'reject block association alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [{ key: 'employeesTable', type: 'table', collection: 'employees', association: 'department' }],
+          },
+        ],
+      },
+      'association is unsupported; use associationPathName',
+      'flowSurfaces executeDsl tabs[0].blocks[0].association',
+    ],
+    [
+      'reject block.resource resourceBinding alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                resource: {
+                  resourceBinding: 'currentCollection',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      'resourceBinding is unsupported; use binding',
+      'flowSurfaces executeDsl tabs[0].blocks[0].resource.resourceBinding',
+    ],
+    [
+      'reject block.resource collection alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                resource: {
+                  collection: 'employees',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      'collection is unsupported; use collectionName',
+      'flowSurfaces executeDsl tabs[0].blocks[0].resource.collection',
+    ],
+    [
+      'reject block.resource association alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                resource: {
+                  collectionName: 'employees',
+                  association: 'department',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      'association is unsupported; use associationPathName',
+      'flowSurfaces executeDsl tabs[0].blocks[0].resource.association',
+    ],
+    [
+      'reject block.resource mixed binding and raw-only keys',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                resource: {
+                  binding: 'currentRecord',
+                  sourceId: 1,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      'cannot mix binding with flowSurfaces executeDsl tabs[0].blocks[0].resource.sourceId',
+      'flowSurfaces executeDsl tabs[0].blocks[0].resource',
+    ],
+    [
+      'reject fieldPath alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [{ key: 'nicknameField', fieldPath: 'nickname' }],
+              },
+            ],
+          },
+        ],
+      },
+      '.fieldPath is unsupported; use field',
+      undefined,
+    ],
+    [
+      'reject openView alias',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nicknameField',
+                    field: 'nickname',
+                    openView: {
+                      title: 'Details',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      '.openView is unsupported; use popup',
+      undefined,
+    ],
+  ])('should %s', async (_label, values, message, expectedPath) => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values,
+    });
+
+    expect(res.status).toBe(400);
+    const errorMessage = readErrorMessage(res);
+    expect(errorMessage).toContain(message);
+    if (expectedPath) {
+      expect(errorMessage).toContain(expectedPath);
+      expect(errorMessage).not.toContain(`tabs['`);
+    }
+  });
+
+  it.each([
+    [
+      'reject block legacy ref',
+      'ref',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                ref: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+              },
+            ],
+          },
+        ],
+      },
+      'flowSurfaces executeDsl tabs[0].blocks[0]',
+    ],
+    [
+      'reject block legacy $ref',
+      '$ref',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                $ref: '#/employeesTable',
+                type: 'table',
+                collection: 'employees',
+              },
+            ],
+          },
+        ],
+      },
+      'flowSurfaces executeDsl tabs[0].blocks[0]',
+    ],
+    [
+      'reject popup legacy $ref',
+      '$ref',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      $ref: '#/popup',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup',
+    ],
+    [
+      'reject resource legacy $ref',
+      '$ref',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'details',
+                resource: {
+                  $ref: '#/resource',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+      'flowSurfaces executeDsl tabs[0].blocks[0].resource',
+    ],
+    [
+      'reject field target legacy $ref',
+      '$ref',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'nickname',
+                    target: {
+                      $ref: '#/employeesTable',
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+      'flowSurfaces executeDsl tabs[0].blocks[0].fields[0].target',
+    ],
+    [
+      'reject layout cell legacy $ref',
+      '$ref',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+            layout: {
+              rows: [[{ $ref: '#/employeesTable' }]],
+            },
+          },
+        ],
+      },
+      'flowSurfaces executeDsl tabs[0].layout.rows[0][0]',
+    ],
+  ])('should %s', async (_label, legacyKey, values, expectedPath) => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values,
+    });
+
+    expect(res.status).toBe(400);
+    const errorMessage = readErrorMessage(res);
+    expect(errorMessage).toContain(expectedPath);
+    if (legacyKey === '$ref') {
+      expect(errorMessage).toContain(`"$ref" is not supported`);
+    } else {
+      expect(errorMessage).toContain('does not support { ref }');
+    }
+    expect(errorMessage).not.toContain(`tabs['`);
+  });
+
+  it('should reject popup unknown keys instead of ignoring them', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      foo: 'bar',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, blocks, layout; unsupported keys: foo',
+    );
+  });
+
+  it('should reject tab layout uid cells and require key-only executeDsl layout cells', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+            layout: {
+              rows: [[{ uid: 'existing-block-uid' }]],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces executeDsl tabs[0].layout.rows[0][0] only accepts keys key, span; unsupported keys: uid',
+    );
+  });
+
+  it('should reject non-object tab layout values instead of silently dropping them', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+            layout: 'auto',
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain('flowSurfaces executeDsl tabs[0].layout must be an object');
+  });
+
+  it('should keep page enableTabs unchanged in replace mode when page.enableTabs is omitted', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Patch DSL page',
-      tabTitle: 'Overview',
+      title: 'Preserve enableTabs',
+      tabTitle: 'Legacy overview',
+      enableTabs: true,
+    });
+    const addTabRes = await rootAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: page.pageUid,
+        },
+        title: 'Legacy extra',
+      },
+    });
+    expect(addTabRes.status).toBe(200);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        page: {
+          title: 'Preserved tabs page',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(getRouteBackedTabs(data.surface)).toHaveLength(1);
+    expect(data.surface.pageRoute.enableTabs).toBe(true);
+  });
+
+  it('should rewrite existing route-backed tab slots by index without requiring tab keys', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Tab order page',
+      tabTitle: 'Legacy overview',
+      enableTabs: true,
+      tabSchemaName: 'overview',
+    });
+    const addTabRes = await rootAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: page.pageUid,
+        },
+        title: 'Legacy summary',
+        tabSchemaName: 'summary',
+      },
+    });
+    const addedTab = getData(addTabRes);
+    const beforeSurface = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const beforeTabs = getRouteBackedTabs(beforeSurface);
+    expect(beforeTabs).toHaveLength(2);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        tabs: [
+          {
+            title: 'Summary',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'details',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(data.keys).toBeUndefined();
+    expect(getRouteBackedTabs(data.surface).map((tab: any) => tab.uid)).toEqual([
+      page.tabSchemaUid,
+      addedTab.tabSchemaUid,
+    ]);
+    expect(getRouteBackedTabs(data.surface).map((tab: any) => tab?.props?.title)).toEqual(['Summary', 'Overview']);
+  });
+
+  it('should reject replace multi-tab payload when enableTabs is omitted but current page enableTabs is false', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Hidden tabs page',
+      tabTitle: 'Legacy overview',
+      enableTabs: false,
     });
 
     const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
       values: {
-        dsl: {
-          version: '1',
-          kind: 'patch',
-          target: {
-            locator: {
-              pageSchemaUid: page.pageSchemaUid,
-            },
-          },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-          ],
-          changes: [
-            {
-              id: 'addTable',
-              op: 'block.add',
-              values: {
-                block: {
-                  id: 'employeesTable',
-                  type: 'table',
-                  title: 'Employees',
-                  dataBound: true,
-                  dataSourceKey: 'employees',
-                },
-              },
-            },
-            {
-              id: 'addNickname',
-              op: 'field.add',
-              target: {
-                id: 'employeesTable',
-              },
-              values: {
-                field: {
-                  fieldPath: 'nickname',
-                },
-              },
-            },
-            {
-              id: 'addRefresh',
-              op: 'action.add',
-              target: {
-                id: 'employeesTable',
-              },
-              values: {
-                action: {
-                  id: 'refreshEmployees',
-                  type: 'refresh',
-                  title: 'Refresh',
-                },
-              },
-            },
-            {
-              id: 'configureTable',
-              op: 'settings.update',
-              target: {
-                id: 'employeesTable',
-              },
-              values: {
-                changes: {
-                  pageSize: 20,
-                },
-              },
-            },
-            {
-              id: 'layoutTable',
-              op: 'layout.replace',
-              target: {
-                locator: {
-                  tabSchemaUid: page.tabSchemaUid,
-                },
-              },
-              values: {
-                layout: {
-                  kind: 'rows-columns',
-                  rows: [
-                    {
-                      key: 'main',
-                      columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
-                    },
-                  ],
-                },
-              },
-            },
-          ],
-          popups: [],
-          assumptions: [],
-          unresolvedQuestions: [],
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
         },
-      },
-    });
-    expect(executeRes.status).toBe(200);
-    const executeData = getData(executeRes);
-
-    expect(executeData.plan.steps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'addTable', action: 'compose' }),
-        expect.objectContaining({ id: 'addNickname', action: 'addField' }),
-        expect.objectContaining({ id: 'addRefresh', action: 'addAction' }),
-        expect.objectContaining({ id: 'configureTable', action: 'configure' }),
-        expect.objectContaining({ id: 'layoutTable', action: 'setLayout' }),
-      ]),
-    );
-    expect(executeData.refs.employeesTable.uid).toBeTruthy();
-    expect(executeData.refs.refreshEmployees.uid).toBeTruthy();
-
-    const tableSurface = await getSurface(rootAgent, {
-      uid: executeData.refs.employeesTable.uid,
-    });
-    expect(tableSurface.tree.use).toBe('TableBlockModel');
-  });
-
-  it('should reject raw passthrough patch payloads after semantic patch migration', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Legacy patch page',
-      tabTitle: 'Overview',
-    });
-
-    const validateRes = await rootAgent.resource('flowSurfaces').validateDsl({
-      values: {
-        dsl: {
-          version: '1',
-          kind: 'patch',
-          target: {
-            locator: {
-              pageSchemaUid: page.pageSchemaUid,
-            },
-          },
-          changes: [
-            {
-              id: 'addTable',
-              op: 'block.add',
-              values: {
-                ref: 'employeesTable',
-                type: 'table',
-              },
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
-      },
-    });
-
-    expect(validateRes.status).toBe(400);
-    expect(readErrorMessage(validateRes)).toContain('values.block is required');
-  });
-
-  it('should reject shell-only default CRUD popup blueprints', async () => {
-    const validateRes = await rootAgent.resource('flowSurfaces').validateDsl({
-      values: {
-        dsl: {
-          version: '1',
-          title: 'Invalid shell popup',
-          target: {
-            mode: 'create-page',
-          },
-          dataSources: [
-            {
-              key: 'employees',
-              kind: 'collection',
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-          ],
-          layout: {
-            kind: 'rows-columns',
-            rows: [
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
               {
-                key: 'main',
-                columns: [{ key: 'table', width: 12, items: ['employeesTable'] }],
+                key: 'overviewTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
               },
             ],
           },
-          blocks: [
-            {
-              id: 'employeesTable',
-              type: 'table',
-              title: 'Employees',
-              dataBound: true,
-              dataSourceKey: 'employees',
-              fields: [{ fieldPath: 'nickname' }],
-              recordActions: [{ id: 'viewEmployee', type: 'view', popupId: 'employeeViewPopup' }],
-            },
-          ],
-          interactions: [],
-          popups: [
-            {
-              id: 'employeeViewPopup',
-              title: 'View employee',
-              completion: 'shell-only',
-            },
-          ],
-          assumptions: [],
-          unresolvedQuestions: [],
-        },
+          {
+            key: 'summary',
+            title: 'Summary',
+            blocks: [
+              {
+                key: 'summaryTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
       },
     });
 
-    expect(validateRes.status).toBe(400);
-    expect(readErrorMessage(validateRes)).toContain('shell-only');
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain(
+      'replace mode requires page.enableTabs=true when tabs.length > 1 and the current page has enableTabs=false',
+    );
+  });
+
+  it('should allow replace multi-tab payload when current page enableTabs is false but page.enableTabs=true is explicit', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Hidden tabs upgrade page',
+      tabTitle: 'Legacy overview',
+      enableTabs: false,
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        page: {
+          enableTabs: true,
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'overviewTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+          {
+            key: 'summary',
+            title: 'Summary',
+            blocks: [
+              {
+                key: 'summaryTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(getRouteBackedTabs(data.surface)).toHaveLength(2);
+    expect(data.surface.pageRoute.enableTabs).toBe(true);
+  });
+
+  it('should reject object-style field target keys in executeDsl and require string block keys only', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Filter target page',
+          },
+        },
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nickname',
+                    field: 'nickname',
+                    target: {
+                      key: 'employeesTable',
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces executeDsl tabs[0].blocks[0].fields[0].target');
+    expect(readErrorMessage(executeRes)).toContain('target must be a string block key');
+  });
+
+  it('should report popup nested block alias errors with index-based public paths', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Popup alias page',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          type: 'details',
+                          collection: 'employees',
+                          association: 'department',
+                          fields: ['nickname'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    const message = readErrorMessage(executeRes);
+    expect(message).toContain('flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup.blocks[0].association');
+    expect(message).toContain('association is unsupported; use associationPathName');
+    expect(message).not.toContain(`tabs['`);
   });
 });

@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from './errors';
-import { FLOW_SURFACE_INTERNAL_META_KEY } from './planning/ref-registry';
+import { FLOW_SURFACE_INTERNAL_META_KEY } from './planning/key-registry';
 
 export function validateFlowSurfacePayloadShape(actionName: string, value: any, path: string) {
   if (Array.isArray(value)) {
