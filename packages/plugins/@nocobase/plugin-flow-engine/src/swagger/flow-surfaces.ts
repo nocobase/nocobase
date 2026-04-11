@@ -9,7 +9,6 @@
 
 import {
   FLOW_SURFACE_MUTATE_OP_TYPES,
-  FLOW_SURFACE_PLAN_STEP_ACTIONS,
   FLOW_SURFACES_ACTION_METHODS,
   FLOW_SURFACES_ACTION_NAMES,
 } from '../server/flow-surfaces/constants';
@@ -172,10 +171,7 @@ function valuesCompatibilityNote(description: string) {
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `validatePlan` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
-
-const FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE =
-  '`validatePlan` is open to `loggedIn` by default for read-only selector compilation. When `validation.collectFieldIssues=true`, the rollback preview path requires the same write permission as `executePlan` (`ui.flowSurfaces`).';
+  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -243,15 +239,6 @@ const actionDocs: Record<string, any> = {
     requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
     responses: responses('FlowSurfaceDescribeSurfaceResponse'),
   },
-  validatePlan: {
-    tags: [FLOW_SURFACES_TAG],
-    summary: 'Resolve plan selectors and preview the compiled low-level calls',
-    description: valuesCompatibilityNote(
-      `Validates a high-level plan against the current surface fingerprint, resolves { key | locator } selectors to concrete uids, and returns the compiled step payloads without mutating data. The fingerprint covers both the public surface tree and the resolved key bindings. When \`surface\` uses { key }, that key must also appear in \`bindKeys\` so the server can anchor the current surface root. Used request keys must also be persistable; route-backed page/tab roots are rejected. When \`validation.collectFieldIssues=true\`, validatePlan additionally runs a rolled-back dry-run preview for field additions and returns aggregated \`validation.fieldIssues\` instead of stopping at the first field-addability error. Non-field preview errors still fail fast. ${FLOW_SURFACES_VALIDATE_PLAN_ACL_NOTE}`,
-    ),
-    requestBody: requestBody('FlowSurfaceValidatePlanRequest', examples.validatePlan),
-    responses: responses('FlowSurfaceValidatePlanResponse'),
-  },
   executeDsl: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute a simplified page-structure DSL to create or replace one Modern page',
@@ -277,15 +264,6 @@ const actionDocs: Record<string, any> = {
       },
     },
     responses: responses('FlowSurfaceExecuteDslResponse'),
-  },
-  executePlan: {
-    tags: [FLOW_SURFACES_TAG],
-    summary: 'Execute a high-level plan and persist used bind keys as declared keys',
-    description: valuesCompatibilityNote(
-      'Executes validated high-level plan steps as the recommended orchestration entry for AI and automation callers by orchestrating the existing FlowSurfaces service methods directly inside one transaction. Request-scoped bind keys used by selectors, plus `surface: { key }` when it anchors the current surface, are persisted back as declared keys. Used request keys must be persistable. Same-run dependencies should use caller-side `{ step, path }` values for scalar outputs, and explicit created keys for new nodes. If the plan removes the current surface itself, the response returns `surfaceExistsAfterExecute=false` and an empty keys map. Clients that need a fresh fingerprint for the next round should call `describeSurface` again.',
-    ),
-    requestBody: requestBody('FlowSurfaceExecutePlanRequest', examples.executePlan),
-    responses: responses('FlowSurfaceExecutePlanResponse'),
   },
   ...templateActionDocs,
   compose: {
@@ -897,24 +875,6 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfacePlanSelectorByKey: {
-    type: 'object',
-    required: ['key'],
-    properties: {
-      key: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePlanSelectorByLocator: {
-    type: 'object',
-    required: ['locator'],
-    properties: {
-      locator: ref('FlowSurfaceReadLocator'),
-    },
-    additionalProperties: false,
-  },
   FlowSurfacePlanSelectorByStep: {
     type: 'object',
     required: ['step'],
@@ -927,16 +887,6 @@ const schemas = {
       },
     },
     additionalProperties: false,
-  },
-  FlowSurfaceSurfaceSelector: {
-    oneOf: [ref('FlowSurfacePlanSelectorByKey'), ref('FlowSurfacePlanSelectorByLocator')],
-  },
-  FlowSurfacePlanSelector: {
-    oneOf: [
-      ref('FlowSurfacePlanSelectorByKey'),
-      ref('FlowSurfacePlanSelectorByLocator'),
-      ref('FlowSurfacePlanSelectorByStep'),
-    ],
   },
   FlowSurfaceBindKey: {
     type: 'object',
@@ -2214,105 +2164,6 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfacePlanStep: {
-    type: 'object',
-    required: ['action'],
-    properties: {
-      id: {
-        type: 'string',
-      },
-      action: {
-        type: 'string',
-        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
-      },
-      selectors: {
-        type: 'object',
-        properties: {
-          target: ref('FlowSurfacePlanSelector'),
-          source: ref('FlowSurfacePlanSelector'),
-        },
-        additionalProperties: false,
-      },
-      values: ANY_OBJECT_SCHEMA,
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePlanDocument: {
-    type: 'object',
-    required: ['steps'],
-    properties: {
-      steps: {
-        type: 'array',
-        items: ref('FlowSurfacePlanStep'),
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePlanCompiledStep: {
-    type: 'object',
-    properties: {
-      index: {
-        type: 'integer',
-      },
-      id: {
-        type: 'string',
-      },
-      action: {
-        type: 'string',
-        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
-      },
-      resolvedSelectors: {
-        type: 'object',
-        properties: {
-          target: ref('FlowSurfaceResolvedSelectorSummary'),
-          source: ref('FlowSurfaceResolvedSelectorSummary'),
-        },
-        additionalProperties: false,
-      },
-      payload: ANY_OBJECT_SCHEMA,
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePlanResultItem: {
-    type: 'object',
-    properties: {
-      index: {
-        type: 'integer',
-      },
-      id: {
-        type: 'string',
-      },
-      action: {
-        type: 'string',
-        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
-      },
-      result: {},
-      createdKeys: {
-        type: 'array',
-        items: ref('FlowSurfacePersistedKeyResult'),
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePersistedKeyResult: {
-    type: 'object',
-    properties: {
-      key: {
-        type: 'string',
-      },
-      uid: {
-        type: 'string',
-      },
-      persisted: {
-        type: 'boolean',
-      },
-      skipped: {
-        type: 'string',
-        enum: ['not_found'],
-      },
-    },
-    additionalProperties: false,
-  },
   FlowSurfaceExecuteDslAssets: {
     type: 'object',
     properties: {
@@ -2690,159 +2541,6 @@ const schemas = {
       },
       target: ref('FlowSurfaceExecuteDslResponseTarget'),
       surface: ref('FlowSurfaceGetResponse'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfacePlanRequestBase: {
-    type: 'object',
-    required: ['plan'],
-    properties: {
-      surface: ref('FlowSurfaceSurfaceSelector'),
-      expectedFingerprint: {
-        type: 'string',
-      },
-      bindKeys: {
-        type: 'array',
-        items: ref('FlowSurfaceBindKey'),
-      },
-      plan: ref('FlowSurfacePlanDocument'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceValidatePlanRequestExtension: {
-    type: 'object',
-    properties: {
-      validation: ref('FlowSurfaceValidatePlanValidationRequest'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceValidatePlanRequest: {
-    allOf: [ref('FlowSurfacePlanRequestBase'), ref('FlowSurfaceValidatePlanRequestExtension')],
-  },
-  FlowSurfaceValidatePlanValidationRequest: {
-    type: 'object',
-    properties: {
-      collectFieldIssues: {
-        type: 'boolean',
-        description:
-          'When true, validatePlan runs a rolled-back dry-run preview for addField/compose fields and returns aggregated fieldIssues. This preview mode requires the same write permission as executePlan.',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceValidatePlanFieldIssue: {
-    type: 'object',
-    required: ['stepIndex', 'action', 'path', 'code', 'message', 'status', 'type', 'blocking'],
-    properties: {
-      stepIndex: {
-        type: 'number',
-      },
-      stepId: {
-        type: 'string',
-      },
-      action: {
-        type: 'string',
-        enum: [...FLOW_SURFACE_PLAN_STEP_ACTIONS],
-      },
-      path: {
-        type: 'string',
-      },
-      code: {
-        type: 'string',
-      },
-      message: {
-        type: 'string',
-      },
-      status: {
-        type: 'number',
-      },
-      type: {
-        type: 'string',
-        enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
-      },
-      blocking: {
-        type: 'boolean',
-      },
-      blockKey: {
-        type: 'string',
-      },
-      fieldKey: {
-        type: 'string',
-      },
-      fieldPath: {
-        type: 'string',
-      },
-      associationPathName: {
-        type: 'string',
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceValidatePlanValidationResult: {
-    type: 'object',
-    required: ['ok', 'fieldIssues'],
-    properties: {
-      ok: {
-        type: 'boolean',
-      },
-      fieldIssues: {
-        type: 'array',
-        items: ref('FlowSurfaceValidatePlanFieldIssue'),
-      },
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceValidatePlanResponse: {
-    type: 'object',
-    properties: {
-      target: {
-        allOf: [ref('FlowSurfaceReadTarget')],
-        nullable: true,
-      },
-      fingerprint: {
-        type: 'string',
-        nullable: true,
-      },
-      keys: ref('FlowSurfaceKeysMap'),
-      compiledSteps: {
-        type: 'array',
-        items: ref('FlowSurfacePlanCompiledStep'),
-      },
-      validation: ref('FlowSurfaceValidatePlanValidationResult'),
-    },
-    additionalProperties: false,
-  },
-  FlowSurfaceExecutePlanRequest: {
-    allOf: [ref('FlowSurfacePlanRequestBase')],
-  },
-  FlowSurfaceExecutePlanResponse: {
-    type: 'object',
-    properties: {
-      target: {
-        allOf: [ref('FlowSurfaceReadTarget')],
-        nullable: true,
-      },
-      fingerprintBefore: {
-        type: 'string',
-        nullable: true,
-      },
-      surfaceExistsAfterExecute: {
-        type: 'boolean',
-        nullable: true,
-      },
-      keys: ref('FlowSurfaceKeysMap'),
-      compiledSteps: {
-        type: 'array',
-        items: ref('FlowSurfacePlanCompiledStep'),
-      },
-      results: {
-        type: 'array',
-        items: ref('FlowSurfacePlanResultItem'),
-      },
-      persistedKeys: {
-        type: 'array',
-        items: ref('FlowSurfacePersistedKeyResult'),
-      },
     },
     additionalProperties: false,
   },

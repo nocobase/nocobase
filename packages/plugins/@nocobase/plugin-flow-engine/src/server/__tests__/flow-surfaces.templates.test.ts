@@ -211,7 +211,7 @@ describe('flowSurfaces templates', () => {
     expect(destroyTemplateRes.status).toBe(200);
   });
 
-  it('should execute convertTemplateToCopy through executePlan for block template references', async () => {
+  it('should convert block template references to detached copies through convertTemplateToCopy', async () => {
     const page = await createPage(rootAgent, {
       title: 'Execute plan block template page',
       tabTitle: 'Execute plan block template tab',
@@ -231,8 +231,8 @@ describe('flowSurfaces templates', () => {
 
     const template = await saveTemplate(rootAgent, {
       target: { uid: sourceBlock.uid },
-      name: 'Execute plan block template',
-      description: 'Reusable block template to verify executePlan convertTemplateToCopy dispatch.',
+      name: 'Convert-to-copy block template',
+      description: 'Reusable block template to verify direct convertTemplateToCopy dispatch.',
       saveMode: 'duplicate',
     });
     const referencedBlock = await addBlockData(rootAgent, {
@@ -250,56 +250,18 @@ describe('flowSurfaces templates', () => {
     });
     await expectTemplateUsage(rootAgent, template.uid, 1);
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executePlan({
+    const convertRes = await rootAgent.resource('flowSurfaces').convertTemplateToCopy({
       values: {
-        surface: {
-          locator: {
-            pageSchemaUid: page.pageSchemaUid,
-          },
-        },
-        plan: {
-          steps: [
-            {
-              id: 'detachTemplate',
-              action: 'convertTemplateToCopy',
-              selectors: {
-                target: {
-                  locator: {
-                    uid: referencedBlock.uid,
-                  },
-                },
-              },
-            },
-          ],
+        target: {
+          uid: referencedBlock.uid,
         },
       },
     });
-    const executeData = getData(executeRes);
-    expect(executeData.compiledSteps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'detachTemplate',
-          action: 'convertTemplateToCopy',
-          payload: expect.objectContaining({
-            target: {
-              uid: referencedBlock.uid,
-            },
-          }),
-        }),
-      ]),
-    );
-    expect(executeData.results).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'detachTemplate',
-          action: 'convertTemplateToCopy',
-          result: expect.objectContaining({
-            uid: referencedBlock.uid,
-            type: 'block',
-          }),
-        }),
-      ]),
-    );
+    const convertData = getData(convertRes);
+    expect(convertData).toMatchObject({
+      uid: referencedBlock.uid,
+      type: 'block',
+    });
 
     const convertedSurface = await getSurface(rootAgent, { uid: referencedBlock.uid });
     expect(convertedSurface.tree.template).toBeUndefined();
@@ -1449,6 +1411,19 @@ describe('flowSurfaces templates', () => {
       description: 'Fields template used to validate collection compatibility on the server side.',
       saveMode: 'duplicate',
     });
+    const fieldsTemplateUid =
+      fieldsTemplate?.uid ||
+      getListData(
+        await rootAgent.resource('flowSurfaces').listTemplates({
+          values: {
+            target: { uid: employeeForm.uid },
+            type: 'block',
+            usage: 'fields',
+            search: 'Employee fields validation template',
+          },
+        }),
+      ).rows.find((row: any) => row.name === 'Employee fields validation template')?.uid;
+    expect(fieldsTemplateUid).toBeTruthy();
 
     const departmentForm = await addBlockData(rootAgent, {
       target: { uid: page.gridUid },
@@ -1462,7 +1437,7 @@ describe('flowSurfaces templates', () => {
       values: {
         target: { uid: departmentForm.uid },
         template: {
-          uid: fieldsTemplate.uid,
+          uid: fieldsTemplateUid,
           mode: 'reference',
         },
       },
@@ -1480,9 +1455,9 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    const listedFieldsTemplate = listedFieldsTemplates.rows.find((row: any) => row.uid === fieldsTemplate.uid);
+    const listedFieldsTemplate = listedFieldsTemplates.rows.find((row: any) => row.uid === fieldsTemplateUid);
     expect(listedFieldsTemplate).toMatchObject({
-      uid: fieldsTemplate.uid,
+      uid: fieldsTemplateUid,
       available: false,
     });
     expect(listedFieldsTemplate?.disabledReason).toContain('collection mismatch');
@@ -1497,8 +1472,8 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    expect(listedCompatibleFieldsTemplates.rows.find((row: any) => row.uid === fieldsTemplate.uid)).toMatchObject({
-      uid: fieldsTemplate.uid,
+    expect(listedCompatibleFieldsTemplates.rows.find((row: any) => row.uid === fieldsTemplateUid)).toMatchObject({
+      uid: fieldsTemplateUid,
       available: true,
     });
 

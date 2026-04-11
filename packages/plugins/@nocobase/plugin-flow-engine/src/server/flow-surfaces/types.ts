@@ -336,45 +336,12 @@ export type FlowSurfacePlanStep = {
   values?: Record<string, any>;
 };
 
-export type FlowSurfaceValidatePlanValidationOptions = {
-  collectFieldIssues?: boolean;
-};
-
-export type FlowSurfaceValidatePlanFieldIssue = {
-  stepIndex: number;
-  stepId?: string;
-  action: FlowSurfacePlanStepAction;
-  path: string;
-  code: string;
-  message: string;
-  status: number;
-  type: string;
-  blocking: boolean;
-  blockKey?: string;
-  fieldKey?: string;
-  fieldPath?: string;
-  associationPathName?: string;
-};
-
-export type FlowSurfaceValidatePlanValidationResult = {
-  ok: boolean;
-  fieldIssues: FlowSurfaceValidatePlanFieldIssue[];
-};
-
 export type FlowSurfacePlanRequestValues = {
   surface?: FlowSurfaceSurfaceSelector;
-  expectedFingerprint?: string;
-  bindKeys?: FlowSurfaceBindKey[];
   plan: {
     steps?: FlowSurfacePlanStep[];
   };
 };
-
-export type FlowSurfaceValidatePlanValues = FlowSurfacePlanRequestValues & {
-  validation?: FlowSurfaceValidatePlanValidationOptions;
-};
-
-export type FlowSurfaceExecutePlanValues = FlowSurfacePlanRequestValues;
 
 export type FlowSurfaceMutateOpType = (typeof FLOW_SURFACE_MUTATE_OP_TYPES)[number];
 

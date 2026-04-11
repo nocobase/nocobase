@@ -152,11 +152,7 @@ function compileCreatePlan(document: FlowSurfaceExecuteDslDocument): FlowSurface
 
   return {
     document,
-    planValues: {
-      plan: {
-        steps,
-      },
-    },
+    steps,
     pageLocator: {},
   };
 }
@@ -267,14 +263,10 @@ function compileReplacePlan(
 
   return {
     document,
-    planValues: {
-      surface: {
-        locator: _.cloneDeep(targetInfo.locator),
-      },
-      plan: {
-        steps,
-      },
+    surface: {
+      locator: _.cloneDeep(targetInfo.locator),
     },
+    steps,
     pageLocator: _.cloneDeep(targetInfo.locator),
     pageUid: targetInfo.pageUid,
   };

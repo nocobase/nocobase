@@ -101,14 +101,14 @@ export async function persistDeclaredKeyForNode(
       skipped: 'not_found',
     };
   }
-  assertKeyPersistable('executePlan', keyInfo, node);
+  assertKeyPersistable('key persistence', keyInfo, node);
   if (keyInfo.reboundFromUid && keyInfo.reboundFromUid !== keyInfo.uid) {
     await clearDeclaredKeyForNode(keyInfo.reboundFromUid, deps, transaction);
   }
   const currentDeclaredKey = getPersistableDeclaredKey(deps, node);
   if (currentDeclaredKey && currentDeclaredKey !== keyInfo.key && !keyInfo.rebind) {
     throwConflict(
-      `flowSurfaces executePlan node '${node.uid}' already has declared key '${currentDeclaredKey}'`,
+      `flowSurfaces node '${node.uid}' already has declared key '${currentDeclaredKey}'`,
       'FLOW_SURFACE_DECLARED_KEY_CONFLICT',
     );
   }

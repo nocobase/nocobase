@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSurfaceExecutePlanValues, FlowSurfaceReadLocator, FlowSurfaceResourceBindingKey } from '../types';
+import type {
+  FlowSurfacePlanStep,
+  FlowSurfaceReadLocator,
+  FlowSurfaceSurfaceSelector,
+  FlowSurfaceResourceBindingKey,
+} from '../types';
 
 export type FlowSurfaceExecuteDslMode = 'create' | 'replace';
 
@@ -167,7 +172,8 @@ export type FlowSurfaceExecuteDslReplaceTargetInfo = {
 
 export type FlowSurfaceExecuteDslProgram = {
   document: FlowSurfaceExecuteDslDocument;
-  planValues: FlowSurfaceExecutePlanValues;
+  surface?: FlowSurfaceSurfaceSelector;
+  steps: FlowSurfacePlanStep[];
   pageLocator: FlowSurfaceReadLocator;
   pageUid?: string;
 };

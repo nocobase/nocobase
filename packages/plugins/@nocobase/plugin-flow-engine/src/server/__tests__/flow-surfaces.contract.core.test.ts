@@ -224,39 +224,6 @@ describe('flowSurfaces API contract core', () => {
       },
     });
     expect(describeRes.status).toBe(200);
-    const validateRes = await readerAgent.resource('flowSurfaces').validatePlan({
-      values: {
-        surface: {
-          locator: {
-            pageSchemaUid: page.pageSchemaUid,
-          },
-        },
-        plan: {
-          steps: [],
-        },
-      },
-    });
-    expect(validateRes.status).toBe(200);
-    const deniedPreviewValidateRes = await readerAgent.resource('flowSurfaces').validatePlan({
-      values: {
-        validation: {
-          collectFieldIssues: true,
-        },
-        surface: {
-          locator: {
-            pageSchemaUid: page.pageSchemaUid,
-          },
-        },
-        plan: {
-          steps: [],
-        },
-      },
-    });
-    expect(deniedPreviewValidateRes.status).toBe(403);
-    expectStructuredError(readErrorItem(deniedPreviewValidateRes), {
-      status: 403,
-      type: 'forbidden',
-    });
 
     const deniedWriteRes = await readerAgent.resource('flowSurfaces').addTab({
       values: {
@@ -281,51 +248,32 @@ describe('flowSurfaces API contract core', () => {
       },
     });
     expect(allowedWriteRes.status).toBe(200);
-    const allowedPreviewValidateRes = await writerAgent.resource('flowSurfaces').validatePlan({
-      values: {
-        validation: {
-          collectFieldIssues: true,
-        },
-        surface: {
-          locator: {
-            pageSchemaUid: page.pageSchemaUid,
-          },
-        },
-        plan: {
-          steps: [],
-        },
-      },
-    });
-    expect(allowedPreviewValidateRes.status).toBe(200);
 
-    const deniedExecutePlanRes = await readerAgent.resource('flowSurfaces').executePlan({
+    const deniedExecuteDslRes = await readerAgent.resource('flowSurfaces').executeDsl({
       values: {
-        surface: {
-          locator: {
-            pageSchemaUid: page.pageSchemaUid,
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Denied executeDsl page',
           },
         },
-        plan: {
-          steps: [
-            {
-              action: 'addTab',
-              selectors: {
-                target: {
-                  locator: {
-                    uid: pageRootUid,
-                  },
-                },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
               },
-              values: {
-                title: 'Denied by executePlan',
-              },
-            },
-          ],
-        },
+            ],
+          },
+        ],
       },
     });
-    expect(deniedExecutePlanRes.status).toBe(403);
-    expectStructuredError(readErrorItem(deniedExecutePlanRes), {
+    expect(deniedExecuteDslRes.status).toBe(403);
+    expectStructuredError(readErrorItem(deniedExecuteDslRes), {
       status: 403,
       type: 'forbidden',
     });

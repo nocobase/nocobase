@@ -39,13 +39,12 @@ import { FlowSurfaceContractGuard } from './contract-guard';
 import {
   FlowSurfaceBadRequestError,
   isFlowSurfaceError,
-  normalizeFlowSurfaceError,
   throwBadRequest,
   throwConflict,
   throwForbidden,
   throwInternalError,
 } from './errors';
-import { executeMutateOps, inspectFlowSurfaceValueKey, resolveFlowSurfaceValueKeys } from './executor';
+import { executeMutateOps } from './executor';
 import { assertNoFlowSurfaceLegacyRef } from './reference-guards';
 import {
   buildSurfaceFingerprintKeysObject as buildPlanningSurfaceFingerprintKeysObject,
@@ -61,23 +60,11 @@ import {
   type FlowSurfaceExecuteDslReplaceTargetInfo,
 } from './dsl/execute';
 import { EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS } from './dsl/private-utils';
-import {
-  describeSurface as describePlanningSurface,
-  executePlan as executePlanningPlan,
-  validatePlan as validatePlanningPlan,
-} from './planning/runtime';
-import {
-  collectFlowSurfaceCreatedKeys,
-  collectPersistableFlowSurfaceCreatedKeys,
-  isFlowSurfacePureKeyObject,
-  registerFlowSurfaceCreatedKeys,
-} from './planning/created-keys';
-import {
-  assertRequestKeysPersistable as assertPlanningRequestKeysPersistable,
-  persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode,
-} from './planning/key-persistence';
+import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
+import { collectFlowSurfaceCreatedKeys, collectPersistableFlowSurfaceCreatedKeys } from './planning/created-keys';
+import { persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode } from './planning/key-persistence';
 import { validateFlowSurfacePayloadShape } from './payload-shape';
-import type { FlowSurfaceCompiledPlanStep, FlowSurfacePlanSurfaceContext } from './planning/types';
+import type { FlowSurfacePlanSurfaceContext } from './planning/types';
 import {
   MULTI_VALUE_ASSOCIATION_INTERFACES,
   normalizeFieldContainerKind,
@@ -253,7 +240,6 @@ import type {
   FlowSurfaceConfigureValues,
   FlowSurfaceContextValues,
   FlowSurfaceDescribeValues,
-  FlowSurfaceExecutePlanValues,
   FlowSurfaceExecutorContext,
   FlowSurfaceMutateOp,
   FlowSurfaceMutateValues,
@@ -268,9 +254,6 @@ import type {
   FlowSurfaceResourceBindingOption,
   FlowSurfaceResourceBindingKey,
   FlowSurfaceSemanticResourceInput,
-  FlowSurfaceValidatePlanFieldIssue,
-  FlowSurfaceValidatePlanValidationResult,
-  FlowSurfaceValidatePlanValues,
   FlowSurfaceWriteTarget,
 } from './types';
 
@@ -289,10 +272,6 @@ type FlowSurfaceSqlChartQueryOutput = {
 type FlowSurfaceSqlChartPreview = {
   queryOutputs?: FlowSurfaceSqlChartQueryOutput[];
   riskyHints?: FlowSurfaceChartHint[];
-};
-
-type FlowSurfaceValidatePlanPreviewDependency = {
-  label: string;
 };
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -2340,7 +2319,6 @@ export class FlowSurfacesService {
   }
 
   private buildPlanningRuntimeDeps() {
-    const keyPersistenceDeps = this.getDeclaredKeyPersistenceDeps();
     return {
       normalizeGetTarget: (value: any) => this.normalizeGetTarget(value),
       resolveLocator: (target: FlowSurfaceReadLocator, resolveOptions?: { transaction?: any }) =>
@@ -2362,10 +2340,6 @@ export class FlowSurfacesService {
         node: any,
         readOptions?: { transaction?: any },
       ) => this.buildSurfaceReadPayload(target, resolved, node, readOptions),
-      assertRequestKeysPersistable: (actionName: string, keys: Map<string, any>, transaction?: any) =>
-        assertPlanningRequestKeysPersistable(actionName, keys, keyPersistenceDeps, transaction),
-      persistDeclaredKeyForNode: (keyInfo: any, transaction?: any) =>
-        persistPlanningDeclaredKeyForNode(keyInfo, keyPersistenceDeps, transaction),
       dispatchPlanOnlyAction: (
         action: 'compose' | 'configure' | 'convertTemplateToCopy',
         payload: Record<string, any>,
@@ -2376,329 +2350,6 @@ export class FlowSurfacesService {
         resolvedValues: Record<string, any>,
         currentCtx: FlowSurfaceExecutorContext,
       ) => this.dispatchOp(op, resolvedValues, currentCtx),
-      isSurfaceReadbackMissingError: (error: unknown) => this.isSurfaceReadbackMissingError(error),
-      collectValidatePlanIssues: (
-        values: FlowSurfaceValidatePlanValues,
-        compiledSteps: FlowSurfaceCompiledPlanStep[],
-        collectOptions?: { transaction?: any },
-      ) => this.collectValidatePlanIssues(values, compiledSteps, collectOptions),
-    };
-  }
-
-  private buildValidatePlanFieldIssue(input: {
-    compiled: FlowSurfaceCompiledPlanStep;
-    path: string;
-    error: unknown;
-    blocking: boolean;
-    blockKey?: string;
-    fieldKey?: string;
-    fieldPath?: string;
-    associationPathName?: string;
-  }): FlowSurfaceValidatePlanFieldIssue {
-    const normalized = normalizeFlowSurfaceError(input.error);
-    return buildDefinedPayload({
-      stepIndex: input.compiled.index,
-      stepId: input.compiled.id,
-      action: input.compiled.action,
-      path: input.path,
-      code: normalized.code,
-      message: normalized.message,
-      status: normalized.status,
-      type: normalized.type,
-      blocking: input.blocking,
-      blockKey: input.blockKey,
-      fieldKey: input.fieldKey,
-      fieldPath: input.fieldPath,
-      associationPathName: input.associationPathName,
-    }) as FlowSurfaceValidatePlanFieldIssue;
-  }
-
-  private buildValidatePlanBlockedIssue(
-    compiled: FlowSurfaceCompiledPlanStep,
-    missingDependency: FlowSurfaceValidatePlanPreviewDependency,
-  ): FlowSurfaceValidatePlanFieldIssue {
-    return {
-      stepIndex: compiled.index,
-      ...(compiled.id ? { stepId: compiled.id } : {}),
-      action: compiled.action,
-      path: `plan.steps[${compiled.index}]`,
-      code: 'FLOW_SURFACE_VALIDATE_PLAN_BLOCKED_BY_FIELD_ISSUE',
-      message: `flowSurfaces validatePlan step '${compiled.id || compiled.index}' is blocked because ${
-        missingDependency.label
-      } is unavailable after earlier field issues`,
-      status: 400,
-      type: 'bad_request',
-      blocking: true,
-    };
-  }
-
-  private findMissingValidatePlanPayloadDependency(
-    input: any,
-    keys: Map<string, any>,
-  ): FlowSurfaceValidatePlanPreviewDependency | null {
-    if (Array.isArray(input)) {
-      for (const item of input) {
-        const matched = this.findMissingValidatePlanPayloadDependency(item, keys);
-        if (matched) {
-          return matched;
-        }
-      }
-      return null;
-    }
-    if (!_.isPlainObject(input)) {
-      return null;
-    }
-    if (isFlowSurfacePureKeyObject(input)) {
-      const key = typeof input.key === 'string' ? input.key.trim() : '';
-      if (!key) {
-        return {
-          label: `key '${String(input.key || '')}'`,
-        };
-      }
-      const resolved = inspectFlowSurfaceValueKey(key, keys);
-      if (!resolved.found || typeof resolved.value === 'undefined') {
-        return {
-          label: `key '${key}'`,
-        };
-      }
-      return null;
-    }
-    if (Object.keys(input).every((key) => ['step', 'path'].includes(key)) && typeof input.step === 'string') {
-      const step = String(input.step || '').trim();
-      if (!step || !keys.has(step)) {
-        return {
-          label: `step '${step || String(input.step || '')}'`,
-        };
-      }
-      const path = _.isUndefined(input.path) ? undefined : String(input.path || '').trim();
-      const value = keys.get(step);
-      if (path && typeof _.get(value, path) === 'undefined') {
-        return {
-          label: `step '${step}' path '${path}'`,
-        };
-      }
-      return null;
-    }
-    for (const value of Object.values(input)) {
-      const matched = this.findMissingValidatePlanPayloadDependency(value, keys);
-      if (matched) {
-        return matched;
-      }
-    }
-    return null;
-  }
-
-  private async withValidatePlanPreviewTransaction<T>(
-    callback: (transaction: any) => Promise<T>,
-    options: { transaction?: any } = {},
-  ) {
-    const transaction = options.transaction
-      ? await this.db.sequelize.transaction({ transaction: options.transaction })
-      : await this.db.sequelize.transaction();
-    try {
-      return await callback(transaction);
-    } finally {
-      if ((transaction as any)?.finished !== 'rollback') {
-        await transaction.rollback();
-      }
-    }
-  }
-
-  private async previewComposeForValidatePlan(
-    values: FlowSurfaceComposeValues,
-    compiled: FlowSurfaceCompiledPlanStep,
-    fieldIssues: FlowSurfaceValidatePlanFieldIssue[],
-    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
-  ) {
-    const target = this.normalizeWriteTarget('compose', values?.target, values);
-    const mode = this.assertComposeMode(values?.mode);
-    const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
-    const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
-    const gridUid = blockParent.parentUid;
-    const initialGrid = await this.repository.findModelById(gridUid, {
-      transaction: options.transaction,
-      includeAsyncNode: true,
-    });
-    const existingItems = _.castArray(initialGrid?.subModels?.items || []).filter((item: any) => item?.uid);
-
-    for (const blockSpec of normalizedBlocks) {
-      if (!blockSpec.template && blockSpec.resource?.kind !== 'semantic') {
-        this.assertRequiredBlockResourceInit({
-          actionName: 'compose',
-          blockCatalogItem: blockSpec.catalogItem,
-          resourceInit: blockSpec.resource?.kind === 'raw' ? blockSpec.resource.value : {},
-          resourceField: 'resource',
-          blockDescriptor: this.describeComposeBlock(blockSpec),
-        });
-      }
-    }
-
-    const plan = compileComposeExecutionPlan({
-      gridUid,
-      mode,
-      normalizedBlocks,
-      existingItemUids: existingItems.map((item: any) => item.uid),
-      layout: values.layout,
-    });
-
-    return executeComposeRuntime(plan, {
-      removeExistingItem: async (uid) => this.removeNodeTreeWithBindings(uid, options.transaction),
-      createBlock: async (payload) =>
-        this.addBlock(payload, {
-          ...options,
-          deferAutoLayout: true,
-          enabledPackages,
-        }),
-      applyNodeSettings: async (actionName, targetUid, settings) => {
-        if (!targetUid) {
-          return;
-        }
-        await this.applyInlineNodeSettings(actionName, targetUid, settings, options);
-      },
-      createField: async (payload) => this.addField(payload, options),
-      applyFieldSettings: async (actionName, fieldResult, settings) =>
-        this.applyInlineFieldSettings(actionName, fieldResult, settings, options),
-      onFieldError: async ({ error, spec, blockSpec }) => {
-        if (!(error instanceof FlowSurfaceBadRequestError)) {
-          throw error;
-        }
-        fieldIssues.push(
-          this.buildValidatePlanFieldIssue({
-            compiled,
-            path: `plan.steps[${compiled.index}].values.blocks[${(blockSpec.index || 1) - 1}].fields[${
-              (spec.index || 1) - 1
-            }]`,
-            error,
-            blocking: false,
-            blockKey: (blockSpec as any).key,
-            fieldKey: (spec as any).key,
-            fieldPath: spec.fieldPath,
-            associationPathName: spec.associationPathName,
-          }),
-        );
-        return 'continue' as const;
-      },
-      createAction: async (payload) =>
-        this.addAction(payload, {
-          ...options,
-          enabledPackages,
-          autoCompleteDefaultPopup: false,
-        }),
-      createRecordAction: async (payload) =>
-        this.addRecordAction(payload, {
-          ...options,
-          enabledPackages,
-          autoCompleteDefaultPopup: false,
-        }),
-      applyActionPopup: async (actionName, actionUid, popup) =>
-        this.applyInlineActionPopup(actionName, actionUid, popup, options),
-      collectActionKeys: async (actionUid) => this.collectComposeActionKeys(actionUid, options.transaction),
-      buildExplicitLayoutPayload: async (input) => {
-        const finalGrid = await this.repository.findModelById(input.gridUid, {
-          transaction: options.transaction,
-          includeAsyncNode: true,
-        });
-        const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
-        return this.buildComposeLayoutPayload({
-          layout: input.layout,
-          createdByKey: input.createdByKey,
-          finalItems,
-        });
-      },
-      buildAppendLayoutPayload: async (input) => {
-        const finalGrid = await this.repository.findModelById(input.gridUid, {
-          transaction: options.transaction,
-          includeAsyncNode: true,
-        });
-        return this.buildAppendGridLayoutPayload({
-          initialGrid,
-          finalGrid,
-          appendedItemUids: input.appendedItemUids,
-        });
-      },
-      setLayout: async (payload) => this.setLayout(payload, options),
-    });
-  }
-
-  private async collectValidatePlanIssues(
-    _values: FlowSurfaceValidatePlanValues,
-    compiledSteps: FlowSurfaceCompiledPlanStep[],
-    options: { transaction?: any } = {},
-  ): Promise<FlowSurfaceValidatePlanValidationResult> {
-    const fieldIssues = await this.withValidatePlanPreviewTransaction(async (transaction) => {
-      const enabledPackages = await this.resolveEnabledPluginPackages({ transaction });
-      const execCtx: FlowSurfaceExecutorContext = {
-        transaction,
-        keys: new Map(),
-        clientKeyToUid: {},
-      };
-      const issues: FlowSurfaceValidatePlanFieldIssue[] = [];
-
-      for (const compiled of compiledSteps) {
-        const missingDependency = issues.length
-          ? this.findMissingValidatePlanPayloadDependency(compiled.payload, execCtx.keys)
-          : null;
-        if (missingDependency) {
-          issues.push(this.buildValidatePlanBlockedIssue(compiled, missingDependency));
-          continue;
-        }
-
-        const resolvedPayload = resolveFlowSurfaceValueKeys(_.cloneDeep(compiled.payload), execCtx.keys);
-        let result: any;
-
-        if (compiled.action === 'addField') {
-          try {
-            result = await this.addField(resolvedPayload, {
-              transaction,
-              enabledPackages,
-            });
-          } catch (error) {
-            if (error instanceof FlowSurfaceBadRequestError) {
-              issues.push(
-                this.buildValidatePlanFieldIssue({
-                  compiled,
-                  path: `plan.steps[${compiled.index}].values`,
-                  error,
-                  blocking: false,
-                  fieldPath: resolvedPayload?.fieldPath,
-                  associationPathName: resolvedPayload?.associationPathName,
-                }),
-              );
-              continue;
-            }
-            throw error;
-          }
-        } else if (compiled.action === 'compose') {
-          result = await this.previewComposeForValidatePlan(
-            resolvedPayload as FlowSurfaceComposeValues,
-            compiled,
-            issues,
-            {
-              transaction,
-              enabledPackages,
-            },
-          );
-        } else if (compiled.mutateOp) {
-          result = await this.dispatchOp(compiled.mutateOp, resolvedPayload, execCtx);
-        } else if (compiled.action === 'configure' || compiled.action === 'convertTemplateToCopy') {
-          result = await this.dispatchPlanOnlyAction(compiled.action, resolvedPayload, transaction);
-        } else {
-          throwInternalError(`flowSurfaces validatePlan action '${compiled.action}' preview is not supported`);
-        }
-
-        if (compiled.id) {
-          execCtx.keys.set(compiled.id, result);
-        }
-        registerFlowSurfaceCreatedKeys(result, compiled.createdKeys, execCtx.keys);
-      }
-
-      return issues;
-    }, options);
-
-    return {
-      ok: fieldIssues.length === 0,
-      fieldIssues,
     };
   }
 
@@ -2723,21 +2374,6 @@ export class FlowSurfacesService {
 
     const unsupportedAction: never = action;
     throwInternalError(`flowSurfaces plan-only action '${unsupportedAction}' is not supported`);
-  }
-
-  private isSurfaceReadbackMissingError(error: unknown) {
-    return (
-      error instanceof FlowSurfaceBadRequestError &&
-      (/^flowSurfaces target not found$/.test(error.message) || /^flowSurfaces uid '.*' not found$/.test(error.message))
-    );
-  }
-
-  async validatePlan(values: FlowSurfaceValidatePlanValues, options: { transaction?: any } = {}) {
-    return validatePlanningPlan(values, this.buildPlanningRuntimeDeps(), options);
-  }
-
-  async executePlan(values: FlowSurfaceExecutePlanValues, options: { transaction?: any } = {}) {
-    return executePlanningPlan(values, this.buildPlanningRuntimeDeps(), options);
   }
 
   private async resolveExecuteDslReplaceTargetInfo(
@@ -2866,7 +2502,16 @@ export class FlowSurfacesService {
 
   async executeDsl(values: Record<string, any>, options: { transaction?: any } = {}) {
     const prepared = await this.prepareExecuteDslRequest(values, options.transaction);
-    const result = await this.executePlan(prepared.planValues, options);
+    const result = await executeInternalPlan(
+      {
+        surface: prepared.surface,
+        plan: {
+          steps: prepared.steps,
+        },
+      },
+      this.buildPlanningRuntimeDeps(),
+      options,
+    );
     const pageLocator = resolveExecuteDslPageLocator(prepared, result);
     const surface = await this.get(pageLocator, options);
 

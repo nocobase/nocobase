@@ -34,44 +34,6 @@ export const flowSurfaceExamples = {
       },
     ],
   },
-  validatePlan: {
-    validation: {
-      collectFieldIssues: true,
-    },
-    surface: {
-      locator: {
-        pageSchemaUid: 'employees-page-schema',
-      },
-    },
-    expectedFingerprint: 'a1b2c3d4e5f6',
-    bindKeys: [
-      {
-        key: 'employeesTable',
-        locator: {
-          uid: 'employees-table-uid',
-        },
-        expectedKind: 'block',
-      },
-    ],
-    plan: {
-      steps: [
-        {
-          id: 'configureTable',
-          action: 'configure',
-          selectors: {
-            target: {
-              key: 'employeesTable',
-            },
-          },
-          values: {
-            changes: {
-              pageSize: 20,
-            },
-          },
-        },
-      ],
-    },
-  },
   executeDsl: {
     version: '1',
     mode: 'create',
@@ -173,92 +135,6 @@ export const flowSurfaceExamples = {
         ],
       },
     ],
-  },
-  executePlan: {
-    plan: {
-      steps: [
-        {
-          id: 'group',
-          action: 'createMenu',
-          values: {
-            title: 'Workspace',
-            type: 'group',
-          },
-        },
-        {
-          id: 'menu',
-          action: 'createMenu',
-          values: {
-            title: 'Employees',
-            type: 'item',
-            parentMenuRouteId: {
-              step: 'group',
-              path: 'routeId',
-            },
-          },
-        },
-        {
-          id: 'page',
-          action: 'createPage',
-          values: {
-            menuRouteId: {
-              step: 'menu',
-              path: 'routeId',
-            },
-            title: 'Employees',
-            tabTitle: 'Overview',
-            enableTabs: true,
-          },
-        },
-        {
-          id: 'composeTable',
-          action: 'compose',
-          selectors: {
-            target: {
-              step: 'page',
-              path: 'tabSchemaUid',
-            },
-          },
-          values: {
-            mode: 'append',
-            blocks: [
-              {
-                key: 'usersTable',
-                type: 'table',
-                resource: {
-                  dataSourceKey: 'main',
-                  collectionName: 'users',
-                },
-                fields: ['username', 'nickname'],
-                recordActions: [{ key: 'viewUser', type: 'view' }],
-              },
-            ],
-          },
-        },
-        {
-          id: 'composeUserPopup',
-          action: 'compose',
-          selectors: {
-            target: {
-              key: 'viewUser.popupGrid',
-            },
-          },
-          values: {
-            mode: 'replace',
-            blocks: [
-              {
-                key: 'userDetails',
-                type: 'details',
-                resource: {
-                  binding: 'currentRecord',
-                },
-                fields: ['username', 'nickname'],
-              },
-            ],
-          },
-        },
-      ],
-    },
   },
   compose: {
     target: {

@@ -17,41 +17,6 @@ function getValues(ctx: any) {
   return ctx.action?.params?.values ?? ctx.action?.params ?? {};
 }
 
-function shouldCollectValidatePlanFieldIssues(ctx: any) {
-  return !!getValues(ctx)?.validation?.collectFieldIssues;
-}
-
-function getCurrentRoleNames(ctx: any) {
-  if (Array.isArray(ctx.state?.currentRoles) && ctx.state.currentRoles.length) {
-    return ctx.state.currentRoles.map((role: any) => (typeof role === 'string' ? role.trim() : '')).filter(Boolean);
-  }
-  const currentUserRoles = Array.isArray(ctx.state?.currentUser?.roles) ? ctx.state.currentUser.roles : [];
-  return currentUserRoles
-    .map((role: any) => {
-      if (typeof role === 'string') {
-        return role.trim();
-      }
-      if (typeof role?.name === 'string') {
-        return role.name.trim();
-      }
-      return '';
-    })
-    .filter(Boolean);
-}
-
-function ensureValidatePlanPreviewWritePermission(ctx: any) {
-  if (!shouldCollectValidatePlanFieldIssues(ctx)) {
-    return;
-  }
-  const roles = getCurrentRoleNames(ctx);
-  const canPreview = roles.length
-    ? ctx.app?.acl?.can({ roles, resource: 'flowSurfaces', action: 'executePlan' })
-    : null;
-  if (!canPreview) {
-    ctx.throw(403, 'No permissions');
-  }
-}
-
 function isImplicitEmptyValuesBag(value: any) {
   return (
     !!value &&
@@ -175,18 +140,9 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     describeSurface: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.describeSurface(getValues(ctx)));
     },
-    validatePlan: async (ctx, next) => {
-      ensureValidatePlanPreviewWritePermission(ctx);
-      await runFlowSurfaceAction(ctx, next, () => service.validatePlan(getValues(ctx)));
-    },
     executeDsl: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () =>
         service.transaction((transaction) => service.executeDsl(getValues(ctx), { transaction })),
-      );
-    },
-    executePlan: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.executePlan(getValues(ctx), { transaction })),
       );
     },
     listTemplates: async (ctx, next) => {
