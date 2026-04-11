@@ -13,6 +13,120 @@ const Path = require('node:path');
 
 let timer = null;
 
+/**
+ * Sever the prototype chain of a host-realm function so that
+ * Object.getPrototypeOf(fn).constructor cannot reach the host Function constructor.
+ */
+function hardenFunction(fn) {
+  Object.setPrototypeOf(fn, null);
+  Object.defineProperty(fn, 'constructor', {
+    value: null,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  });
+  return fn;
+}
+
+/**
+ * Read an own property value from an object, invoking the getter if the property
+ * is an accessor descriptor.  Returns undefined for write-only or throwing accessors.
+ */
+function resolveProperty(obj, key) {
+  const desc = Object.getOwnPropertyDescriptor(obj, key);
+  if (!desc) return undefined;
+  if ('value' in desc) return desc.value;
+  if (desc.get) {
+    try {
+      return desc.get.call(obj);
+    } catch (_) {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Recursively sanitize a value from the host realm before exposing it to the VM
+ * sandbox context.
+ *
+ * Security guarantee: every function in the returned structure has its prototype
+ * chain severed and its `constructor` property set to null via hardenFunction(),
+ * so that sandbox code cannot traverse `fn.constructor` (or
+ * `fn.constructor.constructor`) to reach the host Function constructor.
+ *
+ * All object values are re-created with a null prototype, removing the
+ * `obj.constructor → host Object → Object.constructor → host Function` chain.
+ *
+ * Static properties on function-typed exports (e.g. `dayjs.extend`) are also
+ * exposed on the wrapper so that user code can call them.
+ *
+ * Note: return values of wrapped functions are NOT further sanitized here.
+ * The isolated-vm path (IsolatedVm.js) provides stronger isolation for deployments
+ * that do not require module support.
+ *
+ * @param {*} val    - the host-realm value to sanitize
+ * @param {*} parent - parent object used as `this` when binding methods
+ * @param {WeakMap} [cache] - cycle-detection cache
+ */
+function sanitizeForSandbox(val, parent, cache) {
+  if (!cache) cache = new WeakMap();
+
+  // Primitives (string, number, boolean, bigint, symbol, null, undefined)
+  // are realm-neutral — they carry no mutable prototype chain.
+  if (val === null || val === undefined) return val;
+  if (typeof val !== 'object' && typeof val !== 'function') return val;
+
+  if (cache.has(val)) return cache.get(val);
+
+  if (typeof val === 'function') {
+    // Bind to parent so that methods relying on `this` keep working
+    // (e.g. axios.get internally calls this.request).
+    const fn = parent != null ? val.bind(parent) : val;
+    const wrapper = function (...args) {
+      return fn(...args);
+    };
+    cache.set(val, wrapper);
+    hardenFunction(wrapper);
+
+    // Expose static properties that may be present on function-typed exports
+    // (e.g. dayjs.extend, lodash.chain, axios.create).
+    const SKIP_PROPS = new Set(['length', 'name', 'prototype', 'caller', 'arguments', 'constructor']);
+    for (const key of Object.getOwnPropertyNames(val)) {
+      if (SKIP_PROPS.has(key)) continue;
+      try {
+        const resolved = resolveProperty(val, key);
+        if (resolved !== undefined) {
+          Object.defineProperty(wrapper, key, {
+            value: sanitizeForSandbox(resolved, val, cache),
+            writable: false,
+            enumerable: true,
+            configurable: false,
+          });
+        }
+      } catch (_) {
+        // skip non-readable / non-configurable properties
+      }
+    }
+    return wrapper;
+  }
+
+  // Object: re-create as a null-prototype plain object and recurse on own properties.
+  const clean = Object.create(null);
+  cache.set(val, clean);
+  for (const key of Object.getOwnPropertyNames(val)) {
+    try {
+      const resolved = resolveProperty(val, key);
+      if (resolved !== undefined) {
+        clean[key] = sanitizeForSandbox(resolved, val, cache);
+      }
+    } catch (_) {
+      // skip non-readable properties
+    }
+  }
+  return clean;
+}
+
 function customRequire(m) {
   const configuredModules = (process.env.WORKFLOW_SCRIPT_MODULES?.split(',') ?? []).filter(Boolean);
   let mainName;
@@ -30,24 +144,24 @@ function customRequire(m) {
       .join('/');
   }
   if (configuredModules.includes(mainName)) {
-    return require(m);
+    // FIX (Vector 2): sanitize the module before handing it to the sandbox.
+    // Without this, any function property on the returned module has
+    // fn.constructor === host Function, enabling sandbox escape and RCE.
+    return sanitizeForSandbox(require(m));
   }
-  throw new Error(`module "${m}" not supported`);
-}
-
-/**
- * Sever the prototype chain of a host-realm function so that
- * Object.getPrototypeOf(fn).constructor cannot reach the host Function constructor.
- */
-function hardenFunction(fn) {
-  Object.setPrototypeOf(fn, null);
-  Object.defineProperty(fn, 'constructor', {
+  // FIX (Vector 1): do NOT throw a raw host-realm Error object.
+  // A host Error's prototype chain (e.constructor → host Error → e.constructor.constructor
+  // → host Function) allows the sandbox to obtain the host Function constructor and
+  // achieve RCE. Instead, sever the prototype chain before throwing.
+  const err = new Error(`module "${m}" not supported`);
+  Object.setPrototypeOf(err, null);
+  Object.defineProperty(err, 'constructor', {
     value: null,
     writable: false,
     enumerable: false,
     configurable: false,
   });
-  return fn;
+  throw err;
 }
 
 hardenFunction(customRequire);

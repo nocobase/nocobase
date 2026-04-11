@@ -328,6 +328,136 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
     expect(result.result.escaped).toBe(false);
   });
 
+  it('should not allow sandbox escape via Error thrown by customRequire (Vector 1: Error prototype chain)', async () => {
+    // Attack: customRequire throws a host-realm Error; sandbox catches it and
+    // traverses e.constructor.constructor to reach the host Function constructor.
+    const script = `
+      try {
+        require('__nonexistent_module__');
+      } catch (e) {
+        try {
+          const F = e.constructor.constructor;
+          const proc = F('return process')();
+          return { escaped: true, pid: proc?.pid };
+        } catch (e2) {
+          return { escaped: false, constructorIsNull: e.constructor === null, detail: String(e2) };
+        }
+      }
+      return { escaped: false, reason: 'no error thrown' };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.escaped).toBe(false);
+    expect(result.result.constructorIsNull).toBe(true);
+  });
+
+  it('should not allow sandbox escape via module function constructor (Vector 2: fn.constructor)', async () => {
+    // Attack: a module returned by customRequire is a host-realm object; any
+    // function property has fn.constructor === host Function constructor.
+    const script = `
+      try {
+        const path = require('path');
+        const F = path.join.constructor;
+        if (!F) return { escaped: false, reason: 'constructor is null/falsy' };
+        const proc = F('return process')();
+        return { escaped: true, pid: proc?.pid };
+      } catch (e) {
+        return { escaped: false, error: String(e) };
+      }
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.escaped).toBe(false);
+  });
+
+  it('should reproduce the exact PoC from the CVE report and block it (Vector 1 full RCE chain)', async () => {
+    // Full RCE exploit chain from the report:
+    //   catch host Error → e.constructor.constructor → host Function
+    //   → Function('return process')() → process.binding('spawn_sync').spawn(...)
+    const script = `
+      try {
+        require('__nonexistent__');
+      } catch(e) {
+        try {
+          const F = e.constructor.constructor;
+          const p = F('return process')();
+          const s = p.binding('spawn_sync');
+          const r = s.spawn({
+            file: '/bin/sh',
+            args: ['/bin/sh', '-c', 'id'],
+            stdio: [
+              { type: 'pipe', readable: true,  writable: false },
+              { type: 'pipe', readable: false, writable: true  },
+              { type: 'pipe', readable: false, writable: true  }
+            ]
+          });
+          return { rce: true, output: r.output[1].toString().trim() };
+        } catch (e2) {
+          return { rce: false, error: String(e2) };
+        }
+      }
+      return { rce: false, reason: 'no error thrown' };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.rce).toBe(false);
+  });
+
+  it('should reproduce the exact PoC from the CVE report and block it (Vector 2 full RCE chain)', async () => {
+    // Full RCE exploit chain via module function constructor:
+    //   path.join.constructor → host Function → Function('return process')()
+    const script = `
+      try {
+        const path = require('path');
+        const F = path.join.constructor;
+        if (!F) return { rce: false, reason: 'constructor is null' };
+        const p = F('return process')();
+        const s = p.binding('spawn_sync');
+        const r = s.spawn({
+          file: '/bin/sh',
+          args: ['/bin/sh', '-c', 'id'],
+          stdio: [
+            { type: 'pipe', readable: true,  writable: false },
+            { type: 'pipe', readable: false, writable: true  },
+            { type: 'pipe', readable: false, writable: true  }
+          ]
+        });
+        return { rce: true, output: r.output[1].toString().trim() };
+      } catch (e) {
+        return { rce: false, error: String(e) };
+      }
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.rce).toBe(false);
+  });
+
+  it('module should remain functional after sanitization (path.join)', async () => {
+    const script = `
+      const path = require('path');
+      return {
+        join: path.join('/a', 'b', 'c'),
+        resolve: typeof path.resolve === 'function',
+        constructorIsNull: path.join.constructor === null,
+      };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.join).toBe('/a/b/c');
+    expect(result.result.resolve).toBe(true);
+    expect(result.result.constructorIsNull).toBe(true);
+  });
+
   it('should not allow escape via Object.getPrototypeOf(console.log).constructor', async () => {
     // Bound functions retain host-realm prototype chain
     const script = `
