@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-field-handwritten-signature"
+pkg: "@nocobase/plugin-field-signature"
 ---
 
 # 数据表字段：手写签名
@@ -11,7 +11,7 @@ pkg: "@nocobase/plugin-field-handwritten-signature"
 ## 安装
 
 1. 确认当前环境为 **专业版及以上**，且授权有效。
-2. 打开 **插件管理器**，找到 **数据表字段：手写签名**（`@nocobase/plugin-field-handwritten-signature`）并启用。
+2. 打开 **插件管理器**，找到 **数据表字段：手写签名**（`@nocobase/plugin-field-signature`）并启用。
 3. 确保已启用 **文件管理器**（`@nocobase/plugin-file-manager`）。手写签名字段依赖它提供文件数据表、上传与存储能力；未启用时将无法保存签名图片。
 
 ## 使用说明

@@ -265,7 +265,7 @@
           {
             "type": "custom-link",
             "label": "Handwritten signature",
-            "link": "/data-sources/field-handwritten-signature/"
+            "link": "/data-sources/field-signature/"
           }
         ]
       },

@@ -1,8 +1,8 @@
 ---
-pkg: "@nocobase/plugin-field-handwritten-signature"
+pkg: "@nocobase/plugin-field-signature"
 ---
 
-# Collection field: Handwritten Signature
+# Collection field: Signature
 
 ## Introduction
 
@@ -11,7 +11,7 @@ The handwritten signature field lets users draw a signature on the canvas (mouse
 ## Installation
 
 1. Confirm your deployment is on **Professional edition or above** and the license is valid.
-2. Open **Plugin manager**, find **Collection field: Handwritten Signature** (`@nocobase/plugin-field-handwritten-signature`), and enable it.
+2. Open **Plugin manager**, find **Collection field: Handwritten Signature** (`@nocobase/plugin-field-signature`), and enable it.
 3. Ensure **File manager** (`@nocobase/plugin-file-manager`) is enabled. The handwritten signature field depends on it to provide file collections, uploads, and storage capabilities; without it, signature images cannot be saved.
 
 ## Usage
