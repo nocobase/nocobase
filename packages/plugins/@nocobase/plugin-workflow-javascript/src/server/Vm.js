@@ -47,6 +47,23 @@ function resolveProperty(obj, key) {
 }
 
 /**
+ * Sanitize a value returned from a host-realm function call before it re-enters
+ * the sandbox.  Handles both synchronous return values and Promises (thenables).
+ *
+ * A fresh WeakMap is used per top-level sanitization call so that independent
+ * return values don't accidentally share cached identity across calls.
+ */
+function sanitizeReturnValue(result) {
+  if (result === null || result === undefined) return result;
+  if (typeof result !== 'object' && typeof result !== 'function') return result;
+  // Thenable (Promise): sanitize the resolved value when it arrives.
+  if (typeof result.then === 'function') {
+    return result.then((v) => sanitizeForSandbox(v, null, new WeakMap()));
+  }
+  return sanitizeForSandbox(result, null, new WeakMap());
+}
+
+/**
  * Recursively sanitize a value from the host realm before exposing it to the VM
  * sandbox context.
  *
@@ -58,12 +75,11 @@ function resolveProperty(obj, key) {
  * All object values are re-created with a null prototype, removing the
  * `obj.constructor → host Object → Object.constructor → host Function` chain.
  *
+ * Function wrappers sanitize their return values (including Promise resolutions)
+ * so that objects returned by module calls also have hardened prototype chains.
+ *
  * Static properties on function-typed exports (e.g. `dayjs.extend`) are also
  * exposed on the wrapper so that user code can call them.
- *
- * Note: return values of wrapped functions are NOT further sanitized here.
- * The isolated-vm path (IsolatedVm.js) provides stronger isolation for deployments
- * that do not require module support.
  *
  * @param {*} val    - the host-realm value to sanitize
  * @param {*} parent - parent object used as `this` when binding methods
@@ -84,7 +100,7 @@ function sanitizeForSandbox(val, parent, cache) {
     // (e.g. axios.get internally calls this.request).
     const fn = parent != null ? val.bind(parent) : val;
     const wrapper = function (...args) {
-      return fn(...args);
+      return sanitizeReturnValue(fn(...args));
     };
     cache.set(val, wrapper);
     hardenFunction(wrapper);
@@ -111,18 +127,32 @@ function sanitizeForSandbox(val, parent, cache) {
     return wrapper;
   }
 
-  // Object: re-create as a null-prototype plain object and recurse on own properties.
+  // Object: re-create as a null-prototype plain object and walk the prototype
+  // chain up to MAX_PROTO_DEPTH levels (stopping before Object.prototype) so
+  // that methods defined on the object's own prototype are also included
+  // (e.g. Hash.prototype.update / .digest, Stats.prototype.isFile).
+  // Own properties always take precedence over inherited ones (first-write wins).
   const clean = Object.create(null);
   cache.set(val, clean);
-  for (const key of Object.getOwnPropertyNames(val)) {
-    try {
-      const resolved = resolveProperty(val, key);
-      if (resolved !== undefined) {
-        clean[key] = sanitizeForSandbox(resolved, val, cache);
+
+  const MAX_PROTO_DEPTH = 3;
+  let proto = val;
+  let depth = 0;
+  while (proto !== null && proto !== Object.prototype && depth < MAX_PROTO_DEPTH) {
+    for (const key of Object.getOwnPropertyNames(proto)) {
+      if (key === 'constructor' || key in clean) continue;
+      try {
+        const resolved = resolveProperty(proto, key);
+        if (resolved !== undefined) {
+          // Always bind to the original `val` so `this` inside methods is correct.
+          clean[key] = sanitizeForSandbox(resolved, val, cache);
+        }
+      } catch (_) {
+        // skip non-readable properties
       }
-    } catch (_) {
-      // skip non-readable properties
     }
+    proto = Object.getPrototypeOf(proto);
+    depth++;
   }
   return clean;
 }
