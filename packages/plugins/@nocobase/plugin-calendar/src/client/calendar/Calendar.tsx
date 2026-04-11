@@ -35,7 +35,7 @@ import {
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { cloneDeep, get, omit } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
 import { CalendarRecordViewer, findEventSchema } from './CalendarRecordViewer';
@@ -46,7 +46,13 @@ import { useCalenderHeight } from './hook';
 import { addNew } from './schema';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
-import { formatDate } from './utils';
+import {
+  CALENDAR_RANGE_FILTER_GROUP,
+  createCalendarRangeFilter,
+  formatDate,
+  getCalendarVisibleRange,
+  normalizeCalendarFieldPath,
+} from './utils';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -73,14 +79,19 @@ function Toolbar(props: ToolbarProps) {
   const fieldSchema = useFieldSchema();
   const toolBarSchema: Schema = useMemo(
     () =>
-      fieldSchema.reduceProperties((buf, current) => {
+      fieldSchema?.reduceProperties?.((buf, current) => {
         if (current['x-component'].endsWith('.ActionBar')) {
           return current;
         }
         return buf;
       }, null),
-    [],
+    [fieldSchema],
   );
+
+  if (!toolBarSchema) {
+    return null;
+  }
+
   return (
     <CalendarToolbarContext.Provider value={props}>
       <NocoBaseRecursionField name={toolBarSchema.name} schema={toolBarSchema} />
@@ -99,17 +110,35 @@ const useEvents = (
   },
   date: Date,
   view: (typeof Weeks)[number] | any = 'month',
+  collection?: any,
 ) => {
   const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
     'parseExpression',
   );
   const { t } = useTranslation();
-  const { fields } = useCollection();
+  const collectionContext = useCollection();
+  const activeCollection = collection || collectionContext;
+  const fields = useMemo(() => {
+    return activeCollection?.getFields?.() || (Array.isArray(activeCollection?.fields) ? activeCollection.fields : []);
+  }, [activeCollection]);
   const app = useApp();
   const plugin = app.pm.get('calendar') as any;
-  const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
-  const enumUiSchema = fields.find((v) => v.name === fieldNames?.colorFieldName);
+  const getCollectionField = useCallback(
+    (fieldName?: string) => {
+      const normalizedFieldName = normalizeCalendarFieldPath(fieldName);
+      if (!normalizedFieldName) {
+        return undefined;
+      }
+
+      return activeCollection?.getField?.(normalizedFieldName) || fields.find((v) => v.name === normalizedFieldName);
+    },
+    [activeCollection, fields],
+  );
+  const titleCollectionField = getCollectionField(fieldNames?.title);
+  const colorCollectionField = getCollectionField(fieldNames?.colorFieldName);
+  const labelUiSchema = titleCollectionField?.uiSchema;
+  const enumUiSchema = colorCollectionField;
   return useMemo(() => {
     if (!Array.isArray(dataSource)) return { events: [], enumList: [] };
     const enumList = enumUiSchema?.uiSchema?.enum || [];
@@ -156,8 +185,10 @@ const useEvents = (
         });
 
         if (res) return out;
-        const targetTitleCollectionField = fields.find((v) => v.name === fieldNames.title);
-        const targetTitle = plugin.getTitleFieldInterface(targetTitleCollectionField.interface);
+        const targetTitleCollectionField = getCollectionField(fieldNames.title);
+        const targetTitle = targetTitleCollectionField?.interface
+          ? plugin.getTitleFieldInterface(targetTitleCollectionField.interface)
+          : null;
         const title = getLabelFormatValue(
           labelUiSchema,
           get(item, fieldNames.title),
@@ -228,6 +259,8 @@ const useEvents = (
     t,
     enumUiSchema?.uiSchema?.enum,
     parseExpression,
+    getCollectionField,
+    plugin,
   ]);
 };
 
@@ -236,6 +269,9 @@ const useInsertSchema = (component) => {
   const { insertAfterBegin } = useDesignable();
   const insert = useCallback(
     (ss) => {
+      if (!fieldSchema?.reduceProperties) {
+        return;
+      }
       const schema = fieldSchema.reduceProperties((buf, s) => {
         if (s['x-component'] === 'AssociationField.' + component) {
           return s;
@@ -276,15 +312,18 @@ export const Calendar: any = withDynamicSchemaProps(
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
-      const { events, enumList } = useEvents(dataSource, fieldNames, date, view);
+      const collectionContext = useCollection();
+      const collection = props.collection || collectionContext;
+      const { events, enumList } = useEvents(dataSource, fieldNames, date, view, collection);
+      const rangeRefreshKeyRef = useRef<string>();
       const [record, setRecord] = useState<any>({});
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
       const field = useField();
+      const hasSchemaRuntime = !!fieldSchema?.properties;
       //nint deal with slot select to show create popup
       const { parseAction } = useACLRoleContext();
-      const collection = useCollection();
       const canCreate = parseAction(`${collection.name}:create`);
       const startFieldName = fieldNames?.start?.[0];
       const endFieldName = fieldNames?.end?.[0];
@@ -293,11 +332,14 @@ export const Calendar: any = withDynamicSchemaProps(
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       const apiClient = useAPIClient();
-      const locales = {
-        'zh-CN': zhCN,
-        'en-US': enUS,
-        'ru-RU': ru,
-      };
+      const locales = useMemo(
+        () => ({
+          'zh-CN': zhCN,
+          'en-US': enUS,
+          'ru-RU': ru,
+        }),
+        [],
+      );
       const locale = apiClient.auth.locale || 'en-US';
       const formats = useMemo(() => {
         return {
@@ -351,7 +393,7 @@ export const Calendar: any = withDynamicSchemaProps(
             return local.format(date, 'EEE', culture);
           },
         };
-      }, [locale, view]);
+      }, []);
       const localizer = useMemo(() => {
         return dateFnsLocalizer({
           format,
@@ -360,14 +402,53 @@ export const Calendar: any = withDynamicSchemaProps(
           getDay,
           locales,
         });
-      }, [locale, props.weekStart]);
+      }, [locale, locales, props.weekStart]);
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
 
+      const visibleRange = useMemo(() => {
+        return getCalendarVisibleRange(date, view, props.weekStart);
+      }, [date, props.weekStart, view]);
+
+      useEffect(() => {
+        if (!props.rangeLoadEnabled || !props.resource) {
+          return;
+        }
+
+        const rangeFilter = createCalendarRangeFilter(fieldNames, visibleRange);
+        const nextKey = JSON.stringify({
+          fieldNames,
+          view,
+          start: visibleRange.start.toISOString(),
+          end: visibleRange.end.toISOString(),
+          rangeFilter,
+        });
+
+        if (rangeRefreshKeyRef.current === nextKey) {
+          return;
+        }
+
+        rangeRefreshKeyRef.current = nextKey;
+
+        if (rangeFilter) {
+          props.resource.addFilterGroup(CALENDAR_RANGE_FILTER_GROUP, rangeFilter);
+        } else {
+          props.resource.removeFilterGroup(CALENDAR_RANGE_FILTER_GROUP);
+        }
+
+        props.resource.setPage?.(1);
+        void props.resource.refresh();
+      }, [fieldNames, props.rangeLoadEnabled, props.resource, view, visibleRange]);
+
+      useEffect(() => {
+        return () => {
+          props.resource?.removeFilterGroup?.(CALENDAR_RANGE_FILTER_GROUP);
+        };
+      }, [props.resource]);
+
       const components = useMemo(() => {
-        return {
-          toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
+        const nextComponents: any = {
           week: {
             header: (props) => (
               <Header {...props} type="week" showLunar={showLunar} localizer={localizer} locale={locale} />
@@ -377,7 +458,12 @@ export const Calendar: any = withDynamicSchemaProps(
             dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
           },
         };
-      }, [showLunar]);
+        if (hasSchemaRuntime) {
+          nextComponents.toolbar = (toolbarProps) => <Toolbar {...toolbarProps} showLunar={showLunar}></Toolbar>;
+        }
+
+        return nextComponents;
+      }, [hasSchemaRuntime, locale, localizer, showLunar]);
 
       const messages: any = {
         allDay: '',
@@ -423,8 +509,6 @@ export const Calendar: any = withDynamicSchemaProps(
       // 快速创建行程
       const useCreateFormBlockProps = () => {
         const ctx = useFormBlockContext();
-        let startDateValue = currentSelectDate.start;
-        let endDataValue = currentSelectDate.end;
         const startCollectionField = collection.getField(startFieldName);
         const endCollectionField = collection.getField(endFieldName);
 
@@ -443,7 +527,7 @@ export const Calendar: any = withDynamicSchemaProps(
               ...ctx.form?.query(endFieldName).take()?.componentProps,
             };
 
-            startDateValue = handleDateChangeOnForm(
+            const startDateValue = handleDateChangeOnForm(
               currentSelectDate.start,
               startFieldProps.dateOnly,
               startFieldProps.utc,
@@ -451,7 +535,7 @@ export const Calendar: any = withDynamicSchemaProps(
               startFieldProps.showTime,
               startFieldProps.gtm,
             );
-            endDataValue = handleDateChangeOnForm(
+            const endDataValue = handleDateChangeOnForm(
               currentSelectDate.end,
               endFieldProps.dateOnly,
               endFieldProps.utc,
@@ -466,7 +550,13 @@ export const Calendar: any = withDynamicSchemaProps(
               form.setInitialValuesIn([endFieldName], endDataValue);
             }
           }
-        }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
+        }, [
+          ctx.form,
+          ctx.service?.data?.data,
+          ctx.service?.loading,
+          endCollectionField?.uiSchema,
+          startCollectionField?.uiSchema,
+        ]);
         return {
           form: ctx.form,
         };
@@ -494,7 +584,8 @@ export const Calendar: any = withDynamicSchemaProps(
               onView={setView}
               onSelectSlot={(slotInfo) => {
                 setCurrentSelectDate(slotInfo);
-                if (canCreate && enableQuickCreateEvent) {
+                props.onSelectSlot?.(slotInfo);
+                if (hasSchemaRuntime && canCreate && enableQuickCreateEvent) {
                   insertAddNewer(addNew);
                   setVisibleAddNewer(true);
                 }
@@ -507,6 +598,10 @@ export const Calendar: any = withDynamicSchemaProps(
                 if (!record) {
                   return;
                 }
+                props.onSelectEvent?.({ event, record });
+                if (!hasSchemaRuntime) {
+                  return;
+                }
                 record.__event = {
                   ...omit(event, 'title'),
                   start: formatDate(dayjs(event.start)),
@@ -516,7 +611,7 @@ export const Calendar: any = withDynamicSchemaProps(
                 setRecord(record);
                 openPopup({
                   recordData: record,
-                  customActionSchema: findEventSchema(fieldSchema),
+                  customActionSchema: fieldSchema ? findEventSchema(fieldSchema) : undefined,
                 });
               }}
               formats={formats}
@@ -539,27 +634,29 @@ export const Calendar: any = withDynamicSchemaProps(
               }}
             />
           </PopupContextProvider>
-          <ActionContextProvider
-            value={{
-              ...ctx,
-              visible: visibleAddNewer,
-              setVisible: setVisibleAddNewer,
-              openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
-            }}
-          >
-            <CollectionProvider name={collection.name}>
-              <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
-                <NocoBaseRecursionField
-                  onlyRenderProperties
-                  basePath={field?.address}
-                  schema={fieldSchema}
-                  filterProperties={(s) => {
-                    return s['x-component'] === 'AssociationField.AddNewer';
-                  }}
-                />
-              </SchemaComponentOptions>
-            </CollectionProvider>
-          </ActionContextProvider>
+          {hasSchemaRuntime && collection ? (
+            <ActionContextProvider
+              value={{
+                ...ctx,
+                visible: visibleAddNewer,
+                setVisible: setVisibleAddNewer,
+                openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
+              }}
+            >
+              <CollectionProvider name={collection.name}>
+                <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
+                  <NocoBaseRecursionField
+                    onlyRenderProperties
+                    basePath={field?.address}
+                    schema={fieldSchema}
+                    filterProperties={(s) => {
+                      return s['x-component'] === 'AssociationField.AddNewer';
+                    }}
+                  />
+                </SchemaComponentOptions>
+              </CollectionProvider>
+            </ActionContextProvider>
+          ) : null}
         </div>,
       );
     },
