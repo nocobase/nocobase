@@ -1,7 +1,7 @@
 ---
 title: "模板打印 - 媒体字段格式化"
 description: "模板打印媒体字段格式化器：attachment 和 signature 用于在模板中输出附件图片与手写签名图片。"
-keywords: "模板打印,媒体字段,attachment,signature,Nocobase"
+keywords: "模板打印,媒体字段,attachment,signature,NocoBase"
 ---
 
 ### 媒体字段格式化
