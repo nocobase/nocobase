@@ -701,6 +701,81 @@ describe('AdminLayoutModel menu items', () => {
     expect(saveModel).not.toHaveBeenCalled();
   });
 
+  it('should persist admin layout menu instance flows through flowEngine.saveModel', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-save-step-params-with-instance-flow',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    model.flowRegistry.removeFlow('beforeRender');
+
+    await model.saveStepParams();
+
+    expect(saveModel).toHaveBeenCalledTimes(1);
+    expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+  });
+
+  it('should hydrate persisted instance flows for admin layout menu models', async () => {
+    engine.setModelRepository({
+      findOne: vi.fn().mockResolvedValue({
+        uid: 'menu-item-page-1',
+        use: 'AdminLayoutMenuItemModel',
+        stepParams: {
+          beforeRender: {
+            edit: {
+              title: 'Persisted flow',
+            },
+          },
+        },
+        flowRegistry: {
+          beforeRender: {
+            title: 'Before render',
+            steps: {},
+          },
+        },
+      }),
+    } as any);
+
+    const rerenderSpy = vi.spyOn(AdminLayoutMenuItemModel.prototype, 'rerender').mockResolvedValue(undefined as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-page-1',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(model.getFlow('beforeRender')).toBeDefined();
+      expect(model.getStepParams('beforeRender', 'edit')).toMatchObject({
+        title: 'Persisted flow',
+      });
+    });
+
+    expect(rerenderSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('should expose insert steps and only show insert inner for groups', async () => {
     const groupModel = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'menu-item-group',

@@ -54,6 +54,8 @@ const insertPositionToMethod = {
 
 export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStructure> {
   private creationPersisted = false;
+  private persistedStateHydrated = false;
+  private persistedStateHydrating?: Promise<void>;
 
   onInit(options) {
     super.onInit(options);
@@ -61,6 +63,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       this.props.route as NocoBaseDesktopRoute,
       this.props.parentRoute as NocoBaseDesktopRoute | undefined,
     );
+    void this.hydratePersistedState();
   }
 
   syncFromRoute(route: NocoBaseDesktopRoute, parentRoute?: NocoBaseDesktopRoute) {
@@ -98,6 +101,78 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
   getRouteRepository() {
     return this.context.routeRepository;
+  }
+
+  /**
+   * 按固定 uid 从 flowModels 仓库恢复实例级事件流与步骤参数。
+   *
+   * @returns {Promise<void>} 恢复完成
+   */
+  async hydratePersistedState() {
+    if (this.persistedStateHydrated) {
+      return;
+    }
+
+    if (this.persistedStateHydrating) {
+      return await this.persistedStateHydrating;
+    }
+
+    this.persistedStateHydrating = (async () => {
+      if (this.isCreationSession()) {
+        return;
+      }
+
+      const repository = this.flowEngine.modelRepository;
+      if (!repository?.findOne) {
+        return;
+      }
+
+      const data = await repository.findOne({ uid: this.uid });
+      if (!data?.uid) {
+        return;
+      }
+
+      if (data.stepParams && typeof data.stepParams === 'object') {
+        this.setStepParams(data.stepParams);
+      }
+
+      if (data.flowRegistry && typeof data.flowRegistry === 'object') {
+        for (const key of [...this.flowRegistry.getFlows().keys()]) {
+          this.flowRegistry.removeFlow(key);
+        }
+        this.flowRegistry.addFlows(data.flowRegistry);
+
+        const hasBeforeRenderFlow = Object.values(data.flowRegistry).some((flow: any) => {
+          if (!flow || flow.manual === true) {
+            return false;
+          }
+          if (!flow.on) {
+            return true;
+          }
+          return typeof flow.on === 'string' ? flow.on === 'beforeRender' : flow.on?.eventName === 'beforeRender';
+        });
+
+        if (hasBeforeRenderFlow) {
+          void this.rerender();
+        }
+      }
+    })().finally(() => {
+      this.persistedStateHydrated = true;
+      this.persistedStateHydrating = undefined;
+    });
+
+    return await this.persistedStateHydrating;
+  }
+
+  /**
+   * 判断当前菜单模型是否存在需要通过 flowModels 持久化的实例事件流。
+   *
+   * @returns {boolean} 是否需要走 FlowModel 默认保存链路
+   */
+  hasPersistableInstanceFlows() {
+    const currentFlowCount = this.flowRegistry.getFlows().size;
+    const initialFlowCount = Object.keys((this as any)._options?.flowRegistry || {}).length;
+    return currentFlowCount > 0 || initialFlowCount > 0;
   }
 
   async insertRouteSchema(schema: Record<string, any>) {
@@ -280,6 +355,12 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       await this.persistMenuCreation(values || {});
       this.creationPersisted = true;
       return true;
+    }
+
+    // 菜单基础设置继续直接保存到 route repository；
+    // 只有实例事件流需要回退到 FlowModel 默认持久化链路。
+    if (this.hasPersistableInstanceFlows()) {
+      return await super.saveStepParams();
     }
 
     return true;
