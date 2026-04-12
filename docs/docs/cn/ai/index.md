@@ -10,11 +10,11 @@ features:
     items:
       - title: AI 搭建
         details: 用 AI 辅助搭建 NocoBase 应用，快速生成页面、区块和数据表配置。
-        link: /ai/ai-building
+        link: /ai-builder
       - title: AI 员工
         details: 深度集成在业务系统里的智能体，理解业务上下文、执行操作、角色化协作。
         link: /ai-employees
       - title: AI 开发
         details: 通过 AI 开发自定义的插件、功能等，提升开发效率。
-        link: /ai/ai-development
+        link: /ai-dev
 ---

@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "AI 搭建",
-    "link": "/ai/ai-building"
+    "link": "/ai-builder"
   },
   {
     "type": "custom-link",
@@ -12,6 +12,6 @@
   {
     "type": "custom-link",
     "label": "AI 开发",
-    "link": "/ai/ai-development"
+    "link": "/ai-dev"
   }
 ]

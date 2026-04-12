@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig, type RspressPlugin } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
@@ -6,6 +7,7 @@ import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
+import {pluginCrossRefSidebar} from './plugins/pluginCrossRef';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -189,6 +191,7 @@ export default defineConfig({
     pluginSchema(),
     pluginOgDescription(),
     pluginRemoveGenerator(),
+    pluginCrossRefSidebar(),
     sitemap(),
   ],
   lang,

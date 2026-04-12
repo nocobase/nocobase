@@ -76,8 +76,8 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
-        "link": "/flow-engine/flow-model-vs-react-component"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
