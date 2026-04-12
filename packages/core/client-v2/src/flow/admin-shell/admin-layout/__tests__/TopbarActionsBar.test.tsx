@@ -106,6 +106,7 @@ describe('TopbarActionsBar helpers', () => {
     const items = getTopbarPluginSettingsItems({
       canManagePlugins: true,
       t: (key) => key,
+      getRoutePath: (name) => `/admin/settings/${name}`,
       settings: [
         {
           key: 'plugin-manager',
@@ -142,6 +143,11 @@ describe('TopbarActionsBar helpers', () => {
       'divider',
       'security',
     ]);
+    expect((items as any[])[2]).toMatchObject({
+      key: 'system-settings',
+      name: 'system-settings',
+      path: '/admin/settings/system-settings',
+    });
   });
 
   it('should return empty dropdown items when plugin manager and settings are both unavailable', () => {

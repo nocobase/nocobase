@@ -75,9 +75,11 @@ export function getTopbarPluginSettingsItems(options: {
   settings: PluginSettingsPageType[];
   canManagePlugins: boolean;
   t: (key: string) => string;
+  getRoutePath?: (name: string) => string;
 }): NonNullable<MenuProps['items']> {
-  const { settings, canManagePlugins, t } = options;
+  const { settings, canManagePlugins, t, getRoutePath } = options;
   const topLevelSettings = filterRenderableSettings(settings);
+  const settingsByKey = new Map<string, PluginSettingsPageType>();
   const normalSettings = sortTopLevelSettings(
     topLevelSettings
       .filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME)
@@ -86,24 +88,39 @@ export function getTopbarPluginSettingsItems(options: {
         children: undefined,
       })),
   );
+
+  normalSettings.forEach((item) => {
+    settingsByKey.set(item.key, item);
+  });
+
   const orderedSettings = (getMenuItems(normalSettings) || []).map((item) => {
     if (item?.type === 'divider') {
       return item;
     }
 
+    const matchedSetting = settingsByKey.get(String(item.key));
+    const routePath = matchedSetting?.name ? getRoutePath?.(matchedSetting.name) : undefined;
+    const targetPath = routePath || matchedSetting?.path;
+    const targetLink = matchedSetting?.link;
+    const targetTitle = matchedSetting?.title || item.title;
+
     return {
       key: item.key,
+      name: matchedSetting?.name,
+      path: matchedSetting?.path,
+      link: targetLink,
+      title: targetTitle,
       icon: item.icon,
-      label: item.link ? (
+      label: targetLink ? (
         <div
           onClick={() => {
-            window.open(item.link, '_blank', 'noopener,noreferrer');
+            window.open(targetLink, '_blank', 'noopener,noreferrer');
           }}
         >
-          {item.title}
+          {targetTitle}
         </div>
       ) : (
-        <Link to={item.path}>{item.title}</Link>
+        <Link to={targetPath || '/admin/settings'}>{targetTitle}</Link>
       ),
     };
   });
@@ -317,6 +334,7 @@ const PluginSettingsTopbarAction = observer(
         settings: app.pluginSettingsManager.getList(),
         canManagePlugins: snippets.includes('pm'),
         t,
+        getRoutePath: (name) => app.pluginSettingsManager.getRoutePath(name),
       });
     }, [app, snippets, t]);
 
