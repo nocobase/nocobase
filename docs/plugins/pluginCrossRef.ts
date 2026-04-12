@@ -132,7 +132,7 @@ function resolveEntries(
       const group: SidebarGroup = {
         text: (obj.label as string) || '',
         items: resolveEntries(root, relDir, obj.items as unknown[], crossRefs, topDir),
-        collapsible: true,
+        collapsible: obj.collapsible !== false,
         collapsed: obj.collapsed === true,
       };
       if (typeof obj.link === 'string') {
@@ -194,7 +194,7 @@ function autoDiscoverFiles(root: string, relDir: string): SidebarNode[] {
   return items;
 }
 
-/** 如果是跨模块链接则改写为虚拟路由路径 */
+/** 如果是跨模块链接则改写为虚拟路由路径，保留 # 锚点 */
 function rewriteIfCrossRef(
   link: string,
   crossRefs: CrossRef[],
@@ -203,7 +203,10 @@ function rewriteIfCrossRef(
   const ref = crossRefs.find(
     r => r.sourceDir === topDir && r.targetLink === link,
   );
-  return ref ? ref.aliasRoute : link;
+  if (!ref) return link;
+  const hashIndex = link.indexOf('#');
+  const hash = hashIndex !== -1 ? link.slice(hashIndex) : '';
+  return ref.aliasRoute + hash;
 }
 
 // ── 插件主体 ──────────────────────────────────────────────────────────
