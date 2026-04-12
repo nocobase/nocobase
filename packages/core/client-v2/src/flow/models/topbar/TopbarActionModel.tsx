@@ -25,6 +25,7 @@ import {
   sortTopLevelSettings,
 } from '../../../settings-center/utils';
 import type { CustomToken } from '../../../theme';
+import { writeFlowSettingsPreference } from '../../admin-shell/admin-layout/flowSettingsPreference';
 
 const topbarActionButtonClassName = css`
   &.ant-btn {
@@ -130,7 +131,6 @@ export class TopbarActionModel extends FlowModel {
   declare props: ButtonProps;
   declare icon: React.ReactNode;
   declare tooltip: string;
-  declare sort: number;
   declare aclSnippet?: string;
   declare actionId?: string;
   declare testId?: string;
@@ -282,7 +282,14 @@ const UIEditorTopbarAction = observer(
     return model.renderWrapper(
       <TopbarActionButton
         model={model}
-        style={designable ? { backgroundColor: customToken.colorSettings } : undefined}
+        style={
+          designable
+            ? ({
+                backgroundColor: customToken.colorSettings,
+                '--nb-topbar-action-hover-bg': customToken.colorSettings,
+              } as any)
+            : undefined
+        }
       />,
     );
   },
@@ -346,10 +353,12 @@ export class UIEditorTopbarActionModel extends TopbarActionModel {
   async onClick() {
     const flowSettings = this.context.engine.flowSettings;
     if (flowSettings.enabled) {
+      writeFlowSettingsPreference(false);
       await flowSettings.disable();
       return;
     }
 
+    writeFlowSettingsPreference(true);
     await flowSettings.enable();
   }
 

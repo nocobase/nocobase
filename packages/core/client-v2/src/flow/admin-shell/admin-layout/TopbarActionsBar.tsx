@@ -23,6 +23,12 @@ const topbarActionsBarClassName = css`
   align-items: center;
   color: var(--nb-topbar-action-color);
 
+  .nb-topbar-actions-list {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+  }
+
   .ant-btn {
     display: inline-flex;
     align-items: center;
@@ -120,7 +126,7 @@ const TopbarActionsContent = React.memo((props: { actions: TopbarActionModel[]; 
 
   return (
     <div className={topbarActionsBarClassName} style={getTopbarActionsBarVars(customToken)}>
-      <div onClick={props.onActionClick}>
+      <div className="nb-topbar-actions-list" onClick={props.onActionClick}>
         {actions.map((action) => (
           <ErrorBoundary
             key={action.uid}

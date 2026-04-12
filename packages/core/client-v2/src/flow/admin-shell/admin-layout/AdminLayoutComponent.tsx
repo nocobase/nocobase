@@ -36,6 +36,11 @@ import { useApplications } from './useApplications';
 import { useGlobalTheme, type CustomToken } from '../../../theme';
 import { useSystemSettings } from '../../system-settings';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import {
+  FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
+  FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
+  readFlowSettingsPreference,
+} from './flowSettingsPreference';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -368,6 +373,7 @@ export const AdminLayoutComponent = observer((props: any) => {
   const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
   const isMobileSider = isMobileLayout || isMobileViewport;
   const [collapsed, setCollapsed] = useState(isMobileSider);
+  const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() => readFlowSettingsPreference());
   const [route, setRoute] = useState<{ path: string; children: AdminLayoutMenuNode[] }>({
     path: '/',
     children: [],
@@ -378,7 +384,7 @@ export const AdminLayoutComponent = observer((props: any) => {
       typeof flowEngine.context.t === 'function' ? flowEngine.context.t(value, { ns: 'lm-desktop-routes' }) : value,
     [flowEngine],
   );
-  const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
+  const designable = !isMobileSider && preferredFlowSettingsEnabled;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
   const flowSettingsSyncRef = useRef(0);
@@ -426,6 +432,32 @@ export const AdminLayoutComponent = observer((props: any) => {
     };
   }, [flowEngine]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncPreferredFlowSettings = () => {
+      setPreferredFlowSettingsEnabled(readFlowSettingsPreference());
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== FLOW_SETTINGS_PREFERENCE_STORAGE_KEY) {
+        return;
+      }
+
+      syncPreferredFlowSettings();
+    };
+
+    window.addEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   useLayoutEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
     const nextRoute = adminLayoutModel?.toProLayoutRoute({
@@ -441,7 +473,7 @@ export const AdminLayoutComponent = observer((props: any) => {
 
   useEffect(() => {
     const syncId = ++flowSettingsSyncRef.current;
-    const shouldEnable = designable && !isMobileSider;
+    const shouldEnable = preferredFlowSettingsEnabled && !isMobileSider;
     desiredFlowSettingsEnabledRef.current = shouldEnable;
 
     const applyFlowSettingsState = async (enabled: boolean) => {
@@ -470,7 +502,7 @@ export const AdminLayoutComponent = observer((props: any) => {
         flowSettingsSyncRef.current += 1;
       }
     };
-  }, [designable, flowEngine, isMobileSider]);
+  }, [flowEngine, isMobileSider, preferredFlowSettingsEnabled]);
 
   const layoutToken = useMemo(() => {
     return {
