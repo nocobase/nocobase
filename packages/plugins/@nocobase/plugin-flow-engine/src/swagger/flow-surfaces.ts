@@ -107,6 +107,13 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'actionPanel',
   'jsBlock',
 ];
+const REACTION_FINGERPRINT_DESCRIPTION =
+  'Optional optimistic-concurrency fingerprint from `getReactionMeta.capabilities[].fingerprint`. When provided, the write fails with HTTP 409 if the current slot fingerprint no longer matches.';
+const REACTION_RULES_REPLACE_DESCRIPTION =
+  'Full replacement payload for the resolved reaction slot. Pass `[]` to clear all rules from that slot.';
+const REACTION_LOCALIZED_FORM_TARGET_DESCRIPTION =
+  'Reaction write target. Use the live block/action uid for localized edits. For form field-value and form field-linkage writes, keep passing the outer form block uid; the backend resolves the inner form-grid slot automatically.';
+const REACTION_OUTER_FORM_TARGET_NOTE = 'Pass the outer form block uid, not the inner form-grid uid.';
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
@@ -189,13 +196,18 @@ function buildReactionWriteRequestSchema(ruleSchemaName: string) {
     type: 'object',
     required: ['target', 'rules'],
     properties: {
-      target: ref('FlowSurfaceWriteTarget'),
+      target: {
+        allOf: [ref('FlowSurfaceWriteTarget')],
+        description: REACTION_LOCALIZED_FORM_TARGET_DESCRIPTION,
+      },
       rules: {
         type: 'array',
         items: ref(ruleSchemaName),
+        description: REACTION_RULES_REPLACE_DESCRIPTION,
       },
       expectedFingerprint: {
         type: 'string',
+        description: REACTION_FINGERPRINT_DESCRIPTION,
       },
       verify: {
         type: 'boolean',
@@ -212,19 +224,32 @@ function buildReactionWriteResultSchema(ruleSchemaName: string) {
     type: 'object',
     required: ['target', 'resolvedScene', 'resolvedSlot', 'fingerprint', 'normalizedRules', 'canonicalRules'],
     properties: {
-      target: ref('FlowSurfaceReactionTargetSummary'),
-      resolvedScene: ref('FlowSurfaceReactionScene'),
-      resolvedSlot: ref('FlowSurfaceReactionSlot'),
+      target: {
+        allOf: [ref('FlowSurfaceReactionTargetSummary')],
+        description: 'Resolved public reaction target after target normalization.',
+      },
+      resolvedScene: {
+        allOf: [ref('FlowSurfaceReactionScene')],
+        description:
+          'Concrete reaction scene that the backend resolved for this write, such as `form`, `details`, `subForm`, `block`, or `action`.',
+      },
+      resolvedSlot: {
+        allOf: [ref('FlowSurfaceReactionSlot')],
+        description: 'Concrete persisted slot selected by the backend for this write.',
+      },
       fingerprint: {
         type: 'string',
+        description: 'Fresh slot fingerprint after the write completes.',
       },
       normalizedRules: {
         type: 'array',
         items: ref(ruleSchemaName),
+        description: 'Normalized public rules persisted by the write.',
       },
       canonicalRules: {
         type: 'array',
         items: ANY_OBJECT_SCHEMA,
+        description: 'Canonical internal rules compiled from the normalized public rules.',
       },
       updateAssociationValues: {
         type: 'array',
@@ -292,7 +317,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended \`configureOptions\`, the underlying settings contract, event capabilities, and layout capabilities for the current node. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended \`configureOptions\`, the underlying settings contract, event capabilities, and layout capabilities for the current node. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. For advanced field-value or linkage authoring, prefer \`getReactionMeta\` + \`set*Rules\` instead of guessing raw \`configureOptions\` keys. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -301,7 +326,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read ctx variable tree available under the current target',
     description: valuesCompatibilityNote(
-      `Returns the \`ctx\` variable tree available under the current target. \`path\` only accepts bare paths such as \`record\`, \`popup.record\`, and \`item.parentItem.value\`. Do not pass \`ctx.record\` or \`{{ ctx.record }}\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the low-level \`ctx\` variable tree available under the current target. \`path\` only accepts bare paths such as \`record\`, \`popup.record\`, and \`item.parentItem.value\`. Do not pass \`ctx.record\` or \`{{ ctx.record }}\`. For reaction authoring, use \`getReactionMeta\` as the main discovery endpoint first and use \`context\` only as a lower-level supplement when you need to inspect raw variable paths. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceContextRequest', examples.context),
     responses: responses('FlowSurfaceContextResponse'),
@@ -310,7 +335,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read reaction capabilities, current rules, and contextual authoring metadata',
     description: valuesCompatibilityNote(
-      `Returns the current advanced reaction capabilities for the target, including resolved scene/slot, normalized rules, canonical rules, available field targets, and condition/value authoring metadata. This is the main discovery endpoint for CLI or AI callers before configuring field values or linkage rules. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the current advanced reaction capabilities for the target, including resolved scene/slot, normalized rules, canonical rules, available \`targetFields\`, \`supportedActions\`, and \`conditionMeta\` / \`valueExprMeta\` authoring metadata. This is the main discovery endpoint for CLI or AI callers before configuring field values or linkage rules. For form \`fieldValue\` / \`fieldLinkage\` authoring, callers still pass the outer form block uid; the backend resolves the concrete form-grid slot automatically. Use \`context\` only as a supplement when you need to inspect the raw variable tree behind the returned metadata. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceGetReactionMetaRequest', examples.getReactionMeta),
     responses: responses('FlowSurfaceGetReactionMetaResult'),
@@ -319,7 +344,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace field value rules on a create/edit form block',
     description: valuesCompatibilityNote(
-      'Fully replaces the field-value slot on the target form block. `rules: []` clears the slot. `expectedFingerprint` enables optimistic concurrency against the current slot state.',
+      `Fully replaces the field-value slot on the target form block. ${REACTION_OUTER_FORM_TARGET_NOTE} \`rules: []\` clears the slot. \`expectedFingerprint\` should usually come from \`getReactionMeta.capabilities[].fingerprint\` and enables optimistic concurrency against the current slot state.`,
     ),
     requestBody: requestBody('FlowSurfaceSetFieldValueRulesRequest', examples.setFieldValueRules),
     responses: responses('FlowSurfaceSetFieldValueRulesResult'),
@@ -328,7 +353,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace block-level linkage rules on a supported block',
     description: valuesCompatibilityNote(
-      'Fully replaces the block-linkage slot on the target block. `rules: []` clears the slot. `expectedFingerprint` enables optimistic concurrency against the current slot state.',
+      'Fully replaces the block-linkage slot on the target block. `rules: []` clears the slot. `expectedFingerprint` should usually come from `getReactionMeta.capabilities[].fingerprint` and enables optimistic concurrency against the current slot state.',
     ),
     requestBody: requestBody('FlowSurfaceSetBlockLinkageRulesRequest', examples.setBlockLinkageRules),
     responses: responses('FlowSurfaceSetBlockLinkageRulesResult'),
@@ -337,7 +362,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace field-level linkage rules on a supported form/details/sub-form target',
     description: valuesCompatibilityNote(
-      'Fully replaces the field-linkage slot on the target. The backend resolves the concrete scene automatically (`form`, `details`, or `subForm`) and returns it in `resolvedScene` / `resolvedSlot`.',
+      'Fully replaces the field-linkage slot on the target. The backend resolves the concrete scene automatically (`form`, `details`, or `subForm`) and returns it in `resolvedScene` / `resolvedSlot`. Supported actions are surfaced by `getReactionMeta`, commonly including `setFieldState`, `assignField`, and scene-specific defaults. For form scenes, keep passing the outer form block uid and let the backend resolve the inner grid slot. `expectedFingerprint` should usually come from `getReactionMeta.capabilities[].fingerprint`.',
     ),
     requestBody: requestBody('FlowSurfaceSetFieldLinkageRulesRequest', examples.setFieldLinkageRules),
     responses: responses('FlowSurfaceSetFieldLinkageRulesResult'),
@@ -346,7 +371,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace action-level linkage rules on a supported action',
     description: valuesCompatibilityNote(
-      'Fully replaces the action-linkage slot on the target action. `rules: []` clears the slot. `expectedFingerprint` enables optimistic concurrency against the current slot state.',
+      'Fully replaces the action-linkage slot on the target action. `rules: []` clears the slot. `expectedFingerprint` should usually come from `getReactionMeta.capabilities[].fingerprint` and enables optimistic concurrency against the current slot state.',
     ),
     requestBody: requestBody('FlowSurfaceSetActionLinkageRulesRequest', examples.setActionLinkageRules),
     responses: responses('FlowSurfaceSetActionLinkageRulesResult'),
@@ -388,7 +413,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional `reaction.items[]` authored against local keys / bind keys produced by the same blueprint run. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
@@ -463,7 +488,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action.',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action.',
     ),
     requestBody: {
       required: true,
@@ -523,14 +548,14 @@ const actionDocs: Record<string, any> = {
               summary: 'Configure edit form colon and dataScope with a FilterGroup',
               value: examples.configureEditForm,
             },
-            detailsSettings: {
-              summary: 'Configure details colon and linkageRules',
-              value: examples.configureDetails,
+            detailsCompatibilitySettings: {
+              summary: 'Configure details colon and raw low-level linkageRules compatibility payload',
+              value: examples.configureDetailsCompatibility,
             },
-            actionBehaviorSettings: {
+            actionBehaviorCompatibilitySettings: {
               summary:
-                'Configure action linkageRules, edit/update/duplicate modes, collapsed rows and email selection defaults',
-              value: examples.configureActionModes,
+                'Configure action edit/update/duplicate modes plus raw low-level linkageRules compatibility payload',
+              value: examples.configureActionModesCompatibility,
             },
           },
         },
@@ -2325,13 +2350,16 @@ const schemas = {
     properties: {
       flowKey: {
         type: 'string',
+        description: 'Resolved flow-settings namespace that owns this reaction slot.',
       },
       stepKey: {
         type: 'string',
+        description: 'Resolved step key inside the flow-settings namespace.',
       },
       valuePath: {
         type: 'string',
         nullable: true,
+        description: 'Optional nested value path when the actual rules array is stored below the step root.',
       },
     },
     additionalProperties: false,
@@ -2342,9 +2370,11 @@ const schemas = {
     properties: {
       uid: {
         type: 'string',
+        description: 'Resolved live target uid.',
       },
       publicPath: {
         type: 'string',
+        description: 'Resolved public path or bind-key style path when available.',
       },
     },
     additionalProperties: false,
@@ -2422,6 +2452,7 @@ const schemas = {
       runjsScene: {
         type: 'string',
         enum: ['fieldValue', 'linkage'],
+        description: 'RunJS evaluation scene used by this capability when `source: "runjs"` is allowed.',
       },
     },
     additionalProperties: false,
@@ -2432,6 +2463,8 @@ const schemas = {
     properties: {
       operatorsByPath: {
         type: 'object',
+        description:
+          'Allowed operators keyed by bare reaction context path. Use this to drive condition builders instead of guessing path/operator pairs.',
         additionalProperties: {
           type: 'array',
           items: {
@@ -2448,9 +2481,11 @@ const schemas = {
     properties: {
       type: {
         type: 'string',
+        description: 'Public reaction action type available in the resolved scene.',
       },
       states: {
         type: 'array',
+        description: 'Supported state names when the action type is state-based.',
         items: {
           type: 'string',
         },
@@ -2478,6 +2513,7 @@ const schemas = {
     properties: {
       path: {
         type: 'string',
+        description: 'Targetable field path in the resolved scene.',
       },
       label: {
         type: 'string',
@@ -2490,12 +2526,15 @@ const schemas = {
       },
       supportsDefault: {
         type: 'boolean',
+        description: 'Whether this field can be targeted by default-value semantics.',
       },
       supportsAssign: {
         type: 'boolean',
+        description: 'Whether this field can be targeted by assignment semantics.',
       },
       supportsState: {
         type: 'array',
+        description: 'Field-state transitions supported for this field in the resolved scene.',
         items: {
           type: 'string',
         },
@@ -2518,10 +2557,13 @@ const schemas = {
       },
       targetPath: {
         type: 'string',
+        description: 'Field path that receives the computed/default value.',
       },
       mode: {
         type: 'string',
         enum: ['default', 'assign'],
+        description:
+          '`default` writes default-value semantics, while `assign` writes reactive assignment semantics for the target field.',
       },
       when: ref('FlowSurfaceReactionFilter'),
       value: ref('FlowSurfaceReactionValueExpr'),
@@ -2743,35 +2785,55 @@ const schemas = {
   FlowSurfaceFieldValueCapability: buildReactionCapabilitySchema('fieldValue', 'FlowSurfaceFieldValueRule', {
     targetFields: {
       type: 'array',
+      description: 'Fields that can receive field-value writes in the resolved scene.',
       items: ref('FlowSurfaceFieldOption'),
     },
-    valueExprMeta: ref('FlowSurfaceReactionValueExprMeta'),
+    valueExprMeta: {
+      allOf: [ref('FlowSurfaceReactionValueExprMeta')],
+      description: 'Allowed value-expression sources for this capability.',
+    },
   }),
   FlowSurfaceBlockLinkageCapability: buildReactionCapabilitySchema('blockLinkage', 'FlowSurfaceBlockLinkageRule', {
     supportedActions: {
       type: 'array',
+      description: 'Block-level reaction actions supported in the resolved scene.',
       items: ref('FlowSurfaceReactionSupportedAction'),
     },
-    conditionMeta: ref('FlowSurfaceReactionConditionMeta'),
+    conditionMeta: {
+      allOf: [ref('FlowSurfaceReactionConditionMeta')],
+      description: 'Condition-authoring metadata for this capability.',
+    },
   }),
   FlowSurfaceFieldLinkageCapability: buildReactionCapabilitySchema('fieldLinkage', 'FlowSurfaceFieldLinkageRule', {
     supportedActions: {
       type: 'array',
+      description: 'Field-linkage actions supported in the resolved scene.',
       items: ref('FlowSurfaceReactionSupportedAction'),
     },
     targetFields: {
       type: 'array',
+      description: 'Fields that can be targeted by field-linkage actions in the resolved scene.',
       items: ref('FlowSurfaceFieldOption'),
     },
-    conditionMeta: ref('FlowSurfaceReactionConditionMeta'),
-    valueExprMeta: ref('FlowSurfaceReactionValueExprMeta'),
+    conditionMeta: {
+      allOf: [ref('FlowSurfaceReactionConditionMeta')],
+      description: 'Condition-authoring metadata for this capability.',
+    },
+    valueExprMeta: {
+      allOf: [ref('FlowSurfaceReactionValueExprMeta')],
+      description: 'Allowed value-expression sources for assignment/default actions in this capability.',
+    },
   }),
   FlowSurfaceActionLinkageCapability: buildReactionCapabilitySchema('actionLinkage', 'FlowSurfaceActionLinkageRule', {
     supportedActions: {
       type: 'array',
+      description: 'Action-linkage actions supported in the resolved scene.',
       items: ref('FlowSurfaceReactionSupportedAction'),
     },
-    conditionMeta: ref('FlowSurfaceReactionConditionMeta'),
+    conditionMeta: {
+      allOf: [ref('FlowSurfaceReactionConditionMeta')],
+      description: 'Condition-authoring metadata for this capability.',
+    },
   }),
   FlowSurfaceReactionCapability: {
     oneOf: [
@@ -2823,7 +2885,8 @@ const schemas = {
       },
       target: {
         type: 'string',
-        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result. For form field-value writes, point to the form block key/path, not the inner grid node.',
       },
       rules: {
         type: 'array',
@@ -2831,6 +2894,8 @@ const schemas = {
       },
       expectedFingerprint: {
         type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
       },
     },
     additionalProperties: false,
@@ -2845,7 +2910,8 @@ const schemas = {
       },
       target: {
         type: 'string',
-        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result.',
       },
       rules: {
         type: 'array',
@@ -2853,6 +2919,8 @@ const schemas = {
       },
       expectedFingerprint: {
         type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
       },
     },
     additionalProperties: false,
@@ -2867,7 +2935,8 @@ const schemas = {
       },
       target: {
         type: 'string',
-        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result. Form-scene field linkage still targets the form block key/path, and the backend resolves the concrete grid slot.',
       },
       rules: {
         type: 'array',
@@ -2875,6 +2944,8 @@ const schemas = {
       },
       expectedFingerprint: {
         type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
       },
     },
     additionalProperties: false,
@@ -2889,7 +2960,8 @@ const schemas = {
       },
       target: {
         type: 'string',
-        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result.',
       },
       rules: {
         type: 'array',
@@ -2897,6 +2969,8 @@ const schemas = {
       },
       expectedFingerprint: {
         type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
       },
     },
     additionalProperties: false,
@@ -2912,6 +2986,8 @@ const schemas = {
   FlowSurfaceApplyBlueprintReaction: {
     type: 'object',
     required: ['items'],
+    description:
+      'Optional whole-page reaction authoring section for blueprint-driven interaction logic. Each item must target an explicit same-run local key / bind key. Only explicitly listed items are written. Repeating the same `(type, target)` slot is invalid. In `replace`, include every slot that must exist in the resulting surface instead of relying on omission. Use localized `getReactionMeta` + `set*Rules` for edits on existing live surfaces.',
     properties: {
       items: {
         type: 'array',

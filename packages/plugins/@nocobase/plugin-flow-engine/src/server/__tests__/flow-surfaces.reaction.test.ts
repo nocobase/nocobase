@@ -430,6 +430,150 @@ describe('flowSurfaces reaction', () => {
     expect(formReadback.tree.subModels?.grid?.stepParams?.formModelSettings?.assignRules?.value).toEqual([]);
   });
 
+  it('should reject stale expectedFingerprint in applyBlueprint reaction items', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Reaction fingerprint page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['status'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              expectedFingerprint: 'stale-fingerprint',
+              rules: [
+                {
+                  key: 'defaultStatus',
+                  targetPath: 'status',
+                  value: {
+                    source: 'literal',
+                    value: 'draft',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body?.errors?.[0]?.code).toBe(FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT);
+  });
+
+  it('should clear reaction slots through applyBlueprint reaction rules: []', async () => {
+    const created = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Reaction clear blueprint page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['status'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [
+                {
+                  key: 'defaultStatus',
+                  targetPath: 'status',
+                  value: {
+                    source: 'literal',
+                    value: 'draft',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const createdData = getData(created);
+    const formNodeBeforeClear = findFirstNode(
+      createdData.surface?.tree,
+      (node: any) => node?.use === 'CreateFormModel',
+    );
+    expect(formNodeBeforeClear?.subModels?.grid?.stepParams?.formModelSettings?.assignRules?.value).toHaveLength(1);
+
+    const cleared = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: createdData.target.pageSchemaUid,
+        },
+        tabs: [
+          {
+            key: 'clearMain',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'clearEmployeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['status'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'clearMain.clearEmployeeForm',
+              rules: [],
+            },
+          ],
+        },
+      },
+    });
+
+    const clearedData = getData(cleared);
+    const formNodeAfterClear = findFirstNode(clearedData.surface?.tree, (node: any) => node?.use === 'CreateFormModel');
+    expect(formNodeAfterClear?.stepParams?.formModelSettings?.assignRules?.value).toBeUndefined();
+    expect(formNodeAfterClear?.subModels?.grid?.stepParams?.formModelSettings?.assignRules?.value).toEqual([]);
+  });
+
   it('should compile applyBlueprint reaction items into plan-only reaction steps', async () => {
     const document = prepareFlowSurfaceApplyBlueprintDocument({
       version: '1',

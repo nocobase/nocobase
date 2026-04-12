@@ -1857,6 +1857,138 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(readErrorMessage(executeRes)).toContain('target must be a string block key');
   });
 
+  it('should reject duplicate reaction slots with index-based public paths', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Duplicate reaction slot page',
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['status'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [],
+            },
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces applyBlueprint reaction.items[1]');
+    expect(readErrorMessage(executeRes)).toContain(`duplicates reaction slot 'setFieldValueRules'`);
+    expect(readErrorMessage(executeRes)).toContain(`target 'main.employeeForm'`);
+  });
+
+  it('should reject invalid reaction target payloads with index-based public paths', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid reaction payload page',
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['status'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: {},
+              rules: {},
+            },
+          ],
+        },
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces applyBlueprint reaction.items[0].target');
+    expect(readErrorMessage(executeRes)).toContain('must be a non-empty string');
+  });
+
+  it('should reject non-array reaction rules payloads with index-based public paths', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid reaction rules page',
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['status'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: {},
+            },
+          ],
+        },
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces applyBlueprint reaction.items[0].rules');
+    expect(readErrorMessage(executeRes)).toContain('must be an array');
+  });
+
   it('should report popup nested block errors with index-based public paths', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

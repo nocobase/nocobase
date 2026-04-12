@@ -56,64 +56,59 @@ export const flowSurfaceExamples = {
       enableHeader: true,
       displayTitle: true,
     },
-    assets: {
-      scripts: {
-        overviewBanner: {
-          version: '1.0.0',
-          code: "ctx.render('<div>Employees overview</div>');",
-        },
-      },
-    },
     tabs: [
       {
+        key: 'main',
         title: 'Overview',
         blocks: [
+          {
+            key: 'employeeForm',
+            type: 'createForm',
+            collection: 'employees',
+            fields: ['nickname', 'status', 'amount', 'taxRate', 'subtotal', 'total'],
+            actions: ['submit'],
+          },
           {
             key: 'employeesTable',
             type: 'table',
             collection: 'employees',
-            fields: ['nickname', 'department.title'],
-            recordActions: [
+            fields: ['nickname', 'status', 'total'],
+            actions: [
               {
-                type: 'view',
-                title: 'View',
-                popup: {
-                  title: 'Employee details',
-                  blocks: [
-                    {
-                      type: 'details',
-                      resource: {
-                        binding: 'currentRecord',
-                        collectionName: 'employees',
-                      },
-                      fields: ['nickname', 'department.title'],
-                    },
-                  ],
-                },
+                key: 'refreshAction',
+                type: 'refresh',
               },
             ],
           },
         ],
-      },
-      {
-        title: 'Summary',
-        blocks: [
-          {
-            type: 'jsBlock',
-            title: 'Overview banner',
-            script: 'overviewBanner',
-          },
-        ],
+        layout: {
+          rows: [['main.employeeForm'], ['main.employeesTable']],
+        },
       },
     ],
     reaction: {
       items: [
         {
-          type: 'setBlockLinkageRules',
-          target: 'employeesTable',
+          type: 'setFieldValueRules',
+          target: 'main.employeeForm',
           rules: [
             {
-              key: 'hideWhenCollapsed',
+              key: 'defaultStatus',
+              targetPath: 'status',
+              mode: 'default',
+              value: {
+                source: 'literal',
+                value: 'draft',
+              },
+            },
+          ],
+        },
+        {
+          type: 'setBlockLinkageRules',
+          target: 'main.employeesTable',
+          rules: [
+            {
+              key: 'hideTable',
               when: {
                 logic: '$and',
                 items: [
@@ -124,6 +119,66 @@ export const flowSurfaceExamples = {
                 ],
               },
               then: [{ type: 'setBlockState', state: 'hidden' }],
+            },
+          ],
+        },
+        {
+          type: 'setFieldLinkageRules',
+          target: 'main.employeeForm',
+          rules: [
+            {
+              key: 'recomputeTotals',
+              when: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'formValues.amount',
+                    operator: '$isNotEmpty',
+                  },
+                ],
+              },
+              then: [
+                {
+                  type: 'assignField',
+                  items: [
+                    {
+                      targetPath: 'subtotal',
+                      value: {
+                        source: 'runjs',
+                        version: 'v2',
+                        code: 'const amount = Number(ctx.formValues?.amount || 0); return amount;',
+                      },
+                    },
+                    {
+                      targetPath: 'total',
+                      value: {
+                        source: 'runjs',
+                        version: 'v2',
+                        code: 'const amount = Number(ctx.formValues?.amount || 0); const taxRate = Number(ctx.formValues?.taxRate || 0); return amount + amount * taxRate;',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'setActionLinkageRules',
+          target: 'main.employeesTable.refreshAction',
+          rules: [
+            {
+              key: 'disableRefresh',
+              when: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'params.query.readonly',
+                    operator: '$isTruly',
+                  },
+                ],
+              },
+              then: [{ type: 'setActionState', state: 'disabled' }],
             },
           ],
         },
@@ -150,17 +205,7 @@ export const flowSurfaceExamples = {
             key: 'employeesTable',
             type: 'table',
             collection: 'employees',
-            fields: ['nickname', 'department.title'],
-          },
-        ],
-      },
-      {
-        title: 'Summary',
-        blocks: [
-          {
-            type: 'details',
-            collection: 'employees',
-            fields: ['nickname', 'status'],
+            fields: ['nickname', 'status', 'total'],
           },
         ],
       },
@@ -175,23 +220,13 @@ export const flowSurfaceExamples = {
         key: 'defaultStatus',
         targetPath: 'status',
         mode: 'default',
-        when: {
-          logic: '$and',
-          items: [
-            {
-              path: 'formValues.nickname',
-              operator: '$eq',
-              value: 'Alice',
-            },
-          ],
-        },
         value: {
           source: 'literal',
           value: 'draft',
         },
       },
     ],
-    expectedFingerprint: '9c5b9f3d',
+    expectedFingerprint: 'field-value-fp-1',
   },
   setBlockLinkageRules: {
     target: {
@@ -212,6 +247,7 @@ export const flowSurfaceExamples = {
         then: [{ type: 'setBlockState', state: 'hidden' }],
       },
     ],
+    expectedFingerprint: 'block-linkage-fp-1',
   },
   setFieldLinkageRules: {
     target: {
@@ -219,31 +255,48 @@ export const flowSurfaceExamples = {
     },
     rules: [
       {
-        key: 'disableStatus',
+        key: 'recomputeTotals',
         when: {
           logic: '$and',
           items: [
             {
-              path: 'formValues.nickname',
-              operator: '$eq',
-              value: 'readonly',
+              path: 'formValues.amount',
+              operator: '$isNotEmpty',
             },
           ],
         },
         then: [
           {
-            type: 'setFieldState',
-            fieldPaths: ['status'],
-            state: 'disabled',
+            type: 'assignField',
+            items: [
+              {
+                targetPath: 'subtotal',
+                value: {
+                  source: 'runjs',
+                  version: 'v2',
+                  code: 'const amount = Number(ctx.formValues?.amount || 0); return amount;',
+                },
+              },
+              {
+                targetPath: 'total',
+                value: {
+                  source: 'runjs',
+                  version: 'v2',
+                  code: 'const amount = Number(ctx.formValues?.amount || 0); const taxRate = Number(ctx.formValues?.taxRate || 0); return amount + amount * taxRate;',
+                },
+              },
+            ],
           },
         ],
       },
     ],
+    expectedFingerprint: 'field-linkage-fp-1',
   },
   setActionLinkageRules: {
     target: {
       uid: 'refresh-action-uid',
     },
+    expectedFingerprint: 'action-linkage-fp-1',
     rules: [
       {
         key: 'disableRefresh',
@@ -652,7 +705,7 @@ export const flowSurfaceExamples = {
       },
     },
   },
-  configureDetails: {
+  configureDetailsCompatibility: {
     target: {
       uid: 'details-block-uid',
     },
@@ -707,7 +760,7 @@ export const flowSurfaceExamples = {
       },
     ],
   },
-  configureActionModes: {
+  configureActionModesCompatibility: {
     target: {
       uid: 'compose-email-action-uid',
     },
