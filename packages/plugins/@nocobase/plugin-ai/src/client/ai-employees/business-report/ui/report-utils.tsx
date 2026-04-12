@@ -38,28 +38,68 @@ type ReportRenderOptions = {
   locale?: string;
 };
 
+function isBusinessReportChart(value: unknown): value is BusinessReportChart {
+  return !!value && typeof value === 'object' && typeof (value as BusinessReportChart).options === 'object';
+}
+
+export function normalizeBusinessReportCharts(charts: unknown): BusinessReportChart[] {
+  if (Array.isArray(charts)) {
+    return charts.filter(isBusinessReportChart);
+  }
+
+  if (typeof charts !== 'string') {
+    return [];
+  }
+
+  const raw = charts.trim();
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isBusinessReportChart) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export function normalizeBusinessReport<T extends Partial<BusinessReportRenderState> | undefined | null>(report: T) {
+  if (!report) {
+    return {} as Partial<BusinessReportRenderState>;
+  }
+
+  return {
+    ...report,
+    markdown: report.markdown,
+    charts: normalizeBusinessReportCharts(report.charts),
+  } as Partial<BusinessReportRenderState>;
+}
+
 export function getReportFileName(report: BusinessReport) {
-  const raw = report.fileName || report.title || 'business-analysis-report';
+  const normalizedReport = normalizeBusinessReport(report) as BusinessReport;
+  const raw = normalizedReport.fileName || normalizedReport.title || 'business-analysis-report';
   return raw.replace(/[\\/:*?"<>|]+/g, '-').trim();
 }
 
 export function buildReportMarkdown(report: BusinessReportRenderState, options?: ReportRenderOptions) {
-  const parts: string[] = [`# ${report.title}`];
-  const generatedAt = formatReportGeneratedAt(report.generatedAt, options?.locale);
+  const normalizedReport = normalizeBusinessReport(report) as BusinessReportRenderState;
+  const parts: string[] = [`# ${normalizedReport.title}`];
+  const generatedAt = formatReportGeneratedAt(normalizedReport.generatedAt, options?.locale);
 
   if (generatedAt) {
     parts.push(`_${i18n.t('Generated at')}: ${generatedAt}_`);
   }
 
-  if (report.summary) {
-    parts.push(`> ${report.summary}`);
+  if (normalizedReport.summary) {
+    parts.push(`> ${normalizedReport.summary}`);
   }
 
-  if (report.markdown?.trim()) {
-    parts.push(insertChartsIntoMarkdown(report.markdown.trim(), report.charts || []));
+  if (normalizedReport.markdown?.trim()) {
+    parts.push(insertChartsIntoMarkdown(normalizedReport.markdown.trim(), normalizedReport.charts || []));
   }
 
-  getRemainingCharts(report.markdown, report.charts || []).forEach((chart, index) => {
+  getRemainingCharts(normalizedReport.markdown, normalizedReport.charts || []).forEach((chart, index) => {
     parts.push(`## ${chart.title || `Chart ${index + 1}`}`);
     if (chart.summary) {
       parts.push(chart.summary);

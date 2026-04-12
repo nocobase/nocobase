@@ -95,4 +95,34 @@ describe('query builder', () => {
 
     expect(queryOptions.order).toEqual([[db.sequelize.col('users.created_at'), 'ASC']]);
   });
+
+  it('should order aggregate queries by the projected dimension expression', () => {
+    const { queryOptions } = buildQuery(db, db.getCollection('users'), {
+      measures: [
+        {
+          field: ['id'],
+          aggregation: 'count',
+          alias: 'userCount',
+        },
+      ],
+      dimensions: [
+        {
+          field: ['createdAt'],
+          format: 'YYYY-MM-DD',
+          alias: 'createdDate',
+        },
+      ],
+      orders: [
+        {
+          field: ['createdAt'],
+          alias: 'createdDate',
+          order: 'asc',
+        },
+      ],
+    });
+
+    expect(queryOptions.group).toHaveLength(1);
+    expect(queryOptions.order).toHaveLength(1);
+    expect(queryOptions.order?.[0]?.[0]).toBe(queryOptions.group?.[0]);
+  });
 });

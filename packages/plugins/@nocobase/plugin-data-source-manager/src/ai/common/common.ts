@@ -69,6 +69,10 @@ const example2: QueryObject = {
 
 const example3: QueryObject = { age: { $lt: 50 } };
 \`\`\`
+
+// Datetime rule
+// If you must provide explicit datetime literals in filters, use UTC ISO 8601 strings with a trailing \`Z\`.
+// Example: \`2026-04-01T00:00:00.000Z\`
 `),
   sort: z.array(z.string()).describe(`{{t("ai.tools.dataQuery.args.sort", { ns: "${pkg.name}" })}}`),
   offset: z.number().optional().describe(`{{t("ai.tools.dataQuery.args.offset", { ns: "${pkg.name}" })}}`),
