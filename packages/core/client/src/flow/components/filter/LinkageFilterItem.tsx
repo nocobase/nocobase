@@ -21,7 +21,7 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
-import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, normalizeSelectRenderValue, translateOptions } from '../../internal/utils/enumOptionsUtils';
 import { lazy } from '../../../lazy-helper';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
@@ -82,7 +82,9 @@ function createStaticInputRenderer(
       } else if (optionsFromEnum) {
         finalProps = { ...finalProps, options: optionsFromEnum };
       }
-      return <Select {...finalProps} {...rest} value={value} onChange={onChange} />;
+      return (
+        <Select {...finalProps} {...rest} value={normalizeSelectRenderValue(value, finalProps)} onChange={onChange} />
+      );
     }
     if (xComponent === 'DateFilterDynamicComponent')
       return <DateFilterDynamicComponentLazy {...commonProps} {...rest} value={value} onChange={onChange} />;

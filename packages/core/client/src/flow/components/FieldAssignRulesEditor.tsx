@@ -35,6 +35,7 @@ type CollectionFieldLike = {
   title?: unknown;
   type?: unknown;
   interface?: unknown;
+  uiSchema?: unknown;
   targetKey?: unknown;
   targetCollectionTitleFieldName?: unknown;
   targetCollection?: any;
@@ -194,6 +195,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
           title,
           type: String(f.type || 'string'),
           interface: fieldInterface,
+          uiSchema: (f as any).uiSchema,
           paths: [...basePaths, name],
         };
 

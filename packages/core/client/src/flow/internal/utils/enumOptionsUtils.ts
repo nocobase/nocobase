@@ -46,6 +46,21 @@ export function enumToOptions(uiEnum: UiSchemaEnumItem[] | undefined, t: (s: str
   return translateOptions(normalized, t);
 }
 
+export function normalizeSelectRenderValue(value: unknown, props?: Record<string, any>) {
+  const mode = props?.mode;
+  const isMultiple = mode === 'multiple' || mode === 'tags' || props?.multiple === true;
+
+  if (Array.isArray(value)) {
+    return value.filter((item) => item !== '' && item !== null && typeof item !== 'undefined');
+  }
+
+  if (value === '' || value === null || typeof value === 'undefined') {
+    return isMultiple ? [] : undefined;
+  }
+
+  return value;
+}
+
 // Populate model.props.options from uiSchema.enum if missing; returns whether options were injected
 export function ensureOptionsFromUiSchemaEnumIfAbsent(model: FlowModel, collectionField: CollectionField): boolean {
   const iface = collectionField?.interface;

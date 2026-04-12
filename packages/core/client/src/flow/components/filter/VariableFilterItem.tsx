@@ -27,7 +27,7 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
-import { enumToOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, normalizeSelectRenderValue, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
@@ -158,11 +158,7 @@ function createStaticInputRenderer(
           options={selectOptions}
           {...commonProps}
           {...rest}
-          value={
-            Array.isArray(value) || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-              ? (value as unknown)
-              : undefined
-          }
+          value={normalizeSelectRenderValue(value, commonProps) as any}
           onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
         />
       );

@@ -15,7 +15,7 @@ import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../FieldAssignRulesEditor';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 
-const { mockFieldAssignValueInput } = vi.hoisted(() => ({
+const { mockFieldAssignValueInput, mockConditionBuilder } = vi.hoisted(() => ({
   mockFieldAssignValueInput: vi.fn((props: any) => (
     <div
       data-testid="mock-value-input"
@@ -24,6 +24,9 @@ const { mockFieldAssignValueInput } = vi.hoisted(() => ({
       data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
       data-date-constant={props?.enableDateVariableAsConstant ? 'yes' : 'no'}
     />
+  )),
+  mockConditionBuilder: vi.fn((props: any) => (
+    <div data-testid="mock-condition-builder" data-extra={props?.extraMetaTree ? 'yes' : 'no'} />
   )),
 }));
 
@@ -39,9 +42,7 @@ vi.mock('../ConditionBuilder', async () => {
   const actual = await vi.importActual<typeof import('../ConditionBuilder')>('../ConditionBuilder');
   return {
     ...actual,
-    ConditionBuilder: (props: any) => (
-      <div data-testid="mock-condition-builder" data-extra={props?.extraMetaTree ? 'yes' : 'no'} />
-    ),
+    ConditionBuilder: mockConditionBuilder,
   };
 });
 
@@ -55,6 +56,7 @@ describe('FieldAssignRulesEditor', () => {
 
   beforeEach(() => {
     mockFieldAssignValueInput.mockClear();
+    mockConditionBuilder.mockClear();
   });
 
   const createAssociationFixture = () => {
@@ -572,6 +574,81 @@ describe('FieldAssignRulesEditor', () => {
 
     expect(getByTestId('mock-value-input').getAttribute('data-extra')).toBe('yes');
     expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('yes');
+  });
+
+  it('preserves uiSchema enum for current item attributes in condition extra tree', async () => {
+    const aaaField: any = {
+      name: 'AAA',
+      title: 'AAA',
+      type: 'array',
+      interface: 'multipleSelect',
+      isAssociationField: () => false,
+      uiSchema: {
+        enum: [
+          { label: 'Test1', value: 'Test1' },
+          { label: 'Test2', value: 'Test2' },
+        ],
+      },
+    };
+    const roleNameField: any = {
+      name: 'name',
+      title: 'Role name',
+      type: 'string',
+      interface: 'input',
+      isAssociationField: () => false,
+    };
+    const rolesCollection = {
+      getField: (name: string) => (name === 'AAA' ? aaaField : name === 'name' ? roleNameField : null),
+      getFields: () => [roleNameField, aaaField],
+    };
+    const rolesField: any = {
+      name: 'roles',
+      title: 'Roles',
+      type: 'belongsToMany',
+      interface: 'm2m',
+      isAssociationField: () => true,
+      targetCollection: rolesCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'roles' ? rolesField : null),
+      getFields: () => [rolesField],
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-roles-name',
+        enable: true,
+        targetPath: 'roles.name',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor t={t} fieldOptions={[]} rootCollection={rootCollection} value={value} showCondition />,
+      ),
+    );
+
+    const conditionProps = mockConditionBuilder.mock.calls[mockConditionBuilder.mock.calls.length - 1]?.[0];
+    const extraMetaTree = conditionProps?.extraMetaTree as MetaTreeNode[] | undefined;
+    expect(Array.isArray(extraMetaTree)).toBe(true);
+
+    const itemNode = extraMetaTree?.find((node) => node.name === 'item') as MetaTreeNode | undefined;
+    expect(itemNode).toBeTruthy();
+
+    const itemChildren = (Array.isArray(itemNode?.children) ? itemNode.children : []) as MetaTreeNode[];
+    const attributesNode = itemChildren.find((node) => node.name === 'value') as MetaTreeNode | undefined;
+    expect(attributesNode).toBeTruthy();
+
+    const attributeChildren =
+      typeof attributesNode?.children === 'function' ? await attributesNode.children() : attributesNode?.children ?? [];
+    const aaaNode = (attributeChildren as MetaTreeNode[]).find((node) => node.name === 'AAA') as any;
+
+    expect(aaaNode?.interface).toBe('multipleSelect');
+    expect(aaaNode?.uiSchema?.enum).toEqual([
+      { label: 'Test1', value: 'Test1' },
+      { label: 'Test2', value: 'Test2' },
+    ]);
   });
 
   it('renders empty state when no items', () => {
