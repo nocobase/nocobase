@@ -3132,7 +3132,7 @@ const schemas = {
       },
       targetUid: {
         type: 'string',
-        description: 'Legacy alias used by filter-form target selection. This is not the same field as `target.uid`.',
+        description: 'Optional filter-form target selection key. This is not the same field as `target.uid`.',
       },
       settings: ANY_OBJECT_SCHEMA,
       popup: ref('FlowSurfaceComposeFieldPopup'),

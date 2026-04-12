@@ -70,6 +70,7 @@ import {
   normalizeFieldContainerKind,
   shouldUseAssociationTitleTextDisplay,
 } from './field-semantics';
+import { resolveRegisteredFieldBinding } from './field-binding-registry';
 import {
   ACTION_BUTTON_USES,
   COLLECTION_BLOCK_USES,
@@ -1009,6 +1010,7 @@ export class FlowSurfacesService {
             transaction: options.transaction,
             includeConfigureOptions: expand.has('item.configureOptions'),
             includeContracts: expand.has('item.contracts'),
+            enabledPackages,
           })
         : [];
       response.fields = fieldCatalog.map((item) => this.projectCatalogItem(item, expandFlags));
@@ -5316,6 +5318,7 @@ export class FlowSurfacesService {
     const inlinePopup = this.normalizeInlinePopup('addField', values.popup);
     const resolvedTarget = await this.locator.resolve(target, options);
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
     const requestedStandaloneType =
       typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
@@ -5325,6 +5328,7 @@ export class FlowSurfacesService {
       requestedRenderer: values.renderer,
       requestedType: requestedStandaloneType,
       allowUnresolvedFieldUse: true,
+      enabledPackages,
     });
 
     if (fieldCapability.standaloneUse) {
@@ -5413,6 +5417,7 @@ export class FlowSurfacesService {
           resourceInit: resourceContext.resourceInit,
           fieldPath: resolvedField.fieldPath,
           associationPathName: resolvedField.associationPathName,
+          enabledPackages,
         });
     if (values.renderer === 'js' && fieldMenuCandidate && !fieldMenuCandidate.supportsJs) {
       throwBadRequest(
@@ -5438,6 +5443,7 @@ export class FlowSurfacesService {
       associationPathName: resolvedField.associationPathName,
       bindingChange: true,
       hasExistingTitleField: false,
+      enabledPackages,
     });
     const preferredCapabilityField = this.resolvePreferredFieldForCapability({
       containerUse: container.ownerUse,
@@ -5476,6 +5482,9 @@ export class FlowSurfacesService {
           requestedFieldUse: values.fieldUse,
           requestedWrapperUse: container.wrapperUse,
           requestedRenderer: values.renderer,
+          enabledPackages,
+          dataSourceKey: resolvedField.dataSourceKey,
+          getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
         });
       } catch (error) {
         if (
@@ -5490,6 +5499,9 @@ export class FlowSurfacesService {
             requestedFieldUse: values.fieldUse,
             requestedWrapperUse: container.wrapperUse,
             requestedRenderer: values.renderer,
+            enabledPackages,
+            dataSourceKey: resolvedField.dataSourceKey,
+            getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
           });
         } else {
           throw error;
@@ -9340,6 +9352,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     assertSupportedSimpleChanges('field wrapper', changes, getConfigureOptionKeysForUse(current?.use));
 
     const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version', 'fieldComponent']);
@@ -9388,6 +9401,7 @@ export class FlowSurfacesService {
       ...(hasOwnDefined(wrapperChanges, 'titleField') ? { explicitTitleField: wrapperChanges.titleField } : {}),
       bindingChange,
       hasExistingTitleField,
+      enabledPackages,
     });
     const shouldSyncTitleField = titleFieldSyncDecision.shouldSync;
     const syncedTitleField = titleFieldSyncDecision.titleField;
@@ -9539,6 +9553,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any; openViewActionName?: string },
   ) {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
     assertSupportedSimpleChanges(
@@ -9585,6 +9600,7 @@ export class FlowSurfacesService {
       ...(hasOwnDefined(changes, 'titleField') ? { explicitTitleField: changes.titleField } : {}),
       bindingChange,
       hasExistingTitleField,
+      enabledPackages,
     });
     const shouldSyncTitleField = titleFieldSyncDecision.shouldSync;
     const syncedTitleField = titleFieldSyncDecision.titleField;
@@ -9921,6 +9937,7 @@ export class FlowSurfacesService {
       transaction?: any;
       includeConfigureOptions?: boolean;
       includeContracts?: boolean;
+      enabledPackages?: ReadonlySet<string>;
     } = {},
   ): Promise<FlowSurfaceCatalogProjectableItem[]> {
     const resolved = await this.locator.resolve(target, { transaction: options.transaction });
@@ -9945,6 +9962,7 @@ export class FlowSurfacesService {
           requireDefaultTargetUid: false,
           includeConfigureOptions: options.includeConfigureOptions,
           includeContracts: options.includeContracts,
+          enabledPackages: options.enabledPackages,
         });
       }
       return targets.flatMap((targetBlock) =>
@@ -9957,6 +9975,7 @@ export class FlowSurfacesService {
           requireDefaultTargetUid: targets.length > 1,
           includeConfigureOptions: options.includeConfigureOptions,
           includeContracts: options.includeContracts,
+          enabledPackages: options.enabledPackages,
         }),
       );
     }
@@ -9969,6 +9988,7 @@ export class FlowSurfacesService {
       resourceInit: resourceContext.resourceInit,
       includeConfigureOptions: options.includeConfigureOptions,
       includeContracts: options.includeContracts,
+      enabledPackages: options.enabledPackages,
     });
   }
 
@@ -9985,7 +10005,42 @@ export class FlowSurfacesService {
     return null;
   }
 
-  private resolveAssociationLeafDisplaySemantics(field: any, dataSourceKey: string) {
+  private resolveRegisteredFieldBinding(input: {
+    containerUse: string;
+    field: any;
+    dataSourceKey: string;
+    enabledPackages?: ReadonlySet<string>;
+    useStrictOnly?: boolean;
+  }) {
+    return resolveRegisteredFieldBinding({
+      containerUse: input.containerUse,
+      field: input.field,
+      dataSourceKey: input.dataSourceKey,
+      enabledPackages: input.enabledPackages,
+      getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      useStrictOnly: input.useStrictOnly,
+    });
+  }
+
+  private resolveAssociationLeafDisplaySemantics(
+    field: any,
+    dataSourceKey: string,
+    enabledPackages?: ReadonlySet<string>,
+  ) {
+    const registeredBinding = this.resolveRegisteredFieldBinding({
+      containerUse: 'DetailsItemModel',
+      field,
+      dataSourceKey,
+      enabledPackages,
+      useStrictOnly: true,
+    });
+    if (registeredBinding?.modelClassName) {
+      return {
+        fieldUse: registeredBinding.modelClassName,
+        defaultTitleField: undefined,
+      };
+    }
+
     if (isAssociationField(field)) {
       const defaultTitleField = this.getAssociationDefaultTitleFieldName(field, dataSourceKey);
       if (!defaultTitleField) {
@@ -10011,41 +10066,53 @@ export class FlowSurfacesService {
     mode: 'table' | 'details' | 'form';
     ownerUse: string;
     resourceInit: Record<string, any>;
+    enabledPackages?: ReadonlySet<string>;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
-    return getCollectionFields(collection)
-      .filter((field) => {
-        const fieldName = getFieldName(field);
-        const fieldInterface = getFieldInterface(field);
-        if (!fieldName || !fieldInterface) {
-          return false;
-        }
-        if (input.mode === 'table' && field?.options?.treeChildren) {
-          return false;
-        }
-        if (isAssociationField(field)) {
-          const targetCollection = resolveFieldTargetCollection(
-            field,
-            input.resourceInit.dataSourceKey,
-            (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
-          );
-          const safeTitleField = this.getAssociationDefaultTitleFieldName(field, input.resourceInit.dataSourceKey);
-          if (input.mode === 'form' && targetCollection?.template === 'file') {
-            return false;
-          }
-          return !!safeTitleField;
-        }
-        if (input.mode === 'form') {
-          return !!inferFieldMenuEditableFieldUse(fieldInterface);
-        }
-        return !!inferAssociationLeafDisplayFieldUse(fieldInterface);
-      })
-      .map((field) => ({
+    return getCollectionFields(collection).flatMap((field) => {
+      const fieldName = getFieldName(field);
+      const fieldInterface = getFieldInterface(field);
+      if (!fieldName || !fieldInterface) {
+        return [];
+      }
+      if (input.mode === 'table' && field?.options?.treeChildren) {
+        return [];
+      }
+
+      const registeredBinding = this.resolveRegisteredFieldBinding({
+        containerUse: input.ownerUse,
         field,
-        fieldPath: getFieldName(field),
-        label: getFieldTitle(field),
-        supportsJs: true,
-      }));
+        dataSourceKey: input.resourceInit.dataSourceKey,
+        enabledPackages: input.enabledPackages,
+        useStrictOnly: true,
+      });
+
+      if (isAssociationField(field)) {
+        if (!registeredBinding?.modelClassName) {
+          const safeTitleField = this.getAssociationDefaultTitleFieldName(field, input.resourceInit.dataSourceKey);
+          if (!safeTitleField) {
+            return [];
+          }
+        }
+      } else if (!registeredBinding?.modelClassName) {
+        const hasLegacyCapability =
+          input.mode === 'form'
+            ? !!inferFieldMenuEditableFieldUse(fieldInterface)
+            : !!inferAssociationLeafDisplayFieldUse(fieldInterface);
+        if (!hasLegacyCapability) {
+          return [];
+        }
+      }
+
+      return [
+        {
+          field,
+          fieldPath: fieldName,
+          label: getFieldTitle(field),
+          supportsJs: true,
+        },
+      ];
+    });
   }
 
   private collectFieldMenuAssociationLeafCandidates(input: {
@@ -10056,6 +10123,7 @@ export class FlowSurfacesService {
     pathPrefix?: string;
     titlePrefix?: string[];
     visitedCollectionKeys?: string[];
+    enabledPackages?: ReadonlySet<string>;
   }): FlowSurfaceFieldMenuCandidate[] {
     const collection = input.collection;
     if (!collection) {
@@ -10099,7 +10167,11 @@ export class FlowSurfacesService {
         if (!getFieldInterface(targetField)) {
           continue;
         }
-        const displaySemantics = this.resolveAssociationLeafDisplaySemantics(targetField, input.dataSourceKey);
+        const displaySemantics = this.resolveAssociationLeafDisplaySemantics(
+          targetField,
+          input.dataSourceKey,
+          input.enabledPackages,
+        );
         if (!displaySemantics) {
           continue;
         }
@@ -10130,6 +10202,7 @@ export class FlowSurfacesService {
           pathPrefix: associationPathName,
           titlePrefix,
           visitedCollectionKeys: cycleKey ? [...visitedCollectionKeys, cycleKey] : visitedCollectionKeys,
+          enabledPackages: input.enabledPackages,
         }),
       );
     }
@@ -10140,6 +10213,7 @@ export class FlowSurfacesService {
   private buildFieldMenuCandidates(input: {
     ownerUse: string;
     resourceInit: Record<string, any>;
+    enabledPackages?: ReadonlySet<string>;
   }): FlowSurfaceFieldMenuCandidate[] {
     const mode = this.getFieldMenuCatalogMode(input.ownerUse);
     if (!mode) {
@@ -10157,6 +10231,7 @@ export class FlowSurfacesService {
         mode,
         ownerUse: input.ownerUse,
         resourceInit: input.resourceInit,
+        enabledPackages: input.enabledPackages,
       }),
       ...this.collectFieldMenuAssociationLeafCandidates({
         mode,
@@ -10164,6 +10239,7 @@ export class FlowSurfacesService {
         collection,
         dataSourceKey: input.resourceInit.dataSourceKey,
         visitedCollectionKeys: rootCycleKey ? [rootCycleKey] : [],
+        enabledPackages: input.enabledPackages,
       }),
     ]);
   }
@@ -10173,10 +10249,12 @@ export class FlowSurfacesService {
     resourceInit: Record<string, any>;
     fieldPath: string;
     associationPathName?: string;
+    enabledPackages?: ReadonlySet<string>;
   }) {
     const candidates = this.buildFieldMenuCandidates({
       ownerUse: input.ownerUse,
       resourceInit: input.resourceInit,
+      enabledPackages: input.enabledPackages,
     });
     const normalizedFieldPath = normalizeFieldPath(input.fieldPath, input.associationPathName);
     return (
@@ -10214,12 +10292,14 @@ export class FlowSurfacesService {
     requireDefaultTargetUid?: boolean;
     includeConfigureOptions?: boolean;
     includeContracts?: boolean;
+    enabledPackages?: ReadonlySet<string>;
   }): FlowSurfaceCatalogProjectableItem[] {
     const containerKind = normalizeFieldContainerKind(input.ownerUse);
     const targetPrefix = input.multiTarget && input.targetLabel ? `${input.targetLabel} / ` : '';
     const fieldMenuEntries = this.buildFieldMenuCandidates({
       ownerUse: input.ownerUse,
       resourceInit: input.resourceInit,
+      enabledPackages: input.enabledPackages,
     });
     if (fieldMenuEntries.length) {
       const semanticEntries = fieldMenuEntries.flatMap((item) => {
@@ -10246,6 +10326,9 @@ export class FlowSurfacesService {
               field: capabilityField,
               requestedRenderer: semantic.renderer,
               requestedType: semantic.type,
+              enabledPackages: input.enabledPackages,
+              dataSourceKey: input.resourceInit.dataSourceKey,
+              getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
             });
             wrapperUse = wrapperUse || fieldCapability.wrapperUse;
             fieldUse = fieldUse || fieldCapability.fieldUse;
@@ -10327,6 +10410,7 @@ export class FlowSurfacesService {
     requireDefaultTargetUid?: boolean;
     includeConfigureOptions?: boolean;
     includeContracts?: boolean;
+    enabledPackages?: ReadonlySet<string>;
   }): FlowSurfaceCatalogProjectableItem[] {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     const getFields = (targetCollection: any) => getCollectionFields(targetCollection);
@@ -10391,6 +10475,9 @@ export class FlowSurfacesService {
             field: capabilityField,
             requestedRenderer: semantic.renderer,
             requestedType: semantic.type,
+            enabledPackages: input.enabledPackages,
+            dataSourceKey: input.resourceInit.dataSourceKey,
+            getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
           });
           const use = fieldCapability.standaloneUse || fieldCapability.wrapperUse;
           if (!use) {
@@ -11111,6 +11198,7 @@ export class FlowSurfacesService {
     explicitTitleField?: any;
     bindingChange?: boolean;
     hasExistingTitleField?: boolean;
+    enabledPackages?: ReadonlySet<string>;
   }) {
     const wrapperUse = String(input.wrapperUse || '').trim();
     const hasExplicitTitleField = Object.prototype.hasOwnProperty.call(input, 'explicitTitleField');
@@ -11177,6 +11265,25 @@ export class FlowSurfacesService {
     }
 
     if (!isAssociation) {
+      return input.hasExistingTitleField
+        ? {
+            shouldSync: true,
+            titleField: null,
+          }
+        : {
+            shouldSync: false,
+            titleField: undefined,
+          };
+    }
+
+    const registeredBinding = this.resolveRegisteredFieldBinding({
+      containerUse: wrapperUse,
+      field: resolvedField.field,
+      dataSourceKey: resolvedField.dataSourceKey,
+      enabledPackages: input.enabledPackages,
+      useStrictOnly: true,
+    });
+    if (registeredBinding?.modelClassName) {
       return input.hasExistingTitleField
         ? {
             shouldSync: true,

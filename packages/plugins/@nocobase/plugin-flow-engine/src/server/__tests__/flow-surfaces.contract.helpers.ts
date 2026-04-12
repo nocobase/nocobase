@@ -209,11 +209,59 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
     },
   });
 
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'flow_surface_attachments',
+      title: 'Flow surface attachments',
+      fields: [{ name: 'meta', type: 'json', interface: 'json' }],
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'employee_attachments',
+      title: 'employee_attachments',
+      fields: [
+        {
+          name: 'id',
+          type: 'integer',
+          autoIncrement: true,
+          primaryKey: true,
+          allowNull: false,
+          interface: 'id',
+        },
+      ],
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'fujian',
+      type: 'belongsToMany',
+      target: 'flow_surface_attachments',
+      through: 'employee_attachments',
+      foreignKey: 'employeeId',
+      otherKey: 'attachmentId',
+      interface: 'attachment',
+    },
+  });
+
   await waitForFixtureCollectionsReady(db, {
     employees: ['nickname', 'status', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],
     skills: ['label'],
     employee_skills: ['id', 'employeeId', 'skillId'],
     opaque_targets: ['meta'],
+    flow_surface_attachments: ['meta'],
+    employee_attachments: ['id', 'employeeId', 'attachmentId'],
   });
+
+  const attachmentsCollection = db.getCollection('flow_surface_attachments');
+  if (attachmentsCollection) {
+    attachmentsCollection.template = 'file';
+    attachmentsCollection.options = {
+      ...(attachmentsCollection.options || {}),
+      template: 'file',
+    };
+  }
 }

@@ -1168,6 +1168,137 @@ describe('flowSurfaces association contract', () => {
     expect(readErrorMessage(invalidTitleFieldRes)).toContain("collection 'employees' titleField 'missing' not found");
   });
 
+  it('should allow file-template attachment associations through strict registered bindings without titleField', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Attachment association page',
+      tabTitle: 'Attachment association tab',
+    });
+
+    const tableBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const editFormBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'editForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableBlock.uid,
+          },
+        },
+      }),
+    );
+    const detailsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+        },
+      }),
+    );
+    const editFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: editFormBlock.uid,
+          },
+        },
+      }),
+    );
+
+    expect(tableCatalog.fields.find((item: any) => item.key === 'fujian')).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'DisplayPreviewFieldModel',
+    });
+    expect(detailsCatalog.fields.find((item: any) => item.key === 'fujian')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplayPreviewFieldModel',
+    });
+    expect(editFormCatalog.fields.find((item: any) => item.key === 'fujian')).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'UploadFieldModel',
+    });
+
+    const tableField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: tableBlock.uid,
+          },
+          fieldPath: 'fujian',
+        },
+      }),
+    );
+    const detailsField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+          fieldPath: 'fujian',
+        },
+      }),
+    );
+    const editFormField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: editFormBlock.uid,
+          },
+          fieldPath: 'fujian',
+        },
+      }),
+    );
+
+    const tableWrapperReadback = await getSurface(rootAgent, { uid: tableField.wrapperUid });
+    const tableInnerReadback = await getSurface(rootAgent, { uid: tableField.fieldUid });
+    expect(tableWrapperReadback.tree.use).toBe('TableColumnModel');
+    expect(tableInnerReadback.tree.use).toBe('DisplayPreviewFieldModel');
+    expect(tableWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
+    expect(tableInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
+
+    const detailsWrapperReadback = await getSurface(rootAgent, { uid: detailsField.wrapperUid });
+    const detailsInnerReadback = await getSurface(rootAgent, { uid: detailsField.fieldUid });
+    expect(detailsWrapperReadback.tree.use).toBe('DetailsItemModel');
+    expect(detailsInnerReadback.tree.use).toBe('DisplayPreviewFieldModel');
+    expect(detailsWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
+    expect(detailsInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
+
+    const editFormWrapperReadback = await getSurface(rootAgent, { uid: editFormField.wrapperUid });
+    const editFormInnerReadback = await getSurface(rootAgent, { uid: editFormField.fieldUid });
+    expect(editFormWrapperReadback.tree.use).toBe('FormItemModel');
+    expect(editFormInnerReadback.tree.use).toBe('UploadFieldModel');
+    expect(editFormWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
+    expect(editFormInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
+  });
+
   it('should reject no-interface bound fields across addField addFields and compose', async () => {
     const page = await createPage(rootAgent, {
       title: 'No interface contract page',

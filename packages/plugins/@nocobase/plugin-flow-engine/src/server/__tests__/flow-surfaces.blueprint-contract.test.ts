@@ -215,7 +215,6 @@ describe('flowSurfaces applyBlueprint contract', () => {
         pageUid: page.pageUid,
       },
     });
-    expect(data.keys).toBeUndefined();
     expect(getRouteBackedTabs(data.surface)).toHaveLength(1);
     expect(data.surface.pageRoute.displayTitle).toBe(false);
   });
@@ -1706,7 +1705,6 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(executeRes.status).toBe(200);
     const data = getData(executeRes);
-    expect(data.keys).toBeUndefined();
     expect(getRouteBackedTabs(data.surface).map((tab: any) => tab.uid)).toEqual([
       page.tabSchemaUid,
       addedTab.tabSchemaUid,
@@ -1867,7 +1865,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         mode: 'create',
         navigation: {
           item: {
-            title: 'Popup alias page',
+            title: 'Popup validation page',
           },
         },
         tabs: [

@@ -33,6 +33,7 @@ import {
 } from './action-scope';
 import { FlowSurfaceBadRequestError, FlowSurfaceInternalError } from './errors';
 import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
+import { getRegisteredFieldUses, resolveRegisteredFieldBinding } from './field-binding-registry';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
 const ANY_VALUE_SCHEMA = {};
@@ -309,6 +310,9 @@ const FLOW_SURFACE_BLOCK_OWNER_PLUGIN_BY_USE = new Map(
 );
 const JS_EDITABLE_FIELD_USE_SET = new Set(['JSEditableFieldModel']);
 const JS_DISPLAY_FIELD_USE_SET = new Set(['JSFieldModel']);
+const REGISTERED_EDITABLE_FIELD_USE_SET = getRegisteredFieldUses('editable');
+const REGISTERED_DISPLAY_FIELD_USE_SET = getRegisteredFieldUses('display');
+const REGISTERED_FILTER_FIELD_USE_SET = getRegisteredFieldUses('filter');
 const EDITABLE_FIELD_USE_SET = new Set([
   ...JS_EDITABLE_FIELD_USE_SET,
   'RecordSelectFieldModel',
@@ -362,6 +366,9 @@ const KNOWN_FIELD_NODE_USES = new Set<string>([
   ...EDITABLE_FIELD_USE_SET,
   ...DISPLAY_FIELD_USE_SET,
   ...FILTER_FIELD_USE_SET,
+  ...REGISTERED_EDITABLE_FIELD_USE_SET,
+  ...REGISTERED_DISPLAY_FIELD_USE_SET,
+  ...REGISTERED_FILTER_FIELD_USE_SET,
 ]);
 
 function keyedDomain(
@@ -2017,22 +2024,40 @@ function inferFilterFieldUse(fieldInterface: string) {
   return map[fieldInterface] || 'InputFieldModel';
 }
 
-function getAllowedFieldUseSet(containerUse?: string) {
+function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: ReadonlySet<string>) {
   switch (normalizeFieldContainerUse(containerUse)) {
     case 'form':
-      return EDITABLE_FIELD_USE_SET;
+      return new Set([...EDITABLE_FIELD_USE_SET, ...getRegisteredFieldUses('editable', enabledPackages)]);
     case 'details':
     case 'table':
-      return DISPLAY_FIELD_USE_SET;
+      return new Set([...DISPLAY_FIELD_USE_SET, ...getRegisteredFieldUses('display', enabledPackages)]);
     case 'filter-form':
-      return FILTER_FIELD_USE_SET;
+      return new Set([...FILTER_FIELD_USE_SET, ...getRegisteredFieldUses('filter', enabledPackages)]);
     default:
       return null;
   }
 }
 
-function inferFieldUseByContainer(containerUse: string, field: any) {
+function inferFieldUseByContainer(
+  containerUse: string,
+  field: any,
+  options: {
+    enabledPackages?: ReadonlySet<string>;
+    dataSourceKey?: string;
+    getCollection?: (dataSourceKey: string, collectionName: string) => any;
+  } = {},
+) {
   const fieldInterface = field?.interface || field?.options?.interface;
+  const registeredBinding = resolveRegisteredFieldBinding({
+    containerUse,
+    field,
+    dataSourceKey: options.dataSourceKey,
+    enabledPackages: options.enabledPackages,
+    getCollection: options.getCollection,
+  });
+  if (registeredBinding?.modelClassName) {
+    return registeredBinding.modelClassName;
+  }
   if (
     shouldUseAssociationTitleTextDisplay({
       containerUse,
@@ -2099,6 +2124,9 @@ export function resolveSupportedFieldCapability(input: {
   allowUnresolvedFieldUse?: boolean;
   requestedRenderer?: string;
   requestedType?: string;
+  enabledPackages?: ReadonlySet<string>;
+  dataSourceKey?: string;
+  getCollection?: (dataSourceKey: string, collectionName: string) => any;
 }) {
   const requestedRenderer =
     typeof input.requestedRenderer === 'undefined' ? undefined : String(input.requestedRenderer || '').trim();
@@ -2145,7 +2173,11 @@ export function resolveSupportedFieldCapability(input: {
     requestedRenderer === 'js'
       ? inferJsFieldUseByContainer(input.containerUse)
       : input.field
-        ? inferFieldUseByContainer(input.containerUse, input.field)
+        ? inferFieldUseByContainer(input.containerUse, input.field, {
+            enabledPackages: input.enabledPackages,
+            dataSourceKey: input.dataSourceKey,
+            getCollection: input.getCollection,
+          })
         : undefined;
   const fieldUse = input.requestedFieldUse || inferredFieldUse;
   if (!fieldUse) {
@@ -2172,7 +2204,7 @@ export function resolveSupportedFieldCapability(input: {
     );
   }
 
-  const allowedFieldUses = getAllowedFieldUseSet(input.containerUse);
+  const allowedFieldUses = getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
   if (!allowedFieldUses?.has(fieldUse)) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces fieldUse '${fieldUse}' is not allowed under '${input.containerUse}'`,
