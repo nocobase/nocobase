@@ -20,26 +20,30 @@ import { uid } from '@formily/shared';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
+import { useUpdate } from 'ahooks';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { createDesignable, DndContext, SchemaComponentContext, SortableItem, useDesignable, useDesigner } from '../..';
+import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { useParseURLAndParams } from '../../../block-provider/hooks';
 import {
-  Icon,
   NocoBaseRecursionField,
-  useAllAccessDesktopRoutes,
-  useAPIClient,
-  useParseURLAndParams,
-  useSchemaInitializerRender,
-} from '../../../';
+  useRefreshComponent,
+  useRefreshFieldSchema,
+} from '../../../formily/NocoBaseRecursionField';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
+import { Icon } from '../../../icon/Icon';
+import { useAllAccessDesktopRoutes } from '../../../route-switch/antd/admin-layout/route-runtime';
+import { DndContext } from '../../common/dnd-context';
+import { SortableItem } from '../../common/sortable-item/SortableItem';
+import { SchemaComponentContext } from '../../context';
+import { createDesignable, useDesignable } from '../../hooks/useDesignable';
+import { useDesigner } from '../../hooks/useDesigner';
 import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
-
-import { useUpdate } from 'ahooks';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/route-types';
 

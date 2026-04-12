@@ -39,8 +39,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 });
 
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { RouteModel } from '@nocobase/client-v2';
-import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
+import { AdminLayoutRouteCoordinator, RouteModel } from '@nocobase/client-v2';
 
 const flushPromises = async (times = 3) => {
   for (let i = 0; i < times; i += 1) {

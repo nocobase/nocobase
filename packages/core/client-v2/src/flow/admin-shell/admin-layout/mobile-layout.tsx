@@ -8,10 +8,17 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { ADMIN_LAYOUT_MODEL_UID } from '.';
+import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 
 export const useMobileLayout = () => {
-  const flowEngine = useFlowEngine();
+  const flowEngine = useFlowEngine({ throwError: false });
+  if (!flowEngine) {
+    return {
+      isMobileLayout: false,
+      setIsMobileLayout: () => {},
+    };
+  }
+
   const adminLayoutModel = flowEngine.getModel<any>(ADMIN_LAYOUT_MODEL_UID);
 
   if (!adminLayoutModel) {

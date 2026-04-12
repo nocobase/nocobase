@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { useTableBlockContextBasicValue } from '../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../block-provider/TableBlockContextBasicValue';
 import { useDataBlockRequestData } from '../../data-source';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
 import { useCurrentPopupContext } from '../../schema-component/antd/page/PagePopups';

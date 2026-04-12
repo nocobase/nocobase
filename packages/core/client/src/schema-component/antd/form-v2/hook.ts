@@ -9,7 +9,7 @@
 
 import { useFieldSchema } from '@formily/react';
 import { theme } from 'antd';
-import { useDesignable } from '../../';
+import { useDesignable } from '../../hooks/useDesignable';
 import { useBlockHeightProps } from '../../../block-provider/hooks/useBlockHeightProps';
 import { useDataBlockRequestData } from '../../../data-source';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';

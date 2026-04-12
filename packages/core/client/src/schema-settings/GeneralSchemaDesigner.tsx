@@ -24,13 +24,19 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponentContext } from '../';
-import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
+import { SchemaInitializer } from '../application/schema-initializer/SchemaInitializer';
+import { useSchemaInitializerRender } from '../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { SchemaSettings } from '../application/schema-settings/SchemaSettings';
+import { SchemaToolbarProvider } from '../application/schema-toolbar/context';
 import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../data-source/data-source/DataSourceProvider';
 import { RefreshComponentProvider, useRefreshFieldSchema } from '../formily/NocoBaseRecursionField';
-import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
+import { DragHandler } from '../schema-component/common/sortable-item/SortableItem';
+import { SchemaComponentContext } from '../schema-component/context';
+import { useCompile } from '../schema-component/hooks/useCompile';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
+import { useGridContext, useGridRowContext } from '../schema-component/antd/grid/Grid';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';

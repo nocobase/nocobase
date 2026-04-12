@@ -2,10 +2,17 @@ import { Plugin } from '@nocobase/client';
 import { MobilePage, MobileNotFoundPage } from '@nocobase/plugin-mobile/client';
 
 import { mockApp } from '@nocobase/client/demo-utils';
+import React from 'react';
+
+const Home = () => <div>Home</div>;
 
 class DemoPlugin extends Plugin {
   async load() {
     this.app.addComponents({ MobileNotFoundPage });
+    this.app.router.add('home', {
+      path: '/',
+      Component: Home,
+    });
     this.app.router.add('schema', {
       path: '/page',
     });

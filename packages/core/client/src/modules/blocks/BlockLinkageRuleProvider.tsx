@@ -14,7 +14,7 @@ import { uid } from '@formily/shared';
 import { reaction } from '@formily/reactive';
 import { useLocalVariables, useVariables } from '../../variables';
 import { useReactiveLinkageEffect } from './utils';
-import { useDesignable } from '../../';
+import { useDesignable } from '../../schema-component/hooks/useDesignable';
 import { forEachLinkageRule } from '../../schema-settings/LinkageRules/forEachLinkageRule';
 import {
   getVariableValuesInCondition,

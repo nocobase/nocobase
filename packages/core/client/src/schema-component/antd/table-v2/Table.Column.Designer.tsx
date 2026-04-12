@@ -13,26 +13,28 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollection } from '../../../data-source';
+import { useSchemaToolbar } from '../../../application';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
-  GeneralSchemaDesigner,
   SchemaSettingsDivider,
+  SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
-} from '../../../schema-settings';
+} from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
 import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
 import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
-import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { removeNullCondition } from '../filter';
-import { SchemaSettingsLinkageRules } from '../../../schema-settings';
-import { useCollection } from '../../../data-source';
-import { useSchemaToolbar } from '../../../application';
+import { removeNullCondition } from '../filter/useFilterActionProps';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useFieldModeOptions } from '../../hooks/useFieldModeOptions';
 
 export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用

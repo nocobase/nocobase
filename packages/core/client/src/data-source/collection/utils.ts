@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { i18n as defaultI18n } from '../../i18n';
 import type { Application } from '../../application/Application';
 import type { CollectionOptions } from './Collection';
 
@@ -22,7 +23,11 @@ export const collectionTransform = (collection: CollectionOptions, app: Applicat
     if (app.context?.t) {
       return app.context.t(key, options);
     }
-    return app.i18n.t(key, options) as unknown as string;
+    const i18n = app.i18n || app.getOptions?.().i18n || defaultI18n;
+    if (i18n?.t) {
+      return i18n.t(key, options) as unknown as string;
+    }
+    return key;
   };
   return {
     ...rest,

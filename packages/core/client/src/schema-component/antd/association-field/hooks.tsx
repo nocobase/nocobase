@@ -19,7 +19,7 @@ import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
 import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
-import { useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 import { AssociationFieldMode } from './AssociationFieldModeProvider';
 import { AssociationFieldContext } from './context';
 

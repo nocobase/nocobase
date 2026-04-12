@@ -17,7 +17,7 @@ import { usePopupUtils } from '../../antd/page/pagePopupUtils';
 import { SchemaComponentOptions } from '../../core/SchemaComponentOptions';
 import { useDesignable } from '../../hooks/useDesignable';
 import { popupSchema } from './schema';
-import { CollectionProvider, useCollection } from '../../../data-source';
+import { CollectionProvider, useCollection } from '../../../data-source/collection/CollectionProvider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 
