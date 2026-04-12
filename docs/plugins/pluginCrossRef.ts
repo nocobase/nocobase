@@ -69,9 +69,18 @@ function resolveEntries(
 
     const type = obj.type as string | undefined;
 
-    // section-header
+    // section-header：带 items 时当可折叠分组，否则当纯文本标题
     if (type === 'section-header') {
-      result.push({ sectionHeaderText: (obj.label as string) || '' });
+      if (Array.isArray(obj.items)) {
+        result.push({
+          text: (obj.label as string) || '',
+          items: resolveEntries(root, relDir, obj.items as unknown[], crossRefs, topDir),
+          collapsible: true,
+          collapsed: obj.collapsed !== false,
+        });
+      } else {
+        result.push({ sectionHeaderText: (obj.label as string) || '' });
+      }
       continue;
     }
 
@@ -290,18 +299,24 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       if (crossRefs.length === 0) return [];
 
       const root = config.root || path.join(process.cwd(), 'docs');
+      const tempDir = path.join(process.cwd(), 'node_modules', '.rspress', 'cross-ref');
+      fs.mkdirSync(tempDir, { recursive: true });
+
       return crossRefs
-        .map(ref => {
+        .map((ref, index) => {
           const linkPath = ref.targetLink.split('#')[0];
           const filepath = resolveSourceFile(root, linkPath);
           if (!filepath) return null;
 
           const raw = fs.readFileSync(filepath, 'utf-8');
           const content = injectCanonical(raw, ref.targetLink);
-          return { routePath: ref.aliasRoute, content };
+          // 写成 .md 而不是让 Rspress 默认写成 .mdx，避免 MDX 严格模式导致 HTML 注释报错
+          const tempFile = path.join(tempDir, `cross-ref-${index}.md`);
+          fs.writeFileSync(tempFile, content);
+          return { routePath: ref.aliasRoute, filepath: tempFile };
         })
         .filter(
-          (p): p is { routePath: string; content: string } => p !== null,
+          (p): p is { routePath: string; filepath: string } => p !== null,
         );
     },
   };
