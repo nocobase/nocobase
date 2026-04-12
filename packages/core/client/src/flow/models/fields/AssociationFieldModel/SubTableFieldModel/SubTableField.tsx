@@ -35,6 +35,7 @@ export function SubTableField(props) {
     parentItem,
     resetPage,
     filterTargetKey = 'id',
+    getCurrentValue,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -71,22 +72,21 @@ export function SubTableField(props) {
   const handleAdd = () => {
     if (allowCreate === false) return;
 
+    const currentValue = getCurrentValue();
     const newRow = {
       __is_new__: true,
     };
-
     columns.forEach((col) => {
       newRow[col.dataIndex] = undefined;
     });
-
-    const newValue = [...(value || []), newRow];
+    const newValue = [...currentValue, newRow];
     setCurrentPage(Math.ceil(newValue.length / currentPageSize));
     onChange?.(newValue);
   };
 
   // 删除行
   const handleDelete = (index: number) => {
-    const newValue = [...(value || [])];
+    const newValue = [...getCurrentValue()];
     newValue.splice(index, 1);
     const lastPage = Math.ceil(newValue.length / currentPageSize);
     setCurrentPage(currentPage > lastPage ? lastPage : currentPage);
@@ -95,7 +95,8 @@ export function SubTableField(props) {
 
   // 编辑单元格
   const handleCellChange = (rowIdx, dataIndex, cellValue) => {
-    const newData = value.map((row, idx) => (idx === rowIdx ? { ...row, [dataIndex]: cellValue } : row));
+    const currentValue = getCurrentValue();
+    const newData = currentValue.map((row, idx) => (idx === rowIdx ? { ...row, [dataIndex]: cellValue } : row));
     onChange?.(newData);
   };
 
