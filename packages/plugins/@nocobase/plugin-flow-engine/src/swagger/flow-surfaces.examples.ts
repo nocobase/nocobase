@@ -20,6 +20,11 @@ export const flowSurfaceExamples = {
     path: 'record',
     maxDepth: 3,
   },
+  getReactionMeta: {
+    target: {
+      uid: 'employees-form-uid',
+    },
+  },
   describeSurface: {
     locator: {
       pageSchemaUid: 'employees-page-schema',
@@ -64,6 +69,7 @@ export const flowSurfaceExamples = {
         title: 'Overview',
         blocks: [
           {
+            key: 'employeesTable',
             type: 'table',
             collection: 'employees',
             fields: ['nickname', 'department.title'],
@@ -100,6 +106,29 @@ export const flowSurfaceExamples = {
         ],
       },
     ],
+    reaction: {
+      items: [
+        {
+          type: 'setBlockLinkageRules',
+          target: 'employeesTable',
+          rules: [
+            {
+              key: 'hideWhenCollapsed',
+              when: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'params.query.hideTable',
+                    operator: '$isTruly',
+                  },
+                ],
+              },
+              then: [{ type: 'setBlockState', state: 'hidden' }],
+            },
+          ],
+        },
+      ],
+    },
   },
   applyBlueprintReplace: {
     version: '1',
@@ -118,6 +147,7 @@ export const flowSurfaceExamples = {
         title: 'Overview',
         blocks: [
           {
+            key: 'employeesTable',
             type: 'table',
             collection: 'employees',
             fields: ['nickname', 'department.title'],
@@ -133,6 +163,100 @@ export const flowSurfaceExamples = {
             fields: ['nickname', 'status'],
           },
         ],
+      },
+    ],
+  },
+  setFieldValueRules: {
+    target: {
+      uid: 'employees-form-uid',
+    },
+    rules: [
+      {
+        key: 'defaultStatus',
+        targetPath: 'status',
+        mode: 'default',
+        when: {
+          logic: '$and',
+          items: [
+            {
+              path: 'formValues.nickname',
+              operator: '$eq',
+              value: 'Alice',
+            },
+          ],
+        },
+        value: {
+          source: 'literal',
+          value: 'draft',
+        },
+      },
+    ],
+    expectedFingerprint: '9c5b9f3d',
+  },
+  setBlockLinkageRules: {
+    target: {
+      uid: 'employees-table-uid',
+    },
+    rules: [
+      {
+        key: 'hideTable',
+        when: {
+          logic: '$and',
+          items: [
+            {
+              path: 'params.query.hideTable',
+              operator: '$isTruly',
+            },
+          ],
+        },
+        then: [{ type: 'setBlockState', state: 'hidden' }],
+      },
+    ],
+  },
+  setFieldLinkageRules: {
+    target: {
+      uid: 'employees-form-uid',
+    },
+    rules: [
+      {
+        key: 'disableStatus',
+        when: {
+          logic: '$and',
+          items: [
+            {
+              path: 'formValues.nickname',
+              operator: '$eq',
+              value: 'readonly',
+            },
+          ],
+        },
+        then: [
+          {
+            type: 'setFieldState',
+            fieldPaths: ['status'],
+            state: 'disabled',
+          },
+        ],
+      },
+    ],
+  },
+  setActionLinkageRules: {
+    target: {
+      uid: 'refresh-action-uid',
+    },
+    rules: [
+      {
+        key: 'disableRefresh',
+        when: {
+          logic: '$and',
+          items: [
+            {
+              path: 'params.query.readonly',
+              operator: '$isTruly',
+            },
+          ],
+        },
+        then: [{ type: 'setActionState', state: 'disabled' }],
       },
     ],
   },

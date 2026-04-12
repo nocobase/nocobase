@@ -9,8 +9,13 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
-import { buildDefinedPayload } from '../service-utils';
-import type { FlowSurfaceApplyBlueprintAssets, FlowSurfaceApplyBlueprintDocument } from './public-types';
+import { FLOW_SURFACE_REACTION_DUPLICATE_SLOT } from '../reaction/errors';
+import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
+import type {
+  FlowSurfaceApplyBlueprintAssets,
+  FlowSurfaceApplyBlueprintDocument,
+  FlowSurfaceApplyBlueprintReaction,
+} from './public-types';
 import {
   APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS,
   assertNonEmptyString,
@@ -24,8 +29,17 @@ import {
   readString,
 } from './private-utils';
 
+const APPLY_BLUEPRINT_REACTION_ITEM_ALLOWED_KEYS = ['type', 'target', 'rules', 'expectedFingerprint'] as const;
+const APPLY_BLUEPRINT_REACTION_TYPES = [
+  'setFieldValueRules',
+  'setBlockLinkageRules',
+  'setFieldLinkageRules',
+  'setActionLinkageRules',
+] as const;
+const APPLY_BLUEPRINT_REACTION_TYPE_SET = new Set<string>(APPLY_BLUEPRINT_REACTION_TYPES);
+
 function assertSupportedApplyBlueprintTopLevelKeys(input: Record<string, any>) {
-  const allowedKeys = ['version', 'mode', 'target', 'navigation', 'page', 'assets', 'tabs'];
+  const allowedKeys = ['version', 'mode', 'target', 'navigation', 'page', 'assets', 'tabs', 'reaction'];
   const unsupportedKeys = Object.keys(input).filter((key) => !allowedKeys.includes(key));
   if (!unsupportedKeys.length) {
     return;
@@ -171,6 +185,61 @@ function normalizeTabs(input: any[]): FlowSurfaceApplyBlueprintDocument['tabs'] 
   });
 }
 
+function normalizeReaction(input: any): FlowSurfaceApplyBlueprintReaction | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+
+  assertPlainObject(input, 'flowSurfaces applyBlueprint reaction');
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint reaction', ['items']);
+
+  if (!Array.isArray(input.items)) {
+    throwBadRequest(`flowSurfaces applyBlueprint reaction.items must be an array`);
+  }
+
+  const seenSlots = new Set<string>();
+  return {
+    items: input.items.map((item: any, index: number) => {
+      const context = `flowSurfaces applyBlueprint reaction.items[${index}]`;
+      assertPlainObject(item, context);
+      assertOnlyAllowedKeys(item, context, [...APPLY_BLUEPRINT_REACTION_ITEM_ALLOWED_KEYS]);
+
+      const type = assertNonEmptyString(item.type, `${context}.type`);
+      if (!APPLY_BLUEPRINT_REACTION_TYPE_SET.has(type)) {
+        throwBadRequest(
+          `${context}.type '${type}' is unsupported; supported types: ${APPLY_BLUEPRINT_REACTION_TYPES.join(', ')}`,
+        );
+      }
+
+      const target = normalizeFlowSurfaceComposeKey(
+        assertNonEmptyString(item.target, `${context}.target`),
+        `${context}.target`,
+      );
+      if (!Array.isArray(item.rules)) {
+        throwBadRequest(`${context}.rules must be an array`);
+      }
+
+      const slotKey = `${type}::${target}`;
+      if (seenSlots.has(slotKey)) {
+        throwBadRequest(
+          `${context} duplicates reaction slot '${type}' for target '${target}'`,
+          FLOW_SURFACE_REACTION_DUPLICATE_SLOT,
+        );
+      }
+      seenSlots.add(slotKey);
+
+      return buildDefinedPayload({
+        type,
+        target,
+        rules: _.cloneDeep(item.rules),
+        expectedFingerprint: _.isUndefined(item.expectedFingerprint)
+          ? undefined
+          : assertNonEmptyString(item.expectedFingerprint, `${context}.expectedFingerprint`),
+      }) as FlowSurfaceApplyBlueprintReaction['items'][number];
+    }),
+  };
+}
+
 export function prepareFlowSurfaceApplyBlueprintDocument(
   input: Record<string, any>,
 ): FlowSurfaceApplyBlueprintDocument {
@@ -178,7 +247,9 @@ export function prepareFlowSurfaceApplyBlueprintDocument(
   assertSupportedApplyBlueprintTopLevelKeys(input);
   assertSupportedApplyBlueprintTarget(input);
 
-  const version = assertNonEmptyString(input.version, 'flowSurfaces applyBlueprint version');
+  const version = _.isUndefined(input.version)
+    ? '1'
+    : assertNonEmptyString(input.version, 'flowSurfaces applyBlueprint version');
   if (version !== '1') {
     throwBadRequest(`flowSurfaces applyBlueprint version '${version}' is not supported`);
   }
@@ -225,6 +296,7 @@ export function prepareFlowSurfaceApplyBlueprintDocument(
     charts: normalizeAssetRegistry(input.assets?.charts, 'flowSurfaces applyBlueprint assets.charts'),
   };
   const tabs = normalizeTabs(input.tabs);
+  const reaction = normalizeReaction(input.reaction);
 
   if (tabs.length > 1 && page?.enableTabs === false) {
     throwBadRequest(`flowSurfaces applyBlueprint page.enableTabs cannot be false when tabs.length > 1`);
@@ -238,5 +310,6 @@ export function prepareFlowSurfaceApplyBlueprintDocument(
     ...(page ? { page } : {}),
     tabs,
     assets,
+    ...(reaction ? { reaction } : {}),
   };
 }

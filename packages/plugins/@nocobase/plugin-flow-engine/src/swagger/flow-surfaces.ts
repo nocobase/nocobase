@@ -184,8 +184,94 @@ function valuesCompatibilityNote(description: string) {
   ].join('\n');
 }
 
+function buildReactionWriteRequestSchema(ruleSchemaName: string) {
+  return {
+    type: 'object',
+    required: ['target', 'rules'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      rules: {
+        type: 'array',
+        items: ref(ruleSchemaName),
+      },
+      expectedFingerprint: {
+        type: 'string',
+      },
+      verify: {
+        type: 'boolean',
+        description:
+          'Reserved compatibility flag. Current v1 writes are full replace and return normalized output directly.',
+      },
+    },
+    additionalProperties: false,
+  };
+}
+
+function buildReactionWriteResultSchema(ruleSchemaName: string) {
+  return {
+    type: 'object',
+    required: ['target', 'resolvedScene', 'resolvedSlot', 'fingerprint', 'normalizedRules', 'canonicalRules'],
+    properties: {
+      target: ref('FlowSurfaceReactionTargetSummary'),
+      resolvedScene: ref('FlowSurfaceReactionScene'),
+      resolvedSlot: ref('FlowSurfaceReactionSlot'),
+      fingerprint: {
+        type: 'string',
+      },
+      normalizedRules: {
+        type: 'array',
+        items: ref(ruleSchemaName),
+      },
+      canonicalRules: {
+        type: 'array',
+        items: ANY_OBJECT_SCHEMA,
+      },
+      updateAssociationValues: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    additionalProperties: false,
+  };
+}
+
+function buildReactionCapabilitySchema(
+  kind: 'fieldValue' | 'blockLinkage' | 'fieldLinkage' | 'actionLinkage',
+  ruleSchemaName: string,
+  extraProperties: Record<string, any> = {},
+) {
+  return {
+    type: 'object',
+    required: ['kind', 'resolvedScene', 'resolvedSlot', 'fingerprint', 'normalizedRules', 'canonicalRules', 'context'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: [kind],
+      },
+      resolvedScene: ref('FlowSurfaceReactionScene'),
+      resolvedSlot: ref('FlowSurfaceReactionSlot'),
+      fingerprint: {
+        type: 'string',
+      },
+      normalizedRules: {
+        type: 'array',
+        items: ref(ruleSchemaName),
+      },
+      canonicalRules: {
+        type: 'array',
+        items: ANY_OBJECT_SCHEMA,
+      },
+      context: ref('FlowSurfaceContextResponse'),
+      ...extraProperties,
+    },
+    additionalProperties: false,
+  };
+}
+
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -219,6 +305,51 @@ const actionDocs: Record<string, any> = {
     ),
     requestBody: requestBody('FlowSurfaceContextRequest', examples.context),
     responses: responses('FlowSurfaceContextResponse'),
+  },
+  getReactionMeta: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read reaction capabilities, current rules, and contextual authoring metadata',
+    description: valuesCompatibilityNote(
+      `Returns the current advanced reaction capabilities for the target, including resolved scene/slot, normalized rules, canonical rules, available field targets, and condition/value authoring metadata. This is the main discovery endpoint for CLI or AI callers before configuring field values or linkage rules. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceGetReactionMetaRequest', examples.getReactionMeta),
+    responses: responses('FlowSurfaceGetReactionMetaResult'),
+  },
+  setFieldValueRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace field value rules on a create/edit form block',
+    description: valuesCompatibilityNote(
+      'Fully replaces the field-value slot on the target form block. `rules: []` clears the slot. `expectedFingerprint` enables optimistic concurrency against the current slot state.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetFieldValueRulesRequest', examples.setFieldValueRules),
+    responses: responses('FlowSurfaceSetFieldValueRulesResult'),
+  },
+  setBlockLinkageRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace block-level linkage rules on a supported block',
+    description: valuesCompatibilityNote(
+      'Fully replaces the block-linkage slot on the target block. `rules: []` clears the slot. `expectedFingerprint` enables optimistic concurrency against the current slot state.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetBlockLinkageRulesRequest', examples.setBlockLinkageRules),
+    responses: responses('FlowSurfaceSetBlockLinkageRulesResult'),
+  },
+  setFieldLinkageRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace field-level linkage rules on a supported form/details/sub-form target',
+    description: valuesCompatibilityNote(
+      'Fully replaces the field-linkage slot on the target. The backend resolves the concrete scene automatically (`form`, `details`, or `subForm`) and returns it in `resolvedScene` / `resolvedSlot`.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetFieldLinkageRulesRequest', examples.setFieldLinkageRules),
+    responses: responses('FlowSurfaceSetFieldLinkageRulesResult'),
+  },
+  setActionLinkageRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace action-level linkage rules on a supported action',
+    description: valuesCompatibilityNote(
+      'Fully replaces the action-linkage slot on the target action. `rules: []` clears the slot. `expectedFingerprint` enables optimistic concurrency against the current slot state.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetActionLinkageRulesRequest', examples.setActionLinkageRules),
+    responses: responses('FlowSurfaceSetActionLinkageRulesResult'),
   },
   get: {
     tags: [FLOW_SURFACES_TAG],
@@ -257,7 +388,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional `reaction.items[]` authored against local keys / bind keys produced by the same blueprint run. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
@@ -2180,6 +2311,615 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceReactionKind: {
+    type: 'string',
+    enum: ['fieldValue', 'blockLinkage', 'fieldLinkage', 'actionLinkage'],
+  },
+  FlowSurfaceReactionScene: {
+    type: 'string',
+    enum: ['form', 'block', 'action', 'details', 'subForm'],
+  },
+  FlowSurfaceReactionSlot: {
+    type: 'object',
+    required: ['flowKey', 'stepKey'],
+    properties: {
+      flowKey: {
+        type: 'string',
+      },
+      stepKey: {
+        type: 'string',
+      },
+      valuePath: {
+        type: 'string',
+        nullable: true,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionTargetSummary: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      publicPath: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionFilter: {
+    type: 'object',
+    description:
+      'Recursive public reaction filter object. Paths must use bare ctx-style paths such as `formValues.status` or `record.id`.',
+    additionalProperties: true,
+    example: FILTER_GROUP_EXAMPLE,
+  },
+  FlowSurfaceReactionLiteralValueExpr: {
+    type: 'object',
+    required: ['source', 'value'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['literal'],
+      },
+      value: {},
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionPathValueExpr: {
+    type: 'object',
+    required: ['source', 'path'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['path'],
+      },
+      path: {
+        type: 'string',
+        description: 'Bare reaction context path such as `formValues.status` or `record.id`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionRunJsValueExpr: {
+    type: 'object',
+    required: ['source', 'code'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['runjs'],
+      },
+      code: {
+        type: 'string',
+      },
+      version: {
+        type: 'string',
+        enum: ['v1', 'v2'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionValueExpr: {
+    oneOf: [
+      ref('FlowSurfaceReactionLiteralValueExpr'),
+      ref('FlowSurfaceReactionPathValueExpr'),
+      ref('FlowSurfaceReactionRunJsValueExpr'),
+    ],
+  },
+  FlowSurfaceReactionValueExprMeta: {
+    type: 'object',
+    required: ['supportedSources', 'runjsScene'],
+    properties: {
+      supportedSources: {
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['literal', 'path', 'runjs'],
+        },
+      },
+      runjsScene: {
+        type: 'string',
+        enum: ['fieldValue', 'linkage'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionConditionMeta: {
+    type: 'object',
+    required: ['operatorsByPath'],
+    properties: {
+      operatorsByPath: {
+        type: 'object',
+        additionalProperties: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionSupportedAction: {
+    type: 'object',
+    required: ['type'],
+    properties: {
+      type: {
+        type: 'string',
+      },
+      states: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionUnavailableCapability: {
+    type: 'object',
+    required: ['kind', 'code', 'reason'],
+    properties: {
+      kind: ref('FlowSurfaceReactionKind'),
+      code: {
+        type: 'string',
+      },
+      reason: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldOption: {
+    type: 'object',
+    required: ['path', 'label'],
+    properties: {
+      path: {
+        type: 'string',
+      },
+      label: {
+        type: 'string',
+      },
+      interface: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+      },
+      supportsDefault: {
+        type: 'boolean',
+      },
+      supportsAssign: {
+        type: 'boolean',
+      },
+      supportsState: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldValueRule: {
+    type: 'object',
+    required: ['targetPath', 'value'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      targetPath: {
+        type: 'string',
+      },
+      mode: {
+        type: 'string',
+        enum: ['default', 'assign'],
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      value: ref('FlowSurfaceReactionValueExpr'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionRunJsAction: {
+    type: 'object',
+    required: ['type', 'code'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['runjs'],
+      },
+      code: {
+        type: 'string',
+      },
+      version: {
+        type: 'string',
+        enum: ['v1', 'v2'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockLinkageActionSetBlockState: {
+    type: 'object',
+    required: ['type', 'state'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setBlockState'],
+      },
+      state: {
+        type: 'string',
+        enum: ['visible', 'hidden'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockLinkageAction: {
+    oneOf: [ref('FlowSurfaceBlockLinkageActionSetBlockState'), ref('FlowSurfaceReactionRunJsAction')],
+  },
+  FlowSurfaceBlockLinkageRule: {
+    type: 'object',
+    required: ['then'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      then: {
+        type: 'array',
+        items: ref('FlowSurfaceBlockLinkageAction'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceActionLinkageActionSetActionState: {
+    type: 'object',
+    required: ['type', 'state'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setActionState'],
+      },
+      state: {
+        type: 'string',
+        enum: ['visible', 'hidden', 'hiddenText', 'enabled', 'disabled'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceActionLinkageAction: {
+    oneOf: [ref('FlowSurfaceActionLinkageActionSetActionState'), ref('FlowSurfaceReactionRunJsAction')],
+  },
+  FlowSurfaceActionLinkageRule: {
+    type: 'object',
+    required: ['then'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      then: {
+        type: 'array',
+        items: ref('FlowSurfaceActionLinkageAction'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageAssignItem: {
+    type: 'object',
+    required: ['targetPath', 'value'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      targetPath: {
+        type: 'string',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      value: ref('FlowSurfaceReactionValueExpr'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageActionSetFieldState: {
+    type: 'object',
+    required: ['type', 'fieldPaths', 'state'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setFieldState'],
+      },
+      fieldPaths: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      state: {
+        type: 'string',
+        enum: ['visible', 'hidden', 'hiddenReservedValue', 'required', 'notRequired', 'disabled', 'enabled'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageActionAssignField: {
+    type: 'object',
+    required: ['type', 'items'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['assignField'],
+      },
+      items: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageAssignItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageActionSetFieldDefaultValue: {
+    type: 'object',
+    required: ['type', 'items'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setFieldDefaultValue'],
+      },
+      items: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageAssignItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageAction: {
+    oneOf: [
+      ref('FlowSurfaceFieldLinkageActionSetFieldState'),
+      ref('FlowSurfaceFieldLinkageActionAssignField'),
+      ref('FlowSurfaceFieldLinkageActionSetFieldDefaultValue'),
+      ref('FlowSurfaceReactionRunJsAction'),
+    ],
+  },
+  FlowSurfaceFieldLinkageRule: {
+    type: 'object',
+    required: ['then'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      then: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageAction'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldValueCapability: buildReactionCapabilitySchema('fieldValue', 'FlowSurfaceFieldValueRule', {
+    targetFields: {
+      type: 'array',
+      items: ref('FlowSurfaceFieldOption'),
+    },
+    valueExprMeta: ref('FlowSurfaceReactionValueExprMeta'),
+  }),
+  FlowSurfaceBlockLinkageCapability: buildReactionCapabilitySchema('blockLinkage', 'FlowSurfaceBlockLinkageRule', {
+    supportedActions: {
+      type: 'array',
+      items: ref('FlowSurfaceReactionSupportedAction'),
+    },
+    conditionMeta: ref('FlowSurfaceReactionConditionMeta'),
+  }),
+  FlowSurfaceFieldLinkageCapability: buildReactionCapabilitySchema('fieldLinkage', 'FlowSurfaceFieldLinkageRule', {
+    supportedActions: {
+      type: 'array',
+      items: ref('FlowSurfaceReactionSupportedAction'),
+    },
+    targetFields: {
+      type: 'array',
+      items: ref('FlowSurfaceFieldOption'),
+    },
+    conditionMeta: ref('FlowSurfaceReactionConditionMeta'),
+    valueExprMeta: ref('FlowSurfaceReactionValueExprMeta'),
+  }),
+  FlowSurfaceActionLinkageCapability: buildReactionCapabilitySchema('actionLinkage', 'FlowSurfaceActionLinkageRule', {
+    supportedActions: {
+      type: 'array',
+      items: ref('FlowSurfaceReactionSupportedAction'),
+    },
+    conditionMeta: ref('FlowSurfaceReactionConditionMeta'),
+  }),
+  FlowSurfaceReactionCapability: {
+    oneOf: [
+      ref('FlowSurfaceFieldValueCapability'),
+      ref('FlowSurfaceBlockLinkageCapability'),
+      ref('FlowSurfaceFieldLinkageCapability'),
+      ref('FlowSurfaceActionLinkageCapability'),
+    ],
+  },
+  FlowSurfaceGetReactionMetaRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceGetReactionMetaResult: {
+    type: 'object',
+    required: ['target', 'capabilities', 'unavailable'],
+    properties: {
+      target: ref('FlowSurfaceReactionTargetSummary'),
+      capabilities: {
+        type: 'array',
+        items: ref('FlowSurfaceReactionCapability'),
+      },
+      unavailable: {
+        type: 'array',
+        items: ref('FlowSurfaceReactionUnavailableCapability'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceSetFieldValueRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceFieldValueRule'),
+  FlowSurfaceSetFieldValueRulesResult: buildReactionWriteResultSchema('FlowSurfaceFieldValueRule'),
+  FlowSurfaceSetBlockLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceBlockLinkageRule'),
+  FlowSurfaceSetBlockLinkageRulesResult: buildReactionWriteResultSchema('FlowSurfaceBlockLinkageRule'),
+  FlowSurfaceSetFieldLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceFieldLinkageRule'),
+  FlowSurfaceSetFieldLinkageRulesResult: buildReactionWriteResultSchema('FlowSurfaceFieldLinkageRule'),
+  FlowSurfaceSetActionLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceActionLinkageRule'),
+  FlowSurfaceSetActionLinkageRulesResult: buildReactionWriteResultSchema('FlowSurfaceActionLinkageRule'),
+  FlowSurfaceApplyBlueprintReactionItemSetFieldValueRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setFieldValueRules'],
+      },
+      target: {
+        type: 'string',
+        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldValueRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItemSetBlockLinkageRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setBlockLinkageRules'],
+      },
+      target: {
+        type: 'string',
+        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceBlockLinkageRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItemSetFieldLinkageRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setFieldLinkageRules'],
+      },
+      target: {
+        type: 'string',
+        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setActionLinkageRules'],
+      },
+      target: {
+        type: 'string',
+        description: 'Bind key or local key of the reaction target resolved from the same blueprint run.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceActionLinkageRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItem: {
+    oneOf: [
+      ref('FlowSurfaceApplyBlueprintReactionItemSetFieldValueRules'),
+      ref('FlowSurfaceApplyBlueprintReactionItemSetBlockLinkageRules'),
+      ref('FlowSurfaceApplyBlueprintReactionItemSetFieldLinkageRules'),
+      ref('FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules'),
+    ],
+  },
+  FlowSurfaceApplyBlueprintReaction: {
+    type: 'object',
+    required: ['items'],
+    properties: {
+      items: {
+        type: 'array',
+        items: ref('FlowSurfaceApplyBlueprintReactionItem'),
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceApplyBlueprintAssets: {
     type: 'object',
     properties: {
@@ -2487,9 +3227,9 @@ const schemas = {
   },
   FlowSurfaceApplyBlueprintRequest: {
     type: 'object',
-    required: ['version', 'mode', 'tabs'],
+    required: ['mode', 'tabs'],
     description:
-      'Simplified page-structure request object for applyBlueprint. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.',
+      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.",
     properties: {
       version: {
         type: 'string',
@@ -2508,6 +3248,7 @@ const schemas = {
         items: ref('FlowSurfaceApplyBlueprintTab'),
       },
       assets: ref('FlowSurfaceApplyBlueprintAssets'),
+      reaction: ref('FlowSurfaceApplyBlueprintReaction'),
     },
     additionalProperties: false,
   },

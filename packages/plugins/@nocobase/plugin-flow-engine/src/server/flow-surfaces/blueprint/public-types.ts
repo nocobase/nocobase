@@ -13,6 +13,7 @@ import type {
   FlowSurfaceSurfaceSelector,
   FlowSurfaceResourceBindingKey,
 } from '../types';
+import type { FlowSurfaceApplyBlueprintReactionItem } from '../reaction/types';
 
 export type FlowSurfaceApplyBlueprintMode = 'create' | 'replace';
 
@@ -165,6 +166,10 @@ export type FlowSurfaceApplyBlueprintTabDocument = {
   layout?: FlowSurfaceApplyBlueprintLayout;
 };
 
+export type FlowSurfaceApplyBlueprintReaction = {
+  items: FlowSurfaceApplyBlueprintReactionItem[];
+};
+
 export type FlowSurfaceApplyBlueprintDocument = {
   version: '1';
   mode: FlowSurfaceApplyBlueprintMode;
@@ -173,6 +178,7 @@ export type FlowSurfaceApplyBlueprintDocument = {
   page?: FlowSurfaceApplyBlueprintPage;
   tabs: FlowSurfaceApplyBlueprintTabDocument[];
   assets: FlowSurfaceApplyBlueprintAssets;
+  reaction?: FlowSurfaceApplyBlueprintReaction;
 };
 
 export type FlowSurfaceApplyBlueprintReplaceTargetInfo = {

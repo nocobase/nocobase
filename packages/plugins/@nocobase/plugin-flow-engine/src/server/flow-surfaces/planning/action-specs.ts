@@ -72,6 +72,22 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = defineFlowSurfacePlanActionSpecs({
     selectorMode: 'target',
     executionKind: 'planOnly',
   },
+  setFieldValueRules: {
+    selectorMode: 'target',
+    executionKind: 'planOnly',
+  },
+  setBlockLinkageRules: {
+    selectorMode: 'target',
+    executionKind: 'planOnly',
+  },
+  setFieldLinkageRules: {
+    selectorMode: 'target',
+    executionKind: 'planOnly',
+  },
+  setActionLinkageRules: {
+    selectorMode: 'target',
+    executionKind: 'planOnly',
+  },
   updateSettings: {
     selectorMode: 'target',
     executionKind: 'mutate',

@@ -140,6 +140,29 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     describeSurface: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.describeSurface(getValues(ctx)));
     },
+    getReactionMeta: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.getReactionMeta(getValues(ctx)));
+    },
+    setFieldValueRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setFieldValueRules(getValues(ctx), { transaction })),
+      );
+    },
+    setBlockLinkageRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setBlockLinkageRules(getValues(ctx), { transaction })),
+      );
+    },
+    setFieldLinkageRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setFieldLinkageRules(getValues(ctx), { transaction })),
+      );
+    },
+    setActionLinkageRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setActionLinkageRules(getValues(ctx), { transaction })),
+      );
+    },
     applyBlueprint: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () =>
         service.transaction((transaction) => service.applyBlueprint(getValues(ctx), { transaction })),

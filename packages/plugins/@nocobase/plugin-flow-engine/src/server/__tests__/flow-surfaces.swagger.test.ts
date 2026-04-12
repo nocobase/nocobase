@@ -73,8 +73,44 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceContextVarInfo',
       'FlowSurfaceContextRequest',
       'FlowSurfaceContextResponse',
+      'FlowSurfaceReactionKind',
+      'FlowSurfaceReactionScene',
+      'FlowSurfaceReactionSlot',
+      'FlowSurfaceReactionTargetSummary',
+      'FlowSurfaceReactionFilter',
+      'FlowSurfaceReactionValueExpr',
+      'FlowSurfaceReactionValueExprMeta',
+      'FlowSurfaceReactionConditionMeta',
+      'FlowSurfaceReactionSupportedAction',
+      'FlowSurfaceReactionUnavailableCapability',
+      'FlowSurfaceFieldOption',
+      'FlowSurfaceFieldValueRule',
+      'FlowSurfaceBlockLinkageRule',
+      'FlowSurfaceFieldLinkageRule',
+      'FlowSurfaceActionLinkageRule',
+      'FlowSurfaceFieldValueCapability',
+      'FlowSurfaceBlockLinkageCapability',
+      'FlowSurfaceFieldLinkageCapability',
+      'FlowSurfaceActionLinkageCapability',
+      'FlowSurfaceReactionCapability',
+      'FlowSurfaceGetReactionMetaRequest',
+      'FlowSurfaceGetReactionMetaResult',
+      'FlowSurfaceSetFieldValueRulesRequest',
+      'FlowSurfaceSetFieldValueRulesResult',
+      'FlowSurfaceSetBlockLinkageRulesRequest',
+      'FlowSurfaceSetBlockLinkageRulesResult',
+      'FlowSurfaceSetFieldLinkageRulesRequest',
+      'FlowSurfaceSetFieldLinkageRulesResult',
+      'FlowSurfaceSetActionLinkageRulesRequest',
+      'FlowSurfaceSetActionLinkageRulesResult',
+      'FlowSurfaceApplyBlueprintReactionItemSetFieldValueRules',
+      'FlowSurfaceApplyBlueprintReactionItemSetBlockLinkageRules',
+      'FlowSurfaceApplyBlueprintReactionItemSetFieldLinkageRules',
+      'FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules',
       'FlowSurfaceDescribeSurfaceRequest',
       'FlowSurfaceDescribeSurfaceResponse',
+      'FlowSurfaceApplyBlueprintReactionItem',
+      'FlowSurfaceApplyBlueprintReaction',
       'FlowSurfaceApplyBlueprintRequest',
       'FlowSurfaceApplyBlueprintResponse',
       'FlowSurfaceBindKey',
@@ -201,16 +237,51 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.keys.$ref).toBe(
       '#/components/schemas/FlowSurfaceKeysMap',
     );
+    expect(schemas.FlowSurfaceGetReactionMetaRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceGetReactionMetaResult.required).toEqual(['target', 'capabilities', 'unavailable']);
+    expect(schemas.FlowSurfaceGetReactionMetaResult.properties.capabilities.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceReactionCapability',
+    );
+    expect(schemas.FlowSurfaceReactionCapability.oneOf).toEqual(
+      expect.arrayContaining([
+        { $ref: '#/components/schemas/FlowSurfaceFieldValueCapability' },
+        { $ref: '#/components/schemas/FlowSurfaceBlockLinkageCapability' },
+        { $ref: '#/components/schemas/FlowSurfaceFieldLinkageCapability' },
+        { $ref: '#/components/schemas/FlowSurfaceActionLinkageCapability' },
+      ]),
+    );
+    expect(schemas.FlowSurfaceSetFieldValueRulesRequest.required).toEqual(['target', 'rules']);
+    expect(schemas.FlowSurfaceSetBlockLinkageRulesRequest.required).toEqual(['target', 'rules']);
+    expect(schemas.FlowSurfaceSetFieldLinkageRulesRequest.required).toEqual(['target', 'rules']);
+    expect(schemas.FlowSurfaceSetActionLinkageRulesRequest.required).toEqual(['target', 'rules']);
+    expect(schemas.FlowSurfaceSetFieldValueRulesResult.properties.updateAssociationValues.items.type).toBe('string');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.oneOf).toBeUndefined();
     expect(schemas.FlowSurfaceApplyBlueprintRequest.type).toBe('object');
-    expect(schemas.FlowSurfaceApplyBlueprintRequest.required).toEqual(['version', 'mode', 'tabs']);
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.required).toEqual(['mode', 'tabs']);
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.version.enum).toEqual(['1']);
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.mode.enum).toEqual(['create', 'replace']);
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.tabs.minItems).toBe(1);
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.tabs.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintTab',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain("defaults to '1'");
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('create does not accept target');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('replace requires target.pageSchemaUid');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.reaction.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintReaction',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintReaction.required).toEqual(['items']);
+    expect(schemas.FlowSurfaceApplyBlueprintReaction.properties.items.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintReactionItem',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintReactionItem.oneOf).toEqual(
+      expect.arrayContaining([
+        { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintReactionItemSetFieldValueRules' },
+        { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintReactionItemSetBlockLinkageRules' },
+        { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintReactionItemSetFieldLinkageRules' },
+        { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules' },
+      ]),
+    );
     expect(schemas.FlowSurfaceApplyBlueprintTab.required).toEqual(['blocks']);
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.blocks.minItems).toBe(1);
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.key.description).toContain('Optional local tab key');

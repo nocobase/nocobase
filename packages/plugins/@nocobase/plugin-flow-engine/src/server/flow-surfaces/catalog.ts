@@ -256,6 +256,14 @@ const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
     'defaultValues.value': ARRAY_SCHEMA,
   },
 };
+const BLOCK_LINKAGE_CARD_SETTINGS_GROUP = {
+  allowedPaths: ['linkageRules'],
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['linkageRules'],
+  pathSchemas: {
+    linkageRules: ARRAY_SCHEMA,
+  },
+};
 const TABLE_SETTINGS_GROUP = {
   allowedPaths: [
     'quickEdit.editable',
@@ -557,6 +565,30 @@ const GRID_NODE_CONTRACT = createContract({
 });
 GRID_NODE_CONTRACT.domains.props = keyedDomain(['rows', 'sizes', 'rowOrder'], 'replace');
 
+const FORM_GRID_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: ['rows', 'sizes', 'rowOrder'],
+  stepParams: ['formModelSettings', 'eventSettings'],
+  flowRegistry: true,
+  layoutCapabilities: GRID_LAYOUT_CAPABILITIES,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+  },
+  eventBindings: {
+    formModelSettings: {
+      stepKeys: ['layout', 'assignRules'],
+    },
+    eventSettings: {
+      stepKeys: ['linkageRules'],
+    },
+  },
+});
+FORM_GRID_NODE_CONTRACT.domains.props = keyedDomain(['rows', 'sizes', 'rowOrder'], 'replace');
+FORM_GRID_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  formModelSettings: FORM_MODEL_SETTINGS_GROUP,
+  eventSettings: EVENT_SETTINGS_GROUP,
+});
+
 const PAGE_NODE_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'],
@@ -625,7 +657,7 @@ const TABLE_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'height', 'heightMode'],
   decoratorProps: ['height', 'heightMode'],
-  stepParams: ['resourceSettings', 'tableSettings'],
+  stepParams: ['resourceSettings', 'tableSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ['beforeRender', 'paginationChange'],
@@ -635,13 +667,14 @@ const TABLE_BLOCK_CONTRACT = createContract({
 TABLE_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   tableSettings: TABLE_SETTINGS_GROUP,
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings'],
+  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -652,13 +685,14 @@ FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const CREATE_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings'],
+  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -670,13 +704,14 @@ CREATE_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
   formSettings: CREATE_FORM_SETTINGS_EVENT_ONLY_GROUP,
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const EDIT_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings'],
+  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -688,13 +723,14 @@ EDIT_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
   formSettings: EDIT_FORM_SETTINGS_GROUP,
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const DETAILS_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['resourceSettings', 'detailsSettings'],
+  stepParams: ['resourceSettings', 'detailsSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -704,6 +740,7 @@ const DETAILS_BLOCK_CONTRACT = createContract({
 DETAILS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   detailsSettings: DETAILS_SETTINGS_GROUP,
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const FILTER_FORM_BLOCK_CONTRACT = createContract({
@@ -726,7 +763,7 @@ const LIST_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle'],
   decoratorProps: ['height', 'heightMode'],
-  stepParams: ['resourceSettings', 'listSettings'],
+  stepParams: ['resourceSettings', 'listSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -760,13 +797,14 @@ LIST_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'layout.layout': STRING_SCHEMA,
     },
   },
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const GRID_CARD_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle'],
   decoratorProps: ['height', 'heightMode'],
-  stepParams: ['resourceSettings', 'GridCardSettings'],
+  stepParams: ['resourceSettings', 'GridCardSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -817,6 +855,7 @@ GRID_CARD_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'layout.layout': STRING_SCHEMA,
     },
   },
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const MARKDOWN_BLOCK_CONTRACT = createContract({
@@ -874,14 +913,15 @@ IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const CHART_CARD_SETTINGS_GROUP = {
-  allowedPaths: ['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height'],
+  allowedPaths: ['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height', 'linkageRules'],
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['titleDescription', 'blockHeight'],
+  eventBindingSteps: ['titleDescription', 'blockHeight', 'linkageRules'],
   pathSchemas: {
     'titleDescription.title': STRING_SCHEMA,
     'blockHeight.heightMode': STRING_SCHEMA,
     'blockHeight.height': NUMBER_SCHEMA,
+    linkageRules: ARRAY_SCHEMA,
   },
 };
 
@@ -909,7 +949,7 @@ CHART_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const ACTION_PANEL_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'layout', 'ellipsis'],
-  stepParams: ['actionPanelBlockSetting'],
+  stepParams: ['actionPanelBlockSetting', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -924,6 +964,7 @@ ACTION_PANEL_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'ellipsis.ellipsis': BOOLEAN_SCHEMA,
     },
   },
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const JS_BLOCK_CONTRACT = createContract({
@@ -947,7 +988,7 @@ JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const MAP_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'height', 'heightMode', 'mapField', 'marker', 'lineSort', 'zoom'],
-  stepParams: ['resourceSettings', 'createMapBlock'],
+  stepParams: ['resourceSettings', 'createMapBlock', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -983,12 +1024,13 @@ MAP_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'mapZoom.zoom': NUMBER_SCHEMA,
     },
   },
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
 });
 
 const COMMENTS_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle'],
-  stepParams: ['resourceSettings', 'commentsSettings'],
+  stepParams: ['resourceSettings', 'commentsSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1013,6 +1055,7 @@ COMMENTS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'init.associationPathName': STRING_SCHEMA,
     },
   },
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
   commentsSettings: {
     allowedPaths: ['pageSize.pageSize', 'dataScope.filter'],
     clearable: true,
@@ -1301,6 +1344,61 @@ FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     eventBindingSteps: ['openView'],
     pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
+});
+const SUB_FORM_FIELD_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: [
+    'title',
+    'icon',
+    'titleField',
+    'clickToOpen',
+    'autoSize',
+    'allowMultiple',
+    'multiple',
+    'quickCreate',
+    'allowClear',
+    'displayStyle',
+    'options',
+  ],
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['fieldSettings', 'displayFieldSettings', 'popupSettings', 'eventSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    displayFieldSettings: {
+      stepKeys: ['displayStyle', 'clickToOpen'],
+    },
+    popupSettings: {
+      stepKeys: ['openView'],
+    },
+    eventSettings: {
+      stepKeys: ['linkageRules'],
+    },
+  },
+});
+SUB_FORM_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  fieldSettings: FIELD_SETTINGS_INIT_GROUP,
+  displayFieldSettings: {
+    allowedPaths: ['displayStyle.displayStyle', 'clickToOpen.clickToOpen'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['displayStyle', 'clickToOpen'],
+    pathSchemas: {
+      'displayStyle.displayStyle': STRING_SCHEMA,
+      'clickToOpen.clickToOpen': BOOLEAN_SCHEMA,
+    },
+  },
+  popupSettings: {
+    allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['openView'],
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
+  },
+  eventSettings: EVENT_SETTINGS_GROUP,
 });
 
 const POPUP_ACTION_CONTRACT = createContract({
@@ -1796,10 +1894,10 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['RootPageTabModel', TAB_NODE_CONTRACT],
   ['ChildPageTabModel', TAB_NODE_CONTRACT],
   ['BlockGridModel', GRID_NODE_CONTRACT],
-  ['FormGridModel', GRID_NODE_CONTRACT],
+  ['FormGridModel', FORM_GRID_NODE_CONTRACT],
   ['DetailsGridModel', GRID_NODE_CONTRACT],
   ['FilterFormGridModel', GRID_NODE_CONTRACT],
-  ['AssignFormGridModel', GRID_NODE_CONTRACT],
+  ['AssignFormGridModel', FORM_GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
   ['CreateFormModel', CREATE_FORM_BLOCK_CONTRACT],
   ['EditFormModel', EDIT_FORM_BLOCK_CONTRACT],
@@ -1821,6 +1919,8 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FormAssociationItemModel', DETAILS_ITEM_CONTRACT],
   ['DetailsItemModel', DETAILS_ITEM_CONTRACT],
   ['FilterFormItemModel', FILTER_FORM_ITEM_CONTRACT],
+  ['SubFormFieldModel', SUB_FORM_FIELD_NODE_CONTRACT],
+  ['SubFormListFieldModel', SUB_FORM_FIELD_NODE_CONTRACT],
   ['TableColumnModel', TABLE_COLUMN_CONTRACT],
   ['JSColumnModel', JS_COLUMN_CONTRACT],
   ['JSItemModel', JS_ITEM_CONTRACT],

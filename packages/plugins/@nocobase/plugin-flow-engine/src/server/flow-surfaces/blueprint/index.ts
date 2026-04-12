@@ -16,6 +16,7 @@ export type {
   FlowSurfaceApplyBlueprintNavigationGroup,
   FlowSurfaceApplyBlueprintPage,
   FlowSurfaceApplyBlueprintProgram,
+  FlowSurfaceApplyBlueprintReaction,
   FlowSurfaceApplyBlueprintReplaceTargetInfo,
   FlowSurfaceApplyBlueprintTabDocument,
   FlowSurfaceApplyBlueprintTarget,
@@ -23,3 +24,4 @@ export type {
 
 export { prepareFlowSurfaceApplyBlueprintDocument } from './normalize-document';
 export { compileFlowSurfaceApplyBlueprintRequest, resolveApplyBlueprintPageLocator } from './compile-plan';
+export { compileReactionPlanSteps } from './compile-reaction';

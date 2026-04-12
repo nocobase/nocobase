@@ -60,6 +60,7 @@ import {
   type FlowSurfaceApplyBlueprintReplaceTargetInfo,
 } from './blueprint';
 import { APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS } from './blueprint/private-utils';
+import type { FlowSurfacePlanOnlyActionName } from './planning/action-specs';
 import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
 import { collectFlowSurfaceCreatedKeys, collectPersistableFlowSurfaceCreatedKeys } from './planning/created-keys';
 import { persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode } from './planning/key-persistence';
@@ -143,6 +144,38 @@ import {
   resolveFieldTargetCollection,
   toTemplatePlainRow,
 } from './service-helpers';
+import {
+  FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT,
+  FLOW_SURFACE_REACTION_UNKNOWN_TARGET_KEY,
+} from './reaction/errors';
+import { buildFieldValueWriteResult, normalizeFieldValueRules } from './reaction/field-value';
+import { buildReactionFingerprint } from './reaction/fingerprint';
+import {
+  compileActionLinkageCanonicalRules,
+  compileBlockLinkageCanonicalRules,
+  compileFieldLinkageCanonicalRules,
+  normalizeActionLinkageRules,
+  normalizeBlockLinkageRules,
+  normalizeFieldLinkageRules,
+} from './reaction/linkage';
+import { buildGetReactionMetaResult } from './reaction/meta';
+import { resolveReactionCapability, resolveReactionStorageNode, resolveReactionTarget } from './reaction/resolver';
+import type {
+  FlowSurfaceActionLinkageRule,
+  FlowSurfaceBlockLinkageRule,
+  FlowSurfaceFieldLinkageRule,
+  FlowSurfaceFieldLinkageScene,
+  FlowSurfaceFieldValueRule,
+  FlowSurfaceGetReactionMetaResult,
+  FlowSurfaceGetReactionMetaValues,
+  FlowSurfaceReactionKind,
+  FlowSurfaceReactionRuleNormalizers,
+  FlowSurfaceReactionScene,
+  FlowSurfaceReactionSlot,
+  FlowSurfaceReactionWriteResult,
+  FlowSurfaceReactionWriteValues,
+  FlowSurfaceResolvedReactionTarget,
+} from './reaction/types';
 import {
   assertCollectionTitleFieldExists,
   resolveAssociationSafeTitleField,
@@ -2157,6 +2190,393 @@ export class FlowSurfacesService {
     });
   }
 
+  private extractReactionCanonicalRules(node: any, slot: FlowSurfaceReactionSlot) {
+    const stepRoot = _.get(node, ['stepParams', slot.flowKey, slot.stepKey]);
+    const rawValue = slot.valuePath == null ? stepRoot : _.get(stepRoot, slot.valuePath);
+    return Array.isArray(rawValue) ? _.cloneDeep(rawValue) : [];
+  }
+
+  private buildReactionFieldPathMaps(node: any, scene: FlowSurfaceReactionScene) {
+    const pathToUid = new Map<string, string>();
+    const uidToPath = new Map<string, string>();
+
+    const visit = (current: any, depth: number) => {
+      if (!current || typeof current !== 'object') {
+        return;
+      }
+
+      const isSubFormHostRoot =
+        scene === 'subForm' &&
+        depth === 0 &&
+        ['SubFormFieldModel', 'SubFormListFieldModel'].includes(String(current.use || '').trim());
+
+      if (!isSubFormHostRoot) {
+        const fieldInit =
+          current?.stepParams?.fieldSettings?.init || current?.subModels?.field?.stepParams?.fieldSettings?.init;
+        const fieldPath = String(fieldInit?.fieldPath || '').trim();
+        if (current?.uid && fieldPath) {
+          const normalizedPath = normalizeFieldPath(fieldPath, fieldInit?.associationPathName);
+          if (normalizedPath) {
+            if (!pathToUid.has(normalizedPath)) {
+              pathToUid.set(normalizedPath, current.uid);
+            }
+            if (!uidToPath.has(current.uid)) {
+              uidToPath.set(current.uid, normalizedPath);
+            }
+          }
+        }
+      }
+
+      for (const child of Object.values(current.subModels || {})) {
+        for (const item of Array.isArray(child) ? child : [child]) {
+          visit(item, depth + 1);
+        }
+      }
+    };
+
+    visit(node, 0);
+    return {
+      pathToUid,
+      uidToPath,
+    };
+  }
+
+  private requireReactionFieldUid(pathToUid: Map<string, string>, fieldPath: string, actionName: string) {
+    const normalizedPath = String(fieldPath || '').trim();
+    const uid = pathToUid.get(normalizedPath);
+    if (uid) {
+      return uid;
+    }
+    throwBadRequest(
+      `flowSurfaces ${actionName} field path '${normalizedPath}' is not available on the current target`,
+      FLOW_SURFACE_REACTION_UNKNOWN_TARGET_KEY,
+    );
+  }
+
+  private buildReactionRuleNormalizers(node: any): FlowSurfaceReactionRuleNormalizers {
+    return {
+      fieldValue: ({ canonicalRules }) => normalizeFieldValueRules(canonicalRules),
+      blockLinkage: ({ canonicalRules }) => normalizeBlockLinkageRules(canonicalRules),
+      actionLinkage: ({ canonicalRules }) => normalizeActionLinkageRules(canonicalRules),
+      fieldLinkage: ({ canonicalRules, resolvedScene }) => {
+        const { uidToPath } = this.buildReactionFieldPathMaps(node, resolvedScene as FlowSurfaceFieldLinkageScene);
+        return normalizeFieldLinkageRules(canonicalRules, {
+          scene: resolvedScene as FlowSurfaceFieldLinkageScene,
+          resolveFieldPath: (fieldUid) => uidToPath.get(String(fieldUid || '').trim()),
+        });
+      },
+    };
+  }
+
+  private buildReactionFingerprintForSlot(params: {
+    kind: FlowSurfaceReactionKind;
+    scene: FlowSurfaceReactionScene;
+    slot: FlowSurfaceReactionSlot;
+    canonicalRules: any[];
+  }) {
+    return buildReactionFingerprint({
+      kind: params.kind,
+      scene: params.scene,
+      slot: params.slot,
+      canonicalRules: params.canonicalRules,
+    });
+  }
+
+  private assertReactionFingerprint(
+    actionName: string,
+    expectedFingerprint: string | undefined,
+    currentFingerprint: string,
+  ) {
+    const normalizedExpectedFingerprint = String(expectedFingerprint || '').trim();
+    if (!normalizedExpectedFingerprint) {
+      return;
+    }
+    if (normalizedExpectedFingerprint === currentFingerprint) {
+      return;
+    }
+    throwConflict(
+      `flowSurfaces ${actionName} expectedFingerprint does not match the current reaction slot fingerprint`,
+      FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT,
+    );
+  }
+
+  private async resolveReactionRequest(
+    actionName: string,
+    targetInput: FlowSurfaceWriteTarget | undefined,
+    options: { transaction?: any } = {},
+  ): Promise<{
+    writeTarget: FlowSurfaceWriteTarget;
+    resolved: FlowSurfaceResolvedTarget;
+    node: any;
+    resolvedTarget: FlowSurfaceResolvedReactionTarget;
+  }> {
+    const writeTarget = this.normalizeWriteTarget(actionName, targetInput, {
+      target: targetInput,
+    });
+    const resolved = await this.locator.resolve(writeTarget, options);
+    const rawNode = await this.loadResolvedNode(resolved, options.transaction);
+    const node = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode));
+    const resolvedTarget = resolveReactionTarget({
+      target: writeTarget,
+      node,
+      use: node?.use,
+    });
+    return {
+      writeTarget,
+      resolved,
+      node,
+      resolvedTarget,
+    };
+  }
+
+  private async persistReactionSlot(
+    node: any,
+    slot: FlowSurfaceReactionSlot,
+    canonicalRules: any[],
+    options: { transaction?: any } = {},
+  ) {
+    const targetUid = String(node?.uid || '').trim();
+    if (!targetUid) {
+      throwBadRequest(`flowSurfaces reaction target '${node?.use || 'unknown'}' is missing uid`);
+    }
+
+    const stepParamsPatch: Record<string, any> = {};
+    if (slot.valuePath == null) {
+      _.set(stepParamsPatch, [slot.flowKey, slot.stepKey], _.cloneDeep(canonicalRules));
+    } else {
+      _.set(stepParamsPatch, [slot.flowKey, slot.stepKey, slot.valuePath], _.cloneDeep(canonicalRules));
+    }
+
+    const contract = getNodeContract(node?.use);
+    const domainContract = contract.domains.stepParams;
+    if (!domainContract) {
+      throwBadRequest(`flowSurfaces reaction target '${node?.use || node?.uid}' does not support stepParams writes`);
+    }
+
+    // Reaction slot writes use full-replace semantics on the target slot.
+    // Validate only the slot patch against the contract, then replace that slot directly.
+    this.contractGuard.mergeDomainValue('stepParams', {}, stepParamsPatch, domainContract, node?.use);
+
+    const nextStepParams =
+      this.stripInternalSurfaceMetaFromNodeTree({
+        stepParams: _.cloneDeep(node?.stepParams || {}),
+      })?.stepParams || {};
+    if (slot.valuePath == null) {
+      _.set(nextStepParams, [slot.flowKey, slot.stepKey], _.cloneDeep(canonicalRules));
+    } else {
+      _.set(nextStepParams, [slot.flowKey, slot.stepKey, slot.valuePath], _.cloneDeep(canonicalRules));
+    }
+
+    await this.repository.patch(
+      {
+        uid: targetUid,
+        stepParams: nextStepParams,
+      },
+      { transaction: options.transaction },
+    );
+  }
+
+  private buildLinkageWriteResult<T>(params: {
+    kind: Exclude<FlowSurfaceReactionKind, 'fieldValue'>;
+    resolvedTarget: FlowSurfaceResolvedReactionTarget;
+    resolvedScene: FlowSurfaceReactionScene;
+    resolvedSlot: FlowSurfaceReactionSlot;
+    normalizedRules: T[];
+    canonicalRules: any[];
+  }): FlowSurfaceReactionWriteResult<T> {
+    return {
+      target: params.resolvedTarget.target,
+      resolvedScene: params.resolvedScene,
+      resolvedSlot: params.resolvedSlot,
+      fingerprint: this.buildReactionFingerprintForSlot({
+        kind: params.kind,
+        scene: params.resolvedScene,
+        slot: params.resolvedSlot,
+        canonicalRules: params.canonicalRules,
+      }),
+      normalizedRules: params.normalizedRules,
+      canonicalRules: params.canonicalRules,
+    };
+  }
+
+  async getReactionMeta(
+    values: FlowSurfaceGetReactionMetaValues,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceGetReactionMetaResult> {
+    validateFlowSurfacePayloadShape('getReactionMeta', values, 'values');
+    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest(
+      'getReactionMeta',
+      values?.target,
+      options,
+    );
+    const context = await this.context(
+      {
+        target: writeTarget,
+      },
+      options,
+    );
+    return buildGetReactionMetaResult({
+      resolvedTarget: {
+        ...resolvedTarget,
+        node,
+      },
+      context,
+      normalizeRules: this.buildReactionRuleNormalizers(node),
+    });
+  }
+
+  async setFieldValueRules(
+    values: FlowSurfaceReactionWriteValues<FlowSurfaceFieldValueRule>,
+    options: { transaction?: any } = {},
+  ) {
+    validateFlowSurfacePayloadShape('setFieldValueRules', values, 'values');
+    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest(
+      'setFieldValueRules',
+      values?.target,
+      options,
+    );
+    const capability = resolveReactionCapability(resolvedTarget, 'fieldValue');
+    const storageNode = resolveReactionStorageNode(resolvedTarget, capability);
+    const currentCanonicalRules = this.extractReactionCanonicalRules(storageNode, capability.resolvedSlot);
+    const currentFingerprint = this.buildReactionFingerprintForSlot({
+      kind: 'fieldValue',
+      scene: capability.resolvedScene,
+      slot: capability.resolvedSlot,
+      canonicalRules: currentCanonicalRules,
+    });
+    this.assertReactionFingerprint('setFieldValueRules', values?.expectedFingerprint, currentFingerprint);
+
+    const result = buildFieldValueWriteResult({
+      target: {
+        ...resolvedTarget.target,
+        use: node?.use,
+      },
+      rules: Array.isArray(values?.rules) ? values.rules : [],
+    });
+
+    await this.persistReactionSlot(storageNode, capability.resolvedSlot, result.canonicalRules, options);
+
+    return result;
+  }
+
+  async setBlockLinkageRules(
+    values: FlowSurfaceReactionWriteValues<FlowSurfaceBlockLinkageRule>,
+    options: { transaction?: any } = {},
+  ) {
+    validateFlowSurfacePayloadShape('setBlockLinkageRules', values, 'values');
+    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest(
+      'setBlockLinkageRules',
+      values?.target,
+      options,
+    );
+    const capability = resolveReactionCapability(resolvedTarget, 'blockLinkage');
+    const storageNode = resolveReactionStorageNode(resolvedTarget, capability);
+    const currentCanonicalRules = this.extractReactionCanonicalRules(storageNode, capability.resolvedSlot);
+    const currentFingerprint = this.buildReactionFingerprintForSlot({
+      kind: 'blockLinkage',
+      scene: capability.resolvedScene,
+      slot: capability.resolvedSlot,
+      canonicalRules: currentCanonicalRules,
+    });
+    this.assertReactionFingerprint('setBlockLinkageRules', values?.expectedFingerprint, currentFingerprint);
+
+    const normalizedRules = normalizeBlockLinkageRules(Array.isArray(values?.rules) ? values.rules : []);
+    const canonicalRules = compileBlockLinkageCanonicalRules(normalizedRules);
+    const result = this.buildLinkageWriteResult({
+      kind: 'blockLinkage',
+      resolvedTarget,
+      resolvedScene: capability.resolvedScene,
+      resolvedSlot: capability.resolvedSlot,
+      normalizedRules,
+      canonicalRules,
+    });
+
+    await this.persistReactionSlot(storageNode, capability.resolvedSlot, canonicalRules, options);
+
+    return result;
+  }
+
+  async setFieldLinkageRules(
+    values: FlowSurfaceReactionWriteValues<FlowSurfaceFieldLinkageRule>,
+    options: { transaction?: any } = {},
+  ) {
+    validateFlowSurfacePayloadShape('setFieldLinkageRules', values, 'values');
+    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest(
+      'setFieldLinkageRules',
+      values?.target,
+      options,
+    );
+    const capability = resolveReactionCapability(resolvedTarget, 'fieldLinkage');
+    const storageNode = resolveReactionStorageNode(resolvedTarget, capability);
+    const currentCanonicalRules = this.extractReactionCanonicalRules(storageNode, capability.resolvedSlot);
+    const currentFingerprint = this.buildReactionFingerprintForSlot({
+      kind: 'fieldLinkage',
+      scene: capability.resolvedScene,
+      slot: capability.resolvedSlot,
+      canonicalRules: currentCanonicalRules,
+    });
+    this.assertReactionFingerprint('setFieldLinkageRules', values?.expectedFingerprint, currentFingerprint);
+
+    const scene = capability.resolvedScene as FlowSurfaceFieldLinkageScene;
+    const { pathToUid } = this.buildReactionFieldPathMaps(node, scene);
+    const normalizedRules = normalizeFieldLinkageRules(Array.isArray(values?.rules) ? values.rules : [], {
+      scene,
+    });
+    const canonicalRules = compileFieldLinkageCanonicalRules(normalizedRules, {
+      scene,
+      resolveFieldUid: (fieldPath) => this.requireReactionFieldUid(pathToUid, fieldPath, 'setFieldLinkageRules'),
+    });
+    const result = this.buildLinkageWriteResult({
+      kind: 'fieldLinkage',
+      resolvedTarget,
+      resolvedScene: capability.resolvedScene,
+      resolvedSlot: capability.resolvedSlot,
+      normalizedRules,
+      canonicalRules,
+    });
+
+    await this.persistReactionSlot(storageNode, capability.resolvedSlot, canonicalRules, options);
+
+    return result;
+  }
+
+  async setActionLinkageRules(
+    values: FlowSurfaceReactionWriteValues<FlowSurfaceActionLinkageRule>,
+    options: { transaction?: any } = {},
+  ) {
+    validateFlowSurfacePayloadShape('setActionLinkageRules', values, 'values');
+    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest(
+      'setActionLinkageRules',
+      values?.target,
+      options,
+    );
+    const capability = resolveReactionCapability(resolvedTarget, 'actionLinkage');
+    const storageNode = resolveReactionStorageNode(resolvedTarget, capability);
+    const currentCanonicalRules = this.extractReactionCanonicalRules(storageNode, capability.resolvedSlot);
+    const currentFingerprint = this.buildReactionFingerprintForSlot({
+      kind: 'actionLinkage',
+      scene: capability.resolvedScene,
+      slot: capability.resolvedSlot,
+      canonicalRules: currentCanonicalRules,
+    });
+    this.assertReactionFingerprint('setActionLinkageRules', values?.expectedFingerprint, currentFingerprint);
+
+    const normalizedRules = normalizeActionLinkageRules(Array.isArray(values?.rules) ? values.rules : []);
+    const canonicalRules = compileActionLinkageCanonicalRules(normalizedRules);
+    const result = this.buildLinkageWriteResult({
+      kind: 'actionLinkage',
+      resolvedTarget,
+      resolvedScene: capability.resolvedScene,
+      resolvedSlot: capability.resolvedSlot,
+      normalizedRules,
+      canonicalRules,
+    });
+
+    await this.persistReactionSlot(storageNode, capability.resolvedSlot, canonicalRules, options);
+
+    return result;
+  }
+
   private buildStableFingerprintString(value: any): string {
     if (_.isNil(value)) {
       return 'null';
@@ -2343,7 +2763,7 @@ export class FlowSurfacesService {
         readOptions?: { transaction?: any },
       ) => this.buildSurfaceReadPayload(target, resolved, node, readOptions),
       dispatchPlanOnlyAction: (
-        action: 'compose' | 'configure' | 'convertTemplateToCopy',
+        action: FlowSurfacePlanOnlyActionName,
         payload: Record<string, any>,
         transaction?: any,
       ) => this.dispatchPlanOnlyAction(action, payload, transaction),
@@ -2360,7 +2780,7 @@ export class FlowSurfacesService {
   }
 
   private async dispatchPlanOnlyAction(
-    action: 'compose' | 'configure' | 'convertTemplateToCopy',
+    action: FlowSurfacePlanOnlyActionName,
     payload: Record<string, any>,
     transaction?: any,
   ) {
@@ -2370,6 +2790,23 @@ export class FlowSurfacesService {
         return this.compose(payload as FlowSurfaceComposeValues, options);
       case 'configure':
         return this.configure(payload as FlowSurfaceConfigureValues, options);
+      case 'setFieldValueRules':
+        return this.setFieldValueRules(payload as FlowSurfaceReactionWriteValues<FlowSurfaceFieldValueRule>, options);
+      case 'setBlockLinkageRules':
+        return this.setBlockLinkageRules(
+          payload as FlowSurfaceReactionWriteValues<FlowSurfaceBlockLinkageRule>,
+          options,
+        );
+      case 'setFieldLinkageRules':
+        return this.setFieldLinkageRules(
+          payload as FlowSurfaceReactionWriteValues<FlowSurfaceFieldLinkageRule>,
+          options,
+        );
+      case 'setActionLinkageRules':
+        return this.setActionLinkageRules(
+          payload as FlowSurfaceReactionWriteValues<FlowSurfaceActionLinkageRule>,
+          options,
+        );
       case 'convertTemplateToCopy':
         return this.convertTemplateToCopy(payload, options);
     }

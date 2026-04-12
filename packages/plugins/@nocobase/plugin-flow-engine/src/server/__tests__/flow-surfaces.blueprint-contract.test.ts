@@ -75,7 +75,6 @@ describe('flowSurfaces applyBlueprint contract', () => {
   it('should create one page from a simplified page blueprint and return only target/surface', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
-        version: '1',
         mode: 'create',
         navigation: {
           group: {

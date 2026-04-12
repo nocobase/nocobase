@@ -12,6 +12,7 @@ import { throwBadRequest } from '../errors';
 import { buildDefinedPayload } from '../service-utils';
 import type { FlowSurfacePlanSelector, FlowSurfacePlanStep } from '../types';
 import { compileTabComposeValues } from './compile-blocks';
+import { compileReactionPlanSteps } from './compile-reaction';
 import type {
   FlowSurfaceApplyBlueprintDocument,
   FlowSurfaceApplyBlueprintProgram,
@@ -150,6 +151,8 @@ function compileCreatePlan(document: FlowSurfaceApplyBlueprintDocument): FlowSur
     });
   });
 
+  steps.push(...compileReactionPlanSteps(document.reaction));
+
   return {
     document,
     steps,
@@ -260,6 +263,8 @@ function compileReplacePlan(
         },
       });
     });
+
+  steps.push(...compileReactionPlanSteps(document.reaction));
 
   return {
     document,
