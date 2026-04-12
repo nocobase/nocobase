@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import 'antd/dist/reset.css';
+
 export * from './BaseApplication';
 export * from './Application';
 export * from './HeaderActionsManager';
