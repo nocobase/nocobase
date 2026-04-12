@@ -39,7 +39,36 @@ import { PluginManager, type PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { RouterManager, type RouterOptions } from './RouterManager';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
-import * as schemaInitializerComponents from './schema-initializer/components';
+import {
+  SchemaInitializerActionModal,
+  SchemaInitializerActionModalInternal,
+} from './schema-initializer/components/SchemaInitializerActionModal';
+import {
+  SchemaInitializerChildren,
+  SchemaInitializerChild,
+} from './schema-initializer/components/SchemaInitializerChildren';
+import { SchemaInitializerDivider } from './schema-initializer/components/SchemaInitializerDivider';
+import {
+  SchemaInitializerItem,
+  SchemaInitializerItemInternal,
+} from './schema-initializer/components/SchemaInitializerItem';
+import {
+  SchemaInitializerItemGroup,
+  SchemaInitializerItemGroupInternal,
+} from './schema-initializer/components/SchemaInitializerItemGroup';
+import { SchemaInitializerItems } from './schema-initializer/components/SchemaInitializerItems';
+import {
+  SchemaInitializerSelect,
+  SchemaInitializerSelectInternal,
+} from './schema-initializer/components/SchemaInitializerSelect';
+import {
+  SchemaInitializerSubMenu,
+  SchemaInitializerSubMenuInternal,
+} from './schema-initializer/components/SchemaInitializerSubMenu';
+import {
+  SchemaInitializerSwitch,
+  SchemaInitializerSwitchInternal,
+} from './schema-initializer/components/SchemaInitializerSwitch';
 import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
 
 import { getOperators } from './globalOperators';
@@ -146,7 +175,22 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return {
       ...super.getDefaultComponents(),
       DataBlockProvider,
-      ...schemaInitializerComponents,
+      SchemaInitializerActionModal,
+      SchemaInitializerActionModalInternal,
+      SchemaInitializerChildren,
+      SchemaInitializerChild,
+      SchemaInitializerDivider,
+      SchemaInitializerItem,
+      SchemaInitializerItemGroup,
+      SchemaInitializerItemGroupInternal,
+      SchemaInitializerItemInternal,
+      SchemaInitializerItems,
+      SchemaInitializerSelect,
+      SchemaInitializerSelectInternal,
+      SchemaInitializerSubMenu,
+      SchemaInitializerSubMenuInternal,
+      SchemaInitializerSwitch,
+      SchemaInitializerSwitchInternal,
       CollectionField,
     };
   }

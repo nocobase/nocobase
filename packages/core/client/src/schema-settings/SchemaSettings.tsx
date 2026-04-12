@@ -45,20 +45,12 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  ICON_POPUP_Z_INDEX,
-  SchemaSettingsItemType,
-  SchemaToolbarVisibleContext,
-  VariablesContext,
-  getZIndex,
-  useCollection,
-  useCollectionManager,
-  useZIndexContext,
-  zIndexContext,
-} from '../';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
-import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
+import { ApplicationContext } from '../application/context';
+import { LocationSearchContext, useLocationSearch } from '../application/CustomRouterContextProvider';
+import { useApp } from '../application/hooks/useApp';
+import { SchemaSettingsItemType } from '../application/schema-settings/types';
 import {
   BlockContext,
   BlockRequestContext_deprecated,
@@ -78,6 +70,7 @@ import { useCollectionManager_deprecated } from '../collection-manager/hooks/use
 import { CollectionFieldOptions_deprecated } from '../collection-manager/types';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
+import { useCollection } from '../data-source/collection/CollectionProvider';
 import {
   CollectionRecordProvider,
   useCollectionRecord,
@@ -87,7 +80,8 @@ import { AssociationOrCollectionProvider, useDataBlockProps } from '../data-sour
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { FlagProvider, useFlag } from '../flag-provider';
+import { FlagProvider } from '../flag-provider';
+import { useFlag } from '../flag-provider/hooks/useFlag';
 import { useGlobalTheme } from '@nocobase/client-v2';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
@@ -97,9 +91,11 @@ import {
 } from '../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
+import { getZIndex, useZIndexContext, zIndexContext } from '../schema-component/antd/action/zIndexContext';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { FormDialog } from '../schema-component/antd/form-dialog';
 import { AllDataBlocksContext } from '../schema-component/antd/page/AllDataBlocksProvider';
+import { ICON_POPUP_Z_INDEX } from '../schema-component/antd/popover/Popover';
 import { SchemaComponentContext } from '../schema-component/context';
 import { FormProvider } from '../schema-component/core/FormProvider';
 import { RemoteSchemaComponent } from '../schema-component/core/RemoteSchemaComponent';
@@ -109,7 +105,9 @@ import { useCompile } from '../schema-component/hooks/useCompile';
 import { Designable, createDesignable, useDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
+import { SchemaToolbarVisibleContext } from './GeneralSchemaDesigner';
 import { useLocalVariables, useVariables } from '../variables';
+import { VariablesContext } from '../variables/VariablesProvider';
 import { VariableScopeContext } from '../variables/VariableScope';
 import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
@@ -118,6 +116,7 @@ import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
 import { CurrentRecordContextProvider, useCurrentRecord } from './VariableInput/hooks/useRecordVariable';
+import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;

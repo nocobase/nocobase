@@ -93,7 +93,6 @@ export function withInitializer<T>(C: ComponentType<T>) {
         }),
         [dropdownMaxHeight],
       );
-
       // designable 为 false 时，不渲染
       if (!designable && propsDesignable !== true) {
         return null;
