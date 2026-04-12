@@ -182,7 +182,7 @@ function normalizeEditPopupBlocks(
 
     if (!_.isUndefined(block.resource)) {
       if (_.isPlainObject(block.resource)) {
-        const binding = readOptionalString(block.resource.binding);
+        const binding = 'binding' in block.resource ? readOptionalString(block.resource.binding) : undefined;
         if (!binding) {
           throwBadRequest(
             `${context}.blocks[${index}].resource must use binding='currentRecord' or be omitted in a custom edit popup`,

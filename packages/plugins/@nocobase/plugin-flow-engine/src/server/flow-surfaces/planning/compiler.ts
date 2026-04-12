@@ -31,6 +31,7 @@ import type {
 import {
   assertNoDuplicateFlowSurfaceCreatedKeys,
   collectFlowSurfaceCreatedKeys,
+  isFlowSurfacePureKeyObject,
   normalizeComposeInlineKeysForPlan,
 } from './created-keys';
 
@@ -63,6 +64,12 @@ type FlowSurfaceResolvedSelector =
   | FlowSurfaceResolvedKey
   | FlowSurfaceCompiledPlanStepSelectorLink
   | FlowSurfaceCreatedKeySelector;
+
+function isFlowSurfaceResolvedStepLink(
+  selector: FlowSurfaceResolvedSelector,
+): selector is FlowSurfaceCompiledPlanStepSelectorLink {
+  return 'step' in selector && selector.summary.source === 'step';
+}
 
 export function normalizePlanSelector(
   actionName: string,
@@ -295,10 +302,9 @@ export async function compilePlanStep(
     new Set<string>([...context.keyMap.keys(), ...priorCreatedKeys]),
   );
 
-  const targetSelectorKey =
-    _.isPlainObject(step.selectors?.target) && typeof step.selectors?.target?.key === 'string'
-      ? String(step.selectors.target.key || '').trim()
-      : undefined;
+  const targetSelectorKey = isFlowSurfacePureKeyObject(step.selectors?.target)
+    ? String(step.selectors.target.key || '').trim()
+    : undefined;
   const createdKeys = collectFlowSurfaceCreatedKeys(step.action, step.values || {}, {
     targetSelectorKey,
   });
@@ -320,7 +326,7 @@ export async function compilePlanStep(
 
   const addUsedKey = (selector: FlowSurfaceResolvedSelector) => {
     if ('summary' in selector) {
-      if (selector.summary.source === 'step') {
+      if (isFlowSurfaceResolvedStepLink(selector)) {
         compiled.usedStepLinks.push(selector);
       }
       return selector.summary;
