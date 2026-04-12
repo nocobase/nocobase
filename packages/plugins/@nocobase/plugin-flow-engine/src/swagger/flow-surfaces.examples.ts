@@ -34,7 +34,7 @@ export const flowSurfaceExamples = {
       },
     ],
   },
-  executeDsl: {
+  applyBlueprint: {
     version: '1',
     mode: 'create',
     navigation: {
@@ -101,7 +101,7 @@ export const flowSurfaceExamples = {
       },
     ],
   },
-  executeDslReplace: {
+  applyBlueprintReplace: {
     version: '1',
     mode: 'replace',
     target: {

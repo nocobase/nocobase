@@ -20,7 +20,7 @@ import {
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
 
-describe('flowSurfaces executeDsl contract', () => {
+describe('flowSurfaces applyBlueprint contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
@@ -72,8 +72,8 @@ describe('flowSurfaces executeDsl contract', () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
-  it('should create one page from the simplified structure DSL and return only target/surface', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+  it('should create one page from a simplified page blueprint and return only target/surface', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -154,12 +154,7 @@ describe('flowSurfaces executeDsl contract', () => {
         pageUid: expect.any(String),
       },
     });
-    expect(data.dsl).toBeUndefined();
-    expect(data.plan).toBeUndefined();
-    expect(data.compiledSteps).toBeUndefined();
-    expect(data.results).toBeUndefined();
-    expect(data.verificationMode).toBeUndefined();
-    expect(data.keys).toBeUndefined();
+    expect(Object.keys(data).sort()).toEqual(['mode', 'surface', 'target', 'version']);
 
     expect(getRouteBackedTabs(data.surface).map((tab: any) => tab?.props?.title)).toEqual(['Overview', 'Summary']);
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
@@ -181,7 +176,7 @@ describe('flowSurfaces executeDsl contract', () => {
     });
     expect(addTabRes.status).toBe(200);
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'replace',
@@ -226,13 +221,13 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should reuse a unique same-title navigation group instead of creating a duplicate group', async () => {
-    const groupTitle = `Unique executeDsl group ${Date.now()}`;
+    const groupTitle = `Unique applyBlueprint group ${Date.now()}`;
     const existingGroup = await createMenu(rootAgent, {
       title: groupTitle,
       type: 'group',
     });
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -284,7 +279,7 @@ describe('flowSurfaces executeDsl contract', () => {
       type: 'group',
     });
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -329,7 +324,7 @@ describe('flowSurfaces executeDsl contract', () => {
       type: 'group',
     });
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -367,7 +362,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should reject ambiguous navigation group title reuse and ask for routeId explicitly', async () => {
-    const groupTitle = `Ambiguous executeDsl group ${Date.now()}`;
+    const groupTitle = `Ambiguous applyBlueprint group ${Date.now()}`;
     await createMenu(rootAgent, {
       title: groupTitle,
       type: 'group',
@@ -377,7 +372,7 @@ describe('flowSurfaces executeDsl contract', () => {
       type: 'group',
     });
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -412,7 +407,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should auto-generate a vertical grid layout when tab layout is omitted', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -462,7 +457,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should report layout errors with index-based tab paths instead of generated tab keys', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -491,13 +486,13 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(executeRes.status).toBe(400);
     const message = readErrorMessage(executeRes);
-    expect(message).toContain(`flowSurfaces executeDsl tabs[0].layout.rows[0][0]`);
+    expect(message).toContain(`flowSurfaces applyBlueprint tabs[0].layout.rows[0][0]`);
     expect(message).toContain(`references unknown block 'missingBlock'`);
     expect(message).not.toContain(`tabs['`);
   });
 
   it('should normalize currentRecord associationPathName resource shorthand into an associated-records popup table', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -562,7 +557,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should reject multi-segment associationPathName when binding-centered shorthand tries to normalize it', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -612,7 +607,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should create the nested users-roles popup page structure and auto-promote record actions from details.actions', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -827,7 +822,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should allow custom edit popups with one inherited editForm plus sibling blocks', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -947,7 +942,7 @@ describe('flowSurfaces executeDsl contract', () => {
   });
 
   it('should auto-promote common record actions from actions to recordActions on table, list, and gridCard blocks', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1029,10 +1024,10 @@ describe('flowSurfaces executeDsl contract', () => {
     ]);
   });
 
-  it('should reject unsupported executeDsl top-level keys', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+  it('should reject unsupported applyBlueprint top-level keys', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
-        dsl: {
+        unexpectedEnvelope: {
           version: '1',
           title: 'unsupported',
         },
@@ -1041,7 +1036,7 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain('only accepts top-level keys');
-    expect(readErrorMessage(res)).toContain('unsupported keys: dsl');
+    expect(readErrorMessage(res)).toContain('unsupported keys: unexpectedEnvelope');
   });
 
   it.each([
@@ -1138,52 +1133,30 @@ describe('flowSurfaces executeDsl contract', () => {
       undefined,
     ],
     [
-      'reject block collectionName alias',
+      'reject block unknown key',
       {
         version: '1',
         mode: 'create',
         tabs: [
           {
             key: 'overview',
-            blocks: [{ key: 'employeesTable', type: 'table', collectionName: 'employees', fields: ['nickname'] }],
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                unexpectedKey: true,
+              },
+            ],
           },
         ],
       },
-      'collectionName is unsupported; use collection',
-      'flowSurfaces executeDsl tabs[0].blocks[0].collectionName',
+      'unsupported keys: unexpectedKey',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0]',
     ],
     [
-      'reject block resourceBinding alias',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            key: 'overview',
-            blocks: [{ key: 'employeesTable', type: 'table', resourceBinding: 'currentCollection' }],
-          },
-        ],
-      },
-      'resourceBinding is unsupported; use binding',
-      'flowSurfaces executeDsl tabs[0].blocks[0].resourceBinding',
-    ],
-    [
-      'reject block association alias',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            key: 'overview',
-            blocks: [{ key: 'employeesTable', type: 'table', collection: 'employees', association: 'department' }],
-          },
-        ],
-      },
-      'association is unsupported; use associationPathName',
-      'flowSurfaces executeDsl tabs[0].blocks[0].association',
-    ],
-    [
-      'reject block.resource resourceBinding alias',
+      'reject block.resource unknown key',
       {
         version: '1',
         mode: 'create',
@@ -1195,62 +1168,16 @@ describe('flowSurfaces executeDsl contract', () => {
                 key: 'employeesTable',
                 type: 'table',
                 resource: {
-                  resourceBinding: 'currentCollection',
+                  binding: 'currentRecord',
+                  unexpectedKey: true,
                 },
               },
             ],
           },
         ],
       },
-      'resourceBinding is unsupported; use binding',
-      'flowSurfaces executeDsl tabs[0].blocks[0].resource.resourceBinding',
-    ],
-    [
-      'reject block.resource collection alias',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            key: 'overview',
-            blocks: [
-              {
-                key: 'employeesTable',
-                type: 'table',
-                resource: {
-                  collection: 'employees',
-                },
-              },
-            ],
-          },
-        ],
-      },
-      'collection is unsupported; use collectionName',
-      'flowSurfaces executeDsl tabs[0].blocks[0].resource.collection',
-    ],
-    [
-      'reject block.resource association alias',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            key: 'overview',
-            blocks: [
-              {
-                key: 'employeesTable',
-                type: 'table',
-                resource: {
-                  collectionName: 'employees',
-                  association: 'department',
-                },
-              },
-            ],
-          },
-        ],
-      },
-      'association is unsupported; use associationPathName',
-      'flowSurfaces executeDsl tabs[0].blocks[0].resource.association',
+      'unsupported keys: unexpectedKey',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].resource',
     ],
     [
       'reject block.resource mixed binding and raw-only keys',
@@ -1273,11 +1200,11 @@ describe('flowSurfaces executeDsl contract', () => {
           },
         ],
       },
-      'cannot mix binding with flowSurfaces executeDsl tabs[0].blocks[0].resource.sourceId',
-      'flowSurfaces executeDsl tabs[0].blocks[0].resource',
+      'cannot mix binding with flowSurfaces applyBlueprint tabs[0].blocks[0].resource.sourceId',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].resource',
     ],
     [
-      'reject fieldPath alias',
+      'reject field unknown key',
       {
         version: '1',
         mode: 'create',
@@ -1289,17 +1216,17 @@ describe('flowSurfaces executeDsl contract', () => {
                 key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
-                fields: [{ key: 'nicknameField', fieldPath: 'nickname' }],
+                fields: [{ key: 'nicknameField', field: 'nickname', unexpectedKey: true }],
               },
             ],
           },
         ],
       },
-      '.fieldPath is unsupported; use field',
-      undefined,
+      'unsupported keys: unexpectedKey',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0]',
     ],
     [
-      'reject openView alias',
+      'reject field target object',
       {
         version: '1',
         mode: 'create',
@@ -1311,169 +1238,53 @@ describe('flowSurfaces executeDsl contract', () => {
                 key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
-                fields: [
-                  {
-                    key: 'nicknameField',
-                    field: 'nickname',
-                    openView: {
-                      title: 'Details',
-                    },
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      '.openView is unsupported; use popup',
-      undefined,
-    ],
-  ])('should %s', async (_label, values, message, expectedPath) => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
-      values,
-    });
-
-    expect(res.status).toBe(400);
-    const errorMessage = readErrorMessage(res);
-    expect(errorMessage).toContain(message);
-    if (expectedPath) {
-      expect(errorMessage).toContain(expectedPath);
-      expect(errorMessage).not.toContain(`tabs['`);
-    }
-  });
-
-  it.each([
-    [
-      'reject block legacy ref',
-      'ref',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            title: 'Overview',
-            blocks: [
-              {
-                ref: 'employeesTable',
-                type: 'table',
-                collection: 'employees',
-              },
-            ],
-          },
-        ],
-      },
-      'flowSurfaces executeDsl tabs[0].blocks[0]',
-    ],
-    [
-      'reject block legacy $ref',
-      '$ref',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            title: 'Overview',
-            blocks: [
-              {
-                $ref: '#/employeesTable',
-                type: 'table',
-                collection: 'employees',
-              },
-            ],
-          },
-        ],
-      },
-      'flowSurfaces executeDsl tabs[0].blocks[0]',
-    ],
-    [
-      'reject popup legacy $ref',
-      '$ref',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            title: 'Overview',
-            blocks: [
-              {
-                type: 'table',
-                collection: 'employees',
-                recordActions: [
-                  {
-                    type: 'view',
-                    popup: {
-                      $ref: '#/popup',
-                    },
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup',
-    ],
-    [
-      'reject resource legacy $ref',
-      '$ref',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            title: 'Overview',
-            blocks: [
-              {
-                type: 'details',
-                resource: {
-                  $ref: '#/resource',
-                },
                 fields: ['nickname'],
               },
-            ],
-          },
-        ],
-      },
-      'flowSurfaces executeDsl tabs[0].blocks[0].resource',
-    ],
-    [
-      'reject field target legacy $ref',
-      '$ref',
-      {
-        version: '1',
-        mode: 'create',
-        tabs: [
-          {
-            title: 'Overview',
-            blocks: [
               {
                 key: 'employeesFilter',
                 type: 'filterForm',
                 collection: 'employees',
                 fields: [
                   {
+                    key: 'nicknameField',
                     field: 'nickname',
                     target: {
-                      $ref: '#/employeesTable',
+                      key: 'employeesTable',
                     },
                   },
                 ],
-              },
-              {
-                key: 'employeesTable',
-                type: 'table',
-                collection: 'employees',
-                fields: ['nickname'],
               },
             ],
           },
         ],
       },
-      'flowSurfaces executeDsl tabs[0].blocks[0].fields[0].target',
+      'must be a string block key',
+      'flowSurfaces applyBlueprint tabs[0].blocks[1].fields[0].target',
     ],
     [
-      'reject layout cell legacy $ref',
-      '$ref',
+      'reject action unknown key',
+      {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            key: 'overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                recordActions: [{ type: 'view', unexpectedKey: true }],
+              },
+            ],
+          },
+        ],
+      },
+      'unsupported keys: unexpectedKey',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0]',
+    ],
+    [
+      'reject layout cell unknown key',
       {
         version: '1',
         mode: 'create',
@@ -1489,31 +1300,30 @@ describe('flowSurfaces executeDsl contract', () => {
               },
             ],
             layout: {
-              rows: [[{ $ref: '#/employeesTable' }]],
+              rows: [[{ unexpectedKey: 'employeesTable' }]],
             },
           },
         ],
       },
-      'flowSurfaces executeDsl tabs[0].layout.rows[0][0]',
+      'unsupported keys: unexpectedKey',
+      'flowSurfaces applyBlueprint tabs[0].layout.rows[0][0]',
     ],
-  ])('should %s', async (_label, legacyKey, values, expectedPath) => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+  ])('should %s', async (_label, values, message, expectedPath) => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values,
     });
 
     expect(res.status).toBe(400);
     const errorMessage = readErrorMessage(res);
-    expect(errorMessage).toContain(expectedPath);
-    if (legacyKey === '$ref') {
-      expect(errorMessage).toContain(`"$ref" is not supported`);
-    } else {
-      expect(errorMessage).toContain('does not support { ref }');
+    expect(errorMessage).toContain(message);
+    if (expectedPath) {
+      expect(errorMessage).toContain(expectedPath);
+      expect(errorMessage).not.toContain(`tabs['`);
     }
-    expect(errorMessage).not.toContain(`tabs['`);
   });
 
   it('should reject popup unknown keys instead of ignoring them', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1541,12 +1351,12 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, blocks, layout; unsupported keys: foo',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, blocks, layout; unsupported keys: foo',
     );
   });
 
   it('should reject block-level layout and point authors to tabs[] or popup layout only', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1571,12 +1381,12 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces executeDsl tabs[0].blocks[0].layout is not supported; layout is only allowed on tabs[] and popup',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].layout is not supported; layout is only allowed on tabs[] and popup',
     );
   });
 
-  it('should reject generic form blocks in executeDsl and point authors to editForm/createForm', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+  it('should reject generic form blocks in applyBlueprint and point authors to editForm/createForm', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1600,12 +1410,12 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      "flowSurfaces executeDsl tabs[0].blocks[0].type 'form' is unsupported in executeDsl; use 'editForm' or 'createForm'",
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].type 'form' is unsupported in applyBlueprint; use 'editForm' or 'createForm'",
     );
   });
 
   it('should reject custom edit popups that do not contain exactly one editForm block', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1665,12 +1475,12 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup custom edit popup must contain exactly one editForm block',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup custom edit popup must contain exactly one editForm block',
     );
   });
 
   it('should reject custom edit popup editForm resources that are not currentRecord-bound', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1731,12 +1541,12 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      "flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup.blocks[0].resource.binding must be 'currentRecord' in a custom edit popup",
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup.blocks[0].resource.binding must be 'currentRecord' in a custom edit popup",
     );
   });
 
-  it('should reject tab layout uid cells and require key-only executeDsl layout cells', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+  it('should reject tab layout uid cells and require key-only applyBlueprint layout cells', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1761,12 +1571,12 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces executeDsl tabs[0].layout.rows[0][0] only accepts keys key, span; unsupported keys: uid',
+      'flowSurfaces applyBlueprint tabs[0].layout.rows[0][0] only accepts keys key, span; unsupported keys: uid',
     );
   });
 
   it('should reject non-object tab layout values instead of silently dropping them', async () => {
-    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -1787,7 +1597,7 @@ describe('flowSurfaces executeDsl contract', () => {
     });
 
     expect(res.status).toBe(400);
-    expect(readErrorMessage(res)).toContain('flowSurfaces executeDsl tabs[0].layout must be an object');
+    expect(readErrorMessage(res)).toContain('flowSurfaces applyBlueprint tabs[0].layout must be an object');
   });
 
   it('should keep page enableTabs unchanged in replace mode when page.enableTabs is omitted', async () => {
@@ -1806,7 +1616,7 @@ describe('flowSurfaces executeDsl contract', () => {
     });
     expect(addTabRes.status).toBe(200);
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'replace',
@@ -1862,7 +1672,7 @@ describe('flowSurfaces executeDsl contract', () => {
     const beforeTabs = getRouteBackedTabs(beforeSurface);
     expect(beforeTabs).toHaveLength(2);
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'replace',
@@ -1911,7 +1721,7 @@ describe('flowSurfaces executeDsl contract', () => {
       enableTabs: false,
     });
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'replace',
@@ -1960,7 +1770,7 @@ describe('flowSurfaces executeDsl contract', () => {
       enableTabs: false,
     });
 
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'replace',
@@ -2005,8 +1815,8 @@ describe('flowSurfaces executeDsl contract', () => {
     expect(data.surface.pageRoute.enableTabs).toBe(true);
   });
 
-  it('should reject object-style field target keys in executeDsl and require string block keys only', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+  it('should reject object-style field target keys in applyBlueprint and require string block keys only', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -2046,12 +1856,12 @@ describe('flowSurfaces executeDsl contract', () => {
     });
 
     expect(executeRes.status).toBe(400);
-    expect(readErrorMessage(executeRes)).toContain('flowSurfaces executeDsl tabs[0].blocks[0].fields[0].target');
+    expect(readErrorMessage(executeRes)).toContain('flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].target');
     expect(readErrorMessage(executeRes)).toContain('target must be a string block key');
   });
 
-  it('should report popup nested block alias errors with index-based public paths', async () => {
-    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+  it('should report popup nested block errors with index-based public paths', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
@@ -2076,7 +1886,7 @@ describe('flowSurfaces executeDsl contract', () => {
                         {
                           type: 'details',
                           collection: 'employees',
-                          association: 'department',
+                          unexpectedNestedKey: 'department',
                           fields: ['nickname'],
                         },
                       ],
@@ -2092,8 +1902,8 @@ describe('flowSurfaces executeDsl contract', () => {
 
     expect(executeRes.status).toBe(400);
     const message = readErrorMessage(executeRes);
-    expect(message).toContain('flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup.blocks[0].association');
-    expect(message).toContain('association is unsupported; use associationPathName');
+    expect(message).toContain('flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup.blocks[0]');
+    expect(message).toContain('unsupported keys: unexpectedNestedKey');
     expect(message).not.toContain(`tabs['`);
   });
 });

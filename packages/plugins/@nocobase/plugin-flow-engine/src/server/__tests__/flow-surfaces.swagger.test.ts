@@ -75,8 +75,8 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceContextResponse',
       'FlowSurfaceDescribeSurfaceRequest',
       'FlowSurfaceDescribeSurfaceResponse',
-      'FlowSurfaceExecuteDslRequest',
-      'FlowSurfaceExecuteDslResponse',
+      'FlowSurfaceApplyBlueprintRequest',
+      'FlowSurfaceApplyBlueprintResponse',
       'FlowSurfaceBindKey',
       'FlowSurfaceKeysMap',
       'FlowSurfaceCatalogItem',
@@ -201,48 +201,61 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.keys.$ref).toBe(
       '#/components/schemas/FlowSurfaceKeysMap',
     );
-    expect(schemas.FlowSurfaceExecuteDslRequest.oneOf).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslRequest.type).toBe('object');
-    expect(schemas.FlowSurfaceExecuteDslRequest.required).toEqual(['version', 'mode', 'tabs']);
-    expect(schemas.FlowSurfaceExecuteDslRequest.properties.mode.enum).toEqual(['create', 'replace']);
-    expect(schemas.FlowSurfaceExecuteDslRequest.properties.tabs.minItems).toBe(1);
-    expect(schemas.FlowSurfaceExecuteDslRequest.properties.tabs.items.$ref).toBe(
-      '#/components/schemas/FlowSurfaceExecuteDslTab',
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.oneOf).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.type).toBe('object');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.required).toEqual(['version', 'mode', 'tabs']);
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.mode.enum).toEqual(['create', 'replace']);
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.tabs.minItems).toBe(1);
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.tabs.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintTab',
     );
-    expect(schemas.FlowSurfaceExecuteDslRequest.description).toContain('create does not accept target');
-    expect(schemas.FlowSurfaceExecuteDslRequest.description).toContain('replace requires target.pageSchemaUid');
-    expect(schemas.FlowSurfaceExecuteDslTab.required).toEqual(['blocks']);
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.blocks.minItems).toBe(1);
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.key.description).toContain('Optional local tab key');
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.key.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('create does not accept target');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('replace requires target.pageSchemaUid');
+    expect(schemas.FlowSurfaceApplyBlueprintTab.required).toEqual(['blocks']);
+    expect(schemas.FlowSurfaceApplyBlueprintTab.properties.blocks.minItems).toBe(1);
+    expect(schemas.FlowSurfaceApplyBlueprintTab.properties.key.description).toContain('Optional local tab key');
+    expect(schemas.FlowSurfaceApplyBlueprintTab.properties.key.description).toContain(
       'not used to match existing route-backed tabs in replace mode',
     );
-    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.$ref).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.$ref).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.allOf).toEqual([
-      { $ref: '#/components/schemas/FlowSurfaceExecuteDslLayout' },
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintLayout' },
     ]);
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.allOf).toEqual([
-      { $ref: '#/components/schemas/FlowSurfaceExecuteDslLayout' },
+    expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintLayout' },
     ]);
-    expect(schemas.FlowSurfaceExecuteDslLayout.description).toContain('only on tabs and inline popup documents');
-    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.description).toContain('not on individual blocks');
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.description).toContain('not on individual blocks');
-    expect(schemas.FlowSurfaceExecuteDslPopup.properties.blocks.description).toContain('exactly one `editForm` block');
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.description).toContain('Blocks do not accept a `layout` property');
-    expect(schemas.FlowSurfaceExecuteDslLayout.properties.rows.description).toContain('{ key, span }');
-    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[0].description).toContain('Local block key string');
-    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].description).toContain('uid/ref/$ref selectors');
-    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].properties.uid).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].required).toEqual(['key']);
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.ref).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.collectionName).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.association).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resourceBinding).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.collection.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('only on tabs and inline popup documents');
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.description).toContain('not on individual blocks');
+    expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.description).toContain('not on individual blocks');
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.blocks.description).toContain(
+      'exactly one `editForm` block',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.description).toContain(
+      'Blocks do not accept a `layout` property',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintLayout.properties.rows.description).toContain('{ key, span }');
+    expect(schemas.FlowSurfaceApplyBlueprintLayoutCell.oneOf[0].description).toContain('Local block key string');
+    expect(schemas.FlowSurfaceApplyBlueprintLayoutCell.oneOf[1].description).toContain('local block key');
+    expect(schemas.FlowSurfaceApplyBlueprintLayoutCell.oneOf[1].required).toEqual(['key']);
+    expect(schemas.FlowSurfaceApplyBlueprintLayoutCell.oneOf[1].properties.key.type).toBe('string');
+    expect(schemas.FlowSurfaceApplyBlueprintLayoutCell.oneOf[1].properties.span.type).toBe('number');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.collection.description).toContain(
       'use resource.collectionName',
     );
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.type.enum).toEqual([
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.resource.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockResourceInput',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintActionSpec',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintRecordActionSpec',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.enum).toEqual([
       'table',
       'createForm',
       'editForm',
@@ -256,40 +269,41 @@ describe('flowSurfaces swagger', () => {
       'actionPanel',
       'jsBlock',
     ]);
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.type.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.description).toContain(
       'Generic `form` is not supported',
     );
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resource.$ref).toBe(
-      '#/components/schemas/FlowSurfaceBlockResourceInput',
+    expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.field.type).toBe('string');
+    expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.target.type).toBe('string');
+    expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.target.description).toContain(
+      'String block key on the same tab or popup scope',
     );
-    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.ref).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.fieldPath).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.targetBlock).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.openView).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.target.type).toBe('string');
-    expect(schemas.FlowSurfaceExecuteDslFieldSpec.oneOf[1].properties.target.description).toContain(
-      'Object selectors and ref/$ref forms are not supported',
+    expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
     );
-    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.ref).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.enum).toEqual(
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.enum).toEqual(
       expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
     );
-    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.description).toContain('auto-promotes');
-    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.description).toContain('auto-promotes');
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.description).toContain(
       'exactly one `editForm` block',
     );
-    expect(schemas.FlowSurfaceExecuteDslRecordActionSpec.oneOf[1].properties.ref).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslRecordActionSpec.oneOf[1].properties.type.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.description).toContain(
       'exactly one `editForm` block',
     );
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.actions.description).toContain('auto-promotes');
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationPathName.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.description).toContain('auto-promotes');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.associationPathName.description).toContain(
       'associatedRecords',
     );
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationPathName.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.associationPathName.description).toContain(
       'single association field name',
     );
-    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationField.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.associationField.description).toContain(
       'Canonical association field name',
     );
     expect(schemas.FlowSurfaceSemanticResourceInput.properties.associationField.description).toContain(
@@ -298,80 +312,63 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSemanticResourceInput.properties.associationField.description).toContain(
       'single association field name',
     );
-    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.routeId.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.routeId.description).toContain(
       'Preferred existing menu-group route id',
     );
-    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.title.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
       'reuses a same-title group if the match is unique',
     );
-    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.title.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
       'Same-title reuse is title-only',
     );
-    expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.icon.description).toContain(
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.icon.description).toContain(
       'actually creates a new menu group',
     );
-    expect(schemas.FlowSurfaceExecuteDslResponse.properties.surface.$ref).toBe(
+    expect(schemas.FlowSurfaceApplyBlueprintResponse.properties.surface.$ref).toBe(
       '#/components/schemas/FlowSurfaceGetResponse',
     );
-    expect(schemas.FlowSurfaceExecuteDslResponse.properties.keys).toBeUndefined();
-    expect(schemas.FlowSurfaceDslDocument).toBeUndefined();
-    expect(schemas.FlowSurfaceBlueprintDsl).toBeUndefined();
-    expect(schemas.FlowSurfacePatchDsl).toBeUndefined();
-    expect(schemas.FlowSurfaceDslEntityRef).toBeUndefined();
-    expect(schemas.FlowSurfaceValidateDslRequest).toBeUndefined();
-    expect(schemas.FlowSurfaceValidateDslResponse).toBeUndefined();
-    expect(schemas.FlowSurfaceValidatePlanRequest).toBeUndefined();
-    expect(schemas.FlowSurfaceValidatePlanResponse).toBeUndefined();
-    expect(schemas.FlowSurfaceExecutePlanRequest).toBeUndefined();
-    expect(schemas.FlowSurfaceExecutePlanResponse).toBeUndefined();
-    expect(schemas.FlowSurfacePlanRequestBase).toBeUndefined();
-    expect(schemas.FlowSurfacePlanStep).toBeUndefined();
-    expect(schemas.FlowSurfacePlanCompiledStep).toBeUndefined();
-    expect(schemas.FlowSurfacePlanSelector).toBeUndefined();
-    expect(schemas.FlowSurfacePlanSelectorByKey).toBeUndefined();
-    expect(schemas.FlowSurfacePlanSelectorByLocator).toBeUndefined();
-    expect(schemas.FlowSurfaceSurfaceSelector).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslResponse.properties.verificationMode).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslResponse.properties.compiledSteps).toBeUndefined();
-    expect(schemas.FlowSurfaceExecuteDslResponse.properties.results).toBeUndefined();
+    expect(Object.keys(schemas.FlowSurfaceApplyBlueprintResponse.properties).sort()).toEqual([
+      'mode',
+      'surface',
+      'target',
+      'version',
+    ]);
 
     const catalogRequest = swaggerDocument.paths['/flowSurfaces:catalog'].post.requestBody.content['application/json'];
     expect(catalogRequest.example?.target?.uid).toBe('table-block-uid');
     const describeRequest =
       swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
     expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
-    expect(swaggerDocument.paths['/flowSurfaces:validateDsl']).toBeUndefined();
-    expect(swaggerDocument.paths['/flowSurfaces:validatePlan']).toBeUndefined();
-    const executeDslRequest =
-      swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.content['application/json'];
-    expect(executeDslRequest.examples?.createPage?.value?.mode).toBe('create');
-    expect(executeDslRequest.examples?.createPage?.value?.tabs?.[0]?.key).toBeUndefined();
-    expect(executeDslRequest.examples?.createPage?.value?.tabs?.[0]?.title).toBe('Overview');
-    expect(executeDslRequest.examples?.createPage?.value?.tabs?.[1]?.blocks?.[0]?.script).toBe('overviewBanner');
-    expect(executeDslRequest.examples?.replacePage?.value?.mode).toBe('replace');
-    expect(executeDslRequest.examples?.replacePage?.value?.target?.pageSchemaUid).toBe('employees-page-schema');
-    expect(executeDslRequest.examples?.replacePage?.value?.tabs?.[1]?.key).toBeUndefined();
-    expect(executeDslRequest.examples?.replacePage?.value?.tabs?.[1]?.title).toBe('Summary');
-    expect(swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.description).toContain(
+    const applyBlueprintRequest =
+      swaggerDocument.paths['/flowSurfaces:applyBlueprint'].post.requestBody.content['application/json'];
+    expect(applyBlueprintRequest.examples?.createPage?.value?.mode).toBe('create');
+    expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.title).toBe('Overview');
+    expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[1]?.blocks?.[0]?.script).toBe('overviewBanner');
+    expect(applyBlueprintRequest.examples?.replacePage?.value?.mode).toBe('replace');
+    expect(applyBlueprintRequest.examples?.replacePage?.value?.target?.pageSchemaUid).toBe('employees-page-schema');
+    expect(applyBlueprintRequest.examples?.replacePage?.value?.tabs?.[1]?.title).toBe('Summary');
+    expect(swaggerDocument.paths['/flowSurfaces:applyBlueprint'].post.requestBody.description).toContain(
       'do not JSON.stringify it',
     );
-    expect(swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.description).toContain(
+    expect(swaggerDocument.paths['/flowSurfaces:applyBlueprint'].post.requestBody.description).toContain(
       'do not wrap it in { values: ... }',
     );
-    const executeDslPath = swaggerDocument.paths['/flowSurfaces:executeDsl'].post;
-    expect(executeDslPath.description).toContain('route-backed tab slots by index');
-    expect(executeDslPath.description).toContain('removes trailing old tabs');
-    expect(executeDslPath.description).toContain('appends extra new tabs');
-    expect(executeDslPath.description).toContain('navigation.group.routeId');
-    expect(executeDslPath.description).toContain('same-title group');
-    expect(executeDslPath.description).toContain('does not mutate existing group metadata');
-    expect(executeDslPath.description).toContain('Same-title reuse is title-only');
-    expect(executeDslPath.description).toContain('updateMenu');
-    expect(executeDslPath.description).toContain('only allowed on tabs and inline popup documents');
-    expect(executeDslPath.description).toContain('must not be JSON-stringified');
-    expect(executeDslPath.description).toContain('generic `form`');
-    expect(executeDslPath.description).toContain('exactly one `editForm` block');
-    expect(swaggerDocument.paths['/flowSurfaces:executePlan']).toBeUndefined();
+    const applyBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyBlueprint'].post;
+    expect(applyBlueprintPath.summary).toContain('blueprint');
+    expect(applyBlueprintPath.summary).toContain('Modern page');
+    expect(applyBlueprintPath.description).toContain('route-backed tab slots by index');
+    expect(applyBlueprintPath.description).toContain('removes trailing old tabs');
+    expect(applyBlueprintPath.description).toContain('appends extra new tabs');
+    expect(applyBlueprintPath.description).toContain('navigation.group.routeId');
+    expect(applyBlueprintPath.description).toContain('same-title group');
+    expect(applyBlueprintPath.description).toContain('does not mutate existing group metadata');
+    expect(applyBlueprintPath.description).toContain('Same-title reuse is title-only');
+    expect(applyBlueprintPath.description).toContain('updateMenu');
+    expect(applyBlueprintPath.description).toContain('only allowed on tabs and inline popup documents');
+    expect(applyBlueprintPath.description).toContain('must not be JSON-stringified');
+    expect(applyBlueprintPath.description).toContain('internal flow-surface operations');
+    expect(applyBlueprintPath.description).toContain('generic `form`');
+    expect(applyBlueprintPath.description).toContain('exactly one `editForm` block');
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
     expect(contextRequest.example?.path).toBe('record');

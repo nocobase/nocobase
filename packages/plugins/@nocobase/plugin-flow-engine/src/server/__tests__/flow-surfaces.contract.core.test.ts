@@ -249,13 +249,13 @@ describe('flowSurfaces API contract core', () => {
     });
     expect(allowedWriteRes.status).toBe(200);
 
-    const deniedExecuteDslRes = await readerAgent.resource('flowSurfaces').executeDsl({
+    const deniedApplyBlueprintRes = await readerAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
         navigation: {
           item: {
-            title: 'Denied executeDsl page',
+            title: 'Denied applyBlueprint page',
           },
         },
         tabs: [
@@ -272,8 +272,8 @@ describe('flowSurfaces API contract core', () => {
         ],
       },
     });
-    expect(deniedExecuteDslRes.status).toBe(403);
-    expectStructuredError(readErrorItem(deniedExecuteDslRes), {
+    expect(deniedApplyBlueprintRes.status).toBe(403);
+    expectStructuredError(readErrorItem(deniedApplyBlueprintRes), {
       status: 403,
       type: 'forbidden',
     });

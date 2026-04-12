@@ -13,28 +13,28 @@ import { buildDefinedPayload } from '../service-utils';
 import type { FlowSurfacePlanSelector, FlowSurfacePlanStep } from '../types';
 import { compileTabComposeValues } from './compile-blocks';
 import type {
-  FlowSurfaceExecuteDslDocument,
-  FlowSurfaceExecuteDslProgram,
-  FlowSurfaceExecuteDslReplaceTargetInfo,
+  FlowSurfaceApplyBlueprintDocument,
+  FlowSurfaceApplyBlueprintProgram,
+  FlowSurfaceApplyBlueprintReplaceTargetInfo,
 } from './public-types';
 
-const CREATE_MENU_ITEM_STEP_ID = 'dslMenuItem';
-const CREATE_MENU_GROUP_STEP_ID = 'dslMenuGroup';
-const CREATE_PAGE_STEP_ID = 'dslPage';
-const PAGE_CONFIGURE_STEP_ID = 'dslPageConfigure';
+const CREATE_MENU_ITEM_STEP_ID = 'blueprintMenuItem';
+const CREATE_MENU_GROUP_STEP_ID = 'blueprintMenuGroup';
+const CREATE_PAGE_STEP_ID = 'blueprintPage';
+const PAGE_CONFIGURE_STEP_ID = 'blueprintPageConfigure';
 
-function buildExecuteDslTabStepId(kind: 'compose' | 'add' | 'update', tabIndex: number) {
+function buildApplyBlueprintTabStepId(kind: 'compose' | 'add' | 'update', tabIndex: number) {
   const suffix = tabIndex + 1;
   if (kind === 'compose') {
-    return `dslComposeTab__${suffix}`;
+    return `blueprintComposeTab__${suffix}`;
   }
   if (kind === 'add') {
-    return `dslAddTab__${suffix}`;
+    return `blueprintAddTab__${suffix}`;
   }
-  return `dslUpdateTab__${suffix}`;
+  return `blueprintUpdateTab__${suffix}`;
 }
 
-function buildPageChrome(document: FlowSurfaceExecuteDslDocument) {
+function buildPageChrome(document: FlowSurfaceApplyBlueprintDocument) {
   const firstTab = document.tabs[0];
   const pageTitle = document.page?.title || document.navigation?.item?.title || firstTab?.title || 'Untitled page';
   return {
@@ -59,7 +59,7 @@ function buildTabSelectorFromUid(uid: string): FlowSurfacePlanSelector {
   };
 }
 
-function compileCreatePlan(document: FlowSurfaceExecuteDslDocument): FlowSurfaceExecuteDslProgram {
+function compileCreatePlan(document: FlowSurfaceApplyBlueprintDocument): FlowSurfaceApplyBlueprintProgram {
   const steps: FlowSurfacePlanStep[] = [];
   const chrome = buildPageChrome(document);
 
@@ -113,7 +113,7 @@ function compileCreatePlan(document: FlowSurfaceExecuteDslDocument): FlowSurface
   });
 
   steps.push({
-    id: buildExecuteDslTabStepId('compose', 0),
+    id: buildApplyBlueprintTabStepId('compose', 0),
     action: 'compose',
     selectors: {
       target: buildTabSelectorFromStep(CREATE_PAGE_STEP_ID),
@@ -123,7 +123,7 @@ function compileCreatePlan(document: FlowSurfaceExecuteDslDocument): FlowSurface
 
   document.tabs.slice(1).forEach((tab, offset) => {
     const tabIndex = offset + 1;
-    const addTabStepId = buildExecuteDslTabStepId('add', tabIndex);
+    const addTabStepId = buildApplyBlueprintTabStepId('add', tabIndex);
     steps.push({
       id: addTabStepId,
       action: 'addTab',
@@ -141,7 +141,7 @@ function compileCreatePlan(document: FlowSurfaceExecuteDslDocument): FlowSurface
       }),
     });
     steps.push({
-      id: buildExecuteDslTabStepId('compose', tabIndex),
+      id: buildApplyBlueprintTabStepId('compose', tabIndex),
       action: 'compose',
       selectors: {
         target: buildTabSelectorFromStep(addTabStepId),
@@ -157,7 +157,7 @@ function compileCreatePlan(document: FlowSurfaceExecuteDslDocument): FlowSurface
   };
 }
 
-function buildPageConfigureChanges(document: FlowSurfaceExecuteDslDocument) {
+function buildPageConfigureChanges(document: FlowSurfaceApplyBlueprintDocument) {
   return buildDefinedPayload({
     title: document.page?.title,
     icon: document.page?.icon,
@@ -169,9 +169,9 @@ function buildPageConfigureChanges(document: FlowSurfaceExecuteDslDocument) {
 }
 
 function compileReplacePlan(
-  document: FlowSurfaceExecuteDslDocument,
-  targetInfo: FlowSurfaceExecuteDslReplaceTargetInfo,
-): FlowSurfaceExecuteDslProgram {
+  document: FlowSurfaceApplyBlueprintDocument,
+  targetInfo: FlowSurfaceApplyBlueprintReplaceTargetInfo,
+): FlowSurfaceApplyBlueprintProgram {
   const steps: FlowSurfacePlanStep[] = [];
   const pageChanges = buildPageConfigureChanges(document);
   if (Object.keys(pageChanges).length) {
@@ -201,7 +201,7 @@ function compileReplacePlan(
       });
       if (Object.keys(tabChanges).length) {
         steps.push({
-          id: buildExecuteDslTabStepId('update', index),
+          id: buildApplyBlueprintTabStepId('update', index),
           action: 'updateTab',
           selectors: {
             target: buildTabSelectorFromUid(existingTab.uid),
@@ -210,7 +210,7 @@ function compileReplacePlan(
         });
       }
       steps.push({
-        id: buildExecuteDslTabStepId('compose', index),
+        id: buildApplyBlueprintTabStepId('compose', index),
         action: 'compose',
         selectors: {
           target: buildTabSelectorFromUid(existingTab.uid),
@@ -220,7 +220,7 @@ function compileReplacePlan(
       return;
     }
 
-    const addTabStepId = buildExecuteDslTabStepId('add', index);
+    const addTabStepId = buildApplyBlueprintTabStepId('add', index);
     steps.push({
       id: addTabStepId,
       action: 'addTab',
@@ -239,7 +239,7 @@ function compileReplacePlan(
       }),
     });
     steps.push({
-      id: buildExecuteDslTabStepId('compose', index),
+      id: buildApplyBlueprintTabStepId('compose', index),
       action: 'compose',
       selectors: {
         target: buildTabSelectorFromStep(addTabStepId),
@@ -253,7 +253,7 @@ function compileReplacePlan(
     .reverse()
     .forEach((tab, index) => {
       steps.push({
-        id: `dslRemoveTab__${index + 1}`,
+        id: `blueprintRemoveTab__${index + 1}`,
         action: 'removeTab',
         selectors: {
           target: buildTabSelectorFromUid(tab.uid),
@@ -272,23 +272,23 @@ function compileReplacePlan(
   };
 }
 
-export function compileFlowSurfaceExecuteDslRequest(
-  document: FlowSurfaceExecuteDslDocument,
+export function compileFlowSurfaceApplyBlueprintRequest(
+  document: FlowSurfaceApplyBlueprintDocument,
   options: {
-    replaceTarget?: FlowSurfaceExecuteDslReplaceTargetInfo;
+    replaceTarget?: FlowSurfaceApplyBlueprintReplaceTargetInfo;
   } = {},
-): FlowSurfaceExecuteDslProgram {
+): FlowSurfaceApplyBlueprintProgram {
   if (document.mode === 'create') {
     return compileCreatePlan(document);
   }
   if (!options.replaceTarget) {
-    throwBadRequest(`flowSurfaces executeDsl replace target resolution is missing`);
+    throwBadRequest(`flowSurfaces applyBlueprint replace target resolution is missing`);
   }
   return compileReplacePlan(document, options.replaceTarget);
 }
 
-export function resolveExecuteDslPageLocator(
-  program: FlowSurfaceExecuteDslProgram,
+export function resolveApplyBlueprintPageLocator(
+  program: FlowSurfaceApplyBlueprintProgram,
   executeResult: Record<string, any> | undefined,
 ) {
   if (program.document.mode === 'replace') {
@@ -300,7 +300,7 @@ export function resolveExecuteDslPageLocator(
   const pageSchemaUid =
     resultById[CREATE_PAGE_STEP_ID]?.pageSchemaUid || executeResult?.target?.locator?.pageSchemaUid || undefined;
   if (!pageSchemaUid) {
-    throwBadRequest(`flowSurfaces executeDsl failed to resolve created pageSchemaUid`);
+    throwBadRequest(`flowSurfaces applyBlueprint failed to resolve created pageSchemaUid`);
   }
   return {
     pageSchemaUid: String(pageSchemaUid),

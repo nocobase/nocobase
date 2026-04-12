@@ -272,16 +272,16 @@ export async function executeInternalPlan(
   options: { transaction?: any } = {},
 ): Promise<FlowSurfaceInternalPlanExecutionResult> {
   if (!_.isPlainObject(values)) {
-    throwBadRequest(`flowSurfaces executeDsl requires plan`);
+    throwBadRequest(`flowSurfaces applyBlueprint requires plan`);
   }
-  const context = await buildPlanSurfaceContext(values.surface, undefined, 'executeDsl', deps, options);
-  const steps = normalizePlanSteps('executeDsl', values, deps);
+  const context = await buildPlanSurfaceContext(values.surface, undefined, 'applyBlueprint', deps, options);
+  const steps = normalizePlanSteps('applyBlueprint', values, deps);
   const compiledSteps: FlowSurfaceCompiledPlanStep[] = [];
   const priorStepIds = new Set<string>();
   const priorCreatedKeys = new Set<string>();
   for (const [index, step] of steps.entries()) {
     const compiled = await compilePlanStep(
-      'executeDsl',
+      'applyBlueprint',
       step,
       index,
       context,
@@ -299,7 +299,7 @@ export async function executeInternalPlan(
     }
   }
   if (!context.surfaceSelector) {
-    assertBootstrapPlanConstraints('executeDsl', compiledSteps);
+    assertBootstrapPlanConstraints('applyBlueprint', compiledSteps);
   }
   const results = [] as Array<Record<string, any>>;
   const execCtx: FlowSurfaceExecutorContext = {

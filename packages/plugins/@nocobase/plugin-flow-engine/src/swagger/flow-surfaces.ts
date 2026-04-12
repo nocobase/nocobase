@@ -93,7 +93,7 @@ const RECORD_ACTION_TYPE_ENUM = [
   'delete',
   'updateRecord',
 ];
-const EXECUTE_DSL_BLOCK_TYPE_ENUM = [
+const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
   'createForm',
   'editForm',
@@ -253,11 +253,11 @@ const actionDocs: Record<string, any> = {
     requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
     responses: responses('FlowSurfaceDescribeSurfaceResponse'),
   },
-  executeDsl: {
+  applyBlueprint: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Execute a simplified page-structure DSL to create or replace one Modern page',
+    summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page document and compiles it to FlowSurfaces plan steps internally. The public DSL only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; executeDsl create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, executeDsl reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of executeDsl create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps DSL tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public DSL; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public executeDsl blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, executeDsl auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
@@ -265,21 +265,21 @@ const actionDocs: Record<string, any> = {
         'The JSON request body. Send the page document object itself under requestBody as an object; do not JSON.stringify it and do not wrap it in { values: ... }.',
       content: {
         'application/json': {
-          schema: ref('FlowSurfaceExecuteDslRequest'),
+          schema: ref('FlowSurfaceApplyBlueprintRequest'),
           examples: {
             createPage: {
-              summary: 'Create one Modern page from the simplified page-structure DSL',
-              value: examples.executeDsl,
+              summary: 'Create one Modern page from a page blueprint',
+              value: examples.applyBlueprint,
             },
             replacePage: {
               summary: 'Replace one existing Modern page by pageSchemaUid',
-              value: examples.executeDslReplace,
+              value: examples.applyBlueprintReplace,
             },
           },
         },
       },
     },
-    responses: responses('FlowSurfaceExecuteDslResponse'),
+    responses: responses('FlowSurfaceApplyBlueprintResponse'),
   },
   ...templateActionDocs,
   compose: {
@@ -1554,7 +1554,7 @@ const schemas = {
       associationField: {
         type: 'string',
         description:
-          'Canonical association field name for popup `associatedRecords` binding. In executeDsl authoring, prefer `associationField`; `associationPathName` is only normalized to this field for convenience when it is a single association field name.',
+          'Canonical association field name for popup `associatedRecords` binding. In applyBlueprint authoring, prefer `associationField`; `associationPathName` is only normalized to this field for convenience when it is a single association field name.',
       },
     },
     additionalProperties: false,
@@ -2180,7 +2180,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslAssets: {
+  FlowSurfaceApplyBlueprintAssets: {
     type: 'object',
     properties: {
       scripts: {
@@ -2194,7 +2194,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslLayoutCell: {
+  FlowSurfaceApplyBlueprintLayoutCell: {
     oneOf: [
       {
         type: 'string',
@@ -2203,7 +2203,7 @@ const schemas = {
       {
         type: 'object',
         description:
-          'Layout cell object in the public executeDsl contract. Use only { key, span }; uid/ref/$ref selectors are not supported here.',
+          'Layout cell object in the public applyBlueprint contract. Use only { key, span } to reference a local block key.',
         required: ['key'],
         properties: {
           key: {
@@ -2218,7 +2218,7 @@ const schemas = {
       },
     ],
   },
-  FlowSurfaceExecuteDslLayout: {
+  FlowSurfaceApplyBlueprintLayout: {
     type: 'object',
     description: 'Layout object allowed only on tabs and inline popup documents, never on individual blocks.',
     properties: {
@@ -2227,13 +2227,13 @@ const schemas = {
         description: 'Two-dimensional layout grid. Each cell is either a block key string or an object { key, span }.',
         items: {
           type: 'array',
-          items: ref('FlowSurfaceExecuteDslLayoutCell'),
+          items: ref('FlowSurfaceApplyBlueprintLayoutCell'),
         },
       },
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslPopup: {
+  FlowSurfaceApplyBlueprintPopup: {
     type: 'object',
     properties: {
       title: {
@@ -2248,17 +2248,17 @@ const schemas = {
         type: 'array',
         description:
           'Inline popup blocks. For custom `edit` popups, provide exactly one `editForm` block plus any optional sibling blocks.',
-        items: ref('FlowSurfaceExecuteDslBlockSpec'),
+        items: ref('FlowSurfaceApplyBlueprintBlockSpec'),
       },
       layout: {
-        allOf: [ref('FlowSurfaceExecuteDslLayout')],
+        allOf: [ref('FlowSurfaceApplyBlueprintLayout')],
         description:
           'Popup-scoped layout. Layout is only allowed on tabs and popup documents, not on individual blocks.',
       },
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslFieldSpec: {
+  FlowSurfaceApplyBlueprintFieldSpec: {
     oneOf: [
       {
         type: 'string',
@@ -2274,11 +2274,10 @@ const schemas = {
           label: { type: 'string' },
           target: {
             type: 'string',
-            description:
-              'String block key on the same tab or popup scope, typically used by filter-form fields. Object selectors and ref/$ref forms are not supported.',
+            description: 'String block key on the same tab or popup scope, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceExecuteDslPopup'),
+          popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: { type: 'string' },
           chart: { type: 'string' },
         },
@@ -2286,7 +2285,7 @@ const schemas = {
       },
     ],
   },
-  FlowSurfaceExecuteDslActionSpec: {
+  FlowSurfaceApplyBlueprintActionSpec: {
     oneOf: [
       {
         type: 'string',
@@ -2300,11 +2299,11 @@ const schemas = {
             type: 'string',
             enum: ACTION_TYPE_ENUM,
             description:
-              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; executeDsl also auto-promotes them from `actions` for convenience. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; applyBlueprint also auto-promotes them from `actions` for convenience. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceExecuteDslPopup'),
+          popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: { type: 'string' },
           chart: { type: 'string' },
         },
@@ -2312,7 +2311,7 @@ const schemas = {
       },
     ],
   },
-  FlowSurfaceExecuteDslRecordActionSpec: {
+  FlowSurfaceApplyBlueprintRecordActionSpec: {
     oneOf: [
       {
         type: 'string',
@@ -2330,7 +2329,7 @@ const schemas = {
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceExecuteDslPopup'),
+          popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: { type: 'string' },
           chart: { type: 'string' },
         },
@@ -2338,17 +2337,18 @@ const schemas = {
       },
     ],
   },
-  FlowSurfaceExecuteDslBlockSpec: {
+  FlowSurfaceApplyBlueprintBlockSpec: {
     type: 'object',
     description:
-      'Public executeDsl block spec. Blocks do not accept a `layout` property; use tab.layout or popup.layout instead. Generic `form` is not supported here; use `editForm` or `createForm`.',
+      'Public applyBlueprint block spec. Blocks do not accept a `layout` property; use tab.layout or popup.layout instead. Generic `form` is not supported here; use `editForm` or `createForm`.',
     anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
       key: { type: 'string' },
       type: {
         type: 'string',
-        enum: EXECUTE_DSL_BLOCK_TYPE_ENUM,
-        description: 'Public executeDsl block type. Generic `form` is not supported; use `editForm` or `createForm`.',
+        enum: APPLY_BLUEPRINT_BLOCK_TYPE_ENUM,
+        description:
+          'Public applyBlueprint block type. Generic `form` is not supported; use `editForm` or `createForm`.',
       },
       title: { type: 'string' },
       collection: {
@@ -2360,7 +2360,7 @@ const schemas = {
       associationPathName: {
         type: 'string',
         description:
-          "Association field path used by raw resource-init shorthand. For popup association tables, prefer `resource.binding='associatedRecords'` with `associationField`; executeDsl only normalizes `currentRecord|associatedRecords + associationPathName` to that canonical form when `associationPathName` is a single association field name.",
+          "Association field path used by raw resource-init shorthand. For popup association tables, prefer `resource.binding='associatedRecords'` with `associationField`; applyBlueprint only normalizes `currentRecord|associatedRecords + associationPathName` to that canonical form when `associationPathName` is a single association field name.",
       },
       binding: {
         type: 'string',
@@ -2376,31 +2376,31 @@ const schemas = {
       settings: ANY_OBJECT_SCHEMA,
       fields: {
         type: 'array',
-        items: ref('FlowSurfaceExecuteDslFieldSpec'),
+        items: ref('FlowSurfaceApplyBlueprintFieldSpec'),
       },
       actions: {
         type: 'array',
         description:
-          'Block-level actions. On record-capable blocks, `view`, `edit`, `updateRecord`, and `delete` should normally go to `recordActions`; executeDsl auto-promotes those common record actions when they are written here.',
-        items: ref('FlowSurfaceExecuteDslActionSpec'),
+          'Block-level actions. On record-capable blocks, `view`, `edit`, `updateRecord`, and `delete` should normally go to `recordActions`; applyBlueprint auto-promotes those common record actions when they are written here.',
+        items: ref('FlowSurfaceApplyBlueprintActionSpec'),
       },
       recordActions: {
         type: 'array',
-        items: ref('FlowSurfaceExecuteDslRecordActionSpec'),
+        items: ref('FlowSurfaceApplyBlueprintRecordActionSpec'),
       },
       script: { type: 'string' },
       chart: { type: 'string' },
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslTab: {
+  FlowSurfaceApplyBlueprintTab: {
     type: 'object',
     required: ['blocks'],
     properties: {
       key: {
         type: 'string',
         description:
-          'Optional local tab key used only inside the current executeDsl document for layout or in-document references. It is not used to match existing route-backed tabs in replace mode. When omitted, the server generates one.',
+          'Optional local tab key used only inside the current applyBlueprint document for layout or in-document references. It is not used to match existing route-backed tabs in replace mode. When omitted, the server generates one.',
       },
       title: { type: 'string' },
       icon: { type: 'string' },
@@ -2408,27 +2408,27 @@ const schemas = {
       blocks: {
         type: 'array',
         minItems: 1,
-        items: ref('FlowSurfaceExecuteDslBlockSpec'),
+        items: ref('FlowSurfaceApplyBlueprintBlockSpec'),
       },
       layout: {
-        allOf: [ref('FlowSurfaceExecuteDslLayout')],
+        allOf: [ref('FlowSurfaceApplyBlueprintLayout')],
         description: 'Tab-scoped layout. Layout is allowed here and on popup documents, not on individual blocks.',
       },
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslNavigationGroup: {
+  FlowSurfaceApplyBlueprintNavigationGroup: {
     type: 'object',
     properties: {
       routeId: {
         ...STRING_OR_INTEGER_SCHEMA,
         description:
-          'Preferred existing menu-group route id for exact targeting. Do not mix it with title/icon/tooltip/hideInMenu. executeDsl create mode does not mutate existing group metadata; use low-level updateMenu separately when needed.',
+          'Preferred existing menu-group route id for exact targeting. Do not mix it with title/icon/tooltip/hideInMenu. applyBlueprint create mode does not mutate existing group metadata; use low-level updateMenu separately when needed.',
       },
       title: {
         type: 'string',
         description:
-          "Group title for create mode. When `routeId` is omitted, executeDsl reuses a same-title group if the match is unique, creates one when no group exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group's metadata must change, use low-level updateMenu instead of executeDsl create.",
+          "Group title for create mode. When `routeId` is omitted, applyBlueprint reuses a same-title group if the match is unique, creates one when no group exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group's metadata must change, use low-level updateMenu instead of applyBlueprint create.",
       },
       icon: {
         type: 'string',
@@ -2448,10 +2448,10 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslNavigation: {
+  FlowSurfaceApplyBlueprintNavigation: {
     type: 'object',
     properties: {
-      group: ref('FlowSurfaceExecuteDslNavigationGroup'),
+      group: ref('FlowSurfaceApplyBlueprintNavigationGroup'),
       item: {
         type: 'object',
         properties: {
@@ -2465,7 +2465,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslPage: {
+  FlowSurfaceApplyBlueprintPage: {
     type: 'object',
     properties: {
       title: { type: 'string' },
@@ -2477,7 +2477,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslTarget: {
+  FlowSurfaceApplyBlueprintTarget: {
     type: 'object',
     required: ['pageSchemaUid'],
     properties: {
@@ -2485,11 +2485,11 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslRequest: {
+  FlowSurfaceApplyBlueprintRequest: {
     type: 'object',
     required: ['version', 'mode', 'tabs'],
     description:
-      'Simplified page-structure request object for executeDsl. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.',
+      'Simplified page-structure request object for applyBlueprint. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.',
     properties: {
       version: {
         type: 'string',
@@ -2499,19 +2499,19 @@ const schemas = {
         type: 'string',
         enum: ['create', 'replace'],
       },
-      target: ref('FlowSurfaceExecuteDslTarget'),
-      navigation: ref('FlowSurfaceExecuteDslNavigation'),
-      page: ref('FlowSurfaceExecuteDslPage'),
+      target: ref('FlowSurfaceApplyBlueprintTarget'),
+      navigation: ref('FlowSurfaceApplyBlueprintNavigation'),
+      page: ref('FlowSurfaceApplyBlueprintPage'),
       tabs: {
         type: 'array',
         minItems: 1,
-        items: ref('FlowSurfaceExecuteDslTab'),
+        items: ref('FlowSurfaceApplyBlueprintTab'),
       },
-      assets: ref('FlowSurfaceExecuteDslAssets'),
+      assets: ref('FlowSurfaceApplyBlueprintAssets'),
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslResponseTarget: {
+  FlowSurfaceApplyBlueprintResponseTarget: {
     type: 'object',
     properties: {
       pageSchemaUid: {
@@ -2523,7 +2523,7 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslResponse: {
+  FlowSurfaceApplyBlueprintResponse: {
     type: 'object',
     required: ['version', 'mode', 'target', 'surface'],
     properties: {
@@ -2535,7 +2535,7 @@ const schemas = {
         type: 'string',
         enum: ['create', 'replace'],
       },
-      target: ref('FlowSurfaceExecuteDslResponseTarget'),
+      target: ref('FlowSurfaceApplyBlueprintResponseTarget'),
       surface: ref('FlowSurfaceGetResponse'),
     },
     additionalProperties: false,

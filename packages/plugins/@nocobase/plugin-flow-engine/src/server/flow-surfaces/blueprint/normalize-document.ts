@@ -10,9 +10,9 @@
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { buildDefinedPayload } from '../service-utils';
-import type { FlowSurfaceExecuteDslAssets, FlowSurfaceExecuteDslDocument } from './public-types';
+import type { FlowSurfaceApplyBlueprintAssets, FlowSurfaceApplyBlueprintDocument } from './public-types';
 import {
-  EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS,
+  APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS,
   assertNonEmptyString,
   assertOnlyAllowedKeys,
   assertPlainObject,
@@ -24,36 +24,36 @@ import {
   readString,
 } from './private-utils';
 
-function assertSupportedExecuteDslTopLevelKeys(input: Record<string, any>) {
+function assertSupportedApplyBlueprintTopLevelKeys(input: Record<string, any>) {
   const allowedKeys = ['version', 'mode', 'target', 'navigation', 'page', 'assets', 'tabs'];
   const unsupportedKeys = Object.keys(input).filter((key) => !allowedKeys.includes(key));
   if (!unsupportedKeys.length) {
     return;
   }
   throwBadRequest(
-    `flowSurfaces executeDsl only accepts top-level keys ${allowedKeys.join(
+    `flowSurfaces applyBlueprint only accepts top-level keys ${allowedKeys.join(
       ', ',
     )}; unsupported keys: ${unsupportedKeys.join(', ')}`,
   );
 }
 
-function assertSupportedExecuteDslTarget(input: Record<string, any>) {
+function assertSupportedApplyBlueprintTarget(input: Record<string, any>) {
   if (_.isUndefined(input.target)) {
     return;
   }
-  assertPlainObject(input.target, 'flowSurfaces executeDsl target');
+  assertPlainObject(input.target, 'flowSurfaces applyBlueprint target');
   if (_.isPlainObject(input.target) && typeof (input.target as any).mode !== 'undefined') {
-    throwBadRequest(`flowSurfaces executeDsl target only accepts pageSchemaUid; use top-level mode instead`);
+    throwBadRequest(`flowSurfaces applyBlueprint target only accepts pageSchemaUid; use top-level mode instead`);
   }
-  assertOnlyAllowedKeys(input.target as Record<string, any>, 'flowSurfaces executeDsl target', ['pageSchemaUid']);
+  assertOnlyAllowedKeys(input.target as Record<string, any>, 'flowSurfaces applyBlueprint target', ['pageSchemaUid']);
 }
 
 function normalizePage(input: any) {
   if (_.isUndefined(input)) {
     return undefined;
   }
-  assertPlainObject(input, 'flowSurfaces executeDsl page');
-  assertOnlyAllowedKeys(input, 'flowSurfaces executeDsl page', [
+  assertPlainObject(input, 'flowSurfaces applyBlueprint page');
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint page', [
     'title',
     'icon',
     'documentTitle',
@@ -65,9 +65,9 @@ function normalizePage(input: any) {
     title: readOptionalString(input.title),
     icon: readOptionalString(input.icon),
     documentTitle: readOptionalString(input.documentTitle),
-    enableHeader: readBoolean(input.enableHeader, 'flowSurfaces executeDsl page.enableHeader'),
-    enableTabs: readBoolean(input.enableTabs, 'flowSurfaces executeDsl page.enableTabs'),
-    displayTitle: readBoolean(input.displayTitle, 'flowSurfaces executeDsl page.displayTitle'),
+    enableHeader: readBoolean(input.enableHeader, 'flowSurfaces applyBlueprint page.enableHeader'),
+    enableTabs: readBoolean(input.enableTabs, 'flowSurfaces applyBlueprint page.enableTabs'),
+    displayTitle: readBoolean(input.displayTitle, 'flowSurfaces applyBlueprint page.displayTitle'),
   });
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -76,14 +76,14 @@ function normalizeNavigation(input: any) {
   if (_.isUndefined(input)) {
     return undefined;
   }
-  assertPlainObject(input, 'flowSurfaces executeDsl navigation');
-  assertOnlyAllowedKeys(input, 'flowSurfaces executeDsl navigation', ['group', 'item']);
+  assertPlainObject(input, 'flowSurfaces applyBlueprint navigation');
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint navigation', ['group', 'item']);
   const normalized = buildDefinedPayload({
     group: _.isUndefined(input.group)
       ? undefined
       : (() => {
-          assertPlainObject(input.group, 'flowSurfaces executeDsl navigation.group');
-          assertOnlyAllowedKeys(input.group, 'flowSurfaces executeDsl navigation.group', [
+          assertPlainObject(input.group, 'flowSurfaces applyBlueprint navigation.group');
+          assertOnlyAllowedKeys(input.group, 'flowSurfaces applyBlueprint navigation.group', [
             'routeId',
             'title',
             'icon',
@@ -92,21 +92,21 @@ function normalizeNavigation(input: any) {
           ]);
           const routeId = input.group.routeId;
           if (!_.isUndefined(routeId) && !_.isString(routeId) && !_.isNumber(routeId)) {
-            throwBadRequest(`flowSurfaces executeDsl navigation.group.routeId must be a string or integer`);
+            throwBadRequest(`flowSurfaces applyBlueprint navigation.group.routeId must be a string or integer`);
           }
           if (!_.isUndefined(routeId) && readString(input.group.title)) {
-            throwBadRequest(`flowSurfaces executeDsl navigation.group cannot mix routeId with title`);
+            throwBadRequest(`flowSurfaces applyBlueprint navigation.group cannot mix routeId with title`);
           }
-          const routeMetadataKeys = EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS.filter(
+          const routeMetadataKeys = APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS.filter(
             (key) => !_.isUndefined(input.group[key]),
           );
           if (!_.isUndefined(routeId) && routeMetadataKeys.length) {
             throwBadRequest(
-              `flowSurfaces executeDsl navigation.group.routeId cannot mix with ${routeMetadataKeys
+              `flowSurfaces applyBlueprint navigation.group.routeId cannot mix with ${routeMetadataKeys
                 .map((key) => `navigation.group.${key}`)
                 .join(
                   ', ',
-                )}; executeDsl create mode does not update existing menu-group metadata. Use flowSurfaces:updateMenu separately if needed`,
+                )}; applyBlueprint create mode does not update existing menu-group metadata. Use flowSurfaces:updateMenu separately if needed`,
             );
           }
           const normalized = buildDefinedPayload({
@@ -114,18 +114,18 @@ function normalizeNavigation(input: any) {
             title: readOptionalString(input.group.title),
             icon: readOptionalString(input.group.icon),
             tooltip: readOptionalString(input.group.tooltip),
-            hideInMenu: readBoolean(input.group.hideInMenu, 'flowSurfaces executeDsl navigation.group.hideInMenu'),
+            hideInMenu: readBoolean(input.group.hideInMenu, 'flowSurfaces applyBlueprint navigation.group.hideInMenu'),
           });
           if (_.isUndefined(normalized.routeId) && !normalized.title) {
-            throwBadRequest(`flowSurfaces executeDsl navigation.group requires routeId or title`);
+            throwBadRequest(`flowSurfaces applyBlueprint navigation.group requires routeId or title`);
           }
           return normalized;
         })(),
     item: _.isUndefined(input.item)
       ? undefined
       : (() => {
-          assertPlainObject(input.item, 'flowSurfaces executeDsl navigation.item');
-          assertOnlyAllowedKeys(input.item, 'flowSurfaces executeDsl navigation.item', [
+          assertPlainObject(input.item, 'flowSurfaces applyBlueprint navigation.item');
+          assertOnlyAllowedKeys(input.item, 'flowSurfaces applyBlueprint navigation.item', [
             'title',
             'icon',
             'tooltip',
@@ -135,18 +135,18 @@ function normalizeNavigation(input: any) {
             title: readOptionalString(input.item.title),
             icon: readOptionalString(input.item.icon),
             tooltip: readOptionalString(input.item.tooltip),
-            hideInMenu: readBoolean(input.item.hideInMenu, 'flowSurfaces executeDsl navigation.item.hideInMenu'),
+            hideInMenu: readBoolean(input.item.hideInMenu, 'flowSurfaces applyBlueprint navigation.item.hideInMenu'),
           });
         })(),
   });
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
-function normalizeTabs(input: any[]): FlowSurfaceExecuteDslDocument['tabs'] {
+function normalizeTabs(input: any[]): FlowSurfaceApplyBlueprintDocument['tabs'] {
   const seenTabKeys = new Set<string>();
   return input.map((tab: any, index: number) => {
-    assertPlainObject(tab, `flowSurfaces executeDsl tabs[${index}]`);
-    assertOnlyAllowedKeys(tab, `flowSurfaces executeDsl tabs[${index}]`, [
+    assertPlainObject(tab, `flowSurfaces applyBlueprint tabs[${index}]`);
+    assertOnlyAllowedKeys(tab, `flowSurfaces applyBlueprint tabs[${index}]`, [
       'key',
       'title',
       'icon',
@@ -155,7 +155,7 @@ function normalizeTabs(input: any[]): FlowSurfaceExecuteDslDocument['tabs'] {
       'layout',
     ]);
     if (!Array.isArray(tab.blocks) || !tab.blocks.length) {
-      throwBadRequest(`flowSurfaces executeDsl tabs[${index}].blocks must be a non-empty array`);
+      throwBadRequest(`flowSurfaces applyBlueprint tabs[${index}].blocks must be a non-empty array`);
     }
     const explicitKey = readString(tab.key);
     return {
@@ -166,41 +166,43 @@ function normalizeTabs(input: any[]): FlowSurfaceExecuteDslDocument['tabs'] {
       icon: readOptionalString(tab.icon),
       documentTitle: readOptionalString(tab.documentTitle),
       blocks: _.cloneDeep(tab.blocks),
-      layout: cloneOptionalPlainObject(tab.layout, `flowSurfaces executeDsl tabs[${index}].layout`),
+      layout: cloneOptionalPlainObject(tab.layout, `flowSurfaces applyBlueprint tabs[${index}].layout`),
     };
   });
 }
 
-export function prepareFlowSurfaceExecuteDslDocument(input: Record<string, any>): FlowSurfaceExecuteDslDocument {
-  assertPlainObject(input, 'flowSurfaces executeDsl payload');
-  assertSupportedExecuteDslTopLevelKeys(input);
-  assertSupportedExecuteDslTarget(input);
+export function prepareFlowSurfaceApplyBlueprintDocument(
+  input: Record<string, any>,
+): FlowSurfaceApplyBlueprintDocument {
+  assertPlainObject(input, 'flowSurfaces applyBlueprint payload');
+  assertSupportedApplyBlueprintTopLevelKeys(input);
+  assertSupportedApplyBlueprintTarget(input);
 
-  const version = assertNonEmptyString(input.version, 'flowSurfaces executeDsl version');
+  const version = assertNonEmptyString(input.version, 'flowSurfaces applyBlueprint version');
   if (version !== '1') {
-    throwBadRequest(`flowSurfaces executeDsl version '${version}' is not supported`);
+    throwBadRequest(`flowSurfaces applyBlueprint version '${version}' is not supported`);
   }
 
-  const mode = assertNonEmptyString(input.mode, 'flowSurfaces executeDsl mode');
+  const mode = assertNonEmptyString(input.mode, 'flowSurfaces applyBlueprint mode');
   if (mode !== 'create' && mode !== 'replace') {
-    throwBadRequest(`flowSurfaces executeDsl mode must be 'create' or 'replace'`);
+    throwBadRequest(`flowSurfaces applyBlueprint mode must be 'create' or 'replace'`);
   }
 
   if (!Array.isArray(input.tabs) || !input.tabs.length) {
-    throwBadRequest(`flowSurfaces executeDsl tabs must be a non-empty array`);
+    throwBadRequest(`flowSurfaces applyBlueprint tabs must be a non-empty array`);
   }
 
   const page = normalizePage(input.page);
   const navigation = normalizeNavigation(input.navigation);
 
   if (mode === 'create' && !_.isUndefined(input.target)) {
-    throwBadRequest(`flowSurfaces executeDsl create mode does not accept target`);
+    throwBadRequest(`flowSurfaces applyBlueprint create mode does not accept target`);
   }
   if (mode === 'replace' && !_.isPlainObject(input.target)) {
-    throwBadRequest(`flowSurfaces executeDsl replace mode requires target.pageSchemaUid`);
+    throwBadRequest(`flowSurfaces applyBlueprint replace mode requires target.pageSchemaUid`);
   }
   if (mode === 'replace' && navigation) {
-    throwBadRequest(`flowSurfaces executeDsl replace mode does not accept navigation`);
+    throwBadRequest(`flowSurfaces applyBlueprint replace mode does not accept navigation`);
   }
 
   const target =
@@ -208,24 +210,24 @@ export function prepareFlowSurfaceExecuteDslDocument(input: Record<string, any>)
       ? {
           pageSchemaUid: assertNonEmptyString(
             input.target.pageSchemaUid,
-            'flowSurfaces executeDsl target.pageSchemaUid',
+            'flowSurfaces applyBlueprint target.pageSchemaUid',
           ),
         }
       : undefined;
 
   if (!_.isUndefined(input.assets)) {
-    assertPlainObject(input.assets, 'flowSurfaces executeDsl assets');
-    assertOnlyAllowedKeys(input.assets, 'flowSurfaces executeDsl assets', ['scripts', 'charts']);
+    assertPlainObject(input.assets, 'flowSurfaces applyBlueprint assets');
+    assertOnlyAllowedKeys(input.assets, 'flowSurfaces applyBlueprint assets', ['scripts', 'charts']);
   }
 
-  const assets: FlowSurfaceExecuteDslAssets = {
-    scripts: normalizeAssetRegistry(input.assets?.scripts, 'flowSurfaces executeDsl assets.scripts'),
-    charts: normalizeAssetRegistry(input.assets?.charts, 'flowSurfaces executeDsl assets.charts'),
+  const assets: FlowSurfaceApplyBlueprintAssets = {
+    scripts: normalizeAssetRegistry(input.assets?.scripts, 'flowSurfaces applyBlueprint assets.scripts'),
+    charts: normalizeAssetRegistry(input.assets?.charts, 'flowSurfaces applyBlueprint assets.charts'),
   };
   const tabs = normalizeTabs(input.tabs);
 
   if (tabs.length > 1 && page?.enableTabs === false) {
-    throwBadRequest(`flowSurfaces executeDsl page.enableTabs cannot be false when tabs.length > 1`);
+    throwBadRequest(`flowSurfaces applyBlueprint page.enableTabs cannot be false when tabs.length > 1`);
   }
 
   return {

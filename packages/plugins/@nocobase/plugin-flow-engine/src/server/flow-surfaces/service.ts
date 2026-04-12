@@ -52,14 +52,14 @@ import {
   getDeclaredKeyFromNode as getPlanningDeclaredKeyFromNode,
 } from './planning/key-registry';
 import {
-  compileFlowSurfaceExecuteDslRequest,
-  prepareFlowSurfaceExecuteDslDocument,
-  resolveExecuteDslPageLocator,
-  type FlowSurfaceExecuteDslDocument,
-  type FlowSurfaceExecuteDslProgram,
-  type FlowSurfaceExecuteDslReplaceTargetInfo,
-} from './dsl/execute';
-import { EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS } from './dsl/private-utils';
+  compileFlowSurfaceApplyBlueprintRequest,
+  prepareFlowSurfaceApplyBlueprintDocument,
+  resolveApplyBlueprintPageLocator,
+  type FlowSurfaceApplyBlueprintDocument,
+  type FlowSurfaceApplyBlueprintProgram,
+  type FlowSurfaceApplyBlueprintReplaceTargetInfo,
+} from './blueprint';
+import { APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS } from './blueprint/private-utils';
 import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
 import { collectFlowSurfaceCreatedKeys, collectPersistableFlowSurfaceCreatedKeys } from './planning/created-keys';
 import { persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode } from './planning/key-persistence';
@@ -2376,10 +2376,10 @@ export class FlowSurfacesService {
     throwInternalError(`flowSurfaces plan-only action '${unsupportedAction}' is not supported`);
   }
 
-  private async resolveExecuteDslReplaceTargetInfo(
+  private async resolveApplyBlueprintReplaceTargetInfo(
     pageSchemaUid: string,
     transaction?: any,
-  ): Promise<FlowSurfaceExecuteDslReplaceTargetInfo> {
+  ): Promise<FlowSurfaceApplyBlueprintReplaceTargetInfo> {
     const readback = await this.get(
       {
         pageSchemaUid,
@@ -2388,7 +2388,7 @@ export class FlowSurfacesService {
     );
     const pageUid = readback?.target?.uid || readback?.tree?.uid;
     if (typeof pageUid !== 'string' || !pageUid.trim()) {
-      throwBadRequest(`flowSurfaces executeDsl replace target page is missing page uid`);
+      throwBadRequest(`flowSurfaces applyBlueprint replace target page is missing page uid`);
     }
     const structure = readback?.pageRoute
       ? await this.loadRouteBackedPageStructure(readback.pageRoute, transaction)
@@ -2396,14 +2396,14 @@ export class FlowSurfacesService {
     const tabs = _.castArray(structure.tabRoutes || []).map((tab: any, index: number) => {
       const uid = String(this.readRouteField(tab, 'schemaUid') || tab?.uid || '').trim();
       if (!uid) {
-        throwBadRequest(`flowSurfaces executeDsl replace target tab #${index + 1} is missing uid`);
+        throwBadRequest(`flowSurfaces applyBlueprint replace target tab #${index + 1} is missing uid`);
       }
       return {
         uid,
       };
     });
     if (!tabs.length) {
-      throwBadRequest(`flowSurfaces executeDsl replace target page must contain at least one tab`);
+      throwBadRequest(`flowSurfaces applyBlueprint replace target page must contain at least one tab`);
     }
     const pageEnableTabs =
       typeof readback?.pageRoute?.enableTabs === 'boolean' ? readback.pageRoute.enableTabs : undefined;
@@ -2417,10 +2417,10 @@ export class FlowSurfacesService {
     };
   }
 
-  private async resolveExecuteDslCreateNavigationGroup(
-    document: FlowSurfaceExecuteDslDocument,
+  private async resolveApplyBlueprintCreateNavigationGroup(
+    document: FlowSurfaceApplyBlueprintDocument,
     transaction?: any,
-  ): Promise<FlowSurfaceExecuteDslDocument> {
+  ): Promise<FlowSurfaceApplyBlueprintDocument> {
     if (document.mode !== 'create' || !_.isPlainObject(document.navigation?.group)) {
       return document;
     }
@@ -2440,16 +2440,16 @@ export class FlowSurfacesService {
     }
     if (matchedRoutes.length > 1) {
       throwBadRequest(
-        `flowSurfaces executeDsl navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
+        `flowSurfaces applyBlueprint navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
       );
     }
 
-    const reusedMetadataFields = EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS.filter(
+    const reusedMetadataFields = APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS.filter(
       (key) => !_.isUndefined(document.navigation?.group?.[key]),
     );
     if (reusedMetadataFields.length) {
       throwBadRequest(
-        `flowSurfaces executeDsl navigation.group.title '${groupTitle}' matched an existing menu group; do not also pass ${reusedMetadataFields
+        `flowSurfaces applyBlueprint navigation.group.title '${groupTitle}' matched an existing menu group; do not also pass ${reusedMetadataFields
           .map((key) => `navigation.group.${key}`)
           .join(
             ', ',
@@ -2460,7 +2460,7 @@ export class FlowSurfacesService {
     const routeId = this.readRouteField(matchedRoutes[0], 'id');
     if (_.isNil(routeId) || routeId === '') {
       throwBadRequest(
-        `flowSurfaces executeDsl matched navigation group '${groupTitle}' is missing route id; pass navigation.group.routeId explicitly`,
+        `flowSurfaces applyBlueprint matched navigation group '${groupTitle}' is missing route id; pass navigation.group.routeId explicitly`,
       );
     }
 
@@ -2475,15 +2475,15 @@ export class FlowSurfacesService {
     };
   }
 
-  private async prepareExecuteDslRequest(
+  private async prepareApplyBlueprintRequest(
     values: Record<string, any>,
     transaction?: any,
-  ): Promise<FlowSurfaceExecuteDslProgram> {
-    const initialDocument = prepareFlowSurfaceExecuteDslDocument(values);
-    const document = await this.resolveExecuteDslCreateNavigationGroup(initialDocument, transaction);
+  ): Promise<FlowSurfaceApplyBlueprintProgram> {
+    const initialDocument = prepareFlowSurfaceApplyBlueprintDocument(values);
+    const document = await this.resolveApplyBlueprintCreateNavigationGroup(initialDocument, transaction);
     const replaceTarget =
       document.mode === 'replace' && document.target
-        ? await this.resolveExecuteDslReplaceTargetInfo(document.target.pageSchemaUid, transaction)
+        ? await this.resolveApplyBlueprintReplaceTargetInfo(document.target.pageSchemaUid, transaction)
         : undefined;
     if (
       document.mode === 'replace' &&
@@ -2492,16 +2492,16 @@ export class FlowSurfacesService {
       replaceTarget?.pageEnableTabs === false
     ) {
       throwBadRequest(
-        `flowSurfaces executeDsl replace mode requires page.enableTabs=true when tabs.length > 1 and the current page has enableTabs=false`,
+        `flowSurfaces applyBlueprint replace mode requires page.enableTabs=true when tabs.length > 1 and the current page has enableTabs=false`,
       );
     }
-    return compileFlowSurfaceExecuteDslRequest(document, {
+    return compileFlowSurfaceApplyBlueprintRequest(document, {
       replaceTarget,
     });
   }
 
-  async executeDsl(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const prepared = await this.prepareExecuteDslRequest(values, options.transaction);
+  async applyBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction);
     const result = await executeInternalPlan(
       {
         surface: prepared.surface,
@@ -2512,7 +2512,7 @@ export class FlowSurfacesService {
       this.buildPlanningRuntimeDeps(),
       options,
     );
-    const pageLocator = resolveExecuteDslPageLocator(prepared, result);
+    const pageLocator = resolveApplyBlueprintPageLocator(prepared, result);
     const surface = await this.get(pageLocator, options);
 
     return {

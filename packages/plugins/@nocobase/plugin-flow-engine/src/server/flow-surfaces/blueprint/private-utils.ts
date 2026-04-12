@@ -9,11 +9,10 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
-import { assertNoFlowSurfaceLegacyRef } from '../reference-guards';
 import { normalizeFlowSurfaceComposeKey } from '../service-utils';
-import type { FlowSurfaceExecuteDslAssetMap } from './public-types';
+import type { FlowSurfaceApplyBlueprintAssetMap } from './public-types';
 
-export const EXECUTE_DSL_CREATE_MENU_GROUP_METADATA_KEYS = ['icon', 'tooltip', 'hideInMenu'] as const;
+export const APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS = ['icon', 'tooltip', 'hideInMenu'] as const;
 
 export function assertPlainObject(value: any, context: string) {
   if (!_.isPlainObject(value)) {
@@ -31,16 +30,7 @@ export function assertOnlyAllowedKeys(input: Record<string, any>, context: strin
   );
 }
 
-export function assertNoExecuteDslLegacyRef(input: any, context: string, allowed: string) {
-  assertNoFlowSurfaceLegacyRef(input, {
-    actionName: 'executeDsl',
-    path: context.replace(/^flowSurfaces executeDsl\s+/, ''),
-    dollarRefAllowed: allowed,
-    refAllowed: allowed,
-  });
-}
-
-export function normalizeExecuteDslToken(value: any, fallback = 'item') {
+export function normalizeApplyBlueprintToken(value: any, fallback = 'item') {
   const normalized = String(value || '')
     .trim()
     .replace(/[.[\](){}]+/g, '_')
@@ -95,20 +85,20 @@ export function cloneOptionalPlainObject<T extends Record<string, any>>(value: a
   return _.cloneDeep(value) as T;
 }
 
-export function buildExecuteDslTabPublicPath(index: number) {
-  return `flowSurfaces executeDsl tabs[${index}]`;
+export function buildApplyBlueprintTabPublicPath(index: number) {
+  return `flowSurfaces applyBlueprint tabs[${index}]`;
 }
 
 export function buildScopedKey(scopePrefix: string, localKey: string) {
   return scopePrefix ? `${scopePrefix}.${localKey}` : localKey;
 }
 
-export function normalizeDslLocalKey(rawValue: any, fallback: string, context: string) {
+export function normalizeBlueprintLocalKey(rawValue: any, fallback: string, context: string) {
   const explicit = readString(rawValue);
   if (explicit) {
     return normalizeFlowSurfaceComposeKey(explicit, context);
   }
-  return normalizeFlowSurfaceComposeKey(normalizeExecuteDslToken(fallback, fallback), context);
+  return normalizeFlowSurfaceComposeKey(normalizeApplyBlueprintToken(fallback, fallback), context);
 }
 
 export function normalizeTabLocalKey(
@@ -120,13 +110,13 @@ export function normalizeTabLocalKey(
     explicit: boolean;
   },
 ) {
-  const normalizedBase = normalizeDslLocalKey(rawKey, fallback, `flowSurfaces executeDsl tabs[${index}].key`);
+  const normalizedBase = normalizeBlueprintLocalKey(rawKey, fallback, `flowSurfaces applyBlueprint tabs[${index}].key`);
   if (!usedKeys.has(normalizedBase)) {
     usedKeys.add(normalizedBase);
     return normalizedBase;
   }
   if (options.explicit) {
-    throwBadRequest(`flowSurfaces executeDsl tabs[${index}].key '${normalizedBase}' is duplicated`);
+    throwBadRequest(`flowSurfaces applyBlueprint tabs[${index}].key '${normalizedBase}' is duplicated`);
   }
   let suffix = 2;
   let candidate = `${normalizedBase}_${suffix}`;
@@ -138,7 +128,7 @@ export function normalizeTabLocalKey(
   return candidate;
 }
 
-export function normalizeAssetRegistry(input: any, context: string): FlowSurfaceExecuteDslAssetMap {
+export function normalizeAssetRegistry(input: any, context: string): FlowSurfaceApplyBlueprintAssetMap {
   if (_.isUndefined(input)) {
     return {};
   }

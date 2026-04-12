@@ -11,32 +11,24 @@ import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
 import type { FlowSurfaceResourceBindingKey } from '../types';
-import {
-  assertNoExecuteDslActionRestrictions,
-  assertNoExecuteDslBlockResourceObjectAliases,
-  assertNoExecuteDslBlockRootResourceAliases,
-  assertNoExecuteDslBlockRestrictions,
-  assertNoExecuteDslFieldRestrictions,
-} from './alias-rules';
 import type {
-  FlowSurfaceExecuteDslActionSpec,
-  FlowSurfaceExecuteDslAssets,
-  FlowSurfaceExecuteDslBlockResource,
-  FlowSurfaceExecuteDslBlockSpec,
-  FlowSurfaceExecuteDslDocument,
-  FlowSurfaceExecuteDslFieldObjectSpec,
-  FlowSurfaceExecuteDslLayout,
-  FlowSurfaceExecuteDslPopup,
-  FlowSurfaceExecuteDslTabDocument,
+  FlowSurfaceApplyBlueprintActionSpec,
+  FlowSurfaceApplyBlueprintAssets,
+  FlowSurfaceApplyBlueprintBlockResource,
+  FlowSurfaceApplyBlueprintBlockSpec,
+  FlowSurfaceApplyBlueprintDocument,
+  FlowSurfaceApplyBlueprintFieldObjectSpec,
+  FlowSurfaceApplyBlueprintLayout,
+  FlowSurfaceApplyBlueprintPopup,
+  FlowSurfaceApplyBlueprintTabDocument,
 } from './public-types';
 import {
   assertNonEmptyString,
-  assertNoExecuteDslLegacyRef,
   assertOnlyAllowedKeys,
-  buildExecuteDslTabPublicPath,
+  buildApplyBlueprintTabPublicPath,
   buildScopedKey,
   cloneOptionalPlainObject,
-  normalizeDslLocalKey,
+  normalizeBlueprintLocalKey,
   readOptionalArray,
   readOptionalString,
   readString,
@@ -52,7 +44,7 @@ type FlowSurfaceCompiledPopup = {
   popupTitle?: string;
 };
 
-const EXECUTE_DSL_BLOCK_TYPE_ENUM = [
+const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
   'createForm',
   'editForm',
@@ -67,7 +59,7 @@ const EXECUTE_DSL_BLOCK_TYPE_ENUM = [
   'jsBlock',
 ] as const;
 
-const EXECUTE_DSL_BLOCK_ALLOWED_KEYS = [
+const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'key',
   'type',
   'title',
@@ -86,7 +78,7 @@ const EXECUTE_DSL_BLOCK_ALLOWED_KEYS = [
   'chart',
 ];
 
-const EXECUTE_DSL_FIELD_ALLOWED_KEYS = [
+const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
   'key',
   'field',
   'associationPathName',
@@ -100,11 +92,11 @@ const EXECUTE_DSL_FIELD_ALLOWED_KEYS = [
   'chart',
 ];
 
-const EXECUTE_DSL_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
-const EXECUTE_DSL_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'blocks', 'layout'];
-const EXECUTE_DSL_LAYOUT_ALLOWED_KEYS = ['rows'];
-const EXECUTE_DSL_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
-const EXECUTE_DSL_BLOCK_RESOURCE_ALLOWED_KEYS = [
+const APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
+const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'blocks', 'layout'];
+const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
+const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
+const APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS = [
   'binding',
   'dataSourceKey',
   'collectionName',
@@ -114,17 +106,29 @@ const EXECUTE_DSL_BLOCK_RESOURCE_ALLOWED_KEYS = [
   'sourceId',
   'filterByTk',
 ];
-const EXECUTE_DSL_BLOCK_RESOURCE_RAW_ONLY_KEYS = ['associationName', 'associationPathName', 'sourceId', 'filterByTk'];
-const EXECUTE_DSL_BLOCK_RESOURCE_SHORTHAND_KEYS = [
+const APPLY_BLUEPRINT_BLOCK_RESOURCE_RAW_ONLY_KEYS = [
+  'associationName',
+  'associationPathName',
+  'sourceId',
+  'filterByTk',
+];
+const APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS = [
   'collection',
   'dataSourceKey',
   'associationPathName',
   'binding',
   'associationField',
 ];
-const EXECUTE_DSL_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
-const EXECUTE_DSL_RECORD_ACTION_TYPES = new Set(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild']);
-const EXECUTE_DSL_BLOCK_TYPES = new Set<string>(EXECUTE_DSL_BLOCK_TYPE_ENUM);
+const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
+const APPLY_BLUEPRINT_RECORD_ACTION_TYPES = new Set([
+  'view',
+  'edit',
+  'delete',
+  'updateRecord',
+  'duplicate',
+  'addChild',
+]);
+const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
 
 function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
@@ -132,16 +136,16 @@ function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   }
 }
 
-function assertExecuteDslBlockType(type: string | undefined, context: string) {
+function assertApplyBlueprintBlockType(type: string | undefined, context: string) {
   if (!type) {
     return;
   }
   if (type === 'form') {
-    throwBadRequest(`${context}.type 'form' is unsupported in executeDsl; use 'editForm' or 'createForm'`);
+    throwBadRequest(`${context}.type 'form' is unsupported in applyBlueprint; use 'editForm' or 'createForm'`);
   }
-  if (!EXECUTE_DSL_BLOCK_TYPES.has(type)) {
+  if (!APPLY_BLUEPRINT_BLOCK_TYPES.has(type)) {
     throwBadRequest(
-      `${context}.type '${type}' is unsupported in executeDsl; supported types: ${EXECUTE_DSL_BLOCK_TYPE_ENUM.join(
+      `${context}.type '${type}' is unsupported in applyBlueprint; supported types: ${APPLY_BLUEPRINT_BLOCK_TYPE_ENUM.join(
         ', ',
       )}`,
     );
@@ -149,13 +153,13 @@ function assertExecuteDslBlockType(type: string | undefined, context: string) {
 }
 
 function normalizeEditPopupBlocks(
-  input: FlowSurfaceExecuteDslBlockSpec[],
+  input: FlowSurfaceApplyBlueprintBlockSpec[],
   context: string,
-): FlowSurfaceExecuteDslBlockSpec[] {
+): FlowSurfaceApplyBlueprintBlockSpec[] {
   input.forEach((block, index) => {
     const blockType = readOptionalString(block?.type);
     if (blockType === 'form') {
-      throwBadRequest(`${context}.blocks[${index}].type 'form' is unsupported in executeDsl; use 'editForm'`);
+      throwBadRequest(`${context}.blocks[${index}].type 'form' is unsupported in applyBlueprint; use 'editForm'`);
     }
   });
   const editFormBlocks = input.filter((block) => readOptionalString(block?.type) === 'editForm');
@@ -272,7 +276,7 @@ function normalizeAssociatedRecordsBindingFromAssociationPath(
   };
 }
 
-function readExecuteDslActionType(input: any) {
+function readApplyBlueprintActionType(input: any) {
   if (typeof input === 'string') {
     return readString(input);
   }
@@ -282,8 +286,8 @@ function readExecuteDslActionType(input: any) {
   return undefined;
 }
 
-function splitExecuteDslBlockActionsByScope(
-  block: FlowSurfaceExecuteDslBlockSpec,
+function splitApplyBlueprintBlockActionsByScope(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
   context: string,
 ): {
   actions: any[];
@@ -292,7 +296,7 @@ function splitExecuteDslBlockActionsByScope(
   const rawActions = readOptionalItems(block.actions, `${context}.actions`);
   const rawRecordActions = readOptionalItems(block.recordActions, `${context}.recordActions`);
   const blockType = readOptionalString(block.type);
-  if (!blockType || !EXECUTE_DSL_RECORD_CAPABLE_BLOCK_TYPES.has(blockType)) {
+  if (!blockType || !APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES.has(blockType)) {
     return {
       actions: rawActions,
       recordActions: rawRecordActions,
@@ -301,8 +305,8 @@ function splitExecuteDslBlockActionsByScope(
   const promotedRecordActions: any[] = [];
   const remainingActions: any[] = [];
   rawActions.forEach((action) => {
-    const actionType = readExecuteDslActionType(action);
-    if (actionType && EXECUTE_DSL_RECORD_ACTION_TYPES.has(actionType)) {
+    const actionType = readApplyBlueprintActionType(action);
+    if (actionType && APPLY_BLUEPRINT_RECORD_ACTION_TYPES.has(actionType)) {
       promotedRecordActions.push(action);
       return;
     }
@@ -317,12 +321,12 @@ function splitExecuteDslBlockActionsByScope(
 function resolveAssetSettings(
   settings: any,
   spec: Record<string, any>,
-  assets: FlowSurfaceExecuteDslAssets,
+  assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
 ) {
   const nextSettings = cloneOptionalPlainObject<Record<string, any>>(settings, `${context}.settings`) || {};
 
-  const mergeAsset = (bucket: keyof FlowSurfaceExecuteDslAssets, assetKey: any) => {
+  const mergeAsset = (bucket: keyof FlowSurfaceApplyBlueprintAssets, assetKey: any) => {
     const normalizedKey = readOptionalString(assetKey);
     if (!normalizedKey) {
       return;
@@ -359,15 +363,16 @@ function resolvePopupTitleSettings(settings: Record<string, any>, title?: string
   return nextSettings;
 }
 
-function normalizeBlockResourceObject(input: Record<string, any>, context: string): FlowSurfaceExecuteDslBlockResource {
-  assertNoExecuteDslLegacyRef(input, context, 'binding or collectionName');
-  assertNoExecuteDslBlockResourceObjectAliases(input, context);
-  assertOnlyAllowedKeys(input, context, EXECUTE_DSL_BLOCK_RESOURCE_ALLOWED_KEYS);
+function normalizeBlockResourceObject(
+  input: Record<string, any>,
+  context: string,
+): FlowSurfaceApplyBlueprintBlockResource {
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS);
 
   const hasBinding = Object.prototype.hasOwnProperty.call(input, 'binding');
   if (hasBinding) {
     const normalizedAssociatedRecords = normalizeAssociatedRecordsBindingFromAssociationPath(input, context);
-    const mixedRawKeys = EXECUTE_DSL_BLOCK_RESOURCE_RAW_ONLY_KEYS.filter(
+    const mixedRawKeys = APPLY_BLUEPRINT_BLOCK_RESOURCE_RAW_ONLY_KEYS.filter(
       (key) =>
         Object.prototype.hasOwnProperty.call(input, key) &&
         !(normalizedAssociatedRecords && key === 'associationPathName'),
@@ -384,7 +389,7 @@ function normalizeBlockResourceObject(input: Record<string, any>, context: strin
       dataSourceKey: readOptionalString(input.dataSourceKey),
       collectionName: readOptionalString(input.collectionName),
       associationField: normalizedAssociatedRecords?.associationField || readOptionalString(input.associationField),
-    }) as FlowSurfaceExecuteDslBlockResource;
+    }) as FlowSurfaceApplyBlueprintBlockResource;
   }
 
   if (Object.prototype.hasOwnProperty.call(input, 'associationField')) {
@@ -399,19 +404,19 @@ function normalizeBlockResourceObject(input: Record<string, any>, context: strin
     associationPathName: readOptionalString(input.associationPathName),
     sourceId: input.sourceId,
     filterByTk: input.filterByTk,
-  }) as FlowSurfaceExecuteDslBlockResource;
+  }) as FlowSurfaceApplyBlueprintBlockResource;
   if (!Object.keys(normalized).length) {
     throwBadRequest(`${context} cannot be empty`);
   }
   return normalized;
 }
 
-function buildBlockResource(block: FlowSurfaceExecuteDslBlockSpec, context: string) {
+function buildBlockResource(block: FlowSurfaceApplyBlueprintBlockSpec, context: string) {
   if (!_.isUndefined(block.resource)) {
     if (!_.isPlainObject(block.resource)) {
       throwBadRequest(`${context}.resource must be an object`);
     }
-    const mixedShorthandKeys = EXECUTE_DSL_BLOCK_RESOURCE_SHORTHAND_KEYS.filter((key) =>
+    const mixedShorthandKeys = APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS.filter((key) =>
       Object.prototype.hasOwnProperty.call(block, key),
     );
     if (mixedShorthandKeys.length) {
@@ -452,15 +457,14 @@ function buildBlockResource(block: FlowSurfaceExecuteDslBlockSpec, context: stri
   });
 }
 
-function ensureLayoutRows(layout: FlowSurfaceExecuteDslLayout | undefined, context: string) {
+function ensureLayoutRows(layout: FlowSurfaceApplyBlueprintLayout | undefined, context: string) {
   if (_.isUndefined(layout)) {
     return undefined;
   }
   if (!_.isPlainObject(layout)) {
     throwBadRequest(`${context} must be an object`);
   }
-  assertNoExecuteDslLegacyRef(layout, context, 'rows');
-  assertOnlyAllowedKeys(layout, context, EXECUTE_DSL_LAYOUT_ALLOWED_KEYS);
+  assertOnlyAllowedKeys(layout, context, APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS);
   if (!Array.isArray(layout.rows) || !layout.rows.length) {
     throwBadRequest(`${context}.rows must be a non-empty array`);
   }
@@ -475,8 +479,11 @@ function ensureLayoutRows(layout: FlowSurfaceExecuteDslLayout | undefined, conte
       if (!_.isPlainObject(item)) {
         throwBadRequest(`${context}.rows[${rowIndex}][${itemIndex}] must be a string or object`);
       }
-      assertNoExecuteDslLegacyRef(item, `${context}.rows[${rowIndex}][${itemIndex}]`, 'key');
-      assertOnlyAllowedKeys(item, `${context}.rows[${rowIndex}][${itemIndex}]`, EXECUTE_DSL_LAYOUT_CELL_ALLOWED_KEYS);
+      assertOnlyAllowedKeys(
+        item,
+        `${context}.rows[${rowIndex}][${itemIndex}]`,
+        APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS,
+      );
     });
     return row;
   });
@@ -488,7 +495,7 @@ function autoLayoutFromBlockKeys(blockKeys: string[]) {
   };
 }
 
-export function collectReferencedBlockKeys(layout: FlowSurfaceExecuteDslLayout | undefined, context: string) {
+export function collectReferencedBlockKeys(layout: FlowSurfaceApplyBlueprintLayout | undefined, context: string) {
   const referenced = new Set<string>();
   const rows = ensureLayoutRows(layout, context) || [];
   rows.forEach((row, rowIndex) => {
@@ -510,7 +517,7 @@ export function collectReferencedBlockKeys(layout: FlowSurfaceExecuteDslLayout |
 }
 
 function compileLayout(
-  layout: FlowSurfaceExecuteDslLayout | undefined,
+  layout: FlowSurfaceApplyBlueprintLayout | undefined,
   blockKeysByLocalKey: Map<string, string>,
   context: string,
 ): Record<string, any> | undefined {
@@ -549,9 +556,9 @@ function compileLayout(
 }
 
 function compilePopup(
-  popup: FlowSurfaceExecuteDslPopup | undefined,
+  popup: FlowSurfaceApplyBlueprintPopup | undefined,
   scopePrefix: string,
-  assets: FlowSurfaceExecuteDslAssets,
+  assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
   options: {
     ownerActionType?: string;
@@ -563,11 +570,10 @@ function compilePopup(
   if (!_.isPlainObject(popup)) {
     throwBadRequest(`${context} must be an object`);
   }
-  assertNoExecuteDslLegacyRef(popup, context, 'title, mode, template, blocks, or layout');
-  assertOnlyAllowedKeys(popup, context, EXECUTE_DSL_POPUP_ALLOWED_KEYS);
+  assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
-  const rawPopupBlocks = readOptionalItems<FlowSurfaceExecuteDslBlockSpec>(popup.blocks, `${context}.blocks`);
+  const rawPopupBlocks = readOptionalItems<FlowSurfaceApplyBlueprintBlockSpec>(popup.blocks, `${context}.blocks`);
   const popupBlocks =
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
@@ -609,9 +615,6 @@ function resolveTargetBlockKey(value: any, localBlockKeys: Map<string, string>, 
   if (_.isUndefined(value) || value === null || value === '') {
     return undefined;
   }
-  if (_.isPlainObject(value)) {
-    assertNoExecuteDslLegacyRef(value, context, 'key');
-  }
   if (typeof value === 'string') {
     const normalized = readString(value);
     return localBlockKeys.get(normalized) || normalized;
@@ -620,10 +623,10 @@ function resolveTargetBlockKey(value: any, localBlockKeys: Map<string, string>, 
 }
 
 function compileField(
-  input: string | FlowSurfaceExecuteDslFieldObjectSpec,
+  input: string | FlowSurfaceApplyBlueprintFieldObjectSpec,
   index: number,
   scopePrefix: string,
-  assets: FlowSurfaceExecuteDslAssets,
+  assets: FlowSurfaceApplyBlueprintAssets,
   localBlockKeys: Map<string, string>,
   context: string,
 ) {
@@ -637,9 +640,7 @@ function compileField(
   if (!_.isPlainObject(input)) {
     throwBadRequest(`${context}[${index}] must be a string or object`);
   }
-  assertNoExecuteDslLegacyRef(input, `${context}[${index}]`, 'key');
-  assertNoExecuteDslFieldRestrictions(input, `${context}[${index}]`);
-  assertOnlyAllowedKeys(input, `${context}[${index}]`, EXECUTE_DSL_FIELD_ALLOWED_KEYS);
+  assertOnlyAllowedKeys(input, `${context}[${index}]`, APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS);
   const fieldPath = readOptionalString(input.field);
   const syntheticType = readOptionalString(input.type);
   if (!fieldPath && !syntheticType) {
@@ -648,7 +649,7 @@ function compileField(
   if (fieldPath && syntheticType) {
     throwBadRequest(`${context}[${index}] cannot mix field with synthetic type`);
   }
-  const localKey = normalizeDslLocalKey(
+  const localKey = normalizeBlueprintLocalKey(
     input.key,
     fieldPath || (syntheticType ? `${syntheticType}_${index + 1}` : `field_${index + 1}`),
     `${context}[${index}].key`,
@@ -673,10 +674,10 @@ function compileField(
 }
 
 function compileAction(
-  input: FlowSurfaceExecuteDslActionSpec,
+  input: FlowSurfaceApplyBlueprintActionSpec,
   index: number,
   scopePrefix: string,
-  assets: FlowSurfaceExecuteDslAssets,
+  assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
 ) {
   if (typeof input === 'string') {
@@ -689,11 +690,9 @@ function compileAction(
   if (!_.isPlainObject(input)) {
     throwBadRequest(`${context}[${index}] must be a string or object`);
   }
-  assertNoExecuteDslLegacyRef(input, `${context}[${index}]`, 'key');
-  assertNoExecuteDslActionRestrictions(input, `${context}[${index}]`);
-  assertOnlyAllowedKeys(input, `${context}[${index}]`, EXECUTE_DSL_ACTION_ALLOWED_KEYS);
+  assertOnlyAllowedKeys(input, `${context}[${index}]`, APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS);
   const type = assertNonEmptyString(input.type, `${context}[${index}].type`);
-  const localKey = normalizeDslLocalKey(input.key, `${type}_${index + 1}`, `${context}[${index}].key`);
+  const localKey = normalizeBlueprintLocalKey(input.key, `${type}_${index + 1}`, `${context}[${index}].key`);
   const key = normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, localKey), `${context}[${index}]`);
   let settings = resolveAssetSettings(input.settings, input, assets, `${context}[${index}]`);
   if (readOptionalString(input.title) && _.isUndefined(settings.title)) {
@@ -712,9 +711,9 @@ function compileAction(
 }
 
 function compileBlocks(
-  input: FlowSurfaceExecuteDslBlockSpec[],
+  input: FlowSurfaceApplyBlueprintBlockSpec[],
   scopePrefix: string,
-  assets: FlowSurfaceExecuteDslAssets,
+  assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
   requiredExplicitBlockKeys: Set<string> = new Set(),
 ): FlowSurfaceCompiledBlocks {
@@ -741,15 +740,12 @@ function compileBlocks(
     if (!_.isPlainObject(block)) {
       throwBadRequest(`${context}[${index}] must be an object`);
     }
-    assertNoExecuteDslLegacyRef(block, `${context}[${index}]`, 'key');
-    assertNoExecuteDslBlockRestrictions(block, `${context}[${index}]`);
-    assertNoExecuteDslBlockRootResourceAliases(block, `${context}[${index}]`);
     assertNoBlockLevelLayout(block, `${context}[${index}]`);
-    assertOnlyAllowedKeys(block, `${context}[${index}]`, EXECUTE_DSL_BLOCK_ALLOWED_KEYS);
-    assertExecuteDslBlockType(readOptionalString(block.type), `${context}[${index}]`);
+    assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
+    assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
     const explicitKey = readString(block.key);
     const fallback = block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`;
-    const localKey = normalizeDslLocalKey(block.key, fallback, `${context}[${index}].key`);
+    const localKey = normalizeBlueprintLocalKey(block.key, fallback, `${context}[${index}].key`);
     if (!explicitKey && referencedBlockKeys.has(localKey)) {
       throwBadRequest(
         `${context}[${index}] must provide key explicitly because it is referenced by layout or field.target`,
@@ -764,7 +760,7 @@ function compileBlocks(
 
   const blocks = rawBlocks.map((block, index) => {
     const blockContext = `${context}[${index}]`;
-    const localKey = normalizeDslLocalKey(
+    const localKey = normalizeBlueprintLocalKey(
       block.key,
       block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`,
       `${blockContext}.key`,
@@ -779,7 +775,7 @@ function compileBlocks(
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const fields = readOptionalItems(block.fields, `${blockContext}.fields`);
-    const { actions, recordActions } = splitExecuteDslBlockActionsByScope(block, blockContext);
+    const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
     return buildDefinedPayload({
       key,
       type: readOptionalString(block.type),
@@ -805,14 +801,14 @@ function compileBlocks(
 }
 
 export function compileTabComposeValues(
-  tab: FlowSurfaceExecuteDslTabDocument,
-  document: FlowSurfaceExecuteDslDocument,
+  tab: FlowSurfaceApplyBlueprintTabDocument,
+  document: FlowSurfaceApplyBlueprintDocument,
   tabIndex: number,
   options: {
     mode: 'append' | 'replace';
   },
 ) {
-  const tabPublicPath = buildExecuteDslTabPublicPath(tabIndex);
+  const tabPublicPath = buildApplyBlueprintTabPublicPath(tabIndex);
   const blocksPath = `${tabPublicPath}.blocks`;
   const layoutPath = `${tabPublicPath}.layout`;
   const compiledBlocks = compileBlocks(
