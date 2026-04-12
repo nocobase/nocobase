@@ -75,9 +75,6 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceContextResponse',
       'FlowSurfaceDescribeSurfaceRequest',
       'FlowSurfaceDescribeSurfaceResponse',
-      'FlowSurfaceExecuteDslRequestBase',
-      'FlowSurfaceExecuteDslCreateRequest',
-      'FlowSurfaceExecuteDslReplaceRequest',
       'FlowSurfaceExecuteDslRequest',
       'FlowSurfaceExecuteDslResponse',
       'FlowSurfaceBindKey',
@@ -204,28 +201,35 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.keys.$ref).toBe(
       '#/components/schemas/FlowSurfaceKeysMap',
     );
-    expect(schemas.FlowSurfaceExecuteDslRequest.oneOf).toEqual([
-      { $ref: '#/components/schemas/FlowSurfaceExecuteDslCreateRequest' },
-      { $ref: '#/components/schemas/FlowSurfaceExecuteDslReplaceRequest' },
-    ]);
-    expect(schemas.FlowSurfaceExecuteDslRequestBase.required).toEqual(['version', 'mode', 'tabs']);
-    expect(schemas.FlowSurfaceExecuteDslRequestBase.properties.mode.enum).toEqual(['create', 'replace']);
-    expect(schemas.FlowSurfaceExecuteDslRequestBase.properties.tabs.minItems).toBe(1);
-    expect(schemas.FlowSurfaceExecuteDslRequestBase.properties.tabs.items.$ref).toBe(
+    expect(schemas.FlowSurfaceExecuteDslRequest.oneOf).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslRequest.type).toBe('object');
+    expect(schemas.FlowSurfaceExecuteDslRequest.required).toEqual(['version', 'mode', 'tabs']);
+    expect(schemas.FlowSurfaceExecuteDslRequest.properties.mode.enum).toEqual(['create', 'replace']);
+    expect(schemas.FlowSurfaceExecuteDslRequest.properties.tabs.minItems).toBe(1);
+    expect(schemas.FlowSurfaceExecuteDslRequest.properties.tabs.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceExecuteDslTab',
     );
+    expect(schemas.FlowSurfaceExecuteDslRequest.description).toContain('create does not accept target');
+    expect(schemas.FlowSurfaceExecuteDslRequest.description).toContain('replace requires target.pageSchemaUid');
     expect(schemas.FlowSurfaceExecuteDslTab.required).toEqual(['blocks']);
     expect(schemas.FlowSurfaceExecuteDslTab.properties.blocks.minItems).toBe(1);
     expect(schemas.FlowSurfaceExecuteDslTab.properties.key.description).toContain('Optional local tab key');
     expect(schemas.FlowSurfaceExecuteDslTab.properties.key.description).toContain(
       'not used to match existing route-backed tabs in replace mode',
     );
-    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.$ref).toBe(
-      '#/components/schemas/FlowSurfaceExecuteDslLayout',
-    );
-    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.$ref).toBe(
-      '#/components/schemas/FlowSurfaceExecuteDslLayout',
-    );
+    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceExecuteDslLayout' },
+    ]);
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceExecuteDslLayout' },
+    ]);
+    expect(schemas.FlowSurfaceExecuteDslLayout.description).toContain('only on tabs and inline popup documents');
+    expect(schemas.FlowSurfaceExecuteDslPopup.properties.layout.description).toContain('not on individual blocks');
+    expect(schemas.FlowSurfaceExecuteDslTab.properties.layout.description).toContain('not on individual blocks');
+    expect(schemas.FlowSurfaceExecuteDslPopup.properties.blocks.description).toContain('exactly one `editForm` block');
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.description).toContain('Blocks do not accept a `layout` property');
     expect(schemas.FlowSurfaceExecuteDslLayout.properties.rows.description).toContain('{ key, span }');
     expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[0].description).toContain('Local block key string');
     expect(schemas.FlowSurfaceExecuteDslLayoutCell.oneOf[1].description).toContain('uid/ref/$ref selectors');
@@ -237,6 +241,23 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resourceBinding).toBeUndefined();
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.collection.description).toContain(
       'use resource.collectionName',
+    );
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.type.enum).toEqual([
+      'table',
+      'createForm',
+      'editForm',
+      'details',
+      'filterForm',
+      'list',
+      'gridCard',
+      'markdown',
+      'iframe',
+      'chart',
+      'actionPanel',
+      'jsBlock',
+    ]);
+    expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.type.description).toContain(
+      'Generic `form` is not supported',
     );
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
@@ -254,7 +275,13 @@ describe('flowSurfaces swagger', () => {
       expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
     );
     expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.description).toContain('auto-promotes');
+    expect(schemas.FlowSurfaceExecuteDslActionSpec.oneOf[1].properties.type.description).toContain(
+      'exactly one `editForm` block',
+    );
     expect(schemas.FlowSurfaceExecuteDslRecordActionSpec.oneOf[1].properties.ref).toBeUndefined();
+    expect(schemas.FlowSurfaceExecuteDslRecordActionSpec.oneOf[1].properties.type.description).toContain(
+      'exactly one `editForm` block',
+    );
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.actions.description).toContain('auto-promotes');
     expect(schemas.FlowSurfaceExecuteDslBlockSpec.properties.associationPathName.description).toContain(
       'associatedRecords',
@@ -282,12 +309,6 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceExecuteDslNavigationGroup.properties.icon.description).toContain(
       'actually creates a new menu group',
-    );
-    expect(schemas.FlowSurfaceExecuteDslCreateRequest.allOf).toEqual(
-      expect.arrayContaining([{ $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestBase' }]),
-    );
-    expect(schemas.FlowSurfaceExecuteDslReplaceRequest.allOf).toEqual(
-      expect.arrayContaining([{ $ref: '#/components/schemas/FlowSurfaceExecuteDslRequestBase' }]),
     );
     expect(schemas.FlowSurfaceExecuteDslResponse.properties.surface.$ref).toBe(
       '#/components/schemas/FlowSurfaceGetResponse',
@@ -331,6 +352,12 @@ describe('flowSurfaces swagger', () => {
     expect(executeDslRequest.examples?.replacePage?.value?.target?.pageSchemaUid).toBe('employees-page-schema');
     expect(executeDslRequest.examples?.replacePage?.value?.tabs?.[1]?.key).toBeUndefined();
     expect(executeDslRequest.examples?.replacePage?.value?.tabs?.[1]?.title).toBe('Summary');
+    expect(swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.description).toContain(
+      'do not JSON.stringify it',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:executeDsl'].post.requestBody.description).toContain(
+      'do not wrap it in { values: ... }',
+    );
     const executeDslPath = swaggerDocument.paths['/flowSurfaces:executeDsl'].post;
     expect(executeDslPath.description).toContain('route-backed tab slots by index');
     expect(executeDslPath.description).toContain('removes trailing old tabs');
@@ -340,6 +367,10 @@ describe('flowSurfaces swagger', () => {
     expect(executeDslPath.description).toContain('does not mutate existing group metadata');
     expect(executeDslPath.description).toContain('Same-title reuse is title-only');
     expect(executeDslPath.description).toContain('updateMenu');
+    expect(executeDslPath.description).toContain('only allowed on tabs and inline popup documents');
+    expect(executeDslPath.description).toContain('must not be JSON-stringified');
+    expect(executeDslPath.description).toContain('generic `form`');
+    expect(executeDslPath.description).toContain('exactly one `editForm` block');
     expect(swaggerDocument.paths['/flowSurfaces:executePlan']).toBeUndefined();
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');

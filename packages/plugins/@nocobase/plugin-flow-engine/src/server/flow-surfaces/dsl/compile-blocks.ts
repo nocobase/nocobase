@@ -52,6 +52,21 @@ type FlowSurfaceCompiledPopup = {
   popupTitle?: string;
 };
 
+const EXECUTE_DSL_BLOCK_TYPE_ENUM = [
+  'table',
+  'createForm',
+  'editForm',
+  'details',
+  'filterForm',
+  'list',
+  'gridCard',
+  'markdown',
+  'iframe',
+  'chart',
+  'actionPanel',
+  'jsBlock',
+] as const;
+
 const EXECUTE_DSL_BLOCK_ALLOWED_KEYS = [
   'key',
   'type',
@@ -109,6 +124,102 @@ const EXECUTE_DSL_BLOCK_RESOURCE_SHORTHAND_KEYS = [
 ];
 const EXECUTE_DSL_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
 const EXECUTE_DSL_RECORD_ACTION_TYPES = new Set(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild']);
+const EXECUTE_DSL_BLOCK_TYPES = new Set<string>(EXECUTE_DSL_BLOCK_TYPE_ENUM);
+
+function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
+  if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
+    throwBadRequest(`${context}.layout is not supported; layout is only allowed on tabs[] and popup`);
+  }
+}
+
+function assertExecuteDslBlockType(type: string | undefined, context: string) {
+  if (!type) {
+    return;
+  }
+  if (type === 'form') {
+    throwBadRequest(`${context}.type 'form' is unsupported in executeDsl; use 'editForm' or 'createForm'`);
+  }
+  if (!EXECUTE_DSL_BLOCK_TYPES.has(type)) {
+    throwBadRequest(
+      `${context}.type '${type}' is unsupported in executeDsl; supported types: ${EXECUTE_DSL_BLOCK_TYPE_ENUM.join(
+        ', ',
+      )}`,
+    );
+  }
+}
+
+function normalizeEditPopupBlocks(
+  input: FlowSurfaceExecuteDslBlockSpec[],
+  context: string,
+): FlowSurfaceExecuteDslBlockSpec[] {
+  input.forEach((block, index) => {
+    const blockType = readOptionalString(block?.type);
+    if (blockType === 'form') {
+      throwBadRequest(`${context}.blocks[${index}].type 'form' is unsupported in executeDsl; use 'editForm'`);
+    }
+  });
+  const editFormBlocks = input.filter((block) => readOptionalString(block?.type) === 'editForm');
+  if (!editFormBlocks.length) {
+    throwBadRequest(`${context} custom edit popup must contain exactly one editForm block`);
+  }
+  if (editFormBlocks.length > 1) {
+    throwBadRequest(`${context} custom edit popup must contain exactly one editForm block`);
+  }
+
+  return input.map((block, index) => {
+    const blockType = readOptionalString(block?.type);
+    if (blockType !== 'editForm') {
+      return block;
+    }
+
+    if (!_.isPlainObject(block)) {
+      return block;
+    }
+
+    if (!_.isUndefined(block.resource)) {
+      if (_.isPlainObject(block.resource)) {
+        const binding = readOptionalString(block.resource.binding);
+        if (!binding) {
+          throwBadRequest(
+            `${context}.blocks[${index}].resource must use binding='currentRecord' or be omitted in a custom edit popup`,
+          );
+        }
+        if (binding !== 'currentRecord') {
+          throwBadRequest(
+            `${context}.blocks[${index}].resource.binding must be 'currentRecord' in a custom edit popup`,
+          );
+        }
+      }
+      return block;
+    }
+
+    const shorthandBinding = readOptionalString(block.binding);
+    if (!_.isUndefined(shorthandBinding)) {
+      if (shorthandBinding !== 'currentRecord') {
+        throwBadRequest(`${context}.blocks[${index}].binding must be 'currentRecord' in a custom edit popup`);
+      }
+      return block;
+    }
+
+    const hasRawShorthandResource =
+      !_.isUndefined(block.collection) ||
+      !_.isUndefined(block.dataSourceKey) ||
+      !_.isUndefined(block.associationPathName) ||
+      !_.isUndefined(block.associationField);
+    if (hasRawShorthandResource) {
+      throwBadRequest(
+        `${context}.blocks[${index}] must use binding='currentRecord' or omit resource entirely in a custom edit popup`,
+      );
+    }
+
+    return {
+      ...block,
+      resource: {
+        binding: 'currentRecord',
+      },
+    };
+  });
+}
 
 function readAssociationFieldFromSingleSegmentPath(value: any, context: string) {
   const associationPathName = readOptionalString(value);
@@ -442,6 +553,9 @@ function compilePopup(
   scopePrefix: string,
   assets: FlowSurfaceExecuteDslAssets,
   context: string,
+  options: {
+    ownerActionType?: string;
+  } = {},
 ): FlowSurfaceCompiledPopup {
   if (_.isUndefined(popup)) {
     return {};
@@ -453,7 +567,11 @@ function compilePopup(
   assertOnlyAllowedKeys(popup, context, EXECUTE_DSL_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
-  const popupBlocks = readOptionalItems<FlowSurfaceExecuteDslBlockSpec>(popup.blocks, `${context}.blocks`);
+  const rawPopupBlocks = readOptionalItems<FlowSurfaceExecuteDslBlockSpec>(popup.blocks, `${context}.blocks`);
+  const popupBlocks =
+    options.ownerActionType === 'edit' && rawPopupBlocks.length
+      ? normalizeEditPopupBlocks(rawPopupBlocks, context)
+      : rawPopupBlocks;
   const compiledBlocks = popupBlocks.length
     ? compileBlocks(
         popupBlocks,
@@ -581,7 +699,9 @@ function compileAction(
   if (readOptionalString(input.title) && _.isUndefined(settings.title)) {
     settings.title = readOptionalString(input.title);
   }
-  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`);
+  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, {
+    ownerActionType: type,
+  });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   return buildDefinedPayload({
     key,
@@ -624,7 +744,9 @@ function compileBlocks(
     assertNoExecuteDslLegacyRef(block, `${context}[${index}]`, 'key');
     assertNoExecuteDslBlockRestrictions(block, `${context}[${index}]`);
     assertNoExecuteDslBlockRootResourceAliases(block, `${context}[${index}]`);
+    assertNoBlockLevelLayout(block, `${context}[${index}]`);
     assertOnlyAllowedKeys(block, `${context}[${index}]`, EXECUTE_DSL_BLOCK_ALLOWED_KEYS);
+    assertExecuteDslBlockType(readOptionalString(block.type), `${context}[${index}]`);
     const explicitKey = readString(block.key);
     const fallback = block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`;
     const localKey = normalizeDslLocalKey(block.key, fallback, `${context}[${index}].key`);

@@ -826,6 +826,126 @@ describe('flowSurfaces executeDsl contract', () => {
     );
   });
 
+  it('should allow custom edit popups with one inherited editForm plus sibling blocks', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Inherited edit popup page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username', 'roles'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    title: '详情',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username', 'roles'],
+                          actions: [
+                            {
+                              type: 'edit',
+                              title: '编辑用户',
+                              popup: {
+                                layout: {
+                                  rows: [
+                                    [
+                                      { key: 'userEditForm', span: 12 },
+                                      { key: 'userRoles', span: 12 },
+                                    ],
+                                  ],
+                                },
+                                blocks: [
+                                  {
+                                    key: 'userEditForm',
+                                    type: 'editForm',
+                                    fields: ['username', 'roles'],
+                                    actions: ['submit'],
+                                  },
+                                  {
+                                    key: 'userRoles',
+                                    type: 'table',
+                                    resource: {
+                                      binding: 'associatedRecords',
+                                      associationField: 'roles',
+                                      collectionName: 'roles',
+                                    },
+                                    fields: ['title', 'name'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const mainTable = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const mainViewAction = collectDescendantNodes(mainTable, (item) => item?.use === 'ViewActionModel')[0];
+    const mainViewReadback = await getSurface(rootAgent, {
+      uid: mainViewAction.uid,
+    });
+    const userDetailsBlock = _.castArray(mainViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels
+      ?.grid?.subModels?.items?.[0];
+    const userDetailsReadback = await getSurface(rootAgent, {
+      uid: userDetailsBlock.uid,
+    });
+    const userEditAction = _.castArray(userDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    const userEditReadback = await getSurface(rootAgent, {
+      uid: userEditAction.uid,
+    });
+    const popupItems = _.castArray(
+      _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items ||
+        [],
+    );
+    const userEditForm = popupItems.find((item: any) => item?.use === 'EditFormModel');
+    const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
+
+    expect(userEditForm?.use).toBe('EditFormModel');
+    expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: 'users',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+    expect(collectFieldPaths(userEditForm)).toEqual(expect.arrayContaining(['username', 'roles']));
+    expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    expect(userRolesTable?.use).toBe('TableBlockModel');
+    expect(userRolesTable?.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+    });
+  });
+
   it('should auto-promote common record actions from actions to recordActions on table, list, and gridCard blocks', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').executeDsl({
       values: {
@@ -1422,6 +1542,196 @@ describe('flowSurfaces executeDsl contract', () => {
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
       'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, blocks, layout; unsupported keys: foo',
+    );
+  });
+
+  it('should reject block-level layout and point authors to tabs[] or popup layout only', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                layout: {
+                  rows: [['employeesTable']],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces executeDsl tabs[0].blocks[0].layout is not supported; layout is only allowed on tabs[] and popup',
+    );
+  });
+
+  it('should reject generic form blocks in executeDsl and point authors to editForm/createForm', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Generic form page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Main',
+            blocks: [
+              {
+                type: 'form',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      "flowSurfaces executeDsl tabs[0].blocks[0].type 'form' is unsupported in executeDsl; use 'editForm' or 'createForm'",
+    );
+  });
+
+  it('should reject custom edit popups that do not contain exactly one editForm block', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Missing editForm page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username'],
+                          actions: [
+                            {
+                              type: 'edit',
+                              popup: {
+                                blocks: [
+                                  {
+                                    type: 'details',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: 'users',
+                                    },
+                                    fields: ['username'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup custom edit popup must contain exactly one editForm block',
+    );
+  });
+
+  it('should reject custom edit popup editForm resources that are not currentRecord-bound', async () => {
+    const res = await rootAgent.resource('flowSurfaces').executeDsl({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Invalid editForm resource page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username'],
+                          actions: [
+                            {
+                              type: 'edit',
+                              popup: {
+                                blocks: [
+                                  {
+                                    type: 'editForm',
+                                    resource: {
+                                      binding: 'associatedRecords',
+                                      associationField: 'roles',
+                                      collectionName: 'roles',
+                                    },
+                                    fields: ['title'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      "flowSurfaces executeDsl tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup.blocks[0].resource.binding must be 'currentRecord' in a custom edit popup",
     );
   });
 

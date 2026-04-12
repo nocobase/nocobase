@@ -93,6 +93,20 @@ const RECORD_ACTION_TYPE_ENUM = [
   'delete',
   'updateRecord',
 ];
+const EXECUTE_DSL_BLOCK_TYPE_ENUM = [
+  'table',
+  'createForm',
+  'editForm',
+  'details',
+  'filterForm',
+  'list',
+  'gridCard',
+  'markdown',
+  'iframe',
+  'chart',
+  'actionPanel',
+  'jsBlock',
+];
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
@@ -243,10 +257,12 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute a simplified page-structure DSL to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      "Accepts one simplified JSON page document and compiles it to FlowSurfaces plan steps internally. The public DSL only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; executeDsl create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, executeDsl reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group's metadata must change, use low-level `updateMenu` instead of executeDsl create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps DSL tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public DSL; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. When layout is omitted, executeDsl auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.",
+      'Accepts one simplified JSON page document and compiles it to FlowSurfaces plan steps internally. The public DSL only describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, and optional reusable assets). The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; executeDsl create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, executeDsl reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of executeDsl create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps DSL tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public DSL; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public executeDsl blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, executeDsl auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
+      description:
+        'The JSON request body. Send the page document object itself under requestBody as an object; do not JSON.stringify it and do not wrap it in { values: ... }.',
       content: {
         'application/json': {
           schema: ref('FlowSurfaceExecuteDslRequest'),
@@ -2204,6 +2220,7 @@ const schemas = {
   },
   FlowSurfaceExecuteDslLayout: {
     type: 'object',
+    description: 'Layout object allowed only on tabs and inline popup documents, never on individual blocks.',
     properties: {
       rows: {
         type: 'array',
@@ -2229,9 +2246,15 @@ const schemas = {
       template: ref('FlowSurfacePopupTemplateRef'),
       blocks: {
         type: 'array',
+        description:
+          'Inline popup blocks. For custom `edit` popups, provide exactly one `editForm` block plus any optional sibling blocks.',
         items: ref('FlowSurfaceExecuteDslBlockSpec'),
       },
-      layout: ref('FlowSurfaceExecuteDslLayout'),
+      layout: {
+        allOf: [ref('FlowSurfaceExecuteDslLayout')],
+        description:
+          'Popup-scoped layout. Layout is only allowed on tabs and popup documents, not on individual blocks.',
+      },
     },
     additionalProperties: false,
   },
@@ -2277,7 +2300,7 @@ const schemas = {
             type: 'string',
             enum: ACTION_TYPE_ENUM,
             description:
-              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; executeDsl also auto-promotes them from `actions` for convenience.',
+              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; executeDsl also auto-promotes them from `actions` for convenience. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -2303,7 +2326,7 @@ const schemas = {
             type: 'string',
             enum: RECORD_ACTION_TYPE_ENUM,
             description:
-              'Record-action type for record-capable blocks such as `table`, `details`, `list`, and `gridCard`.',
+              'Record-action type for record-capable blocks such as `table`, `details`, `list`, and `gridCard`. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -2317,10 +2340,16 @@ const schemas = {
   },
   FlowSurfaceExecuteDslBlockSpec: {
     type: 'object',
+    description:
+      'Public executeDsl block spec. Blocks do not accept a `layout` property; use tab.layout or popup.layout instead. Generic `form` is not supported here; use `editForm` or `createForm`.',
     anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
       key: { type: 'string' },
-      type: { type: 'string' },
+      type: {
+        type: 'string',
+        enum: EXECUTE_DSL_BLOCK_TYPE_ENUM,
+        description: 'Public executeDsl block type. Generic `form` is not supported; use `editForm` or `createForm`.',
+      },
       title: { type: 'string' },
       collection: {
         type: 'string',
@@ -2381,7 +2410,10 @@ const schemas = {
         minItems: 1,
         items: ref('FlowSurfaceExecuteDslBlockSpec'),
       },
-      layout: ref('FlowSurfaceExecuteDslLayout'),
+      layout: {
+        allOf: [ref('FlowSurfaceExecuteDslLayout')],
+        description: 'Tab-scoped layout. Layout is allowed here and on popup documents, not on individual blocks.',
+      },
     },
     additionalProperties: false,
   },
@@ -2453,9 +2485,11 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceExecuteDslRequestBase: {
+  FlowSurfaceExecuteDslRequest: {
     type: 'object',
     required: ['version', 'mode', 'tabs'],
+    description:
+      'Simplified page-structure request object for executeDsl. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.',
     properties: {
       version: {
         type: 'string',
@@ -2476,44 +2510,6 @@ const schemas = {
       assets: ref('FlowSurfaceExecuteDslAssets'),
     },
     additionalProperties: false,
-  },
-  FlowSurfaceExecuteDslCreateRequest: {
-    allOf: [
-      ref('FlowSurfaceExecuteDslRequestBase'),
-      {
-        type: 'object',
-        properties: {
-          mode: {
-            type: 'string',
-            enum: ['create'],
-          },
-        },
-        not: {
-          required: ['target'],
-        },
-      },
-    ],
-  },
-  FlowSurfaceExecuteDslReplaceRequest: {
-    allOf: [
-      ref('FlowSurfaceExecuteDslRequestBase'),
-      {
-        type: 'object',
-        required: ['target'],
-        properties: {
-          mode: {
-            type: 'string',
-            enum: ['replace'],
-          },
-        },
-        not: {
-          required: ['navigation'],
-        },
-      },
-    ],
-  },
-  FlowSurfaceExecuteDslRequest: {
-    oneOf: [ref('FlowSurfaceExecuteDslCreateRequest'), ref('FlowSurfaceExecuteDslReplaceRequest')],
   },
   FlowSurfaceExecuteDslResponseTarget: {
     type: 'object',

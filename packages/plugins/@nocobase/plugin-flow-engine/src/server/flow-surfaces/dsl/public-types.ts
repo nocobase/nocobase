@@ -123,9 +123,23 @@ export type FlowSurfaceExecuteDslActionObjectSpec = {
 
 export type FlowSurfaceExecuteDslActionSpec = string | FlowSurfaceExecuteDslActionObjectSpec;
 
+export type FlowSurfaceExecuteDslBlockType =
+  | 'table'
+  | 'createForm'
+  | 'editForm'
+  | 'details'
+  | 'filterForm'
+  | 'list'
+  | 'gridCard'
+  | 'markdown'
+  | 'iframe'
+  | 'chart'
+  | 'actionPanel'
+  | 'jsBlock';
+
 export type FlowSurfaceExecuteDslBlockSpec = {
   key?: string;
-  type?: string;
+  type?: FlowSurfaceExecuteDslBlockType;
   title?: string;
   collection?: string;
   dataSourceKey?: string;
