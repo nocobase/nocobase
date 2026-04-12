@@ -209,6 +209,14 @@ function rewriteIfCrossRef(
   return ref.aliasRoute + hash;
 }
 
+// ── canonical 映射表（供 rspress.config.ts 查询）─────────────────────
+
+/**
+ * 虚拟路由 → 原始路由的映射表。
+ * rspress.config.ts 的 head canonical 函数用它把虚拟路由的 canonical 指向原始页面。
+ */
+export const crossRefCanonicalMap: Record<string, string> = {};
+
 // ── 插件主体 ──────────────────────────────────────────────────────────
 
 /**
@@ -251,6 +259,11 @@ export function pluginCrossRefSidebar(): RspressPlugin {
             }
           }
         }
+      }
+
+      // 填充 canonical 映射表（虚拟路由 → 原始路由）
+      for (const ref of crossRefs) {
+        crossRefCanonicalMap[ref.aliasRoute] = ref.targetLink.split('#')[0];
       }
 
       if (crossRefs.length === 0) return config;
@@ -311,8 +324,7 @@ export function pluginCrossRefSidebar(): RspressPlugin {
           const filepath = resolveSourceFile(root, linkPath);
           if (!filepath) return null;
 
-          const raw = fs.readFileSync(filepath, 'utf-8');
-          const content = injectCanonical(raw, ref.targetLink);
+          const content = fs.readFileSync(filepath, 'utf-8');
           // 写成 .md 而不是让 Rspress 默认写成 .mdx，避免 MDX 严格模式导致 HTML 注释报错
           const tempFile = path.join(tempDir, `cross-ref-${index}.md`);
           fs.writeFileSync(tempFile, content);
@@ -327,28 +339,7 @@ export function pluginCrossRefSidebar(): RspressPlugin {
 
 // ── 工具函数 ──────────────────────────────────────────────────────────
 
-function injectCanonical(raw: string, canonicalPath: string): string {
-  const canonicalYaml = [
-    'head:',
-    '  - - link',
-    `    - rel: canonical`,
-    `      href: "${canonicalPath}"`,
-  ].join('\n');
 
-  if (raw.startsWith('---')) {
-    const closingIndex = raw.indexOf('\n---', 3);
-    if (closingIndex !== -1) {
-      return (
-        raw.slice(0, closingIndex) +
-        '\n' +
-        canonicalYaml +
-        raw.slice(closingIndex)
-      );
-    }
-  }
-
-  return `---\n${canonicalYaml}\n---\n\n${raw}`;
-}
 
 function resolveSourceFile(root: string, link: string): string | null {
   for (const ext of ['.md', '.mdx']) {

@@ -7,7 +7,7 @@ import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
-import {pluginCrossRefSidebar} from './plugins/pluginCrossRef';
+import {pluginCrossRefSidebar, crossRefCanonicalMap} from './plugins/pluginCrossRef';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -130,10 +130,12 @@ export default defineConfig({
   head: [
     ['meta', { name: 'robots', content: indexLanguages.includes(lang) ? 'index,follow' : 'noindex,nofollow' }],
     (route) => {
+      // 跨模块虚拟路由通过 frontmatter canonicalPath 指向原始页面
+      const canonicalRoute = crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://v2.docs.nocobase.com/${lang}${route.routePath}" />`
+        return `<link rel="canonical" href="https://v2.docs.nocobase.com/${lang}${canonicalRoute}" />`
       }
-      return `<link rel="canonical" href="https://v2.docs.nocobase.com${route.routePath}" />`
+      return `<link rel="canonical" href="https://v2.docs.nocobase.com${canonicalRoute}" />`
     },
     (route) => {
       const links = [];
