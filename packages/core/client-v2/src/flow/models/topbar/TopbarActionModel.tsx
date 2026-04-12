@@ -11,7 +11,7 @@ import { ApiOutlined, HighlightOutlined, SettingOutlined } from '@ant-design/ico
 import { css, cx } from '@emotion/css';
 import { FlowModel, observer, tExpr, useFlowEngine } from '@nocobase/flow-engine';
 import { Button, Dropdown, theme, Tooltip, type ButtonProps, type MenuProps } from 'antd';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -55,6 +55,12 @@ const topbarActionButtonClassName = css`
     background: var(--nb-topbar-action-hover-bg) !important;
     color: var(--nb-topbar-action-color);
   }
+`;
+
+const topbarActionTriggerClassName = css`
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
 `;
 
 /**
@@ -202,7 +208,11 @@ export class TopbarActionModel extends FlowModel {
       return node;
     }
 
-    return <Tooltip title={this.context.t(this.tooltip)}>{node}</Tooltip>;
+    return (
+      <Tooltip title={this.context.t(this.tooltip)}>
+        <span className={topbarActionTriggerClassName}>{node}</span>
+      </Tooltip>
+    );
   }
 
   /**
@@ -233,7 +243,6 @@ const TopbarActionButton = observer(
         {...model.props}
         type="text"
         icon={model.icon}
-        title={typeof model.tooltip === 'string' ? model.context.t(model.tooltip) : undefined}
         data-testid={model.getTestId()}
         onClick={model.onClick.bind(model)}
         className={cx(topbarActionButtonClassName, className, model.props?.className)}
@@ -302,6 +311,7 @@ const PluginSettingsTopbarAction = observer(
     const app = useApp();
     const { snippets = [] } = useACLRoleContext();
     const { t } = useTranslation();
+    const [open, setOpen] = useState(false);
     const items = useMemo(() => {
       return getTopbarPluginSettingsItems({
         settings: app.pluginSettingsManager.getList(),
@@ -322,6 +332,12 @@ const PluginSettingsTopbarAction = observer(
 
     return (
       <Dropdown
+        open={open}
+        trigger={['hover']}
+        placement="bottomRight"
+        mouseEnterDelay={0}
+        mouseLeaveDelay={0.1}
+        onOpenChange={setOpen}
         menu={{
           style: {
             maxHeight: '70vh',
@@ -330,7 +346,9 @@ const PluginSettingsTopbarAction = observer(
           items,
         }}
       >
-        <TopbarActionButton model={model} />
+        <span className={topbarActionTriggerClassName} onMouseEnter={() => setOpen(true)}>
+          <TopbarActionButton model={model} />
+        </span>
       </Dropdown>
     );
   },
