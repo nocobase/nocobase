@@ -121,7 +121,7 @@ export function verifyCollectionDefinition(app: any, collectionName: string) {
     issues.push('Collection template is missing.');
   }
 
-  if (!fieldNames.has('id') && collection.options?.template !== 'calendar' && collection.options?.template !== 'view') {
+  if (!fieldNames.has('id') && collection.options?.template !== 'view') {
     issues.push('Primary key field `id` is missing.');
   }
 

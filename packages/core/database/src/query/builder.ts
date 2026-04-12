@@ -147,6 +147,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
   let hasAgg = false;
   const attributes: any[] = [];
   const fieldMap: Record<string, any> = {};
+  const projectedFieldMap: Record<string, any> = {};
 
   measures.forEach((measure: any) => {
     const { field, aggregation, alias, distinct } = measure;
@@ -166,6 +167,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
     fieldMap[alias || field] = measure;
+    projectedFieldMap[alias || field] = attribute[0];
   });
 
   const group: any[] = [];
@@ -185,11 +187,14 @@ export function buildQuery(database: Database, collection: Collection, options: 
       group.push(attribute[0]);
     }
     fieldMap[alias || field] = dimension;
+    projectedFieldMap[alias || field] = attribute[0];
   });
 
   const order: Order = orders.map((item: any) => {
     const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
-    const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
+    const projectedField =
+      projectedFieldMap[item.alias] || projectedFieldMap[item.name] || projectedFieldMap[item.field as string];
+    const name = hasAgg ? projectedField || sequelize.literal(alias) : sequelize.col(item.field as string);
     let sort = ALLOWED_ORDER_DIRECTIONS.includes(item.order?.toUpperCase()) ? item.order.toUpperCase() : 'ASC';
     if (item.nulls === 'first') {
       sort += ' NULLS FIRST';

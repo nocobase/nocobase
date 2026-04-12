@@ -199,6 +199,9 @@ exports.runAppCommand = async (command, args = []) => {
 };
 
 exports.promptForTs = () => {
+  if (process.env.LOGGER_SILENT === 'true') {
+    return;
+  }
   console.log(chalk.green('WAIT: ') + 'TypeScript compiling...');
 };
 

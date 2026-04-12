@@ -59,6 +59,11 @@
             "type": "custom-link",
             "label": "表单",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "树",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },

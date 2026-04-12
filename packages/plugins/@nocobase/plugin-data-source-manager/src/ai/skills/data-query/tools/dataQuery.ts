@@ -134,7 +134,8 @@ const AggregateQuerySchema = {
     },
     filter: {
       type: 'object',
-      description: 'Filter object applied before aggregation.',
+      description:
+        'Filter object applied before aggregation. If you must provide explicit datetime literals, use UTC ISO 8601 strings with a trailing Z.',
       additionalProperties: true,
     },
     having: {
@@ -150,10 +151,6 @@ const AggregateQuerySchema = {
       type: 'number',
       description: `Maximum number of rows to return. Defaults to 50 and is capped at ${MAX_QUERY_LIMIT}.`,
     },
-    timezone: {
-      type: 'string',
-      description: 'Optional timezone override for date formatting.',
-    },
   },
 };
 
@@ -168,7 +165,6 @@ type AggregateQueryArgs = {
   having?: Record<string, any>;
   offset?: number;
   limit?: number;
-  timezone?: string;
 };
 
 function getDataSourceKey(args: AggregateQueryArgs) {
@@ -177,7 +173,6 @@ function getDataSourceKey(args: AggregateQueryArgs) {
 
 function getTimezone(ctx: Context, args: AggregateQueryArgs) {
   const value =
-    args.timezone ||
     ctx.get?.('x-timezone') ||
     ctx.request?.get?.('x-timezone') ||
     ctx.request?.header?.['x-timezone'] ||
@@ -190,8 +185,8 @@ export default defineTools({
   scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.dataQueryAggregate.title", { ns: "${pkg.name}" })}}`,
-    about: `{{t("ai.tools.dataQueryAggregate.about", { ns: "${pkg.name}" })}}`,
+    title: `{{t("ai.tools.dataQuery.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.dataQuery.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'dataQuery',

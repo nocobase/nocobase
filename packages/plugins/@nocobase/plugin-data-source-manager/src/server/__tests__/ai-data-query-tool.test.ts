@@ -141,4 +141,27 @@ describe('dataQuery tool', () => {
       }),
     );
   });
+
+  it('should not inherit request timezone unless explicitly provided', async () => {
+    await invokeTool(
+      ctx,
+      {
+        dataSource: 'main',
+        collectionName: 'orders',
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+      },
+      { toolCallId: 'tool-call-4', writer: vi.fn() },
+    );
+
+    expect(applyQueryPermission).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timezone: 'Asia/Shanghai',
+      }),
+    );
+    expect(repositoryQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timezone: 'Asia/Shanghai',
+      }),
+    );
+  });
 });

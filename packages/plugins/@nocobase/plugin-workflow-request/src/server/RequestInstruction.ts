@@ -94,14 +94,24 @@ function getContentTypeTransformer(mimeType: string, app: Application) {
   }
 }
 
+function createInvalidUrlError(cause?: unknown) {
+  if (cause instanceof TypeError && typeof (cause as any).code !== 'undefined') {
+    return cause;
+  }
+
+  const error = new TypeError('Invalid URL') as TypeError & { code?: string };
+  error.code = 'ERR_INVALID_URL';
+  return error;
+}
+
 function validateUrl(url: string) {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      throw new Error('Invalid URL');
+      throw createInvalidUrlError();
     }
-  } catch {
-    throw new Error('Invalid URL');
+  } catch (error) {
+    throw createInvalidUrlError(error);
   }
 }
 

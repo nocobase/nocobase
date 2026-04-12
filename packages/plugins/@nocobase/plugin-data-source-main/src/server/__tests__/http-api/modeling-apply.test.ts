@@ -206,6 +206,12 @@ describe('modeling apply actions', () => {
 
     const events = app.db.getCollection('events');
     expect(events).toBeDefined();
+    expect(events.hasField('id')).toBe(true);
+    expect(events.getField('id').options.interface).toBe('snowflakeId');
+    expect(events.hasField('createdAt')).toBe(true);
+    expect(events.getField('createdAt').options.interface).toBe('createdAt');
+    expect(events.hasField('updatedAt')).toBe(true);
+    expect(events.getField('updatedAt').options.interface).toBe('updatedAt');
     expect(events.hasField('exclude')).toBe(true);
     expect(events.getField('exclude').options.interface).toBe('json');
     expect(events.getField('exclude').options.type).toBe('json');

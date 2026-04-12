@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-fdw",
-  "version": "2.1.0-alpha.14",
+  "version": "2.1.0-alpha.15",
   "main": "./dist/server/index.js",
   "keywords": [
     "Collections"

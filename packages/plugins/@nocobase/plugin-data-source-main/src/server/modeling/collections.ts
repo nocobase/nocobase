@@ -177,6 +177,13 @@ export function buildTemplateBaseline(input: PlainObject) {
             type: 'json',
             title: 'Exclude',
           }),
+          ...buildPresetFields({
+            includeId: true,
+            includeCreatedAt: true,
+            includeCreatedBy: true,
+            includeUpdatedAt: true,
+            includeUpdatedBy: true,
+          }),
         ],
       };
     case 'view':

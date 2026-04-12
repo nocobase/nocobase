@@ -261,6 +261,11 @@
             "type": "custom-link",
             "label": "附件（URL）",
             "link": "/data-sources/field-attachment-url/"
+          },
+          {
+            "type": "custom-link",
+            "label": "手写签名",
+            "link": "/data-sources/field-signature/"
           }
         ]
       },

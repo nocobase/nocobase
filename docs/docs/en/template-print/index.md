@@ -17,6 +17,7 @@ The Template Printing plugin lets you design templates in Word, Excel, and Power
 - **Flexible template management**: Add, edit, delete, and categorize templates for easy maintenance and reuse.
 - **Rich template syntax**: Supports basic replacement, array access, loops, and conditional statements to handle complex document logic.
 - **Formatter support**: Provides conditional output, date formatting, number formatting, etc., to improve readability and professionalism.
+- **Image field support**: Supports rendering attachment images and handwritten signature images in templates.
 - **Efficient output**: Supports direct PDF generation for convenient sharing and printing.
 
 ## Installation
