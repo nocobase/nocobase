@@ -43,11 +43,23 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { AdminLayoutModel, getAdminLayoutModel } from '..';
+import { TopbarActionModel } from '../../../models/topbar/TopbarActionModel';
+import { TopbarActionsBar } from '../TopbarActionsBar';
 
 class TestAdminLayoutModel extends AdminLayoutModel {
   render() {
     return null;
   }
+}
+
+class TestTopbarActionModelA extends TopbarActionModel {
+  sort = 20;
+  actionId = 'test-topbar-a';
+}
+
+class TestTopbarActionModelB extends TopbarActionModel {
+  sort = 10;
+  actionId = 'test-topbar-b';
 }
 
 const TestAdminLayoutHost = (props) => {
@@ -232,5 +244,38 @@ describe('AdminLayoutModel runtime', () => {
     await waitFor(() => {
       expect(routeModel.context.pageActive.value).toBe(false);
     });
+  });
+
+  it('should expose unified TopbarActionsBar through actionsRender', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      TopbarActionModel,
+      TestTopbarActionModelA,
+      TestTopbarActionModelB,
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    await act(async () => {
+      await model.dispatchEvent('beforeRender', undefined, { useCache: false });
+    });
+
+    expect(typeof model.props.actionsRender).toBe('function');
+
+    const rendered = model.props.actionsRender({ isMobile: false });
+    expect(rendered).toHaveLength(1);
+    expect(rendered[0].type).toBe(TopbarActionsBar);
+    expect(rendered[0].props.isMobile).toBe(false);
+    expect(rendered[0].props.actions.map((action) => action.uid)).toEqual([
+      'topbar-action-TestTopbarActionModelA',
+      'topbar-action-TestTopbarActionModelB',
+    ]);
   });
 });

@@ -8,7 +8,7 @@
  */
 
 import { define, observable, reaction } from '@formily/reactive';
-import { type FlowEngine, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { type FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import type { NocoBaseDesktopRoute } from '../../../flow-compat';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../AdminLayoutRouteCoordinator';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
@@ -21,6 +21,7 @@ import {
 import { AdminLayoutComponent } from './AdminLayoutComponent';
 import React from 'react';
 import { TopbarActionModel } from '../../models/topbar/TopbarActionModel';
+import { TopbarActionsBar } from './TopbarActionsBar';
 
 export type AdminLayoutStructure = {
   subModels: {
@@ -279,16 +280,14 @@ AdminLayoutModel.registerFlow({
     step1: {
       handler: async (ctx, params) => {
         const topbarActionModels = await ctx.engine.getSubclassesOfAsync('TopbarActionModel');
-        const actions = [...topbarActionModels.keys()]
-          .map<TopbarActionModel>((name) => {
-            return ctx.engine.createModel({
-              use: name,
-              uid: `topbar-action-${name}`,
-            });
-          })
-          .sort((a, b) => (a.sort || 0) - (b.sort || 0));
-        ctx.model.props.actionsRender = () => {
-          return actions.map((action) => <FlowModelRenderer key={action.uid} model={action} />);
+        const actions = [...topbarActionModels.keys()].map<TopbarActionModel>((name) => {
+          return ctx.engine.createModel({
+            use: name,
+            uid: `topbar-action-${name}`,
+          });
+        });
+        ctx.model.props.actionsRender = (props) => {
+          return [<TopbarActionsBar key="topbar-actions" actions={actions} isMobile={props?.isMobile} />];
         };
       },
     },

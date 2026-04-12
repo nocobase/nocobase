@@ -7,83 +7,364 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { HighlightOutlined, SettingOutlined, BellOutlined } from '@ant-design/icons';
-import { FlowModel, tExpr } from '@nocobase/flow-engine';
-import { Button, Dropdown, Tooltip } from 'antd';
-import React from 'react';
+import { ApiOutlined, HighlightOutlined, SettingOutlined } from '@ant-design/icons';
+import { css, cx } from '@emotion/css';
+import { FlowModel, observer, tExpr, useFlowEngine } from '@nocobase/flow-engine';
+import { Button, Dropdown, theme, Tooltip, type ButtonProps, type MenuProps } from 'antd';
+import React, { useEffect, useMemo } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useACLRoleContext } from '../../../acl';
+import type { PluginSettingsPageType } from '../../../PluginSettingsManager';
+import { useApp } from '../../../hooks/useApp';
+import {
+  filterRenderableSettings,
+  getMenuItems,
+  PLUGIN_MANAGER_SETTING_NAME,
+  sortTopLevelSettings,
+} from '../../../settings-center/utils';
+import type { CustomToken } from '../../../theme';
 
+const topbarActionButtonClassName = css`
+  &.ant-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+    color: var(--nb-topbar-action-color);
+    vertical-align: middle;
+  }
+
+  &.ant-btn .anticon,
+  &.ant-btn .ant-badge,
+  &.ant-btn .ant-badge .anticon {
+    color: var(--nb-topbar-action-color);
+  }
+
+  &.ant-btn:hover,
+  &.ant-btn:focus,
+  &.ant-btn:active {
+    background: var(--nb-topbar-action-hover-bg) !important;
+    color: var(--nb-topbar-action-color);
+  }
+`;
+
+/**
+ * 将 settings 顶部菜单转换成右上角 dropdown items。
+ *
+ * @param {PluginSettingsPageType[]} settings 当前可访问的 settings 列表
+ * @param {boolean} canManagePlugins 是否允许访问插件管理
+ * @param {(key: string) => string} t 国际化函数
+ * @returns {NonNullable<MenuProps['items']>} dropdown items
+ */
+export function getTopbarPluginSettingsItems(options: {
+  settings: PluginSettingsPageType[];
+  canManagePlugins: boolean;
+  t: (key: string) => string;
+}): NonNullable<MenuProps['items']> {
+  const { settings, canManagePlugins, t } = options;
+  const topLevelSettings = filterRenderableSettings(settings);
+  const normalSettings = sortTopLevelSettings(
+    topLevelSettings
+      .filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME)
+      .map((item) => ({
+        ...item,
+        children: undefined,
+      })),
+  );
+  const orderedSettings = (getMenuItems(normalSettings) || []).map((item) => {
+    if (item?.type === 'divider') {
+      return item;
+    }
+
+    return {
+      key: item.key,
+      icon: item.icon,
+      label: item.link ? (
+        <div
+          onClick={() => {
+            window.open(item.link, '_blank', 'noopener,noreferrer');
+          }}
+        >
+          {item.title}
+        </div>
+      ) : (
+        <Link to={item.path}>{item.title}</Link>
+      ),
+    };
+  });
+
+  const items: NonNullable<MenuProps['items']> = [];
+
+  if (canManagePlugins) {
+    items.push({
+      key: 'plugin-manager',
+      icon: <ApiOutlined />,
+      label: <Link to="/admin/settings/plugin-manager">{t('Plugin manager')}</Link>,
+    });
+  }
+
+  if (canManagePlugins && orderedSettings.length) {
+    items.push({ type: 'divider' });
+  }
+
+  items.push(...orderedSettings);
+
+  return items;
+}
+
+/**
+ * 右上角动作基类。
+ *
+ * 该基类只负责单个按钮的稳定协议，
+ * 统一的列表聚合、分隔线和 Help 由 TopbarActionsBar 负责。
+ */
 export class TopbarActionModel extends FlowModel {
+  declare props: ButtonProps;
   declare icon: React.ReactNode;
   declare tooltip: string;
   declare sort: number;
+  declare aclSnippet?: string;
+  declare actionId?: string;
+  declare testId?: string;
 
-  onClick() {}
+  sort = 0;
 
+  /**
+   * 获取稳定动作标识。
+   *
+   * @returns {string} 动作标识
+   */
+  getActionId() {
+    return this.actionId || this.uid || this.constructor.name;
+  }
+
+  /**
+   * 获取稳定测试标识。
+   *
+   * @returns {string} data-testid
+   */
+  getTestId() {
+    return this.testId || `topbar-action-${this.getActionId()}`;
+  }
+
+  /**
+   * 判断当前动作是否被显式隐藏。
+   *
+   * @returns {boolean} 是否隐藏
+   */
+  isHidden() {
+    return !!this.hidden;
+  }
+
+  /**
+   * 计算按钮视觉样式。
+   *
+   * @param {CustomToken} _token 当前主题 token
+   * @returns {React.CSSProperties | undefined} 按钮样式
+   */
+  getButtonStyle(_token: CustomToken): React.CSSProperties | undefined {
+    return undefined;
+  }
+
+  /**
+   * 点击动作默认实现。
+   *
+   * @param {React.MouseEvent<HTMLElement>} _event 点击事件
+   * @returns {void}
+   */
+  onClick(_event?: React.MouseEvent<HTMLElement>) {}
+
+  /**
+   * 渲染按钮外壳。
+   *
+   * @returns {React.ReactNode} 按钮节点
+   */
+  renderButton() {
+    return <TopbarActionButton model={this} />;
+  }
+
+  /**
+   * 包装按钮节点，例如 tooltip 或 dropdown。
+   *
+   * @param {React.ReactNode} node 按钮节点
+   * @returns {React.ReactNode} 包装后的节点
+   */
   renderWrapper(node: React.ReactNode) {
+    if (!this.tooltip) {
+      return node;
+    }
+
     return <Tooltip title={this.context.t(this.tooltip)}>{node}</Tooltip>;
   }
 
+  /**
+   * 渲染最终动作节点。
+   *
+   * @returns {React.ReactNode} 最终节点
+   */
   render() {
-    return this.renderWrapper(
-      <Button {...this.props} icon={this.icon} type="link" onClick={this.onClick.bind(this)}></Button>,
-    );
+    return this.renderWrapper(this.renderButton());
   }
 }
+
+const getTopbarActionButtonVars = (token: CustomToken) => {
+  return {
+    '--nb-topbar-action-color': token.colorTextHeaderMenu || 'rgba(255, 255, 255, 0.65)',
+    '--nb-topbar-action-hover-bg': token.colorBgHeaderMenuHover || 'rgba(255, 255, 255, 0.1)',
+  } as React.CSSProperties;
+};
+
+const TopbarActionButton = observer(
+  (props: { model: TopbarActionModel; style?: React.CSSProperties; className?: string }) => {
+    const { model, style, className } = props;
+    const { token } = theme.useToken();
+    const customToken = token as CustomToken;
+
+    return (
+      <Button
+        {...model.props}
+        type="text"
+        icon={model.icon}
+        title={typeof model.tooltip === 'string' ? model.context.t(model.tooltip) : undefined}
+        data-testid={model.getTestId()}
+        onClick={model.onClick.bind(model)}
+        className={cx(topbarActionButtonClassName, className, model.props?.className)}
+        style={{
+          ...getTopbarActionButtonVars(customToken),
+          ...model.getButtonStyle(customToken),
+          ...model.props?.style,
+          ...style,
+        }}
+      />
+    );
+  },
+  { displayName: 'TopbarActionButton' },
+);
+
+const UIEditorTopbarAction = observer(
+  (props: { model: UIEditorTopbarActionModel }) => {
+    const { model } = props;
+    const flowEngine = useFlowEngine();
+    const { token } = theme.useToken();
+    const customToken = token as CustomToken;
+    const designable = !!flowEngine.context.flowSettingsEnabled;
+    const isMobileLayout = !!flowEngine.context.isMobileLayout;
+
+    useHotkeys(
+      'ctrl+shift+u',
+      () => {
+        if (isMobileLayout) {
+          return;
+        }
+
+        if (designable) {
+          flowEngine.flowSettings.disable();
+          return;
+        }
+
+        flowEngine.flowSettings.enable();
+      },
+      [designable, flowEngine, isMobileLayout],
+    );
+
+    if (isMobileLayout) {
+      return null;
+    }
+
+    return model.renderWrapper(
+      <TopbarActionButton
+        model={model}
+        style={designable ? { backgroundColor: customToken.colorSettings } : undefined}
+      />,
+    );
+  },
+  { displayName: 'UIEditorTopbarAction' },
+);
+
+const PluginSettingsTopbarAction = observer(
+  (props: { model: PluginSettingsTopbarActionModel }) => {
+    const { model } = props;
+    const app = useApp();
+    const { snippets = [] } = useACLRoleContext();
+    const { t } = useTranslation();
+    const items = useMemo(() => {
+      return getTopbarPluginSettingsItems({
+        settings: app.pluginSettingsManager.getList(),
+        canManagePlugins: snippets.includes('pm'),
+        t,
+      });
+    }, [app, snippets, t]);
+
+    useEffect(() => {
+      return () => {
+        app.pluginSettingsManager.clearCache();
+      };
+    }, [app]);
+
+    if (!items.length) {
+      return null;
+    }
+
+    return (
+      <Dropdown
+        menu={{
+          style: {
+            maxHeight: '70vh',
+            overflow: 'auto',
+          },
+          items,
+        }}
+      >
+        <TopbarActionButton model={model} />
+      </Dropdown>
+    );
+  },
+  { displayName: 'PluginSettingsTopbarAction' },
+);
 
 export class UIEditorTopbarActionModel extends TopbarActionModel {
   sort = 0;
+  actionId = 'ui-editor';
+  testId = 'ui-editor-button';
+  aclSnippet = 'ui.*';
   icon = (<HighlightOutlined />);
-  tooltip = tExpr('UI editor');
+  tooltip = tExpr('UI Editor');
 
-  onClick() {
+  /**
+   * 切换 UI 编辑器开关。
+   *
+   * @returns {Promise<void>} 异步切换结果
+   */
+  async onClick() {
     const flowSettings = this.context.engine.flowSettings;
     if (flowSettings.enabled) {
-      flowSettings.disable();
-    } else {
-      flowSettings.enable();
+      await flowSettings.disable();
+      return;
     }
+
+    await flowSettings.enable();
   }
-}
 
-export class MessageTopbarActionModel extends TopbarActionModel {
-  sort = 200;
-  icon = (<BellOutlined />);
-  tooltip = tExpr('Message');
-
-  onClick() {
-    console.log('Message');
+  render() {
+    return <UIEditorTopbarAction model={this} />;
   }
 }
 
 export class PluginSettingsTopbarActionModel extends TopbarActionModel {
   sort = 100;
+  actionId = 'plugin-settings';
+  testId = 'plugin-settings-button';
   icon = (<SettingOutlined />);
 
-  onClick() {
-    console.log('Message');
-  }
-
-  renderWrapper(node: React.ReactNode) {
-    return (
-      <Dropdown
-        menu={{
-          items: [
-            {
-              key: 'plugin-manager',
-              label: 'Plugin manager',
-            },
-            {
-              type: 'divider',
-            },
-            {
-              key: 'system-settings',
-              label: 'System settings',
-            },
-          ],
-        }}
-      >
-        {node}
-      </Dropdown>
-    );
+  render() {
+    return <PluginSettingsTopbarAction model={this} />;
   }
 }
