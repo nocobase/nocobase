@@ -1,0 +1,17 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "IframeBlockModel"
+  },
+  "tree": {
+    "alias": "block.iframe1",
+    "use": "IframeBlockModel"
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Blocks",
+    "icon": null,
+    "options": null
+  }
+}

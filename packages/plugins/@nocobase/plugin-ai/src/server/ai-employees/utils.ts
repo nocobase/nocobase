@@ -26,7 +26,7 @@ export const convertAIMessage = ({
   const toolCalls = aiMessage.tool_calls;
   const tools = aiEmployee.skillSettings?.tools;
 
-  if (!message && !toolCalls?.length) {
+  if (message == null && !toolCalls?.length) {
     return null;
   }
 

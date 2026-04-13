@@ -128,3 +128,6 @@ Configure your NocoBase startup parameters (such as environment variables `DB_HO
 | **Recommended Scenarios** | Enterprise users with a controlled, consistent environment who need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept the loss of file-related functions |
 
 We hope this tutorial helps you successfully deploy the ticketing system. If you encounter any issues during the process, please feel free to contact us!
+---
+
+*Last updated: 2026-03-24*

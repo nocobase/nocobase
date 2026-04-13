@@ -22,6 +22,52 @@ export interface AssociationFieldNames {
   value: string;
 }
 
+const isPlaceholderFieldName = (value: unknown, fallback: 'label' | 'value') => value === fallback;
+
+const unwrapAssociationOptionRecord = (option: unknown): Record<string, unknown> | undefined => {
+  if (option && typeof option === 'object') {
+    const raw = (option as Record<string, unknown>).data;
+    if (raw && typeof raw === 'object') {
+      return raw as Record<string, unknown>;
+    }
+    return option as Record<string, unknown>;
+  }
+  return undefined;
+};
+
+function normalizeFilterTargetKey(filterTargetKey: unknown): string | undefined {
+  if (typeof filterTargetKey === 'string' && filterTargetKey) {
+    return filterTargetKey;
+  }
+  if (Array.isArray(filterTargetKey) && filterTargetKey.length === 1 && typeof filterTargetKey[0] === 'string') {
+    return filterTargetKey[0];
+  }
+  return undefined;
+}
+
+export function normalizeAssociationFieldNames(
+  fieldNames: Partial<AssociationFieldNames> | undefined,
+  targetCollection?: any,
+): AssociationFieldNames {
+  const titleCollectionFieldName =
+    typeof targetCollection?.titleCollectionField?.name === 'string'
+      ? targetCollection.titleCollectionField.name
+      : undefined;
+  const fallbackValue = normalizeFilterTargetKey(targetCollection?.filterTargetKey) || 'id';
+  const explicitValue =
+    typeof fieldNames?.value === 'string' && fieldNames.value && !isPlaceholderFieldName(fieldNames.value, 'value')
+      ? fieldNames.value
+      : undefined;
+  const explicitLabel =
+    typeof fieldNames?.label === 'string' && fieldNames.label && !isPlaceholderFieldName(fieldNames.label, 'label')
+      ? fieldNames.label
+      : undefined;
+  const value = explicitValue || fallbackValue;
+  const label = explicitLabel || titleCollectionFieldName || value;
+
+  return { label, value };
+}
+
 export type AssociationOption = Record<string, any>;
 export type PopupScrollEvent = Parameters<NonNullable<SelectProps<any>['onPopupScroll']>>[0];
 
@@ -115,33 +161,43 @@ function toSafeDisplayLabel(value: unknown): string | number | boolean | undefin
 export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
+  const record = unwrapAssociationOptionRecord(option);
+  const normalizedFieldNames = normalizeAssociationFieldNames(
+    fieldNames,
+    currentModel.context.collectionField?.targetCollection,
+  );
   const field: any = currentModel.subModels.field as FlowModel;
+  const labelValue =
+    toSafeDisplayLabel(record?.[normalizedFieldNames.label]) ??
+    toSafeDisplayLabel(record?.label) ??
+    toSafeDisplayLabel(record?.[normalizedFieldNames.value]);
   if (!field) {
-    return;
+    return <span>{labelValue ?? 'N/A'}</span>;
   }
-  const key = option[fieldNames.value];
-  const fieldModel = field.createFork({}, key);
+
+  const optionKey = String(record?.[normalizedFieldNames.value] ?? labelValue ?? 'association-option');
+  const fieldModel = field.createFork({}, optionKey);
   fieldModel.context.defineProperty('record', {
-    get: () => option,
+    get: () => record,
     cache: false,
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => fieldModel.context.collection),
   });
-  const labelValue =
-    toSafeDisplayLabel(option?.[fieldNames.label]) ??
-    toSafeDisplayLabel(option?.label) ??
-    toSafeDisplayLabel(option?.[fieldNames.value]);
-  const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
+
+  const titleCollectionField = currentModel.context.collectionField.targetCollection?.getField?.(
+    normalizedFieldNames.label,
+  );
   const titleFieldComponentProps =
     titleCollectionField && typeof titleCollectionField.getComponentProps === 'function'
       ? titleCollectionField.getComponentProps()
       : {};
   fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleFieldComponentProps });
-  const hasLabelValue = labelValue !== null && typeof labelValue !== 'undefined' && labelValue !== '';
-  return (
-    <span style={{ pointerEvents: 'none' }} key={key}>
-      {hasLabelValue ? fieldModel.render() : 'N/A'}
-    </span>
-  );
+
+  const renderedLabel =
+    labelValue !== null && typeof labelValue !== 'undefined' && labelValue !== ''
+      ? (fieldModel.render() as React.ReactNode)
+      : 'N/A';
+
+  return <span style={{ pointerEvents: 'none' }}>{renderedLabel}</span>;
 }
 
 export function toSelectValue(
@@ -157,7 +213,7 @@ export function toSelectValue(
 
   const isAssociationOption = (item: unknown): item is AssociationOption => typeof item === 'object' && item !== null;
 
-  const convert = (item: AssociationOption) => {
+  const convert = (item: AssociationOption): any => {
     if (!isAssociationOption(item)) return undefined;
     return {
       label: <LabelByField option={item} fieldNames={fieldNames} />,
@@ -166,7 +222,7 @@ export function toSelectValue(
   };
 
   if (valueMode === 'value') {
-    const toValue = (item: AssociationOption | string | number) => {
+    const toValue = (item: AssociationOption | string | number): any => {
       if (typeof item === 'object' && item !== null) {
         return convert(item);
       }
@@ -176,7 +232,7 @@ export function toSelectValue(
       }
       // Handle string or number values
       return {
-        label: item,
+        label: String(item),
         value: item,
       };
     };

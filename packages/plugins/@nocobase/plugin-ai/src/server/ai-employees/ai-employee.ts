@@ -123,7 +123,9 @@ export class AIEmployee {
   }
 
   async getFormatMessages(userMessages: AIMessageInput[]) {
-    const { provider } = await this.getLLMService();
+    const { provider } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const { messages } = await this.aiChatConversation.getChatContext({
       userMessages,
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
@@ -193,7 +195,9 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
-    const { provider, model, service } = await this.getLLMService();
+    const { provider, model, service } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const { historyMessages, tools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
@@ -304,51 +308,6 @@ export class AIEmployee {
       this.ctx.log.error(err);
       throw err;
     }
-  }
-
-  // === LLM/provider setup ===
-  async getLLMService() {
-    // model is required - it's set by the frontend ModelSwitcher
-    if (!this.model?.llmService || !this.model?.model) {
-      throw new Error('LLM service not configured');
-    }
-
-    const llmServiceName = this.model.llmService;
-    const model = this.model.model;
-
-    // Build model options from model
-    const modelOptions: Record<string, any> = {
-      llmService: llmServiceName,
-      model,
-    };
-
-    if (this.webSearch === true) {
-      modelOptions.builtIn = { webSearch: true };
-    }
-
-    const service = await this.db.getRepository('llmServices').findOne({
-      filter: {
-        name: llmServiceName,
-      },
-    });
-
-    if (!service) {
-      throw new Error('LLM service not found');
-    }
-
-    const providerOptions = this.plugin.aiManager.llmProviders.get(service.provider);
-    if (!providerOptions) {
-      throw new Error('LLM service provider not found');
-    }
-
-    const Provider = providerOptions.provider;
-    const provider = new Provider({
-      app: this.ctx.app,
-      serviceOptions: service.options,
-      modelOptions,
-    });
-
-    return { provider, model, service };
   }
 
   // === Agent wiring & execution ===
@@ -463,20 +422,24 @@ export class AIEmployee {
     let isReasoning = false;
     let gathered: any;
     signal.addEventListener('abort', async () => {
-      if (gathered?.type === 'ai') {
-        const values = convertAIMessage({
-          aiEmployee: this,
-          providerName,
-          model,
-          aiMessage: gathered,
-        });
-        if (values) {
-          values.metadata.interrupted = true;
-        }
+      try {
+        if (gathered?.type === 'ai') {
+          const values = convertAIMessage({
+            aiEmployee: this,
+            providerName,
+            model,
+            aiMessage: gathered,
+          });
+          if (values) {
+            values.metadata.interrupted = true;
+          }
 
-        await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-          const result: AIMessage = await conversation.addMessages(values);
-        });
+          await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+            const result: AIMessage = await conversation.addMessages(values);
+          });
+        }
+      } catch (e) {
+        this.logger.error('Fail to save message after conversation abort', gathered);
       }
     });
 
@@ -597,6 +560,9 @@ export class AIEmployee {
               },
               invokeStatus: 'done',
               status: chunks.body?.toolCallResult?.status,
+              invokeStartTime: chunks.body?.toolCallResult?.invokeStartTime,
+              invokeEndTime: chunks.body?.toolCallResult?.invokeEndTime,
+              content: chunks.body?.toolCallResult?.content,
             });
           } else if (chunks.action === 'beforeSendToolMessage') {
             const { messageId, messages } = chunks.body ?? {};
@@ -618,6 +584,9 @@ export class AIEmployee {
                   },
                   invokeStatus: 'confirmed',
                   status: toolCallResult?.status,
+                  invokeStartTime: toolCallResult?.invokeStartTime,
+                  invokeEndTime: toolCallResult?.invokeEndTime,
+                  content: toolCallResult?.content,
                 });
               }
             }
@@ -806,6 +775,8 @@ export class AIEmployee {
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale?.() || 'en-US',
+        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale(), getCurrentTimezone(this.ctx)),
+        timezone: getCurrentTimezone(this.ctx),
       },
       knowledgeBase,
       availableSkills,
@@ -1033,7 +1004,9 @@ If information is missing, clearly state it in the summary.</Important>`;
       return;
     }
 
-    const { model, service } = await this.getLLMService();
+    const { model, service } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
     const toolMessageContent = 'The user ignored the application for tools usage and will continued to ask questions';
@@ -1317,6 +1290,10 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private async getAIEmployeeTools() {
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    if (this.webSearch === true) {
+      const subAgentWebSearch = await this.toolsManager.getTools('subAgentWebSearch');
+      tools.push(subAgentWebSearch);
+    }
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
     const employeeTools = this.employee.skillSettings?.tools ?? [];
@@ -1532,6 +1509,42 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 }
 
+function getCurrentTimezone(ctx: Context): string | undefined {
+  const value =
+    ctx.get?.('x-timezone') ||
+    ctx.request?.get?.('x-timezone') ||
+    ctx.request?.header?.['x-timezone'] ||
+    ctx.req?.headers?.['x-timezone'] ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getCurrentDateTimeForPrompt(locale: string | undefined, timezone?: string) {
+  const now = new Date();
+  const normalizedLocale = locale || 'en-US';
+
+  try {
+    const formatter = new Intl.DateTimeFormat(normalizedLocale, {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    return `${formatter.format(now)}${timezone ? ` (${timezone})` : ''}`;
+  } catch (error) {
+    return `${now.toISOString()}${timezone ? ` (${timezone})` : ''}`;
+  }
+}
+
 class AgentThread {
   constructor(
     private readonly _sessionId: string,
@@ -1636,11 +1649,17 @@ export class ChatStreamProtocol {
         toolCall,
         invokeStatus,
         status,
+        invokeStartTime,
+        invokeEndTime,
+        content,
         interruptAction,
       }: {
         toolCall: { messageId: string; id: string; name: string; willInterrupt: boolean };
         invokeStatus: string;
         status?: string;
+        invokeStartTime?: string | Date | null;
+        invokeEndTime?: string | Date | null;
+        content?: unknown;
         interruptAction?: {
           order: number;
           description: string;
@@ -1653,6 +1672,9 @@ export class ChatStreamProtocol {
             toolCall,
             invokeStatus,
             status,
+            invokeStartTime,
+            invokeEndTime,
+            content,
             interruptAction,
           },
         });

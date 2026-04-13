@@ -85,7 +85,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
   }
 
   async send(args): Promise<any> {
-    const { message, channel, receivers } = args;
+    const { message, channel, receivers, transaction } = args;
     const { host, port, secure, account, password, from } = channel.options;
     const userRepo = this.app.db.getRepository('users');
 
@@ -97,6 +97,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
           filter: {
             id: receivers.value,
           },
+          transaction,
         });
         const usersEmail = users.map((user) => user.email).filter(Boolean);
         const payload = {

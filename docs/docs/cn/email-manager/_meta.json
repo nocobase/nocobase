@@ -51,6 +51,11 @@
       },
       {
         "type": "custom-link",
+        "label": "邮件别名",
+        "link": "/email-manager/usage/alias"
+      },
+      {
+        "type": "custom-link",
         "label": "邮件模板",
         "link": "/email-manager/usage/template"
       }

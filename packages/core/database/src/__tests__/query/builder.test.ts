@@ -81,4 +81,48 @@ describe('query builder', () => {
       }),
     ).toThrow('Invalid aggregation function: if(1=2,sleep(1),sleep(3)) and sum');
   });
+
+  it('should sanitize invalid order direction', () => {
+    const { queryOptions } = buildQuery(db, db.getCollection('users'), {
+      orders: [
+        {
+          field: ['createdAt'],
+          alias: 'createdAt',
+          order: `ASC'); SELECT pg_sleep(1)--` as any,
+        },
+      ],
+    });
+
+    expect(queryOptions.order).toEqual([[db.sequelize.col('users.created_at'), 'ASC']]);
+  });
+
+  it('should order aggregate queries by the projected dimension expression', () => {
+    const { queryOptions } = buildQuery(db, db.getCollection('users'), {
+      measures: [
+        {
+          field: ['id'],
+          aggregation: 'count',
+          alias: 'userCount',
+        },
+      ],
+      dimensions: [
+        {
+          field: ['createdAt'],
+          format: 'YYYY-MM-DD',
+          alias: 'createdDate',
+        },
+      ],
+      orders: [
+        {
+          field: ['createdAt'],
+          alias: 'createdDate',
+          order: 'asc',
+        },
+      ],
+    });
+
+    expect(queryOptions.group).toHaveLength(1);
+    expect(queryOptions.order).toHaveLength(1);
+    expect(queryOptions.order?.[0]?.[0]).toBe(queryOptions.group?.[0]);
+  });
 });

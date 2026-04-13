@@ -33,9 +33,7 @@ export class DashscopeProvider extends LLMProvider {
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
 
-    const modelKwargs: Record<string, any> = {
-      thinking_budget: 40000,
-    };
+    const modelKwargs: Record<string, any> = {};
 
     // Only set response_format when responseFormat is explicitly provided
     // Dashscope API rejects { type: undefined }

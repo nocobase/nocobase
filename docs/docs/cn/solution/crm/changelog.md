@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-04-05
+
+**备份文件**：
+- [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
+- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
+
+**更新内容**：
+- 修复表格 Summary 汇总显示异常的问题
+- 完成角色权限配置
+- 新增全局查找页面（Lookup），支持在单个页面内同时搜索多个表的记录
+- 修复安装时脚本报错 `plugin-disable-pm-add` 找不到的问题
+- 增加线索指派按钮
+- 修复商机筛选点击时报错的问题
+
+---
+
 ## 2026-03-27
 
 **备份文件**：

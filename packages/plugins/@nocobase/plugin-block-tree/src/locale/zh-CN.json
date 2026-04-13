@@ -1,7 +1,15 @@
 {
+  "Connect data blocks": "连接数据区块",
+  "Configured": "已配置",
   "Expand all": "展开所有",
+  "Foreign key": "外键",
+  "No supported data blocks": "暂无可连接的数据区块",
   "Root records per page": "每页根记录数量",
   "Search": "搜索",
   "Searchable": "搜索",
-  "Tree": "树"
+  "Select field": "选择字段",
+  "Tree settings": "树区块设置",
+  "Tree": "树",
+  "Unconnected": "未连接",
+  "Include child nodes when filtering": "筛选时包含子节点"
 }

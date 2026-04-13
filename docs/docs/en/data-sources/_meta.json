@@ -261,6 +261,11 @@
             "type": "custom-link",
             "label": "Attachment (URL)",
             "link": "/data-sources/field-attachment-url/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Handwritten signature",
+            "link": "/data-sources/field-signature/"
           }
         ]
       },

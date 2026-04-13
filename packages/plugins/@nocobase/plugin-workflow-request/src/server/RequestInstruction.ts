@@ -94,9 +94,32 @@ function getContentTypeTransformer(mimeType: string, app: Application) {
   }
 }
 
+function createInvalidUrlError(cause?: unknown) {
+  if (cause instanceof TypeError && typeof (cause as any).code !== 'undefined') {
+    return cause;
+  }
+
+  const error = new TypeError('Invalid URL') as TypeError & { code?: string };
+  error.code = 'ERR_INVALID_URL';
+  return error;
+}
+
+function validateUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw createInvalidUrlError();
+    }
+  } catch (error) {
+    throw createInvalidUrlError(error);
+  }
+}
+
 async function request(config: RequestInstructionConfig, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
+
+  validateUrl(url);
   const headers = (config.headers ?? []).reduce((result, header) => {
     const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
@@ -136,29 +159,27 @@ function responseSuccess(response, onlyData = false) {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers,
-        config: response.config,
         data: response.data,
       };
 }
 
 function responseFailure(error) {
-  let result = {
-    message: error.message,
-    stack: error.stack,
+  const result: Record<string, any> = {
+    message: error instanceof Error ? error.message : String(error),
   };
-  if (error.isAxiosError) {
-    if (error.response) {
-      Object.assign(result, {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        headers: error.response.headers,
-        config: error.response.config,
-        data: error.response.data,
-      });
-    } else if (error.request) {
-      result = error.toJSON();
-    }
+
+  if (typeof error?.code !== 'undefined') {
+    result['code'] = error.code;
   }
+
+  if (error?.isAxiosError && error.response) {
+    Object.assign(result, {
+      status: error.response.status,
+      statusText: error.response.statusText,
+      data: error.response.data,
+    });
+  }
+
   return result;
 }
 
@@ -171,11 +192,26 @@ const CONTENT_TYPES = [
   'text/plain',
 ];
 
+function logFailureDebug(logger, error) {
+  if (!error?.isAxiosError) {
+    return;
+  }
+
+  if (error.response) {
+    logger.debug('request failed response details', {
+      status: error.response.status,
+      statusText: error.response.statusText,
+      data: error.response.data,
+    });
+    return;
+  }
+
+  logger.debug('request failed error details', responseFailure(error));
+}
+
 export default class extends Instruction {
   configSchema = Joi.object({
-    url: Joi.string().uri({
-      scheme: ['http', 'https'],
-    }),
+    url: Joi.string(),
     method: Joi.string().valid(...METHODS),
     contentType: Joi.string().valid(...CONTENT_TYPES),
     headers: Joi.array().items(
@@ -210,9 +246,10 @@ export default class extends Instruction {
           result: responseSuccess(response, config.onlyData),
         };
       } catch (error) {
+        logFailureDebug(this.workflow.app.logger, error);
         return {
           status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
-          result: error.isAxiosError ? error.toJSON() : error.message,
+          result: responseFailure(error),
         };
       }
     }
@@ -245,6 +282,7 @@ export default class extends Instruction {
       } else {
         processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
       }
+      logFailureDebug(processor.logger, error);
       jobDone.status = config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
       jobDone.result = responseFailure(error);
     } finally {
@@ -274,9 +312,10 @@ export default class extends Instruction {
         result: responseSuccess(response, config.onlyData),
       };
     } catch (error) {
+      logFailureDebug(this.workflow.app.logger, error);
       return {
         status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
-        result: error.isAxiosError ? error.toJSON() : error.message,
+        result: responseFailure(error),
       };
     }
   }
