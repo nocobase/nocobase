@@ -12,11 +12,12 @@ keywords: "操作扩展,Action,ActionModel,ActionSceneEnum,操作按钮,NocoBase
 
 每个操作需要声明它出现的场景，通过 `static scene` 属性指定：
 
-| 场景       | 值                           | 说明                                   |
-| ---------- | ---------------------------- | -------------------------------------- |
-| collection | `ActionSceneEnum.collection` | 作用于数据表，比如"新建"按钮           |
-| record     | `ActionSceneEnum.record`     | 作用于单条记录，比如"编辑"、"删除"按钮 |
-| both       | `ActionSceneEnum.both`       | 两种场景都可用                         |
+| 场景       | 值                           | 说明                                       |
+| ---------- | ---------------------------- | ------------------------------------------ |
+| collection | `ActionSceneEnum.collection` | 作用于数据表，比如"新建"按钮               |
+| record     | `ActionSceneEnum.record`     | 作用于单条记录，比如"编辑"、"删除"按钮     |
+| both       | `ActionSceneEnum.both`       | 两种场景都可用                             |
+| all        | `ActionSceneEnum.all`        | 所有场景都可用（包括特殊上下文，如弹窗等） |
 
 ## 示例
 

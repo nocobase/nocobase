@@ -409,7 +409,7 @@ const todoItemsCollection = {
   ],
 };
 
-export class PluginDataBlockClient extends Plugin {
+export class PluginCustomTableBlockResourceClientV2 extends Plugin {
   async load() {
     // 注册区块、字段、操作模型
     this.flowEngine.registerModelLoaders({
@@ -424,19 +424,33 @@ export class PluginDataBlockClient extends Plugin {
       },
     });
 
-    // 将 todoItems 注册到客户端数据源
-    const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
-    mainDS?.addCollection(todoItemsCollection);
+    // Register todoItems to the client-side data source.
+    // Must listen to 'dataSource:loaded' event because ensureLoaded() runs after load(),
+    // and it calls setCollections() which clears all collections before re-setting from server.
+    // Re-register in the event callback to ensure addCollection survives reload.
+    const addTodoCollection = () => {
+      const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
+      if (mainDS && !mainDS.getCollection('todoItems')) {
+        mainDS.addCollection(todoItemsCollection);
+      }
+    };
+
+    this.app.eventBus.addEventListener('dataSource:loaded', (event: Event) => {
+      if ((event as CustomEvent).detail?.dataSourceKey === 'main') {
+        addTodoCollection();
+      }
+    });
   }
 }
 
-export default PluginDataBlockClient;
+export default PluginCustomTableBlockResourceClientV2;
 ```
 
 几个关键点：
 
 - **`registerModelLoaders`** — 按需加载注册三个模型：区块、字段、操作
-- **`dataSourceManager.getDataSource('main')`** — 获取主数据源实例
+- **`this.app.eventBus`** — 应用级事件总线，用于监听生命周期事件
+- **`dataSource:loaded` 事件** — 数据源加载完成后触发。必须在这个事件回调里调用 `addCollection`，因为 `ensureLoaded()` 会在 `load()` 之后运行，它会先清空再重新设置所有 collection——直接在 `load()` 里调用 `addCollection` 会被覆盖
 - **`addCollection()`** — 把 collection 注册到客户端数据源。字段需要带 `interface` 和 `uiSchema` 属性，这样 NocoBase 才知道怎么渲染
 - **`filterTargetKey: 'id'`** — 必须设置，指定用于唯一标识记录的字段（通常是主键）。如果不设置，collection 不会出现在区块的数据表选择列表中
 - 服务端的 `defineCollection` 负责创建物理表和 ORM 映射，客户端的 `addCollection` 负责让 UI 知道这张表的存在——两边配合才能完成前后端联动
@@ -470,7 +484,7 @@ yarn pm enable @my-project/plugin-custom-table-block-resource
 | 权限控制         | `acl.allow()`                                   | [服务端 → ACL 权限控制](../../server/acl)               |
 | 初始数据         | `install()` + `repo.createMany()`               | [服务端 → Plugin 插件](../../server/plugin)             |
 | 表格区块         | `TableBlockModel`                               | [FlowEngine → 区块扩展](../flow-engine/block)           |
-| 客户端注册数据表 | `addCollection()` + `filterTargetKey`           | [服务端 → Collections 数据表](../../server/collections) |
+| 客户端注册数据表 | `addCollection()` + `eventBus` + `filterTargetKey` | [Plugin 插件](../plugin)                                |
 | 自定义字段       | `ClickableFieldModel` + `bindModelToInterface`  | [FlowEngine → 字段扩展](../flow-engine/field)           |
 | 自定义操作       | `ActionModel` + `registerFlow({ on: 'click' })` | [FlowEngine → 操作扩展](../flow-engine/action)          |
 | 弹窗             | `ctx.viewer.dialog()`                           | [Context → 常用能力](../ctx/common-capabilities)        |

@@ -207,43 +207,13 @@ yarn nocobase install -f
 
 ## 让 Collection 出现在 UI 数据表列表中
 
-通过 `defineCollection` 定义的表是服务端内部表，默认**不会出现**在「数据源管理」的列表中，也不会出现在「添加区块」时的数据表选择列表里。如果你的插件需要让用户在界面上选到这张表（比如添加区块时绑定数据表），需要在**客户端插件**的 `load()` 中通过 `addCollection` 手动注册：
+通过 `defineCollection` 定义的表是服务端内部表，默认**不会出现**在「数据源管理」的列表中，也不会出现在「添加区块」时的数据表选择列表里。
+
+**推荐做法**：在 NocoBase 界面的「[数据源管理](../../data-sources/data-source-main/)」中添加对应的数据表，配置好字段和接口类型后，表就会自动出现在区块的数据表选择列表里。
 
 ![添加区块时能选中自己的](https://static-docs.nocobase.com/20260409143839.png)
 
-```ts
-// src/client-v2/plugin.tsx
-import { Plugin } from '@nocobase/client-v2';
-
-export class MyPlugin extends Plugin {
-  async load() {
-    const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
-    mainDS?.addCollection({
-      name: 'todoItems',
-      title: 'Todo Items',
-      // filterTargetKey 必须设置，否则不会出现在区块的数据表选择列表中
-      filterTargetKey: 'id',
-      fields: [
-        {
-          type: 'bigInt',
-          name: 'id',
-          primaryKey: true,
-          autoIncrement: true,
-          interface: 'id',
-        },
-        {
-          type: 'string',
-          name: 'title',
-          interface: 'input',
-          uiSchema: { type: 'string', title: 'Title', 'x-component': 'Input' },
-        },
-      ],
-    });
-  }
-}
-```
-
-服务端的 `defineCollection` 负责创建物理表和 ORM 映射，客户端的 `addCollection` 负责让 UI 知道这张表的存在。两边配合才能实现前后端联动。完整示例见 [做一个前后端联动的数据管理插件](../client/examples/fullstack-plugin.md)。
+如果确实需要在插件代码里注册（比如示例插件里的演示场景），可以在客户端插件里通过 `addCollection` 手动注册。注意必须通过 `eventBus` 模式注册，不能直接在 `load()` 里调用——`ensureLoaded()` 会在 `load()` 之后清空并重新设置所有 collection。完整示例见 [做一个前后端联动的数据管理插件](../client/examples/fullstack-plugin.md)。
 
 ## 自动生成资源（Resource）
 

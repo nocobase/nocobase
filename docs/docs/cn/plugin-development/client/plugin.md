@@ -103,8 +103,10 @@ async load() {
 | `this.router`               | 路由管理器，用于注册页面路由                             |
 | `this.pluginSettingsRouter` | 插件设置页路由管理器                                     |
 | `this.flowEngine`           | FlowEngine 实例，用于注册 FlowModel                      |
+| `this.engine`               | `this.flowEngine` 的别名                                 |
 | `this.context`              | 上下文对象，和组件里的 `useFlowContext()` 返回同一个对象  |
 | `this.app`                  | Application 实例                                         |
+| `this.app.eventBus`         | 应用级事件总线（`EventTarget`），用于监听生命周期事件     |
 
 如果需要访问更多 NocoBase 能力（比如 `api`、`t`(i18n)、`logger`），可以通过 `this.context` 获取：
 

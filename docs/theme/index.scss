@@ -345,6 +345,12 @@ h6,
   }
 }
 
+.rp-nav-menu {
+  &.rp-nav-menu--right {
+    margin: 0 !important;
+  }
+}
+
 @media (max-width: 868px) {
   .rp-nav-menu {
     display: none !important;

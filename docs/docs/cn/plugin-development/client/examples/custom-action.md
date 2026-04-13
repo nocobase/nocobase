@@ -256,7 +256,7 @@ yarn pm enable @my-project/plugin-simple-action
 | 能力     | 用法                                         | 文档                                           |
 | -------- | -------------------------------------------- | ---------------------------------------------- |
 | 操作按钮 | `ActionModel` + `static scene`               | [FlowEngine → 操作扩展](../flow-engine/action) |
-| 操作场景 | `ActionSceneEnum.collection / record / both` | [FlowEngine → 操作扩展](../flow-engine/action) |
+| 操作场景 | `ActionSceneEnum.collection / record / both / all` | [FlowEngine → 操作扩展](../flow-engine/action) |
 | 菜单注册 | `define({ label })`                          | [FlowEngine 概述](../flow-engine/index.md)     |
 | 模型注册 | `this.flowEngine.registerModelLoaders()`     | [Plugin 插件](../plugin)                       |
 | 延迟翻译 | `tExpr()`                                    | [i18n 国际化](../component/i18n)               |

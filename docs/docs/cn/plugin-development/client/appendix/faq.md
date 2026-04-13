@@ -92,33 +92,11 @@ this.flowEngine.registerModelLoaders({
 
 ### 添加区块后，数据表选择列表里没有我的表
 
-通过 `defineCollection` 定义的表是服务端内部表，默认不会出现在 UI 的数据表列表中。需要在客户端插件的 `load()` 里通过 `addCollection` 手动注册。
+通过 `defineCollection` 定义的表是服务端内部表，默认不会出现在 UI 的数据表列表中。
 
-这里有两个容易漏掉的关键点：
+**推荐做法**：在 NocoBase 界面的「[数据源管理](../../../data-sources/data-source-main/)」中添加对应的数据表，配置好字段和接口类型后，表就会自动出现在区块的数据表选择列表里。
 
-1. **必须设置 `filterTargetKey`**——如果不设置，collection 会被 `CollectionBlockModel.filterCollection()` 过滤掉，不会出现在列表中
-2. **必须声明 `id` 字段**——客户端需要知道主键字段的存在
-
-```ts
-const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
-mainDS?.addCollection({
-  name: 'myTable',
-  title: 'My Table',
-  filterTargetKey: 'id', // 不设置就不会出现在列表中
-  fields: [
-    {
-      type: 'bigInt',
-      name: 'id',
-      primaryKey: true,
-      autoIncrement: true,
-      interface: 'id',
-    },
-    // ... 其他字段需要带 interface 和 uiSchema
-  ],
-});
-```
-
-详见 [服务端 → Collections 数据表](../../server/collections)。
+如果确实需要在插件代码里注册（比如示例插件里的演示场景），可以通过 `addCollection` 手动注册，详见 [做一个前后端联动的数据管理插件](../examples/fullstack-plugin)。注意必须通过 `eventBus` 模式注册，不能直接在 `load()` 里调用——`ensureLoaded()` 会在 `load()` 之后清空并重新设置所有 collection。
 
 ### 自定义区块只想绑定特定数据表
 

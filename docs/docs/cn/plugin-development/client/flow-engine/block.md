@@ -123,7 +123,7 @@ ManyRecordBlockModel.define({
 
 跟 `BlockModel` 比，`CollectionBlockModel` 多了这些：
 
-- **`static scene`** — 声明区块场景，`BlockSceneEnum.many` 表示多条记录
+- **`static scene`** — 声明区块场景。常用值：`BlockSceneEnum.many`（多条记录列表）、`BlockSceneEnum.one`（单条记录详情/表单）。完整枚举还包括 `new`、`select`、`filter`、`subForm`、`bulkEditForm` 等
 - **`createResource()`** — 创建数据资源，`MultiRecordResource` 用于获取多条记录
 - **`this.resource.getData()`** — 获取数据表的数据
 
