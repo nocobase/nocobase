@@ -85,6 +85,7 @@ export class AIEmployeeInstruction extends Instruction {
           app: this.workflow.app,
           db: this.workflow.app.db,
           log: this.workflow.app.log,
+          logger: this.workflow.app.log,
           state: { currentRoles },
         } as any,
         employee,
