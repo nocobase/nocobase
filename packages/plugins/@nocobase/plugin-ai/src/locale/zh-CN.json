@@ -390,8 +390,11 @@
   "File (load via URL)": "文件 (从文件URL加载)",
   "Enable the LLM to use web search tools during task execution": "允许大模型在任务执行期间使用联网搜索工具",
   "Feedback & Notification": "反馈与通知",
-  "Requires approval": "需要批准",
-  "Whether user approval is required before the task outputs the final result": "任务输出最终结果前是否需要用户批准",
-  "Assignees": "受让用户",
-  "Users who can approve the final output result of the task": "可以批准任务最终输出结果的用户"
+  "Requires approval": "需要审批",
+  "Whether user approval is required before the task outputs the final result": "任务输出最终结果前是否需要用户审批",
+  "Assignees": "审批人",
+  "Users who can approve the final output result of the task": "可以批准任务最终输出结果的用户",
+  "No required": "不需要",
+  "AI decision": "AI 决策",
+  "Human decision": "人工决策"
 }

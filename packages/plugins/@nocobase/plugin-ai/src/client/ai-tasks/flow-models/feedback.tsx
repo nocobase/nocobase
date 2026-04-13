@@ -12,14 +12,13 @@ import { css, SchemaComponent } from '@nocobase/client';
 import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import { StructuredOutput } from '../components/structured-output';
 import { namespace } from '../../locale';
-import { Switch } from 'antd';
 import { AssigneesSelect, AssigneesAddition } from '../components/assigness';
 
 export class AIEmployeeTaskFeedbackModel extends FlowModel {
   public render() {
     return (
       <SchemaComponent
-        components={{ StructuredOutput, AssigneesSelect, AssigneesAddition, Switch }}
+        components={{ StructuredOutput, AssigneesSelect, AssigneesAddition }}
         schema={{
           type: 'void',
           properties: {
@@ -29,19 +28,37 @@ export class AIEmployeeTaskFeedbackModel extends FlowModel {
             },
             requiresApproval: {
               title: tExpr('Requires approval', { ns: namespace }),
-              type: 'boolean',
-              default: false,
+              type: 'string',
+              default: 'no_required',
               'x-decorator': 'FormItem',
               'x-decorator-props': {
                 tooltip: tExpr('Whether user approval is required before the task outputs the final result', {
                   ns: namespace,
                 }),
               },
-              'x-component': Switch,
+              'x-component': 'Radio.Group',
+              enum: [
+                { label: tExpr('No required', { ns: namespace }), value: 'no_required' },
+                { label: tExpr('AI decision', { ns: namespace }), value: 'ai_decision' },
+                { label: tExpr('Human decision', { ns: namespace }), value: 'human_decision' },
+              ],
             },
             assignees: {
               type: 'array',
               title: `{{t("Assignees", { ns: "${namespace}" })}}`,
+              'x-reactions': [
+                {
+                  dependencies: ['.requiresApproval'],
+                  fulfill: {
+                    schema: {
+                      'x-visible': '{{$deps[0] !== "no_required"}}',
+                    },
+                    state: {
+                      required: '{{$deps[0] !== "no_required"}}',
+                    },
+                  },
+                },
+              ],
               'x-decorator': 'FormItem',
               'x-component': 'ArrayItems',
               'x-component-props': {

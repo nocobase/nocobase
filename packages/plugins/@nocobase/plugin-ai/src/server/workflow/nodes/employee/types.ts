@@ -22,7 +22,7 @@ export type AIEmployeeInstructionConfig = {
     llmService: string;
     model: string;
   };
-  requiresApproval?: boolean;
+  requiresApproval?: 'no_required' | 'ai_decision' | 'human_decision';
   assignees?: string[];
   userId: string;
   files: AIEmployeeInstructionFiles[];

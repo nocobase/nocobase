@@ -31,7 +31,7 @@ export class AIEmployeeInstruction extends Instruction {
       skillSettings,
       webSearch,
       model,
-      requiresApproval,
+      requiresApproval = 'no_required',
       userId,
       files,
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
@@ -116,15 +116,7 @@ export class AIEmployeeInstruction extends Instruction {
         ],
       });
 
-      await this.workflow.db.getRepository('aiWorkflowTasks').update({
-        values: { status: 'pending_acceptance' },
-        filter: {
-          id: aiWorkflowTasks.id,
-          status: 'processing',
-        },
-      });
-
-      await this.autoApproval({ conversation, aiWorkflowTasks, result, aiEmployee, toolName });
+      await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
     };
 
     runner().catch((e) => {
@@ -162,7 +154,7 @@ export class AIEmployeeInstruction extends Instruction {
     userMessage: string;
     systemMessage: string;
     skillSettings: AIEmployeeInstructionConfig['skillSettings'];
-    requiresApproval?: boolean;
+    requiresApproval: 'no_required' | 'ai_decision' | 'human_decision';
     toolName: string;
     node: FlowNodeModel;
     processor: Processor;
@@ -200,13 +192,14 @@ export class AIEmployeeInstruction extends Instruction {
         transaction,
       });
 
-      if (requiresApproval === true) {
+      if (requiresApproval !== 'no_required') {
         const userIds = await parseAssignees(node, processor);
         if (userIds?.length) {
           await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
             values: userIds.map((userId) => ({
               userId,
               aiWorkflowTaskId: aiWorkflowTasks.id,
+              read: true,
             })),
             transaction,
           });
@@ -217,13 +210,15 @@ export class AIEmployeeInstruction extends Instruction {
     });
   }
 
-  private async autoApproval({
+  private async checkApproval({
+    requiresApproval,
     conversation,
     aiWorkflowTasks,
     result,
     aiEmployee,
     toolName,
   }: {
+    requiresApproval: 'no_required' | 'ai_decision' | 'human_decision';
     conversation: any;
     aiWorkflowTasks: any;
     result: any;
@@ -250,38 +245,36 @@ export class AIEmployeeInstruction extends Instruction {
       return;
     }
     const toolCall = toolCalls.find((it: any) => it.name === toolName);
-    if (!(toolCall?.args?.requiresApproval === false)) {
-      return;
-    }
-    await this.workflow.db.getRepository('aiWorkflowTasks').update({
-      values: { status: 'pending_approval' },
-      filter: {
-        id: aiWorkflowTasks.id,
-        status: 'pending_acceptance',
-      },
-    });
-    const [updated] = await this.workflow.db.getModel('aiToolMessages').update(
-      { userDecision: { type: 'approve' }, invokeStatus: 'waiting' },
-      {
-        where: {
-          sessionId: conversation.sessionId,
-          messageId: result.messageId,
-          invokeStatus: 'interrupted',
+    if (toolCall?.args?.requiresApproval === false) {
+      const [updated] = await this.workflow.db.getModel('aiToolMessages').update(
+        { userDecision: { type: 'approve' }, invokeStatus: 'waiting' },
+        {
+          where: {
+            sessionId: conversation.sessionId,
+            messageId: result.messageId,
+            invokeStatus: 'interrupted',
+          },
         },
-      },
-    );
-    if (!updated) {
-      return;
+      );
+      if (!updated) {
+        return;
+      }
+      const userDecisions = await ai.aiConversationsManager.getUserDecisions(result.messageId);
+      await aiEmployee.invoke({ userDecisions });
+      await this.workflow.db.getRepository('aiWorkflowTasks').update({
+        values: { status: 'approved' },
+        filter: {
+          id: aiWorkflowTasks.id,
+        },
+      });
+    } else if (requiresApproval !== 'no_required') {
+      await this.workflow.db.getRepository('aiWorkflowTasks').update({
+        values: { status: 'pending_acceptance' },
+        filter: {
+          id: aiWorkflowTasks.id,
+        },
+      });
     }
-    const userDecisions = await ai.aiConversationsManager.getUserDecisions(result.messageId);
-    await aiEmployee.invoke({ userDecisions });
-    await this.workflow.db.getRepository('aiWorkflowTasks').update({
-      values: { status: 'approved' },
-      filter: {
-        id: aiWorkflowTasks.id,
-        status: 'pending_approval',
-      },
-    });
   }
 }
 
@@ -357,6 +350,9 @@ export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
       return;
     }
     const values = model.toJSON();
+    if (values.status !== 'pending_acceptance') {
+      return;
+    }
     options.transaction?.afterCommit(async () => {
       const assignees = await plugin.db.getRepository('usersAiWorkflowTasks').find({
         filter: {
@@ -366,6 +362,15 @@ export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
       if (!assignees?.length) {
         return;
       }
+
+      await plugin.db.getRepository('usersAiWorkflowTasks').update({
+        values: {
+          read: false,
+        },
+        filter: {
+          aiWorkflowTaskId: values.id,
+        },
+      });
 
       for (const assignee of assignees) {
         plugin.app.emit('ws:sendToUser', {

@@ -387,4 +387,7 @@
   "Whether user approval is required before the task outputs the final result": "Whether user approval is required before the task outputs the final result",
   "Assignees": "Assignees",
   "Users who can approve the final output result of the task": "Users who can approve the final output result of the task",
+  "No required": "No required",
+  "AI decision": "AI decision",
+  "Human decision": "Human decision"
 }

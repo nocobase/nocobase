@@ -40,7 +40,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
   const config = processor.getParsedValue(flowNode.config, flowNode.id);
 
   let schema: any;
-  if (!config?.structuredOutput?.schema) {
+  if (!config.structuredOutput?.schema) {
     schema = {
       type: 'object',
       properties: {
@@ -70,7 +70,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
     };
   }
 
-  if (config.requiresApproval === true) {
+  if (config.requiresApproval === 'ai_decision') {
     schema.properties.requiresApproval = {
       type: 'boolean',
       description: 'If result need human to review and do some decision-making, set it to true',
@@ -79,7 +79,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
 
   register.registerTools({
     scope: 'SPECIFIED',
-    defaultPermission: config?.requiresApproval === true ? 'ASK' : 'ALLOW',
+    defaultPermission: config.requiresApproval !== 'no_required' ? 'ASK' : 'ALLOW',
     from: 'workflow',
     definition: {
       name: 'aiEmployeeWorkflowTaskOutput',
@@ -101,7 +101,6 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
         },
         filter: {
           id: task.id,
-          status: 'pending_approval',
         },
       });
 

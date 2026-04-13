@@ -31,8 +31,8 @@ export default defineCollection({
       allowNull: false,
     },
     {
-      name: 'requiresApproval',
-      type: 'boolean',
+      name: 'requiresApproval', // no_required, ai_decision, human_decision
+      type: 'string',
       allowNull: true,
     },
     {
