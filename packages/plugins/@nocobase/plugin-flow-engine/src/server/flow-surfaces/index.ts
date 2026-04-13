@@ -137,6 +137,63 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     get: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.get(getReadValues(ctx)));
     },
+    describeSurface: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.describeSurface(getValues(ctx)));
+    },
+    getReactionMeta: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.getReactionMeta(getValues(ctx)));
+    },
+    setFieldValueRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setFieldValueRules(getValues(ctx), { transaction })),
+      );
+    },
+    setBlockLinkageRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setBlockLinkageRules(getValues(ctx), { transaction })),
+      );
+    },
+    setFieldLinkageRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setFieldLinkageRules(getValues(ctx), { transaction })),
+      );
+    },
+    setActionLinkageRules: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.setActionLinkageRules(getValues(ctx), { transaction })),
+      );
+    },
+    applyBlueprint: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.applyBlueprint(getValues(ctx), { transaction })),
+      );
+    },
+    listTemplates: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.listTemplates(getValues(ctx)));
+    },
+    getTemplate: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.getTemplate(getValues(ctx)));
+    },
+    saveTemplate: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.saveTemplate(getValues(ctx), { transaction })),
+      );
+    },
+    updateTemplate: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.updateTemplate(getValues(ctx), { transaction })),
+      );
+    },
+    destroyTemplate: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.destroyTemplate(getValues(ctx), { transaction })),
+      );
+    },
+    convertTemplateToCopy: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.convertTemplateToCopy(getValues(ctx), { transaction })),
+      );
+    },
     compose: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () =>
         service.transaction((transaction) => service.compose(getValues(ctx), { transaction })),

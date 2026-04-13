@@ -12,6 +12,9 @@ import {
   FLOW_SURFACES_ACTION_METHODS,
   FLOW_SURFACES_ACTION_NAMES,
 } from '../server/flow-surfaces/constants';
+import { flowSurfaceExamples as examples } from './flow-surfaces.examples';
+import { createFlowSurfaceTemplateActionDocs } from './flow-surfaces.template-action-docs';
+import { createFlowSurfaceTemplateSchemas } from './flow-surfaces.template-schemas';
 
 const FLOW_SURFACES_TAG = 'flowSurfaces';
 const ANY_OBJECT_SCHEMA = {
@@ -90,6 +93,27 @@ const RECORD_ACTION_TYPE_ENUM = [
   'delete',
   'updateRecord',
 ];
+const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
+  'table',
+  'createForm',
+  'editForm',
+  'details',
+  'filterForm',
+  'list',
+  'gridCard',
+  'markdown',
+  'iframe',
+  'chart',
+  'actionPanel',
+  'jsBlock',
+];
+const REACTION_FINGERPRINT_DESCRIPTION =
+  'Optional optimistic-concurrency fingerprint from `getReactionMeta.capabilities[].fingerprint`. When provided, the write fails with HTTP 409 if the current slot fingerprint no longer matches.';
+const REACTION_RULES_REPLACE_DESCRIPTION =
+  'Full replacement payload for the resolved reaction slot. Pass `[]` to clear all rules from that slot.';
+const REACTION_LOCALIZED_FORM_TARGET_DESCRIPTION =
+  'Reaction write target. Use the live block/action uid for localized edits. For form field-value and form field-linkage writes, keep passing the outer form block uid; the backend resolves the inner form-grid slot automatically.';
+const REACTION_OUTER_FORM_TARGET_NOTE = 'Pass the outer form block uid, not the inner form-grid uid.';
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
@@ -167,1035 +191,133 @@ function valuesCompatibilityNote(description: string) {
   ].join('\n');
 }
 
-const examples = {
-  catalog: {
-    target: {
-      uid: 'table-block-uid',
-    },
-  },
-  context: {
-    target: {
-      uid: 'details-block-uid',
-    },
-    path: 'record',
-    maxDepth: 3,
-  },
-  compose: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    mode: 'append',
-    blocks: [
-      {
-        key: 'filter',
-        type: 'filterForm',
-        resource: {
-          dataSourceKey: 'main',
-          collectionName: 'users',
-        },
-        fields: [
-          {
-            fieldPath: 'username',
-            target: 'table',
-          },
-          {
-            fieldPath: 'nickname',
-            target: 'table',
-          },
-        ],
-        actions: ['submit', 'reset', 'collapse'],
+function buildReactionWriteRequestSchema(ruleSchemaName: string) {
+  return {
+    type: 'object',
+    required: ['target', 'rules'],
+    properties: {
+      target: {
+        allOf: [ref('FlowSurfaceWriteTarget')],
+        description: REACTION_LOCALIZED_FORM_TARGET_DESCRIPTION,
       },
-      {
-        key: 'table',
-        type: 'table',
-        resource: {
-          dataSourceKey: 'main',
-          collectionName: 'users',
-        },
-        fields: ['username', 'nickname', { fieldPath: 'roles.title' }],
-        actions: ['filter', 'addNew', 'refresh', 'bulkDelete', 'link'],
-        recordActions: [
-          'view',
-          'edit',
-          {
-            type: 'popup',
-            popup: {
-              mode: 'replace',
-              blocks: [
-                {
-                  key: 'details',
-                  type: 'details',
-                  resource: {
-                    dataSourceKey: 'main',
-                    collectionName: 'users',
-                  },
-                  fields: ['username', 'nickname'],
-                },
-              ],
-            },
-          },
-          'updateRecord',
-          'delete',
-        ],
+      rules: {
+        type: 'array',
+        items: ref(ruleSchemaName),
+        description: REACTION_RULES_REPLACE_DESCRIPTION,
       },
-    ],
-    layout: {
-      rows: [
-        [
-          {
-            key: 'filter',
-            span: 3,
-          },
-          {
-            key: 'table',
-            span: 7,
-          },
-        ],
-      ],
-    },
-  },
-  composeStatic: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    blocks: [
-      {
-        key: 'markdown',
-        type: 'markdown',
-        settings: {
-          content: '# Team handbook',
-        },
+      expectedFingerprint: {
+        type: 'string',
+        description: REACTION_FINGERPRINT_DESCRIPTION,
       },
-      {
-        key: 'iframe',
-        type: 'iframe',
-        settings: {
-          mode: 'url',
-          url: 'https://example.com/embed',
-          height: 360,
-        },
-      },
-      {
-        key: 'panel',
-        type: 'actionPanel',
-        settings: {
-          layout: 'list',
-          ellipsis: false,
-        },
-      },
-    ],
-    layout: {
-      rows: [['markdown', 'iframe'], ['panel']],
-    },
-  },
-  composeListRich: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    blocks: [
-      {
-        key: 'employeesList',
-        type: 'list',
-        resource: {
-          dataSourceKey: 'main',
-          collectionName: 'employees',
-        },
-        fields: [
-          'nickname',
-          {
-            fieldPath: 'department.name',
-          },
-        ],
-        actions: ['addNew', 'refresh'],
-        recordActions: [
-          'view',
-          'edit',
-          {
-            type: 'popup',
-            popup: {
-              mode: 'replace',
-              blocks: [
-                {
-                  key: 'details',
-                  type: 'details',
-                  resource: {
-                    dataSourceKey: 'main',
-                    collectionName: 'employees',
-                  },
-                  fields: ['nickname'],
-                },
-              ],
-            },
-          },
-          'delete',
-        ],
-        settings: {
-          pageSize: 20,
-          layout: 'vertical',
-        },
-      },
-    ],
-  },
-  composeGridCardRich: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    blocks: [
-      {
-        key: 'employeeCards',
-        type: 'gridCard',
-        resource: {
-          dataSourceKey: 'main',
-          collectionName: 'employees',
-        },
-        fields: [
-          'nickname',
-          {
-            fieldPath: 'department.name',
-          },
-        ],
-        actions: ['addNew', 'refresh'],
-        recordActions: ['view', 'edit', 'updateRecord', 'delete'],
-        settings: {
-          columns: 3,
-          rowCount: 2,
-          layout: 'vertical',
-        },
-      },
-    ],
-  },
-  composeJsBlock: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    blocks: [
-      {
-        key: 'customHero',
-        type: 'jsBlock',
-        settings: {
-          title: 'Custom hero',
-          description: 'Rendered by JS block runtime',
-          className: 'hero-shell',
-          version: '1.0.0',
-          code: "ctx.render('<div>Hello from JS block</div>');",
-        },
-      },
-    ],
-  },
-  configure: {
-    target: {
-      uid: 'details-field-uid',
-    },
-    changes: {
-      clickToOpen: true,
-      openView: {
-        dataSourceKey: 'main',
-        collectionName: 'departments',
-        associationName: 'users.department',
-        mode: 'drawer',
+      verify: {
+        type: 'boolean',
+        description:
+          'Reserved compatibility flag. Current v1 writes are full replace and return normalized output directly.',
       },
     },
-  },
-  configureAssociationPopup: {
-    target: {
-      uid: 'roles-field-wrapper-uid',
-    },
-    changes: {
-      clickToOpen: true,
-      openView: {
-        dataSourceKey: 'main',
-        collectionName: 'roles',
-        associationName: 'users.roles',
-        mode: 'drawer',
+    additionalProperties: false,
+  };
+}
+
+function buildReactionWriteResultSchema(ruleSchemaName: string) {
+  return {
+    type: 'object',
+    required: ['target', 'resolvedScene', 'resolvedSlot', 'fingerprint', 'normalizedRules', 'canonicalRules'],
+    properties: {
+      target: {
+        allOf: [ref('FlowSurfaceReactionTargetSummary')],
+        description: 'Resolved public reaction target after target normalization.',
       },
-    },
-  },
-  configureBlock: {
-    target: {
-      uid: 'list-block-uid',
-    },
-    changes: {
-      pageSize: 50,
-      dataScope: {
-        logic: '$and',
-        items: [
-          {
-            path: 'nickname',
-            operator: '$eq',
-            value: 'beta',
-          },
-        ],
+      resolvedScene: {
+        allOf: [ref('FlowSurfaceReactionScene')],
+        description:
+          'Concrete reaction scene that the backend resolved for this write, such as `form`, `details`, `subForm`, `block`, or `action`.',
       },
-      sorting: [
-        {
-          field: 'username',
-          direction: 'asc',
-        },
-      ],
-      layout: 'vertical',
-    },
-  },
-  createMenu: {
-    title: 'Employees',
-    type: 'item',
-    parentMenuRouteId: 1001,
-  },
-  updateMenu: {
-    menuRouteId: 1002,
-    title: 'Employees Center',
-    parentMenuRouteId: null,
-  },
-  configureAction: {
-    target: {
-      uid: 'update-record-action-uid',
-    },
-    changes: {
-      title: 'Quick update',
-      type: 'primary',
-      color: 'gold',
-      htmlType: 'button',
-      position: 'end',
-      confirm: {
-        enable: true,
-        title: 'Confirm update',
-        content: 'Apply assigned values?',
+      resolvedSlot: {
+        allOf: [ref('FlowSurfaceReactionSlot')],
+        description: 'Concrete persisted slot selected by the backend for this write.',
       },
-      assignValues: {
-        status: 'active',
+      fingerprint: {
+        type: 'string',
+        description: 'Fresh slot fingerprint after the write completes.',
       },
-    },
-  },
-  configureJsBlock: {
-    target: {
-      uid: 'js-block-uid',
-    },
-    changes: {
-      title: 'Users hero',
-      description: 'Rendered from FlowSurfaces configure',
-      className: 'users-hero',
-      version: '1.0.1',
-      code: "ctx.render('<div>Users hero</div>');",
-    },
-  },
-  configureJsAction: {
-    target: {
-      uid: 'js-action-uid',
-    },
-    changes: {
-      title: 'Run diagnostics',
-      type: 'primary',
-      version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
-    },
-  },
-  configureJsItemAction: {
-    target: {
-      uid: 'js-item-action-uid',
-    },
-    changes: {
-      title: 'Run item diagnostics',
-      type: 'default',
-      version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
-    },
-  },
-  configureJsField: {
-    target: {
-      uid: 'js-field-wrapper-uid',
-    },
-    changes: {
-      label: 'Custom renderer',
-      version: '1.0.1',
-      code: "ctx.render(String(ctx.record?.nickname?.toUpperCase?.() || ''));",
-    },
-  },
-  configureJsColumn: {
-    target: {
-      uid: 'js-column-uid',
-    },
-    changes: {
-      title: 'JS column',
-      width: 240,
-      fixed: 'left',
-      version: '1.0.1',
-      code: "ctx.render(String(ctx.record?.username || ''));",
-    },
-  },
-  configureJsItem: {
-    target: {
-      uid: 'js-item-uid',
-    },
-    changes: {
-      label: 'JS item',
-      showLabel: true,
-      labelWidth: 120,
-      version: '1.0.1',
-      code: "ctx.render(String(ctx.record?.nickname || ''));",
-    },
-  },
-  configurePage: {
-    target: {
-      uid: 'employees-page-uid',
-    },
-    changes: {
-      icon: 'UserOutlined',
-      enableHeader: false,
-    },
-  },
-  configureTableAdvanced: {
-    target: {
-      uid: 'tree-table-block-uid',
-    },
-    changes: {
-      quickEdit: true,
-      treeTable: true,
-      defaultExpandAllRows: true,
-      dragSort: true,
-      dragSortBy: 'sort',
-    },
-  },
-  configureEditForm: {
-    target: {
-      uid: 'edit-form-block-uid',
-    },
-    changes: {
-      colon: false,
-      dataScope: {
-        logic: '$and',
-        items: [
-          {
-            path: 'status',
-            operator: '$eq',
-            value: 'draft',
-          },
-        ],
+      normalizedRules: {
+        type: 'array',
+        items: ref(ruleSchemaName),
+        description: 'Normalized public rules persisted by the write.',
       },
-    },
-  },
-  configureDetails: {
-    target: {
-      uid: 'details-block-uid',
-    },
-    changes: {
-      colon: true,
-      linkageRules: [
-        {
-          when: {
-            path: 'status',
-            operator: '$eq',
-            value: 'archived',
-          },
-          set: {
-            hidden: true,
-          },
-        },
-      ],
-    },
-  },
-  composePopupCurrentRecord: {
-    target: {
-      uid: 'view-action-uid',
-    },
-    mode: 'replace',
-    blocks: [
-      {
-        key: 'details',
-        type: 'details',
-        resource: {
-          binding: 'currentRecord',
-        },
-        fields: ['nickname', 'department.title'],
+      canonicalRules: {
+        type: 'array',
+        items: ANY_OBJECT_SCHEMA,
+        description: 'Canonical internal rules compiled from the normalized public rules.',
       },
-    ],
-  },
-  composePopupAssociatedRecords: {
-    target: {
-      uid: 'association-popup-action-uid',
-    },
-    mode: 'replace',
-    blocks: [
-      {
-        key: 'employees',
-        type: 'table',
-        resource: {
-          binding: 'associatedRecords',
-          associationField: 'employee',
-        },
-        fields: ['nickname', 'status'],
-        actions: ['refresh'],
-        recordActions: ['view', 'edit'],
-      },
-    ],
-  },
-  configureActionModes: {
-    target: {
-      uid: 'compose-email-action-uid',
-    },
-    changes: {
-      linkageRules: [
-        {
-          when: {
-            path: 'status',
-            operator: '$eq',
-            value: 'draft',
-          },
-          set: {
-            disabled: true,
-          },
-        },
-      ],
-      editMode: 'drawer',
-      updateMode: 'overwrite',
-      duplicateMode: 'popup',
-      collapsedRows: 2,
-      defaultCollapsed: true,
-      emailFieldNames: ['email', 'backupEmail'],
-      defaultSelectAllRecords: true,
-    },
-  },
-  createPage: {
-    menuRouteId: 1002,
-    title: 'Employees',
-    tabTitle: 'Overview',
-    enableTabs: true,
-    displayTitle: true,
-    documentTitle: 'Employees workspace',
-    tabDocumentTitle: 'Employees overview',
-  },
-  addTab: {
-    target: {
-      uid: 'employees-page-uid',
-    },
-    title: 'Details',
-    icon: 'TableOutlined',
-    documentTitle: 'Employee details tab',
-  },
-  updateTab: {
-    target: {
-      uid: 'details-tab-schema',
-    },
-    title: 'Details',
-    icon: 'TableOutlined',
-    documentTitle: 'Employee details tab',
-    flowRegistry: {
-      beforeRenderApply: {
-        key: 'beforeRenderApply',
-        on: 'beforeRender',
-        steps: {},
-      },
-    },
-  },
-  addPopupTab: {
-    target: {
-      uid: 'view-action-popup-page-uid',
-    },
-    title: 'Popup details',
-    icon: 'TableOutlined',
-    documentTitle: 'Popup details tab',
-  },
-  updatePopupTab: {
-    target: {
-      uid: 'popup-secondary-tab-uid',
-    },
-    title: 'Popup details updated',
-    icon: 'AppstoreOutlined',
-    documentTitle: 'Popup details updated tab',
-    flowRegistry: {
-      beforeRenderApply: {
-        key: 'beforeRenderApply',
-        on: 'beforeRender',
-        steps: {},
-      },
-    },
-  },
-  movePopupTab: {
-    sourceUid: 'popup-secondary-tab-uid',
-    targetUid: 'popup-primary-tab-uid',
-    position: 'before',
-  },
-  removePopupTab: {
-    target: {
-      uid: 'popup-secondary-tab-uid',
-    },
-  },
-  addBlock: {
-    target: {
-      uid: 'view-action-uid',
-    },
-    type: 'details',
-    resource: {
-      binding: 'currentRecord',
-    },
-  },
-  addPopupAssociatedBlock: {
-    target: {
-      uid: 'association-popup-action-uid',
-    },
-    type: 'table',
-    resource: {
-      binding: 'associatedRecords',
-      associationField: 'employee',
-    },
-  },
-  addPopupOtherRecordsBlock: {
-    target: {
-      uid: 'popup-action-uid',
-    },
-    type: 'table',
-    resource: {
-      binding: 'otherRecords',
-      dataSourceKey: 'main',
-      collectionName: 'departments',
-    },
-  },
-  addJsBlock: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    type: 'jsBlock',
-    settings: {
-      title: 'Users banner',
-      description: 'Custom JS rendered banner',
-      version: '1.0.0',
-      code: "ctx.render('<div>Users banner</div>');",
-    },
-  },
-  addField: {
-    target: {
-      uid: 'create-form-block-uid',
-    },
-    fieldPath: 'nickname',
-    renderer: 'js',
-    settings: {
-      label: 'Nickname (JS)',
-      code: "ctx.render(String(ctx.value?.toUpperCase?.() || ctx.value || ''));",
-      version: '1.0.0',
-    },
-  },
-  addAssociationField: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    fieldPath: 'title',
-    associationPathName: 'department',
-    settings: {
-      title: 'Department title',
-      width: 240,
-    },
-    popup: {
-      mode: 'replace',
-      blocks: [
-        {
-          key: 'departmentDetails',
-          type: 'details',
-          resource: {
-            binding: 'currentRecord',
-          },
-          fields: ['title', 'manager.nickname'],
-        },
-      ],
-    },
-  },
-  addJsColumn: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    type: 'jsColumn',
-    settings: {
-      title: 'Runtime column',
-      width: 240,
-      version: '1.0.0',
-      code: "ctx.render(String(ctx.record?.nickname || ''));",
-    },
-  },
-  addJsItem: {
-    target: {
-      uid: 'create-form-grid-uid',
-    },
-    type: 'jsItem',
-    settings: {
-      label: 'Runtime item',
-      showLabel: true,
-      version: '1.0.0',
-      code: "ctx.render(String(ctx.record?.nickname || ''));",
-    },
-  },
-  addAction: {
-    target: {
-      uid: 'filter-form-block-uid',
-    },
-    type: 'submit',
-    settings: {
-      title: 'Apply filters',
-      confirm: false,
-    },
-  },
-  addLinkAction: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    type: 'link',
-    settings: {
-      title: 'Open docs',
-    },
-  },
-  addJsAction: {
-    target: {
-      uid: 'action-panel-uid',
-    },
-    type: 'js',
-    settings: {
-      title: 'Run JS',
-      type: 'primary',
-      version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("hello")\');',
-    },
-  },
-  addJsItemAction: {
-    target: {
-      uid: 'create-form-uid',
-    },
-    type: 'jsItem',
-    settings: {
-      title: 'Run item JS',
-      type: 'default',
-      version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("item")\');',
-    },
-  },
-  addRecordAction: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    type: 'view',
-    settings: {
-      title: 'View user',
-      openView: {
-        dataSourceKey: 'main',
-        collectionName: 'users',
-        mode: 'drawer',
-      },
-    },
-    popup: {
-      mode: 'replace',
-      blocks: [
-        {
-          key: 'details',
-          type: 'details',
-          resource: {
-            dataSourceKey: 'main',
-            collectionName: 'users',
-          },
-          fields: ['username', 'nickname'],
-        },
-      ],
-    },
-  },
-  addRecordJsAction: {
-    target: {
-      uid: 'details-block-uid',
-    },
-    type: 'js',
-    settings: {
-      title: 'Inspect record',
-      type: 'default',
-      version: '1.0.0',
-      code: 'return currentRecord?.id;',
-    },
-  },
-  addBlocks: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    blocks: [
-      {
-        key: 'usersTable',
-        type: 'table',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'users',
-        },
-        settings: {
-          title: 'Users table',
-          pageSize: 50,
-        },
-      },
-      {
-        key: 'teamNotes',
-        type: 'markdown',
-        settings: {
-          content: '# Team notes',
-        },
-      },
-    ],
-  },
-  addFields: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    fields: [
-      {
-        key: 'username',
-        fieldPath: 'username',
-        settings: {
-          title: 'User name',
-          width: 220,
-        },
-        popup: {
-          mode: 'replace',
-          blocks: [
-            {
-              key: 'details',
-              type: 'details',
-              resource: {
-                binding: 'currentRecord',
-              },
-              fields: ['username', 'nickname'],
-            },
-          ],
-        },
-      },
-      {
-        key: 'nickname',
-        fieldPath: 'nickname',
-        renderer: 'js',
-        settings: {
-          label: 'Nickname (JS)',
-          code: 'return value;',
-          version: '1.0.0',
-        },
-      },
-    ],
-  },
-  addActions: {
-    target: {
-      uid: 'filter-form-block-uid',
-    },
-    actions: [
-      {
-        key: 'submit',
-        type: 'submit',
-        settings: {
-          title: 'Search',
-          confirm: false,
-        },
-      },
-      {
-        key: 'reset',
-        type: 'reset',
-        settings: {
-          title: 'Reset filters',
-        },
-      },
-    ],
-  },
-  addRecordActions: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    recordActions: [
-      {
-        key: 'view',
-        type: 'view',
-        settings: {
-          title: 'View user',
-          openView: {
-            dataSourceKey: 'main',
-            collectionName: 'users',
-            mode: 'drawer',
-          },
-        },
-        popup: {
-          mode: 'replace',
-          blocks: [
-            {
-              key: 'details',
-              type: 'details',
-              resource: {
-                dataSourceKey: 'main',
-                collectionName: 'users',
-              },
-              fields: ['username'],
-            },
-          ],
-        },
-      },
-      {
-        key: 'edit',
-        type: 'edit',
-        settings: {
-          title: 'Edit user',
-        },
-      },
-      {
-        key: 'delete',
-        type: 'delete',
-        settings: {
-          title: 'Delete user',
-        },
-      },
-    ],
-  },
-  updateSettings: {
-    target: {
-      uid: 'table-block-uid',
-    },
-    stepParams: {
-      tableSettings: {
-        pageSize: {
-          pageSize: 50,
-        },
-        tableDensity: {
-          size: 'middle',
+      updateAssociationValues: {
+        type: 'array',
+        items: {
+          type: 'string',
         },
       },
     },
-    flowRegistry: {
-      beforeRenderApply: {
-        key: 'beforeRenderApply',
-        on: 'beforeRender',
-        steps: {},
+    additionalProperties: false,
+  };
+}
+
+function buildReactionCapabilitySchema(
+  kind: 'fieldValue' | 'blockLinkage' | 'fieldLinkage' | 'actionLinkage',
+  ruleSchemaName: string,
+  extraProperties: Record<string, any> = {},
+) {
+  return {
+    type: 'object',
+    required: ['kind', 'resolvedScene', 'resolvedSlot', 'fingerprint', 'normalizedRules', 'canonicalRules', 'context'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: [kind],
       },
-    },
-  },
-  setEventFlows: {
-    target: {
-      uid: 'view-action-uid',
-    },
-    flowRegistry: {
-      popupSettings: {
-        key: 'popupSettings',
-        on: 'click',
-        steps: {
-          openView: {
-            params: {
-              title: 'Employee details',
-              size: 'large',
-            },
-          },
-        },
+      resolvedScene: ref('FlowSurfaceReactionScene'),
+      resolvedSlot: ref('FlowSurfaceReactionSlot'),
+      fingerprint: {
+        type: 'string',
       },
-    },
-  },
-  setLayout: {
-    target: {
-      uid: 'page-grid-uid',
-    },
-    rows: {
-      row1: [['block-a'], ['block-b']],
-    },
-    sizes: {
-      row1: [12, 12],
-    },
-    rowOrder: ['row1'],
-  },
-  moveNode: {
-    sourceUid: 'block-b',
-    targetUid: 'block-a',
-    position: 'before',
-  },
-  removeNode: {
-    target: {
-      uid: 'obsolete-block-uid',
-    },
-  },
-  mutate: {
-    atomic: true,
-    ops: [
-      {
-        opId: 'menu',
-        type: 'createMenu',
-        values: {
-          title: 'Employees',
-          type: 'item',
-        },
+      normalizedRules: {
+        type: 'array',
+        items: ref(ruleSchemaName),
       },
-      {
-        opId: 'page',
-        type: 'createPage',
-        values: {
-          menuRouteId: {
-            ref: 'menu.routeId',
-          },
-          tabTitle: 'Overview',
-        },
+      canonicalRules: {
+        type: 'array',
+        items: ANY_OBJECT_SCHEMA,
       },
-      {
-        opId: 'table',
-        type: 'addBlock',
-        values: {
-          target: {
-            uid: {
-              ref: 'page.tabSchemaUid',
-            },
-          },
-          type: 'table',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      },
-      {
-        type: 'addField',
-        values: {
-          target: {
-            uid: {
-              ref: 'table.uid',
-            },
-          },
-          fieldPath: 'nickname',
-        },
-      },
-    ],
-  },
-  apply: {
-    target: {
-      uid: 'page-grid-uid',
+      context: ref('FlowSurfaceContextResponse'),
+      ...extraProperties,
     },
-    mode: 'replace',
-    spec: {
-      subModels: {
-        items: [
-          {
-            clientKey: 'table-a',
-            use: 'TableBlockModel',
-            stepParams: {
-              resourceSettings: {
-                init: {
-                  dataSourceKey: 'main',
-                  collectionName: 'employees',
-                },
-              },
-            },
-          },
-          {
-            clientKey: 'markdown-a',
-            use: 'MarkdownBlockModel',
-            props: {
-              content: 'Employee handbook',
-            },
-          },
-        ],
-      },
-    },
-  },
-  getPopupQuery: {
-    uid: 'view-action-uid',
-  },
-  getPageQuery: {
-    pageSchemaUid: 'employees-page-schema',
-  },
-};
+    additionalProperties: false,
+  };
+}
+
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `catalog` / `context`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+
+const templateActionDocs = createFlowSurfaceTemplateActionDocs({
+  tag: FLOW_SURFACES_TAG,
+  readAclNote: FLOW_SURFACES_READ_ACL_NOTE,
+  requestBody,
+  responses,
+  valuesCompatibilityNote,
+});
+
+const templateSchemas = createFlowSurfaceTemplateSchemas({
+  ref,
+  stringOrIntegerSchema: STRING_OR_INTEGER_SCHEMA,
+  actionTypeEnum: ACTION_TYPE_ENUM,
+});
 
 const actionDocs: Record<string, any> = {
   catalog: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended \`configureOptions\`, the underlying settings contract, event capabilities, and layout capabilities for the current node. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended \`configureOptions\`, the underlying settings contract, event capabilities, and layout capabilities for the current node. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. For advanced field-value or linkage authoring, prefer \`getReactionMeta\` + \`set*Rules\` instead of guessing raw \`configureOptions\` keys. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -1204,10 +326,55 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read ctx variable tree available under the current target',
     description: valuesCompatibilityNote(
-      `Returns the \`ctx\` variable tree available under the current target. \`path\` only accepts bare paths such as \`record\`, \`popup.record\`, and \`item.parentItem.value\`. Do not pass \`ctx.record\` or \`{{ ctx.record }}\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the low-level \`ctx\` variable tree available under the current target. \`path\` only accepts bare paths such as \`record\`, \`popup.record\`, and \`item.parentItem.value\`. Do not pass \`ctx.record\` or \`{{ ctx.record }}\`. For reaction authoring, use \`getReactionMeta\` as the main discovery endpoint first and use \`context\` only as a lower-level supplement when you need to inspect raw variable paths. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceContextRequest', examples.context),
     responses: responses('FlowSurfaceContextResponse'),
+  },
+  getReactionMeta: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read reaction capabilities, current rules, and contextual authoring metadata',
+    description: valuesCompatibilityNote(
+      `Returns the current advanced reaction capabilities for the target, including resolved scene/slot, normalized rules, canonical rules, available \`targetFields\`, \`supportedActions\`, and \`conditionMeta\` / \`valueExprMeta\` authoring metadata. This is the main discovery endpoint for CLI or AI callers before configuring field values or linkage rules. For form \`fieldValue\` / \`fieldLinkage\` authoring, callers still pass the outer form block uid; the backend resolves the concrete form-grid slot automatically. Use \`context\` only as a supplement when you need to inspect the raw variable tree behind the returned metadata. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceGetReactionMetaRequest', examples.getReactionMeta),
+    responses: responses('FlowSurfaceGetReactionMetaResult'),
+  },
+  setFieldValueRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace field value rules on a create/edit form block',
+    description: valuesCompatibilityNote(
+      `Fully replaces the field-value slot on the target form block. ${REACTION_OUTER_FORM_TARGET_NOTE} \`rules: []\` clears the slot. \`expectedFingerprint\` should usually come from \`getReactionMeta.capabilities[].fingerprint\` and enables optimistic concurrency against the current slot state.`,
+    ),
+    requestBody: requestBody('FlowSurfaceSetFieldValueRulesRequest', examples.setFieldValueRules),
+    responses: responses('FlowSurfaceSetFieldValueRulesResult'),
+  },
+  setBlockLinkageRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace block-level linkage rules on a supported block',
+    description: valuesCompatibilityNote(
+      'Fully replaces the block-linkage slot on the target block. `rules: []` clears the slot. `expectedFingerprint` should usually come from `getReactionMeta.capabilities[].fingerprint` and enables optimistic concurrency against the current slot state.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetBlockLinkageRulesRequest', examples.setBlockLinkageRules),
+    responses: responses('FlowSurfaceSetBlockLinkageRulesResult'),
+  },
+  setFieldLinkageRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace field-level linkage rules on a supported form/details/sub-form target',
+    description: valuesCompatibilityNote(
+      'Fully replaces the field-linkage slot on the target. The backend resolves the concrete scene automatically (`form`, `details`, or `subForm`) and returns it in `resolvedScene` / `resolvedSlot`. Supported actions are surfaced by `getReactionMeta`, commonly including `setFieldState`, `assignField`, and scene-specific defaults. For form scenes, keep passing the outer form block uid and let the backend resolve the inner grid slot. `expectedFingerprint` should usually come from `getReactionMeta.capabilities[].fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetFieldLinkageRulesRequest', examples.setFieldLinkageRules),
+    responses: responses('FlowSurfaceSetFieldLinkageRulesResult'),
+  },
+  setActionLinkageRules: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace action-level linkage rules on a supported action',
+    description: valuesCompatibilityNote(
+      'Fully replaces the action-linkage slot on the target action. `rules: []` clears the slot. `expectedFingerprint` should usually come from `getReactionMeta.capabilities[].fingerprint` and enables optimistic concurrency against the current slot state.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetActionLinkageRulesRequest', examples.setActionLinkageRules),
+    responses: responses('FlowSurfaceSetActionLinkageRulesResult'),
   },
   get: {
     tags: [FLOW_SURFACES_TAG],
@@ -1233,11 +400,49 @@ const actionDocs: Record<string, any> = {
     ],
     responses: responses('FlowSurfaceGetResponse'),
   },
+  describeSurface: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read surface tree with stable keys and fingerprint',
+    description: valuesCompatibilityNote(
+      `Reads the current surface together with request-scoped bind keys, persisted declared keys, and an optimistic-concurrency fingerprint. The fingerprint is computed from the public surface tree together with the resolved key bindings and ignores key source differences such as \`request\` vs \`declared\`. The public readback strips the internal declared-key metadata path from node.stepParams. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
+    responses: responses('FlowSurfaceDescribeSurfaceResponse'),
+  },
+  applyBlueprint: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Apply a page blueprint to create or replace one Modern page',
+    description: valuesCompatibilityNote(
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+    ),
+    requestBody: {
+      required: true,
+      description:
+        'The JSON request body. Send the page document object itself under requestBody as an object; do not JSON.stringify it and do not wrap it in { values: ... }.',
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceApplyBlueprintRequest'),
+          examples: {
+            createPage: {
+              summary: 'Create one Modern page from a page blueprint',
+              value: examples.applyBlueprint,
+            },
+            replacePage: {
+              summary: 'Replace one existing Modern page by pageSchemaUid',
+              value: examples.applyBlueprintReplace,
+            },
+          },
+        },
+      },
+    },
+    responses: responses('FlowSurfaceApplyBlueprintResponse'),
+  },
+  ...templateActionDocs,
   compose: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics. This is the preferred creation entry for AI callers. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
     ),
     requestBody: {
       required: true,
@@ -1283,7 +488,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. Check `catalog(target).configureOptions` before calling this action.',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action.',
     ),
     requestBody: {
       required: true,
@@ -1343,14 +548,14 @@ const actionDocs: Record<string, any> = {
               summary: 'Configure edit form colon and dataScope with a FilterGroup',
               value: examples.configureEditForm,
             },
-            detailsSettings: {
-              summary: 'Configure details colon and linkageRules',
-              value: examples.configureDetails,
+            detailsCompatibilitySettings: {
+              summary: 'Configure details colon and raw low-level linkageRules compatibility payload',
+              value: examples.configureDetailsCompatibility,
             },
-            actionBehaviorSettings: {
+            actionBehaviorCompatibilitySettings: {
               summary:
-                'Configure action linkageRules, edit/update/duplicate modes, collapsed rows and email selection defaults',
-              value: examples.configureActionModes,
+                'Configure action edit/update/duplicate modes plus raw low-level linkageRules compatibility payload',
+              value: examples.configureActionModesCompatibility,
             },
           },
         },
@@ -1478,7 +683,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      'Creates a block by catalog key or an explicitly supported block use. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`.',
+      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`.',
     ),
     requestBody: {
       required: true,
@@ -1512,7 +717,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` / `catalog.configureOptions`. Popup-capable fields can also pass `popup` directly to append a popup subtree. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
     ),
     requestBody: {
       required: true,
@@ -1536,6 +741,10 @@ const actionDocs: Record<string, any> = {
               summary: 'Create a standalone JS item under a form field container',
               value: examples.addJsItem,
             },
+            popupTemplate: {
+              summary: 'Create a bound field that reuses a saved popup template',
+              value: examples.addFieldPopupTemplate,
+            },
           },
         },
       },
@@ -1546,7 +755,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
     ),
     requestBody: {
       required: true,
@@ -1580,7 +789,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` / `catalog.configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree.',
+      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
     ),
     requestBody: {
       required: true,
@@ -1606,7 +815,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings` or `template`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1615,7 +824,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple fields sequentially under the same target. Each item may include `settings`, and popup-capable fields may also include `popup`, but raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple fields sequentially under the same target. The request may either import one shared `template` or create explicit `fields[]`. Each item may include `settings`, and popup-capable fields may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. Raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -1685,7 +894,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Execute multiple operations atomically',
     description: valuesCompatibilityNote(
-      'Executes `ops[]` in order and supports `opId` plus `{ref:"<opId>.<field>"}` references to earlier results. V1 only supports `atomic=true`.',
+      'Executes `ops[]` in order and supports `opId` plus `{ step: "<opId>", path: "<field>" }` references to earlier results. `{ key: "<opId>" }` reads the whole previous result object. V1 only supports `atomic=true`.',
     ),
     requestBody: requestBody('FlowSurfaceMutateRequest', examples.mutate),
     responses: responses('FlowSurfaceMutationResponse'),
@@ -1745,22 +954,22 @@ const parameters = {
 };
 
 const schemas = {
-  FlowSurfaceMutateRef: {
+  FlowSurfaceMutateKey: {
     type: 'object',
-    required: ['ref'],
+    required: ['key'],
     properties: {
-      ref: {
+      key: {
         type: 'string',
-        description: 'Reference to a previous mutate op result field, for example `page.tabSchemaUid`.',
+        description: 'Reference to a previously created runtime key, for example a prior mutate `opId`.',
       },
     },
     additionalProperties: false,
   },
   FlowSurfaceResolvableString: {
-    oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateRef')],
+    oneOf: [{ type: 'string' }, ref('FlowSurfaceMutateKey'), ref('FlowSurfacePlanSelectorByStep')],
   },
   FlowSurfaceResolvableIdentifier: {
-    oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceMutateRef')],
+    oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceMutateKey'), ref('FlowSurfacePlanSelectorByStep')],
   },
   FlowSurfaceWriteTarget: {
     type: 'object',
@@ -1834,6 +1043,83 @@ const schemas = {
       kind: {
         type: 'string',
         enum: ['page', 'tab', 'grid', 'block', 'node'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlanSelectorByStep: {
+    type: 'object',
+    required: ['step'],
+    properties: {
+      step: {
+        type: 'string',
+      },
+      path: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBindKey: {
+    type: 'object',
+    required: ['key', 'locator'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      locator: ref('FlowSurfaceReadLocator'),
+      expectedKind: {
+        type: 'string',
+        enum: ['page', 'tab', 'grid', 'block', 'fieldHost', 'action', 'popupHost', 'popupPage', 'popupTab', 'node'],
+      },
+      rebind: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceKeyInfo: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      kind: {
+        type: 'string',
+      },
+      source: {
+        type: 'string',
+        enum: ['declared', 'request', 'system'],
+      },
+      locator: ref('FlowSurfaceReadLocator'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceKeysMap: {
+    type: 'object',
+    additionalProperties: ref('FlowSurfaceKeyInfo'),
+  },
+  FlowSurfaceResolvedSelectorSummary: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      kind: {
+        type: 'string',
+      },
+      key: {
+        type: 'string',
+      },
+      source: {
+        type: 'string',
+        enum: ['declared', 'request', 'system', 'step'],
+      },
+      step: {
+        type: 'string',
+      },
+      path: {
+        type: 'string',
       },
     },
     additionalProperties: false,
@@ -2025,6 +1311,10 @@ const schemas = {
         type: 'string',
         enum: ['page', 'tab', 'block', 'field', 'action'],
       },
+      scope: {
+        type: 'string',
+        enum: ['block', 'record', 'form', 'filterForm', 'actionPanel'],
+      },
       scene: {
         type: 'string',
       },
@@ -2084,6 +1374,106 @@ const schemas = {
     },
     additionalProperties: true,
   },
+  FlowSurfaceCatalogSection: {
+    type: 'string',
+    enum: ['blocks', 'fields', 'actions', 'recordActions', 'node'],
+  },
+  FlowSurfaceCatalogExpand: {
+    type: 'string',
+    enum: ['item.configureOptions', 'item.contracts', 'item.allowedContainerUses', 'node.contracts'],
+  },
+  FlowSurfaceCatalogPopupScenario: {
+    type: 'object',
+    required: ['kind', 'scene', 'hasCurrentRecord', 'hasAssociationContext'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['plainPopup', 'recordPopup', 'associationPopup'],
+      },
+      scene: {
+        type: 'string',
+        enum: ['new', 'one', 'many', 'select', 'subForm', 'bulkEditForm', 'generic'],
+      },
+      hasCurrentRecord: {
+        type: 'boolean',
+      },
+      hasAssociationContext: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogFieldContainerScenario: {
+    type: 'object',
+    required: ['kind'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['form', 'details', 'table', 'filter-form'],
+      },
+      targetMode: {
+        type: 'string',
+        enum: ['single', 'multiple'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogActionContainerScenario: {
+    type: 'object',
+    required: ['scope'],
+    properties: {
+      scope: {
+        type: 'string',
+        enum: ['block', 'record', 'form', 'filterForm', 'actionPanel'],
+      },
+      ownerUse: {
+        type: 'string',
+      },
+      recordActionContainerUse: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogScenario: {
+    type: 'object',
+    required: ['surfaceKind'],
+    properties: {
+      surfaceKind: {
+        type: 'string',
+        enum: ['global', 'page', 'tab', 'grid', 'block', 'node'],
+      },
+      popup: ref('FlowSurfaceCatalogPopupScenario'),
+      fieldContainer: ref('FlowSurfaceCatalogFieldContainerScenario'),
+      actionContainer: ref('FlowSurfaceCatalogActionContainerScenario'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCatalogNodeInfo: {
+    type: 'object',
+    required: ['editableDomains', 'configureOptions'],
+    properties: {
+      editableDomains: {
+        type: 'array',
+        items: ref('FlowSurfaceNodeDomain'),
+      },
+      configureOptions: ref('FlowSurfaceConfigureOptions'),
+      settingsSchema: ANY_OBJECT_SCHEMA,
+      settingsContract: {
+        type: 'object',
+        properties: {
+          props: ref('FlowSurfaceDomainContract'),
+          decoratorProps: ref('FlowSurfaceDomainContract'),
+          stepParams: ref('FlowSurfaceDomainContract'),
+          flowRegistry: ref('FlowSurfaceDomainContract'),
+        },
+        additionalProperties: false,
+      },
+      eventCapabilities: ref('FlowSurfaceEventCapabilities'),
+      layoutCapabilities: ref('FlowSurfaceLayoutCapabilities'),
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceGetTreeNode: {
     type: 'object',
     properties: {
@@ -2109,6 +1499,9 @@ const schemas = {
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
       flowRegistry: ANY_OBJECT_SCHEMA,
+      template: ref('FlowSurfaceBlockTemplateRef'),
+      fieldsTemplate: ref('FlowSurfaceTemplateRef'),
+      popup: ref('FlowSurfacePopupSummary'),
       subModels: {
         type: 'object',
         additionalProperties: {
@@ -2316,6 +1709,8 @@ const schemas = {
       },
       associationField: {
         type: 'string',
+        description:
+          'Canonical association field name for popup `associatedRecords` binding. In applyBlueprint authoring, prefer `associationField`; `associationPathName` is only normalized to this field for convenience when it is a single association field name.',
       },
     },
     additionalProperties: false,
@@ -2339,6 +1734,14 @@ const schemas = {
     type: 'object',
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
+      sections: {
+        type: 'array',
+        items: ref('FlowSurfaceCatalogSection'),
+      },
+      expand: {
+        type: 'array',
+        items: ref('FlowSurfaceCatalogExpand'),
+      },
     },
     additionalProperties: false,
   },
@@ -2348,6 +1751,13 @@ const schemas = {
       target: {
         allOf: [ref('FlowSurfaceResolvedTarget')],
         nullable: true,
+      },
+      scenario: ref('FlowSurfaceCatalogScenario'),
+      selectedSections: {
+        type: 'array',
+        description:
+          'Final sections returned by the server. When `sections` is omitted from the request, the server smart-selects sections for the current target scenario and clients should treat this field as authoritative.',
+        items: ref('FlowSurfaceCatalogSection'),
       },
       blocks: {
         type: 'array',
@@ -2368,24 +1778,7 @@ const schemas = {
           'Public record/item-level actions exposed for record-capable targets such as table/details/list/gridCard.',
         items: ref('FlowSurfaceCatalogItem'),
       },
-      editableDomains: {
-        type: 'array',
-        items: ref('FlowSurfaceNodeDomain'),
-      },
-      configureOptions: ref('FlowSurfaceConfigureOptions'),
-      settingsSchema: ANY_OBJECT_SCHEMA,
-      settingsContract: {
-        type: 'object',
-        properties: {
-          props: ref('FlowSurfaceDomainContract'),
-          decoratorProps: ref('FlowSurfaceDomainContract'),
-          stepParams: ref('FlowSurfaceDomainContract'),
-          flowRegistry: ref('FlowSurfaceDomainContract'),
-        },
-        additionalProperties: false,
-      },
-      eventCapabilities: ref('FlowSurfaceEventCapabilities'),
-      layoutCapabilities: ref('FlowSurfaceLayoutCapabilities'),
+      node: ref('FlowSurfaceCatalogNodeInfo'),
     },
     additionalProperties: false,
   },
@@ -2443,6 +1836,18 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceDescribeSurfaceRequest: {
+    type: 'object',
+    required: ['locator'],
+    properties: {
+      locator: ref('FlowSurfaceReadLocator'),
+      bindKeys: {
+        type: 'array',
+        items: ref('FlowSurfaceBindKey'),
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceGetResponse: {
     type: 'object',
     properties: {
@@ -2454,6 +1859,42 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceDescribeSurfaceResponse: {
+    type: 'object',
+    properties: {
+      target: ref('FlowSurfaceReadTarget'),
+      tree: ref('FlowSurfaceGetTreeNode'),
+      nodeMap: ref('FlowSurfaceNodeMap'),
+      pageRoute: ref('FlowSurfaceRouteMeta'),
+      route: ref('FlowSurfaceRouteMeta'),
+      fingerprint: {
+        type: 'string',
+      },
+      keys: ref('FlowSurfaceKeysMap'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePopupSummary: {
+    type: 'object',
+    properties: {
+      mode: {
+        type: 'string',
+        enum: ['local', 'copy'],
+      },
+      pageUid: {
+        type: 'string',
+      },
+      tabUid: {
+        type: 'string',
+      },
+      gridUid: {
+        type: 'string',
+      },
+      template: ref('FlowSurfacePopupTemplateRef'),
+    },
+    additionalProperties: false,
+  },
+  ...templateSchemas,
   FlowSurfaceComposeLayoutCell: {
     oneOf: [
       {
@@ -2461,9 +1902,12 @@ const schemas = {
       },
       {
         type: 'object',
-        required: ['key'],
+        anyOf: [{ required: ['key'] }, { required: ['uid'] }],
         properties: {
           key: {
+            type: 'string',
+          },
+          uid: {
             type: 'string',
           },
           span: {
@@ -2498,6 +1942,7 @@ const schemas = {
         properties: {
           key: {
             type: 'string',
+            description: 'Optional stable field key returned in compose results.',
           },
           fieldPath: {
             type: 'string',
@@ -2515,7 +1960,7 @@ const schemas = {
             description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceComposeActionPopup'),
+          popup: ref('FlowSurfaceComposeFieldPopup'),
         },
         additionalProperties: false,
       },
@@ -2525,6 +1970,7 @@ const schemas = {
         properties: {
           key: {
             type: 'string',
+            description: 'Optional stable field key returned in compose results.',
           },
           type: {
             type: 'string',
@@ -2537,9 +1983,81 @@ const schemas = {
       },
     ],
   },
+  FlowSurfaceTemplateRef: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+        description: 'Saved template uid.',
+      },
+      mode: {
+        type: 'string',
+        enum: ['reference', 'copy'],
+        default: 'reference',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockTemplateRef: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      mode: {
+        type: 'string',
+        enum: ['reference', 'copy'],
+        default: 'reference',
+      },
+      usage: {
+        type: 'string',
+        enum: ['block', 'fields'],
+        description: 'For form templates, choose whether to create the whole block or only import its fields.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePopupTemplateRef: {
+    allOf: [ref('FlowSurfaceTemplateRef')],
+  },
   FlowSurfaceComposeActionPopup: {
     type: 'object',
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
+      },
+    ],
     properties: {
+      template: ref('FlowSurfacePopupTemplateRef'),
+      mode: {
+        type: 'string',
+        enum: ['append', 'replace'],
+      },
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeBlockSpec'),
+      },
+      layout: ref('FlowSurfaceComposeLayout'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceComposeFieldPopup: {
+    type: 'object',
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
+      },
+    ],
+    properties: {
+      template: ref('FlowSurfacePopupTemplateRef'),
       mode: {
         type: 'string',
         enum: ['append', 'replace'],
@@ -2600,7 +2118,8 @@ const schemas = {
   },
   FlowSurfaceComposeBlockSpec: {
     type: 'object',
-    required: ['key', 'type'],
+    required: ['key'],
+    anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
       key: {
         type: 'string',
@@ -2622,6 +2141,7 @@ const schemas = {
           'jsBlock',
         ],
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       settings: ANY_OBJECT_SCHEMA,
       fields: {
@@ -2718,6 +2238,9 @@ const schemas = {
         type: 'string',
         enum: ACTION_TYPE_ENUM,
       },
+      scope: {
+        type: 'string',
+      },
       uid: {
         type: 'string',
       },
@@ -2805,12 +2328,1032 @@ const schemas = {
         type: 'string',
         enum: ['append', 'replace'],
       },
-      keyToUid: ref('FlowSurfaceClientKeyMap'),
       blocks: {
         type: 'array',
         items: ref('FlowSurfaceComposeBlockResult'),
       },
       layout: ref('FlowSurfaceSetLayoutResult'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionKind: {
+    type: 'string',
+    enum: ['fieldValue', 'blockLinkage', 'fieldLinkage', 'actionLinkage'],
+  },
+  FlowSurfaceReactionScene: {
+    type: 'string',
+    enum: ['form', 'block', 'action', 'details', 'subForm'],
+  },
+  FlowSurfaceReactionSlot: {
+    type: 'object',
+    required: ['flowKey', 'stepKey'],
+    properties: {
+      flowKey: {
+        type: 'string',
+        description: 'Resolved flow-settings namespace that owns this reaction slot.',
+      },
+      stepKey: {
+        type: 'string',
+        description: 'Resolved step key inside the flow-settings namespace.',
+      },
+      valuePath: {
+        type: 'string',
+        nullable: true,
+        description: 'Optional nested value path when the actual rules array is stored below the step root.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionTargetSummary: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+        description: 'Resolved live target uid.',
+      },
+      publicPath: {
+        type: 'string',
+        description: 'Resolved public path or bind-key style path when available.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionFilter: {
+    type: 'object',
+    description:
+      'Recursive public reaction filter object. Paths must use bare ctx-style paths such as `formValues.status` or `record.id`.',
+    additionalProperties: true,
+    example: FILTER_GROUP_EXAMPLE,
+  },
+  FlowSurfaceReactionLiteralValueExpr: {
+    type: 'object',
+    required: ['source', 'value'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['literal'],
+      },
+      value: {},
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionPathValueExpr: {
+    type: 'object',
+    required: ['source', 'path'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['path'],
+      },
+      path: {
+        type: 'string',
+        description: 'Bare reaction context path such as `formValues.status` or `record.id`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionRunJsValueExpr: {
+    type: 'object',
+    required: ['source', 'code'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['runjs'],
+      },
+      code: {
+        type: 'string',
+      },
+      version: {
+        type: 'string',
+        enum: ['v1', 'v2'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionValueExpr: {
+    oneOf: [
+      ref('FlowSurfaceReactionLiteralValueExpr'),
+      ref('FlowSurfaceReactionPathValueExpr'),
+      ref('FlowSurfaceReactionRunJsValueExpr'),
+    ],
+  },
+  FlowSurfaceReactionValueExprMeta: {
+    type: 'object',
+    required: ['supportedSources', 'runjsScene'],
+    properties: {
+      supportedSources: {
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['literal', 'path', 'runjs'],
+        },
+      },
+      runjsScene: {
+        type: 'string',
+        enum: ['fieldValue', 'linkage'],
+        description: 'RunJS evaluation scene used by this capability when `source: "runjs"` is allowed.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionConditionMeta: {
+    type: 'object',
+    required: ['operatorsByPath'],
+    properties: {
+      operatorsByPath: {
+        type: 'object',
+        description:
+          'Allowed operators keyed by bare reaction context path. Use this to drive condition builders instead of guessing path/operator pairs.',
+        additionalProperties: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionSupportedAction: {
+    type: 'object',
+    required: ['type'],
+    properties: {
+      type: {
+        type: 'string',
+        description: 'Public reaction action type available in the resolved scene.',
+      },
+      states: {
+        type: 'array',
+        description: 'Supported state names when the action type is state-based.',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionUnavailableCapability: {
+    type: 'object',
+    required: ['kind', 'code', 'reason'],
+    properties: {
+      kind: ref('FlowSurfaceReactionKind'),
+      code: {
+        type: 'string',
+      },
+      reason: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldOption: {
+    type: 'object',
+    required: ['path', 'label'],
+    properties: {
+      path: {
+        type: 'string',
+        description: 'Targetable field path in the resolved scene.',
+      },
+      label: {
+        type: 'string',
+      },
+      interface: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+      },
+      supportsDefault: {
+        type: 'boolean',
+        description: 'Whether this field can be targeted by default-value semantics.',
+      },
+      supportsAssign: {
+        type: 'boolean',
+        description: 'Whether this field can be targeted by assignment semantics.',
+      },
+      supportsState: {
+        type: 'array',
+        description: 'Field-state transitions supported for this field in the resolved scene.',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldValueRule: {
+    type: 'object',
+    required: ['targetPath', 'value'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      targetPath: {
+        type: 'string',
+        description: 'Field path that receives the computed/default value.',
+      },
+      mode: {
+        type: 'string',
+        enum: ['default', 'assign'],
+        description:
+          '`default` writes default-value semantics, while `assign` writes reactive assignment semantics for the target field.',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      value: ref('FlowSurfaceReactionValueExpr'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceReactionRunJsAction: {
+    type: 'object',
+    required: ['type', 'code'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['runjs'],
+      },
+      code: {
+        type: 'string',
+      },
+      version: {
+        type: 'string',
+        enum: ['v1', 'v2'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockLinkageActionSetBlockState: {
+    type: 'object',
+    required: ['type', 'state'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setBlockState'],
+      },
+      state: {
+        type: 'string',
+        enum: ['visible', 'hidden'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockLinkageAction: {
+    oneOf: [ref('FlowSurfaceBlockLinkageActionSetBlockState'), ref('FlowSurfaceReactionRunJsAction')],
+  },
+  FlowSurfaceBlockLinkageRule: {
+    type: 'object',
+    required: ['then'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      then: {
+        type: 'array',
+        items: ref('FlowSurfaceBlockLinkageAction'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceActionLinkageActionSetActionState: {
+    type: 'object',
+    required: ['type', 'state'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setActionState'],
+      },
+      state: {
+        type: 'string',
+        enum: ['visible', 'hidden', 'hiddenText', 'enabled', 'disabled'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceActionLinkageAction: {
+    oneOf: [ref('FlowSurfaceActionLinkageActionSetActionState'), ref('FlowSurfaceReactionRunJsAction')],
+  },
+  FlowSurfaceActionLinkageRule: {
+    type: 'object',
+    required: ['then'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      then: {
+        type: 'array',
+        items: ref('FlowSurfaceActionLinkageAction'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageAssignItem: {
+    type: 'object',
+    required: ['targetPath', 'value'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      targetPath: {
+        type: 'string',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      value: ref('FlowSurfaceReactionValueExpr'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageActionSetFieldState: {
+    type: 'object',
+    required: ['type', 'fieldPaths', 'state'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setFieldState'],
+      },
+      fieldPaths: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      state: {
+        type: 'string',
+        enum: ['visible', 'hidden', 'hiddenReservedValue', 'required', 'notRequired', 'disabled', 'enabled'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageActionAssignField: {
+    type: 'object',
+    required: ['type', 'items'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['assignField'],
+      },
+      items: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageAssignItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageActionSetFieldDefaultValue: {
+    type: 'object',
+    required: ['type', 'items'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: ['setFieldDefaultValue'],
+      },
+      items: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageAssignItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldLinkageAction: {
+    oneOf: [
+      ref('FlowSurfaceFieldLinkageActionSetFieldState'),
+      ref('FlowSurfaceFieldLinkageActionAssignField'),
+      ref('FlowSurfaceFieldLinkageActionSetFieldDefaultValue'),
+      ref('FlowSurfaceReactionRunJsAction'),
+    ],
+  },
+  FlowSurfaceFieldLinkageRule: {
+    type: 'object',
+    required: ['then'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      enabled: {
+        type: 'boolean',
+      },
+      when: ref('FlowSurfaceReactionFilter'),
+      then: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageAction'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceFieldValueCapability: buildReactionCapabilitySchema('fieldValue', 'FlowSurfaceFieldValueRule', {
+    targetFields: {
+      type: 'array',
+      description: 'Fields that can receive field-value writes in the resolved scene.',
+      items: ref('FlowSurfaceFieldOption'),
+    },
+    valueExprMeta: {
+      allOf: [ref('FlowSurfaceReactionValueExprMeta')],
+      description: 'Allowed value-expression sources for this capability.',
+    },
+  }),
+  FlowSurfaceBlockLinkageCapability: buildReactionCapabilitySchema('blockLinkage', 'FlowSurfaceBlockLinkageRule', {
+    supportedActions: {
+      type: 'array',
+      description: 'Block-level reaction actions supported in the resolved scene.',
+      items: ref('FlowSurfaceReactionSupportedAction'),
+    },
+    conditionMeta: {
+      allOf: [ref('FlowSurfaceReactionConditionMeta')],
+      description: 'Condition-authoring metadata for this capability.',
+    },
+  }),
+  FlowSurfaceFieldLinkageCapability: buildReactionCapabilitySchema('fieldLinkage', 'FlowSurfaceFieldLinkageRule', {
+    supportedActions: {
+      type: 'array',
+      description: 'Field-linkage actions supported in the resolved scene.',
+      items: ref('FlowSurfaceReactionSupportedAction'),
+    },
+    targetFields: {
+      type: 'array',
+      description: 'Fields that can be targeted by field-linkage actions in the resolved scene.',
+      items: ref('FlowSurfaceFieldOption'),
+    },
+    conditionMeta: {
+      allOf: [ref('FlowSurfaceReactionConditionMeta')],
+      description: 'Condition-authoring metadata for this capability.',
+    },
+    valueExprMeta: {
+      allOf: [ref('FlowSurfaceReactionValueExprMeta')],
+      description: 'Allowed value-expression sources for assignment/default actions in this capability.',
+    },
+  }),
+  FlowSurfaceActionLinkageCapability: buildReactionCapabilitySchema('actionLinkage', 'FlowSurfaceActionLinkageRule', {
+    supportedActions: {
+      type: 'array',
+      description: 'Action-linkage actions supported in the resolved scene.',
+      items: ref('FlowSurfaceReactionSupportedAction'),
+    },
+    conditionMeta: {
+      allOf: [ref('FlowSurfaceReactionConditionMeta')],
+      description: 'Condition-authoring metadata for this capability.',
+    },
+  }),
+  FlowSurfaceReactionCapability: {
+    oneOf: [
+      ref('FlowSurfaceFieldValueCapability'),
+      ref('FlowSurfaceBlockLinkageCapability'),
+      ref('FlowSurfaceFieldLinkageCapability'),
+      ref('FlowSurfaceActionLinkageCapability'),
+    ],
+  },
+  FlowSurfaceGetReactionMetaRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceGetReactionMetaResult: {
+    type: 'object',
+    required: ['target', 'capabilities', 'unavailable'],
+    properties: {
+      target: ref('FlowSurfaceReactionTargetSummary'),
+      capabilities: {
+        type: 'array',
+        items: ref('FlowSurfaceReactionCapability'),
+      },
+      unavailable: {
+        type: 'array',
+        items: ref('FlowSurfaceReactionUnavailableCapability'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceSetFieldValueRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceFieldValueRule'),
+  FlowSurfaceSetFieldValueRulesResult: buildReactionWriteResultSchema('FlowSurfaceFieldValueRule'),
+  FlowSurfaceSetBlockLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceBlockLinkageRule'),
+  FlowSurfaceSetBlockLinkageRulesResult: buildReactionWriteResultSchema('FlowSurfaceBlockLinkageRule'),
+  FlowSurfaceSetFieldLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceFieldLinkageRule'),
+  FlowSurfaceSetFieldLinkageRulesResult: buildReactionWriteResultSchema('FlowSurfaceFieldLinkageRule'),
+  FlowSurfaceSetActionLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceActionLinkageRule'),
+  FlowSurfaceSetActionLinkageRulesResult: buildReactionWriteResultSchema('FlowSurfaceActionLinkageRule'),
+  FlowSurfaceApplyBlueprintReactionItemSetFieldValueRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setFieldValueRules'],
+      },
+      target: {
+        type: 'string',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result. For form field-value writes, point to the form block key/path, not the inner grid node.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldValueRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItemSetBlockLinkageRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setBlockLinkageRules'],
+      },
+      target: {
+        type: 'string',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceBlockLinkageRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItemSetFieldLinkageRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setFieldLinkageRules'],
+      },
+      target: {
+        type: 'string',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result. Form-scene field linkage still targets the form block key/path, and the backend resolves the concrete grid slot.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules: {
+    type: 'object',
+    required: ['type', 'target', 'rules'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['setActionLinkageRules'],
+      },
+      target: {
+        type: 'string',
+        description:
+          'Bind key or local key of the reaction target resolved from the same blueprint run. The referenced node must have an explicit key/bind key in that blueprint result.',
+      },
+      rules: {
+        type: 'array',
+        items: ref('FlowSurfaceActionLinkageRule'),
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description:
+          'Optional optimistic-concurrency fingerprint from a prior `getReactionMeta` read of the same slot.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintReactionItem: {
+    oneOf: [
+      ref('FlowSurfaceApplyBlueprintReactionItemSetFieldValueRules'),
+      ref('FlowSurfaceApplyBlueprintReactionItemSetBlockLinkageRules'),
+      ref('FlowSurfaceApplyBlueprintReactionItemSetFieldLinkageRules'),
+      ref('FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules'),
+    ],
+  },
+  FlowSurfaceApplyBlueprintReaction: {
+    type: 'object',
+    required: ['items'],
+    description:
+      'Optional whole-page reaction authoring section for blueprint-driven interaction logic. Each item must target an explicit same-run local key / bind key. Only explicitly listed items are written. Repeating the same `(type, target)` slot is invalid. In `replace`, include every slot that must exist in the resulting surface instead of relying on omission. Use localized `getReactionMeta` + `set*Rules` for edits on existing live surfaces.',
+    properties: {
+      items: {
+        type: 'array',
+        items: ref('FlowSurfaceApplyBlueprintReactionItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintAssets: {
+    type: 'object',
+    properties: {
+      scripts: {
+        type: 'object',
+        additionalProperties: ANY_OBJECT_SCHEMA,
+      },
+      charts: {
+        type: 'object',
+        additionalProperties: ANY_OBJECT_SCHEMA,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintLayoutCell: {
+    oneOf: [
+      {
+        type: 'string',
+        description: 'Local block key string in the current tab or popup scope.',
+      },
+      {
+        type: 'object',
+        description:
+          'Layout cell object in the public applyBlueprint contract. Use only { key, span } to reference a local block key.',
+        required: ['key'],
+        properties: {
+          key: {
+            type: 'string',
+            description: 'Local block key in the current tab or popup scope.',
+          },
+          span: {
+            type: 'number',
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceApplyBlueprintLayout: {
+    type: 'object',
+    description: 'Layout object allowed only on tabs and inline popup documents, never on individual blocks.',
+    properties: {
+      rows: {
+        type: 'array',
+        description: 'Two-dimensional layout grid. Each cell is either a block key string or an object { key, span }.',
+        items: {
+          type: 'array',
+          items: ref('FlowSurfaceApplyBlueprintLayoutCell'),
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintPopup: {
+    type: 'object',
+    properties: {
+      title: {
+        type: 'string',
+      },
+      mode: {
+        type: 'string',
+        enum: ['append', 'replace'],
+      },
+      template: ref('FlowSurfacePopupTemplateRef'),
+      blocks: {
+        type: 'array',
+        description:
+          'Inline popup blocks. For custom `edit` popups, provide exactly one `editForm` block plus any optional sibling blocks.',
+        items: ref('FlowSurfaceApplyBlueprintBlockSpec'),
+      },
+      layout: {
+        allOf: [ref('FlowSurfaceApplyBlueprintLayout')],
+        description:
+          'Popup-scoped layout. Layout is only allowed on tabs and popup documents, not on individual blocks.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintFieldSpec: {
+    oneOf: [
+      {
+        type: 'string',
+      },
+      {
+        type: 'object',
+        properties: {
+          key: { type: 'string' },
+          field: { type: 'string' },
+          associationPathName: { type: 'string' },
+          renderer: { type: 'string' },
+          type: { type: 'string' },
+          label: { type: 'string' },
+          target: {
+            type: 'string',
+            description: 'String block key on the same tab or popup scope, typically used by filter-form fields.',
+          },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceApplyBlueprintPopup'),
+          script: { type: 'string' },
+          chart: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceApplyBlueprintActionSpec: {
+    oneOf: [
+      {
+        type: 'string',
+      },
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          key: { type: 'string' },
+          type: {
+            type: 'string',
+            enum: ACTION_TYPE_ENUM,
+            description:
+              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; applyBlueprint also auto-promotes them from `actions` for convenience. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+          },
+          title: { type: 'string' },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceApplyBlueprintPopup'),
+          script: { type: 'string' },
+          chart: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceApplyBlueprintRecordActionSpec: {
+    oneOf: [
+      {
+        type: 'string',
+      },
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          key: { type: 'string' },
+          type: {
+            type: 'string',
+            enum: RECORD_ACTION_TYPE_ENUM,
+            description:
+              'Record-action type for record-capable blocks such as `table`, `details`, `list`, and `gridCard`. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+          },
+          title: { type: 'string' },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceApplyBlueprintPopup'),
+          script: { type: 'string' },
+          chart: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceApplyBlueprintBlockSpec: {
+    type: 'object',
+    description:
+      'Public applyBlueprint block spec. Blocks do not accept a `layout` property; use tab.layout or popup.layout instead. Generic `form` is not supported here; use `editForm` or `createForm`.',
+    anyOf: [{ required: ['type'] }, { required: ['template'] }],
+    properties: {
+      key: { type: 'string' },
+      type: {
+        type: 'string',
+        enum: APPLY_BLUEPRINT_BLOCK_TYPE_ENUM,
+        description:
+          'Public applyBlueprint block type. Generic `form` is not supported; use `editForm` or `createForm`.',
+      },
+      title: { type: 'string' },
+      collection: {
+        type: 'string',
+        description:
+          'Block-level shorthand collection name. When using the nested resource object instead, use resource.collectionName there.',
+      },
+      dataSourceKey: { type: 'string' },
+      associationPathName: {
+        type: 'string',
+        description:
+          "Association field path used by raw resource-init shorthand. For popup association tables, prefer `resource.binding='associatedRecords'` with `associationField`; applyBlueprint only normalizes `currentRecord|associatedRecords + associationPathName` to that canonical form when `associationPathName` is a single association field name.",
+      },
+      binding: {
+        type: 'string',
+        enum: ['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'],
+      },
+      associationField: {
+        type: 'string',
+        description:
+          'Canonical association field name for popup `associatedRecords` binding. Prefer this over `associationPathName` when authoring relation tables inside record popups.',
+      },
+      resource: ref('FlowSurfaceBlockResourceInput'),
+      template: ref('FlowSurfaceBlockTemplateRef'),
+      settings: ANY_OBJECT_SCHEMA,
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceApplyBlueprintFieldSpec'),
+      },
+      actions: {
+        type: 'array',
+        description:
+          'Block-level actions. On record-capable blocks, `view`, `edit`, `updateRecord`, and `delete` should normally go to `recordActions`; applyBlueprint auto-promotes those common record actions when they are written here.',
+        items: ref('FlowSurfaceApplyBlueprintActionSpec'),
+      },
+      recordActions: {
+        type: 'array',
+        items: ref('FlowSurfaceApplyBlueprintRecordActionSpec'),
+      },
+      script: { type: 'string' },
+      chart: { type: 'string' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintTab: {
+    type: 'object',
+    required: ['blocks'],
+    properties: {
+      key: {
+        type: 'string',
+        description:
+          'Optional local tab key used only inside the current applyBlueprint document for layout or in-document references. It is not used to match existing route-backed tabs in replace mode. When omitted, the server generates one.',
+      },
+      title: { type: 'string' },
+      icon: { type: 'string' },
+      documentTitle: { type: 'string' },
+      blocks: {
+        type: 'array',
+        minItems: 1,
+        items: ref('FlowSurfaceApplyBlueprintBlockSpec'),
+      },
+      layout: {
+        allOf: [ref('FlowSurfaceApplyBlueprintLayout')],
+        description: 'Tab-scoped layout. Layout is allowed here and on popup documents, not on individual blocks.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintNavigationGroup: {
+    type: 'object',
+    properties: {
+      routeId: {
+        ...STRING_OR_INTEGER_SCHEMA,
+        description:
+          'Preferred existing menu-group route id for exact targeting. Do not mix it with title/icon/tooltip/hideInMenu. applyBlueprint create mode does not mutate existing group metadata; use low-level updateMenu separately when needed.',
+      },
+      title: {
+        type: 'string',
+        description:
+          "Group title for create mode. When `routeId` is omitted, applyBlueprint reuses a same-title group if the match is unique, creates one when no group exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group's metadata must change, use low-level updateMenu instead of applyBlueprint create.",
+      },
+      icon: {
+        type: 'string',
+        description:
+          'Group icon used only when create mode actually creates a new menu group. Not allowed together with routeId.',
+      },
+      tooltip: {
+        type: 'string',
+        description:
+          'Group tooltip used only when create mode actually creates a new menu group. Not allowed together with routeId.',
+      },
+      hideInMenu: {
+        type: 'boolean',
+        description:
+          'Group hidden-state used only when create mode actually creates a new menu group. Not allowed together with routeId.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintNavigation: {
+    type: 'object',
+    properties: {
+      group: ref('FlowSurfaceApplyBlueprintNavigationGroup'),
+      item: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          icon: { type: 'string' },
+          tooltip: { type: 'string' },
+          hideInMenu: { type: 'boolean' },
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintPage: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      icon: { type: 'string' },
+      documentTitle: { type: 'string' },
+      enableHeader: { type: 'boolean' },
+      enableTabs: { type: 'boolean' },
+      displayTitle: { type: 'boolean' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintTarget: {
+    type: 'object',
+    required: ['pageSchemaUid'],
+    properties: {
+      pageSchemaUid: { type: 'string' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintRequest: {
+    type: 'object',
+    required: ['mode', 'tabs'],
+    description:
+      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.",
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
+      },
+      mode: {
+        type: 'string',
+        enum: ['create', 'replace'],
+      },
+      target: ref('FlowSurfaceApplyBlueprintTarget'),
+      navigation: ref('FlowSurfaceApplyBlueprintNavigation'),
+      page: ref('FlowSurfaceApplyBlueprintPage'),
+      tabs: {
+        type: 'array',
+        minItems: 1,
+        items: ref('FlowSurfaceApplyBlueprintTab'),
+      },
+      assets: ref('FlowSurfaceApplyBlueprintAssets'),
+      reaction: ref('FlowSurfaceApplyBlueprintReaction'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintResponseTarget: {
+    type: 'object',
+    properties: {
+      pageSchemaUid: {
+        type: 'string',
+      },
+      pageUid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintResponse: {
+    type: 'object',
+    required: ['version', 'mode', 'target', 'surface'],
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
+      },
+      mode: {
+        type: 'string',
+        enum: ['create', 'replace'],
+      },
+      target: ref('FlowSurfaceApplyBlueprintResponseTarget'),
+      surface: ref('FlowSurfaceGetResponse'),
     },
     additionalProperties: false,
   },
@@ -3305,6 +3848,7 @@ const schemas = {
       use: {
         type: 'string',
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
@@ -3359,8 +3903,17 @@ const schemas = {
   FlowSurfaceAddFieldRequest: {
     type: 'object',
     required: ['target'],
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
+      },
+    ],
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
+      template: ref('FlowSurfaceTemplateRef'),
       fieldPath: {
         type: 'string',
         description: 'Required for bound fields. Omit when using synthetic standalone types such as jsColumn/jsItem.',
@@ -3396,10 +3949,10 @@ const schemas = {
       },
       targetUid: {
         type: 'string',
-        description: 'Legacy alias used by filter-form target selection. This is not the same field as `target.uid`.',
+        description: 'Optional filter-form target selection key. This is not the same field as `target.uid`.',
       },
       settings: ANY_OBJECT_SCHEMA,
-      popup: ref('FlowSurfaceComposeActionPopup'),
+      popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
   },
@@ -3572,6 +4125,7 @@ const schemas = {
       use: {
         type: 'string',
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
@@ -3580,10 +4134,19 @@ const schemas = {
   },
   FlowSurfaceAddFieldItem: {
     type: 'object',
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
+      },
+    ],
     properties: {
       key: {
         type: 'string',
       },
+      template: ref('FlowSurfaceTemplateRef'),
       fieldPath: {
         type: 'string',
       },
@@ -3617,7 +4180,7 @@ const schemas = {
         type: 'string',
       },
       settings: ANY_OBJECT_SCHEMA,
-      popup: ref('FlowSurfaceComposeActionPopup'),
+      popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
   },
@@ -3673,9 +4236,18 @@ const schemas = {
   },
   FlowSurfaceAddFieldsRequest: {
     type: 'object',
-    required: ['target', 'fields'],
+    required: ['target'],
+    oneOf: [
+      {
+        required: ['template'],
+      },
+      {
+        required: ['fields'],
+      },
+    ],
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
+      template: ref('FlowSurfaceTemplateRef'),
       fields: {
         type: 'array',
         items: ref('FlowSurfaceAddFieldItem'),
@@ -4168,7 +4740,7 @@ const schemas = {
       values: {
         ...ANY_OBJECT_SCHEMA,
         description:
-          'Business payload for the corresponding `/flowSurfaces:<type>` action. Nested refs must use `{ ref: "<opId>.<path>" }`.',
+          'Business payload for the corresponding `/flowSurfaces:<type>` action. Nested runtime values must use `{ step: "<opId>", path: "<field>" }` or `{ key: "<opId>" }`.',
       },
     },
     additionalProperties: false,

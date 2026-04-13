@@ -173,4 +173,65 @@ describe('flow-model duplicate', () => {
     expect(newContent.uid).not.toBe('dup-page-content');
     expect(newContent.parentId).toBe(newPage.uid);
   });
+
+  it('should overwrite uid fields embedded in node options when duplicating', async () => {
+    const tree = {
+      uid: 'dup-options-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'dup-options-root',
+            use: 'RootModel',
+            subModels: {
+              items: [
+                {
+                  uid: 'dup-options-item',
+                  use: 'WrapperModel',
+                  name: 'dup-options-item',
+                  subModels: {
+                    field: {
+                      uid: 'dup-options-field',
+                      use: 'FieldModel',
+                      name: 'dup-options-field',
+                      stepParams: {
+                        popupSettings: {
+                          openView: {
+                            popupTemplateUid: 'popup-template-1',
+                            popupTemplateMode: 'reference',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    } as any;
+
+    await repository.insertModel(tree);
+
+    const duplicatedWithAsync = await repository.findModelById('dup-options-root', { includeAsyncNode: true });
+    expect(duplicatedWithAsync.subModels.items[0].uid).toBe('dup-options-item');
+    expect(duplicatedWithAsync.subModels.items[0].subModels.field.uid).toBe('dup-options-field');
+
+    const duplicated = await repository.duplicate('dup-options-root');
+    expect(duplicated).toBeTruthy();
+    expect(duplicated.uid).not.toBe('dup-options-root');
+
+    const duplicatedTree = await repository.findModelById(duplicated.uid, { includeAsyncNode: true });
+    const newItem = duplicatedTree.subModels.items[0];
+    expect(newItem).toBeTruthy();
+    expect(newItem.uid).not.toBe('dup-options-item');
+    expect(newItem.parentId).toBe(duplicated.uid);
+
+    const newField = newItem.subModels.field;
+    expect(newField).toBeTruthy();
+    expect(newField.uid).not.toBe('dup-options-field');
+    expect(newField.parentId).toBe(newItem.uid);
+    expect(newField.stepParams?.popupSettings?.openView?.popupTemplateUid).toBe('popup-template-1');
+  });
 });

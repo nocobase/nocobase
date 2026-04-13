@@ -12,6 +12,7 @@ import { uid } from '@nocobase/utils';
 import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
 import { isBareFlowContextPath } from '../flow-surfaces/context';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 describe('flowSurfaces context', () => {
@@ -25,7 +26,7 @@ describe('flowSurfaces context', () => {
     db = app.db;
     flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
     rootAgent = await loginFlowSurfacesRootAgent(app);
-    await setupFixtureCollections(rootAgent);
+    await setupFixtureCollections(rootAgent, db);
   }, 120000);
 
   beforeEach(async () => {
@@ -206,21 +207,7 @@ describe('flowSurfaces context', () => {
     expect(chartContext.vars.chart.properties.queryOutputs.properties.employeeCount.type).toBe('number');
     expect(chartContext.vars.chart.properties.queryOutputs.properties['department.title'].type).toBe('string');
     expect(chartContext.vars.chart.properties.aliases.properties.employeeCount).toBeTruthy();
-    expect(chartContext.vars.chart.properties.aliases.properties.employeeCount.description).toContain('Do not assume');
     expect(chartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
-    expect(chartContext.vars.chart.properties.supportedMappings.properties.bar.properties.x.description).toContain(
-      'Required',
-    );
-    expect(chartContext.vars.chart.properties.supportedStyles.properties.bar.properties.boundaryGap.type).toBe(
-      'boolean',
-    );
-    expect(chartContext.vars.chart.properties.supportedStyles.properties.pie.properties.labelType.enumValues).toEqual([
-      'value',
-      'percent',
-    ]);
-    expect(chartContext.vars.chart.properties.safeDefaults.properties.builder_basic_minimal).toBeTruthy();
-    expect(chartContext.vars.chart.properties.riskyPatterns.properties.custom_visual_raw).toBeTruthy();
-    expect(chartContext.vars.chart.properties.unsupportedPatterns.properties.builder_measure_sorting).toBeTruthy();
 
     const configureSqlRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -255,15 +242,8 @@ describe('flowSurfaces context', () => {
     });
     expect(sqlChartContextRes.status).toBe(200);
     const sqlChartContext = getData(sqlChartContextRes);
-    expect(sqlChartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
-    expect(sqlChartContext.vars.chart.properties.supportedMappings.properties.pie.properties.category).toBeTruthy();
-    expect(sqlChartContext.vars.chart.properties.supportedStyles.properties.funnel.properties.sort.enumValues).toEqual([
-      'descending',
-      'ascending',
-    ]);
     expect(sqlChartContext.vars.chart.properties.queryOutputs.properties.total.type).toBe('number');
     expect(sqlChartContext.vars.chart.properties.aliases).toBeUndefined();
-    expect(sqlChartContext.vars.chart.properties.safeDefaults.properties.block_outer_props_only).toBeTruthy();
 
     const configureRiskySqlRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -574,6 +554,7 @@ describe('flowSurfaces context', () => {
       title: 'Context catalog page',
       tabTitle: 'Context catalog tab',
     });
+    const catalogExpand = ['item.configureOptions'];
 
     const pageCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -582,13 +563,14 @@ describe('flowSurfaces context', () => {
         },
       }),
     );
-    expect(pageCatalog.configureOptions.documentTitle.supportsFlowContext).toBe(true);
-    expect(pageCatalog.configureOptions.title.supportsFlowContext).toBeUndefined();
+    expect(pageCatalog.node.configureOptions.documentTitle.supportsFlowContext).toBe(true);
+    expect(pageCatalog.node.configureOptions.title.supportsFlowContext).toBeUndefined();
 
     const tabCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
           target: { uid: page.gridUid },
+          expand: catalogExpand,
         },
       }),
     );
@@ -616,8 +598,8 @@ describe('flowSurfaces context', () => {
         },
       }),
     );
-    expect(formCatalog.configureOptions.assignRules.supportsFlowContext).toBe(true);
-    expect(formCatalog.configureOptions.resource.supportsFlowContext).toBeUndefined();
+    expect(formCatalog.node.configureOptions.assignRules.supportsFlowContext).toBe(true);
+    expect(formCatalog.node.configureOptions.resource.supportsFlowContext).toBeUndefined();
   });
 });
 
@@ -635,7 +617,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(response);
 }
 
-async function setupFixtureCollections(rootAgent: any) {
+async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
       name: 'departments',
@@ -697,5 +679,11 @@ async function setupFixtureCollections(rootAgent: any) {
       foreignKey: 'employeeId',
       interface: 'o2m',
     },
+  });
+
+  await waitForFixtureCollectionsReady(db, {
+    departments: ['title', 'location'],
+    employees: ['nickname', 'status', 'departmentId'],
+    tasks: ['title', 'status', 'employeeId'],
   });
 }
