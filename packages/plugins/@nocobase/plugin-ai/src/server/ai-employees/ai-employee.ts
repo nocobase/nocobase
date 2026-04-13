@@ -775,7 +775,7 @@ export class AIEmployee {
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale?.() || 'en-US',
-        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale(), getCurrentTimezone(this.ctx)),
+        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale?.(), getCurrentTimezone(this.ctx)),
         timezone: getCurrentTimezone(this.ctx),
       },
       knowledgeBase,
