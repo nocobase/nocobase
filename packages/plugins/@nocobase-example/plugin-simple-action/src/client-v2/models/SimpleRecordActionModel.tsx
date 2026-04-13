@@ -31,7 +31,9 @@ SimpleRecordActionModel.registerFlow({
     showMessage: {
       async handler(ctx) {
         const index = ctx.model.context.recordIndex;
-        ctx.message.info(ctx.t('Record action clicked, row index: {{index}}', { index }));
+        const record = ctx.model.context.record;
+        const id = record?.id;
+        ctx.message.info(ctx.t('Record action clicked, record ID: {{id}}, row index: {{index}}', { id, index }));
       },
     },
   },

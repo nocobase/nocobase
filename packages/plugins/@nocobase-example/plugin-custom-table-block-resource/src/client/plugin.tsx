@@ -47,7 +47,12 @@ export class PluginCustomTableBlockResourceClient extends Plugin {
   async load() {
     this.flowEngine.registerModels(models);
 
-    // 将 todoItems 注册到客户端数据源
+    // Register todoItems to the client-side data source.
+    // Note: In client-v2, you cannot call addCollection directly in load(),
+    // because v2's DataSourceManager calls clearCollections during ensureLoaded(),
+    // which wipes out any collection added during the load() phase.
+    // In v2, use eventBus 'dataSource:loaded' event to re-register instead.
+    // See src/client-v2/plugin.tsx for the v2 implementation.
     const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
     mainDS?.addCollection(todoItemsCollection);
   }

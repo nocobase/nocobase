@@ -7,18 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// TODO: client-v2 暂未提供 TableBlockModel，待实现后将下方注释取消
+import { TableBlockModel } from '@nocobase/client-v2';
+import type { Collection } from '@nocobase/flow-engine';
+import { tExpr } from '../locale';
 
-// import { TableBlockModel } from '@nocobase/client-v2';
-// import { tExpr } from '../locale';
-//
-// export class TodoBlockModel extends TableBlockModel {
-//   // 限制只对 todoItems 数据表可用
-//   static filterCollection(collection) {
-//     return collection.name === 'todoItems';
-//   }
-// }
-//
-// TodoBlockModel.define({
-//   label: tExpr('Todo block'),
-// });
+export class TodoBlockModel extends TableBlockModel {
+  static filterCollection(collection: Collection) {
+    return collection.name === 'todoItems';
+  }
+}
+
+TodoBlockModel.define({
+  label: tExpr('Todo block'),
+});

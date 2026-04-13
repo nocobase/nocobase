@@ -8,7 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-// TODO: client-v2 暂未提供 CollectionBlockModel，待实现后取消注释
 
 const todoItemsCollection = {
   name: 'todoItems',
@@ -43,22 +42,37 @@ const todoItemsCollection = {
   ],
 };
 
-export class PluginDataBlockClientV2 extends Plugin {
+export class PluginCustomTableBlockResourceClientV2 extends Plugin {
   async load() {
-    // TODO: client-v2 暂未提供 CollectionBlockModel，待实现后取消注释
-    // this.flowEngine.registerModelLoaders({
-    //   TodoBlockModel: {
-    //     loader: () => import('./models/TodoBlockModel'),
-    //   },
-    // });
-    // 将 todoItems 注册到客户端数据源，让它出现在区块的数据表选择列表中
-    // 通过 addReloadCallback 确保在数据源 reload 后重新注册，不被覆盖
-    // const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
-    // mainDS?.addCollection(todoItemsCollection);
-    // mainDS?.addReloadCallback(() => {
-    //   mainDS?.addCollection(todoItemsCollection);
-    // });
+    this.flowEngine.registerModelLoaders({
+      TodoBlockModel: {
+        loader: () => import('./models/TodoBlockModel'),
+      },
+      PriorityFieldModel: {
+        loader: () => import('./models/PriorityFieldModel'),
+      },
+      NewTodoActionModel: {
+        loader: () => import('./models/NewTodoActionModel'),
+      },
+    });
+
+    // Register todoItems to the client-side data source.
+    // Must listen to 'dataSource:loaded' event because ensureLoaded() runs after load(),
+    // and it calls setCollections() which clears all collections before re-setting from server.
+    // Re-register in the event callback to ensure addCollection survives reload.
+    const addTodoCollection = () => {
+      const mainDS = this.flowEngine.dataSourceManager.getDataSource('main');
+      if (mainDS && !mainDS.getCollection('todoItems')) {
+        mainDS.addCollection(todoItemsCollection);
+      }
+    };
+
+    this.app.eventBus.addEventListener('dataSource:loaded', (event: Event) => {
+      if ((event as CustomEvent).detail?.dataSourceKey === 'main') {
+        addTodoCollection();
+      }
+    });
   }
 }
 
-export default PluginDataBlockClientV2;
+export default PluginCustomTableBlockResourceClientV2;

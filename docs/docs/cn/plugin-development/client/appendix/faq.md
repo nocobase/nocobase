@@ -126,7 +126,7 @@ mainDS?.addCollection({
 
 ```ts
 export class MyBlockModel extends TableBlockModel {
-  static filterCollection(collection) {
+  static filterCollection(collection: Collection) {
     return collection.name === 'myTable';
   }
 }

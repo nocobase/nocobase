@@ -8,11 +8,12 @@
  */
 
 import { TableBlockModel } from '@nocobase/client';
+import type { Collection } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
 
 export class TodoBlockModel extends TableBlockModel {
   // 限制只对 todoItems 数据表可用
-  static filterCollection(collection) {
+  static filterCollection(collection: Collection) {
     return collection.name === 'todoItems';
   }
 }

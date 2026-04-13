@@ -7,69 +7,104 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// TODO: client-v2 暂未提供 ActionModel，待实现后将下方注释取消
+import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
+import { MultiRecordResource, observable, observer } from '@nocobase/flow-engine';
+import { Button, Form, Input, Select, Space, Switch } from 'antd';
+import { ButtonProps } from 'antd';
+import React from 'react';
+import { tExpr } from '../locale';
 
-// import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
-// import { MultiRecordResource } from '@nocobase/flow-engine';
-// import { ButtonProps } from 'antd';
-// import { tExpr } from '../locale';
-//
-// export class NewTodoActionModel extends ActionModel {
-//   static scene = ActionSceneEnum.collection;
-//
-//   defaultProps: ButtonProps = {
-//     type: 'primary',
-//     children: tExpr('New todo'),
-//   };
-// }
-//
-// NewTodoActionModel.define({
-//   label: tExpr('New todo'),
-// });
-//
-// NewTodoActionModel.registerFlow({
-//   key: 'newTodoFlow',
-//   title: tExpr('New todo'),
-//   on: 'click',
-//   steps: {
-//     openForm: {
-//       title: tExpr('Todo form'),
-//       uiSchema: {
-//         title: {
-//           type: 'string',
-//           title: tExpr('Title'),
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Input',
-//           required: true,
-//         },
-//         priority: {
-//           type: 'string',
-//           title: tExpr('Priority'),
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Select',
-//           enum: [
-//             { label: 'High', value: 'high' },
-//             { label: 'Medium', value: 'medium' },
-//             { label: 'Low', value: 'low' },
-//           ],
-//         },
-//         completed: {
-//           type: 'boolean',
-//           title: tExpr('Completed'),
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Checkbox',
-//         },
-//       },
-//       defaultParams: {
-//         priority: 'medium',
-//         completed: false,
-//       },
-//       async handler(ctx, params) {
-//         const resource = ctx.blockModel?.resource as MultiRecordResource;
-//         if (!resource) return;
-//         await resource.create(params);
-//         ctx.message.success(ctx.t('Created successfully'));
-//       },
-//     },
-//   },
-// });
+// 用 observable 管理状态，替代 useState
+const formState = observable({
+  loading: false,
+});
+
+// 弹窗内的表单组件，用 observer 包裹以响应 observable 变化
+const NewTodoForm = observer(function NewTodoForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (values: any) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [form] = Form.useForm();
+
+  const handleSubmit = async () => {
+    const values = await form.validateFields();
+    formState.loading = true;
+    try {
+      await onSubmit(values);
+    } finally {
+      formState.loading = false;
+    }
+  };
+
+  return (
+    <Form form={form} layout="vertical" initialValues={{ priority: 'medium', completed: false }}>
+      <Form.Item label="Title" name="title" rules={[{ required: true, message: 'Please enter title' }]}>
+        <Input placeholder="Enter todo title" />
+      </Form.Item>
+      <Form.Item label="Priority" name="priority">
+        <Select
+          options={[
+            { label: 'High', value: 'high' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'Low', value: 'low' },
+          ]}
+        />
+      </Form.Item>
+      <Form.Item label="Completed" name="completed" valuePropName="checked">
+        <Switch />
+      </Form.Item>
+      <Form.Item>
+        <Space>
+          <Button type="primary" onClick={handleSubmit} loading={formState.loading}>
+            OK
+          </Button>
+          <Button onClick={onCancel}>Cancel</Button>
+        </Space>
+      </Form.Item>
+    </Form>
+  );
+});
+
+export class NewTodoActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
+  defaultProps: ButtonProps = {
+    type: 'primary',
+    children: tExpr('New todo'),
+  };
+}
+
+NewTodoActionModel.define({
+  label: tExpr('New todo'),
+});
+
+NewTodoActionModel.registerFlow({
+  key: 'newTodoFlow',
+  title: tExpr('New todo'),
+  on: 'click',
+  steps: {
+    openForm: {
+      async handler(ctx) {
+        const resource = ctx.blockModel?.resource as MultiRecordResource;
+        if (!resource) return;
+
+        // 使用 ctx.viewer.dialog 打开弹窗
+        ctx.viewer.dialog({
+          content: (view) => (
+            <NewTodoForm
+              onSubmit={async (values) => {
+                await resource.create(values);
+                ctx.message.success(ctx.t('Created successfully'));
+                view.close();
+              }}
+              onCancel={() => view.close()}
+            />
+          ),
+        });
+      },
+    },
+  },
+});

@@ -140,10 +140,11 @@ ManyRecordBlockModel.define({
 ```tsx
 // 示例：限制只对 todoItems 数据表可用的表格区块
 import { TableBlockModel } from '@nocobase/client-v2';
+import type { Collection } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
 
 export class TodoBlockModel extends TableBlockModel {
-  static filterCollection(collection) {
+  static filterCollection(collection: Collection) {
     return collection.name === 'todoItems';
   }
 }

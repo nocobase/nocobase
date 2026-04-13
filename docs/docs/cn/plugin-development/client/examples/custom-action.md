@@ -127,7 +127,9 @@ SimpleRecordActionModel.registerFlow({
     showMessage: {
       async handler(ctx) {
         const index = ctx.model.context.recordIndex;
-        ctx.message.info(ctx.t('Record action clicked, row index: {{index}}', { index }));
+        const record = ctx.model.context.record;
+        const id = record?.id;
+        ctx.message.info(ctx.t('Record action clicked, record ID: {{id}}, row index: {{index}}', { id, index }));
       },
     },
   },
@@ -183,7 +185,7 @@ SimpleBothActionModel.registerFlow({
   "Simple record action": "简单记录操作",
   "Simple both action": "简单通用操作",
   "Collection action clicked": "数据表操作被点击了",
-  "Record action clicked, row index: {{index}}": "记录操作被点击了，行索引：{{index}}",
+  "Record action clicked, record ID: {{id}}, row index: {{index}}": "记录操作被点击了，记录 ID：{{id}}，行索引：{{index}}",
   "Both action clicked": "通用操作被点击了"
 }
 ```
@@ -195,7 +197,7 @@ SimpleBothActionModel.registerFlow({
   "Simple record action": "Simple record action",
   "Simple both action": "Simple both action",
   "Collection action clicked": "Collection action clicked",
-  "Record action clicked, row index: {{index}}": "Record action clicked, row index: {{index}}",
+  "Record action clicked, record ID: {{id}}, row index: {{index}}": "Record action clicked, record ID: {{id}}, row index: {{index}}",
   "Both action clicked": "Both action clicked"
 }
 ```

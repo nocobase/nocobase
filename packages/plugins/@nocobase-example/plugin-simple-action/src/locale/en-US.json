@@ -3,6 +3,6 @@
   "Simple record action": "Simple record action",
   "Simple both action": "Simple both action",
   "Collection action clicked": "Collection action clicked",
-  "Record action clicked, row index: {{index}}": "Record action clicked, row index: {{index}}",
+  "Record action clicked, record ID: {{id}}, row index: {{index}}": "Record action clicked, record ID: {{id}}, row index: {{index}}",
   "Both action clicked": "Both action clicked"
 }

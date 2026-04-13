@@ -64,7 +64,7 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
 
 export class DisplaySimpleFieldModel extends ClickableFieldModel {
-  public renderComponent(value) {
+  public renderComponent(value: string) {
     // this.context.record 可以拿到当前行的完整记录
     console.log('当前记录：', this.context.record);
     console.log('当前记录 index：', this.context.recordIndex);

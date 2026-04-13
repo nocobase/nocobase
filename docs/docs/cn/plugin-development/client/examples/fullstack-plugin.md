@@ -142,11 +142,12 @@ export default PluginDataBlockServer;
 ```tsx
 // src/client-v2/models/TodoBlockModel.tsx
 import { TableBlockModel } from '@nocobase/client-v2';
+import type { Collection } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
 
 export class TodoBlockModel extends TableBlockModel {
   // 限制只对 todoItems 数据表可用
-  static filterCollection(collection) {
+  static filterCollection(collection: Collection) {
     return collection.name === 'todoItems';
   }
 }
