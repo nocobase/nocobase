@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "@nocobase-example/plugin-settings-page",
+  "displayName": "Plugin example: Settings page",
+  "description": "This plugin demonstrates how to create a plugin settings page with form, API integration, and i18n.",
+  "version": "2.1.0-alpha.13",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}

@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig, type RspressPlugin } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
 import { pluginSchema } from './plugins/pluginSchema';
 import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
-// import { pluginPreview } from '@rspress/plugin-preview';
+import { pluginPreview } from '@rspress/plugin-preview';
+import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
+import {pluginCrossRefSidebar, crossRefCanonicalMap} from './plugins/pluginCrossRef';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -127,10 +130,12 @@ export default defineConfig({
   head: [
     ['meta', { name: 'robots', content: indexLanguages.includes(lang) ? 'index,follow' : 'noindex,nofollow' }],
     (route) => {
+      // 跨模块虚拟路由通过 frontmatter canonicalPath 指向原始页面
+      const canonicalRoute = crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://v2.docs.nocobase.com/${lang}${route.routePath}" />`
+        return `<link rel="canonical" href="https://v2.docs.nocobase.com/${lang}${canonicalRoute}" />`
       }
-      return `<link rel="canonical" href="https://v2.docs.nocobase.com${route.routePath}" />`
+      return `<link rel="canonical" href="https://v2.docs.nocobase.com${canonicalRoute}" />`
     },
     (route) => {
       const links = [];
@@ -160,14 +165,21 @@ export default defineConfig({
     cleanUrls: true,
   },
   builderConfig: {
-    plugins: [pluginSass()],
+    html: {
+      tags: [
+        {
+          tag: 'script',
+          // 通过 window.RSPRESS_THEME 变量来指定默认的主题模式
+          children: "window.RSPRESS_THEME = 'light';",
+        },
+      ],
+    },
+    source: {
+      tsconfigPath: path.join(__dirname, 'tsconfig.json'),
+    },
+    plugins: [pluginSass(), pluginNodePolyfill()],
     resolve: {
-      alias: {
-        '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
-        '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
-        '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
-        '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
-      },
+      aliasStrategy: 'prefer-tsconfig',
     },
   },
   markdown: {
@@ -176,28 +188,17 @@ export default defineConfig({
     },
   },
   plugins: [
-    // pluginPreview({
-    //   iframeOptions: {
-    //     builderConfig: {
-    //       resolve: {
-    //         alias: {
-    //           '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
-    //           '@nocobase/shared': path.join(__dirname, '../shared/src'),
-    //           '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-    //           '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
-    //         },
-    //       },
-    //     },
-    //   },
-    // }),
+    pluginPreview(),
     pluginLlms(),
     pluginSchema(),
     pluginOgDescription(),
     pluginRemoveGenerator(),
+    pluginCrossRefSidebar(),
     sitemap(),
   ],
   lang,
   themeConfig: {
+    darkMode: false,
     socialLinks: [
       {
         icon: 'github',

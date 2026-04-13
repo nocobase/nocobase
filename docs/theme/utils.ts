@@ -1,4 +1,4 @@
-import { useLang, useSite } from "@rspress/runtime";
+import { useLang, useSite } from '@rspress/core/runtime';
 
 export function transformHref(href: string, lang?: string) {
   if (!lang) {

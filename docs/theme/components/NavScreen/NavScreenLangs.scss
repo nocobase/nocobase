@@ -1,0 +1,50 @@
+.rp-nav-screen-langs {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  border-radius: var(--rp-radius-small);
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 12px;
+  font-size: 14px;
+
+  &__left {
+    display: flex;
+    align-items: center;
+  }
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  &__icon {
+    transform: rotate(-90deg);
+    transition: transform 0.3s ease;
+    &--open {
+      transform: rotate(0deg);
+    }
+  }
+}
+
+.rp-nav-screen-langs-group {
+  width: 100%;
+
+  &__inner {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  &__item {
+    padding: 0px 24px;
+  }
+
+  &__item--active {
+    color: var(--rp-c-text-2);
+    cursor: default;
+    pointer-events: none;
+  }
+}

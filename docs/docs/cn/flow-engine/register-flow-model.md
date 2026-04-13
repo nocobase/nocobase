@@ -21,13 +21,16 @@ class HelloModel extends FlowModel {
 }
 ```
 
+```tsx file="./_demos/register-flow-model.tsx" preview
+```
+
 ## 可用的 FlowModel 基类
 
-| 基类名称                    | 说明                       |
-| ----------------------- | ------------------------ |
-| `BlockModel`            | 所有区块的基类                  |
-| `CollectionBlockModel`  | 数据表区块，继承自 BlockModel     |
-| `ActionModel`           | 所有操作的基类                  |
+| 基类名称               | 说明                          |
+| ---------------------- | ----------------------------- |
+| `BlockModel`           | 所有区块的基类                |
+| `CollectionBlockModel` | 数据表区块，继承自 BlockModel |
+| `ActionModel`          | 所有操作的基类                |
 
 ## 注册 FlowModel
 
