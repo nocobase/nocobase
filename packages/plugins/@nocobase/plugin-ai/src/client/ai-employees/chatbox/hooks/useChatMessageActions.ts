@@ -339,6 +339,7 @@ export const useChatMessageActions = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
+            processError(data);
             if (data.from === 'main-agent') {
               if (sessionId !== data.sessionId) {
                 console.warn('invalid session id, ignore chunks', data);
@@ -353,7 +354,6 @@ export const useChatMessageActions = () => {
               processToolCall(data, mainAgentMessageStore);
               processToolCallStatus(data, mainAgentMessageStore);
               processWebSearch(data);
-              processError(data);
             } else if (data.from === 'sub-agent') {
               const subAgentMessageStore = {
                 addMessage: (msg: Message) => {
@@ -376,7 +376,6 @@ export const useChatMessageActions = () => {
               processToolCall(data, subAgentMessageStore);
               processToolCallStatus(data, subAgentMessageStore);
               processWebSearch(data);
-              processError(data);
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
