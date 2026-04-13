@@ -582,9 +582,9 @@ export class FlowModelRepository extends Repository {
       }
 
       const schemaNode: SchemaNode = {
-        ...optionsObj,
         uid: newUid,
         ['x-async']: !!n.async,
+        ...optionsObj,
       };
 
       if (newParentUid) {
