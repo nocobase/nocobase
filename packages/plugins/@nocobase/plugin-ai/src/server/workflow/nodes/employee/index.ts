@@ -21,6 +21,7 @@ import { AIEmployee } from '../../../ai-employees/ai-employee';
 import { Model, Transactionable } from '@nocobase/database';
 import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
+import { isValidFilter } from '@nocobase/utils';
 
 export class AIEmployeeInstruction extends Instruction {
   run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
@@ -31,7 +32,6 @@ export class AIEmployeeInstruction extends Instruction {
       webSearch,
       model,
       requiresApproval,
-      assignees,
       userId,
       files,
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
@@ -56,7 +56,6 @@ export class AIEmployeeInstruction extends Instruction {
         systemMessage,
         skillSettings,
         requiresApproval,
-        assignees,
         toolName,
         node,
         processor,
@@ -154,7 +153,6 @@ export class AIEmployeeInstruction extends Instruction {
     systemMessage,
     skillSettings,
     requiresApproval,
-    assignees,
     toolName,
     node,
     processor,
@@ -165,7 +163,6 @@ export class AIEmployeeInstruction extends Instruction {
     systemMessage: string;
     skillSettings: AIEmployeeInstructionConfig['skillSettings'];
     requiresApproval?: boolean;
-    assignees?: string[];
     toolName: string;
     node: FlowNodeModel;
     processor: Processor;
@@ -203,14 +200,17 @@ export class AIEmployeeInstruction extends Instruction {
         transaction,
       });
 
-      if (requiresApproval === true && assignees?.length) {
-        await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
-          values: assignees.map((userId) => ({
-            userId,
-            aiWorkflowTaskId: aiWorkflowTasks.id,
-          })),
-          transaction,
-        });
+      if (requiresApproval === true) {
+        const userIds = await parseAssignees(node, processor);
+        if (userIds?.length) {
+          await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
+            values: userIds.map((userId) => ({
+              userId,
+              aiWorkflowTaskId: aiWorkflowTasks.id,
+            })),
+            transaction,
+          });
+        }
       }
 
       return { conversation, aiWorkflowTasks };
@@ -283,6 +283,72 @@ export class AIEmployeeInstruction extends Instruction {
       },
     });
   }
+}
+
+async function parseAssignees(node, processor): Promise<number[]> {
+  const configAssignees = processor
+    .getParsedValue(node.config.assignees ?? [], node.id)
+    .flat()
+    .filter(Boolean);
+
+  const assignees: number[] = [];
+  const seen = new Set<number>();
+
+  const addAssignee = (id: number) => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      assignees.push(id);
+    }
+  };
+
+  const UserRepo = processor.options.plugin.app.db.getRepository('users');
+
+  // Batch-validate all plain user IDs upfront in a single DB query.
+  // This avoids blindly trusting user input and prevents records with non-existent userIds.
+  // Note: after flat(), an item may still be an array when the resolved variable is itself an array;
+  // those array items are also treated as plain IDs and included in the batch validation.
+  const plainIds = configAssignees.flatMap((item) =>
+    Array.isArray(item) ? item : typeof item !== 'object' ? [item] : [],
+  ) as number[];
+  const validIdSet = new Set<number>();
+  if (plainIds.length) {
+    const users = await UserRepo.find({
+      filter: { id: { $in: plainIds } },
+      fields: ['id'],
+      transaction: processor.mainTransaction,
+    });
+    users.forEach((u) => validIdSet.add(u.id));
+  }
+
+  for (const item of configAssignees) {
+    if (Array.isArray(item)) {
+      // Array of plain IDs (e.g. from a variable resolving to an array) — preserve their order.
+      for (const id of item) {
+        if (validIdSet.has(id)) {
+          addAssignee(id);
+        }
+      }
+    } else if (typeof item === 'object') {
+      if (!isValidFilter(item.filter)) {
+        continue;
+      }
+      // For filter objects: query as-is and use DB-returned order.
+      // Intra-group ordering will be supported via an explicit sort config option in the future.
+      const result = await UserRepo.find({
+        ...item,
+        fields: ['id'],
+        transaction: processor.mainTransaction,
+      });
+      result.forEach((user) => addAssignee(user.id));
+    } else {
+      // For plain IDs: only add if validated (exists in DB), preserving config order.
+      if (validIdSet.has(item)) {
+        addAssignee(item);
+      }
+    }
+  }
+
+  return assignees;
 }
 
 export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {

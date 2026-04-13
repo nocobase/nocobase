@@ -8,18 +8,18 @@
  */
 
 import React from 'react';
-import { SchemaComponent } from '@nocobase/client';
+import { css, SchemaComponent } from '@nocobase/client';
 import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import { StructuredOutput } from '../components/structured-output';
 import { namespace } from '../../locale';
 import { Switch } from 'antd';
-import { UsersSelect } from '../components/users-select';
+import { AssigneesSelect, AssigneesAddition } from '../components/assigness';
 
 export class AIEmployeeTaskFeedbackModel extends FlowModel {
   public render() {
     return (
       <SchemaComponent
-        components={{ StructuredOutput, UsersSelect, Switch }}
+        components={{ StructuredOutput, AssigneesSelect, AssigneesAddition, Switch }}
         schema={{
           type: 'void',
           properties: {
@@ -41,25 +41,61 @@ export class AIEmployeeTaskFeedbackModel extends FlowModel {
             },
             assignees: {
               type: 'array',
-              title: tExpr('Assignees', { ns: namespace }),
+              title: `{{t("Assignees", { ns: "${namespace}" })}}`,
               'x-decorator': 'FormItem',
-              'x-decorator-props': {
-                tooltip: tExpr('Users who can approve the final output result of the task', { ns: namespace }),
-              },
-              'x-component': UsersSelect,
+              'x-component': 'ArrayItems',
               'x-component-props': {
-                multiple: true,
+                className: css`
+                  &[disabled] {
+                    > .ant-formily-array-base-addition {
+                      display: none;
+                    }
+                    > .ant-formily-array-items-item .ant-space-item:not(:nth-child(2)) {
+                      display: none;
+                    }
+                  }
+                `,
               },
-              'x-reactions': {
-                dependencies: ['requiresApproval'],
-                fulfill: {
-                  state: {
-                    disabled: '{{$deps[0] !== true}}',
-                    required: '{{$deps[0] === true}}',
+              items: {
+                type: 'void',
+                'x-component': 'Space',
+                'x-component-props': {
+                  className: css`
+                    width: 100%;
+                    &.ant-space.ant-space-horizontal {
+                      flex-wrap: nowrap;
+                    }
+                    > .ant-space-item:nth-child(2) {
+                      flex-grow: 1;
+                    }
+                  `,
+                },
+                properties: {
+                  sort: {
+                    type: 'void',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'ArrayItems.SortHandle',
+                  },
+                  input: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'AssigneesSelect',
+                  },
+                  remove: {
+                    type: 'void',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'ArrayItems.Remove',
                   },
                 },
               },
-              default: [],
+              required: true,
+              properties: {
+                add: {
+                  type: 'void',
+                  title: `{{t("Add assignee", { ns: "${namespace}" })}}`,
+                  'x-component': 'AssigneesAddition',
+                },
+              },
             },
           },
         }}
