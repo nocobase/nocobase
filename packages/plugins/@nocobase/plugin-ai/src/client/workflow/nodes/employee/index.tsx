@@ -41,4 +41,30 @@ export class AIEmployeeInstruction extends Instruction {
   isAvailable({ engine, workflow }) {
     return !engine.isWorkflowSync(workflow);
   }
+
+  useVariables(node) {
+    const schema = node.config?.structuredOutput?.schema ?? {
+      type: 'object',
+      properties: {
+        result: {
+          type: 'object',
+          properties: {
+            response: {
+              type: 'string',
+              description: 'The text message sent to the user can be in any format',
+            },
+          },
+        },
+      },
+      additionalProperties: false,
+    };
+    return {
+      label: node.title,
+      value: node.key,
+      children: Object.entries(schema.properties ?? {}).map(([key, value]) => ({
+        label: (value as any).title ?? key,
+        value: key,
+      })),
+    };
+  }
 }
