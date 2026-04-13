@@ -47,19 +47,67 @@ function resolveProperty(obj, key) {
 }
 
 /**
+ * Sanitize a thrown value from the host realm so that its prototype chain cannot
+ * be used to escape the sandbox.  The message is extracted as a primitive string,
+ * then a fresh Error is created whose prototype chain is severed.
+ */
+function sanitizeError(e) {
+  let msg;
+  try {
+    msg = e != null && typeof e.message === 'string' ? e.message : String(e);
+  } catch (_) {
+    msg = 'unknown error';
+  }
+  const clean = new Error(msg);
+  Object.setPrototypeOf(clean, null);
+  Object.defineProperty(clean, 'constructor', {
+    value: null,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  });
+  return clean;
+}
+
+/**
  * Sanitize a value returned from a host-realm function call before it re-enters
  * the sandbox.  Handles both synchronous return values and Promises (thenables).
  *
- * A fresh WeakMap is used per top-level sanitization call so that independent
- * return values don't accidentally share cached identity across calls.
+ * For thenables, a clean null-prototype thenable is returned instead of the raw
+ * host Promise.  Returning the host Promise directly would expose
+ * p.constructor (→ host Promise) → p.constructor.constructor (→ host Function),
+ * allowing sandbox escape.  The clean thenable intercepts both onFulfilled and
+ * onRejected callbacks so that resolved values are sanitized and rejected errors
+ * have their prototype chains severed before reaching sandbox code.
  */
 function sanitizeReturnValue(result) {
   if (result === null || result === undefined) return result;
   if (typeof result !== 'object' && typeof result !== 'function') return result;
-  // Thenable (Promise): sanitize the resolved value when it arrives.
+
   if (typeof result.then === 'function') {
-    return result.then((v) => sanitizeForSandbox(v, null, new WeakMap()));
+    // Build a null-prototype thenable that wraps the host Promise without
+    // exposing its constructor chain.  `await cleanThenable` works because the
+    // spec resolves thenables by calling cleanThenable.then(resolve, reject).
+    const cleanThenable = Object.create(null);
+    const originalThen = result.then.bind(result);
+    Object.defineProperty(cleanThenable, 'then', {
+      value: hardenFunction(function (onFulfilled, onRejected) {
+        const next = originalThen(
+          typeof onFulfilled === 'function'
+            ? (v) => onFulfilled(sanitizeForSandbox(v, null, new WeakMap()))
+            : onFulfilled,
+          typeof onRejected === 'function' ? (e) => onRejected(sanitizeError(e)) : onRejected,
+        );
+        // Sanitize the chained Promise so that .then().then() chains are also clean.
+        return sanitizeReturnValue(next);
+      }),
+      writable: false,
+      enumerable: true,
+      configurable: false,
+    });
+    return cleanThenable;
   }
+
   return sanitizeForSandbox(result, null, new WeakMap());
 }
 
@@ -100,7 +148,16 @@ function sanitizeForSandbox(val, parent, cache) {
     // (e.g. axios.get internally calls this.request).
     const fn = parent != null ? val.bind(parent) : val;
     const wrapper = function (...args) {
-      return sanitizeReturnValue(fn(...args));
+      let ret;
+      try {
+        ret = fn(...args);
+      } catch (e) {
+        // Sanitize host-realm exceptions before they reach the sandbox.
+        // A raw host Error has e.constructor.constructor === host Function,
+        // which allows sandbox escape and RCE.
+        throw sanitizeError(e);
+      }
+      return sanitizeReturnValue(ret);
     };
     cache.set(val, wrapper);
     hardenFunction(wrapper);

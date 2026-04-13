@@ -145,8 +145,9 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
 
   beforeEach(() => {
     originalModules = process.env.WORKFLOW_SCRIPT_MODULES;
-    // Setting WORKFLOW_SCRIPT_MODULES triggers the node vm engine
-    process.env.WORKFLOW_SCRIPT_MODULES = 'path,crypto';
+    // Setting WORKFLOW_SCRIPT_MODULES triggers the node vm engine.
+    // fs is included so that Promise-returning module APIs can be tested.
+    process.env.WORKFLOW_SCRIPT_MODULES = 'path,crypto,fs';
     transport = new CacheTransport();
     logger = winston.createLogger({
       transports: [transport],
@@ -529,5 +530,76 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
 
     expect(result.status).toBe(JOB_STATUS.RESOLVED);
     expect(result.result.escaped).toBe(false);
+  });
+
+  it('should not allow escape via exception thrown by an allowed module function (P1.1: module throw)', async () => {
+    // Attack: call a whitelist-module function with bad args so it throws a
+    // host-realm Error, then traverse e.constructor.constructor → host Function.
+    // Example: path.join(null) throws TypeError in the host realm.
+    const script = `
+      try {
+        const path = require('path');
+        path.join(null);  // throws host TypeError
+      } catch (e) {
+        try {
+          const F = e.constructor.constructor;
+          if (!F) return { escaped: false, reason: 'constructor is null' };
+          const proc = F('return process')();
+          return { escaped: true, pid: proc?.pid };
+        } catch (e2) {
+          return { escaped: false, constructorIsNull: e.constructor === null, detail: String(e2) };
+        }
+      }
+      return { escaped: false, reason: 'no error thrown' };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.escaped).toBe(false);
+    expect(result.result.constructorIsNull).toBe(true);
+  });
+
+  it('should not allow escape via Promise returned by an allowed module (P1.2: host Promise constructor)', async () => {
+    // Attack: an async module API returns a host Promise; p.constructor is the
+    // host Promise constructor, and p.constructor.constructor is host Function.
+    // Example: require('fs').promises.readdir('.') returns a native Promise.
+    const script = `
+      try {
+        const fs = require('fs');
+        const p = fs.promises.readdir('.');
+        // Before awaiting, inspect the promise's constructor chain
+        const PromiseCtor = p.constructor;
+        if (!PromiseCtor) return { escaped: false, reason: 'constructor is null/falsy' };
+        const F = PromiseCtor.constructor;
+        if (!F) return { escaped: false, reason: 'Promise.constructor is null/falsy' };
+        const proc = F('return process')();
+        return { escaped: true, pid: proc?.pid };
+      } catch (e) {
+        return { escaped: false, error: String(e) };
+      }
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.escaped).toBe(false);
+  });
+
+  it('Promise-returning module functions should still work after sanitization (fs.promises.readdir)', async () => {
+    // Functional regression: async module APIs must still return usable thenables.
+    // Note: sanitizeForSandbox converts Arrays to null-prototype objects for security
+    // (a raw host Array exposes arr.__proto__.constructor → host Function → RCE), so
+    // Array.isArray() returns false — but indexed access and .length still work.
+    const script = `
+      const fs = require('fs');
+      const entries = await fs.promises.readdir('.');
+      return entries != null && entries.length > 0 && typeof entries[0] === 'string';
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result).toBe(true);
   });
 });
