@@ -20,11 +20,12 @@ import { Badge, Tooltip } from 'antd';
 import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
-import { Icon, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import { Icon } from '../../../icon';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import type { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
 import { uid } from '@nocobase/utils/client';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './route-types';
 import {
   appendQueryStringToUrl,
   navigateWithinSelf,
@@ -274,7 +275,8 @@ const translateByModel = (model: FlowModel, value: any) => {
 
 const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> = [
   { key: 'group', label: 'Group', menuType: 'group' },
-  { key: 'flow-page', label: 'Page', menuType: 'flowPage' },
+  { key: 'page', label: 'Classic page (v1)', menuType: 'page' },
+  { key: 'flow-page', label: 'Modern page (v2)', menuType: 'flowPage' },
   { key: 'link', label: 'Link', menuType: 'link' },
 ];
 

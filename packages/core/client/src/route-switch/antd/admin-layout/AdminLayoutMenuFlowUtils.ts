@@ -8,7 +8,6 @@
  */
 
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
-import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 import {
   AdminLayoutMenuCreationMeta,
   AdminLayoutMenuCreationParams,
@@ -17,6 +16,7 @@ import {
   getAdminLayoutMenuMovePositionOptions,
 } from './AdminLayoutMenuUtils';
 import { getFlowPageMenuSchema, getPageMenuSchema, isVariable } from './AdminLayoutCompat';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './route-types';
 
 const buildLinkSettingSchema = (t: (title: any) => any) => ({
   href: {
@@ -116,7 +116,8 @@ export const getMenuCreationDefaultParams = (
 
 const MENU_TYPE_OPTIONS: Array<{ label: string; value: AdminLayoutMenuCreationType }> = [
   { label: 'Group', value: 'group' },
-  { label: 'Page', value: 'flowPage' },
+  { label: 'Classic page (v1)', value: 'page' },
+  { label: 'Modern page (v2)', value: 'flowPage' },
   { label: 'Link', value: 'link' },
 ];
 

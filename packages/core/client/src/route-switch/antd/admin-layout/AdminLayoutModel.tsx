@@ -8,9 +8,15 @@
  */
 
 import React from 'react';
-import { AdminLayoutModel } from '@nocobase/client-v2';
+import { AdminLayoutModel, getAdminLayoutModel } from '@nocobase/client-v2';
 import { AdminShellProvider } from './AdminShellProvider';
 import { AdminLayoutComponent } from './AdminLayoutComponentV1';
+import { type NocoBaseDesktopRoute } from './route-types';
+import {
+  type AdminLayoutMenuRouteOptions,
+  getAdminLayoutMenuInitializerButton,
+  reconcileAdminLayoutMenuItems,
+} from './AdminLayoutMenuUtils';
 
 /**
  * 兼容旧 route-switch 入口的 Admin Layout 渲染包装类。
@@ -25,6 +31,33 @@ import { AdminLayoutComponent } from './AdminLayoutComponentV1';
  * ```
  */
 export class AdminLayoutModelV1 extends AdminLayoutModel {
+  syncMenuRoutes(routes: NocoBaseDesktopRoute[]) {
+    reconcileAdminLayoutMenuItems(this as any, Array.isArray(routes) ? routes : []);
+  }
+
+  toProLayoutRoute(options: Omit<AdminLayoutMenuRouteOptions, 'depth'>) {
+    const result =
+      ((this.subModels.menuItems || []) as any[])
+        .map((item) =>
+          item.toProLayoutRoute({
+            ...options,
+            depth: 0,
+          }),
+        )
+        .filter(Boolean) || [];
+
+    if (options.designable) {
+      options.isMobile
+        ? result.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header', this as any))
+        : result.unshift(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header', this as any));
+    }
+
+    return {
+      path: '/',
+      children: result,
+    };
+  }
+
   render() {
     return (
       <AdminShellProvider>
@@ -33,3 +66,5 @@ export class AdminLayoutModelV1 extends AdminLayoutModel {
     );
   }
 }
+
+export { getAdminLayoutModel };

@@ -616,12 +616,7 @@ describe('AdminLayoutModel menu items', () => {
       sortField: 'sort',
       method: 'insertBefore',
     });
-    expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: 'POST',
-        url: '/uiSchemas:insert',
-      }),
-    );
+    expect(request).not.toHaveBeenCalled();
   });
 
   it('should persist insert step using selected menu type', async () => {
@@ -819,8 +814,7 @@ describe('AdminLayoutModel menu items', () => {
     expect(schema?.menuType?.['x-component']).toBe('Radio.Group');
     expect(schema?.menuType?.enum).toEqual([
       { label: 'Group', value: 'group' },
-      { label: 'Classic page (v1)', value: 'page' },
-      { label: 'Modern page (v2)', value: 'flowPage' },
+      { label: 'Page', value: 'flowPage' },
       { label: 'Link', value: 'link' },
     ]);
     expect(schema?.href?.['x-reactions']).toMatchObject({
@@ -871,7 +865,7 @@ describe('AdminLayoutModel menu items', () => {
     await model.destroy();
 
     expect(deleteRoute).toHaveBeenCalledWith(1);
-    expect(removeSchema).toHaveBeenCalled();
+    expect(removeSchema).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith('/admin/next-page');
   });
 
@@ -922,7 +916,7 @@ describe('AdminLayoutModel menu items', () => {
     await model.destroy();
 
     expect(deleteRoute).toHaveBeenCalledWith(1);
-    expect(removeSchema).toHaveBeenCalled();
+    expect(removeSchema).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith('/admin/next-page');
   });
 

@@ -11,7 +11,6 @@ import React from 'react';
 import { FlowModel } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 import {
   AdminLayoutMenuCreationMeta,
   AdminLayoutMenuCreationParams,
@@ -29,8 +28,10 @@ import {
   shouldRenderIconInTitle,
 } from './AdminLayoutMenuUtils';
 import { findFirstPageRoute } from './AdminLayoutCompat';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './route-types';
 import {
   buildMenuBasicSchema,
+  buildInsertRouteSchema,
   buildLinkSettingSchema,
   createInsertMenuStep,
   findNextSiblingRoute,
@@ -38,11 +39,14 @@ import {
   getMenuCreationDefaultParams,
   getMenuCreationUiSchema,
   getMenuEditDefaultParams,
+  insertRouteSchema,
   matchesRoutePath,
   toTreeSelectItems,
 } from './AdminLayoutMenuFlowUtils';
 
 export * from './AdminLayoutMenuUtils';
+export { insertRouteSchema } from './AdminLayoutMenuFlowUtils';
+
 const insertPositionToMethod = {
   beforeBegin: 'insertBefore',
   afterEnd: 'insertAfter',
@@ -171,6 +175,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return currentFlowCount > 0 || initialFlowCount > 0;
   }
 
+  async insertRouteSchema(schema: Record<string, any>) {
+    await insertRouteSchema(this.context.api, schema);
+  }
+
   async createMenuRoute(
     route: NocoBaseDesktopRoute,
     options?: {
@@ -283,6 +291,8 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         },
       ],
     });
+
+    await this.insertRouteSchema(buildInsertRouteSchema(meta.menuType, pageSchemaUid, tabSchemaUid, tabSchemaName));
   }
 
   async persistMenuCreation(values: AdminLayoutMenuCreationParams) {
@@ -386,7 +396,12 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const prevSibling = findPrevSiblingRoute(allAccessRoutes, route);
     const nextSibling = findNextSiblingRoute(allAccessRoutes, route);
 
-    await this.getRouteRepository().deleteRoute(route.id);
+    await Promise.all([
+      this.getRouteRepository().deleteRoute(route.id),
+      route.schemaUid
+        ? this.context.api.resource('uiSchemas')[`remove/${route.schemaUid}`]?.()
+        : Promise.resolve(undefined),
+    ]);
 
     if (!shouldNavigate) {
       return true;
