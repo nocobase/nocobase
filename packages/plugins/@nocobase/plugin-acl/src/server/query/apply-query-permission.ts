@@ -146,13 +146,12 @@ function pruneSelections<T extends QuerySelection>(
   return pruneEmptyArray((items || []).filter((item) => isAllowedFieldPath(acl, db, roles, resourceName, item.field)));
 }
 
-function getAvailableHavingKeys(resourceName: string, query: QueryPermissionQuery) {
+function getAvailableSelectionKeys(resourceName: string, query: QueryPermissionQuery) {
   const keys = new Set<string>();
 
   for (const item of [...(query.measures || []), ...(query.dimensions || [])]) {
     if (item.alias) {
       keys.add(item.alias);
-      continue;
     }
 
     const fieldPathKey = stringifyFieldPath(item.field);
@@ -167,6 +166,26 @@ function getAvailableHavingKeys(resourceName: string, query: QueryPermissionQuer
   }
 
   return keys;
+}
+
+function pruneOrders(
+  items: QueryOrder[] | undefined,
+  acl: ACL,
+  db: Database,
+  roles: string[],
+  resourceName: string,
+  availableSelectionKeys: Set<string>,
+) {
+  return pruneEmptyArray(
+    (items || []).filter((item) => {
+      if (isAllowedFieldPath(acl, db, roles, resourceName, item.field)) {
+        return true;
+      }
+
+      const fieldKey = stringifyFieldPath(item.field);
+      return !!fieldKey && availableSelectionKeys.has(fieldKey);
+    }),
+  );
 }
 
 function pruneHavingNode(node: any, availableKeys: Set<string>): any {
@@ -233,11 +252,11 @@ export async function applyQueryPermission(options: ApplyQueryPermissionOptions)
     ...sourceQuery,
     measures: pruneSelections(sourceQuery.measures, acl, db, roles, resourceName),
     dimensions: pruneSelections(sourceQuery.dimensions, acl, db, roles, resourceName),
-    orders: pruneSelections(sourceQuery.orders, acl, db, roles, resourceName),
   };
 
-  const availableHavingKeys = getAvailableHavingKeys(resourceName, query);
-  query.having = pruneHavingNode(query.having, availableHavingKeys);
+  const availableSelectionKeys = getAvailableSelectionKeys(resourceName, query);
+  query.orders = pruneOrders(sourceQuery.orders, acl, db, roles, resourceName, availableSelectionKeys);
+  query.having = pruneHavingNode(query.having, availableSelectionKeys);
 
   const aclFilter = await getParsedPermissionFilter(
     {

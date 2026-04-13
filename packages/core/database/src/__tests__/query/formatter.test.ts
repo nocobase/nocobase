@@ -227,4 +227,34 @@ describe('query formatter', () => {
       { orderDate: '2024-05-14', orderCount: 1 },
     ]);
   });
+
+  it('should support ordering aggregate queries by measure alias', async () => {
+    const repo = db.getRepository('query_format_test');
+
+    const rows = [
+      { dateOnly: '2024-05-14' },
+      { dateOnly: '2024-05-14' },
+      { dateOnly: '2024-05-14' },
+      { dateOnly: '2024-05-13' },
+      { dateOnly: '2024-05-13' },
+      { dateOnly: '2024-05-12' },
+    ];
+
+    for (const values of rows) {
+      await repo.create({ values });
+    }
+
+    expect(
+      await repo.query({
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+        dimensions: [{ field: ['dateOnly'], alias: 'dateOnly' }],
+        orders: [{ field: 'count', order: 'desc' }],
+        timezone: '+00:00',
+      }),
+    ).toMatchObject([
+      { dateOnly: '2024-05-14', count: 3 },
+      { dateOnly: '2024-05-13', count: 2 },
+      { dateOnly: '2024-05-12', count: 1 },
+    ]);
+  });
 });

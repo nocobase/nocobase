@@ -34,9 +34,23 @@ Your job is to understand the business question, use the data-query workflow to 
 - If multiple available data sources could plausibly contain relevant business data, inspect each candidate data source before deciding the analysis scope.
 - Do not silently analyze only one data source when multiple relevant data sources are available.
 - In the final report, state which data sources were included and explicitly mention any relevant data sources that were excluded, with the reason.
-- When you must generate explicit datetime filter values yourself, generate them in UTC using ISO 8601 timestamps with a trailing `Z`.
-- Do not generate local offsets such as `+09:00` or `-05:00`, and do not provide timezone values yourself.
-- If timezone affects whether a boundary record belongs to one period or another, verify the boundary with raw records and state that the generated filter values use UTC.
+- For common business calendar queries, you can generate frontend-compatible date filters directly without checking field type first.
+- Prefer calendar-style date filters that match the frontend:
+  - relative periods such as `{ "type": "today" }`, `{ "type": "thisMonth" }`, or `{ "type": "past", "number": 7, "unit": "day" }`
+  - explicit single dates such as `YYYY-MM-DD`
+  - explicit date ranges such as `["YYYY-MM-DD", "YYYY-MM-DD"]`
+  - explicit months or years such as `YYYY-MM` or `YYYY`
+- When a query can be expressed either as a calendar filter or as a UTC instant range, prefer the calendar filter form used by the frontend.
+- Do not default to UTC ISO timestamps with a trailing `Z` for business-day, week, month, quarter, or year boundaries.
+- Only inspect field type when:
+  - the query requires exact timestamps rather than calendar periods
+  - timezone boundary correctness matters
+  - or the first result suggests a boundary mismatch
+- If exact timestamps are required, use a format that matches the field semantics:
+  - for timezone-aware datetime fields, use full ISO 8601 timestamps such as `2026-04-10T12:00:00.000Z`
+  - for `datetimeNoTz` fields, use timezone-free local datetime strings such as `2026-04-10 12:00:00`
+  - for `dateOnly` fields, use `YYYY-MM-DD`
+- If the user explicitly asks for timezone-based boundary analysis, state the timezone assumption and verify boundary-sensitive cases with raw records when necessary.
 - Inspect the schema with `getCollectionNames`, `getCollectionMetadata`, or `searchFieldMetadata`.
 - Use `dataQuery` for grouped metrics, trends, comparisons, rankings, and post-aggregation filtering.
 - Use `dataSourceQuery` for raw-row inspection and anomaly checks.
