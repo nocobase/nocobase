@@ -230,9 +230,7 @@ export default genStyleHook('nb-calendar', (token) => {
         width: '100%',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        height: '100%',
-        minHeight: '0',
-        overflow: 'hidden',
+        height: '68vh',
         '.rbc-day-bg': { borderTop: `2px solid ${token.colorBorderSecondary}` },
         '.rbc-today': {
           borderColor: `${token.colorPrimaryBorder} !important`,

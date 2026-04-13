@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
+import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
 import {
   AddSubModelButton,
   DndProvider,
@@ -33,7 +33,7 @@ import {
   getCalendarVisibleRange,
   normalizeCalendarFieldPath,
   parseCalendarWeekStart,
-} from '../calendar/utils';
+} from './utils';
 
 const DEFAULT_TITLE_INTERFACES = ['input', 'select', 'phone', 'email', 'radioGroup'];
 const DEFAULT_COLOR_INTERFACES = ['select', 'radioGroup'];
@@ -95,6 +95,22 @@ type CalendarCollectionField = {
   };
 };
 
+type CalendarActionSubModel = ActionModel & {
+  hidden?: boolean;
+  props?: {
+    position?: string;
+  };
+  uid: string;
+};
+
+const DRAG_HANDLER_TOOLBAR_ITEMS = [
+  {
+    key: 'drag-handler',
+    component: DragHandler as React.ComponentType<any>,
+    sort: 1,
+  },
+];
+
 export class CalendarBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
 
@@ -102,12 +118,12 @@ export class CalendarBlockModel extends CollectionBlockModel {
     CollectionActionGroupModel: 'CalendarCollectionActionGroupModel',
   };
 
-  static filterCollection(collection) {
+  static filterCollection(collection: any) {
     if (!super.filterCollection(collection)) {
       return false;
     }
 
-    return collection?.getFields?.()?.some?.((field) => {
+    return !!collection?.getFields?.()?.some?.((field: CalendarCollectionField) => {
       return (
         isSupportedByValues(field?.interface, DEFAULT_DATE_TIME_FIELD_TYPES) ||
         isSupportedByValues(field?.type, DEFAULT_DATE_TIME_FIELD_TYPES)
@@ -242,11 +258,11 @@ export class CalendarBlockModel extends CollectionBlockModel {
   }
 
   getQuickCreateAction() {
-    return this.subModels.quickCreateAction as any;
+    return this.subModels?.quickCreateAction as any;
   }
 
   getEventViewAction() {
-    return this.subModels.eventViewAction as any;
+    return this.subModels?.eventViewAction as any;
   }
 
   getPopupActionUid(actionKey: 'quickCreateAction' | 'eventViewAction') {
@@ -280,11 +296,11 @@ export class CalendarBlockModel extends CollectionBlockModel {
       actionKey === 'quickCreateAction'
         ? () => createCalendarQuickCreateActionOptions(this.getPopupActionUid(actionKey))
         : () => createCalendarEventViewActionOptions(this.getPopupActionUid(actionKey));
-    let action = this.subModels[actionKey] as any;
+    let action = this.subModels?.[actionKey] as any;
 
     if (!action) {
       this.setSubModel(actionKey, buildActionOptions());
-      action = this.subModels[actionKey] as any;
+      action = this.subModels?.[actionKey] as any;
     }
 
     if (this.context.flowSettingsEnabled && action?.save) {
@@ -366,7 +382,7 @@ const CalendarBlockRenderer = observer(
     const colorFunctions = useGetColor(colorCollectionField);
     const isConfigMode = !!model.context.flowSettingsEnabled;
 
-    const leftActions = model.mapSubModels('actions', (action) => {
+    const leftActions = ((model as any).mapSubModels('actions', (action: CalendarActionSubModel) => {
       if (action.hidden && !isConfigMode) {
         return null;
       }
@@ -377,22 +393,16 @@ const CalendarBlockRenderer = observer(
             <FlowModelRenderer
               model={action}
               showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-              extraToolbarItems={[
-                {
-                  key: 'drag-handler',
-                  component: DragHandler,
-                  sort: 1,
-                },
-              ]}
+              extraToolbarItems={DRAG_HANDLER_TOOLBAR_ITEMS}
             />
           </Droppable>
         );
       }
 
       return null;
-    });
+    }) || []) as React.ReactNode[];
 
-    const rightActions = model.mapSubModels('actions', (action) => {
+    const rightActions = ((model as any).mapSubModels('actions', (action: CalendarActionSubModel) => {
       if (action.hidden && !isConfigMode) {
         return null;
       }
@@ -403,20 +413,14 @@ const CalendarBlockRenderer = observer(
             <FlowModelRenderer
               model={action}
               showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-              extraToolbarItems={[
-                {
-                  key: 'drag-handler',
-                  component: DragHandler,
-                  sort: 1,
-                },
-              ]}
+              extraToolbarItems={DRAG_HANDLER_TOOLBAR_ITEMS}
             />
           </Droppable>
         );
       }
 
       return null;
-    });
+    }) || []) as React.ReactNode[];
 
     const hasActions = [...leftActions, ...rightActions].some(Boolean);
     const actionBar =

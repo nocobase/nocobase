@@ -23,7 +23,7 @@ import { getLabelFormatValue } from '@nocobase/client';
 import { i18nt, useTranslation } from '../../../locale';
 import GlobalStyle from '../../calendar/global.style';
 import { useCalenderHeight } from '../../calendar/hook';
-import useStyle from '../../calendar/style';
+import useBaseStyle from '../../calendar/style';
 import { theme } from 'antd';
 import {
   CALENDAR_RANGE_FILTER_GROUP,
@@ -31,9 +31,16 @@ import {
   formatDate,
   getCalendarVisibleRange,
   normalizeCalendarFieldPath,
-} from '../../calendar/utils';
+} from '../utils';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarViewProvider, type CalendarNavigationAction } from './CalendarViewContext';
+import useStyle from './style';
+
+type CalendarCulture = keyof typeof LOCALES;
+
+type LocalizerFormatContext = {
+  format: (value: Date, formatStr: string, culture?: string) => string;
+};
 
 interface Event {
   id: string;
@@ -114,7 +121,7 @@ const useCalendarEvents = (
         }
 
         let out = false;
-        const res = exclude?.some((value) => {
+        const res = exclude?.some((value: string) => {
           let dateValue = value;
           if (dateValue.endsWith('_after')) {
             dateValue = dateValue.replace(/_after$/, '');
@@ -251,33 +258,40 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     props.collection,
     props.weekStart,
   );
-  const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
+  const baseStyle = useBaseStyle();
+  const overrideStyle = useStyle();
   const apiClient = useAPIClient();
-  const locale = apiClient.auth.locale || 'en-US';
+  const locale = (
+    LOCALES[apiClient.auth.locale as CalendarCulture] ? (apiClient.auth.locale as CalendarCulture) : 'en-US'
+  ) as CalendarCulture;
 
   const formats = useMemo(() => {
     return {
-      monthHeaderFormat: (value, culture, local) =>
+      monthHeaderFormat: (value: Date, culture: string, local: LocalizerFormatContext) =>
         local.format(
           value,
           culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
           culture,
         ),
-      agendaDateFormat: (value, culture, local) => {
+      agendaDateFormat: (value: Date, culture: string, local: LocalizerFormatContext) => {
         return local.format(
           value,
           culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
           culture,
         );
       },
-      dayHeaderFormat: (value, culture, local) => {
+      dayHeaderFormat: (value: Date, culture: string, local: LocalizerFormatContext) => {
         return local.format(
           value,
           culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d',
           culture,
         );
       },
-      dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+      dayRangeHeaderFormat: (
+        { start, end }: { start: Date; end: Date },
+        culture: string,
+        local: LocalizerFormatContext,
+      ) => {
         if (start.getMonth() === end.getMonth()) {
           return local.format(
             start,
@@ -295,7 +309,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
           culture,
         )}`;
       },
-      weekdayFormat: (value, culture, local) => {
+      weekdayFormat: (value: Date, culture: string, local: LocalizerFormatContext) => {
         return local.format(value, 'EEE', culture);
       },
     };
@@ -305,7 +319,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     return dateFnsLocalizer({
       format,
       parse,
-      startOfWeek: (value) =>
+      startOfWeek: (value: Date) =>
         startOfWeek(value, {
           locale: LOCALES[locale],
           weekStartsOn: (props.weekStart ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6,
@@ -409,7 +423,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
   const components = useMemo(() => {
     return {
       week: {
-        header: (headerProps) => (
+        header: (headerProps: any) => (
           <CalendarHeader
             {...headerProps}
             type="week"
@@ -420,7 +434,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
         ),
       },
       month: {
-        dateHeader: (headerProps) => <CalendarHeader {...headerProps} showLunar={props.showLunar} />,
+        dateHeader: (headerProps: any) => <CalendarHeader {...headerProps} showLunar={props.showLunar} />,
       },
     };
   }, [locale, localizer, props.showLunar]);
@@ -439,7 +453,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     time: i18nt('Time'),
     event: i18nt('Event'),
     noEventsInRange: i18nt('None'),
-    showMore: (count) => i18nt('{{count}} more items', { count }),
+    showMore: (count: number) => i18nt('{{count}} more items', { count }),
   };
 
   const eventPropGetter = (event: Event) => {
@@ -466,62 +480,64 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     return null;
   }
 
-  return wrapSSR(
-    <CalendarViewProvider value={viewContextValue}>
-      <div
-        className={`${hashId} ${containerClassName}`}
-        style={{
-          height: height || 700,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          marginBottom: token.marginSM,
-        }}
-      >
-        <GlobalStyle />
-        {props.actionBar ? props.actionBar : null}
-        <div style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden' }}>
-          <BigCalendar
-            popup
-            selectable
-            toolbar={false}
-            events={events}
-            eventPropGetter={eventPropGetter}
-            view={view}
-            views={WEEKS}
-            date={date}
-            step={60}
-            showMultiDayTimes
-            messages={messages}
-            onNavigate={setDate}
-            onView={setView}
-            onSelectSlot={(slotInfo) => {
-              props.onSelectSlot?.(slotInfo);
-            }}
-            onSelectEvent={(event) => {
-              const record = props.dataSource?.find((item) => get(item, props.fieldNames.id || 'id') === event.id);
-              if (!record) {
-                return;
-              }
-              props.onSelectEvent?.({
-                event: {
-                  ...omit(event, 'resource'),
-                  start: formatDate(dayjs(event.start)),
-                  end: formatDate(dayjs(event.end)),
-                } as any,
-                record,
-              });
-            }}
-            formats={formats}
-            components={components}
-            culture={locale}
-            localizer={localizer}
-            tooltipAccessor={(value) => {
-              return value.rawTitle ? value.rawTitle : '';
-            }}
-          />
+  return baseStyle.wrapSSR(
+    overrideStyle.wrapSSR(
+      <CalendarViewProvider value={viewContextValue}>
+        <div
+          className={`${baseStyle.hashId} ${baseStyle.componentCls} ${overrideStyle.hashId} ${overrideStyle.componentCls}`}
+          style={{
+            height: height || 700,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            marginBottom: token.marginSM,
+          }}
+        >
+          <GlobalStyle />
+          {props.actionBar ? props.actionBar : null}
+          <div style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden' }}>
+            <BigCalendar
+              popup
+              selectable
+              toolbar={false}
+              events={events}
+              eventPropGetter={eventPropGetter}
+              view={view}
+              views={WEEKS}
+              date={date}
+              step={60}
+              showMultiDayTimes
+              messages={messages}
+              onNavigate={setDate}
+              onView={setView}
+              onSelectSlot={(slotInfo: any) => {
+                props.onSelectSlot?.(slotInfo);
+              }}
+              onSelectEvent={(event: Event & { resource?: unknown }) => {
+                const record = props.dataSource?.find((item) => get(item, props.fieldNames.id || 'id') === event.id);
+                if (!record) {
+                  return;
+                }
+                props.onSelectEvent?.({
+                  event: {
+                    ...omit(event, 'resource'),
+                    start: formatDate(dayjs(event.start)),
+                    end: formatDate(dayjs(event.end)),
+                  } as any,
+                  record,
+                });
+              }}
+              formats={formats}
+              components={components}
+              culture={locale}
+              localizer={localizer}
+              tooltipAccessor={(value: Event) => {
+                return value.rawTitle ? value.rawTitle : '';
+              }}
+            />
+          </div>
         </div>
-      </div>
-    </CalendarViewProvider>,
+      </CalendarViewProvider>,
+    ),
   );
 });
