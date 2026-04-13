@@ -63,7 +63,7 @@ function normalizeFieldValueRule(
   rule: FlowSurfaceFieldValueRule | undefined,
   index: number,
 ): FlowSurfaceFieldValueRule {
-  const current = _.isPlainObject(rule) ? rule : {};
+  const current: Partial<FlowSurfaceFieldValueRule> = _.isPlainObject(rule) ? rule : {};
   const key = String(current.key || `idx:${index}`).trim();
   return {
     ...(key ? { key } : {}),

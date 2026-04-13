@@ -7,12 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import _ from 'lodash';
 import { isBareFlowContextPath } from '../context';
 import { throwBadRequest } from '../errors';
 import {
+  FLOW_SURFACE_REACTION_INVALID_CONDITION_OPERATOR,
   FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+  FLOW_SURFACE_REACTION_INVALID_TARGET_FIELD,
+  FLOW_SURFACE_REACTION_INVALID_VALUE_PATH,
+  FLOW_SURFACE_REACTION_INVALID_VALUE_SOURCE,
   FLOW_SURFACE_REACTION_UNSUPPORTED_ACTION_FOR_SCENE,
   FLOW_SURFACE_REACTION_UNSUPPORTED_TARGET_KIND,
 } from './errors';
@@ -30,6 +34,7 @@ import type {
   FlowSurfaceFieldLinkageAssignItem,
   FlowSurfaceFieldLinkageRule,
   FlowSurfaceFieldLinkageScene,
+  FlowSurfaceFieldOption,
   FlowSurfaceFieldPathToUidResolver,
   FlowSurfaceFieldUidToPathResolver,
   FlowSurfaceReactionFilter,
@@ -62,6 +67,19 @@ const EMPTY_FILTER: FlowSurfaceReactionFilter = {
 
 const CONTEXT_EXPR_RE = /^\{\{\s*ctx(?:\.([^}]+?))?\s*\}\}$/;
 const CTX_PREFIX_RE = /^ctx\./;
+
+type FlowSurfaceLinkageValidationCapability = {
+  conditionMeta: {
+    operatorsByPath: Record<string, string[]>;
+  };
+};
+
+type FlowSurfaceFieldLinkageValidationCapability = FlowSurfaceLinkageValidationCapability & {
+  targetFields: FlowSurfaceFieldOption[];
+  valueExprMeta?: {
+    supportedSources: Array<'literal' | 'path' | 'runjs'>;
+  };
+};
 
 function buildStableFingerprintString(value: any): string {
   if (_.isNil(value)) {
@@ -250,6 +268,12 @@ function normalizeValueExpr(value: any): FlowSurfaceValueExpr {
       code: value.code,
       ...(value.version ? { version: value.version } : {}),
     };
+  }
+  if (_.isPlainObject(value) && 'source' in value) {
+    throwBadRequest(
+      `value.source "${String(value.source)}" is not supported. Expected one of "literal", "path", or "runjs".`,
+      FLOW_SURFACE_REACTION_INVALID_VALUE_SOURCE,
+    );
   }
   if (isRunJsExpr(value)) {
     return {
@@ -595,8 +619,10 @@ function compileFieldAction(
   prefix: string,
   options: CompileFieldRuleOptions,
 ) {
+  const actionNames = FLOW_SURFACE_LINKAGE_CANONICAL_ACTION_NAMES[options.scene];
+
   if (action.type === 'setFieldState') {
-    const actionName = FLOW_SURFACE_LINKAGE_CANONICAL_ACTION_NAMES[options.scene].setFieldState;
+    const actionName = actionNames.setFieldState;
     return {
       key: normalizeKey(action.key, prefix, index),
       name: actionName,
@@ -614,9 +640,15 @@ function compileFieldAction(
   }
 
   if (action.type === 'assignField') {
+    if (!('assignField' in actionNames)) {
+      throwBadRequest(
+        `Field linkage action "${action.type}" is not supported in scene "${options.scene}".`,
+        FLOW_SURFACE_REACTION_UNSUPPORTED_ACTION_FOR_SCENE,
+      );
+    }
     return {
       key: normalizeKey(action.key, prefix, index),
-      name: FLOW_SURFACE_LINKAGE_CANONICAL_ACTION_NAMES[options.scene].assignField,
+      name: actionNames.assignField,
       params: {
         value: compileFieldAssignItems(action.items, 'assign'),
       },
@@ -624,9 +656,15 @@ function compileFieldAction(
   }
 
   if (action.type === 'setFieldDefaultValue') {
+    if (!('setFieldDefaultValue' in actionNames)) {
+      throwBadRequest(
+        `Field linkage action "${action.type}" is not supported in scene "${options.scene}".`,
+        FLOW_SURFACE_REACTION_UNSUPPORTED_ACTION_FOR_SCENE,
+      );
+    }
     return {
       key: normalizeKey(action.key, prefix, index),
-      name: FLOW_SURFACE_LINKAGE_CANONICAL_ACTION_NAMES[options.scene].setFieldDefaultValue,
+      name: actionNames.setFieldDefaultValue,
       params: {
         value: compileFieldAssignItems(action.items, 'default'),
       },
@@ -651,6 +689,156 @@ function assertScene(kind: 'blockLinkage' | 'actionLinkage', scene: string) {
     throwBadRequest(
       `${kind} only supports scene "${expectedScene}". Received "${scene}".`,
       FLOW_SURFACE_REACTION_UNSUPPORTED_TARGET_KIND,
+    );
+  }
+}
+
+function buildAllowedContextPathSet(operatorsByPath: Record<string, string[]>) {
+  return new Set(Object.keys(operatorsByPath || {}).filter(Boolean));
+}
+
+function formatAllowedValues(values: string[]) {
+  return values.length ? values.join(', ') : '(none)';
+}
+
+function validateContextBoundValuePath(
+  rawPath: unknown,
+  allowedContextPaths: Set<string>,
+  fieldName: string,
+  code = FLOW_SURFACE_REACTION_INVALID_VALUE_PATH,
+) {
+  const path = extractBareContextPath(rawPath, `${fieldName}.path`);
+  if (!allowedContextPaths.has(path)) {
+    throwBadRequest(`${fieldName}.path "${path}" is not available in the current reaction context.`, code);
+  }
+}
+
+function validateContextBoundValue(value: any, allowedContextPaths: Set<string>, fieldName: string) {
+  if (_.isPlainObject(value) && value.source === 'path') {
+    validateContextBoundValuePath(value.path, allowedContextPaths, fieldName);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => validateContextBoundValue(item, allowedContextPaths, `${fieldName}[${index}]`));
+    return;
+  }
+  if (_.isPlainObject(value)) {
+    for (const [key, item] of Object.entries(value)) {
+      validateContextBoundValue(item, allowedContextPaths, `${fieldName}.${key}`);
+    }
+  }
+}
+
+function validateReactionFilterAgainstCapability(
+  filter: FlowSurfaceReactionFilter | undefined,
+  capability: FlowSurfaceLinkageValidationCapability,
+  prefix: string,
+) {
+  const operatorsByPath = capability.conditionMeta?.operatorsByPath || {};
+  const allowedContextPaths = buildAllowedContextPathSet(operatorsByPath);
+
+  const visit = (node: any, currentPrefix: string) => {
+    if (!_.isPlainObject(node)) {
+      return;
+    }
+    if (Array.isArray(node.items)) {
+      node.items.forEach((item: any, index: number) => visit(item, `${currentPrefix}.items[${index}]`));
+      return;
+    }
+
+    const hasOperator = 'operator' in node;
+    const hasValue = 'value' in node;
+    const hasPath = 'path' in node;
+
+    if (!hasOperator && !hasValue && !hasPath) {
+      return;
+    }
+
+    if (!hasPath) {
+      throwBadRequest(
+        `${currentPrefix}.path must be a non-empty string.`,
+        FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+      );
+    }
+
+    const path = extractBareContextPath(node.path, `${currentPrefix}.path`);
+    if (!allowedContextPaths.has(path)) {
+      throwBadRequest(
+        `${currentPrefix}.path "${path}" is not available in the current reaction context.`,
+        FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+      );
+    }
+
+    const operator = typeof node.operator === 'string' ? node.operator.trim() : '';
+    const allowedOperators = operatorsByPath[path] || [];
+    if (!operator) {
+      throwBadRequest(
+        `${currentPrefix}.operator is required for path "${path}".`,
+        FLOW_SURFACE_REACTION_INVALID_CONDITION_OPERATOR,
+      );
+    }
+    if (!allowedOperators.includes(operator)) {
+      throwBadRequest(
+        `${currentPrefix}.operator "${operator}" is not supported for path "${path}". Supported operators: ${formatAllowedValues(
+          allowedOperators,
+        )}.`,
+        FLOW_SURFACE_REACTION_INVALID_CONDITION_OPERATOR,
+      );
+    }
+
+    if (hasValue) {
+      validateContextBoundValue(node.value, allowedContextPaths, `${currentPrefix}.value`);
+    }
+  };
+
+  visit(filter, prefix);
+}
+
+function validateFieldAssignItemValue(
+  item: FlowSurfaceFieldLinkageAssignItem,
+  capability: FlowSurfaceFieldLinkageValidationCapability,
+  prefix: string,
+) {
+  const supportedSources = capability.valueExprMeta?.supportedSources || [];
+  if (!supportedSources.includes(item.value.source)) {
+    throwBadRequest(
+      `${prefix}.value.source "${item.value.source}" is not supported. Supported sources: ${formatAllowedValues(
+        supportedSources,
+      )}.`,
+      FLOW_SURFACE_REACTION_INVALID_VALUE_SOURCE,
+    );
+  }
+
+  if (item.value.source === 'path') {
+    validateContextBoundValuePath(
+      item.value.path,
+      buildAllowedContextPathSet(capability.conditionMeta.operatorsByPath),
+      `${prefix}.value`,
+    );
+  }
+}
+
+function validateFieldAssignItemTarget(
+  item: FlowSurfaceFieldLinkageAssignItem,
+  capability: FlowSurfaceFieldLinkageValidationCapability,
+  prefix: string,
+  mode: 'assign' | 'default',
+) {
+  const field = capability.targetFields.find((targetField) => targetField.path === item.targetPath);
+  if (!field) {
+    throwBadRequest(
+      `${prefix}.targetPath "${item.targetPath}" is not available in the current target fields.`,
+      FLOW_SURFACE_REACTION_INVALID_TARGET_FIELD,
+    );
+  }
+
+  const supported = mode === 'assign' ? field.supportsAssign : field.supportsDefault;
+  if (!supported) {
+    throwBadRequest(
+      `${prefix}.targetPath "${item.targetPath}" does not support ${
+        mode === 'assign' ? 'assignment' : 'default values'
+      } in the current scene.`,
+      FLOW_SURFACE_REACTION_INVALID_TARGET_FIELD,
     );
   }
 }
@@ -745,6 +933,15 @@ export function validateBlockLinkageSceneSupport(scene: string, rules?: FlowSurf
   }
 }
 
+export function validateBlockLinkageRulesAgainstCapability(
+  rules: FlowSurfaceBlockLinkageRule[],
+  capability: FlowSurfaceLinkageValidationCapability,
+) {
+  for (const [ruleIndex, rule] of (rules || []).entries()) {
+    validateReactionFilterAgainstCapability(rule.when, capability, `rules[${ruleIndex}].when`);
+  }
+}
+
 export function validateActionLinkageSceneSupport(scene: string, rules?: FlowSurfaceActionLinkageRule[]) {
   assertScene('actionLinkage', scene);
   for (const rule of rules || []) {
@@ -759,12 +956,21 @@ export function validateActionLinkageSceneSupport(scene: string, rules?: FlowSur
   }
 }
 
+export function validateActionLinkageRulesAgainstCapability(
+  rules: FlowSurfaceActionLinkageRule[],
+  capability: FlowSurfaceLinkageValidationCapability,
+) {
+  for (const [ruleIndex, rule] of (rules || []).entries()) {
+    validateReactionFilterAgainstCapability(rule.when, capability, `rules[${ruleIndex}].when`);
+  }
+}
+
 export function validateFieldLinkageSceneSupport(
   scene: FlowSurfaceFieldLinkageScene,
   rules?: FlowSurfaceFieldLinkageRule[],
 ) {
-  const supportedActionTypes = FLOW_SURFACE_FIELD_LINKAGE_ACTION_TYPES_BY_SCENE[scene];
-  const supportedStates = FLOW_SURFACE_FIELD_LINKAGE_STATES_BY_SCENE[scene];
+  const supportedActionTypes = FLOW_SURFACE_FIELD_LINKAGE_ACTION_TYPES_BY_SCENE[scene] as readonly string[];
+  const supportedStates = FLOW_SURFACE_FIELD_LINKAGE_STATES_BY_SCENE[scene] as readonly string[];
 
   for (const rule of rules || []) {
     for (const action of rule.then || []) {
@@ -779,6 +985,29 @@ export function validateFieldLinkageSceneSupport(
           `Field linkage state "${String(action.state)}" is not supported in scene "${scene}".`,
           FLOW_SURFACE_REACTION_UNSUPPORTED_ACTION_FOR_SCENE,
         );
+      }
+    }
+  }
+}
+
+export function validateFieldLinkageRulesAgainstCapability(
+  rules: FlowSurfaceFieldLinkageRule[],
+  capability: FlowSurfaceFieldLinkageValidationCapability,
+) {
+  for (const [ruleIndex, rule] of (rules || []).entries()) {
+    validateReactionFilterAgainstCapability(rule.when, capability, `rules[${ruleIndex}].when`);
+
+    for (const [actionIndex, action] of (rule.then || []).entries()) {
+      if (action.type !== 'assignField' && action.type !== 'setFieldDefaultValue') {
+        continue;
+      }
+
+      const mode = action.type === 'assignField' ? 'assign' : 'default';
+      for (const [itemIndex, item] of (action.items || []).entries()) {
+        const itemPrefix = `rules[${ruleIndex}].then[${actionIndex}].items[${itemIndex}]`;
+        validateFieldAssignItemTarget(item, capability, itemPrefix, mode);
+        validateFieldAssignItemValue(item, capability, itemPrefix);
+        validateReactionFilterAgainstCapability(item.when, capability, `${itemPrefix}.when`);
       }
     }
   }

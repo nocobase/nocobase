@@ -112,7 +112,7 @@ function selectPreferredDefaultRule(rules: FlowSurfaceFieldBindingRuleRecord[]) 
   return rules.find((rule) => typeof rule.when === 'function') || rules[0];
 }
 
-const FIELD_BINDING_RULES: FlowSurfaceFieldBindingRuleRecord[] = [
+const FIELD_BINDING_RULE_DEFINITIONS = [
   {
     scope: 'display',
     modelClassName: 'DisplayPreviewFieldModel',
@@ -335,7 +335,9 @@ const FIELD_BINDING_RULES: FlowSurfaceFieldBindingRuleRecord[] = [
     ownerPlugin: FORMULA_PLUGIN,
     when: ({ field }) => isNumericFormulaDataType(getFieldDataType(field)),
   },
-].map((rule, index) => ({
+] satisfies FlowSurfaceFieldBindingRule[];
+
+const FIELD_BINDING_RULES: FlowSurfaceFieldBindingRuleRecord[] = FIELD_BINDING_RULE_DEFINITIONS.map((rule, index) => ({
   ...rule,
   index,
 }));

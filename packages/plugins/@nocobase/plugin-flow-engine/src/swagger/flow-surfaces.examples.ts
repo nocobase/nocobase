@@ -133,7 +133,7 @@ export const flowSurfaceExamples = {
                 items: [
                   {
                     path: 'formValues.amount',
-                    operator: '$isNotEmpty',
+                    operator: '$notEmpty',
                   },
                 ],
               },
@@ -261,7 +261,7 @@ export const flowSurfaceExamples = {
           items: [
             {
               path: 'formValues.amount',
-              operator: '$isNotEmpty',
+              operator: '$notEmpty',
             },
           ],
         },

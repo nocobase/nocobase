@@ -157,13 +157,17 @@ import {
   normalizeActionLinkageRules,
   normalizeBlockLinkageRules,
   normalizeFieldLinkageRules,
+  validateActionLinkageRulesAgainstCapability,
+  validateBlockLinkageRulesAgainstCapability,
+  validateFieldLinkageRulesAgainstCapability,
 } from './reaction/linkage';
-import { buildGetReactionMetaResult } from './reaction/meta';
+import { buildGetReactionMetaResult, buildReactionMetaCapabilities } from './reaction/meta';
 import { resolveReactionCapability, resolveReactionStorageNode, resolveReactionTarget } from './reaction/resolver';
 import type {
   FlowSurfaceActionLinkageRule,
   FlowSurfaceBlockLinkageRule,
   FlowSurfaceFieldLinkageRule,
+  FlowSurfaceLinkageCapability,
   FlowSurfaceFieldLinkageScene,
   FlowSurfaceFieldValueRule,
   FlowSurfaceGetReactionMetaResult,
@@ -2399,6 +2403,35 @@ export class FlowSurfacesService {
     };
   }
 
+  private async getLiveLinkageCapability(
+    kind: Exclude<FlowSurfaceReactionKind, 'fieldValue'>,
+    writeTarget: FlowSurfaceWriteTarget,
+    resolvedTarget: FlowSurfaceResolvedReactionTarget,
+    node: any,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceLinkageCapability> {
+    const context = await this.context(
+      {
+        target: writeTarget,
+      },
+      options,
+    );
+    const { capabilities } = buildReactionMetaCapabilities({
+      resolvedTarget: {
+        ...resolvedTarget,
+        node,
+      },
+      context,
+    });
+    const capability = capabilities.find((item): item is FlowSurfaceLinkageCapability => item.kind === kind);
+    if (!capability) {
+      throwBadRequest(
+        `flowSurfaces reaction target '${resolvedTarget.use || resolvedTarget.target.uid}' does not support ${kind}`,
+      );
+    }
+    return capability;
+  }
+
   async getReactionMeta(
     values: FlowSurfaceGetReactionMetaValues,
     options: { transaction?: any } = {},
@@ -2481,6 +2514,14 @@ export class FlowSurfacesService {
     this.assertReactionFingerprint('setBlockLinkageRules', values?.expectedFingerprint, currentFingerprint);
 
     const normalizedRules = normalizeBlockLinkageRules(Array.isArray(values?.rules) ? values.rules : []);
+    const liveCapability = await this.getLiveLinkageCapability(
+      'blockLinkage',
+      writeTarget,
+      resolvedTarget,
+      node,
+      options,
+    );
+    validateBlockLinkageRulesAgainstCapability(normalizedRules, liveCapability);
     const canonicalRules = compileBlockLinkageCanonicalRules(normalizedRules);
     const result = this.buildLinkageWriteResult({
       kind: 'blockLinkage',
@@ -2522,6 +2563,21 @@ export class FlowSurfacesService {
     const normalizedRules = normalizeFieldLinkageRules(Array.isArray(values?.rules) ? values.rules : [], {
       scene,
     });
+    const liveCapability = await this.getLiveLinkageCapability(
+      'fieldLinkage',
+      writeTarget,
+      resolvedTarget,
+      node,
+      options,
+    );
+    if (liveCapability.kind !== 'fieldLinkage') {
+      throwBadRequest(
+        `flowSurfaces reaction target '${
+          resolvedTarget.use || resolvedTarget.target.uid
+        }' does not support fieldLinkage`,
+      );
+    }
+    validateFieldLinkageRulesAgainstCapability(normalizedRules, liveCapability);
     const canonicalRules = compileFieldLinkageCanonicalRules(normalizedRules, {
       scene,
       resolveFieldUid: (fieldPath) => this.requireReactionFieldUid(pathToUid, fieldPath, 'setFieldLinkageRules'),
@@ -2562,6 +2618,14 @@ export class FlowSurfacesService {
     this.assertReactionFingerprint('setActionLinkageRules', values?.expectedFingerprint, currentFingerprint);
 
     const normalizedRules = normalizeActionLinkageRules(Array.isArray(values?.rules) ? values.rules : []);
+    const liveCapability = await this.getLiveLinkageCapability(
+      'actionLinkage',
+      writeTarget,
+      resolvedTarget,
+      node,
+      options,
+    );
+    validateActionLinkageRulesAgainstCapability(normalizedRules, liveCapability);
     const canonicalRules = compileActionLinkageCanonicalRules(normalizedRules);
     const result = this.buildLinkageWriteResult({
       kind: 'actionLinkage',
