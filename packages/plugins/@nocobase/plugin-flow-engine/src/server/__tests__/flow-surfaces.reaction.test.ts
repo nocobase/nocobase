@@ -173,15 +173,6 @@ describe('flowSurfaces reaction', () => {
           rules: [
             {
               key: 'hideTable',
-              when: {
-                logic: '$and',
-                items: [
-                  {
-                    path: 'params.query.readonly',
-                    operator: '$isTruly',
-                  },
-                ],
-              },
               then: [
                 {
                   type: 'setBlockState',
@@ -210,15 +201,6 @@ describe('flowSurfaces reaction', () => {
           rules: [
             {
               key: 'disableRefresh',
-              when: {
-                logic: '$and',
-                items: [
-                  {
-                    path: 'params.query.readonly',
-                    operator: '$isTruly',
-                  },
-                ],
-              },
               then: [
                 {
                   type: 'setActionState',
