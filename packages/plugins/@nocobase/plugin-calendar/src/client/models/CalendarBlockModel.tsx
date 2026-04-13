@@ -253,6 +253,28 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return `${this.uid}-${actionKey}`;
   }
 
+  async syncPopupActionOpenMode(action: any) {
+    if (!action) {
+      return;
+    }
+
+    const nextMode = this.getEventOpenMode();
+    const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
+
+    if (currentParams.mode === nextMode) {
+      return;
+    }
+
+    action.setStepParams('popupSettings', 'openView', {
+      ...currentParams,
+      mode: nextMode,
+    });
+
+    if (this.context.flowSettingsEnabled && action?.saveStepParams) {
+      await action.saveStepParams();
+    }
+  }
+
   async ensurePopupAction(actionKey: 'quickCreateAction' | 'eventViewAction') {
     const buildActionOptions =
       actionKey === 'quickCreateAction'
@@ -268,6 +290,8 @@ export class CalendarBlockModel extends CollectionBlockModel {
     if (this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
+
+    await this.syncPopupActionOpenMode(action);
 
     return action;
   }
@@ -621,8 +645,14 @@ CalendarBlockModel.registerFlow({
           eventOpenMode: (ctx.model as CalendarBlockModel).getEventOpenMode(),
         };
       },
-      handler(ctx, params) {
-        (ctx.model as CalendarBlockModel).setProps({ eventOpenMode: normalizeEventOpenMode(params.eventOpenMode) });
+      async handler(ctx, params) {
+        const model = ctx.model as CalendarBlockModel;
+        model.setProps({ eventOpenMode: normalizeEventOpenMode(params.eventOpenMode) });
+
+        await Promise.all([
+          model.syncPopupActionOpenMode(model.getQuickCreateAction()),
+          model.syncPopupActionOpenMode(model.getEventViewAction()),
+        ]);
       },
     },
     showLunar: {
