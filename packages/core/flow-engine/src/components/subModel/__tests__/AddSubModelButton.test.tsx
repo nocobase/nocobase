@@ -1142,6 +1142,7 @@ describe('AddSubModelButton toggleable behavior', () => {
       },
       { timeout: 3000 },
     );
+    await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
 
     // dropdown should remain open and children should still be visible (no flicker / reload)
     expect(screen.getByText('Async Group')).toBeInTheDocument();
@@ -1158,6 +1159,7 @@ describe('AddSubModelButton toggleable behavior', () => {
 
     // ensure destroy has been called (avoid flakiness on exact call counts)
     await waitFor(() => {
+      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
       expect(repo.destroy).toHaveBeenCalled();
     });
   });
