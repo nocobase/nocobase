@@ -58,9 +58,13 @@ export default defineTools({
     }
 
     const plugin = getAIPlugin(ctx);
-    return await plugin.knowledgeBaseManager.retrievePrompt({
+    const content = await plugin.knowledgeBaseManager.retrievePrompt({
       username,
       query,
     });
+    return {
+      status: 'success',
+      content,
+    };
   },
 });
