@@ -8,16 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-// TODO: client-v2 暂未提供 ClickableFieldModel，待实现后取消注释
 
 export class PluginFieldSimpleClientV2 extends Plugin {
   async load() {
-    // TODO: client-v2 暂未提供 ClickableFieldModel，待实现后取消注释
-    // this.flowEngine.registerModelLoaders({
-    //   DisplaySimpleFieldModel: {
-    //     loader: () => import('./models/DisplaySimpleFieldModel'),
-    //   },
-    // });
+    this.flowEngine.registerModelLoaders({
+      DisplaySimpleFieldModel: {
+        loader: () => import('./models/DisplaySimpleFieldModel'),
+      },
+    });
   }
 }
 

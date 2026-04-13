@@ -7,20 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// TODO: client-v2 暂未提供 ActionModel，待实现后将下方注释取消
+import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
+import { ButtonProps } from 'antd';
+import { tExpr } from '../locale';
 
-// import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
-// import { ButtonProps } from 'antd';
-// import { tExpr } from '../locale';
-//
-// export class SimpleBothActionModel extends ActionModel {
-//   static scene = ActionSceneEnum.both;
-//
-//   defaultProps: ButtonProps = {
-//     children: tExpr('Simple both action'),
-//   };
-// }
-//
-// SimpleBothActionModel.define({
-//   label: tExpr('Simple both action'),
-// });
+export class SimpleBothActionModel extends ActionModel {
+  static scene = ActionSceneEnum.both;
+
+  defaultProps: ButtonProps = {
+    children: tExpr('Simple both action'),
+  };
+}
+
+SimpleBothActionModel.define({
+  label: tExpr('Simple both action'),
+});
+
+SimpleBothActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple both action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        ctx.message.info(ctx.t('Both action clicked'));
+      },
+    },
+  },
+});

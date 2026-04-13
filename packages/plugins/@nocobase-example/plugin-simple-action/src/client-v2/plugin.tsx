@@ -8,22 +8,20 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-// TODO: client-v2 暂未提供 ActionModel，待实现后取消注释
 
 export class PluginSimpleActionClientV2 extends Plugin {
   async load() {
-    // TODO: client-v2 暂未提供 ActionModel，待实现后取消注释
-    // this.flowEngine.registerModelLoaders({
-    //   SimpleCollectionActionModel: {
-    //     loader: () => import('./models/SimpleCollectionActionModel'),
-    //   },
-    //   SimpleRecordActionModel: {
-    //     loader: () => import('./models/SimpleRecordActionModel'),
-    //   },
-    //   SimpleBothActionModel: {
-    //     loader: () => import('./models/SimpleBothActionModel'),
-    //   },
-    // });
+    this.flowEngine.registerModelLoaders({
+      SimpleCollectionActionModel: {
+        loader: () => import('./models/SimpleCollectionActionModel'),
+      },
+      SimpleRecordActionModel: {
+        loader: () => import('./models/SimpleRecordActionModel'),
+      },
+      SimpleBothActionModel: {
+        loader: () => import('./models/SimpleBothActionModel'),
+      },
+    });
   }
 }
 

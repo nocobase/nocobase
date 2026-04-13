@@ -7,20 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// TODO: client-v2 暂未提供 ActionModel，待实现后将下方注释取消
+import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
+import { ButtonProps } from 'antd';
+import { tExpr } from '../locale';
 
-// import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
-// import { ButtonProps } from 'antd';
-// import { tExpr } from '../locale';
-//
-// export class SimpleCollectionActionModel extends ActionModel {
-//   static scene = ActionSceneEnum.collection;
-//
-//   defaultProps: ButtonProps = {
-//     children: tExpr('Simple collection action'),
-//   };
-// }
-//
-// SimpleCollectionActionModel.define({
-//   label: tExpr('Simple collection action'),
-// });
+export class SimpleCollectionActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
+  defaultProps: ButtonProps = {
+    children: tExpr('Simple collection action'),
+  };
+}
+
+SimpleCollectionActionModel.define({
+  label: tExpr('Simple collection action'),
+});
+
+SimpleCollectionActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple collection action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        ctx.message.success(ctx.t('Collection action clicked'));
+      },
+    },
+  },
+});
