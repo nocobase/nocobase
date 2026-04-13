@@ -1,6 +1,5 @@
-import { Application, Plugin } from '@nocobase/client-v2';
+import { Application, Plugin, BlockModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Space, Switch, Typography } from 'antd';
 import { useState } from 'react';
 

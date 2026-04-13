@@ -8,16 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-// TODO: client-v2 暂未提供 BlockModel，待实现后取消注释
 
 export class PluginSimpleBlockClientV2 extends Plugin {
   async load() {
-    // TODO: client-v2 暂未提供 BlockModel，待实现后取消注释
-    // this.flowEngine.registerModelLoaders({
-    //   SimpleBlockModel: {
-    //     loader: () => import('./models/SimpleBlockModel'),
-    //   },
-    // });
+    this.flowEngine.registerModelLoaders({
+      SimpleBlockModel: {
+        loader: () => import('./models/SimpleBlockModel'),
+      },
+    });
   }
 }
 

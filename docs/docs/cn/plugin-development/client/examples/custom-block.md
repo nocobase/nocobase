@@ -186,7 +186,7 @@ yarn pm enable @my-project/plugin-simple-block
 | 区块渲染 | `BlockModel` + `renderComponent()` | [FlowEngine → 区块扩展](../flow-engine/block) |
 | 菜单注册 | `define({ label })`                | [FlowEngine 概述](../flow-engine/index.md)    |
 | 配置面板 | `registerFlow()` + `uiSchema`      | [FlowEngine 概述](../flow-engine/index.md)    |
-| 模型注册 | `this.flowEngine.registerModels()` | [Plugin 插件](../plugin)                      |
+| 模型注册 | `registerModelLoaders`（按需加载） | [Plugin 插件](../plugin)                      |
 | 延迟翻译 | `tExpr()`                          | [i18n 国际化](../component/i18n)              |
 
 ## 相关链接

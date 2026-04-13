@@ -7,44 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// TODO: client-v2 暂未提供 BlockModel，待实现后将下方注释取消
+import React from 'react';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
-// import React from 'react';
-// import { BlockModel } from '@nocobase/client-v2';
-// import { tExpr } from '../locale';
-//
-// export class SimpleBlockModel extends BlockModel {
-//   renderComponent() {
-//     return <div dangerouslySetInnerHTML={{ __html: this.props.html }} />;
-//   }
-// }
-//
-// SimpleBlockModel.define({
-//   label: tExpr('Simple block'),
-// });
-//
-// SimpleBlockModel.registerFlow({
-//   key: 'flow1',
-//   title: tExpr('Simple Block Flow'),
-//   on: 'beforeRender',
-//   steps: {
-//     editHtml: {
-//       title: tExpr('Edit HTML Content'),
-//       uiSchema: {
-//         html: {
-//           type: 'string',
-//           title: tExpr('HTML Content'),
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Input.TextArea',
-//         },
-//       },
-//       defaultParams: {
-//         html: `<h3>This is a simple block</h3>
-// <p>You can edit the HTML content.</p>`,
-//       },
-//       handler(ctx, params) {
-//         ctx.model.props.html = params.html;
-//       },
-//     },
-//   },
-// });
+export class SimpleBlockModel extends BlockModel {
+  renderComponent() {
+    return <div dangerouslySetInnerHTML={{ __html: this.props.html }} />;
+  }
+}
+
+SimpleBlockModel.define({
+  label: tExpr('Simple block'),
+});
+
+SimpleBlockModel.registerFlow({
+  key: 'flow1',
+  title: tExpr('Simple Block Flow'),
+  on: 'beforeRender',
+  steps: {
+    editHtml: {
+      title: tExpr('Edit HTML Content'),
+      uiSchema: {
+        html: {
+          type: 'string',
+          title: tExpr('HTML Content'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+      },
+      defaultParams: {
+        html: `<h3>This is a simple block</h3>
+<p>You can edit the HTML content.</p>`,
+      },
+      handler(ctx, params) {
+        ctx.model.props.html = params.html;
+      },
+    },
+  },
+});
