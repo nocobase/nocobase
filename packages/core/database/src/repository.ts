@@ -300,7 +300,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey();
     } else {
       delete queryOptions.include;
-      delete queryOptions.distinct;
     }
 
     // @ts-ignore
