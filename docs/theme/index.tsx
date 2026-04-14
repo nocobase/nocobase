@@ -277,13 +277,13 @@ export function HomeFeature() {
         {featureGroups.map((feature, index) => {
           let items = feature.items ?? [];
 
-          if (index === 1) {
+          if (index === 2) {
             const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'guide');
             if (page) {
               const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
               items = [...allItems.filter((item) => item.showOnHome), ...items];
             }
-          } else if (index === 2) {
+          } else if (index === 3) {
             const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'development');
             if (page) {
               // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个

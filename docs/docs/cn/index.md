@@ -17,7 +17,20 @@ hero:
       link: https://github.com/nocobase/nocobase
 
 features:
-  - title: 开始
+  - title: AI
+    details: 让 AI 融入 NocoBase 的搭建、使用和开发全流程。
+    items:
+      - title: AI 搭建
+        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+        link: /ai-builder
+      - title: AI 员工
+        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
+        link: /ai-employees
+      - title: AI 开发
+        details: 借助 AI 快速生成插件脚手架、模型和组件代码。
+        link: /ai-dev
+
+  - title: 上手
     details: 了解 NocoBase 如何使用，并完成安装部署。
     items:
       - title: NocoBase 使用入门

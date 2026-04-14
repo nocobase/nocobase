@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "AI 开发",
+        "link": "/plugin-development/ai-development"
+      },
+      {
+        "type": "custom-link",
         "label": "项目目录结构",
         "link": "/plugin-development/project-structure"
       }
