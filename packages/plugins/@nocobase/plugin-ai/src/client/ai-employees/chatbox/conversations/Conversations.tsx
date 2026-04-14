@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Badge, Input, Segmented } from 'antd';
 import { css } from '@emotion/css';
 import { useRequest } from '@nocobase/client';
@@ -21,8 +21,6 @@ import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessagesStore } from '../stores/chat-messages';
 import { ConversationsList, useConversationsList } from './ConversationsList';
 import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
-
-type CurrentList = 'conversations' | 'workflowTasks';
 
 const segmentedClassName = css`
   .ant-segmented-group {
@@ -51,6 +49,8 @@ export const Conversations: React.FC = memo(() => {
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
+  const conversationSegmented = useChatConversationsStore.use.conversationSegmented();
+  const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
@@ -59,7 +59,6 @@ export const Conversations: React.FC = memo(() => {
   const { messagesService } = useChatMessageActions();
 
   const { clear } = useChatBoxActions();
-  const [currentList, setCurrentList] = useState<CurrentList>('conversations');
 
   const openConversation = useCallback(
     (sessionId: string, username?: string) => {
@@ -99,7 +98,7 @@ export const Conversations: React.FC = memo(() => {
   });
 
   const workflowTasksController = useWorkflowTasksList({
-    onOpenConversation: (sessionId, username) => openConversation(sessionId, username),
+    onOpenConversation: openConversation,
   });
 
   return (
@@ -123,14 +122,14 @@ export const Conversations: React.FC = memo(() => {
           }}
           placeholder={t('Search')}
           onSearch={(val) => {
-            if (currentList === 'conversations') {
+            if (conversationSegmented === 'conversations') {
               conversationsController.runSearch(val);
             } else {
               workflowTasksController.runSearch(val);
             }
           }}
           onClear={() => {
-            if (currentList === 'conversations') {
+            if (conversationSegmented === 'conversations') {
               conversationsController.runSearch('');
             } else {
               workflowTasksController.runSearch('');
@@ -145,31 +144,20 @@ export const Conversations: React.FC = memo(() => {
             { label: t('Conversations'), value: 'conversations' },
             {
               label: (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}
-                >
+                <Badge count={workflowTasksController.unreadCount} size="small" offset={[10, 5]}>
                   <span>{t('Workflow tasks')}</span>
-                  {workflowTasksController.unreadCount > 0 ? (
-                    <Badge count={workflowTasksController.unreadCount} size="small" style={{ boxShadow: 'none' }} />
-                  ) : null}
-                </span>
+                </Badge>
               ),
               value: 'workflowTasks',
             },
           ]}
-          value={currentList}
+          value={conversationSegmented}
           onChange={(value) => {
-            const nextList = value as CurrentList;
-            setCurrentList(nextList);
-            if (nextList === 'workflowTasks') {
-              workflowTasksController.refresh();
-            } else {
+            setConversationSegmented(value);
+            if (value === 'conversations') {
               conversationsController.refresh();
+            } else {
+              workflowTasksController.refresh();
             }
           }}
         />
@@ -182,7 +170,7 @@ export const Conversations: React.FC = memo(() => {
           overflowX: 'hidden',
         }}
       >
-        {currentList === 'conversations' ? (
+        {conversationSegmented === 'conversations' ? (
           <ConversationsList controller={conversationsController} />
         ) : (
           <WorkflowTasksList controller={workflowTasksController} />
