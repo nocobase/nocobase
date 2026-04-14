@@ -101,3 +101,5 @@ NocoBase supports three installation methods:
 ## How NocoBase works
 
 https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf
+
+chore: publish
