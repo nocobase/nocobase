@@ -32,4 +32,28 @@ describe('skillToolBindingMiddleware', () => {
     expect(handler).toHaveBeenCalledOnce();
     expect(result.tools.map((tool) => tool.name)).toEqual(['getSkill', 'dataQuery', 'getCollectionNames']);
   });
+
+  it('should preserve provider built-in tools without names', async () => {
+    const middleware = skillToolBindingMiddleware(
+      {
+        getActivatedSkillToolNames: vi.fn().mockResolvedValue(new Set(['getSkill'])),
+      } as any,
+      {
+        baseToolNames: ['getSkill'],
+      },
+    );
+
+    const handler = vi.fn(async (request) => request);
+    const webSearchTool = { type: 'web_search_preview' };
+    const googleSearchTool = { googleSearch: {} };
+    const result = await middleware.wrapModelCall(
+      {
+        tools: [{ name: 'getSkill' }, webSearchTool, googleSearchTool, { name: 'hiddenTool' }],
+      } as any,
+      handler,
+    );
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(result.tools).toEqual([{ name: 'getSkill' }, webSearchTool, googleSearchTool]);
+  });
 });

@@ -40,6 +40,9 @@ export const skillToolBindingMiddleware = (
     const allowedToolNames = await getAllowedToolNames();
     return tools.filter((tool) => {
       const name = getToolName(tool);
+      if (name == null) {
+        return true;
+      }
       return name && allowedToolNames.has(name);
     });
   };
