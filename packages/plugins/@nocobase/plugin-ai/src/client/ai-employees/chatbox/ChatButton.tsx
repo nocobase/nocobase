@@ -91,7 +91,7 @@ export const ChatButton: React.FC = observer(() => {
             : ''}
         `}
       >
-        <Badge dot={unreadCount > 0}>
+        <Badge count={unreadCount} offset={[-5, 5]}>
           <Avatar src={icon} size={42} shape="square" />
         </Badge>
       </div>
