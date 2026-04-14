@@ -10,6 +10,7 @@
 import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from '../../../common/common';
 import { Context } from '@nocobase/actions';
+import { getStructuredQueryArgError } from '../../../common/utils';
 // @ts-ignore
 import pkg from '../../../../../package.json';
 
@@ -23,10 +24,18 @@ export default defineTools({
   definition: {
     name: 'dataSourceCounting',
     description:
-      'Use dataSource, collectionName, and collection fields to query data from the database, get total count of records',
+      'Use dataSource, collectionName, and collection fields to query data from the database, get total count of records. The filter argument must be a structured object, not a JSON string.',
     schema: ArgSchema,
   },
   invoke: async (ctx: Context, args: ArgType) => {
+    const filterError = getStructuredQueryArgError('filter', args.filter);
+    if (filterError) {
+      return {
+        status: 'error',
+        content: filterError,
+      };
+    }
+
     const plugin = ctx.app.pm.get('ai');
     const content = await plugin.aiContextDatasourceManager.query(ctx, { ...args, offset: 0, limit: 1 } as any);
     return {

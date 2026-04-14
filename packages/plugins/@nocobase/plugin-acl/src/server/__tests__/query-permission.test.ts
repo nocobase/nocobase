@@ -237,6 +237,40 @@ describe('query permission', () => {
     });
   });
 
+  it('should keep aggregate alias orders when the measure is allowed', async () => {
+    const role = app.acl.define({ role: 'aggregate-order-viewer' });
+    role.grantAction('orders:view', {
+      fields: ['id', 'user'],
+    });
+    role.grantAction('users:view', {
+      fields: ['nickname'],
+    });
+
+    const result = await applyQueryPermission({
+      acl: app.acl,
+      db,
+      resourceName: 'orders',
+      currentRole: 'aggregate-order-viewer',
+      currentRoles: ['aggregate-order-viewer'],
+      query: {
+        collection: 'orders',
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+        dimensions: [{ field: ['user', 'nickname'], alias: 'nickname' }],
+        orders: [
+          { field: 'count', order: 'desc' },
+          { field: 'nickname', order: 'asc' },
+        ],
+      },
+    });
+
+    expect(result.query.measures).toEqual([{ field: ['id'], aggregation: 'count', alias: 'count' }]);
+    expect(result.query.dimensions).toEqual([{ field: ['user', 'nickname'], alias: 'nickname' }]);
+    expect(result.query.orders).toEqual([
+      { field: 'count', order: 'desc' },
+      { field: 'nickname', order: 'asc' },
+    ]);
+  });
+
   it('should prune association selections when target resource permission is missing', async () => {
     const role = app.acl.define({ role: 'root-only-viewer' });
     role.grantAction('orders:view', {

@@ -10,9 +10,8 @@
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
-import '../../base/ActionModel';
 import { ActionModel } from '../../base/ActionModelCore';
-import { getValidationNamePathsExcludingHiddenModels } from './submitValues';
+import { shouldSkipSubmitValidation, validateSubmitForm } from './submitValues';
 
 export class FormActionModel extends ActionModel {}
 
@@ -53,16 +52,12 @@ FormSubmitActionModel.registerFlow({
       async handler(ctx, params) {
         if (params.enable) {
           try {
-            const validateNamePaths = ctx?.flowSettingsEnabled
-              ? getValidationNamePathsExcludingHiddenModels(ctx.blockModel)
-              : null;
-            if (Array.isArray(validateNamePaths)) {
-              if (validateNamePaths.length) {
-                await ctx.form.validateFields(validateNamePaths as any);
-              }
-            } else {
-              await ctx.form.validateFields();
-            }
+            await validateSubmitForm({
+              form: ctx.form,
+              blockModel: ctx.blockModel,
+              flowSettingsEnabled: ctx?.flowSettingsEnabled,
+              skipValidator: shouldSkipSubmitValidation(ctx?.model),
+            });
             const confirmed = await ctx.modal.confirm({
               title: ctx.t(params.title, { ns: 'lm-flow-engine' }),
               content: ctx.t(params.content, { ns: 'lm-flow-engine' }),
@@ -78,6 +73,14 @@ FormSubmitActionModel.registerFlow({
           }
         }
       },
+    },
+    skipRequiredValidation: {
+      title: tExpr('Skip required validation'),
+      uiMode: { type: 'switch', key: 'skipValidator' },
+      defaultParams: {
+        skipValidator: false,
+      },
+      handler() {},
     },
     saveResource: {
       async handler(ctx, params) {

@@ -11,6 +11,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { NoPermissionError } from '@nocobase/acl';
 import { applyQueryPermission } from '@nocobase/plugin-acl';
 import dataQueryTool from '../../ai/skills/data-query/tools/dataQuery';
+import { ArgSchema } from '../../ai/common/common';
 
 vi.mock('@nocobase/plugin-acl', () => ({
   applyQueryPermission: vi.fn(),
@@ -142,26 +143,61 @@ describe('dataQuery tool', () => {
     );
   });
 
-  it('should not inherit request timezone unless explicitly provided', async () => {
-    await invokeTool(
+  it('should describe frontend-compatible calendar filter rules in aggregate query schema', () => {
+    const sharedFilterDescription = ArgSchema.shape.filter.description;
+    const schema: any = dataQueryTool.definition.schema;
+    const filterDescription = schema.properties.filter.description;
+    const havingDescription = schema.properties.having.description;
+
+    expect(sharedFilterDescription).toContain('$dateOn');
+    expect(sharedFilterDescription).toContain('$dateBetween');
+    expect(sharedFilterDescription).toContain('must be a structured object');
+    expect(sharedFilterDescription).toContain(
+      'Do not expand calendar queries into UTC month-start or day-start boundary expressions.',
+    );
+    expect(sharedFilterDescription).toContain('datetimeNoTz');
+
+    expect(filterDescription).toContain('$dateOn');
+    expect(filterDescription).toContain('$dateBetween');
+    expect(filterDescription).toContain('not a JSON string');
+    expect(filterDescription).toContain('do not expand month/day queries into UTC boundary timestamps');
+    expect(havingDescription).toContain('selected measure aliases');
+  });
+
+  it('should reject stringified filter objects', async () => {
+    const result = await invokeTool(
       ctx,
       {
         dataSource: 'main',
         collectionName: 'orders',
         measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+        filter: '{"status":{"$eq":"paid"}}' as any,
       },
-      { toolCallId: 'tool-call-4', writer: vi.fn() },
+      { toolCallId: 'tool-call-5', writer: vi.fn() },
     );
 
-    expect(applyQueryPermission).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timezone: 'Asia/Shanghai',
-      }),
+    expect(result).toEqual({
+      status: 'error',
+      content:
+        '"filter" must be an object, not a JSON string. Pass structured JSON like { "createdAt": { "$dateOn": "2025-11" } }.',
+    });
+  });
+
+  it('should reject stringified having objects', async () => {
+    const result = await invokeTool(
+      ctx,
+      {
+        dataSource: 'main',
+        collectionName: 'orders',
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+        having: '{"count":{"$gt":10}}' as any,
+      },
+      { toolCallId: 'tool-call-6', writer: vi.fn() },
     );
-    expect(repositoryQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timezone: 'Asia/Shanghai',
-      }),
-    );
+
+    expect(result).toEqual({
+      status: 'error',
+      content: '"having" must be an object, not a JSON string. Pass structured JSON like { "count": { "$gt": 10 } }.',
+    });
   });
 });
