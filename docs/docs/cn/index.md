@@ -27,7 +27,7 @@ features:
         details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
         link: /ai-employees
       - title: AI 开发
-        details: 借助 AI 快速生成插件脚手架、模型和组件代码。
+        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
 
   - title: 上手
