@@ -8,135 +8,81 @@
  */
 
 import React from 'react';
-import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
-import { SchemaComponent } from '@nocobase/client';
-import { tExpr } from '@nocobase/flow-engine';
+import { observer, useField, useForm } from '@formily/react';
+import { DataSourceCollectionCascader } from '@nocobase/client';
+import { Form, Select } from 'antd';
 import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client';
-import { namespace } from '../../locale';
+import { useT } from '../../locale';
+import { ListCollapse } from '../../components/ListCollapse';
 
-export const FileInputs: React.FC = () => {
+type FileInputItem = {
+  type?: 'file_id' | 'file_url';
+  collection?: string;
+  value?: string;
+};
+
+const defaultFileInput: FileInputItem = {
+  type: 'file_id',
+};
+
+export const FileInputs: React.FC = observer(() => {
+  const t = useT();
+  const field = useField();
+  const form = useForm();
+  const files = (form.getValuesIn(field.path) ?? []) as FileInputItem[];
+
+  const updateFiles = (next: FileInputItem[]) => {
+    form.setValuesIn(field.path, next);
+  };
+
+  const updateItem = (index: number, patch: Partial<FileInputItem>) => {
+    updateFiles(files.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
+  };
+
   return (
-    <SchemaComponent
-      components={{ ArrayCollapse, FormLayout, WorkflowVariableInput }}
-      schema={{
-        type: 'void',
-        properties: {
-          files: {
-            title: tExpr('Attachments', { ns: namespace }),
-            type: 'array',
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              tooltip: tExpr('Select the file or image to be sent to the LLM', { ns: namespace }),
-            },
-            'x-component': 'ArrayCollapse',
-            'x-component-props': {
-              size: 'small',
-            },
-            items: {
-              type: 'object',
-              'x-component': 'ArrayCollapse.CollapsePanel',
-              'x-component-props': {
-                header: tExpr('Files', { ns: namespace }),
-              },
-              properties: {
-                index: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.Index',
-                },
-                form: {
-                  type: 'void',
-                  'x-component': 'FormLayout',
-                  'x-component-props': {
-                    layout: 'vertical',
-                  },
-                  properties: {
-                    type: {
-                      title: tExpr('Attachment Type', { ns: namespace }),
-                      type: 'string',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Select',
-                      enum: [
-                        { label: tExpr('File (load via Files collection)', { ns: namespace }), value: 'file_id' },
-                        { label: tExpr('File (load via URL)', { ns: namespace }), value: 'file_url' },
-                      ],
-                      default: 'file_id',
-                    },
-                    collection: {
-                      type: 'string',
-                      title: '{{t("Collection")}}',
-                      'x-reactions': [
-                        {
-                          dependencies: ['.type'],
-                          fulfill: {
-                            schema: {
-                              'x-visible': '{{$deps[0] === "file_id"}}',
-                            },
-                            state: {
-                              required: '{{$deps[0] === "file_id"}}',
-                            },
-                          },
-                        },
-                      ],
-                      'x-decorator': 'FormItem',
-                      'x-component': 'DataSourceCollectionCascader',
-                      'x-component-props': {
-                        dataSourceFilter(item) {
-                          return item.options.key === 'main';
-                        },
-                        collectionFilter(collection) {
-                          return collection.options.template === 'file';
-                        },
-                      },
-                    },
-                    value: {
-                      title: tExpr('ID', { ns: namespace }),
-                      type: 'string',
-                      'x-reactions': [
-                        {
-                          dependencies: ['.type'],
-                          fulfill: {
-                            schema: {
-                              title: `{{ $deps[0] === "file_url" ? t("URL") : t("ID") }}`,
-                            },
-                          },
-                        },
-                      ],
-                      'x-decorator': 'FormItem',
-                      'x-component': 'WorkflowVariableInput',
-                      'x-component-props': {
-                        changeOnSelect: true,
-                      },
-                      required: true,
-                    },
-                  },
-                },
-                moveUp: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.MoveUp',
-                },
-                moveDown: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.MoveDown',
-                },
-                remove: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.Remove',
-                },
-              },
-            },
-            properties: {
-              addition: {
-                type: 'void',
-                title: tExpr('Add file', { ns: namespace }),
-                'x-component': 'ArrayCollapse.Addition',
-                'x-component-props': {
-                  defaultValue: { type: 'file_id' },
-                },
-              },
-            },
-          },
-        },
-      }}
+    <ListCollapse<FileInputItem>
+      value={files}
+      onChange={updateFiles}
+      defaultValue={defaultFileInput}
+      addText={t('Add file')}
+      itemTitle={t('Files')}
+      renderHeader={(_, index) => `${t('Files')} ${index + 1}`}
+      renderItem={(item, index) => (
+        <Form component={false} layout="vertical">
+          <Form.Item label={t('Attachment Type')} layout="vertical" required>
+            <Select
+              value={item.type ?? 'file_id'}
+              options={[
+                { label: t('File (load via Files collection)'), value: 'file_id' },
+                { label: t('File (load via URL)'), value: 'file_url' },
+              ]}
+              onChange={(type) =>
+                updateItem(index, {
+                  type,
+                  collection: type === 'file_id' ? item.collection : undefined,
+                })
+              }
+            />
+          </Form.Item>
+          {item.type !== 'file_url' ? (
+            <Form.Item label={t('Collection')} layout="vertical" required>
+              <DataSourceCollectionCascader
+                value={item.collection}
+                dataSourceFilter={(dataSource) => dataSource.options.key === 'main'}
+                collectionFilter={(collection) => collection.options.template === 'file'}
+                onChange={(collection) => updateItem(index, { collection })}
+              />
+            </Form.Item>
+          ) : null}
+          <Form.Item label={item.type === 'file_url' ? t('URL') : t('ID')} layout="vertical" required>
+            <WorkflowVariableInput
+              value={item.value}
+              changeOnSelect
+              onChange={(value) => updateItem(index, { value })}
+            />
+          </Form.Item>
+        </Form>
+      )}
     />
   );
-};
+});

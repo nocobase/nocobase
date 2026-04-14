@@ -64,6 +64,11 @@ export class AIEmployeeTaskModel extends FlowModel {
             },
             files: {
               type: 'void',
+              title: tExpr('Attachments', { ns: namespace }),
+              'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Select the file or image to be sent to the LLM', { ns: namespace }),
+              },
               'x-component': FileInputs,
             },
             skillSettings: {
