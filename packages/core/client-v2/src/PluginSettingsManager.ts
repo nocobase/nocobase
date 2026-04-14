@@ -73,13 +73,29 @@ export interface PluginSettingsPageType {
   readonly [index: string]: any;
 }
 
+export interface PluginSettingsPageLike {
+  readonly label?: React.ReactNode;
+  readonly title?: React.ReactNode;
+  readonly link?: string;
+  readonly key: string;
+  readonly path: string;
+  readonly sort?: number;
+  readonly name?: string;
+  readonly isAllow?: boolean;
+  readonly topLevelName?: string;
+  readonly aclSnippet?: string | null;
+  readonly hidden?: boolean;
+  readonly children?: readonly PluginSettingsPageLike[];
+  readonly [index: string]: any;
+}
+
 export interface PluginSettingsManagerBaseLike {
   clearCache(): void;
   setAclSnippets(aclSnippets: string[]): void;
   remove(name: string): void;
   has(name: string): boolean;
-  get(name: string, filterAuth?: boolean): PluginSettingsPageType | null;
-  getList(filterAuth?: boolean): PluginSettingsPageType[];
+  get(name: string, filterAuth?: boolean): PluginSettingsPageLike | null;
+  getList(filterAuth?: boolean): PluginSettingsPageLike[];
   getRoutePath(name: string): string;
   getAclSnippets(): (string | null)[];
 }

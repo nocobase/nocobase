@@ -31,10 +31,10 @@ import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
 import type { Plugin } from './Plugin';
-import type { PluginManager, PluginType } from './PluginManager';
+import type { PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
 import type { PluginSettingsManagerBaseLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
-import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import type { ComponentTypeAndString, RouterManagerBaseLike, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -58,7 +58,7 @@ export interface BaseApplicationOptions {
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
-  plugins?: PluginType[];
+  plugins?: PluginTypeLike[];
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
@@ -77,13 +77,13 @@ export interface BaseApplicationOptions {
 export abstract class BaseApplication<TOptions extends BaseApplicationOptions = BaseApplicationOptions> {
   public eventBus = new EventTarget();
   public providers: ComponentAndProps[] = [];
-  public router: RouterManager;
+  public router: RouterManagerBaseLike;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {};
-  public pluginManager: PluginManager;
+  public pluginManager: PluginManagerBaseLike;
   public pluginSettingsManager: PluginSettingsManagerBaseLike;
   public aiManager: AIManager;
   public headerActionsManager: HeaderActionsManager;
@@ -105,7 +105,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setMeta: (meta: Record<string, any>) => void;
     };
     pluginSettingsRouter: PluginSettingsManagerBaseLike;
-    pluginManager: PluginManager;
+    pluginManager: PluginManagerBaseLike;
   };
   public systemSettings: SystemSettingsSource;
   maintained = false;
@@ -487,8 +487,8 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
 
   protected abstract createApiClient(options: TOptions): APIClient;
   protected abstract createI18n(options: TOptions): i18next;
-  protected abstract createRouterManager(options: TOptions): any;
-  protected abstract createPluginManager(options: TOptions): PluginManager;
+  protected abstract createRouterManager(options: TOptions): RouterManagerBaseLike;
+  protected abstract createPluginManager(options: TOptions): PluginManagerBaseLike;
   protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerBaseLike;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws);

@@ -51,6 +51,15 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
+export interface RouterManagerBaseLike {
+  router: any;
+  add(name: string, route: RouteType): void;
+  get(name: string): RouteType | undefined;
+  has(name: string): boolean;
+  remove(name: string): void;
+  getRouterComponent(children?: React.ReactNode): React.FC<{ BaseLayout?: ComponentType }>;
+}
+
 export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
