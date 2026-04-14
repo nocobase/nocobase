@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-field-simple",
   "displayName": "Plugin example: Field simple",
   "description": "This plugin demonstrates how to use the field simple feature to create a simple field.",
-  "version": "2.1.0-alpha.15",
+  "version": "2.1.0-alpha.16",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

@@ -7,16 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  extractPropertyPath,
-  formatPathToVariable,
-  isVariableExpression,
-  normalizeRunJSValue,
-} from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH } from './errors';
 import type { FlowSurfaceReactionFilter, FlowSurfaceValueExpr } from './types';
+import { extractPropertyPath, formatPathToVariable, isVariableExpression, normalizeRunJSValue } from './utils';
 
 const EMPTY_CONDITION = Object.freeze({ logic: '$and', items: [] });
 
