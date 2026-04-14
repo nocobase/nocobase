@@ -396,5 +396,11 @@
   "Users who can approve the final output result of the task": "可以批准任务最终输出结果的用户",
   "No required": "不需要",
   "AI decision": "AI 决策",
-  "Human decision": "人工决策"
+  "Human decision": "人工决策",
+  "Approved": "已审批",
+  "Approval pending": "待审批",
+  "Acceptance pending": "待接受",
+  "Processing": "处理中",
+  "Approve": "批准",
+  "Reject": "拒绝"
 }

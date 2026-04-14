@@ -12,6 +12,7 @@ import { Badge, Card, List, Spin, Tag, theme } from 'antd';
 import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
+import { namespace, useT } from '../../../locale';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
@@ -74,6 +75,25 @@ export type WorkflowTasksListController = ReturnType<typeof useWorkflowTasksList
 
 export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListController }> = ({ controller }) => {
   const { token } = theme.useToken();
+  const t = useT();
+
+  const getStatusDesc = useCallback(
+    (status: string) => {
+      switch (status) {
+        case 'approved':
+          return t('Approved', { ns: namespace });
+        case 'pending_approval':
+          return t('Approval pending', { ns: namespace });
+        case 'pending_acceptance':
+          return t('Acceptance pending', { ns: namespace });
+        case 'processing':
+          return t('Processing', { ns: namespace });
+        default:
+          return status;
+      }
+    },
+    [t],
+  );
 
   if (controller.loading && !controller.workflowTasks.length) {
     return (
@@ -138,7 +158,7 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
                 </div>
               </div>
               <Tag color={getStatusTagColor(item.status)} style={{ marginInlineEnd: 0 }}>
-                {item.status}
+                {getStatusDesc(item.status)}
               </Tag>
             </div>
             <div

@@ -10,7 +10,7 @@
 import React, { useMemo, useState } from 'react';
 import { ToolsUIProperties, useAPIClient, useRequest } from '@nocobase/client';
 import { Button, Card, Descriptions, Flex, Spin, Typography } from 'antd';
-import { useT } from '../../../locale';
+import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
 
 type WorkflowTaskOutputSchema = {
@@ -117,7 +117,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
             }
           }}
         >
-          {t('Reject')}
+          {t('Reject', { ns: namespace })}
         </Button>,
         <Button
           key="approve"
@@ -134,7 +134,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
             }
           }}
         >
-          {t('Approve')}
+          {t('Approve', { ns: namespace })}
         </Button>,
       ]}
     >

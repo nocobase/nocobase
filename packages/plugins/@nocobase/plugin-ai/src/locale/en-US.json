@@ -389,5 +389,11 @@
   "Users who can approve the final output result of the task": "Users who can approve the final output result of the task",
   "No required": "No required",
   "AI decision": "AI decision",
-  "Human decision": "Human decision"
+  "Human decision": "Human decision",
+  "Approved": "Approved",
+  "Approval pending": "Approval pending",
+  "Acceptance pending": "Acceptance pending",
+  "Processing": "Processing",
+  "Approve": "Approve",
+  "Reject": "Reject"
 }
