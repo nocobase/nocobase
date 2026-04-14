@@ -125,14 +125,14 @@ export class AIEmployee {
   }
 
   private async initSession({ messageId, provider, model, providerName }) {
-    const { tools, baseToolNames, toolCatalog } = await this.getAgentTools();
+    const { tools, baseToolNames } = await this.getAgentTools();
     const resolvedTools = provider.resolveTools(tools.map(buildTool));
     if (!messageId && this.legacy !== true) {
       return {
         historyMessages: [],
         tools,
         resolvedTools,
-        middleware: this.getMiddleware({ tools, baseToolNames, toolCatalog: resolvedTools, model, providerName }),
+        middleware: this.getMiddleware({ tools, baseToolNames, model, providerName }),
         config: undefined,
         state: undefined,
       };
@@ -151,7 +151,6 @@ export class AIEmployee {
       middleware: this.getMiddleware({
         tools,
         baseToolNames,
-        toolCatalog: resolvedTools,
         model,
         providerName,
         messageId,
@@ -1381,7 +1380,6 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async getAgentTools(): Promise<{
     tools: ToolsEntry[];
     baseToolNames: Set<string>;
-    toolCatalog: ToolsEntry[];
   }> {
     const baseTools = await this.getAIEmployeeTools();
     const toolMap = await this.getToolsMap();
@@ -1390,28 +1388,10 @@ If information is missing, clearly state it in the summary.</Important>`;
     const baseToolNames = new Set(
       baseTools.map((it) => it.definition.name).filter((name) => name === 'getSkill' || !skillOwnedToolNames.has(name)),
     );
-    const skillTools = _.uniq(
-      availableSkills
-        .flatMap((it) => it.tools ?? [])
-        .map((toolName) => toolMap.get(toolName))
-        .filter((it) => !!it)
-        .map((it) => it.definition.name),
-    )
-      .map((toolName) => toolMap.get(toolName))
-      .filter((it) => !!it);
-
-    const toolsMap = new Map<string, ToolsEntry>(toolMap);
-    for (const tool of baseTools) {
-      toolsMap.set(tool.definition.name, tool);
-    }
-    for (const tool of skillTools) {
-      toolsMap.set(tool.definition.name, tool);
-    }
 
     return {
-      tools: Array.from(toolsMap.values()),
+      tools: Array.from(toolMap.values()),
       baseToolNames,
-      toolCatalog: Array.from(toolMap.values()),
     };
   }
 
@@ -1478,15 +1458,13 @@ If information is missing, clearly state it in the summary.</Important>`;
     model: string;
     tools: any[];
     baseToolNames: Set<string>;
-    toolCatalog: any[];
     messageId?: string;
     agentThread?: AgentThread;
   }) {
-    const { providerName, model, tools, baseToolNames, toolCatalog, messageId, agentThread } = options;
+    const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
     return [
       skillToolBindingMiddleware(this, {
         baseToolNames: Array.from(baseToolNames.values()),
-        toolCatalog,
       }),
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),

@@ -11,21 +11,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { skillToolBindingMiddleware } from '../ai-employees/middleware/skill-tools';
 
 describe('skillToolBindingMiddleware', () => {
-  it('should append tools from dynamically loaded skills to model requests', async () => {
+  it('should keep only tools allowed by loaded skills in model requests', async () => {
     const middleware = skillToolBindingMiddleware(
       {
         getActivatedSkillToolNames: vi.fn().mockResolvedValue(new Set(['getSkill', 'dataQuery', 'getCollectionNames'])),
       } as any,
       {
         baseToolNames: ['getSkill'],
-        toolCatalog: [{ name: 'getSkill' }, { name: 'dataQuery' }, { name: 'getCollectionNames' }] as any,
       },
     );
 
     const handler = vi.fn(async (request) => request);
     const result = await middleware.wrapModelCall(
       {
-        tools: [{ name: 'getSkill' }],
+        tools: [{ name: 'getSkill' }, { name: 'dataQuery' }, { name: 'getCollectionNames' }, { name: 'hiddenTool' }],
       } as any,
       handler,
     );
