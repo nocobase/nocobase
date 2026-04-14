@@ -32,7 +32,7 @@ import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, B
 import { SystemSettingsSource } from './flow/system-settings';
 import type { Plugin } from './Plugin';
 import type { PluginManager, PluginType } from './PluginManager';
-import type { PluginSettingsManagerLike } from './PluginSettingsManager';
+import type { PluginSettingsManagerBaseLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
 import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
@@ -84,7 +84,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {};
   public pluginManager: PluginManager;
-  public pluginSettingsManager: PluginSettingsManagerLike;
+  public pluginSettingsManager: PluginSettingsManagerBaseLike;
   public aiManager: AIManager;
   public headerActionsManager: HeaderActionsManager;
   public devDynamicImport: DevDynamicImport;
@@ -104,7 +104,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setData: (data: Record<string, any>) => void;
       setMeta: (meta: Record<string, any>) => void;
     };
-    pluginSettingsRouter: PluginSettingsManagerLike;
+    pluginSettingsRouter: PluginSettingsManagerBaseLike;
     pluginManager: PluginManager;
   };
   public systemSettings: SystemSettingsSource;
@@ -489,7 +489,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createI18n(options: TOptions): i18next;
   protected abstract createRouterManager(options: TOptions): any;
   protected abstract createPluginManager(options: TOptions): PluginManager;
-  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerLike;
+  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerBaseLike;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws);
   }

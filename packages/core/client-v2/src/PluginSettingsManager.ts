@@ -73,17 +73,20 @@ export interface PluginSettingsPageType {
   readonly [index: string]: any;
 }
 
-export interface PluginSettingsManagerLike {
+export interface PluginSettingsManagerBaseLike {
   clearCache(): void;
   setAclSnippets(aclSnippets: string[]): void;
-  addMenuItem(options: PluginSettingsMenuItemOptions): void;
-  addPageItem(options: PluginSettingsPageItemOptions): void;
   remove(name: string): void;
   has(name: string): boolean;
   get(name: string, filterAuth?: boolean): PluginSettingsPageType | null;
   getList(filterAuth?: boolean): PluginSettingsPageType[];
   getRoutePath(name: string): string;
   getAclSnippets(): (string | null)[];
+}
+
+export interface PluginSettingsManagerLike extends PluginSettingsManagerBaseLike {
+  addMenuItem(options: PluginSettingsMenuItemOptions): void;
+  addPageItem(options: PluginSettingsPageItemOptions): void;
 }
 
 interface InternalMenuItemRecord extends PluginSettingsMenuItemOptions {
@@ -185,6 +188,8 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
    * @throws {Error} 当路径与其他配置冲突时抛错
    */
   addMenuItem(options: PluginSettingsMenuItemOptions) {
+    this.assertMenuKey(options.key, 'key');
+
     const menuName = options.key;
     const nextMenu: InternalMenuItemRecord = {
       ...this.menus[menuName],
@@ -208,6 +213,8 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
    * @throws {Error} 当 menu 不存在或路径冲突时抛错
    */
   addPageItem(options: PluginSettingsPageItemOptions) {
+    this.assertMenuKey(options.menuKey, 'menuKey');
+
     const menu = this.menus[options.menuKey];
 
     if (!menu) {
@@ -387,15 +394,16 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
       includeHidden: boolean;
     },
   ) {
-    const isAllow = this.hasAuth(menu.name);
-
-    if (options.filterAuth && !isAllow) {
-      return null;
-    }
+    const menuIsAllow = this.hasAuth(menu.name);
 
     const children = this.sortPageNames(this.getPageNamesByMenu(menu.key))
       .map((pageName) => this.buildPageSnapshot(this.pages[pageName], options))
       .filter(Boolean) as PluginSettingsPageType[];
+    const isAllow = menuIsAllow || children.some((child) => child.isAllow);
+
+    if (options.filterAuth && children.length === 0) {
+      return null;
+    }
 
     if (!options.includeHidden && menu.hidden) {
       return null;
@@ -584,5 +592,13 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
   private isMenuIndexPair(leftName: string, rightName: string) {
     const menuIndexPairs = new Set([`${leftName}.index`, `${rightName}.index`]);
     return menuIndexPairs.has(rightName) || menuIndexPairs.has(leftName);
+  }
+
+  private assertMenuKey(value: string, fieldName: 'key' | 'menuKey') {
+    if (!value.includes('.')) {
+      return;
+    }
+
+    throw new Error(`Plugin settings menu key cannot contain ".": ${fieldName}=${value}`);
   }
 }

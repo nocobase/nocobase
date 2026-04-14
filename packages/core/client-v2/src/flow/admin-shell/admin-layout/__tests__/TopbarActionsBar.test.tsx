@@ -158,6 +158,25 @@ describe('TopbarActionsBar helpers', () => {
 
     expect(items).toEqual([]);
   });
+
+  it('should not inject hidden plugin manager into topbar dropdown', () => {
+    const items = getTopbarPluginSettingsItems({
+      canManagePlugins: true,
+      t: (key) => key,
+      settings: [
+        {
+          key: 'plugin-manager',
+          name: 'plugin-manager',
+          title: 'Plugin manager',
+          path: '/admin/settings/plugin-manager',
+          icon: null,
+          hidden: true,
+        },
+      ] as any,
+    });
+
+    expect(items).toEqual([]);
+  });
 });
 
 describe('TopbarActionsBar', () => {

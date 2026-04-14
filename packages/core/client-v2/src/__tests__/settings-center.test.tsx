@@ -270,6 +270,38 @@ describe('settings center', () => {
     expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
   });
 
+  it('should keep menu visible when menu acl is denied but child page is visible', async () => {
+    class MenuAclPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({
+          key: 'menu-acl-demo',
+          title: 'Menu ACL Demo',
+          aclSnippet: 'pm.menu-acl-demo.menu',
+        });
+        this.pluginSettingsManager.addPageItem({
+          menuKey: 'menu-acl-demo',
+          key: 'index',
+          title: 'Menu ACL Demo',
+          Component: () => <div>Menu ACL child page</div>,
+        });
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, MenuAclPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/menu-acl-demo'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', 'pm.system-settings.system-settings', '!pm.menu-acl-demo.menu'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    expect(await screen.findByText('Menu ACL child page')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Menu ACL Demo' })).toBeInTheDocument();
+  });
+
   it('should save system settings through systemSettings:put', async () => {
     const app = createMockClient({
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin],

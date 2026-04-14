@@ -36,6 +36,7 @@ export interface ApplicationOptions extends BaseApplicationOptions {
 
 export class Application extends BaseApplication<ApplicationOptions> {
   public declare dataSourceManager: any;
+  public declare pluginSettingsManager: PluginSettingsManagerLike;
 
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient(options.apiClient);

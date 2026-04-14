@@ -166,6 +166,37 @@ describe('PluginSettingsManager v2', () => {
     }).toThrow(/menuKey=missing/);
   });
 
+  it('should reject dotted menu keys in public api', () => {
+    const app = createMockClient();
+
+    expect(() => {
+      app.pluginSettingsManager.addMenuItem({ key: 'demo.group', title: 'Demo' });
+    }).toThrow(/key=demo\.group/);
+
+    app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
+
+    expect(() => {
+      app.pluginSettingsManager.addPageItem({ menuKey: 'demo.group', key: 'index', title: 'Overview' });
+    }).toThrow(/menuKey=demo\.group/);
+  });
+
+  it('should keep menu visible when menu acl is denied but child page remains visible', () => {
+    const app = createMockClient();
+
+    app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo', aclSnippet: 'pm.demo.menu' });
+    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.setAclSnippets(['!pm.demo.menu']);
+
+    const menu = app.pluginSettingsManager.get('demo');
+
+    expect(menu).toMatchObject({
+      name: 'demo',
+      isAllow: true,
+    });
+    expect(menu?.children?.map((item) => item.name)).toEqual(['demo.index']);
+    expect(app.pluginSettingsManager.getList().map((item) => item.name)).toEqual(['demo']);
+  });
+
   it('should allow updating same index page registration', () => {
     const app = createMockClient();
 

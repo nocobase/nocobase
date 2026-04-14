@@ -10,6 +10,7 @@
 import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import type { Application } from '../Application';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
@@ -208,7 +209,7 @@ const RootRedirect: FC = () => {
  * 只迁移当前 v2 运行时仍然需要的部分，显式跳过 schemaInitializerManager
  * 以及用户标注暂不迁移的旧插件注册逻辑。
  */
-export class NocoBaseBuildInPlugin extends Plugin {
+export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
   async afterAdd() {
     await this.addPlugins();
   }
