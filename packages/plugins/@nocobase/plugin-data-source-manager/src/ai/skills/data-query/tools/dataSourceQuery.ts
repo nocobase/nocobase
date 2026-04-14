@@ -12,6 +12,7 @@ import { ArgSchema, ArgType } from '../../../common/common';
 import { Context } from '@nocobase/actions';
 import {
   buildPagedToolResult,
+  getStructuredQueryArgError,
   normalizeLimitOffset,
   truncateLongStrings,
   MAX_QUERY_LIMIT,
@@ -28,10 +29,19 @@ export default defineTools({
   },
   definition: {
     name: 'dataSourceQuery',
-    description: 'Use dataSource, collectionName, and collection fields to query data from the database',
+    description:
+      'Use dataSource, collectionName, and collection fields to query data from the database. The filter argument must be a structured object, not a JSON string.',
     schema: ArgSchema,
   },
   invoke: async (ctx: Context, args: ArgType) => {
+    const filterError = getStructuredQueryArgError('filter', args.filter);
+    if (filterError) {
+      return {
+        status: 'error',
+        content: filterError,
+      };
+    }
+
     const plugin = ctx.app.pm.get('ai');
 
     // 限制单次查询数量

@@ -14,23 +14,52 @@ export const skillToolBindingMiddleware = (
   aiEmployee: AIEmployee,
   options: {
     baseToolNames: string[];
+    toolCatalog: any[];
   },
 ) => {
   const baseToolNames = new Set(options.baseToolNames ?? []);
+  const toolCatalog = options.toolCatalog ?? [];
 
   const getAllowedToolNames = async () => {
     const activatedSkillToolNames = await aiEmployee.getActivatedSkillToolNames();
     return new Set([...baseToolNames, ...activatedSkillToolNames]);
   };
 
+  const getToolName = (tool: any) => {
+    if (!tool || typeof tool !== 'object') {
+      return null;
+    }
+    if (typeof tool.name === 'string') {
+      return tool.name;
+    }
+    if (typeof tool.function?.name === 'string') {
+      return tool.function.name;
+    }
+    return null;
+  };
+
   const filterRequestTools = async (tools: any[] = []) => {
     const allowedToolNames = await getAllowedToolNames();
-    return tools.filter((tool: any) => {
-      if (!tool || typeof tool !== 'object' || typeof tool.name !== 'string') {
-        return true;
+    const result = new Map<string, any>();
+
+    for (const tool of tools) {
+      const name = getToolName(tool);
+      if (!name) {
+        continue;
       }
-      return allowedToolNames.has(tool.name);
-    });
+      if (allowedToolNames.has(name)) {
+        result.set(name, tool);
+      }
+    }
+
+    for (const tool of toolCatalog) {
+      const name = getToolName(tool);
+      if (name && allowedToolNames.has(name) && !result.has(name)) {
+        result.set(name, tool);
+      }
+    }
+
+    return Array.from(result.values());
   };
 
   return createMiddleware({

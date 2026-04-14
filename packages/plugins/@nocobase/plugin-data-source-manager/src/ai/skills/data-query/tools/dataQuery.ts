@@ -11,7 +11,12 @@ import { Context } from '@nocobase/actions';
 import { NoPermissionError } from '@nocobase/acl';
 import { defineTools } from '@nocobase/ai';
 import { applyQueryPermission, QueryPermissionQuery as DataQueryPermissionQuery } from '@nocobase/plugin-acl';
-import { MAX_QUERY_LIMIT, normalizeLimitOffset, truncateLongStrings } from '../../../common/utils';
+import {
+  MAX_QUERY_LIMIT,
+  getStructuredQueryArgError,
+  normalizeLimitOffset,
+  truncateLongStrings,
+} from '../../../common/utils';
 // @ts-ignore
 import pkg from '../../../../../package.json';
 
@@ -135,12 +140,13 @@ const AggregateQuerySchema = {
     filter: {
       type: 'object',
       description:
-        'Filter object applied before aggregation. If you must provide explicit datetime literals, use UTC ISO 8601 strings with a trailing Z.',
+        'Filter object applied before aggregation. Pass a structured object, not a JSON string. Follow the frontend NocoBase date filter contract: use only $dateOn, $dateNotOn, $dateBefore, $dateAfter, $dateNotBefore, $dateNotAfter, $dateBetween, $empty, and $notEmpty for calendar-style date filtering; prefer YYYY-MM-DD, YYYY-MM, YYYY, relative period objects, or ["start","end"] date ranges; do not expand month/day queries into UTC boundary timestamps.',
       additionalProperties: true,
     },
     having: {
       type: 'object',
-      description: 'Having object applied after grouping.',
+      description:
+        'Having object applied after grouping. Pass a structured object, not a JSON string. Reference selected measure aliases or selected field paths here, for example { count: { $gt: 10 } }.',
       additionalProperties: true,
     },
     offset: {
@@ -195,6 +201,22 @@ export default defineTools({
     schema: AggregateQuerySchema,
   },
   invoke: async (ctx: Context, args: AggregateQueryArgs) => {
+    const filterError = getStructuredQueryArgError('filter', args.filter);
+    if (filterError) {
+      return {
+        status: 'error',
+        content: filterError,
+      };
+    }
+
+    const havingError = getStructuredQueryArgError('having', args.having);
+    if (havingError) {
+      return {
+        status: 'error',
+        content: havingError,
+      };
+    }
+
     const dataSourceKey = getDataSourceKey(args);
     const ds = ctx.app.dataSourceManager.get(dataSourceKey);
 

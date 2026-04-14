@@ -2,6 +2,11 @@
 scope: GENERAL
 name: data-metadata
 description: helps get collection metadata (data model, like database table definition, RESTful API definition), like collection definition, field metadata
+tools:
+  - getDataSources
+  - getCollectionNames
+  - getCollectionMetadata
+  - searchFieldMetadata
 introduction:
   title: '{{t("ai.skills.dataMetadata.title", { ns: "@nocobase/plugin-data-source-manager" })}}'
   about: '{{t("ai.skills.dataMetadata.about", { ns: "@nocobase/plugin-data-source-manager" })}}'
