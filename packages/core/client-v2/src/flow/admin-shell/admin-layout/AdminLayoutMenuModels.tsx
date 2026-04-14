@@ -31,7 +31,6 @@ import {
 import { findFirstPageRoute } from './AdminLayoutCompat';
 import {
   buildMenuBasicSchema,
-  buildInsertRouteSchema,
   buildLinkSettingSchema,
   createInsertMenuStep,
   findNextSiblingRoute,
@@ -39,14 +38,11 @@ import {
   getMenuCreationDefaultParams,
   getMenuCreationUiSchema,
   getMenuEditDefaultParams,
-  insertRouteSchema,
   matchesRoutePath,
   toTreeSelectItems,
 } from './AdminLayoutMenuFlowUtils';
 
 export * from './AdminLayoutMenuUtils';
-export { insertRouteSchema } from './AdminLayoutMenuFlowUtils';
-
 const insertPositionToMethod = {
   beforeBegin: 'insertBefore',
   afterEnd: 'insertAfter',
@@ -175,10 +171,6 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return currentFlowCount > 0 || initialFlowCount > 0;
   }
 
-  async insertRouteSchema(schema: Record<string, any>) {
-    await insertRouteSchema(this.context.api, schema);
-  }
-
   async createMenuRoute(
     route: NocoBaseDesktopRoute,
     options?: {
@@ -291,8 +283,6 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         },
       ],
     });
-
-    await this.insertRouteSchema(buildInsertRouteSchema(meta.menuType, pageSchemaUid, tabSchemaUid, tabSchemaName));
   }
 
   async persistMenuCreation(values: AdminLayoutMenuCreationParams) {
@@ -396,12 +386,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const prevSibling = findPrevSiblingRoute(allAccessRoutes, route);
     const nextSibling = findNextSiblingRoute(allAccessRoutes, route);
 
-    await Promise.all([
-      this.getRouteRepository().deleteRoute(route.id),
-      route.schemaUid
-        ? this.context.api.resource('uiSchemas')[`remove/${route.schemaUid}`]?.()
-        : Promise.resolve(undefined),
-    ]);
+    await this.getRouteRepository().deleteRoute(route.id);
 
     if (!shouldNavigate) {
       return true;

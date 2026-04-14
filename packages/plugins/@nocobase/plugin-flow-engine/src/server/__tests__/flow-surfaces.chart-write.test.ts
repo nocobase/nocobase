@@ -11,6 +11,7 @@ import type { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 describe('flowSurfaces chart write paths', () => {
@@ -24,7 +25,7 @@ describe('flowSurfaces chart write paths', () => {
     db = app.db;
     flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
     rootAgent = await loginFlowSurfacesRootAgent(app);
-    await setupFixtureCollections(rootAgent);
+    await setupFixtureCollections(rootAgent, db);
   }, 120000);
 
   beforeEach(async () => {
@@ -274,6 +275,7 @@ describe('flowSurfaces chart write paths', () => {
   });
 
   it('should reject invalid sql preview and sql mappings outside inferred outputs', async () => {
+    const employeesTable = getFixtureTableName(db, 'employees');
     const page = await createPage(rootAgent, {
       title: 'Chart invalid sql page',
       tabTitle: 'Chart invalid sql tab',
@@ -337,7 +339,7 @@ describe('flowSurfaces chart write paths', () => {
         changes: {
           query: {
             mode: 'sql',
-            sql: 'select nickname, count(*) as employeeCount from employees group by nickname',
+            sql: `select nickname, count(*) as employeeCount from ${employeesTable} group by nickname`,
             sqlDatasource: 'main',
           },
           visual: {
@@ -355,6 +357,7 @@ describe('flowSurfaces chart write paths', () => {
   });
 
   it('should reject basic visual writes when sql preview outputs are unavailable', async () => {
+    const employeesTable = getFixtureTableName(db, 'employees');
     const page = await createPage(rootAgent, {
       title: 'Chart risky sql page',
       tabTitle: 'Chart risky sql tab',
@@ -374,7 +377,7 @@ describe('flowSurfaces chart write paths', () => {
         changes: {
           query: {
             mode: 'sql',
-            sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+            sql: `select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from ${employeesTable}`,
             sqlDatasource: 'main',
           },
           visual: {
@@ -393,6 +396,7 @@ describe('flowSurfaces chart write paths', () => {
   });
 
   it('should clear stale basic visual when query switches to risky sql without an explicit visual patch', async () => {
+    const employeesTable = getFixtureTableName(db, 'employees');
     const page = await createPage(rootAgent, {
       title: 'Chart risky sql query-only page',
       tabTitle: 'Chart risky sql query-only tab',
@@ -443,7 +447,7 @@ describe('flowSurfaces chart write paths', () => {
         changes: {
           query: {
             mode: 'sql',
-            sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+            sql: `select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from ${employeesTable}`,
             sqlDatasource: 'main',
           },
         },
@@ -458,7 +462,7 @@ describe('flowSurfaces chart write paths', () => {
     );
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'sql',
-      sql: "select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from employees",
+      sql: `select '{{ ctx.user.id }}' as viewer_id, count(*) as total_count from ${employeesTable}`,
       sqlDatasource: 'main',
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option).toBeUndefined();
@@ -583,7 +587,7 @@ chart.on('click', 'series', function(params) {
     });
     expect(composeRes.status).toBe(200);
 
-    const chartUid = getData(composeRes).keyToUid.chart;
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'chart')?.uid;
     expect(chartUid).toBeTruthy();
 
     const surface = getData(
@@ -753,6 +757,7 @@ chart.on('click', 'series', function(params) {
   });
 
   it('should persist sql chart bindings, cleanup stale flowSql and resync filter targets when chart mode changes', async () => {
+    const employeesTable = getFixtureTableName(db, 'employees');
     const page = await createPage(rootAgent, {
       title: 'Chart mode sync page',
       tabTitle: 'Chart mode sync tab',
@@ -826,7 +831,7 @@ chart.on('click', 'series', function(params) {
         changes: {
           query: {
             mode: 'sql',
-            sql: 'select nickname, count(*) as employeeCount from employees group by nickname',
+            sql: `select nickname, count(*) as employeeCount from ${employeesTable} group by nickname`,
             sqlDatasource: 'main',
           },
         },
@@ -895,6 +900,10 @@ function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || response?.body?.message || response?.message || '';
 }
 
+function getFixtureTableName(db: Database, collectionName: string) {
+  return db.getCollection(collectionName)?.getTableNameWithSchemaAsString?.() || collectionName;
+}
+
 async function createPage(rootAgent: any, values: Record<string, any>) {
   const response = await rootAgent.resource('flowSurfaces').createPage({ values });
   expect(response.status).toBe(200);
@@ -925,7 +934,7 @@ async function addField(rootAgent: any, targetUid: string, fieldPath: string, ex
   return getData(response);
 }
 
-async function setupFixtureCollections(rootAgent: any) {
+async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
       name: 'departments',
@@ -956,5 +965,10 @@ async function setupFixtureCollections(rootAgent: any) {
       foreignKey: 'departmentId',
       interface: 'm2o',
     },
+  });
+
+  await waitForFixtureCollectionsReady(db, {
+    departments: ['title', 'location'],
+    employees: ['nickname', 'status', 'departmentId'],
   });
 }

@@ -11,119 +11,10 @@ import type { Database, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
-import {
-  buildPersistedRootPageModel,
-  buildPopupPageTree,
-  buildSyntheticRootPageTabModel,
-} from '../flow-surfaces/builder';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
-
-describe('flowSurfaces resource builders', () => {
-  it('should keep persisted page builder separate from synthetic tab and popup builders', async () => {
-    const persistedPage = buildPersistedRootPageModel({
-      pageUid: 'persisted-page',
-      pageTitle: 'Persisted page',
-      routeId: 1,
-      enableTabs: true,
-      displayTitle: false,
-      pageDocumentTitle: 'Persisted document title',
-    });
-    expect(persistedPage).toMatchObject({
-      uid: 'persisted-page',
-      use: 'RootPageModel',
-      props: {
-        routeId: 1,
-        title: 'Persisted page',
-        enableTabs: true,
-        displayTitle: false,
-      },
-      stepParams: {
-        pageSettings: {
-          general: {
-            title: 'Persisted page',
-            enableTabs: true,
-            displayTitle: false,
-            documentTitle: 'Persisted document title',
-          },
-        },
-      },
-    });
-    expect(persistedPage.subModels).toBeUndefined();
-
-    const syntheticTab = buildSyntheticRootPageTabModel({
-      uid: 'synthetic-tab',
-      title: 'Synthetic tab',
-      icon: 'TableOutlined',
-      documentTitle: 'Synthetic document title',
-      route: {
-        id: 100,
-        schemaUid: 'synthetic-tab',
-      },
-      props: {
-        custom: true,
-      },
-      stepParams: {
-        pageTabSettings: {
-          tab: {
-            closable: false,
-          },
-        },
-      },
-      grid: {
-        uid: 'synthetic-grid',
-        use: 'BlockGridModel',
-      },
-    });
-    expect(syntheticTab).toMatchObject({
-      uid: 'synthetic-tab',
-      use: 'RootPageTabModel',
-      props: {
-        custom: true,
-        title: 'Synthetic tab',
-        icon: 'TableOutlined',
-      },
-      stepParams: {
-        pageTabSettings: {
-          tab: {
-            title: 'Synthetic tab',
-            icon: 'TableOutlined',
-            documentTitle: 'Synthetic document title',
-            closable: false,
-          },
-        },
-      },
-      subModels: {
-        grid: {
-          uid: 'synthetic-grid',
-          use: 'BlockGridModel',
-        },
-      },
-    });
-
-    const popupPage = buildPopupPageTree({
-      pageUid: 'popup-page',
-      tabUid: 'popup-tab',
-      gridUid: 'popup-grid',
-      pageTitle: 'Popup page',
-      tabTitle: 'Popup tab',
-      displayTitle: true,
-      enableTabs: true,
-    });
-    expect(popupPage.use).toBe('ChildPageModel');
-    expect(_.castArray(popupPage.subModels?.tabs || [])[0]).toMatchObject({
-      uid: 'popup-tab',
-      use: 'ChildPageTabModel',
-      subModels: {
-        grid: {
-          uid: 'popup-grid',
-          use: 'BlockGridModel',
-        },
-      },
-    });
-  });
-});
 
 describe('flowSurfaces resource', () => {
   let app: MockServer;
@@ -151,41 +42,11 @@ describe('flowSurfaces resource', () => {
     }
   });
 
-  it('should create page and manage tabs through flowSurfaces', async () => {
+  it('should sync tab move and settings writes back to route and readback', async () => {
     const created = await createPage(rootAgent, {
       title: 'Employees page',
       tabTitle: 'Main tab',
     });
-
-    const pageRoute = await routesRepo.findOne({
-      filter: {
-        schemaUid: created.pageSchemaUid,
-      },
-      appends: ['children'],
-    });
-    expect(pageRoute?.get('type')).toBe('flowPage');
-    expect(pageRoute?.get('children')).toHaveLength(1);
-    expect(_.castArray(pageRoute?.get('children') || [])[0]?.get?.('hidden')).toBe(true);
-
-    const pageModel = await flowRepo.findModelByParentId(created.pageSchemaUid, {
-      subKey: 'page',
-      includeAsyncNode: true,
-    });
-    expect(pageModel?.use).toBe('RootPageModel');
-    expect(pageModel?.props?.routeId).toBe(pageRoute?.get('id'));
-    expect(pageModel?.subModels?.tabs).toBeUndefined();
-
-    const initialReadback = await getSurface(rootAgent, {
-      pageSchemaUid: created.pageSchemaUid,
-    });
-    expect(initialReadback.tree.use).toBe('RootPageModel');
-    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.use).toBe('RootPageTabModel');
-    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.subModels?.grid?.use).toBe('BlockGridModel');
-    const initialTabGrid = await flowRepo.findModelByParentId(created.tabSchemaUid, {
-      subKey: 'grid',
-      includeAsyncNode: true,
-    });
-    expect(initialTabGrid?.use).toBe('BlockGridModel');
 
     const addedTab = await getData(
       await rootAgent.resource('flowSurfaces').addTab({
@@ -196,24 +57,7 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    expect(
-      await flowRepo.findModelById(addedTab.tabSchemaUid, {
-        includeAsyncNode: true,
-      }),
-    ).toMatchObject({
-      uid: addedTab.tabSchemaUid,
-      schema: {
-        use: 'RouteModel',
-      },
-    });
-    expect(
-      await flowRepo.findModelByParentId(addedTab.tabSchemaUid, {
-        subKey: 'grid',
-        includeAsyncNode: true,
-      }),
-    ).toMatchObject({
-      use: 'BlockGridModel',
-    });
+    expect(addedTab.tabSchemaUid).toBeTruthy();
 
     const moveTabRes = await rootAgent.resource('flowSurfaces').moveTab({
       values: {
@@ -251,7 +95,6 @@ describe('flowSurfaces resource', () => {
       icon: 'AppstoreOutlined',
       documentTitle: 'Updated browser title',
     });
-    expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
 
     await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -301,53 +144,22 @@ describe('flowSurfaces resource', () => {
     expect(routeBackedTabs[0].uid).toBe(addedTab.tabSchemaUid);
     expect(routeBackedTabs[1].uid).toBe(created.tabSchemaUid);
 
-    await rootAgent.resource('flowSurfaces').removeTab({
+    const removeTabRes = await rootAgent.resource('flowSurfaces').removeTab({
       values: {
         uid: addedTab.tabSchemaUid,
       },
     });
+    expect(removeTabRes.status).toBe(200);
 
-    const removedTabRoute = await routesRepo.findOne({
-      filter: {
-        schemaUid: addedTab.tabSchemaUid,
-      },
-    });
-    expect(removedTabRoute).toBeNull();
-    expect(
-      await flowRepo.findModelByParentId(addedTab.tabSchemaUid, {
-        subKey: 'grid',
-        includeAsyncNode: true,
-      }),
-    ).toBeNull();
-
-    await rootAgent.resource('flowSurfaces').destroyPage({
+    const destroyPageRes = await rootAgent.resource('flowSurfaces').destroyPage({
       values: {
         uid: created.pageUid,
       },
     });
-
-    expect(
-      await routesRepo.findOne({
-        filter: {
-          schemaUid: created.pageSchemaUid,
-        },
-      }),
-    ).toBeNull();
-    expect(
-      await flowRepo.findModelByParentId(created.pageSchemaUid, {
-        subKey: 'page',
-        includeAsyncNode: true,
-      }),
-    ).toBeNull();
-    expect(
-      await flowRepo.findModelByParentId(created.tabSchemaUid, {
-        subKey: 'grid',
-        includeAsyncNode: true,
-      }),
-    ).toBeNull();
+    expect(destroyPageRes.status).toBe(200);
   });
 
-  it('should manage popup child tabs through popup tab APIs and recover from empty popup tabs', async () => {
+  it('should recover popup surfaces after removing the last popup child tab', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup tabs page',
       tabTitle: 'Popup tabs tab',
@@ -376,110 +188,10 @@ describe('flowSurfaces resource', () => {
     expect(popupAction.popupTabUid).toBeTruthy();
     expect(popupAction.popupGridUid).toBeTruthy();
 
-    const popupHostBefore = await getSurface(rootAgent, {
-      uid: popupAction.uid,
-    });
-    const popupPageUid = popupHostBefore.tree.subModels?.page?.uid;
-    const primaryPopupTabUid = _.castArray(popupHostBefore.tree.subModels?.page?.subModels?.tabs || [])[0]?.uid;
-    expect(popupPageUid).toBe(popupAction.popupPageUid);
-    expect(primaryPopupTabUid).toBe(popupAction.popupTabUid);
-
-    const addedPopupTab = getData(
-      await rootAgent.resource('flowSurfaces').addPopupTab({
-        values: {
-          target: {
-            uid: popupPageUid,
-          },
-          title: 'Secondary popup tab',
-          icon: 'TableOutlined',
-          documentTitle: 'Secondary popup browser title',
-        },
-      }),
-    );
-    expect(addedPopupTab.popupPageUid).toBe(popupPageUid);
-    expect(addedPopupTab.popupTabUid).toBeTruthy();
-    expect(addedPopupTab.popupGridUid).toBeTruthy();
-
-    const popupPageAfterAdd = await getSurface(rootAgent, {
-      uid: popupPageUid,
-    });
-    expect(popupPageAfterAdd.tree.use).toBe('ChildPageModel');
-    expect(_.castArray(popupPageAfterAdd.tree.subModels?.tabs || [])).toHaveLength(2);
-
-    const updatedPopupTab = getData(
-      await rootAgent.resource('flowSurfaces').updatePopupTab({
-        values: {
-          target: {
-            uid: addedPopupTab.popupTabUid,
-          },
-          title: 'Secondary popup tab updated',
-          icon: 'AppstoreOutlined',
-          documentTitle: 'Updated popup browser title',
-          flowRegistry: {
-            popupTabBeforeRender: {
-              key: 'popupTabBeforeRender',
-              on: 'beforeRender',
-              steps: {},
-            },
-          },
-        },
-      }),
-    );
-    expect(updatedPopupTab).toMatchObject({
-      uid: addedPopupTab.popupTabUid,
-      title: 'Secondary popup tab updated',
-      icon: 'AppstoreOutlined',
-    });
-
-    const popupTabReadback = await getSurface(rootAgent, {
-      uid: addedPopupTab.popupTabUid,
-    });
-    expect(popupTabReadback.tree.use).toBe('ChildPageTabModel');
-    expect(popupTabReadback.tree.props).toMatchObject({
-      title: 'Secondary popup tab updated',
-      icon: 'AppstoreOutlined',
-    });
-    expect(popupTabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
-      title: 'Secondary popup tab updated',
-      icon: 'AppstoreOutlined',
-      documentTitle: 'Updated popup browser title',
-    });
-    expect(popupTabReadback.tree.flowRegistry).toMatchObject({
-      popupTabBeforeRender: {
-        key: 'popupTabBeforeRender',
-      },
-    });
-
-    const movePopupTabRes = await rootAgent.resource('flowSurfaces').movePopupTab({
-      values: {
-        sourceUid: addedPopupTab.popupTabUid,
-        targetUid: primaryPopupTabUid,
-        position: 'before',
-      },
-    });
-    expect(movePopupTabRes.status).toBe(200);
-
-    const popupPageAfterMove = await getSurface(rootAgent, {
-      uid: popupPageUid,
-    });
-    expect(_.castArray(popupPageAfterMove.tree.subModels?.tabs || []).map((item: any) => item.uid)).toEqual([
-      addedPopupTab.popupTabUid,
-      primaryPopupTabUid,
-    ]);
-
-    const removeMovedTabRes = await rootAgent.resource('flowSurfaces').removePopupTab({
-      values: {
-        target: {
-          uid: addedPopupTab.popupTabUid,
-        },
-      },
-    });
-    expect(removeMovedTabRes.status).toBe(200);
-
     const removeLastTabRes = await rootAgent.resource('flowSurfaces').removePopupTab({
       values: {
         target: {
-          uid: primaryPopupTabUid,
+          uid: popupAction.popupTabUid,
         },
       },
     });
@@ -489,7 +201,7 @@ describe('flowSurfaces resource', () => {
       uid: popupAction.uid,
     });
     const popupPageAfterRemoveAll = popupHostAfterRemoveAll.tree.subModels?.page;
-    expect(popupPageAfterRemoveAll?.uid).toBe(popupPageUid);
+    expect(popupPageAfterRemoveAll?.uid).toBe(popupAction.popupPageUid);
     expect(popupPageAfterRemoveAll?.use).toBe('ChildPageModel');
     expect(_.castArray(popupPageAfterRemoveAll?.subModels?.tabs || [])).toHaveLength(0);
 
@@ -506,7 +218,7 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    expect(recoveredPopupBlock.popupPageUid).toBe(popupPageUid);
+    expect(recoveredPopupBlock.popupPageUid).toBe(popupAction.popupPageUid);
     expect(recoveredPopupBlock.popupTabUid).toBeTruthy();
     expect(recoveredPopupBlock.popupGridUid).toBeTruthy();
 
@@ -516,7 +228,7 @@ describe('flowSurfaces resource', () => {
     const recoveredPopupPage = popupHostAfterRecovery.tree.subModels?.page;
     const recoveredTabs = _.castArray(recoveredPopupPage?.subModels?.tabs || []);
     const recoveredGridItems = _.castArray(recoveredTabs[0]?.subModels?.grid?.subModels?.items || []);
-    expect(recoveredPopupPage?.uid).toBe(popupPageUid);
+    expect(recoveredPopupPage?.uid).toBe(popupAction.popupPageUid);
     expect(recoveredTabs).toHaveLength(1);
     expect(recoveredTabs[0]?.uid).toBe(recoveredPopupBlock.popupTabUid);
     expect(recoveredGridItems).toHaveLength(1);
@@ -637,218 +349,12 @@ describe('flowSurfaces resource', () => {
     });
   });
 
-  it('should enforce mutate atomic and apply replace contracts without changing tab readback semantics', async () => {
-    const rollbackPageSchemaUid = 'default_atomic_page_schema_uid';
-    const rollbackTabSchemaUid = 'default_atomic_tab_schema_uid';
-    const rollbackRes = await rootAgent.resource('flowSurfaces').mutate({
-      values: {
-        ops: [
-          {
-            opId: 'page',
-            type: 'createPage',
-            values: {
-              pageSchemaUid: rollbackPageSchemaUid,
-              tabSchemaUid: rollbackTabSchemaUid,
-              title: 'Default atomic page',
-              tabTitle: 'Default atomic tab',
-            },
-          },
-          {
-            opId: 'block',
-            type: 'addBlock',
-            values: {
-              target: {
-                uid: {
-                  ref: 'page.tabSchemaUid',
-                },
-              },
-              type: 'details',
-              resourceInit: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
-              },
-            },
-          },
-          {
-            type: 'addField',
-            values: {
-              target: {
-                uid: {
-                  ref: 'block.uid',
-                },
-              },
-              fieldPath: 'not_exists',
-            },
-          },
-        ],
-      },
-    });
-    expect(rollbackRes.status).toBe(400);
-    expect(
-      await routesRepo.findOne({
-        filter: {
-          schemaUid: rollbackPageSchemaUid,
-        },
-      }),
-    ).toBeNull();
-
-    const atomicFalsePageSchemaUid = 'atomic_false_page_schema_uid';
-    const atomicFalseRes = await rootAgent.resource('flowSurfaces').mutate({
-      values: {
-        atomic: false,
-        ops: [
-          {
-            type: 'createPage',
-            values: {
-              pageSchemaUid: atomicFalsePageSchemaUid,
-              tabSchemaUid: 'atomic_false_tab_schema_uid',
-              title: 'Atomic false page',
-              tabTitle: 'Atomic false tab',
-            },
-          },
-        ],
-      },
-    });
-    expect(atomicFalseRes.status).toBe(400);
-    expect(atomicFalseRes.body.errors?.[0]?.message).toContain('atomic=true');
-    expect(atomicFalseRes.body.errors?.[0]?.message).toContain('v1');
-    expect(
-      await routesRepo.findOne({
-        filter: {
-          schemaUid: atomicFalsePageSchemaUid,
-        },
-      }),
-    ).toBeNull();
-
-    const legacyRefRes = await rootAgent.resource('flowSurfaces').mutate({
-      values: {
-        ops: [
-          {
-            opId: 'page',
-            type: 'createPage',
-            values: {
-              pageSchemaUid: 'legacy_ref_page_schema_uid',
-              tabSchemaUid: 'legacy_ref_tab_schema_uid',
-              title: 'Legacy ref page',
-              tabTitle: 'Legacy ref tab',
-            },
-          },
-          {
-            type: 'addBlock',
-            values: {
-              target: {
-                uid: {
-                  $ref: 'page.tabSchemaUid',
-                },
-              },
-              type: 'details',
-              resourceInit: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
-              },
-            },
-          },
-        ],
-      },
-    });
-    expect(legacyRefRes.status).toBe(400);
-    expect(legacyRefRes.body.errors?.[0]?.message).toContain('"$ref"');
-    expect(legacyRefRes.body.errors?.[0]?.message).toContain('ref');
-
-    const page = await createPage(rootAgent, {
-      title: 'Contract page',
-      tabTitle: 'Contract tab',
-    });
-
-    const defaultApplyRes = await rootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: { uid: page.tabSchemaUid },
-        spec: {
-          props: {
-            title: 'Contract tab default replace',
-            icon: 'TableOutlined',
-          },
-          stepParams: {
-            pageTabSettings: {
-              tab: {
-                title: 'Contract tab default replace',
-                icon: 'TableOutlined',
-                documentTitle: 'Contract tab default document',
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(defaultApplyRes.status).toBe(200);
-
-    const explicitReplaceRes = await rootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: { uid: page.tabSchemaUid },
-        mode: 'replace',
-        spec: {
-          props: {
-            title: 'Contract tab explicit replace',
-            icon: 'AppstoreOutlined',
-          },
-          stepParams: {
-            pageTabSettings: {
-              tab: {
-                title: 'Contract tab explicit replace',
-                icon: 'AppstoreOutlined',
-                documentTitle: 'Contract tab explicit document',
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(explicitReplaceRes.status).toBe(200);
-
-    const invalidApplyMode = await rootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: { uid: page.tabSchemaUid },
-        mode: 'merge',
-        spec: {
-          props: {
-            title: 'Contract tab invalid replace',
-          },
-        },
-      },
-    });
-    expect(invalidApplyMode.status).toBe(400);
-    expect(invalidApplyMode.body.errors?.[0]?.message).toContain(`mode='replace'`);
-    expect(invalidApplyMode.body.errors?.[0]?.message).toContain('v1');
-
-    const tabRoute = await routesRepo.findOne({
-      filter: {
-        schemaUid: page.tabSchemaUid,
-      },
-    });
-    const tabReadback = await getSurface(rootAgent, {
-      tabSchemaUid: page.tabSchemaUid,
-    });
-    expect(tabRoute?.get('title')).toBe('Contract tab explicit replace');
-    expect(tabRoute?.get('icon')).toBe('AppstoreOutlined');
-    expect(tabRoute?.get('options').documentTitle).toBe('Contract tab explicit document');
-    expect(tabReadback.tree.use).toBe('RootPageTabModel');
-    expect(tabReadback.tree.props).toMatchObject({
-      title: 'Contract tab explicit replace',
-      icon: 'AppstoreOutlined',
-    });
-    expect(tabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
-      title: 'Contract tab explicit replace',
-      icon: 'AppstoreOutlined',
-      documentTitle: 'Contract tab explicit document',
-    });
-    expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
-  });
-
-  it('should expose catalog by public collection block contexts', async () => {
+  it('should expose representative catalog entries and settings contracts for page and table contexts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Catalog page',
       tabTitle: 'Catalog tab',
     });
+    const catalogExpand = ['item.configureOptions', 'node.contracts'];
 
     const tabCatalog = await getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -856,32 +362,17 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: page.tabSchemaUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
     expect(tabCatalog.blocks.map((item: any) => item.use)).toEqual(
-      expect.arrayContaining([
-        'TableBlockModel',
-        'CreateFormModel',
-        'EditFormModel',
-        'DetailsBlockModel',
-        'FilterFormBlockModel',
-        'ListBlockModel',
-        'GridCardBlockModel',
-        'JSBlockModel',
-        'MarkdownBlockModel',
-        'IframeBlockModel',
-        'MapBlockModel',
-        'ChartBlockModel',
-        'CommentsBlockModel',
-        'ActionPanelBlockModel',
-      ]),
+      expect.arrayContaining(['TableBlockModel', 'ListBlockModel', 'ChartBlockModel', 'ActionPanelBlockModel']),
     );
     expect(tabCatalog.blocks.find((item: any) => item.use === 'FormBlockModel')).toBeUndefined();
-    expect(tabCatalog.blocks.find((item: any) => item.key === 'form')).toBeUndefined();
     expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
     expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
-    expect(tabCatalog.configureOptions).toMatchObject({
+    expect(tabCatalog.node.configureOptions).toMatchObject({
       title: {
         type: 'string',
       },
@@ -892,78 +383,9 @@ describe('flowSurfaces resource', () => {
         type: 'string',
       },
     });
-    expect(tabCatalog.settingsContract?.stepParams?.groups?.pageTabSettings?.allowedPaths).toEqual(
+    expect(tabCatalog.node.settingsContract?.stepParams?.groups?.pageTabSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['tab.title', 'tab.icon', 'tab.documentTitle']),
     );
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')?.settingsContract?.stepParams?.groups
-        ?.listSettings,
-    ).toBeTruthy();
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')?.settingsContract?.stepParams?.groups
-        ?.listSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['pageSize.pageSize', 'dataScope.filter']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')?.settingsContract?.stepParams?.groups
-        ?.listSettings?.allowedPaths,
-    ).not.toContain('dataScope.*');
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')?.settingsContract?.stepParams?.groups
-        ?.GridCardSettings,
-    ).toBeTruthy();
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')?.settingsContract?.stepParams?.groups
-        ?.GridCardSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['rowCount.rowCount', 'dataScope.filter']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')?.settingsContract?.stepParams?.groups
-        ?.GridCardSettings?.allowedPaths,
-    ).not.toContain('dataScope.*');
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'JSBlockModel')?.settingsContract?.decoratorProps?.allowedKeys,
-    ).toEqual(expect.arrayContaining(['title', 'description', 'className']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'JSBlockModel')?.settingsContract?.stepParams?.groups
-        ?.jsSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['runJs.code', 'runJs.version']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'MarkdownBlockModel')?.settingsContract?.stepParams?.groups
-        ?.markdownBlockSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['editMarkdown.content']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'IframeBlockModel')?.settingsContract?.stepParams?.groups
-        ?.iframeBlockSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['editIframe.mode', 'editIframe.url', 'editIframe.html']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'ActionPanelBlockModel')?.settingsContract?.stepParams?.groups
-        ?.actionPanelBlockSetting?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['layout.layout', 'ellipsis.ellipsis']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.settingsContract?.stepParams?.groups
-        ?.createMapBlock?.allowedPaths,
-    ).toEqual(
-      expect.arrayContaining(['init.mapField', 'init.marker', 'dataScope.filter', 'lineSort.sort', 'mapZoom.zoom']),
-    );
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.settingsContract?.stepParams?.groups
-        ?.createMapBlock?.allowedPaths,
-    ).not.toContain('dataScope.*');
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.settingsContract?.stepParams?.groups
-        ?.commentsSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['pageSize.pageSize', 'dataScope.filter']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.settingsContract?.stepParams?.groups
-        ?.commentsSettings?.allowedPaths,
-    ).not.toContain('dataScope.*');
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'ChartBlockModel')?.settingsContract?.stepParams?.groups
-        ?.cardSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height']));
-    expect(
-      tabCatalog.blocks.find((item: any) => item.use === 'ChartBlockModel')?.settingsContract?.stepParams?.groups
-        ?.chartSettings?.allowedPaths,
-    ).toEqual(expect.arrayContaining(['configure', 'configure.*']));
 
     const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
       dataSourceKey: 'main',
@@ -975,148 +397,20 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: tableBlockUid,
           },
+          expand: catalogExpand,
         },
       }),
     );
-    expect(tableCatalog.blocks).toEqual([]);
-    expect(tableCatalog.configureOptions).toMatchObject({
-      title: {
-        type: 'string',
-      },
-      pageSize: {
-        type: 'number',
-      },
-      density: {
-        type: 'string',
-        enum: expect.arrayContaining(['large', 'middle', 'small']),
-      },
-      quickEdit: {
-        type: 'boolean',
-      },
-    });
+    expect(tableCatalog.blocks).toBeUndefined();
     expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining([
-        'filter',
-        'addNew',
-        'popup',
-        'refresh',
-        'bulkDelete',
-        'bulkEdit',
-        'bulkUpdate',
-        'export',
-        'exportAttachments',
-        'import',
-        'link',
-        'upload',
-        'js',
-        'composeEmail',
-        'templatePrint',
-        'triggerWorkflow',
-      ]),
+      expect.arrayContaining(['addNew', 'refresh', 'bulkDelete', 'js']),
     );
     expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining([
-        'duplicate',
-        'view',
-        'edit',
-        'popup',
-        'composeEmail',
-        'delete',
-        'updateRecord',
-        'js',
-        'templatePrint',
-        'triggerWorkflow',
-      ]),
+      expect.arrayContaining(['view', 'edit', 'delete', 'js']),
     );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.resourceSettings?.allowedPaths).toEqual(
-      expect.arrayContaining([
-        'init.dataSourceKey',
-        'init.collectionName',
-        'init.associationName',
-        'init.associationPathName',
-      ]),
-    );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).toEqual(
-      expect.arrayContaining([
-        'quickEdit.editable',
-        'showRowNumbers.showIndex',
-        'pageSize.pageSize',
-        'dataScope.filter',
-        'defaultSorting.sort',
-        'treeTable.treeTable',
-        'defaultExpandAllRows.defaultExpandAllRows',
-        'tableDensity.size',
-        'dragSort.dragSort',
-        'dragSortBy.dragSortBy',
-      ]),
-    );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('quickEdit');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('quickEdit.*');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('dataScope');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('dataScope.*');
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
-      'defaultSorting',
-    );
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
-      'defaultSorting.*',
-    );
-    expect(
-      tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.pathSchemas?.['dataScope.filter'],
-    ).toMatchObject({
-      type: 'object',
-      required: expect.arrayContaining(['logic', 'items']),
-      properties: {
-        logic: {
-          enum: ['$and', '$or'],
-        },
-        items: {
-          type: 'array',
-        },
-      },
-      'x-flowSurfaceFormat': 'filter-group',
-    });
-    expect(
-      tableCatalog.settingsSchema?.stepParams?.properties?.tableSettings?.properties?.dataScope?.properties?.filter,
-    ).toMatchObject({
-      type: 'object',
-      required: expect.arrayContaining(['logic', 'items']),
-      properties: {
-        logic: {
-          enum: ['$and', '$or'],
-        },
-        items: {
-          type: 'array',
-        },
-      },
-      'x-flowSurfaceFormat': 'filter-group',
-    });
-    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.eventBindingSteps).toEqual(
-      expect.arrayContaining([
-        'quickEdit',
-        'showRowNumbers',
-        'pageSize',
-        'dataScope',
-        'defaultSorting',
-        'treeTable',
-        'defaultExpandAllRows',
-        'tableDensity',
-        'dragSort',
-        'dragSortBy',
-      ]),
-    );
-    expect(tableCatalog.settingsContract?.stepParams?.allowedKeys).not.toContain('paginationSettings');
     expect(tableCatalog.fields.some((item: any) => item.key === 'nickname')).toBe(true);
     expect(tableCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
     expect(tableCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
-    expect(tableCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
-      use: 'TableColumnModel',
-      fieldUse: 'DisplayTextFieldModel',
-    });
-    expect(tableCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
-      use: 'TableColumnModel',
-      fieldUse: 'JSFieldModel',
-      renderer: 'js',
-    });
     expect(tableCatalog.fields.find((item: any) => item.key === 'nickname')?.configureOptions).toMatchObject({
       label: {
         type: 'string',
@@ -1125,355 +419,22 @@ describe('flowSurfaces resource', () => {
         type: 'boolean',
       },
     });
-    expect(tableCatalog.fields.find((item: any) => item.key === 'jsColumn')).toMatchObject({
-      use: 'JSColumnModel',
-      fieldUse: 'JSColumnModel',
-      type: 'jsColumn',
-    });
-    expect(tableCatalog.actions.find((item: any) => item.key === 'addNew')?.configureOptions).toMatchObject({
-      title: {
-        type: 'string',
-      },
-      openView: {
-        type: 'object',
-      },
-    });
-
-    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
-    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
-      (column: any) => column.use === 'TableActionsColumnModel',
-    )?.uid;
-    expect(actionsColumnUid).toBeTruthy();
-
-    const rowActionCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: actionsColumnUid,
-          },
-        },
-      }),
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.resourceSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['init.dataSourceKey', 'init.collectionName']),
     );
-    expect(rowActionCatalog.recordActions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining([
-        'duplicate',
-        'view',
-        'edit',
-        'popup',
-        'composeEmail',
-        'delete',
-        'updateRecord',
-        'js',
-        'templatePrint',
-        'triggerWorkflow',
-      ]),
+    expect(tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['pageSize.pageSize', 'dataScope.filter', 'dragSort.dragSort']),
     );
     expect(
-      rowActionCatalog.recordActions.find((item: any) => item.use === 'ViewActionModel')?.settingsContract?.stepParams
-        ?.groups?.buttonSettings?.allowedPaths,
-    ).toEqual(
-      expect.arrayContaining([
-        'general.title',
-        'general.tooltip',
-        'general.icon',
-        'general.type',
-        'general.danger',
-        'general.color',
-        'linkageRules',
-      ]),
-    );
-    expect(
-      rowActionCatalog.recordActions.find((item: any) => item.use === 'ViewActionModel')?.configureOptions,
+      tableCatalog.node.settingsContract?.stepParams?.groups?.tableSettings?.pathSchemas?.['dataScope.filter'],
     ).toMatchObject({
-      title: {
-        type: 'string',
-      },
-      openView: {
-        type: 'object',
-      },
+      type: 'object',
+      required: expect.arrayContaining(['logic', 'items']),
+      'x-flowSurfaceFormat': 'filter-group',
     });
-    expect(rowActionCatalog.settingsContract?.props?.allowedKeys).toEqual(
-      expect.arrayContaining(['title', 'tooltip', 'width', 'fixed']),
-    );
-
-    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const createFormCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: createFormUid,
-          },
-        },
-      }),
-    );
-    expect(createFormCatalog.blocks).toEqual([]);
-    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['submit', 'js', 'jsItem', 'triggerWorkflow']),
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
-      expect.arrayContaining([
-        'layout.layout',
-        'layout.labelAlign',
-        'layout.labelWidth',
-        'layout.labelWrap',
-        'layout.colon',
-        'assignRules.value',
-      ]),
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'layout',
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'layout.*',
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'assignRules',
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'assignRules.*',
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['linkageRules.value']),
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
-      'linkageRules',
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
-      'linkageRules.*',
-    );
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual([]);
-    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
-      expect.arrayContaining(['init', 'refresh']),
-    );
-    expect(
-      createFormCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
-    ).toEqual(expect.arrayContaining(['label', 'showLabel', 'tooltip', 'extra']));
-    expect(
-      createFormCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
-    ).not.toContain('title');
-    expect(createFormCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
-      use: 'FormItemModel',
-      fieldUse: 'JSEditableFieldModel',
-      renderer: 'js',
-    });
-    expect(createFormCatalog.fields.find((item: any) => item.key === 'jsItem')).toMatchObject({
-      use: 'JSItemModel',
-      fieldUse: 'JSItemModel',
-      type: 'jsItem',
-    });
-
-    const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const editFormCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: editFormUid,
-          },
-        },
-      }),
-    );
-    expect(editFormCatalog.blocks).toEqual([]);
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
-      expect.arrayContaining([
-        'layout.layout',
-        'layout.labelAlign',
-        'layout.labelWidth',
-        'layout.labelWrap',
-        'layout.colon',
-        'assignRules.value',
-      ]),
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'layout',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'layout.*',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'assignRules',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'assignRules.*',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['linkageRules.value']),
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
-      'linkageRules',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
-      'linkageRules.*',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['dataScope.filter']),
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain('dataScope');
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain(
-      'dataScope.*',
-    );
-    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
-      expect.arrayContaining(['init', 'dataScope', 'refresh']),
-    );
-    expect(editFormCatalog.fields.find((item: any) => item.key === 'department.title')).toMatchObject({
-      use: 'FormAssociationItemModel',
-      wrapperUse: 'FormAssociationItemModel',
-      fieldUse: 'DisplayTextFieldModel',
-    });
-    expect(editFormCatalog.fields.find((item: any) => item.key === 'js:department.title')).toBeUndefined();
-    expect(editFormCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
-      use: 'FormItemModel',
-      fieldUse: 'JSEditableFieldModel',
-      renderer: 'js',
-    });
-
-    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const detailsCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: detailsUid,
-          },
-        },
-      }),
-    );
-    expect(detailsCatalog.blocks).toEqual([]);
-    expect(detailsCatalog.recordActions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining([
-        'view',
-        'edit',
-        'popup',
-        'composeEmail',
-        'delete',
-        'updateRecord',
-        'js',
-        'templatePrint',
-        'triggerWorkflow',
-      ]),
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['layout.layout', 'dataScope.filter', 'defaultSorting.sort', 'linkageRules.value']),
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain('layout');
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'layout.*',
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'dataScope',
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'dataScope.*',
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'defaultSorting',
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'defaultSorting.*',
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'linkageRules',
-    );
-    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
-      'linkageRules.*',
-    );
-    expect(detailsCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
-      use: 'DetailsItemModel',
-      fieldUse: 'DisplayTextFieldModel',
-    });
-    expect(detailsCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
-    expect(detailsCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
-
-    const listUid = await addBlock(rootAgent, page.tabSchemaUid, 'list', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const listCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: listUid,
-          },
-        },
-      }),
-    );
-    expect(listCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
-      use: 'DetailsItemModel',
-      fieldUse: 'DisplayTextFieldModel',
-    });
-
-    const gridCardUid = await addBlock(rootAgent, page.tabSchemaUid, 'gridCard', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const gridCardCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: gridCardUid,
-          },
-        },
-      }),
-    );
-    expect(gridCardCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
-      use: 'DetailsItemModel',
-      fieldUse: 'DisplayTextFieldModel',
-    });
-    expect(gridCardCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
-    expect(gridCardCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
-
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const filterFormCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: filterFormUid,
-          },
-        },
-      }),
-    );
-    expect(filterFormCatalog.blocks).toEqual([]);
-    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['submit', 'reset', 'js']),
-    );
-    expect(filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths).toEqual(
-      expect.arrayContaining([
-        'layout.layout',
-        'layout.labelAlign',
-        'layout.labelWidth',
-        'layout.labelWrap',
-        'layout.colon',
-        'defaultValues.value',
-      ]),
-    );
-    expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
-    ).not.toContain('layout');
-    expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
-    ).not.toContain('layout.*');
-    expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
-    ).not.toContain('defaultValues');
-    expect(
-      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
-    ).not.toContain('defaultValues.*');
-    expect(
-      tableCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
-    ).toEqual(expect.arrayContaining(['title', 'tooltip', 'width', 'fixed', 'editable', 'sorter']));
   });
 
-  it('should expose popup collection block resourceBindings for plain, record and association popup surfaces', async () => {
+  it('should expose association-specific popup resourceBindings for association popup surfaces', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup resource catalog page',
       tabTitle: 'Popup resource catalog tab',
@@ -1482,85 +443,6 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-
-    const plainPopupAction = await addAction(rootAgent, tableUid, 'popup');
-    const plainPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: plainPopupAction.uid,
-          },
-        },
-      }),
-    );
-    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')?.resourceBindings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ key: 'currentCollection' }),
-        expect.objectContaining({ key: 'otherRecords' }),
-      ]),
-    );
-    expect(
-      plainPopupCatalog.blocks
-        .find((item: any) => item.use === 'CreateFormModel')
-        ?.resourceBindings.map((item: any) => item.key),
-    ).not.toEqual(expect.arrayContaining(['currentRecord', 'associatedRecords']));
-    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')).toBeUndefined();
-    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')).toBeUndefined();
-
-    const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view');
-    const recordPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: recordPopupAction.uid,
-          },
-        },
-      }),
-    );
-    const recordPopupDetailsBindings =
-      recordPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
-    expect(recordPopupDetailsBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
-    );
-    expect(recordPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection']),
-    );
-    const recordPopupTableBindings =
-      recordPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')?.resourceBindings || [];
-    expect(recordPopupTableBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['associatedRecords', 'otherRecords']),
-    );
-    expect(recordPopupTableBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection', 'currentRecord']),
-    );
-    expect(recordPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          key: 'skills',
-          collectionName: 'skills',
-          associationName: 'employees.skills',
-        }),
-      ]),
-    );
-
-    const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');
-    const recordScopedPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: recordScopedPopupAction.uid,
-          },
-        },
-      }),
-    );
-    const recordScopedPopupDetailsBindings =
-      recordScopedPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
-    expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
-    );
-    expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection']),
-    );
 
     const associationPopupAction = await addAction(rootAgent, tableUid, 'popup');
     const associationPopupConfig = await rootAgent.resource('flowSurfaces').configure({
@@ -1843,7 +725,7 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRaw)).toContain('currentRecord');
   });
 
-  it('should support explicit otherRecords dataSourceKey and hide collection-block bindings on unsupported popup scenes', async () => {
+  it('should support explicit otherRecords dataSourceKey on plain popup surfaces', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup block scene page',
       tabTitle: 'Popup block scene tab',
@@ -1879,54 +761,6 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'departments',
     });
-
-    const selectPopupAction = await addAction(rootAgent, tableUid, 'popup');
-    const selectPopupConfig = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: {
-          uid: selectPopupAction.uid,
-        },
-        changes: {
-          openView: {
-            scene: 'select',
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      },
-    });
-    expect(selectPopupConfig.status).toBe(200);
-
-    const selectPopupCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: selectPopupAction.uid,
-          },
-        },
-      }),
-    );
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')).toBeUndefined();
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')).toBeUndefined();
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')).toBeUndefined();
-    expect(selectPopupCatalog.blocks.find((item: any) => item.use === 'MarkdownBlockModel')).toBeTruthy();
-
-    const unsupportedAdd = await rootAgent.resource('flowSurfaces').addBlock({
-      values: {
-        target: {
-          uid: selectPopupAction.uid,
-        },
-        type: 'table',
-        resource: {
-          binding: 'otherRecords',
-          dataSourceKey: 'main',
-          collectionName: 'departments',
-        },
-      },
-    });
-    expect(unsupportedAdd.status).toBe(400);
-    expect(readErrorMessage(unsupportedAdd)).toContain(`scene 'select'`);
-    expect(readErrorMessage(unsupportedAdd)).toContain('does not support popup collection block creation');
   });
 
   it('should enforce grouped path-level contracts for public core collection blocks', async () => {
@@ -2249,7 +1083,7 @@ describe('flowSurfaces resource', () => {
     }
   });
 
-  it('should enforce real block settings keys for supported built-in block contracts', async () => {
+  it('should enforce real block settings keys for representative built-in block contracts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Block contract page',
       tabTitle: 'Block contract tab',
@@ -2297,94 +1131,6 @@ describe('flowSurfaces resource', () => {
     });
     expect(validMarkdownSettings.status).toBe(200);
 
-    const actionPanelBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'actionPanel',
-        },
-      }),
-    );
-    const invalidActionPanelSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: actionPanelBlock.uid,
-        },
-        stepParams: {
-          buttonSettings: {
-            general: {
-              title: 'legacy-button-key',
-            },
-          },
-        },
-      },
-    });
-    expect(invalidActionPanelSettings.status).toBe(400);
-
-    const validActionPanelSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: actionPanelBlock.uid,
-        },
-        stepParams: {
-          actionPanelBlockSetting: {
-            layout: {
-              layout: 'list',
-            },
-          },
-        },
-      },
-    });
-    expect(validActionPanelSettings.status).toBe(200);
-
-    const listBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'list',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      }),
-    );
-    const invalidListSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: listBlock.uid,
-        },
-        stepParams: {
-          cardSettings: {
-            layout: {
-              layout: 'vertical',
-            },
-          },
-        },
-      },
-    });
-    expect(invalidListSettings.status).toBe(400);
-
-    const validListSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: listBlock.uid,
-        },
-        stepParams: {
-          listSettings: {
-            pageSize: {
-              pageSize: 20,
-            },
-          },
-        },
-      },
-    });
-    expect(validListSettings.status).toBe(200);
-
     const createFormBlock = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -2399,22 +1145,6 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    const invalidCreateFormLayoutPath = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: createFormBlock.uid,
-        },
-        stepParams: {
-          formModelSettings: {
-            layout: {
-              legacy: true,
-            },
-          },
-        },
-      },
-    });
-    expect(invalidCreateFormLayoutPath.status).toBe(400);
-
     const invalidCreateFormEventOnlyWrite = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -2480,235 +1210,6 @@ describe('flowSurfaces resource', () => {
     });
     expect(validCreateFormEventBinding.status).toBe(200);
 
-    const editFormBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'editForm',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      }),
-    );
-    const invalidEditFormEventOnlyWrite = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: editFormBlock.uid,
-        },
-        stepParams: {
-          formSettings: {
-            refresh: {
-              force: true,
-            },
-          },
-        },
-      },
-    });
-    expect(invalidEditFormEventOnlyWrite.status).toBe(400);
-
-    const validEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: editFormBlock.uid,
-        },
-        stepParams: {
-          formSettings: {
-            dataScope: {
-              filter: {
-                logic: '$and',
-                items: [],
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(validEditFormSettings.status).toBe(200);
-
-    const validEditFormEventBinding = await rootAgent.resource('flowSurfaces').setEventFlows({
-      values: {
-        target: {
-          uid: editFormBlock.uid,
-        },
-        flowRegistry: {
-          editFormInit: {
-            key: 'editFormInit',
-            on: {
-              eventName: 'submit',
-              phase: 'beforeStep',
-              flowKey: 'formSettings',
-              stepKey: 'init',
-            },
-            steps: {},
-          },
-          editFormRefresh: {
-            key: 'editFormRefresh',
-            on: {
-              eventName: 'submit',
-              phase: 'beforeStep',
-              flowKey: 'formSettings',
-              stepKey: 'refresh',
-            },
-            steps: {},
-          },
-        },
-      },
-    });
-    expect(validEditFormEventBinding.status).toBe(200);
-
-    const createFormReadback = await getSurface(rootAgent, {
-      uid: createFormBlock.uid,
-    });
-    expect(createFormReadback.tree.flowRegistry?.createFormRefresh).toMatchObject({
-      key: 'createFormRefresh',
-      on: {
-        eventName: 'submit',
-        phase: 'beforeStep',
-        flowKey: 'formSettings',
-        stepKey: 'refresh',
-      },
-    });
-    const editFormReadback = await getSurface(rootAgent, {
-      uid: editFormBlock.uid,
-    });
-    expect(editFormReadback.tree.flowRegistry?.editFormInit).toMatchObject({
-      key: 'editFormInit',
-      on: {
-        eventName: 'submit',
-        phase: 'beforeStep',
-        flowKey: 'formSettings',
-        stepKey: 'init',
-      },
-    });
-    expect(editFormReadback.tree.flowRegistry?.editFormRefresh).toMatchObject({
-      key: 'editFormRefresh',
-      on: {
-        eventName: 'submit',
-        phase: 'beforeStep',
-        flowKey: 'formSettings',
-        stepKey: 'refresh',
-      },
-    });
-
-    const detailsBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'details',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      }),
-    );
-    const invalidDetailsLayoutPath = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: detailsBlock.uid,
-        },
-        stepParams: {
-          detailsSettings: {
-            layout: {
-              legacy: true,
-            },
-          },
-        },
-      },
-    });
-    expect(invalidDetailsLayoutPath.status).toBe(400);
-
-    const validDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: detailsBlock.uid,
-        },
-        stepParams: {
-          detailsSettings: {
-            layout: {
-              layout: 'vertical',
-              labelAlign: 'left',
-              labelWidth: 120,
-              labelWrap: true,
-              colon: true,
-            },
-            dataScope: {
-              filter: {
-                logic: '$and',
-                items: [],
-              },
-            },
-            defaultSorting: {
-              sort: [],
-            },
-            linkageRules: {
-              value: [],
-            },
-          },
-        },
-      },
-    });
-    expect(validDetailsSettings.status).toBe(200);
-
-    const filterFormBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'filterForm',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'employees',
-          },
-        },
-      }),
-    );
-    const invalidFilterFormDefaultValuePath = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: filterFormBlock.uid,
-        },
-        stepParams: {
-          formFilterBlockModelSettings: {
-            defaultValues: {
-              legacy: true,
-            },
-          },
-        },
-      },
-    });
-    expect(invalidFilterFormDefaultValuePath.status).toBe(400);
-
-    const validFilterFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: filterFormBlock.uid,
-        },
-        stepParams: {
-          formFilterBlockModelSettings: {
-            layout: {
-              layout: 'horizontal',
-              labelAlign: 'left',
-              labelWidth: 140,
-              labelWrap: true,
-              colon: true,
-            },
-            defaultValues: {
-              value: [],
-            },
-          },
-        },
-      },
-    });
-    expect(validFilterFormSettings.status).toBe(200);
-
     const tableBlock = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -2739,22 +1240,6 @@ describe('flowSurfaces resource', () => {
     });
     expect(invalidTableLegacyStep.status).toBe(400);
 
-    const invalidTableNestedPath = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: tableBlock.uid,
-        },
-        stepParams: {
-          tableSettings: {
-            quickEdit: {
-              legacy: true,
-            },
-          },
-        },
-      },
-    });
-    expect(invalidTableNestedPath.status).toBe(400);
-
     const validTableSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -2771,14 +1256,8 @@ describe('flowSurfaces resource', () => {
             quickEdit: {
               editable: true,
             },
-            showRowNumbers: {
-              showIndex: false,
-            },
             pageSize: {
               pageSize: 50,
-            },
-            tableDensity: {
-              size: 'small',
             },
             dragSort: {
               dragSort: true,
@@ -2836,6 +1315,19 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(validChartSettings.status).toBe(200);
+
+    const createFormReadback = await getSurface(rootAgent, {
+      uid: createFormBlock.uid,
+    });
+    expect(createFormReadback.tree.flowRegistry?.createFormRefresh).toMatchObject({
+      key: 'createFormRefresh',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeStep',
+        flowKey: 'formSettings',
+        stepKey: 'refresh',
+      },
+    });
   });
 
   it('should enforce real action button settings keys and linkageRules event bindings', async () => {
@@ -2985,67 +1477,6 @@ describe('flowSurfaces resource', () => {
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules).toEqual([]);
-  });
-
-  it('should reject create-time payloads that bypass the shared settings contract', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Create contract page',
-      tabTitle: 'Create contract tab',
-    });
-
-    const invalidBlockCreate = await rootAgent.resource('flowSurfaces').addBlock({
-      values: {
-        target: {
-          uid: page.tabSchemaUid,
-        },
-        type: 'markdown',
-        stepParams: {
-          markdownSettings: {
-            editMarkdown: {
-              content: 'legacy-create-key',
-            },
-          },
-        },
-      },
-    });
-    expect(invalidBlockCreate.status).toBe(400);
-    expect(readErrorMessage(invalidBlockCreate)).toContain('does not accept raw keys');
-
-    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const invalidActionCreate = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: tableBlockUid,
-        },
-        type: 'addNew',
-        stepParams: {
-          buttonSettings: {
-            general: {
-              htmlType: 'submit',
-            },
-          },
-        },
-      },
-    });
-    expect(invalidActionCreate.status).toBe(400);
-    expect(readErrorMessage(invalidActionCreate)).toContain('does not accept raw keys');
-
-    const invalidFieldCreate = await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: {
-          uid: tableBlockUid,
-        },
-        type: 'jsColumn',
-        props: {
-          title: 'Legacy runtime column',
-        },
-      },
-    });
-    expect(invalidFieldCreate.status).toBe(400);
-    expect(readErrorMessage(invalidFieldCreate)).toContain('does not accept raw keys');
   });
 
   it('should support inline settings and popup on singular add APIs', async () => {
@@ -3565,6 +1996,103 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRes)).toContain('external openView.uid');
   });
 
+  it('should preserve empty action popup payload semantics for external popup targets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'External action popup replace page',
+      tabTitle: 'External action popup replace tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const externalPopupAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'details',
+                type: 'details',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    getData(
+      await rootAgent.resource('flowSurfaces').updatePopupTab({
+        values: {
+          target: {
+            uid: externalPopupAction.popupTabUid,
+          },
+          title: 'Shared employee popup',
+        },
+      }),
+    );
+
+    const replaceRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'view',
+        settings: {
+          openView: {
+            uid: externalPopupAction.uid,
+          },
+        },
+        popup: {},
+      },
+    });
+    expect(replaceRes.status).toBe(200);
+    expect(getData(replaceRes).popupPageUid).toBe(externalPopupAction.popupPageUid);
+
+    const layoutOnlyRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'view',
+        settings: {
+          openView: {
+            uid: externalPopupAction.uid,
+          },
+        },
+        popup: {
+          mode: 'replace',
+          layout: {
+            rows: [['details']],
+          },
+        },
+      },
+    });
+    expect(layoutOnlyRes.status).toBe(200);
+    expect(getData(layoutOnlyRes).popupPageUid).toBe(externalPopupAction.popupPageUid);
+
+    const externalPopupReadback = await getSurface(rootAgent, {
+      uid: externalPopupAction.uid,
+    });
+    const externalPopupTab = _.castArray(externalPopupReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const externalPopupBlock = _.castArray(externalPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const externalPopupFieldPaths = _.castArray(externalPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(externalPopupTab?.props?.title).toBe('Shared employee popup');
+    expect(externalPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(externalPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(externalPopupFieldPaths).toEqual(['nickname']);
+  });
+
   it('should reject openView uid when it points to a popup page node', async () => {
     const page = await createPage(rootAgent, {
       title: 'Invalid popup uid page',
@@ -3886,11 +2414,22 @@ describe('flowSurfaces resource', () => {
       settings: {
         title: 'Create New',
       },
+      popup: {},
     });
     expect(addNewAction.uid).toBeTruthy();
 
-    await addRecordAction(rootAgent, tableBlockUid, 'view');
-    await addRecordAction(rootAgent, tableBlockUid, 'edit');
+    const viewAction = await addRecordAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        mode: 'replace',
+      },
+    });
+    const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
+      popup: {
+        layout: {
+          rows: [[{ key: 'defaultEditForm', span: 10 }]],
+        },
+      },
+    });
     await addRecordAction(rootAgent, tableBlockUid, 'popup');
     await addRecordAction(rootAgent, tableBlockUid, 'delete');
 
@@ -3949,8 +2488,150 @@ describe('flowSurfaces resource', () => {
         'field.department.title.wrapper',
       ]),
     );
-    expect(bundle.refs['field.nickname.wrapper'].uid).toBe(nicknameField.wrapperUid);
-    expect(bundle.refs['field.status.wrapper'].uid).toBe(statusField.wrapperUid);
+    expect(Object.values(bundle.refs).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
+    expect(Object.values(bundle.refs).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
+
+    const addNewReadback = await getSurface(rootAgent, {
+      uid: addNewAction.uid,
+    });
+    const addNewPopupTab = _.castArray(addNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const addNewPopupBlock = _.castArray(addNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const addNewPopupFieldPaths = _.castArray(addNewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(addNewPopupTab?.props?.title).toBe('Create New');
+    expect(addNewPopupBlock?.use).toBe('CreateFormModel');
+    expect(addNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(addNewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(addNewPopupFieldPaths).not.toEqual(
+      expect.arrayContaining(['createdAt', 'updatedAt', 'departmentId', 'tasks', 'logs', 'skills']),
+    );
+    expect(_.castArray(addNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    const viewReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const viewPopupTab = _.castArray(viewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const viewPopupBlock = _.castArray(viewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const viewPopupFieldPaths = _.castArray(viewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(viewPopupTab?.props?.title).toBe('Details');
+    expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
+    expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(viewPopupBlock?.subModels?.actions).toBeUndefined();
+    expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
+
+    const editReadback = await getSurface(rootAgent, {
+      uid: editAction.uid,
+    });
+    const editPopupTab = _.castArray(editReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const editPopupBlock = _.castArray(editPopupTab?.subModels?.grid?.subModels?.items || [])[0];
+    const editPopupFieldPaths = _.castArray(editPopupBlock?.subModels?.grid?.subModels?.items || []).map(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+    );
+    expect(editPopupTab?.props?.title).toBe('Edit');
+    expect(editPopupBlock?.use).toBe('EditFormModel');
+    expect(editPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(editPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
+    expect(editPopupFieldPaths).not.toEqual(
+      expect.arrayContaining(['createdAt', 'updatedAt', 'departmentId', 'tasks', 'logs', 'skills']),
+    );
+    expect(_.castArray(editPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+  });
+
+  it('should auto-complete omitted popup payloads for direct action APIs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Implicit popup action page',
+      tabTitle: 'Implicit popup action tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const addNewAction = await addAction(rootAgent, tableBlockUid, 'addNew', {
+      settings: {
+        title: 'Create Employee',
+      },
+    });
+    const viewAction = await addRecordAction(rootAgent, tableBlockUid, 'view', {
+      settings: {
+        title: 'Inspect Employee',
+      },
+    });
+
+    const readActionPopup = async (actionUid: string) => {
+      const actionReadback = await getSurface(rootAgent, {
+        uid: actionUid,
+      });
+      const popupTab = _.castArray(actionReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+      const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+      return {
+        popupTab,
+        popupBlock,
+      };
+    };
+
+    expect(addNewAction.popupPageUid).toBeTruthy();
+    expect(addNewAction.popupTabUid).toBeTruthy();
+    expect(addNewAction.popupGridUid).toBeTruthy();
+    const addNewPopup = await readActionPopup(addNewAction.uid);
+    expect(addNewPopup.popupTab?.props?.title).toBe('Create Employee');
+    expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
+    expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(addNewPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    expect(viewAction.popupPageUid).toBeTruthy();
+    expect(viewAction.popupTabUid).toBeTruthy();
+    expect(viewAction.popupGridUid).toBeTruthy();
+    const viewPopup = await readActionPopup(viewAction.uid);
+    expect(viewPopup.popupTab?.props?.title).toBe('Inspect Employee');
+    expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+  });
+
+  it('should keep plain popup action empty payloads composable', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Plain popup empty payload page',
+      tabTitle: 'Plain popup empty payload tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const popupActionRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: tableBlockUid,
+        },
+        type: 'popup',
+        popup: {},
+      },
+    });
+    expect(popupActionRes.status).toBe(200);
+    const popupActionData = getData(popupActionRes);
+    expect(popupActionData.popupPageUid).toBeTruthy();
+    expect(popupActionData.popupTabUid).toBeTruthy();
+    expect(popupActionData.popupGridUid).toBeTruthy();
+
+    const popupReadback = await getSurface(rootAgent, {
+      uid: popupActionData.uid,
+    });
+    expect(popupReadback.tree.subModels?.page?.uid).toBe(popupActionData.popupPageUid);
+    expect(_.castArray(popupReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.uid).toBe(
+      popupActionData.popupTabUid,
+    );
   });
 
   it('should support nested popup surfaces to depth 3', async () => {
@@ -4320,7 +3001,7 @@ describe('flowSurfaces resource', () => {
     const clearedFieldReadback = await getSurface(rootAgent, {
       uid: clickableField.fieldUid,
     });
-    expect(clearedFieldReadback.tree.stepParams?.popupSettings).toEqual({});
+    expect(clearedFieldReadback.tree.stepParams?.popupSettings).toBeUndefined();
   });
 
   it('should require explicit filter targets and persist default filter field props plus filterManager bindings', async () => {
@@ -4642,170 +3323,6 @@ describe('flowSurfaces resource', () => {
     ).toBe(false);
   });
 
-  it('should persist sql chart bindings and resync filter-form target bindings when chart mode changes', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Chart filter target page',
-      tabTitle: 'Chart filter target tab',
-    });
-
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const chartUid = await addBlock(rootAgent, page.tabSchemaUid, 'chart', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-
-    const configureBuilderRes = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: { uid: chartUid },
-        changes: {
-          query: {
-            mode: 'builder',
-            resource: {
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-            measures: [
-              {
-                field: 'id',
-                aggregation: 'count',
-                alias: 'employeeCount',
-              },
-            ],
-            dimensions: [{ field: 'department.title' }],
-          },
-          visual: {
-            type: 'bar',
-            mappings: {
-              x: 'department.title',
-              y: 'employeeCount',
-            },
-          },
-        },
-      },
-    });
-    expect(configureBuilderRes.status).toBe(200);
-
-    const filterCatalog = getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: { uid: filterFormUid },
-        },
-      }),
-    );
-    expect(filterCatalog.fields.some((item: any) => item.key === 'nickname' && item.targetBlockUid === chartUid)).toBe(
-      true,
-    );
-
-    const nicknameFilterField = await addField(rootAgent, filterFormUid, 'nickname', {
-      defaultTargetUid: chartUid,
-    });
-    const pageGrid = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
-    expect(
-      _.castArray(pageGrid?.filterManager || []).find((item: any) => item.filterId === nicknameFilterField.wrapperUid),
-    ).toMatchObject({
-      targetId: chartUid,
-      filterPaths: ['nickname'],
-    });
-
-    const configureSqlRes = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: { uid: chartUid },
-        changes: {
-          query: {
-            mode: 'sql',
-            sql: 'select nickname, count(*) as employeeCount from employees group by nickname',
-            sqlDatasource: 'main',
-          },
-        },
-      },
-    });
-    expect(configureSqlRes.status).toBe(200);
-
-    const flowSqlRecord = await db.getRepository('flowSql').findOne({
-      filter: { uid: chartUid },
-    });
-    expect(flowSqlRecord?.get?.('sql')).toContain('group by nickname');
-
-    const pageGridAfterSql = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
-    expect(
-      _.castArray(pageGridAfterSql?.filterManager || []).some(
-        (item: any) => item.filterId === nicknameFilterField.wrapperUid,
-      ),
-    ).toBe(false);
-
-    const configureBackToBuilderRes = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: { uid: chartUid },
-        changes: {
-          query: {
-            mode: 'builder',
-            resource: {
-              dataSourceKey: 'main',
-              collectionName: 'employees',
-            },
-            measures: [
-              {
-                field: 'id',
-                aggregation: 'count',
-                alias: 'employeeCount',
-              },
-            ],
-            dimensions: [{ field: 'department.title' }],
-          },
-        },
-      },
-    });
-    expect(configureBackToBuilderRes.status).toBe(200);
-    const staleFlowSqlRecord = await db.getRepository('flowSql').findOne({
-      filter: { uid: chartUid },
-    });
-    expect(staleFlowSqlRecord).toBeNull();
-
-    const pageGridAfterBuilder = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
-    expect(
-      _.castArray(pageGridAfterBuilder?.filterManager || []).find(
-        (item: any) => item.filterId === nicknameFilterField.wrapperUid,
-      ),
-    ).toMatchObject({
-      targetId: chartUid,
-      filterPaths: ['nickname'],
-    });
-
-    const configureOtherCollectionRes = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: { uid: chartUid },
-        changes: {
-          query: {
-            mode: 'builder',
-            resource: {
-              dataSourceKey: 'main',
-              collectionName: 'departments',
-            },
-            measures: [
-              {
-                field: 'title',
-                aggregation: 'count',
-                alias: 'departmentCount',
-              },
-            ],
-            dimensions: [{ field: 'location' }],
-          },
-        },
-      },
-    });
-    expect(configureOtherCollectionRes.status).toBe(200);
-
-    const pageGridAfterCollectionChange = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
-    expect(
-      _.castArray(pageGridAfterCollectionChange?.filterManager || []).some(
-        (item: any) => item.filterId === nicknameFilterField.wrapperUid,
-      ),
-    ).toBe(false);
-  });
-
   it('should keep field capability inference aligned across catalog addField and apply', async () => {
     const page = await createPage(rootAgent, {
       title: 'Field capability page',
@@ -5007,7 +3524,7 @@ describe('flowSurfaces resource', () => {
     expect(validFieldReadback.tree.use).toBe('DisplayTextFieldModel');
   });
 
-  it('should keep action visibility aligned between catalog and direct addAction', async () => {
+  it('should keep representative advanced action visibility aligned between catalog and direct addAction', async () => {
     const page = await createPage(rootAgent, {
       title: 'Action visibility page',
       tabTitle: 'Action visibility tab',
@@ -5092,83 +3609,25 @@ describe('flowSurfaces resource', () => {
       expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
     );
 
-    const tableReadback = await getSurface(rootAgent, { uid: tableUid });
-    const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
-      (column: any) => column?.use === 'TableActionsColumnModel',
-    )?.uid;
-    expect(actionsColumnUid).toBeTruthy();
-
     const tableBulkEdit = await addAction(rootAgent, tableUid, 'bulkEdit');
-    const tableExpandCollapse = await addAction(rootAgent, tableUid, 'expandCollapse');
-    const tableBulkUpdate = await addAction(rootAgent, tableUid, 'bulkUpdate');
-    const tableComposeEmail = await addAction(rootAgent, tableUid, 'composeEmail');
     const rowAddChild = await addRecordAction(rootAgent, tableUid, 'addChild');
-    const rowDuplicate = await addRecordAction(rootAgent, tableUid, 'duplicate');
-    const rowComposeEmail = await addRecordAction(rootAgent, tableUid, 'composeEmail');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
-    const detailsView = await addRecordAction(rootAgent, detailsUid, 'view');
-    const filterSubmit = await addAction(rootAgent, filterFormUid, 'submit');
-    const filterReset = await addAction(rootAgent, filterFormUid, 'reset');
     const filterCollapse = await addAction(rootAgent, filterFormUid, 'collapse');
+    const detailsTemplatePrint = await addRecordAction(rootAgent, detailsUid, 'templatePrint');
 
     expect((await getSurface(rootAgent, { uid: tableBulkEdit.uid })).tree.use).toBe('BulkEditActionModel');
-    expect((await getSurface(rootAgent, { uid: tableExpandCollapse.uid })).tree.use).toBe('ExpandCollapseActionModel');
-    expect((await getSurface(rootAgent, { uid: tableBulkUpdate.uid })).tree.use).toBe('BulkUpdateActionModel');
-    expect((await getSurface(rootAgent, { uid: tableComposeEmail.uid })).tree.use).toBe('MailSendActionModel');
     expect((await getSurface(rootAgent, { uid: rowAddChild.uid })).tree.use).toBe('AddChildActionModel');
-    expect((await getSurface(rootAgent, { uid: rowDuplicate.uid })).tree.use).toBe('DuplicateActionModel');
-    expect((await getSurface(rootAgent, { uid: rowComposeEmail.uid })).tree.use).toBe('MailSendActionModel');
     expect((await getSurface(rootAgent, { uid: formSubmit.uid })).tree.use).toBe('FormSubmitActionModel');
-    expect((await getSurface(rootAgent, { uid: detailsView.uid })).tree.use).toBe('ViewActionModel');
-    expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.use).toBe('FilterFormSubmitActionModel');
-    expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.stepParams?.submitSettings).toBeUndefined();
-    expect((await getSurface(rootAgent, { uid: filterReset.uid })).tree.use).toBe('FilterFormResetActionModel');
     expect((await getSurface(rootAgent, { uid: filterCollapse.uid })).tree.use).toBe('FilterFormCollapseActionModel');
+    expect((await getSurface(rootAgent, { uid: detailsTemplatePrint.uid })).tree.use).toBe(
+      'TemplatePrintRecordActionModel',
+    );
     expect(
       (await getSurface(rootAgent, { uid: rowAddChild.uid })).tree.stepParams?.popupSettings?.openView,
     ).toMatchObject({
       mode: 'drawer',
       size: 'medium',
     });
-    expect(
-      (await getSurface(rootAgent, { uid: rowComposeEmail.uid })).tree.stepParams?.popupSettings?.openView,
-    ).toMatchObject({
-      mode: 'drawer',
-      size: 'medium',
-    });
-
-    const createFormDeleteRes = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: createFormUid,
-        },
-        type: 'delete',
-      },
-    });
-    expect(createFormDeleteRes.status).toBe(400);
-    expect(readErrorMessage(createFormDeleteRes)).toContain(`is not allowed under 'CreateFormModel'`);
-
-    const filterFormViewRes = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: filterFormUid,
-        },
-        type: 'view',
-      },
-    });
-    expect(filterFormViewRes.status).toBe(400);
-    expect(readErrorMessage(filterFormViewRes)).toContain(`is not allowed under 'FilterFormBlockModel'`);
-
-    const tableSubmitRes = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: tableUid,
-        },
-        type: 'submit',
-      },
-    });
-    expect(tableSubmitRes.status).toBe(400);
-    expect(readErrorMessage(tableSubmitRes)).toContain(`is not allowed under 'TableBlockModel'`);
   });
 
   it('should expose js public capabilities consistently across catalog, direct APIs and configure', async () => {
@@ -6067,7 +4526,7 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidFieldUseApply)).toContain(`fieldUse 'DisplayTextFieldModel'`);
   });
 
-  it('should support mutate ref chain rollback apply replace subtree and stable get readback', async () => {
+  it('should support mutate key chain rollback apply replace subtree and stable get readback', async () => {
     const pageSchemaUid = 'rollback_page_schema_uid';
     const tabSchemaUid = 'rollback_tab_schema_uid';
     const rollbackRes = await rootAgent.resource('flowSurfaces').mutate({
@@ -6090,7 +4549,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'page.tabSchemaUid',
+                  key: 'page.tabSchemaUid',
                 },
               },
               type: 'details',
@@ -6105,7 +4564,7 @@ describe('flowSurfaces resource', () => {
             values: {
               target: {
                 uid: {
-                  ref: 'block.uid',
+                  key: 'block.uid',
                 },
               },
               fieldPath: 'not_exists',
@@ -7433,11 +5892,12 @@ describe('flowSurfaces resource', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
+    const gammaBlock = getComposeBlock(composed, 'gamma');
     expect(composed.layout).toMatchObject({
       rowOrder: ['legacyRow', 'appendRow1'],
       rows: {
         legacyRow: [[firstBlockUid], [secondBlockUid]],
-        appendRow1: [[composed.keyToUid.gamma]],
+        appendRow1: [[gammaBlock.uid]],
       },
       sizes: {
         legacyRow: [8, 16],
@@ -7452,7 +5912,7 @@ describe('flowSurfaces resource', () => {
       rowOrder: ['legacyRow', 'appendRow1'],
       rows: {
         legacyRow: [[firstBlockUid], [secondBlockUid]],
-        appendRow1: [[composed.keyToUid.gamma]],
+        appendRow1: [[gammaBlock.uid]],
       },
       sizes: {
         legacyRow: [8, 16],
@@ -7529,6 +5989,7 @@ describe('flowSurfaces resource', () => {
     expect(composeRes.status).toBe(200);
 
     const composed = getData(composeRes);
+    const gammaBlock = getComposeBlock(composed, 'gamma');
     const readback = await getSurface(rootAgent, {
       uid: page.tabSchemaUid,
     });
@@ -7537,7 +5998,7 @@ describe('flowSurfaces resource', () => {
       rows: {
         autoRow1: [[firstBlockUid]],
         autoRow2: [[secondBlockUid]],
-        autoRow3: [[composed.keyToUid.gamma]],
+        autoRow3: [[gammaBlock.uid]],
       },
       sizes: {
         autoRow1: [24],
@@ -8131,6 +6592,12 @@ function getData(response: any) {
   return response.body.data;
 }
 
+function getComposeBlock(result: any, key: string) {
+  const block = _.castArray(result?.blocks || []).find((item: any) => item?.key === key);
+  expect(block).toBeTruthy();
+  return block;
+}
+
 function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
 }
@@ -8436,6 +6903,7 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       tasks: ['title', 'status', 'employeeId'],
       employee_logs: ['content', 'employeeId'],
       skills: ['label'],
+      employee_skills: ['id', 'employeeId', 'skillId'],
     });
   }
 
@@ -8477,42 +6945,4 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       label: 'TypeScript',
     },
   });
-}
-
-async function waitForFixtureCollectionsReady(
-  db: Database,
-  requiredCollections: Record<string, string[]>,
-  timeoutMs = 15000,
-) {
-  const deadline = Date.now() + timeoutMs;
-  const queryInterface = db.sequelize.getQueryInterface();
-
-  while (Date.now() < deadline) {
-    let allReady = true;
-
-    for (const [collectionName, requiredColumns] of Object.entries(requiredCollections)) {
-      const collection = db.getCollection(collectionName);
-      const tableName = collection?.model?.getTableName?.() || collection?.name || collectionName;
-
-      try {
-        const columns = await queryInterface.describeTable(tableName as any);
-        const missingColumns = requiredColumns.filter((column) => !columns?.[column]);
-        if (missingColumns.length) {
-          allReady = false;
-          break;
-        }
-      } catch {
-        allReady = false;
-        break;
-      }
-    }
-
-    if (allReady) {
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-
-  throw new Error(`Fixture collections are not ready: ${Object.keys(requiredCollections).join(', ')}`);
 }

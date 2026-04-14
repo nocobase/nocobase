@@ -116,8 +116,7 @@ export const getMenuCreationDefaultParams = (
 
 const MENU_TYPE_OPTIONS: Array<{ label: string; value: AdminLayoutMenuCreationType }> = [
   { label: 'Group', value: 'group' },
-  { label: 'Classic page (v1)', value: 'page' },
-  { label: 'Modern page (v2)', value: 'flowPage' },
+  { label: 'Page', value: 'flowPage' },
   { label: 'Link', value: 'link' },
 ];
 

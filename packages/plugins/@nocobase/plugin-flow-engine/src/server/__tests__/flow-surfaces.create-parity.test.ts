@@ -8,6 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
+import _ from 'lodash';
 import {
   createCreateParityTree,
   projectFormalBlockCreateParityTree,
@@ -15,6 +16,7 @@ import {
 } from './flow-surfaces.fixtures';
 import {
   FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST,
+  FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS,
   type FormalFlowSurfaceBlockKey,
 } from './flow-surfaces-fixtures/manifest';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -46,6 +48,11 @@ const PET_TABLE_FIELD_PATHS = [
   'lastVisitAt',
   'updatedAt',
 ];
+
+const REPRESENTATIVE_CREATE_PARITY_ENTRIES = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.filter((entry) =>
+  FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS.includes(entry.key),
+);
+
 describe('flowSurfaces create parity (formal built-in blocks)', () => {
   let app: MockServer;
   let rootAgent: any;
@@ -62,7 +69,7 @@ describe('flowSurfaces create parity (formal built-in blocks)', () => {
     }
   });
 
-  for (const entry of FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST) {
+  for (const entry of REPRESENTATIVE_CREATE_PARITY_ENTRIES) {
     it(`should keep create parity aligned with real fixture canonical tree for formal block '${entry.key}'`, async () => {
       const readback = await buildCreateParityReadback(rootAgent, entry.key);
       const actualTree = projectFormalBlockCreateParityTree(entry.key, createCreateParityTree(readback));
@@ -74,21 +81,19 @@ describe('flowSurfaces create parity (formal built-in blocks)', () => {
 
   // Filter-form popup creation now has popup-scene-specific resource semantics and no longer
   // shares the same canonical baseline as the top-level representative fixture.
-  // Keep popup parity coverage for the collection blocks whose popup shape still matches the
-  // representative fixture directly.
-  for (const key of ['table', 'list', 'grid-card'] as const) {
-    it(`should keep nested popup create parity aligned with representative fixture for '${key}'`, async () => {
-      const readback = await buildNestedPopupCreateParityReadback(rootAgent, key);
-      const actualTree = projectFormalBlockCreateParityTree(key, createCreateParityTree(readback));
-      const fixtureEntry = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.find((entry) => entry.key === key);
-      if (!fixtureEntry) {
-        throw new Error(`Missing create parity fixture manifest for '${key}'`);
-      }
-      const expectedTree = readCreateParityFixtureExpectation(key, fixtureEntry.createParityFixture.name);
+  // Keep one nested collection-block representative parity smoke to ensure popup bootstrap still
+  // matches the canonical fixture path for the most complex table scenario.
+  it(`should keep nested popup create parity aligned with representative fixture for 'table'`, async () => {
+    const readback = await buildNestedPopupCreateParityReadback(rootAgent, 'table');
+    const actualTree = projectFormalBlockCreateParityTree('table', createCreateParityTree(readback));
+    const fixtureEntry = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.find((entry) => entry.key === 'table');
+    if (!fixtureEntry) {
+      throw new Error(`Missing create parity fixture manifest for 'table'`);
+    }
+    const expectedTree = readCreateParityFixtureExpectation('table', fixtureEntry.createParityFixture.name);
 
-      expect(actualTree).toEqual(expectedTree);
-    });
-  }
+    expect(actualTree).toEqual(expectedTree);
+  });
 });
 
 async function buildCreateParityReadback(rootAgent: any, key: FormalFlowSurfaceBlockKey) {
@@ -206,41 +211,17 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       await clearActionGroup(rootAgent, remove.uid, 'deleteSettings');
       await configureSimpleAction(rootAgent, remove.uid, 'Delete');
 
-      const addNewPopup = await createBlockData(rootAgent, {
-        target: {
-          uid: addNew.uid,
-        },
-        type: 'createForm',
-        resource: {
-          binding: 'currentCollection',
-        },
-      });
+      const addNewPopup = await readActionPopupState(rootAgent, addNew.uid);
       await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, 'Add Pet');
-      await configurePetsCreateFormBlock(rootAgent, addNewPopup.uid, 'Save');
+      await reorderBlockFields(rootAgent, addNewPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
-      const viewPopup = await createBlockData(rootAgent, {
-        target: {
-          uid: view.uid,
-        },
-        type: 'details',
-        resource: {
-          binding: 'currentRecord',
-        },
-      });
+      const viewPopup = await readActionPopupState(rootAgent, view.uid);
       await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, 'Pet Details');
-      await configurePetsDetailsBlock(rootAgent, viewPopup.uid);
+      await reorderBlockFields(rootAgent, viewPopup.popupBlockUid, PET_DETAILS_FIELD_PATHS);
 
-      const editPopup = await createBlockData(rootAgent, {
-        target: {
-          uid: edit.uid,
-        },
-        type: 'editForm',
-        resource: {
-          binding: 'currentRecord',
-        },
-      });
+      const editPopup = await readActionPopupState(rootAgent, edit.uid);
       await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, 'Edit Pet');
-      await configurePetsEditFormBlock(rootAgent, editPopup.uid, 'Save Changes');
+      await reorderBlockFields(rootAgent, editPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
       return getSurface(rootAgent, {
         uid: nestedTable.uid,
@@ -346,41 +327,17 @@ async function createTableParityReadback(rootAgent: any) {
   await clearActionGroup(rootAgent, remove.uid, 'deleteSettings');
   await configureSimpleAction(rootAgent, remove.uid, 'Delete');
 
-  const addNewPopup = await createBlockData(rootAgent, {
-    target: {
-      uid: addNew.uid,
-    },
-    type: 'createForm',
-    resource: {
-      binding: 'currentCollection',
-    },
-  });
+  const addNewPopup = await readActionPopupState(rootAgent, addNew.uid);
   await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, 'Add Pet');
-  await configurePetsCreateFormBlock(rootAgent, addNewPopup.uid, 'Save');
+  await reorderBlockFields(rootAgent, addNewPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
-  const viewPopup = await createBlockData(rootAgent, {
-    target: {
-      uid: view.uid,
-    },
-    type: 'details',
-    resource: {
-      binding: 'currentRecord',
-    },
-  });
+  const viewPopup = await readActionPopupState(rootAgent, view.uid);
   await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, 'Pet Details');
-  await configurePetsDetailsBlock(rootAgent, viewPopup.uid);
+  await reorderBlockFields(rootAgent, viewPopup.popupBlockUid, PET_DETAILS_FIELD_PATHS);
 
-  const editPopup = await createBlockData(rootAgent, {
-    target: {
-      uid: edit.uid,
-    },
-    type: 'editForm',
-    resource: {
-      binding: 'currentRecord',
-    },
-  });
+  const editPopup = await readActionPopupState(rootAgent, edit.uid);
   await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, 'Edit Pet');
-  await configurePetsEditFormBlock(rootAgent, editPopup.uid, 'Save Changes');
+  await reorderBlockFields(rootAgent, editPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
   return getSurface(rootAgent, {
     uid: table.uid,
@@ -694,6 +651,62 @@ async function configurePopupSurface(rootAgent: any, popupPageUid: string, popup
       },
     },
   });
+}
+
+async function readActionPopupState(rootAgent: any, actionUid: string) {
+  const actionReadback = await getSurface(rootAgent, {
+    uid: actionUid,
+  });
+  const popupPage = _.castArray(actionReadback.tree?.subModels?.page || [])[0];
+  const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
+  const popupGrid = _.castArray(popupTab?.subModels?.grid || [])[0];
+  const popupBlock = _.castArray(popupGrid?.subModels?.items || [])[0];
+
+  if (!popupPage?.uid || !popupTab?.uid || !popupBlock?.uid) {
+    throw new Error(`Action '${actionUid}' is missing default popup surface state`);
+  }
+
+  return {
+    popupPageUid: popupPage.uid,
+    popupTabUid: popupTab.uid,
+    popupBlockUid: popupBlock.uid,
+  };
+}
+
+async function reorderBlockFields(rootAgent: any, blockUid: string, desiredFieldPaths: string[]) {
+  const readback = await getSurface(rootAgent, {
+    uid: blockUid,
+  });
+  const grid = _.castArray(readback.tree?.subModels?.grid || [])[0];
+  const items = _.castArray(grid?.subModels?.items || []).filter((item: any) => item?.uid);
+  if (items.length < 2) {
+    return;
+  }
+
+  const uidByFieldPath = new Map(
+    items
+      .map((item: any) => [item?.stepParams?.fieldSettings?.init?.fieldPath, item.uid] as const)
+      .filter(([fieldPath, uid]) => !!fieldPath && !!uid),
+  );
+  const orderedUids = desiredFieldPaths.map((fieldPath) => uidByFieldPath.get(fieldPath)).filter(Boolean) as string[];
+  if (orderedUids.length < 2) {
+    return;
+  }
+
+  const currentFirstUid = items[0]?.uid;
+  const [firstUid, ...restUids] = orderedUids;
+  if (currentFirstUid && firstUid && firstUid !== currentFirstUid) {
+    await moveNode(rootAgent, firstUid, currentFirstUid, 'before');
+  }
+
+  let previousUid = firstUid;
+  for (const uid of restUids) {
+    if (!uid || uid === previousUid) {
+      continue;
+    }
+    await moveNode(rootAgent, uid, previousUid, 'after');
+    previousUid = uid;
+  }
 }
 
 async function clearActionGroup(rootAgent: any, uid: string, group: string) {

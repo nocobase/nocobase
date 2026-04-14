@@ -193,6 +193,146 @@ export default {
         },
       },
     },
+    '/roles/{roleName}/users:list': {
+      get: {
+        tags: ['roles.users'],
+        summary: 'List users bound to a role',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/PageQuery' },
+          { $ref: '#/components/parameters/PageSizeQuery' },
+          { $ref: '#/components/parameters/SortQuery' },
+          { $ref: '#/components/parameters/AppendsQuery' },
+          { $ref: '#/components/parameters/FilterQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  additionalProperties: true,
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/roles/{roleName}/users:add': {
+      post: {
+        tags: ['roles.users'],
+        summary: 'Bind one or more users to a role',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/MembershipUserFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
+    '/roles/{roleName}/users:remove': {
+      post: {
+        tags: ['roles.users'],
+        summary: 'Unbind one or more users from a role',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/MembershipUserFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
+    '/users/{userId}/roles:list': {
+      get: {
+        tags: ['users.roles'],
+        summary: 'List roles bound to a user',
+        parameters: [
+          { $ref: '#/components/parameters/UserIdPath' },
+          { $ref: '#/components/parameters/PageQuery' },
+          { $ref: '#/components/parameters/PageSizeQuery' },
+          { $ref: '#/components/parameters/SortQuery' },
+          { $ref: '#/components/parameters/AppendsQuery' },
+          { $ref: '#/components/parameters/FilterQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  additionalProperties: true,
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/users/{userId}/roles:add': {
+      post: {
+        tags: ['users.roles'],
+        summary: 'Bind one or more roles to a user',
+        parameters: [
+          { $ref: '#/components/parameters/UserIdPath' },
+          { $ref: '#/components/parameters/MembershipRoleFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
+    '/users/{userId}/roles:remove': {
+      post: {
+        tags: ['users.roles'],
+        summary: 'Unbind one or more roles from a user',
+        parameters: [
+          { $ref: '#/components/parameters/UserIdPath' },
+          { $ref: '#/components/parameters/MembershipRoleFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
     '/dataSources/{dataSourceKey}/roles:update': {
       post: {
         tags: ['dataSources.roles'],
@@ -594,12 +734,56 @@ export default {
         required: true,
         schema: { type: 'string' },
       },
+      UserIdPath: {
+        name: 'userId',
+        in: 'path',
+        description: 'User primary key.',
+        required: true,
+        schema: {
+          anyOf: [{ type: 'string' }, { type: 'integer' }],
+        },
+      },
       DataSourceKeyPath: {
         name: 'dataSourceKey',
         in: 'path',
         description: 'Data source key, for example `main`.',
         required: true,
         schema: { type: 'string' },
+      },
+      MembershipUserFilterByTkQuery: {
+        name: 'filterByTk',
+        in: 'query',
+        description: 'User primary key, or a list of user primary keys.',
+        required: true,
+        schema: {
+          anyOf: [
+            { type: 'string' },
+            { type: 'integer' },
+            {
+              type: 'array',
+              items: {
+                anyOf: [{ type: 'string' }, { type: 'integer' }],
+              },
+            },
+          ],
+        },
+      },
+      MembershipRoleFilterByTkQuery: {
+        name: 'filterByTk',
+        in: 'query',
+        description: 'Role name, or a list of role names.',
+        required: true,
+        schema: {
+          anyOf: [
+            { type: 'string' },
+            {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+          ],
+        },
       },
       ResourceNameQuery: {
         name: 'filterByTk',

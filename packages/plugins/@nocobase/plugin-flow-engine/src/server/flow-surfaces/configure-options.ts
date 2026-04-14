@@ -166,7 +166,10 @@ const FORM_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
   labelAlign: stringOption('Label alignment', { example: 'left' }),
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
-  assignRules: objectOption('Assignment rules', { example: {} }),
+  assignRules: objectOption(
+    'Raw assignment-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setFieldValueRules` or blueprint `reaction.items[]` instead of guessing this configure key directly.',
+    { example: {} },
+  ),
   colon: booleanOption('Whether to display a colon after the label', { example: true }),
 };
 
@@ -185,7 +188,10 @@ const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
   colon: booleanOption('Whether to display a colon after the label', { example: true }),
   sorting: SORTING,
   dataScope: FILTER_GROUP,
-  linkageRules: arrayOption('Linkage rules', { example: [] }),
+  linkageRules: arrayOption(
+    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setFieldLinkageRules` instead of guessing this configure key directly.',
+    { example: [] },
+  ),
 };
 
 const FILTER_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -476,7 +482,10 @@ const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
-  linkageRules: arrayOption('Linkage rules', { example: [] }),
+  linkageRules: arrayOption(
+    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setActionLinkageRules` instead of guessing this configure key directly.',
+    { example: [] },
+  ),
 };
 
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {

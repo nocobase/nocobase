@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, OpenModeProvider, SchemaComponentOptions, useMobileLayout, usePopupSettings } from '@nocobase/client';
+import { Action, OpenModeProvider, SchemaComponentOptions, usePopupSettings } from '@nocobase/client';
+import { useMobileLayout } from '@nocobase/client-v2';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, useEffect } from 'react';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';

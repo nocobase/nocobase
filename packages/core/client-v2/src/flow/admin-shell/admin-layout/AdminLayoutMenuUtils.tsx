@@ -274,8 +274,7 @@ const translateByModel = (model: FlowModel, value: any) => {
 
 const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> = [
   { key: 'group', label: 'Group', menuType: 'group' },
-  { key: 'page', label: 'Classic page (v1)', menuType: 'page' },
-  { key: 'flow-page', label: 'Modern page (v2)', menuType: 'flowPage' },
+  { key: 'flow-page', label: 'Page', menuType: 'flowPage' },
   { key: 'link', label: 'Link', menuType: 'link' },
 ];
 

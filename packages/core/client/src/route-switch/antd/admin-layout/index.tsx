@@ -8,18 +8,14 @@
  */
 
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import {
-  AdminLayoutMenuItemModel,
-  getAdminLayoutModel,
-  LayoutContent,
-  shouldRenderIconInTitle,
-  useMobileLayout,
-} from '@nocobase/client-v2';
+import { LayoutContent, useMobileLayout } from '@nocobase/client-v2';
 import React from 'react';
 import { AdminDynamicPage } from './AdminDynamicPage';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
-import { AdminLayoutModelV1 } from './AdminLayoutModel';
+import { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
+import { getAdminLayoutModel, AdminLayoutModelV1 } from './AdminLayoutModel';
+import { shouldRenderIconInTitle } from './AdminLayoutMenuUtils';
 import { userCenterSettings } from './userCenterSettings';
 
 export * from './useDeleteRouteSchema';
