@@ -81,7 +81,8 @@ export function getStructuredQueryArgError(name: string, value: unknown): string
   }
 
   if (typeof value === 'string') {
-    return `"${name}" must be an object, not a JSON string. Pass structured JSON like { "createdAt": { "$dateOn": "2025-11" } }.`;
+    const example = name === 'having' ? '{ "count": { "$gt": 10 } }' : '{ "createdAt": { "$dateOn": "2025-11" } }';
+    return `"${name}" must be an object, not a JSON string. Pass structured JSON like ${example}.`;
   }
 
   if (value === null || Array.isArray(value) || typeof value !== 'object') {

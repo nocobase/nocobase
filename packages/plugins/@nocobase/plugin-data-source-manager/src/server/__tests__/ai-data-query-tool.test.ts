@@ -197,8 +197,7 @@ describe('dataQuery tool', () => {
 
     expect(result).toEqual({
       status: 'error',
-      content:
-        '"having" must be an object, not a JSON string. Pass structured JSON like { "createdAt": { "$dateOn": "2025-11" } }.',
+      content: '"having" must be an object, not a JSON string. Pass structured JSON like { "count": { "$gt": 10 } }.',
     });
   });
 });
