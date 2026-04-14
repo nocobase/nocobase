@@ -11,9 +11,10 @@ import React, { useCallback } from 'react';
 import { Badge, Card, List, Spin, Tag, theme } from 'antd';
 import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
+import { ModelRef } from '../stores/chat-box';
 
 type UseWorkflowTasksListOptions = {
-  onOpenConversation: (sessionId: string, username?: string) => void;
+  onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
 };
 
 const getStatusTagColor = (status: string) => {
@@ -39,15 +40,18 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
       await acceptWorkflowTask(sessionId);
 
       let username: string | undefined;
+      let model: ModelRef | undefined;
       try {
         const task = await getWorkflowTaskBySession(sessionId);
         username = task?.config?.username;
+        model = task?.config?.model;
       } catch {
         username = undefined;
+        model = undefined;
       }
 
       refresh();
-      onOpenConversation(sessionId, username);
+      onOpenConversation(sessionId, username, model);
     },
     [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh],
   );

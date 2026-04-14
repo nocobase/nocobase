@@ -16,7 +16,7 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { AIEmployee } from '../../types';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
-import { useChatBoxStore } from '../stores/chat-box';
+import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessagesStore } from '../stores/chat-messages';
 import { ConversationsList, useConversationsList } from './ConversationsList';
@@ -61,7 +61,7 @@ export const Conversations: React.FC = memo(() => {
   const { clear } = useChatBoxActions();
 
   const openConversation = useCallback(
-    (sessionId: string, username?: string) => {
+    (sessionId: string, username?: string, model?: ModelRef) => {
       if (sessionId === currentConversation) {
         return;
       }
@@ -73,7 +73,11 @@ export const Conversations: React.FC = memo(() => {
       }
       setMessages([]);
       clear();
-      setModel(null);
+      if (model) {
+        setModel(model);
+      } else {
+        setModel(null);
+      }
       messagesService.run(sessionId);
       if (!expanded) {
         setShowConversations(false);

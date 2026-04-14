@@ -18,12 +18,12 @@ import { uid } from '@formily/shared';
 import { useT } from '../../../locale';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
-import { useChatBoxStore } from '../stores/chat-box';
+import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { ListEmpty } from './common';
 
 type UseConversationsListOptions = {
-  onOpenConversation: (sessionId: string, username?: string) => void;
+  onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
 };
 
 const conversationItemClassName = css`
