@@ -2341,9 +2341,10 @@ export const fieldLinkageRules = defineAction({
       return;
     }
 
-    const getFieldIndexEntriesFromModel = (model: any): Array<{ name: string; index: number }> => {
+    const getRowScopeKeyFromModel = (model: any): string | null => {
       const fieldIndex = model?.context?.fieldIndex;
       const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
+      if (!arr.length) return null;
       const entries: Array<{ name: string; index: number }> = [];
       for (const it of arr) {
         if (typeof it !== 'string') continue;
@@ -2352,35 +2353,6 @@ export const fieldLinkageRules = defineAction({
         if (!name || Number.isNaN(index)) continue;
         entries.push({ name, index });
       }
-      return entries;
-    };
-
-    const getFieldIndexSignatureFromModel = (model: any): string | null => {
-      const entries = getFieldIndexEntriesFromModel(model);
-      if (!entries.length) return null;
-      return entries.map((entry) => `${entry.name}:${entry.index}`).join('|');
-    };
-
-    const getClosestBlockUid = (model: any): string | null => {
-      let cursor = model;
-      const visited = new Set<any>();
-      while (cursor && !visited.has(cursor)) {
-        visited.add(cursor);
-        try {
-          const uid = cursor?.context?.blockModel?.uid;
-          if (uid != null && uid !== '') {
-            return String(uid);
-          }
-        } catch {
-          // ignore
-        }
-        cursor = cursor?.parent;
-      }
-      return null;
-    };
-
-    const getRowScopeKeyFromModel = (model: any): string | null => {
-      const entries = getFieldIndexEntriesFromModel(model);
       if (!entries.length) return null;
       const deepest = entries[entries.length - 1].name;
       const occurrence = entries.reduce((count, e) => (e.name === deepest ? count + 1 : count), 0);
@@ -2394,90 +2366,30 @@ export const fieldLinkageRules = defineAction({
       return !!getRowScopeKeyFromModel(model);
     };
 
-    const isInlineTableRowCarrierModel = (model: any): boolean => {
-      if (!model || typeof model !== 'object') return false;
-      if (!(model as any)?.subModels?.field) return false;
-      return !!getRowScopeKeyFromModel(model);
-    };
-
-    const getRowCarrierPriority = (model: any): number => {
-      if (isRowGridForkModel(model)) return 2;
-      if (isInlineTableRowCarrierModel(model)) return 1;
-      return -1;
-    };
-
-    const getLiveRowValueFromForm = (model: any) => {
-      const entries = getFieldIndexEntriesFromModel(model);
-      if (!entries.length) return undefined;
-      const rowPath: Array<string | number> = [];
-      for (const entry of entries) {
-        rowPath.push(entry.name, entry.index);
-      }
-      const form = model?.context?.form;
-      try {
-        if (typeof form?.getFieldValue === 'function') {
-          return form.getFieldValue(rowPath);
-        }
-      } catch {
-        // ignore
-      }
-      try {
-        if (typeof form?.getFieldsValue === 'function') {
-          return _.get(form.getFieldsValue(true), rowPath);
-        }
-      } catch {
-        // ignore
-      }
-      if (typeof form?.values !== 'undefined') {
-        return _.get(form.values, rowPath);
-      }
-      return undefined;
-    };
-
-    const collectRowScopedCarrierForksByKey = (): Map<string, FlowModel[]> => {
-      const out = new Map<string, Map<string, { model: FlowModel; priority: number }>>();
+    const collectRowGridForksByKey = (): Map<string, FlowModel[]> => {
+      const out = new Map<string, FlowModel[]>();
       const engine = ctx.engine;
-      if (!engine?.forEachModel) return new Map<string, FlowModel[]>();
-      const currentBlockUid = getClosestBlockUid(ctx.model);
-
-      const visitCandidate = (candidate: any) => {
-        if (!candidate || candidate.disposed) return;
-        const rowScopeKey = getRowScopeKeyFromModel(candidate);
-        const fieldIndexSignature = getFieldIndexSignatureFromModel(candidate);
-        const priority = getRowCarrierPriority(candidate);
-        if (!rowScopeKey || !fieldIndexSignature || priority < 0) return;
-        const candidateBlockUid = getClosestBlockUid(candidate);
-        if (currentBlockUid && candidateBlockUid && currentBlockUid !== candidateBlockUid) return;
-
-        const bySignature = out.get(rowScopeKey) || new Map<string, { model: FlowModel; priority: number }>();
-        const prev = bySignature.get(fieldIndexSignature);
-        if (!prev || priority > prev.priority) {
-          bySignature.set(fieldIndexSignature, { model: candidate as FlowModel, priority });
-        }
-        out.set(rowScopeKey, bySignature);
-      };
+      if (!engine?.forEachModel) return out;
 
       engine.forEachModel((m: FlowModel) => {
         const forks: any = (m as any)?.forks;
         if (!forks || typeof forks.forEach !== 'function') return;
         forks.forEach((fork: any) => {
-          visitCandidate(fork);
+          if (!fork || fork.disposed) return;
+          if (!isRowGridForkModel(fork)) return;
+          const rowScopeKey = getRowScopeKeyFromModel(fork);
+          if (!rowScopeKey) return;
+          const arr = out.get(rowScopeKey) || [];
+          arr.push(fork as FlowModel);
+          out.set(rowScopeKey, arr);
         });
       });
 
-      const normalized = new Map<string, FlowModel[]>();
-      out.forEach((bySignature, rowScopeKey) => {
-        normalized.set(
-          rowScopeKey,
-          Array.from(bySignature.values()).map((entry) => entry.model),
-        );
-      });
-
-      return normalized;
+      return out;
     };
 
     const runRowScoped = async (): Promise<boolean> => {
-      const forksByKey = collectRowScopedCarrierForksByKey();
+      const forksByKey = collectRowGridForksByKey();
       let hasAnyRowFork = false;
       for (const [rowScopeKey, rowParams] of rowParamsByKey.entries()) {
         const forks = forksByKey.get(rowScopeKey) || [];
@@ -2486,39 +2398,6 @@ export const fieldLinkageRules = defineAction({
         for (const forkModel of forks) {
           const rowCtx = new FlowRuntimeContext(forkModel, ctx.flowKey);
           defineSharedRuntimeMeta(rowCtx as any);
-          if (isInlineTableRowCarrierModel(forkModel)) {
-            const inheritedItemOptions = rowCtx.getPropertyOptions?.('item');
-            const { get: _itemGet, value: _itemValue, ...inheritedItemRest } = (inheritedItemOptions || {}) as any;
-            let freshItemReady = false;
-            let freshItem: any;
-            rowCtx.defineProperty('item', {
-              ...inheritedItemRest,
-              // Inline table row carrier caches render-time item.value. Refresh it from the current form row once
-              // for this execution so rule templates read the latest row value without repeated form snapshots.
-              get: () => {
-                if (freshItemReady) return freshItem;
-                let inheritedItem;
-                try {
-                  inheritedItem = (forkModel as any)?.context?.item;
-                } catch {
-                  inheritedItem = undefined;
-                }
-                const liveValue = getLiveRowValueFromForm(forkModel);
-                freshItem =
-                  inheritedItem && typeof inheritedItem === 'object' && typeof liveValue !== 'undefined'
-                    ? {
-                        ...inheritedItem,
-                        __is_new__: liveValue?.__is_new__ ?? inheritedItem?.__is_new__,
-                        __is_stored__: liveValue?.__is_stored__ ?? inheritedItem?.__is_stored__,
-                        value: liveValue,
-                      }
-                    : inheritedItem;
-                freshItemReady = true;
-                return freshItem;
-              },
-              cache: false,
-            });
-          }
           try {
             const resolvedRow = await resolveLinkageRulesParamsPreservingRunJsScripts(rowCtx, rowParams);
             await commonLinkageRulesHandler(rowCtx, resolvedRow);
