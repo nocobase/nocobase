@@ -1022,6 +1022,162 @@ describe('flowSurfaces applyBlueprint contract', () => {
     ]);
   });
 
+  it('should reject addChild written under actions in applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Misplaced addChild page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                fields: ['title'],
+                actions: [{ type: 'addChild', title: 'Add child category' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('tabs[0].blocks[0].actions[0]');
+    expect(readErrorMessage(executeRes)).toContain('must be authored under recordActions');
+  });
+
+  it('should reject addChild string shorthand written under actions in applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Misplaced addChild shorthand page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                fields: ['title'],
+                actions: ['addChild'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('tabs[0].blocks[0].actions[0]');
+    expect(readErrorMessage(executeRes)).toContain('must be authored under recordActions');
+  });
+
+  it('should only allow addChild under recordActions when applyBlueprint targets a tree table', async () => {
+    const invalidRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Invalid addChild blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                fields: ['title'],
+                recordActions: [{ type: 'addChild', title: 'Add child category' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('tree table');
+
+    const validRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Valid addChild blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+                recordActions: [{ type: 'addChild', title: 'Add child category' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(validRes.status).toBe(200);
+    const data = getData(validRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
+
+    const validStringRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Valid addChild shorthand blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+                recordActions: ['addChild'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(validStringRes.status).toBe(200);
+  });
+
   it('should reject unsupported applyBlueprint top-level keys', async () => {
     const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

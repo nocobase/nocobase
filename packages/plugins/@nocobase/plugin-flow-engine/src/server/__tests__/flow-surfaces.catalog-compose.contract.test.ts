@@ -158,8 +158,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       expect(tableCatalog.actions.find((item: any) => item.key === 'triggerWorkflow')).toBeUndefined();
 
       expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
-        expect.arrayContaining(['addChild', 'view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+        expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
       );
+      expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
       expect(tableCatalog.recordActions.find((item: any) => item.key === 'duplicate')).toBeUndefined();
       expect(tableCatalog.recordActions.find((item: any) => item.key === 'composeEmail')).toBeUndefined();
       expect(tableCatalog.recordActions.find((item: any) => item.key === 'templatePrint')).toBeUndefined();
@@ -266,7 +267,6 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'duplicate',
-        'addChild',
         'view',
         'edit',
         'popup',
@@ -278,6 +278,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         'triggerWorkflow',
       ]),
     );
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
     expect(tableCatalog.recordActions.length).toBeGreaterThan(0);
     expect(tableCatalog.actions.find((item: any) => item.key === 'addNew')?.configureOptions).toMatchObject({
       title: {
@@ -343,6 +344,83 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
+    );
+  });
+
+  it('should only expose addChild in target-specific catalog when a table uses a tree collection with treeTable enabled', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Tree table catalog contract page',
+      tabTitle: 'Tree table catalog contract tab',
+    });
+    const employeesTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const categoriesTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'categories',
+      },
+    });
+
+    const employeesCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: employeesTable.uid,
+          },
+        },
+      }),
+    );
+    expect(employeesCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
+
+    const categoriesCatalogBeforeEnable = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: categoriesTable.uid,
+          },
+        },
+      }),
+    );
+    expect(categoriesCatalogBeforeEnable.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: categoriesTable.uid,
+            },
+            changes: {
+              treeTable: true,
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const categoriesCatalogAfterEnable = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: categoriesTable.uid,
+          },
+        },
+      }),
+    );
+    expect(categoriesCatalogAfterEnable.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['addChild', 'view', 'edit', 'delete']),
     );
   });
 
@@ -1131,6 +1209,70 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(gridCardRecordOnlyRes.status).toBe(400);
     expect(readErrorMessage(gridCardRecordOnlyRes)).toContain(`must be placed under actions`);
+  });
+
+  it('should only compose addChild when the target table enables treeTable on a tree collection', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose addChild page',
+      tabTitle: 'Compose addChild tab',
+    });
+
+    const invalidComposeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'categoriesTableWithoutTree',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            recordActions: ['addChild'],
+          },
+        ],
+      },
+    });
+    expect(invalidComposeRes.status).toBe(400);
+    expect(readErrorMessage(invalidComposeRes)).toContain('tree table');
+
+    const validComposeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'categoriesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            fields: ['title'],
+            recordActions: ['addChild'],
+            settings: {
+              treeTable: true,
+            },
+          },
+        ],
+      },
+    });
+    expect(validComposeRes.status).toBe(200);
+
+    const categoriesTable = getData(validComposeRes).blocks.find((item: any) => item.key === 'categoriesTable');
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['addChild']);
+
+    const addChildReadback = await getSurface(rootAgent, {
+      uid: categoriesTable.recordActions[0].uid,
+    });
+    expect(addChildReadback.tree.use).toBe('AddChildActionModel');
+    expect(addChildReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+    });
   });
 
   it('should reject legacy scope overrides mixed into compose actions and recordActions', async () => {

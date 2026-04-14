@@ -132,6 +132,14 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [{ name: 'bio', type: 'text', interface: 'textarea' }],
     },
   });
+  await rootAgent.resource('collections').apply({
+    values: {
+      name: 'categories',
+      title: 'Categories',
+      template: 'tree',
+      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+    },
+  });
 
   await rootAgent.resource('collections.fields', 'employees').create({
     values: {
@@ -247,6 +255,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
   });
 
   await waitForFixtureCollectionsReady(db, {
+    categories: ['title', 'parentId'],
     employees: ['nickname', 'status', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],
     skills: ['label'],

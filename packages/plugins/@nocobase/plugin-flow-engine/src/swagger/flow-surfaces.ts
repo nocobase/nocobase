@@ -57,6 +57,7 @@ const ACTION_TYPE_ENUM = [
   'reset',
   'collapse',
 ];
+const APPLY_BLUEPRINT_ACTION_TYPE_ENUM = ACTION_TYPE_ENUM.filter((item) => item !== 'addChild');
 const NON_RECORD_ACTION_TYPE_ENUM = [
   'filter',
   'addNew',
@@ -107,6 +108,10 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'actionPanel',
   'jsBlock',
 ];
+const ADD_CHILD_TREE_TABLE_NOTE =
+  '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled.';
+const APPLY_BLUEPRINT_ADD_CHILD_NOTE =
+  '`addChild` is not auto-promoted from `actions`; author it only under `recordActions`, and only when the live target `catalog.recordActions` exposes it for a tree table.';
 const REACTION_FINGERPRINT_DESCRIPTION =
   'Optional optimistic-concurrency fingerprint from `getReactionMeta.capabilities[].fingerprint`. When provided, the write fails with HTTP 409 if the current slot fingerprint no longer matches.';
 const REACTION_RULES_REPLACE_DESCRIPTION =
@@ -789,7 +794,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
+      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode.`,
     ),
     requestBody: {
       required: true,
@@ -800,6 +805,10 @@ const actionDocs: Record<string, any> = {
             view: {
               summary: 'Create a view action under a table record-action owner target',
               value: examples.addRecordAction,
+            },
+            addChild: {
+              summary: 'Create an addChild record action on a tree table target',
+              value: examples.addRecordAddChildAction,
             },
             js: {
               summary: 'Create a JS record action under a details block owner target',
@@ -842,9 +851,26 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple record actions sequentially under the same record-capable owner target',
     description: valuesCompatibilityNote(
-      'Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. Each item may include `settings`, and popup-capable actions may also include `popup`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an `error` with `message/type/code/status`.',
+      `Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Each item may include \`settings\`, and popup-capable actions may also include \`popup\`, but raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an \`error\` with \`message/type/code/status\`.`,
     ),
-    requestBody: requestBody('FlowSurfaceAddRecordActionsRequest', examples.addRecordActions),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceAddRecordActionsRequest'),
+          examples: {
+            basic: {
+              summary: 'Create multiple standard record actions under a table owner target',
+              value: examples.addRecordActions,
+            },
+            addChild: {
+              summary: 'Create addChild under a tree table owner target',
+              value: examples.addRecordAddChildActions,
+            },
+          },
+        },
+      },
+    },
     responses: responses('FlowSurfaceAddRecordActionsResult'),
   },
   updateSettings: {
@@ -3105,6 +3131,7 @@ const schemas = {
     oneOf: [
       {
         type: 'string',
+        enum: APPLY_BLUEPRINT_ACTION_TYPE_ENUM,
       },
       {
         type: 'object',
@@ -3113,9 +3140,8 @@ const schemas = {
           key: { type: 'string' },
           type: {
             type: 'string',
-            enum: ACTION_TYPE_ENUM,
-            description:
-              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; applyBlueprint also auto-promotes them from `actions` for convenience. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+            enum: APPLY_BLUEPRINT_ACTION_TYPE_ENUM,
+            description: `Action type. On record-capable blocks (\`table\`, \`details\`, \`list\`, \`gridCard\`), record actions such as \`view\`, \`edit\`, \`updateRecord\`, \`delete\`, and \`duplicate\` should normally be authored under \`recordActions\`; applyBlueprint also auto-promotes those common record actions from \`actions\` for convenience. ${APPLY_BLUEPRINT_ADD_CHILD_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -3131,6 +3157,7 @@ const schemas = {
     oneOf: [
       {
         type: 'string',
+        enum: RECORD_ACTION_TYPE_ENUM,
       },
       {
         type: 'object',
@@ -3140,8 +3167,7 @@ const schemas = {
           type: {
             type: 'string',
             enum: RECORD_ACTION_TYPE_ENUM,
-            description:
-              'Record-action type for record-capable blocks such as `table`, `details`, `list`, and `gridCard`. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+            description: `Record-action type for record-capable blocks such as \`table\`, \`details\`, \`list\`, and \`gridCard\`. ${ADD_CHILD_TREE_TABLE_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -3196,8 +3222,7 @@ const schemas = {
       },
       actions: {
         type: 'array',
-        description:
-          'Block-level actions. On record-capable blocks, `view`, `edit`, `updateRecord`, and `delete` should normally go to `recordActions`; applyBlueprint auto-promotes those common record actions when they are written here.',
+        description: `Block-level actions. On record-capable blocks, \`view\`, \`edit\`, \`updateRecord\`, \`delete\`, and \`duplicate\` should normally go to \`recordActions\`; applyBlueprint auto-promotes those common record actions when they are written here. ${APPLY_BLUEPRINT_ADD_CHILD_NOTE}`,
         items: ref('FlowSurfaceApplyBlueprintActionSpec'),
       },
       recordActions: {
