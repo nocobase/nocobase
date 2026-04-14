@@ -239,10 +239,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,
     });
-    this.app.pluginSettingsManager.add('security', {
-      title: this.app.i18n.t('Security'),
-      icon: 'SafetyOutlined',
-    });
   }
 
   addRoutes() {
