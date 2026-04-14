@@ -21,7 +21,7 @@ const ReactQuill = lazy(async () => {
 
   registerFontSize(Quill);
   registerSmartBreak(Quill);
-  registerImageResize(Quill);
+  await registerImageResize(Quill);
 
   return import('react-quill');
 });

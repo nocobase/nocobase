@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import ImageResize from 'quill-image-resize-module-react';
-
-export const registerImageResize = (Quill) => {
+export const registerImageResize = async (Quill) => {
+  const { default: ImageResize } = await import('quill-image-resize-module-react');
   const Image = Quill.import('formats/image');
 
   class ImageFormat extends Image {
