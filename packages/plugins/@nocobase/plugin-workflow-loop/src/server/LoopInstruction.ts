@@ -21,7 +21,7 @@ export type LoopInstructionConfig = {
   target: any;
   condition?:
     | {
-        checkpoint?: number;
+        checkpoint?: 0 | 1;
         continueOnFalse?: boolean;
         calculation?: any;
         expression?: string;
@@ -55,6 +55,17 @@ function calculateCondition(node: FlowNodeModel, processor: Processor) {
 
 export default class extends Instruction {
   configSchema = Joi.object({
+    target: Joi.alternatives().try(Joi.number(), Joi.array(), Joi.string()),
+    condition: Joi.alternatives()
+      .try(
+        Joi.object({
+          checkpoint: Joi.number().valid(0, 1).default(0),
+          continueOnFalse: Joi.boolean(),
+          calculation: Joi.object(),
+        }),
+        Joi.boolean().valid(false),
+      )
+      .default(false),
     exit: Joi.number().valid(EXIT.RETURN, EXIT.BREAK, EXIT.CONTINUE),
   });
 
