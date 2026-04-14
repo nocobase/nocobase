@@ -32,7 +32,7 @@ import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, B
 import { SystemSettingsSource } from './flow/system-settings';
 import type { Plugin } from './Plugin';
 import type { PluginManager, PluginType } from './PluginManager';
-import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
+import type { PluginSettingsManagerLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
 import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
@@ -62,7 +62,6 @@ export interface BaseApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  pluginSettings?: Record<string, PluginSettingOptions>;
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
@@ -85,7 +84,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {};
   public pluginManager: PluginManager;
-  public pluginSettingsManager: PluginSettingsManager<any>;
+  public pluginSettingsManager: PluginSettingsManagerLike;
   public aiManager: AIManager;
   public headerActionsManager: HeaderActionsManager;
   public devDynamicImport: DevDynamicImport;
@@ -105,7 +104,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setData: (data: Record<string, any>) => void;
       setMeta: (meta: Record<string, any>) => void;
     };
-    pluginSettingsRouter: PluginSettingsManager<any>;
+    pluginSettingsRouter: PluginSettingsManagerLike;
     pluginManager: PluginManager;
   };
   public systemSettings: SystemSettingsSource;
@@ -490,7 +489,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createI18n(options: TOptions): i18next;
   protected abstract createRouterManager(options: TOptions): any;
   protected abstract createPluginManager(options: TOptions): PluginManager;
-  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManager<any>;
+  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerLike;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws);
   }

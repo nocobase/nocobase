@@ -23,6 +23,7 @@ import {
   ADMIN_SETTINGS_LAYOUT_MODEL_UID,
   createSettingsPathMap,
   filterRenderableSettings,
+  filterVisibleSettings,
   getDefaultSettingsPath,
   getMenuItems,
   matchSettingsRoute,
@@ -72,33 +73,52 @@ export const InternalAdminSettingsLayout = () => {
   const { snippets = [] } = useACLRoleContext();
 
   const allSettings = useMemo(
-    () => filterRenderableSettings(app.pluginSettingsManager.getList()),
-    [app.pluginSettingsManager, snippets],
+    () => filterRenderableSettings(app.pluginSettingsManager.getList(false)),
+    [app.pluginSettingsManager],
+  );
+  const visibleSettings = useMemo(
+    () => filterVisibleSettings(filterRenderableSettings(app.pluginSettingsManager.getList(true))),
+    [app.pluginSettingsManager],
   );
   const pluginManagerSetting = useMemo(
-    () => allSettings.find((item) => item.name === PLUGIN_MANAGER_SETTING_NAME) || null,
-    [allSettings],
+    () => visibleSettings.find((item) => item.name === PLUGIN_MANAGER_SETTING_NAME) || null,
+    [visibleSettings],
   );
   const normalSettings = useMemo(
-    () => sortTopLevelSettings(allSettings.filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME)),
-    [allSettings],
+    () => sortTopLevelSettings(visibleSettings.filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME)),
+    [visibleSettings],
   );
   const allVisibleSettings = useMemo(
     () => (pluginManagerSetting ? [pluginManagerSetting, ...normalSettings] : normalSettings),
     [normalSettings, pluginManagerSetting],
   );
-  const settingsMapByPath = useMemo(() => createSettingsPathMap(allVisibleSettings), [allVisibleSettings]);
+  const registeredSettingsMapByPath = useMemo(() => createSettingsPathMap(allSettings), [allSettings]);
+  const visibleSettingsMapByPath = useMemo(() => createSettingsPathMap(allVisibleSettings), [allVisibleSettings]);
   const currentSetting = useMemo(
-    () => matchSettingsRoute(settingsMapByPath, location.pathname),
-    [location.pathname, settingsMapByPath],
+    () => matchSettingsRoute(registeredSettingsMapByPath, location.pathname),
+    [location.pathname, registeredSettingsMapByPath],
+  );
+  const currentVisibleSetting = useMemo(
+    () => matchSettingsRoute(visibleSettingsMapByPath, location.pathname),
+    [location.pathname, visibleSettingsMapByPath],
   );
   const currentTopLevelSetting = useMemo(() => {
     if (!currentSetting) {
       return null;
     }
-    return allVisibleSettings.find((item) => item.name === currentSetting.topLevelName) || currentSetting;
+    return allSettings.find((item) => item.name === currentSetting.topLevelName) || currentSetting;
+  }, [allSettings, currentSetting]);
+  const currentVisibleTopLevelSetting = useMemo(() => {
+    if (!currentSetting) {
+      return null;
+    }
+    return allVisibleSettings.find((item) => item.name === currentSetting.topLevelName) || null;
   }, [allVisibleSettings, currentSetting]);
   const defaultSettingsPath = useMemo(() => getDefaultSettingsPath(allVisibleSettings), [allVisibleSettings]);
+  const currentVisibleTabs = useMemo(() => {
+    return (currentVisibleTopLevelSetting?.children || []).filter((item) => !item.hidden) as PluginSettingsPageType[];
+  }, [currentVisibleTopLevelSetting?.children]);
+  const shouldShowTabs = currentVisibleTabs.length > 1 && currentVisibleTopLevelSetting?.showTabs !== false;
 
   useEffect(() => {
     const nextTitle =
@@ -109,7 +129,7 @@ export const InternalAdminSettingsLayout = () => {
     if (nextTitle) {
       document.title = nextTitle;
     }
-  }, [currentTopLevelSetting?.title, currentTopLevelSetting?.topLevelName]);
+  }, [currentTopLevelSetting]);
 
   const sidebarMenus = useMemo(() => {
     const items: any[] = [];
@@ -151,15 +171,24 @@ export const InternalAdminSettingsLayout = () => {
     return <SettingsEmpty type="route" />;
   }
 
-  if (location.pathname === currentTopLevelSetting?.path && currentTopLevelSetting?.children?.length) {
-    const firstChildPath = getDefaultSettingsPath(currentTopLevelSetting.children);
-    if (firstChildPath && firstChildPath !== location.pathname) {
-      return <Navigate replace to={firstChildPath} />;
-    }
+  if (!currentVisibleSetting && currentSetting.isAllow === false) {
+    return <SettingsEmpty type="route" />;
   }
 
   if (currentSetting.link) {
     return <Navigate replace to={currentSetting.link} />;
+  }
+
+  if (location.pathname === currentTopLevelSetting?.path && currentTopLevelSetting?.children?.length) {
+    const visibleIndexPath = currentVisibleTopLevelSetting?.children?.find((item) => item.pageKey === 'index')?.path;
+    const firstVisibleChildPath = getDefaultSettingsPath(
+      currentVisibleTopLevelSetting?.children as PluginSettingsPageType[],
+    );
+    const nextPath = visibleIndexPath || firstVisibleChildPath;
+
+    if (nextPath && nextPath !== location.pathname) {
+      return <Navigate replace to={nextPath} />;
+    }
   }
 
   return (
@@ -180,7 +209,7 @@ export const InternalAdminSettingsLayout = () => {
         }}
       >
         <Menu
-          selectedKeys={[currentSetting?.pluginKey || currentSetting?.topLevelName || currentSetting?.name]}
+          selectedKeys={currentVisibleTopLevelSetting?.name ? [currentVisibleTopLevelSetting.name] : []}
           style={{ height: '100%', borderInlineEnd: 'none' }}
           onClick={({ key }) => {
             const topLevelSetting = allVisibleSettings.find((item) => item.name === key);
@@ -220,15 +249,14 @@ export const InternalAdminSettingsLayout = () => {
           style={{
             background: token.colorBgContainer,
             borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-            paddingBottom:
-              currentTopLevelSetting?.children?.length && currentTopLevelSetting.showTabs !== false ? 0 : token.padding,
+            paddingBottom: shouldShowTabs ? 0 : token.padding,
           }}
           footer={
-            currentTopLevelSetting?.children?.length && currentTopLevelSetting.showTabs !== false ? (
+            shouldShowTabs ? (
               <Menu
                 mode="horizontal"
-                selectedKeys={[currentSetting?.name]}
-                items={getMenuItems(currentTopLevelSetting.children)}
+                selectedKeys={[currentVisibleSetting?.name || currentSetting?.name]}
+                items={getMenuItems(currentVisibleTabs)}
                 onClick={({ key }) => {
                   const targetPath = replaceRouteParams(app.pluginSettingsManager.getRoutePath(String(key)), params);
                   if (location.pathname !== targetPath) {
@@ -261,7 +289,7 @@ export const InternalAdminSettingsLayout = () => {
 export const AdminSettingsLayout = (props) => {
   const flowEngine = useFlowEngine();
   const modelRef = useRef<AdminSettingsLayoutModel | null>(null);
-  const modelChildren = <InternalAdminSettingsLayout {...props} />;
+  const modelChildren = useMemo(() => <InternalAdminSettingsLayout {...props} />, [props]);
   const hostClassName = css`
     height: 100%;
     > div {

@@ -20,6 +20,8 @@ import type { PluginSettingsPageType } from '../../../PluginSettingsManager';
 import { useApp } from '../../../hooks/useApp';
 import {
   filterRenderableSettings,
+  filterVisibleSettings,
+  getDefaultSettingsPath,
   getMenuItems,
   PLUGIN_MANAGER_SETTING_NAME,
   sortTopLevelSettings,
@@ -75,10 +77,9 @@ export function getTopbarPluginSettingsItems(options: {
   settings: PluginSettingsPageType[];
   canManagePlugins: boolean;
   t: (key: string) => string;
-  getRoutePath?: (name: string) => string;
 }): NonNullable<MenuProps['items']> {
-  const { settings, canManagePlugins, t, getRoutePath } = options;
-  const topLevelSettings = filterRenderableSettings(settings);
+  const { settings, canManagePlugins, t } = options;
+  const topLevelSettings = filterVisibleSettings(filterRenderableSettings(settings));
   const settingsByKey = new Map<string, PluginSettingsPageType>();
   const normalSettings = sortTopLevelSettings(
     topLevelSettings
@@ -99,8 +100,9 @@ export function getTopbarPluginSettingsItems(options: {
     }
 
     const matchedSetting = settingsByKey.get(String(item.key));
-    const routePath = matchedSetting?.name ? getRoutePath?.(matchedSetting.name) : undefined;
-    const targetPath = routePath || matchedSetting?.path;
+    const targetPath = matchedSetting?.children?.length
+      ? getDefaultSettingsPath(matchedSetting.children as PluginSettingsPageType[])
+      : matchedSetting?.path;
     const targetLink = matchedSetting?.link;
     const targetTitle = matchedSetting?.title || item.title;
 
@@ -331,10 +333,9 @@ const PluginSettingsTopbarAction = observer(
     const [open, setOpen] = useState(false);
     const items = useMemo(() => {
       return getTopbarPluginSettingsItems({
-        settings: app.pluginSettingsManager.getList(),
+        settings: app.pluginSettingsManager.getList(true),
         canManagePlugins: snippets.includes('pm'),
         t,
-        getRoutePath: (name) => app.pluginSettingsManager.getRoutePath(name),
       });
     }, [app, snippets, t]);
 

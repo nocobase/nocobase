@@ -34,10 +34,36 @@ export function hasOwnSettingsPage(setting?: PluginSettingsPageType | null) {
  * @param {PluginSettingsPageType[]} settings 原始配置树
  * @returns {PluginSettingsPageType[]} 过滤后的配置树
  */
-export function filterRenderableSettings(settings: PluginSettingsPageType[] = []): PluginSettingsPageType[] {
+export function filterRenderableSettings(settings: readonly PluginSettingsPageType[] = []): PluginSettingsPageType[] {
   return settings
     .map((setting) => {
       const children = filterRenderableSettings(setting.children || []);
+
+      if (!hasOwnSettingsPage(setting) && children.length === 0) {
+        return null;
+      }
+
+      return {
+        ...setting,
+        children: children.length ? children : undefined,
+      };
+    })
+    .filter(Boolean) as PluginSettingsPageType[];
+}
+
+/**
+ * 过滤出可用于导航展示的 settings。
+ *
+ * 该过程会移除 hidden 项，并继续清理没有可见页面的空 menu。
+ *
+ * @param {PluginSettingsPageType[]} settings 原始配置树
+ * @returns {PluginSettingsPageType[]} 可见配置树
+ */
+export function filterVisibleSettings(settings: readonly PluginSettingsPageType[] = []): PluginSettingsPageType[] {
+  return settings
+    .filter((setting) => !setting.hidden)
+    .map((setting) => {
+      const children = filterVisibleSettings((setting.children || []) as PluginSettingsPageType[]);
 
       if (!hasOwnSettingsPage(setting) && children.length === 0) {
         return null;
@@ -78,10 +104,10 @@ export function sortTopLevelSettings(settings: PluginSettingsPageType[] = []) {
  * @param {PluginSettingsPageType[]} settings 过滤后的配置树
  * @returns {Record<string, PluginSettingsPageType>} 路径索引
  */
-export function createSettingsPathMap(settings: PluginSettingsPageType[] = []) {
+export function createSettingsPathMap(settings: readonly PluginSettingsPageType[] = []) {
   const pathMap: Record<string, PluginSettingsPageType> = {};
 
-  const traverse = (items: PluginSettingsPageType[]) => {
+  const traverse = (items: readonly PluginSettingsPageType[]) => {
     items.forEach((item) => {
       pathMap[item.path] = item;
       if (item.children?.length) {
@@ -139,7 +165,9 @@ export function replaceRouteParams(urlTemplate: string, params?: Record<string, 
  * @param {PluginSettingsPageType[]} settings 配置树
  * @returns {PluginSettingsPageType | null} 第一个可内部打开的页面
  */
-export function findFirstInternalSettingsPage(settings: PluginSettingsPageType[] = []): PluginSettingsPageType | null {
+export function findFirstInternalSettingsPage(
+  settings: readonly PluginSettingsPageType[] = [],
+): PluginSettingsPageType | null {
   for (const setting of settings) {
     if (setting.children?.length) {
       const firstChild = findFirstInternalSettingsPage(setting.children);
@@ -164,7 +192,7 @@ export function findFirstInternalSettingsPage(settings: PluginSettingsPageType[]
  * @returns {PluginSettingsPageType | null} 命中的配置项
  */
 export function findSettingsByName(
-  settings: PluginSettingsPageType[] = [],
+  settings: readonly PluginSettingsPageType[] = [],
   name: string,
 ): PluginSettingsPageType | null {
   for (const setting of settings) {
@@ -188,13 +216,22 @@ export function findSettingsByName(
  * @param {PluginSettingsPageType[]} settings 当前可访问配置树
  * @returns {string | undefined} 默认跳转路径
  */
-export function getDefaultSettingsPath(settings: PluginSettingsPageType[] = []) {
+export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType[] = []) {
   const preferredNames = [SYSTEM_SETTINGS_SETTING_NAME, PLUGIN_MANAGER_SETTING_NAME];
 
   for (const name of preferredNames) {
     const preferred = findSettingsByName(settings, name);
-    if (preferred && hasOwnSettingsPage(preferred) && !preferred.link) {
+    if (!preferred) {
+      continue;
+    }
+
+    if (hasOwnSettingsPage(preferred) && !preferred.link) {
       return preferred.path;
+    }
+
+    const preferredChildPath = findFirstInternalSettingsPage(preferred.children as PluginSettingsPageType[])?.path;
+    if (preferredChildPath) {
+      return preferredChildPath;
     }
   }
 
@@ -207,7 +244,7 @@ export function getDefaultSettingsPath(settings: PluginSettingsPageType[] = []) 
  * @param {PluginSettingsPageType[]} settings 目标配置项
  * @returns {any[] | undefined} Menu items
  */
-export function getMenuItems(settings: PluginSettingsPageType[] = []) {
+export function getMenuItems(settings: readonly PluginSettingsPageType[] = []) {
   const pinnedList = settings.filter((item) => item.isPinned && !item.hidden);
   const otherList = settings.filter((item) => !item.isPinned && !item.hidden);
   const items: any[] = [];

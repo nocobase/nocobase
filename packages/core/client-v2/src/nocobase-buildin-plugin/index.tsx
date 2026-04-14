@@ -225,16 +225,32 @@ export class NocoBaseBuildInPlugin extends Plugin {
       AdminSettingsLayoutModel,
     });
 
-    this.app.pluginSettingsManager.add('plugin-manager', {
+    this.app.pluginSettingsManager.addMenuItem({
+      key: 'plugin-manager',
       title: this.app.i18n.t('Plugin manager'),
       icon: 'ApiOutlined',
+      aclSnippet: 'pm',
+      sort: -200,
+    });
+    this.app.pluginSettingsManager.addPageItem({
+      menuKey: 'plugin-manager',
+      key: 'index',
+      title: this.app.i18n.t('Plugin manager'),
       componentLoader: () => import('../settings-center/PluginManagerPage'),
       aclSnippet: 'pm',
       sort: -200,
     });
-    this.app.pluginSettingsManager.add('system-settings', {
+    this.app.pluginSettingsManager.addMenuItem({
+      key: 'system-settings',
       title: this.app.i18n.t('System settings'),
       icon: 'SettingOutlined',
+      aclSnippet: 'pm.system-settings.system-settings',
+      sort: -100,
+    });
+    this.app.pluginSettingsManager.addPageItem({
+      menuKey: 'system-settings',
+      key: 'index',
+      title: this.app.i18n.t('System settings'),
       componentLoader: () => import('../settings-center/SystemSettingsPage'),
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,

@@ -106,7 +106,6 @@ describe('TopbarActionsBar helpers', () => {
     const items = getTopbarPluginSettingsItems({
       canManagePlugins: true,
       t: (key) => key,
-      getRoutePath: (name) => `/admin/settings/${name}`,
       settings: [
         {
           key: 'plugin-manager',
