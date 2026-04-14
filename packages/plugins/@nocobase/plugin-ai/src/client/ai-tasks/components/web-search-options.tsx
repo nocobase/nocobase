@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Switch, Alert } from 'antd';
 import { observer, tExpr } from '@nocobase/flow-engine';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
 import { namespace, useT } from '../../locale';
@@ -19,6 +19,7 @@ import { SchemaComponent } from '@nocobase/client';
 
 const WebSearchSwitch: React.FC = observer(() => {
   const t = useT();
+  const form = useForm();
   const field = useField<Field>();
   const modelField = field.query('.model').take() as Field;
   const { services } = useLLMServiceCatalog();
@@ -28,9 +29,11 @@ const WebSearchSwitch: React.FC = observer(() => {
     [modelField?.value, services],
   );
 
-  const supportWebSearch = selectedService?.supportWebSearch;
-  const isDisabled = !!modelField?.value && supportWebSearch === false;
+  const formDisabled =
+    form.disabled || field.disabled || field.pattern === 'disabled' || field.pattern === 'readPretty';
   const showConflictWarning = !!field.value && !!selectedService?.isToolConflict;
+  const showWebSearchNotSupportedWarning = !!modelField.value && selectedService?.supportWebSearch === false;
+  const isDisabled = formDisabled || showWebSearchNotSupportedWarning;
 
   useEffect(() => {
     if (isDisabled && field.value) {
@@ -41,7 +44,9 @@ const WebSearchSwitch: React.FC = observer(() => {
   return (
     <div>
       <Switch checked={!!field.value} disabled={isDisabled} onChange={(checked) => (field.value = checked)} />
-      {isDisabled && <div style={{ marginTop: 8, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Web search not supported')}</div>}
+      {showWebSearchNotSupportedWarning && (
+        <div style={{ marginTop: 8, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Web search not supported')}</div>
+      )}
       {showConflictWarning && (
         <Alert style={{ marginTop: 8 }} type="warning" showIcon={true} message={t('Search disables tools')} />
       )}

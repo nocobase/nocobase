@@ -10,7 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { Avatar, Dropdown } from 'antd';
 import { CheckOutlined, DownOutlined } from '@ant-design/icons';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { useToken } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
@@ -21,15 +21,23 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 
 export const AIEmployeeSelect: React.FC = observer(() => {
   const t = useT();
+  const form = useForm();
   const field = useField<Field>();
   const [isOpen, setIsOpen] = useState(false);
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
   const { token } = useToken();
+  const disabled = form.disabled || field.disabled || field.pattern === 'disabled' || field.pattern === 'readPretty';
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees();
   }, [aiConfigRepository]);
+
+  useEffect(() => {
+    if (disabled && isOpen) {
+      setIsOpen(false);
+    }
+  }, [disabled, isOpen]);
 
   const currentEmployee = aiEmployees.find((employee) => employee.username === field.value);
 
@@ -55,6 +63,9 @@ export const AIEmployeeSelect: React.FC = observer(() => {
             </span>
           ),
           onClick: () => {
+            if (disabled) {
+              return;
+            }
             field.value = employee.username;
             setIsOpen(false);
           },
@@ -76,8 +87,9 @@ export const AIEmployeeSelect: React.FC = observer(() => {
         borderRadius: 6,
         height: 28,
         padding: '0 8px',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         userSelect: 'none',
+        opacity: disabled ? 0.45 : 1,
       }}
     >
       {currentEmployee ? <Avatar shape="circle" size={20} src={avatars(currentEmployee.avatar)} /> : null}
@@ -98,10 +110,15 @@ export const AIEmployeeSelect: React.FC = observer(() => {
 
   return (
     <Dropdown
+      disabled={disabled}
       menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
       trigger={['hover']}
-      open={isOpen}
-      onOpenChange={setIsOpen}
+      open={disabled ? false : isOpen}
+      onOpenChange={(open) => {
+        if (!disabled) {
+          setIsOpen(open);
+        }
+      }}
       overlayStyle={{ zIndex: 1200 }}
     >
       {dropdownContent}
