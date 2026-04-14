@@ -20,6 +20,65 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     isAssociationField: () => true,
     targetCollection,
   };
+  const createRowCarrier = ({
+    engine,
+    uid,
+    fieldIndex,
+    setFormValues,
+    actionHandler,
+    item,
+    form,
+    blockUid,
+  }: {
+    engine: FlowEngine;
+    uid: string;
+    fieldIndex: string[];
+    setFormValues: ReturnType<typeof vi.fn>;
+    actionHandler: ReturnType<typeof vi.fn>;
+    item?: any;
+    form?: any;
+    blockUid?: string;
+  }) => {
+    const carrier = new FlowModel({ uid, flowEngine: engine }) as any;
+    carrier.context.defineProperty('fieldIndex', {
+      value: fieldIndex,
+    });
+    carrier.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    carrier.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    if (typeof item !== 'undefined') {
+      carrier.context.defineProperty('item', {
+        get: () => item,
+        cache: false,
+      });
+    }
+    if (typeof form !== 'undefined') {
+      carrier.context.defineProperty('form', {
+        value: form,
+      });
+    }
+    if (typeof blockUid !== 'undefined') {
+      carrier.context.defineProperty('blockModel', {
+        value: { uid: blockUid },
+      });
+    }
+    carrier.subModels = { field: {} };
+    carrier.getAction = vi.fn((name: string) => {
+      if (name === 'linkageAssignField') {
+        return {
+          handler: actionHandler,
+        };
+      }
+    });
+    return carrier;
+  };
 
   it('passes linkageTxId and scope depth to row-scoped setFormValues', async () => {
     const setFormValues = vi.fn(async () => undefined);
@@ -398,6 +457,188 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
       linkageTxId: 'tx-root-user-event',
       linkageScopeDepth: 0,
     });
+  });
+
+  it('uses the latest inline row value once and ignores carriers from other blocks', async () => {
+    const rolesField: any = {
+      type: 'hasMany',
+      isAssociationField: () => true,
+      targetCollection,
+    };
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn((namePath: Array<string | number>) => {
+        if (JSON.stringify(namePath) === JSON.stringify(['roles', 0])) {
+          return {
+            role_uid: 'role-uid-fresh',
+            role_name: '',
+            __is_new__: true,
+            __is_stored__: false,
+          };
+        }
+        return undefined;
+      }),
+      getFieldsValue: vi.fn(() => ({
+        roles: [
+          {
+            role_uid: 'role-uid-from-snapshot',
+            role_name: '',
+          },
+        ],
+      })),
+    };
+    const foreignHandler = vi.fn((actionCtx: any, { addFormValuePatch }: any) => {
+      addFormValuePatch({ path: 'roles.role_name', value: `foreign:${actionCtx.item?.value?.role_uid}` });
+    });
+    const currentHandler = vi.fn((actionCtx: any, { addFormValuePatch }: any) => {
+      expect(actionCtx.item.value.role_uid).toBe('role-uid-fresh');
+      expect(actionCtx.item.value.role_uid).toBe('role-uid-fresh');
+      expect(actionCtx.item.__is_new__).toBe(true);
+      expect(actionCtx.item.__is_stored__).toBe(false);
+      addFormValuePatch({ path: 'roles.role_name', value: actionCtx.item.value.role_uid });
+    });
+
+    const engine = new FlowEngine();
+    const rowCarrier = createRowCarrier({
+      engine,
+      uid: 'inline-table-row-carrier',
+      fieldIndex: ['roles:0'],
+      setFormValues,
+      actionHandler: currentHandler,
+      item: {
+        index: 0,
+        length: 1,
+        __is_new__: false,
+        __is_stored__: true,
+        value: {
+          role_uid: 'role-uid-stale',
+          role_name: '',
+        },
+      },
+      form,
+      blockUid: 'block-inline',
+    });
+    const foreignCarrier = createRowCarrier({
+      engine,
+      uid: 'inline-table-row-carrier-foreign',
+      fieldIndex: ['roles:0'],
+      setFormValues,
+      actionHandler: foreignHandler,
+      item: {
+        index: 0,
+        length: 1,
+        value: {
+          role_uid: 'foreign-row',
+        },
+      },
+      blockUid: 'block-foreign',
+    });
+    const currentCarrier = createRowCarrier({
+      engine,
+      uid: 'inline-table-row-carrier-current',
+      fieldIndex: ['roles:0'],
+      setFormValues,
+      actionHandler: currentHandler,
+      item: {
+        index: 0,
+        length: 1,
+        __is_new__: false,
+        __is_stored__: true,
+        value: {
+          role_uid: 'role-uid-stale',
+        },
+      },
+      form,
+      blockUid: 'block-inline',
+    });
+
+    const ctx: any = {
+      model: {
+        uid: 'grid-model-inline',
+        context: {
+          blockModel: {
+            uid: 'block-inline',
+            collection: {
+              getField: (name: string) => (name === 'roles' ? rolesField : null),
+            },
+          },
+        },
+        getAction: vi.fn((name: string) => {
+          if (name === 'linkageAssignField') {
+            return {
+              handler: currentHandler,
+            };
+          }
+        }),
+        __allModels: [],
+      },
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb({ uid: 'master-foreign', forks: new Set([foreignCarrier]) });
+          cb({ uid: 'master-current', forks: new Set([currentCarrier]) });
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-inline-row',
+        changedPaths: [['roles', 0, 'role_uid']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-inline',
+          title: 'rule-inline',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  {
+                    key: 'assign-inline',
+                    enable: true,
+                    targetPath: 'roles.role_name',
+                    mode: 'assign',
+                    value: 'role-uid-fresh',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(foreignHandler).toHaveBeenCalledTimes(0);
+    expect(currentHandler).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [
+        {
+          path: ['roles', 0, 'role_name'],
+          value: 'role-uid-fresh',
+        },
+      ],
+      expect.objectContaining({
+        linkageTxId: 'tx-inline-row',
+      }),
+    );
+    const rowValueReads = form.getFieldValue.mock.calls.filter(
+      ([namePath]: [Array<string | number>]) => JSON.stringify(namePath) === JSON.stringify(['roles', 0]),
+    );
+    expect(rowValueReads).toHaveLength(1);
+    expect(form.getFieldsValue).toHaveBeenCalledTimes(0);
   });
 
   it('keeps linkage metadata when row-scoped execution is deferred then retried', async () => {
