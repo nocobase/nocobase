@@ -457,3 +457,25 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 ```
+## Umgebungsvariablen anderer Plugins
+
+### SERVER_REQUEST_WHITELIST
+
+Whitelist der erlaubten Ziele für serverseitige ausgehende HTTP-Anfragen, um SSRF-Angriffe (Server-Side Request Forgery) zu verhindern. Kommagetrennte Liste aus exakten IPs, CIDR-Bereichen, exakten Hostnamen und einstufigen Platzhalter-Subdomains.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Gilt für**: Workflow-Knoten „HTTP-Anfrage" und benutzerdefinierte Anfrage-Aktionsschaltflächen. Relative Pfade (Aufrufe der NocoBase-API selbst) sind nicht betroffen.
+
+**Nicht konfiguriert**: Alle `http`/`https`-Anfragen sind erlaubt (bisheriges Verhalten). **Konfiguriert**: Nur Anfragen, deren Host einem Whitelist-Eintrag entspricht, sind erlaubt; nicht übereinstimmende Anfragen führen zu einem Fehler.
+
+Unterstützte Formate:
+
+| Format | Beispiel | Trifft zu auf |
+| --- | --- | --- |
+| Exakte IPv4 | `1.2.3.4` | Nur diese IP |
+| IPv4 CIDR | `10.0.0.0/8` | Alle IPs im Subnetz |
+| Exakter Hostname | `api.example.com` | Nur dieser Hostname |
+| Platzhalter-Subdomain | `*.example.com` | Eine Subdomain-Ebene, z. B. `foo.example.com`; **nicht** `example.com` oder `a.b.example.com` |

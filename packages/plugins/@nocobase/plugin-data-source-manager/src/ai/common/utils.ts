@@ -74,3 +74,20 @@ export function truncateLongStrings(obj: any, maxLen = MAX_STRING_LENGTH): any {
   }
   return obj;
 }
+
+export function getStructuredQueryArgError(name: string, value: unknown): string | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const example = name === 'having' ? '{ "count": { "$gt": 10 } }' : '{ "createdAt": { "$dateOn": "2025-11" } }';
+    return `"${name}" must be an object, not a JSON string. Pass structured JSON like ${example}.`;
+  }
+
+  if (value === null || Array.isArray(value) || typeof value !== 'object') {
+    return `"${name}" must be an object.`;
+  }
+
+  return null;
+}

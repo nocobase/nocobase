@@ -126,10 +126,12 @@ export class AIEmployee {
 
   private async initSession({ messageId, provider, model, providerName }) {
     const { tools, baseToolNames } = await this.getAgentTools();
+    const resolvedTools = provider.resolveTools(tools.map(buildTool));
     if (!messageId && this.legacy !== true) {
       return {
         historyMessages: [],
         tools,
+        resolvedTools,
         middleware: this.getMiddleware({ tools, baseToolNames, model, providerName }),
         config: undefined,
         state: undefined,
@@ -145,6 +147,7 @@ export class AIEmployee {
     return {
       historyMessages,
       tools,
+      resolvedTools,
       middleware: this.getMiddleware({
         tools,
         baseToolNames,
@@ -177,7 +180,7 @@ export class AIEmployee {
     const { provider, model, service } = await this.plugin.aiManager.getLLMService({
       ...this.model,
     });
-    const { historyMessages, tools, middleware, config, state } = await this.initSession({
+    const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
       model,
@@ -187,7 +190,7 @@ export class AIEmployee {
     const chatContext = await this.aiChatConversation.getChatContext({
       userMessages: [...historyMessages, ...(userMessages ?? [])],
       userDecisions,
-      tools,
+      tools: resolvedTools,
       middleware,
       getSystemPrompt: (userMessages) => this.getSystemPrompt(userMessages),
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
@@ -298,7 +301,7 @@ export class AIEmployee {
     middleware?: any[];
   }) {
     const model = provider.createModel();
-    const allTools = provider.resolveTools(tools?.map(buildTool) ?? []);
+    const allTools = tools ?? [];
     if (this.from === 'main-agent') {
       const checkpointer = new SequelizeCollectionSaver(() => this.ctx.app.mainDataSource);
       return createLangChainAgent({ model, tools: allTools, middleware, systemPrompt, checkpointer });
@@ -1374,28 +1377,20 @@ If information is missing, clearly state it in the summary.</Important>`;
     );
   }
 
-  private async getAgentTools(): Promise<{ tools: ToolsEntry[]; baseToolNames: Set<string> }> {
+  private async getAgentTools(): Promise<{
+    tools: ToolsEntry[];
+    baseToolNames: Set<string>;
+  }> {
     const baseTools = await this.getAIEmployeeTools();
-    const baseToolNames = new Set(baseTools.map((it) => it.definition.name));
     const toolMap = await this.getToolsMap();
     const availableSkills = await this.getAvailableSkills();
-    const skillTools = _.uniq(
-      availableSkills
-        .flatMap((it) => it.tools ?? [])
-        .map((toolName) => toolMap.get(toolName))
-        .filter((it) => !!it)
-        .map((it) => it.definition.name),
-    )
-      .map((toolName) => toolMap.get(toolName))
-      .filter((it) => !!it);
-
-    const toolsMap = new Map<string, ToolsEntry>(baseTools.map((it) => [it.definition.name, it]));
-    for (const tool of skillTools) {
-      toolsMap.set(tool.definition.name, tool);
-    }
+    const skillOwnedToolNames = new Set(availableSkills.flatMap((it) => it.tools ?? []));
+    const baseToolNames = new Set(
+      baseTools.map((it) => it.definition.name).filter((name) => name === 'getSkill' || !skillOwnedToolNames.has(name)),
+    );
 
     return {
-      tools: Array.from(toolsMap.values()),
+      tools: Array.from(toolMap.values()),
       baseToolNames,
     };
   }
@@ -1436,7 +1431,11 @@ If information is missing, clearly state it in the summary.</Important>`;
       return new Set<string>();
     }
     const availableSkills = await this.getAvailableSkills();
-    const skillsMap = new Map(availableSkills.map((it) => [it.name, it]));
+    const loadedSkills = await this.plugin.ai.skillsManager.getSkills(loadedSkillNames);
+    const normalizedLoadedSkills = Array.isArray(loadedSkills) ? loadedSkills : [loadedSkills];
+    const skillsMap = new Map(
+      [...availableSkills, ...normalizedLoadedSkills.filter(Boolean)].map((it) => [it.name, it]),
+    );
     const result = new Set<string>();
     for (const skillName of loadedSkillNames) {
       const target = skillsMap.get(skillName);
@@ -1457,7 +1456,7 @@ If information is missing, clearly state it in the summary.</Important>`;
   private getMiddleware(options: {
     providerName: string;
     model: string;
-    tools: ToolsEntry[];
+    tools: any[];
     baseToolNames: Set<string>;
     messageId?: string;
     agentThread?: AgentThread;

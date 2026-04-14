@@ -13,8 +13,9 @@ import '../../../../base/ActionModel';
 import { ActionGroupModel } from '../../../../base/ActionGroupModel';
 import { ActionModel } from '../../../../base/ActionModelCore';
 import {
-  getValidationNamePathsExcludingHiddenModels,
   omitHiddenModelValuesFromSubmit,
+  shouldSkipSubmitValidation,
+  validateSubmitForm,
 } from '../../../../blocks/form/submitValues';
 
 function matchPath(paths: string[], key: string) {
@@ -47,16 +48,12 @@ PopupSubTableFormSubmitActionModel.registerFlow({
       async handler(ctx, params) {
         if (params.enable) {
           try {
-            const validateNamePaths = ctx?.flowSettingsEnabled
-              ? getValidationNamePathsExcludingHiddenModels(ctx.blockModel)
-              : null;
-            if (Array.isArray(validateNamePaths)) {
-              if (validateNamePaths.length) {
-                await ctx.form.validateFields(validateNamePaths as any);
-              }
-            } else {
-              await ctx.form.validateFields();
-            }
+            await validateSubmitForm({
+              form: ctx.form,
+              blockModel: ctx.blockModel,
+              flowSettingsEnabled: ctx?.flowSettingsEnabled,
+              skipValidator: shouldSkipSubmitValidation(ctx?.model),
+            });
             const confirmed = await ctx.modal.confirm({
               title: ctx.t(params.title, { ns: 'lm-flow-engine' }),
               content: ctx.t(params.content, { ns: 'lm-flow-engine' }),
@@ -73,6 +70,14 @@ PopupSubTableFormSubmitActionModel.registerFlow({
         }
       },
     },
+    skipRequiredValidation: {
+      title: tExpr('Skip required validation'),
+      uiMode: { type: 'switch', key: 'skipValidator' },
+      defaultParams: {
+        skipValidator: false,
+      },
+      handler() {},
+    },
     save: {
       async handler(ctx, params) {
         const blockModel = ctx.blockModel;
@@ -84,16 +89,12 @@ PopupSubTableFormSubmitActionModel.registerFlow({
         const parentUpdateAssociations = parentResource.getUpdateAssociationValues();
         const prefixPath = matchPath(parentUpdateAssociations, associationName);
         try {
-          const validateNamePaths = ctx?.flowSettingsEnabled
-            ? getValidationNamePathsExcludingHiddenModels(blockModel)
-            : null;
-          if (Array.isArray(validateNamePaths)) {
-            if (validateNamePaths.length) {
-              await blockModel.form.validateFields(validateNamePaths as any);
-            }
-          } else {
-            await blockModel.form.validateFields();
-          }
+          await validateSubmitForm({
+            form: blockModel?.form,
+            blockModel,
+            flowSettingsEnabled: ctx?.flowSettingsEnabled,
+            skipValidator: shouldSkipSubmitValidation(ctx?.model),
+          });
           const rawValues = blockModel.form.getFieldsValue(true);
           const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
           subTableModel.dispatchEvent('updateRow', {

@@ -8,13 +8,14 @@
  */
 
 import Joi from 'joi';
-import axios, { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { Readable } from 'stream';
+import { serverRequest } from '@nocobase/utils';
 
 export interface Header {
   name: string;
@@ -138,7 +139,7 @@ async function request(config: RequestInstructionConfig, app: Application) {
   }
 
   const transformer = getContentTypeTransformer(contentType, app);
-  return axios.request({
+  return serverRequest({
     url: trim(url),
     method,
     headers,
