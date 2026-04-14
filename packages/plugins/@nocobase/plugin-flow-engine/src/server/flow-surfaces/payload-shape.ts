@@ -25,13 +25,5 @@ export function validateFlowSurfacePayloadShape(actionName: string, value: any, 
   ) {
     throwBadRequest(`flowSurfaces ${actionName} ${path}.stepParams.${FLOW_SURFACE_INTERNAL_META_KEY} is reserved`);
   }
-  if (
-    _.isPlainObject(value.template) &&
-    (Object.prototype.hasOwnProperty.call(value, 'mode') ||
-      Object.prototype.hasOwnProperty.call(value, 'blocks') ||
-      Object.prototype.hasOwnProperty.call(value, 'layout'))
-  ) {
-    throwBadRequest(`flowSurfaces ${actionName} ${path} cannot mix template with local popup content`);
-  }
   Object.entries(value).forEach(([key, child]) => validateFlowSurfacePayloadShape(actionName, child, `${path}.${key}`));
 }

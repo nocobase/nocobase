@@ -577,6 +577,14 @@ function compilePopup(
   assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
+  if (template) {
+    return {
+      popup: {
+        template,
+      },
+      popupTitle,
+    };
+  }
   const rawPopupBlocks = readOptionalItems<FlowSurfaceApplyBlueprintBlockSpec>(popup.blocks, `${context}.blocks`);
   const popupBlocks =
     options.ownerActionType === 'edit' && rawPopupBlocks.length

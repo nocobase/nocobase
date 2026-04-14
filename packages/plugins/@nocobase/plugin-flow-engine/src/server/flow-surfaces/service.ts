@@ -6337,6 +6337,15 @@ export class FlowSurfacesService {
     return popup;
   }
 
+  private buildInlinePopupTemplateOpenView(popup: Record<string, any>) {
+    const normalizedTitle =
+      _.isUndefined(popup?.title) || _.isNull(popup?.title) ? undefined : String(popup.title).trim() || undefined;
+    return buildDefinedPayload({
+      template: popup?.template,
+      title: normalizedTitle,
+    });
+  }
+
   private peekInlineFieldSettingsOpenView(settings: Record<string, any> | undefined, wrapperUse?: string) {
     if (!settings || !Object.keys(settings).length) {
       return undefined;
@@ -6810,16 +6819,6 @@ export class FlowSurfacesService {
     }
   }
 
-  private assertInlinePopupTemplateConflict(actionName: string, popup: Record<string, any>) {
-    const forbiddenKeys = ['blocks', 'layout', 'mode'].filter((key) => !_.isUndefined(popup[key]));
-    if (forbiddenKeys.length) {
-      throwBadRequest(
-        `flowSurfaces ${actionName} popup.template cannot be combined with ${forbiddenKeys.join(', ')}`,
-        'FLOW_SURFACE_TEMPLATE_POPUP_CONFLICT',
-      );
-    }
-  }
-
   private async applyInlineFieldPopup(
     actionName: string,
     result: FlowSurfaceAddFieldResult,
@@ -6828,7 +6827,6 @@ export class FlowSurfacesService {
   ) {
     const fieldHostUid = result.fieldUid || result.uid;
     if (!_.isUndefined(popup?.template)) {
-      this.assertInlinePopupTemplateConflict(actionName, popup);
       Object.assign(
         result,
         await this.configureFieldNode(
@@ -6836,9 +6834,7 @@ export class FlowSurfacesService {
             uid: fieldHostUid,
           },
           {
-            openView: {
-              template: popup.template,
-            },
+            openView: this.buildInlinePopupTemplateOpenView(popup),
           },
           {
             ...options,
@@ -7248,16 +7244,13 @@ export class FlowSurfacesService {
     }
 
     if (popup && hasFlowSurfaceInlinePopupTemplate(popup)) {
-      this.assertInlinePopupTemplateConflict(actionName, popup);
       await this.configureActionNode(
         {
           uid: actionUid,
         },
         actionNode.use,
         {
-          openView: {
-            template: popup.template,
-          },
+          openView: this.buildInlinePopupTemplateOpenView(popup),
         },
         {
           ...options,

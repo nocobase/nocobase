@@ -159,6 +159,133 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should ignore local popup blocks/layout/mode when applyBlueprint binds popup.template', async () => {
+    const sourcePage = await createPage(rootAgent, {
+      title: `Popup template source page ${Date.now()}`,
+      tabTitle: 'Source',
+    });
+    const sourceDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: sourcePage.gridUid },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const sourceField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: { uid: sourceDetails.uid },
+          fieldPath: 'nickname',
+          popup: {
+            blocks: [
+              {
+                key: 'sourcePopupDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const popupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceField.fieldUid || sourceField.uid },
+          name: `Blueprint popup template ${Date.now()}`,
+          description: 'Reusable popup template for applyBlueprint mixed popup payload coverage.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            title: `Popup template blueprint group ${Date.now()}`,
+          },
+          item: {
+            title: `Popup template blueprint page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Popup template blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'nickname',
+                    popup: {
+                      title: 'Employee quick view',
+                      template: {
+                        uid: popupTemplate.uid,
+                        mode: 'reference',
+                      },
+                      mode: 'append',
+                      blocks: [
+                        {
+                          key: 'ignoredPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'employees',
+                          },
+                          fields: ['status'],
+                        },
+                      ],
+                      layout: {
+                        rows: [['ignoredPopupDetails']],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const templatedField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname' &&
+        item?.popup?.template?.uid === popupTemplate.uid,
+    )[0];
+
+    expect(templatedField?.popup?.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+    expect(templatedField?.popup?.pageUid).toBeUndefined();
+    expect(templatedField?.popup?.tabUid).toBeUndefined();
+    expect(templatedField?.popup?.gridUid).toBeUndefined();
+    expect(templatedField?.stepParams?.popupSettings?.openView).toMatchObject({
+      title: 'Employee quick view',
+    });
+    expect(collectDescendantNodes(data.surface.tree, (item) => item?.use === 'MarkdownBlockModel')).toHaveLength(0);
+  });
+
   it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
     const page = await createPage(rootAgent, {
       title: 'Legacy employees',
