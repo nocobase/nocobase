@@ -35,6 +35,7 @@ const AIButton = () => {
   });
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const setReadonly = useChatBoxStore.use.setReadonly();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
 
@@ -66,6 +67,7 @@ const AIButton = () => {
           border: '1px solid #eee',
         }}
         onClick={() => {
+          setReadonly(false);
           if (!open) {
             setOpen(true);
             switchAIEmployee(aiEmployee);

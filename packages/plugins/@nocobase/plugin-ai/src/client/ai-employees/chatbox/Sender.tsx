@@ -78,6 +78,7 @@ export const Sender: React.FC = () => {
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setSenderRef = useChatBoxStore.use.setSenderRef();
+  const readonly = useChatBoxStore.use.readonly();
 
   const setAttachments = useChatMessagesStore.use.setAttachments();
   const uploadProps = useUploadFiles();
@@ -202,7 +203,7 @@ export const Sender: React.FC = () => {
         header={<SenderHeader />}
         loading={responseLoading}
         footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
-        disabled={!currentEmployee}
+        disabled={!currentEmployee || readonly}
         placeholder={t('Enter your question')}
         actions={false}
         autoSize={{ minRows: 2, maxRows: 8 }}

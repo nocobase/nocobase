@@ -148,6 +148,7 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const conversations = useChatConversationsStore.use.conversations();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setReadonly = useChatBoxStore.use.setReadonly();
 
   const { startNewConversation } = useChatBoxActions();
   const { conversationsService, lastConversationRef } = useChatConversationActions();
@@ -181,9 +182,10 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
 
   const onSelectConversation = useCallback(
     (sessionId: string) => {
+      setReadonly(false);
       onOpenConversation(sessionId, conversations.find((item) => item.sessionId === sessionId)?.aiEmployee?.username);
     },
-    [onOpenConversation, conversations],
+    [onOpenConversation, conversations, setReadonly],
   );
 
   const attachLastConversationObserver = useCallback(

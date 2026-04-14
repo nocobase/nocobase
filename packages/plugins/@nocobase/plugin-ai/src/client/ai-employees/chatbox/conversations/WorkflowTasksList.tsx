@@ -11,7 +11,7 @@ import React, { useCallback } from 'react';
 import { Badge, Card, List, Spin, Tag, theme } from 'antd';
 import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { ModelRef } from '../stores/chat-box';
+import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
@@ -34,6 +34,7 @@ const getStatusTagColor = (status: string) => {
 export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksListOptions) => {
   const { loading, workflowTasks, unreadCount, runSearch, refresh, acceptWorkflowTask, getWorkflowTaskBySession } =
     useWorkflowTasks();
+  const setReadonly = useChatBoxStore.use.setReadonly();
 
   const onSelectWorkflowTask = useCallback(
     async (sessionId: string) => {
@@ -41,16 +42,19 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
 
       let username: string | undefined;
       let model: ModelRef | undefined;
+      let readonly = false;
       try {
         const task = await getWorkflowTaskBySession(sessionId);
         username = task?.config?.username;
         model = task?.config?.model;
+        readonly = task?.readonly === true;
       } catch {
         username = undefined;
         model = undefined;
       }
 
       refresh();
+      setReadonly(readonly);
       onOpenConversation(sessionId, username, model);
     },
     [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh],

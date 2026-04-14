@@ -174,6 +174,7 @@ export const AIMessage: React.FC<{
   };
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const readonly = useChatBoxStore.use.readonly();
 
   const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;
@@ -185,7 +186,7 @@ export const AIMessage: React.FC<{
   const messageActions =
     msg.type !== 'greeting' ? (
       <Space>
-        {msg.from === 'main-agent' && (
+        {msg.from === 'main-agent' && readonly !== true && (
           <Button
             color="default"
             variant="text"
@@ -287,6 +288,8 @@ export const UserMessage: React.FC<{
     ...item,
   }));
 
+  const readonly = useChatBoxStore.use.readonly();
+
   return (
     <MessageWrapper
       ref={msg.ref}
@@ -297,7 +300,7 @@ export const UserMessage: React.FC<{
       `)}
       footer={
         <Space>
-          {msg.from === 'main-agent' && (
+          {msg.from === 'main-agent' && readonly !== true && (
             <Button
               color="default"
               variant="text"

@@ -47,6 +47,7 @@ interface ChatBoxState {
 
   // [AI_DEBUG]
   showDebugPanel: boolean;
+  readonly: boolean;
 }
 
 interface ChatBoxActions {
@@ -74,6 +75,7 @@ interface ChatBoxActions {
 
   // [AI_DEBUG]
   setShowDebugPanel: (show: boolean) => void;
+  setReadonly: (readonly: boolean) => void;
 }
 
 const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
@@ -102,6 +104,7 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   model: null,
   // [AI_DEBUG]
   showDebugPanel: false,
+  readonly: false,
 
   setOpen: (open) => set({ open, ...(open ? {} : { collapsed: false }) }),
   setExpanded: (expanded) => set({ expanded, ...(expanded ? { collapsed: false } : {}) }),
@@ -132,6 +135,7 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   setModel: (model) => set({ model }),
   // [AI_DEBUG]
   setShowDebugPanel: (show) => set({ showDebugPanel: show }),
+  setReadonly: (readonly) => set({ readonly }),
 }));
 
 export const useChatBoxStore = createSelectors(store);

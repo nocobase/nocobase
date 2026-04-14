@@ -38,6 +38,7 @@ export const ChatButton: React.FC = observer(() => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const setReadonly = useChatBoxStore.use.setReadonly();
 
   const { switchAIEmployee } = useChatBoxActions();
 
@@ -52,6 +53,7 @@ export const ChatButton: React.FC = observer(() => {
       <div
         onClick={() => {
           setDropdownOpen(false);
+          setReadonly(false);
           setOpen(true);
           const leaderEmployee = aiEmployees.find(isLeader);
           if (leaderEmployee) {

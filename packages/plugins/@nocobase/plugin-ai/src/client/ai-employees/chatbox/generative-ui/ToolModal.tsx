@@ -18,6 +18,7 @@ import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { useChatBoxStore } from '../stores/chat-box';
 const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   return {
     onOk: async () => {},
@@ -43,6 +44,7 @@ export const ToolModal: React.FC = observer(() => {
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
   const toolsByName = useChatToolsStore.use.toolsByName();
+  const readonly = useChatBoxStore.use.readonly();
 
   const { updateToolArgs, messagesService } = useChatMessageActions();
 
@@ -127,7 +129,7 @@ export const ToolModal: React.FC = observer(() => {
         setOpen(false);
       }}
       okButtonProps={{
-        disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus),
+        disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus) || readonly,
       }}
       footer={
         FooterComponent && resolvedActiveTool ? (

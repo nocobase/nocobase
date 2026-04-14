@@ -25,6 +25,7 @@ import { Schema } from '@formily/react';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useChatMessagesStore } from '../stores/chat-messages';
 import { css, keyframes } from '@emotion/css';
+import { useChatBoxStore } from '../stores/chat-box';
 
 const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
@@ -45,10 +46,12 @@ const CallButton: React.FC<{
   const { token } = useToken();
   const { getDecisionActions } = useToolCallActions({ messageId });
   const [loading, setLoading] = useState(false);
+  const readonly = useChatBoxStore.use.readonly();
   return (
     <Flex align="center" gap={8}>
       <Button
         loading={loading}
+        disabled={readonly}
         onClick={async (e) => {
           e.stopPropagation();
           setLoading(true);

@@ -11,6 +11,7 @@ import React, { useMemo, useState } from 'react';
 import { ToolsUIProperties, useAPIClient, useRequest } from '@nocobase/client';
 import { Button, Card, Descriptions, Flex, Spin, Typography } from 'antd';
 import { useT } from '../../../locale';
+import { useChatBoxStore } from '../../chatbox/stores/chat-box';
 
 type WorkflowTaskOutputSchema = {
   title?: string;
@@ -57,7 +58,8 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
   const t = useT();
   const api = useAPIClient();
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
-  const disabled = toolCall.invokeStatus !== 'interrupted' || !!action;
+  const readonly = useChatBoxStore.use.readonly();
+  const disabled = toolCall.invokeStatus !== 'interrupted' || !!action || readonly;
 
   const { data, loading } = useRequest<{ data: WorkflowTaskOutputData }>(
     async () => {

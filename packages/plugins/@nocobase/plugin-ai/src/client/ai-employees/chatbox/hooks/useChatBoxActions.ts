@@ -30,6 +30,7 @@ export const useChatBoxActions = () => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const setReadonly = useChatBoxStore.use.setReadonly();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const setTaskVariables = useChatBoxStore.use.setTaskVariables();
   const roles = useChatBoxStore.use.roles();
@@ -195,6 +196,7 @@ export const useChatBoxActions = () => {
       clear();
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
+      setReadonly(false);
       if (!open) {
         setOpen(true);
       }

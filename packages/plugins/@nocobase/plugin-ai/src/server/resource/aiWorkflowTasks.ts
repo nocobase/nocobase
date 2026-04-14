@@ -117,8 +117,9 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       ctx.body = {
         ...(task?.toJSON?.() ?? task),
-        read: usersAiWorkflowTasks?.read ?? false,
+        read: usersAiWorkflowTasks?.read ?? true,
         config: node?.config ?? null,
+        readonly: task.acceptedUserId !== null && task.acceptedUserId !== userId,
       };
 
       await next();
