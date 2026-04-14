@@ -25,7 +25,7 @@ In the workflow configuration interface, click the plus ("+") button in the flow
 ## Node Configuration
 
 
-![SQL Node_Node Configuration](https://static-docs.nocobase.com/20240904002334.png)
+![SQL Node_Node Configuration](https://static-docs.nocobase.com/20260414235136.png)
 
 
 ### Data Source
@@ -38,7 +38,19 @@ The data source must be a database type, such as the main data source, PostgreSQ
 
 Edit the SQL statement. Currently, only one SQL statement is supported.
 
-Insert the required variables using the variable button in the upper right corner of the editor. Before execution, these variables will be replaced with their corresponding values through text substitution. The resulting text will then be used as the final SQL statement and sent to the database for querying.
+:::info
+Since `v2.0.30`, for security reasons, direct variable text substitution in SQL statements is no longer supported. Parameterized queries must be used instead.
+:::
+
+Variables from the process context can be used in SQL statements, but must be specified using the `:variableName` placeholder format, for example:
+
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
+
+### Parameter List
+
+In the SQL statement above, `:userId` is a placeholder. The replacement of placeholders must be configured in the "Parameter List". The variable name uses the name from the placeholder, e.g. `userId`, and the value can be selected from the process context using the variable selector.
 
 ## Node Execution Result
 
