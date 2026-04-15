@@ -43,11 +43,11 @@ export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication
     return this.app.router;
   }
 
-  get pluginSettingsManager() {
+  get pluginSettingsManager(): TApp['pluginSettingsManager'] {
     return this.app.pluginSettingsManager;
   }
 
-  get pluginSettingsRouter() {
+  get pluginSettingsRouter(): TApp['pluginSettingsManager'] {
     return this.app.pluginSettingsManager;
   }
 

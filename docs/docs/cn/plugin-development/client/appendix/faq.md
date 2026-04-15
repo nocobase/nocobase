@@ -59,13 +59,17 @@ this.router.add('hello', {
 
 ```ts
 // ❌ v1 client 不支持 componentLoader
-this.pluginSettingsRouter.add('my-settings', {
+this.pluginSettingsManager.addPageTabItem({
+  menuKey: 'my-settings',
+  key: 'index',
   componentLoader: () => import('./pages/MyPage'),
 });
 
 // ✅ v1 client 用 Component
 import MyPage from './pages/MyPage';
-this.pluginSettingsManager.add('my-settings', {
+this.pluginSettingsManager.addPageTabItem({
+  menuKey: 'my-settings',
+  key: 'index',
   Component: MyPage,
 });
 ```

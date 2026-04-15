@@ -45,7 +45,7 @@ plugin-name/
 | 我想做什么 | 写在哪个文件 | 调什么 API | 文档 |
 | --- | --- | --- | --- |
 | 注册一个页面路由 | `plugin.tsx` 的 `load()` | `this.router.add()` | [Router](../router) |
-| 注册一个插件设置页 | `plugin.tsx` 的 `load()` | `this.pluginSettingsRouter.add()` | [Router](../router) |
+| 注册一个插件设置页 | `plugin.tsx` 的 `load()` | `pluginSettingsManager.addMenuItem()` + `addPageTabItem()` | [Router](../router) |
 | 注册一个自定义区块 | `plugin.tsx` 的 `load()` | `this.flowEngine.registerModelLoaders()` | [FlowEngine → 区块扩展](../flow-engine/block) |
 | 注册一个自定义字段 | `plugin.tsx` 的 `load()` | `this.flowEngine.registerModelLoaders()` | [FlowEngine → 字段扩展](../flow-engine/field) |
 | 注册一个自定义操作 | `plugin.tsx` 的 `load()` | `this.flowEngine.registerModelLoaders()` | [FlowEngine → 操作扩展](../flow-engine/action) |

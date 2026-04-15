@@ -68,10 +68,16 @@ async load() {
     componentLoader: () => import('./pages/HelloPage'),
   });
 
-  // 注册插件设置页
-  this.pluginSettingsRouter.add('hello-settings', {
-    title: 'Hello 设置',
+  // 注册插件设置页（菜单 + 页面）
+  this.pluginSettingsManager.addMenuItem({
+    key: 'hello-settings',
+    title: this.t('Hello 设置'),
     icon: 'SettingOutlined',
+  });
+  this.pluginSettingsManager.addPageTabItem({
+    menuKey: 'hello-settings',
+    key: 'index',
+    title: this.t('Hello 设置'),
     componentLoader: () => import('./pages/HelloSettingPage'),
   });
 }
@@ -101,7 +107,7 @@ async load() {
 | 属性                        | 说明                                                     |
 | --------------------------- | -------------------------------------------------------- |
 | `this.router`               | 路由管理器，用于注册页面路由                             |
-| `this.pluginSettingsRouter` | 插件设置页路由管理器                                     |
+| `this.pluginSettingsManager` | 插件设置页管理器（`addMenuItem` + `addPageTabItem`）      |
 | `this.flowEngine`           | FlowEngine 实例，用于注册 FlowModel                      |
 | `this.engine`               | `this.flowEngine` 的别名                                 |
 | `this.context`              | 上下文对象，和组件里的 `useFlowContext()` 返回同一个对象  |

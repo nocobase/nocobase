@@ -1,12 +1,12 @@
 ---
 title: "做一个插件设置页"
-description: "NocoBase 插件实战：用 Router + Component + ctx.api 做一个插件设置页面，管理第三方 API Key。"
-keywords: "插件设置页,pluginSettingsRouter,Antd Form,ctx.api,NocoBase"
+description: "NocoBase 插件实战：用 pluginSettingsManager + Component + ctx.api 做一个插件设置页面，管理第三方 API Key。"
+keywords: "插件设置页,pluginSettingsManager,addMenuItem,addPageTabItem,Antd Form,ctx.api,NocoBase"
 ---
 
 # 做一个插件设置页
 
-很多插件需要一个设置页面来让用户配置参数——比如第三方服务的 API Key、Webhook 地址等。这个示例展示怎么用 `pluginSettingsRouter` + React 组件 + `ctx.api` 做一个完整的插件设置页。
+很多插件需要一个设置页面来让用户配置参数——比如第三方服务的 API Key、Webhook 地址等。这个示例展示怎么用 `pluginSettingsManager` + React 组件 + `ctx.api` 做一个完整的插件设置页。
 
 这个示例不涉及 FlowEngine，纯粹是 Plugin + Router + Component + Context 的组合。
 
@@ -16,7 +16,7 @@ keywords: "插件设置页,pluginSettingsRouter,Antd Form,ctx.api,NocoBase"
 
 - [编写第一个插件](../../write-your-first-plugin) — 插件创建和目录结构
 - [Plugin 插件](../plugin) — 插件入口和 `load()` 生命周期
-- [Router 路由](../router) — `pluginSettingsRouter` 设置页注册
+- [Router 路由](../router) — `pluginSettingsManager` 设置页注册
 - [Component 组件开发](../component/index.md) — React 组件写法和 useFlowContext
 - [i18n 国际化](../component/i18n) — 翻译文件写法和 `useT()` 用法
 
@@ -52,20 +52,38 @@ yarn pm create @my-project/plugin-settings-page
 
 这会在 `packages/plugins/@my-project/plugin-settings-page` 下生成基础文件结构，包括 `src/client-v2/`、`src/server/`、`src/locale/` 等目录。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
-## 第二步：注册设置页路由
+## 第二步：注册设置页
 
-编辑 `src/client-v2/plugin.tsx`，在 `load()` 里用 `this.pluginSettingsRouter.add()` 注册设置页：
+编辑 `src/client-v2/plugin.tsx`，在 `load()` 里用 `this.pluginSettingsManager` 注册设置页。分两步——先用 `addMenuItem()` 注册菜单入口，再用 `addPageTabItem()` 注册实际页面：
 
 ```ts
 // src/client-v2/plugin.tsx
-import { Plugin } from '@nocobase/client-v2';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-export class PluginSettingsPageClient extends Plugin {
+export class PluginSettingsPageClient extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('external-api', {
+    // 注册菜单入口
+    this.pluginSettingsManager.addMenuItem({
+      key: 'external-api',
       title: this.t('External API Settings'),
       icon: 'ApiOutlined', // Ant Design 图标，参考 https://5x.ant.design/components/icon
+    });
+
+    // Tab 1：API 配置（key 为 'index'，映射到菜单根路径 /admin/settings/external-api）
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'external-api',
+      key: 'index',
+      title: this.t('API Configuration'),
       componentLoader: () => import('./pages/ExternalApiSettingsPage'),
+      sort: -1, // 排序值越小越靠前
+    });
+
+    // Tab 2：关于页面（映射到 /admin/settings/external-api/about）
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'external-api',
+      key: 'about',
+      title: this.t('About'),
+      componentLoader: () => import('./pages/AboutPage'),
     });
   }
 }
@@ -73,7 +91,9 @@ export class PluginSettingsPageClient extends Plugin {
 export default PluginSettingsPageClient;
 ```
 
-注册后，「插件配置」菜单里会出现一个「External API Settings」入口。`this.t()` 会自动以当前插件的包名作为 i18n namespace，详见 [Context → 常用能力](../ctx/common-capabilities#国际化ctxt--ctxi18n)。
+注册后，「插件配置」菜单里会出现一个「外部服务配置」入口，顶部会有两个 tab——「API 配置」和「关于」。当菜单下只有一个页面时 tab 栏会自动隐藏，这里注册了两个页面所以会自动显示。`this.t()` 会自动以当前插件的包名作为 i18n namespace，详见 [Context → 常用能力](../ctx/common-capabilities#国际化ctxt--ctxi18n)。
+
+![settings page](https://static-docs.nocobase.com/20260415160006.png)
 
 ## 第三步：编写设置页组件
 
@@ -196,6 +216,11 @@ export default function ExternalApiSettingsPage() {
 // src/locale/zh-CN.json
 {
   "External API Settings": "外部服务配置",
+  "API Configuration": "API 配置",
+  "About": "关于",
+  "Plugin name": "插件名称",
+  "Version": "版本",
+  "This is a demo plugin showing how to register a settings page with multiple tabs.": "这是一个演示插件，展示如何注册带多个 Tab 的设置页。",
   "Please enter API Key": "请输入 API Key",
   "Please enter API Secret": "请输入 API Secret",
   "Please enter endpoint URL": "请输入接口地址",
@@ -210,6 +235,11 @@ export default function ExternalApiSettingsPage() {
 // src/locale/en-US.json
 {
   "External API Settings": "External API Settings",
+  "API Configuration": "API Configuration",
+  "About": "About",
+  "Plugin name": "Plugin name",
+  "Version": "Version",
+  "This is a demo plugin showing how to register a settings page with multiple tabs.": "This is a demo plugin showing how to register a settings page with multiple tabs.",
   "Please enter API Key": "Please enter API Key",
   "Please enter API Secret": "Please enter API Secret",
   "Please enter endpoint URL": "Please enter endpoint URL",
@@ -302,7 +332,42 @@ export default PluginSettingsPageServer;
 - **`acl.allow()`** — `'loggedIn'` 表示登录用户即可访问。`set` 接口没有显式 allow，默认只有管理员能调用
 - **`await next()`** — 每个 action 最后都要调用，这是 Koa 中间件的约定
 
-## 第六步：启用插件
+## 第六步：编写「关于」页面
+
+在第二步里我们注册了两个 tab，「API 配置」的页面组件已经在第三步写好了，现在来写「关于」tab 的页面。
+
+新建 `src/client-v2/pages/AboutPage.tsx`：
+
+```tsx
+// src/client-v2/pages/AboutPage.tsx
+import React from 'react';
+import { Card, Descriptions, Typography } from 'antd';
+import { useT } from '../locale';
+
+const { Paragraph } = Typography;
+
+export default function AboutPage() {
+  const t = useT();
+
+  return (
+    <Card title={t('About')}>
+      <Descriptions column={1} bordered style={{ maxWidth: 600 }}>
+        <Descriptions.Item label={t('Plugin name')}>
+          @nocobase-example/plugin-settings-page
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Version')}>1.0.0</Descriptions.Item>
+      </Descriptions>
+      <Paragraph style={{ marginTop: 16, color: '#888' }}>
+        {t('This is a demo plugin showing how to register a settings page with multiple tabs.')}
+      </Paragraph>
+    </Card>
+  );
+}
+```
+
+这个页面很简单——用 Antd 的 `Descriptions` 展示插件信息。实际项目中，「关于」tab 可以用来放版本号、更新日志、帮助链接等。
+
+## 第七步：启用插件
 
 ```bash
 yarn pm enable @my-project/plugin-settings-page
@@ -320,13 +385,14 @@ yarn pm enable @my-project/plugin-settings-page
 
 这个示例用到的能力：
 
-| 能力             | 用法                              | 文档                                                            |
-| ---------------- | --------------------------------- | --------------------------------------------------------------- |
-| 注册设置页       | `this.pluginSettingsRouter.add()` | [Router 路由](../router)                                        |
-| API 请求         | `ctx.api.request()`               | [Context → 常用能力](../ctx/common-capabilities#api-请求ctxapi) |
-| 国际化（客户端） | `this.t()` / `useT()`             | [i18n 国际化](../component/i18n)                                |
-| 国际化（服务端） | `ctx.t()` / `plugin.t()`          | [i18n 国际化（服务端）](../../server/i18n)                      |
-| 表单 UI          | Antd Form                         | [Ant Design Form](https://5x.ant.design/components/form)        |
+| 能力             | 用法                                                       | 文档                                                            |
+| ---------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
+| 注册设置页       | `pluginSettingsManager.addMenuItem()` + `addPageTabItem()` | [Router 路由](../router)                                        |
+| 多 Tab 设置页    | 同一 `menuKey` 注册多个 `addPageTabItem()`                 | [Router 路由](../router)                                        |
+| API 请求         | `ctx.api.request()`                                        | [Context → 常用能力](../ctx/common-capabilities#api-请求ctxapi) |
+| 国际化（客户端） | `this.t()` / `useT()`                                      | [i18n 国际化](../component/i18n)                                |
+| 国际化（服务端） | `ctx.t()` / `plugin.t()`                                   | [i18n 国际化（服务端）](../../server/i18n)                      |
+| 表单 UI          | Antd Form                                                  | [Ant Design Form](https://5x.ant.design/components/form)        |
 
 ## 相关链接
 

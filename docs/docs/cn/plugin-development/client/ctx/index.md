@@ -62,7 +62,7 @@ Plugin 类提供了一些快捷属性，方便在 `load()` 里使用。不过要
 | Plugin 快捷属性             | 指向                  | 用途                                 |
 | --------------------------- | --------------------- | ------------------------------------ |
 | `this.router`               | RouterManager         | 注册路由，用 `.add()`                |
-| `this.pluginSettingsRouter` | PluginSettingsManager | 注册插件配置页                       |
+| `this.pluginSettingsManager` | PluginSettingsManager | 注册插件配置页（`addMenuItem` + `addPageTabItem`） |
 | `this.flowEngine`           | FlowEngine 实例       | 注册 FlowModel                       |
 | `this.t()`                  | i18n.t() + 自动 ns    | 国际化，自动注入插件包名             |
 | `this.context`              | FlowEngineContext     | 上下文对象，和 useFlowContext() 一致 |

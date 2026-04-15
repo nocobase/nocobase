@@ -275,9 +275,9 @@ export default function MyPage() {
 
 路由相关能力分为三部分：注册（仅 Plugin）、导航和信息获取（仅组件）。
 
-### 路由注册（this.router / this.pluginSettingsRouter）
+### 路由注册（this.router / this.pluginSettingsManager）
 
-在 Plugin 的 `load()` 中通过 `this.router.add()` 注册页面路由，通过 `this.pluginSettingsRouter.add()` 注册插件设置页：
+在 Plugin 的 `load()` 中通过 `this.router.add()` 注册页面路由，通过 `this.pluginSettingsManager` 注册插件设置页：
 
 ```ts
 async load() {
@@ -288,9 +288,15 @@ async load() {
   });
 
   // 注册插件设置页（会出现在「插件配置」菜单里）
-  this.pluginSettingsRouter.add('my-settings', {
+  this.pluginSettingsManager.addMenuItem({
+    key: 'my-settings',
     title: this.t('My Settings'),
     icon: 'SettingOutlined', // Ant Design 图标，参考 https://5x.ant.design/components/icon
+  });
+  this.pluginSettingsManager.addPageTabItem({
+    menuKey: 'my-settings',
+    key: 'index',
+    title: this.t('My Settings'),
     componentLoader: () => import('./pages/MySettingsPage'),
   });
 }
@@ -300,7 +306,7 @@ async load() {
 
 :::warning 注意
 
-`this.router` 和 `this.pluginSettingsRouter` 都是 RouterManager，用于**注册路由**。跟组件里的 `ctx.router`（React Router，用于**页面导航**）不是同一个东西。
+`this.router` 是 RouterManager，用于**注册路由**。`this.pluginSettingsManager` 是 PluginSettingsManager，用于**注册设置页**。两者跟组件里的 `ctx.router`（React Router，用于**页面导航**）不是同一个东西。
 
 :::
 
