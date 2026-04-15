@@ -106,6 +106,9 @@ jobs:
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
+          if ! node -e "require.resolve('dayjs-timezone-iana-plugin')" >/dev/null 2>&1; then
+            yarn add -W dayjs-timezone-iana-plugin@0.1.0
+          fi
           yarn build
 
       - name: Checkout pro-plugins
@@ -136,13 +139,14 @@ jobs:
             fi
             git clone -b $TARGET_TAG https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
-        env:
-          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
 
       - name: Build Pro plugins
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
+          if ! node -e "require.resolve('dayjs-timezone-iana-plugin')" >/dev/null 2>&1; then
+            yarn add -W dayjs-timezone-iana-plugin@0.1.0
+          fi
           yarn build packages/pro-plugins
 
       - name: Resolve pro plugin scopes
