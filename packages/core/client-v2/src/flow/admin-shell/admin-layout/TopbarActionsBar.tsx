@@ -16,6 +16,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useAclSnippets } from '../../../acl/useAclSnippets';
 import type { CustomToken } from '../../../theme';
 import { TopbarActionModel } from '../../models/topbar/TopbarActionModel';
+import { USER_CENTER_ACTION_ID } from '../../models/topbar/UserCenterTopbarActionModel';
 import { HelpLite } from './HelpLite';
 
 const topbarActionsBarClassName = css`
@@ -118,16 +119,26 @@ const TopbarActionErrorFallback = () => {
   return null;
 };
 
+const getTopbarActionId = (action: TopbarActionModel) => {
+  if (typeof action?.getActionId === 'function') {
+    return action.getActionId();
+  }
+
+  return action?.actionId || action?.uid || '';
+};
+
 const TopbarActionsContent = React.memo((props: { actions: TopbarActionModel[]; onActionClick?: () => void }) => {
   const { allow } = useAclSnippets();
   const { token } = theme.useToken();
   const customToken = token as CustomToken;
   const actions = useMemo(() => getVisibleTopbarActions(props.actions, allow), [allow, props.actions]);
+  const mainActions = actions.filter((action) => getTopbarActionId(action) !== USER_CENTER_ACTION_ID);
+  const userCenterAction = actions.find((action) => getTopbarActionId(action) === USER_CENTER_ACTION_ID);
 
   return (
     <div className={topbarActionsBarClassName} style={getTopbarActionsBarVars(customToken)}>
       <div className="nb-topbar-actions-list" onClick={props.onActionClick}>
-        {actions.map((action) => (
+        {mainActions.map((action) => (
           <ErrorBoundary
             key={action.uid}
             FallbackComponent={TopbarActionErrorFallback}
@@ -143,6 +154,17 @@ const TopbarActionsContent = React.memo((props: { actions: TopbarActionModel[]; 
         <Divider type="vertical" />
       </ConfigProvider>
       <HelpLite />
+      {userCenterAction ? (
+        <ErrorBoundary
+          key={userCenterAction.uid}
+          FallbackComponent={TopbarActionErrorFallback}
+          onError={(error) => {
+            console.error('[NocoBase] Topbar action render failed.', error);
+          }}
+        >
+          <FlowModelRenderer model={userCenterAction} />
+        </ErrorBoundary>
+      ) : null}
     </div>
   );
 });

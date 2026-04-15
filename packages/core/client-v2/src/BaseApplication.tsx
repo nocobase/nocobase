@@ -30,8 +30,7 @@ import { AIManager } from './ai';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
-import type { Plugin } from './Plugin';
-import type { PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
+import type { PluginClassLike, PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
 import type { PluginSettingsManagerBaseLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
 import type { ComponentTypeAndString, RouterManagerBaseLike, RouterOptions } from './RouterManager';
@@ -47,7 +46,6 @@ declare global {
   }
 }
 
-export type PluginClassLike = new (options: any, app: any) => Plugin<any, any>;
 export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClassLike }>;
 export type ComponentAndProps<T = any> = [ComponentType, T];
 
