@@ -12,8 +12,10 @@ import { ConfigProvider, Divider } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useAclSnippets } from '../../../acl';
 import { useApp } from '../../../flow-compat';
+import { FlowModelRenderer } from '@nocobase/flow-engine';
 import { HeaderActionRenderer, type HeaderActionItemLite } from './HeaderActionRendererLite';
 import { HelpLite } from './HelpLite';
+import { USER_CENTER_ACTION_ID, UserCenterTopbarActionModel } from '../../models/topbar/UserCenterTopbarActionModel';
 
 const HEADER_ACTIONS_MANAGER_CHANGED = 'header-actions-manager:changed';
 
@@ -99,6 +101,14 @@ export const PinnedPluginListLite = React.memo((props: { onClick?: () => void })
   }, [app]);
 
   const items = app.headerActionsManager.resolveVisibleItems(allow) as HeaderActionItemLite[];
+  const hasUserCenterModel = !!app.flowEngine.getModelClass('UserCenterTopbarActionModel');
+  const userCenter = hasUserCenterModel
+    ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
+      app.flowEngine.createModel<UserCenterTopbarActionModel>({
+        use: 'UserCenterTopbarActionModel',
+        uid: `topbar-action-${USER_CENTER_ACTION_ID}`,
+      })
+    : null;
 
   return (
     <div className={pinnedPluginListClassName}>
@@ -111,6 +121,7 @@ export const PinnedPluginListLite = React.memo((props: { onClick?: () => void })
         <Divider type="vertical" />
       </ConfigProvider>
       <HelpLite key="help" />
+      {userCenter ? <FlowModelRenderer model={userCenter} /> : null}
     </div>
   );
 });

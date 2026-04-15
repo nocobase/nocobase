@@ -30,11 +30,10 @@ import { AIManager } from './ai';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
-import type { Plugin } from './Plugin';
-import type { PluginManager, PluginType } from './PluginManager';
-import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
+import type { PluginClassLike, PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
+import type { PluginSettingsManagerBaseLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
-import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import type { ComponentTypeAndString, RouterManagerBaseLike, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -47,7 +46,6 @@ declare global {
   }
 }
 
-export type PluginClassLike = new (options: any, app: any) => Plugin<any, any>;
 export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClassLike }>;
 export type ComponentAndProps<T = any> = [ComponentType, T];
 
@@ -58,11 +56,10 @@ export interface BaseApplicationOptions {
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
-  plugins?: PluginType[];
+  plugins?: PluginTypeLike[];
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  pluginSettings?: Record<string, PluginSettingOptions>;
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
@@ -78,14 +75,14 @@ export interface BaseApplicationOptions {
 export abstract class BaseApplication<TOptions extends BaseApplicationOptions = BaseApplicationOptions> {
   public eventBus = new EventTarget();
   public providers: ComponentAndProps[] = [];
-  public router: RouterManager;
+  public router: RouterManagerBaseLike;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {};
-  public pluginManager: PluginManager;
-  public pluginSettingsManager: PluginSettingsManager<any>;
+  public pluginManager: PluginManagerBaseLike;
+  public pluginSettingsManager: PluginSettingsManagerBaseLike;
   public aiManager: AIManager;
   public headerActionsManager: HeaderActionsManager;
   public devDynamicImport: DevDynamicImport;
@@ -105,8 +102,8 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setData: (data: Record<string, any>) => void;
       setMeta: (meta: Record<string, any>) => void;
     };
-    pluginSettingsRouter: PluginSettingsManager<any>;
-    pluginManager: PluginManager;
+    pluginSettingsRouter: PluginSettingsManagerBaseLike;
+    pluginManager: PluginManagerBaseLike;
   };
   public systemSettings: SystemSettingsSource;
   maintained = false;
@@ -488,9 +485,9 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
 
   protected abstract createApiClient(options: TOptions): APIClient;
   protected abstract createI18n(options: TOptions): i18next;
-  protected abstract createRouterManager(options: TOptions): any;
-  protected abstract createPluginManager(options: TOptions): PluginManager;
-  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManager<any>;
+  protected abstract createRouterManager(options: TOptions): RouterManagerBaseLike;
+  protected abstract createPluginManager(options: TOptions): PluginManagerBaseLike;
+  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerBaseLike;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws);
   }

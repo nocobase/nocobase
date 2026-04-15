@@ -12,6 +12,7 @@ import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
+import { Outlet } from 'react-router-dom';
 
 const waitForAppReady = async () => {
   await waitFor(() => {
@@ -136,7 +137,13 @@ describe('app', () => {
   it('should support plugin settings componentLoader lazy functionality', async () => {
     class PluginHelloClient extends Plugin {
       async load() {
-        this.pluginSettingsManager.add('demo', {
+        this.pluginSettingsManager.addMenuItem({
+          key: 'demo',
+          title: 'Demo',
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'demo',
+          key: 'index',
           title: 'Demo',
           componentLoader: async () => ({
             default: () => <div>Hello Lazy Settings</div>,
@@ -147,6 +154,14 @@ describe('app', () => {
     const app = createMockClient({
       plugins: [PluginHelloClient],
       router: { type: 'memory', initialEntries: ['/admin/settings/demo'] },
+    });
+    app.router.add('admin', {
+      path: '/admin',
+      Component: Outlet,
+    });
+    app.router.add('admin.settings', {
+      path: '/admin/settings',
+      Component: Outlet,
     });
     await renderApp(app);
     expect(await screen.findByText('Hello Lazy Settings')).toBeInTheDocument();

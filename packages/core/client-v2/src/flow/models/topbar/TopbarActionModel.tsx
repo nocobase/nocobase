@@ -20,6 +20,7 @@ import type { PluginSettingsPageType } from '../../../PluginSettingsManager';
 import { useApp } from '../../../hooks/useApp';
 import {
   filterRenderableSettings,
+  filterVisibleSettings,
   getMenuItems,
   PLUGIN_MANAGER_SETTING_NAME,
   sortTopLevelSettings,
@@ -75,10 +76,10 @@ export function getTopbarPluginSettingsItems(options: {
   settings: PluginSettingsPageType[];
   canManagePlugins: boolean;
   t: (key: string) => string;
-  getRoutePath?: (name: string) => string;
 }): NonNullable<MenuProps['items']> {
-  const { settings, canManagePlugins, t, getRoutePath } = options;
-  const topLevelSettings = filterRenderableSettings(settings);
+  const { settings, canManagePlugins, t } = options;
+  const topLevelSettings = filterVisibleSettings(filterRenderableSettings(settings));
+  const pluginManagerSetting = topLevelSettings.find((item) => item.name === PLUGIN_MANAGER_SETTING_NAME);
   const settingsByKey = new Map<string, PluginSettingsPageType>();
   const normalSettings = sortTopLevelSettings(
     topLevelSettings
@@ -99,8 +100,7 @@ export function getTopbarPluginSettingsItems(options: {
     }
 
     const matchedSetting = settingsByKey.get(String(item.key));
-    const routePath = matchedSetting?.name ? getRoutePath?.(matchedSetting.name) : undefined;
-    const targetPath = routePath || matchedSetting?.path;
+    const targetPath = matchedSetting?.path;
     const targetLink = matchedSetting?.link;
     const targetTitle = matchedSetting?.title || item.title;
 
@@ -127,11 +127,13 @@ export function getTopbarPluginSettingsItems(options: {
 
   const items: NonNullable<MenuProps['items']> = [];
 
-  if (canManagePlugins) {
+  if (canManagePlugins && pluginManagerSetting) {
     items.push({
-      key: 'plugin-manager',
-      icon: <ApiOutlined />,
-      label: <Link to="/admin/settings/plugin-manager">{t('Plugin manager')}</Link>,
+      key: pluginManagerSetting.key,
+      name: pluginManagerSetting.name,
+      path: pluginManagerSetting.path,
+      icon: pluginManagerSetting.icon || <ApiOutlined />,
+      label: <Link to={pluginManagerSetting.path}>{pluginManagerSetting.title || t('Plugin manager')}</Link>,
     });
   }
 
@@ -331,10 +333,9 @@ const PluginSettingsTopbarAction = observer(
     const [open, setOpen] = useState(false);
     const items = useMemo(() => {
       return getTopbarPluginSettingsItems({
-        settings: app.pluginSettingsManager.getList(),
+        settings: app.pluginSettingsManager.getList(true),
         canManagePlugins: snippets.includes('pm'),
         t,
-        getRoutePath: (name) => app.pluginSettingsManager.getRoutePath(name),
       });
     }, [app, snippets, t]);
 

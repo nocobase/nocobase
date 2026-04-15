@@ -19,6 +19,7 @@
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/plugin-acl": "2.x",
     "@nocobase/plugin-auth": "2.x",

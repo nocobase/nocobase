@@ -12,6 +12,8 @@ import type { Plugin } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
 export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
+export type PluginClassLike = new (options: any, app: any) => any;
+export type PluginTypeLike = PluginClassLike | [PluginClassLike, PluginOptions<any>];
 export type PluginClass<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> = new (
   options: PluginOptions<Opts>,
   app: TApp,
@@ -26,6 +28,12 @@ export type PluginData = {
   url: string;
   type: 'local' | 'upload' | 'npm';
 };
+
+export interface PluginManagerBaseLike {
+  add<T = any>(plugin: PluginClassLike, opts?: PluginOptions<T>): Promise<void>;
+  get(nameOrPluginClass: any): any;
+  load(): Promise<void>;
+}
 
 export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();

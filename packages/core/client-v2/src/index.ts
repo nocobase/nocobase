@@ -25,6 +25,7 @@ export * from './RouterManager';
 export * from './PluginManager';
 export * from './PluginSettingsManager';
 export * from './hooks';
+export { default as languageCodes } from './locale/languageCodes';
 export * from './nocobase-buildin-plugin';
 export * from './collection-field-interface/CollectionFieldInterface';
 export * from './collection-field-interface/CollectionFieldInterfaceManager';

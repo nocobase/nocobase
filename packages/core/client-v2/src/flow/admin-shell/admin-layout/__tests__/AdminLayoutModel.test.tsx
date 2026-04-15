@@ -44,6 +44,7 @@ import {
 } from '@nocobase/flow-engine';
 import { AdminLayoutModel, getAdminLayoutModel } from '..';
 import { TopbarActionModel } from '../../../models/topbar/TopbarActionModel';
+import { UserCenterTopbarActionModel } from '../../../models/topbar/UserCenterTopbarActionModel';
 import { TopbarActionsBar } from '../TopbarActionsBar';
 
 class TestAdminLayoutModel extends AdminLayoutModel {
@@ -252,6 +253,7 @@ describe('AdminLayoutModel runtime', () => {
       TopbarActionModel,
       TestTopbarActionModelA,
       TestTopbarActionModelB,
+      UserCenterTopbarActionModel,
     });
 
     render(
@@ -276,6 +278,7 @@ describe('AdminLayoutModel runtime', () => {
     expect(rendered[0].props.actions.map((action) => action.uid)).toEqual([
       'topbar-action-TestTopbarActionModelA',
       'topbar-action-TestTopbarActionModelB',
+      'topbar-action-UserCenterTopbarActionModel',
     ]);
   });
 });

@@ -214,6 +214,94 @@ describe('settings center', () => {
     expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
   });
 
+  it('should allow direct access to hidden page without showing menu entry', async () => {
+    class HiddenSettingsPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({ key: 'hidden-demo', title: 'Hidden demo' });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'hidden-demo',
+          key: 'index',
+          title: 'Hidden demo',
+          hidden: true,
+          Component: () => <div>Hidden settings page</div>,
+        });
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, HiddenSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/hidden-demo'] },
+    });
+    mockAdminRuntime(app);
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    expect(await screen.findByText('Hidden settings page')).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Hidden demo' })).not.toBeInTheDocument();
+  });
+
+  it('should show route empty state when direct access page has no permission', async () => {
+    class ProtectedSettingsPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({ key: 'secure-demo', title: 'Secure demo' });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'secure-demo',
+          key: 'index',
+          title: 'Secure demo',
+          aclSnippet: 'pm.secure-demo.index',
+          Component: () => <div>Secure settings page</div>,
+        });
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, ProtectedSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/secure-demo'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', 'pm.system-settings.system-settings', '!pm.secure-demo.index'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
+    expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
+  });
+
+  it('should keep menu visible when menu acl is denied but child page is visible', async () => {
+    class MenuAclPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({
+          key: 'menu-acl-demo',
+          title: 'Menu ACL Demo',
+          aclSnippet: 'pm.menu-acl-demo.menu',
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'menu-acl-demo',
+          key: 'index',
+          title: 'Menu ACL Demo',
+          Component: () => <div>Menu ACL child page</div>,
+        });
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, MenuAclPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/menu-acl-demo'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', 'pm.system-settings.system-settings', '!pm.menu-acl-demo.menu'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    expect(await screen.findByText('Menu ACL child page')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Menu ACL Demo' })).toBeInTheDocument();
+  });
+
   it('should save system settings through systemSettings:put', async () => {
     const app = createMockClient({
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
@@ -248,9 +336,12 @@ describe('settings center', () => {
 
     const uploadInput = document.querySelector('input[type="file"]') as HTMLInputElement | null;
     expect(uploadInput).not.toBeNull();
+    if (!uploadInput) {
+      throw new Error('Upload input not found');
+    }
 
     const invalidFile = new File(['plain-text'], 'invalid.txt', { type: 'text/plain' });
-    fireEvent.change(uploadInput!, {
+    fireEvent.change(uploadInput, {
       target: {
         files: [invalidFile],
       },

@@ -9,7 +9,7 @@
 
 import { Registry } from '@nocobase/utils/client';
 import type { ComponentType } from 'react';
-import { Plugin } from '@nocobase/client-v2';
+import { Plugin, UserCenterSelectItemModel, languageCodes } from '@nocobase/client-v2';
 import debounce from 'lodash/debounce';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
@@ -17,6 +17,31 @@ import AuthProvider from './providers/AuthProvider';
 import { BasicSignInForm } from './forms/BasicSignInForm';
 import { BasicSignUpForm } from './forms/BasicSignUpForm';
 import { authLocaleResources, NAMESPACE } from './locale';
+
+class UserCenterLanguageItemModel extends UserCenterSelectItemModel {
+  static itemId = 'language';
+
+  section = 'preferences' as const;
+  sort = 350;
+  label = 'Language';
+
+  async prepare() {
+    const systemSettings = await this.context.systemSettings.load();
+    const enabledLanguages = systemSettings?.data?.enabledLanguages || [];
+
+    this.options = enabledLanguages.map((code: string) => ({
+      value: code,
+      label: languageCodes[code]?.label || code,
+    }));
+    this.value = this.context.app.apiClient.auth.getLocale?.() || this.context.app.apiClient.auth.locale;
+    this.ready = this.options.length > 1;
+  }
+
+  async onChange(value: string) {
+    this.context.app.apiClient.auth.setLocale(value);
+    window.location.reload();
+  }
+}
 
 export type AuthOptions = {
   components: Partial<{
@@ -69,6 +94,7 @@ export class PluginAuthClientV2 extends Plugin {
     });
 
     this.app.use(AuthProvider);
+    this.app.flowEngine.registerModels({ UserCenterLanguageItemModel });
 
     this.addRoutes();
     this.registerPresetAuthType();

@@ -10,6 +10,7 @@
 import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import type { Application } from '../Application';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
@@ -208,7 +209,7 @@ const RootRedirect: FC = () => {
  * 只迁移当前 v2 运行时仍然需要的部分，显式跳过 schemaInitializerManager
  * 以及用户标注暂不迁移的旧插件注册逻辑。
  */
-export class NocoBaseBuildInPlugin extends Plugin {
+export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
   async afterAdd() {
     await this.addPlugins();
   }
@@ -225,16 +226,32 @@ export class NocoBaseBuildInPlugin extends Plugin {
       AdminSettingsLayoutModel,
     });
 
-    this.app.pluginSettingsManager.add('plugin-manager', {
+    this.app.pluginSettingsManager.addMenuItem({
+      key: 'plugin-manager',
       title: this.app.i18n.t('Plugin manager'),
       icon: 'ApiOutlined',
+      aclSnippet: 'pm',
+      sort: -200,
+    });
+    this.app.pluginSettingsManager.addPageTabItem({
+      menuKey: 'plugin-manager',
+      key: 'index',
+      title: this.app.i18n.t('Plugin manager'),
       componentLoader: () => import('../settings-center/PluginManagerPage'),
       aclSnippet: 'pm',
       sort: -200,
     });
-    this.app.pluginSettingsManager.add('system-settings', {
+    this.app.pluginSettingsManager.addMenuItem({
+      key: 'system-settings',
       title: this.app.i18n.t('System settings'),
       icon: 'SettingOutlined',
+      aclSnippet: 'pm.system-settings.system-settings',
+      sort: -100,
+    });
+    this.app.pluginSettingsManager.addPageTabItem({
+      menuKey: 'system-settings',
+      key: 'index',
+      title: this.app.i18n.t('System settings'),
       componentLoader: () => import('../settings-center/SystemSettingsPage'),
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,
