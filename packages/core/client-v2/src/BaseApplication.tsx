@@ -19,11 +19,12 @@ import {
 import { APIClient, getSubAppName } from '@nocobase/sdk';
 import type { i18n as i18next } from 'i18next';
 import { get, merge, set } from 'lodash';
-import React, { ComponentType, FC, ReactElement, ReactNode, useLayoutEffect } from 'react';
+import React, { ErrorInfo, FC, ReactElement, ReactNode, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link, NavLink, Navigate } from 'react-router-dom';
+import { isValidElementType } from 'react-is';
 import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
@@ -33,7 +34,12 @@ import { SystemSettingsSource } from './flow/system-settings';
 import type { PluginClassLike, PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
 import type { PluginSettingsManagerBaseLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
-import type { ComponentTypeAndString, RouterManagerBaseLike, RouterOptions } from './RouterManager';
+import type {
+  ComponentTypeAndString,
+  RenderableComponentType,
+  RouterManagerBaseLike,
+  RouterOptions,
+} from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -42,12 +48,34 @@ import type { RequireJS } from './utils/requirejs';
 
 declare global {
   interface Window {
+    requirejs?: RequireJS;
     define: RequireJS['define'];
   }
 }
 
+type AnyComponent = RenderableComponentType<any>;
+type AuthTokenPayload = {
+  token: string;
+  authenticator: string | null;
+};
+
+const LEADING_SLASHES_REGEXP = /^\/+/;
+const TRAILING_SLASHES_REGEXP = /\/+$/;
+
+const trimLeadingSlashes = (value: string) => {
+  const match = LEADING_SLASHES_REGEXP.exec(value);
+  return match ? value.slice(match[0].length) : value;
+};
+
+const trimTrailingSlashes = (value: string) => {
+  const match = TRAILING_SLASHES_REGEXP.exec(value);
+  return match ? value.slice(0, -match[0].length) : value;
+};
+
+const isRenderableComponentType = (value: unknown): value is AnyComponent => isValidElementType(value);
+
 export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClassLike }>;
-export type ComponentAndProps<T = any> = [ComponentType, T];
+export type ComponentAndProps<T = any> = [AnyComponent, T];
 
 export interface BaseApplicationOptions {
   name?: string;
@@ -55,9 +83,9 @@ export interface BaseApplicationOptions {
   apiClient?: any;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
-  providers?: (ComponentType | ComponentAndProps)[];
+  providers?: (AnyComponent | ComponentAndProps)[];
   plugins?: PluginTypeLike[];
-  components?: Record<string, ComponentType>;
+  components?: Record<string, AnyComponent>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
   designable?: boolean;
@@ -80,12 +108,12 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
-  public components: Record<string, ComponentType<any> | any> = {};
+  public components: Record<string, AnyComponent> = {};
   public pluginManager: PluginManagerBaseLike;
   public pluginSettingsManager: PluginSettingsManagerBaseLike;
   public aiManager!: AIManager;
   public headerActionsManager!: HeaderActionsManager;
-  public devDynamicImport: DevDynamicImport;
+  public devDynamicImport?: DevDynamicImport;
   public requirejs!: RequireJS;
   public name: string;
   public favicon!: string;
@@ -107,13 +135,13 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public systemSettings!: SystemSettingsSource;
   maintained = false;
   maintaining = false;
-  error = null;
+  error: unknown = null;
 
   model: ApplicationModel;
 
   private wsAuthorized = false;
   apps: {
-    Component?: ComponentType;
+    Component?: AnyComponent | null;
   } = {
     Component: null,
   };
@@ -190,15 +218,25 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     this.aiManager = new AIManager(this);
   }
 
-  protected configureContext() {}
+  protected configureContext() {
+    // 供子类按需覆盖。
+  }
 
-  protected configureRuntimeAdapters() {}
+  protected configureRuntimeAdapters() {
+    // 供子类按需覆盖。
+  }
 
-  protected addCustomProviders() {}
+  protected addCustomProviders() {
+    // 供子类按需覆盖。
+  }
 
   protected initListeners() {
-    this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
-      this.setTokenInWebSocket(event.detail);
+    this.eventBus.addEventListener('auth:tokenChanged', (event: Event) => {
+      const detail = (event as CustomEvent<AuthTokenPayload>).detail;
+      if (!detail?.token) {
+        return;
+      }
+      this.setTokenInWebSocket(detail);
     });
 
     this.eventBus.addEventListener('maintaining:end', () => {
@@ -211,7 +249,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     });
   }
 
-  protected setTokenInWebSocket(options: { token: string; authenticator: string }) {
+  protected setTokenInWebSocket(options: AuthTokenPayload) {
     const { token, authenticator } = options;
     if (this.maintaining) {
       return;
@@ -229,16 +267,17 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   }
 
   protected initRequireJs() {
-    if (typeof window === 'undefined') {
+    if (globalThis.window === undefined) {
       return;
     }
-    if (window['requirejs']) {
-      this.requirejs = window['requirejs'];
+    const currentWindow = globalThis.window;
+    if (currentWindow.requirejs) {
+      this.requirejs = currentWindow.requirejs;
       return;
     }
-    window['requirejs'] = this.requirejs = getRequireJs();
+    currentWindow.requirejs = this.requirejs = getRequireJs();
     defineGlobalDeps(this.requirejs);
-    window.define = this.requirejs.define;
+    currentWindow.define = this.requirejs.define;
   }
 
   /**
@@ -302,8 +341,8 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   addReactRouterComponents() {
     this.addComponents({
       Link,
-      Navigate: Navigate as ComponentType,
-      NavLink: NavLink as ComponentType,
+      Navigate: Navigate as AnyComponent,
+      NavLink: NavLink as AnyComponent,
     });
   }
 
@@ -321,13 +360,15 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       this.favicon = favicon;
     }
 
-    if (!faviconLinkElement) {
+    const iconHref = this.favicon || '/favicon/favicon.ico';
+
+    if (faviconLinkElement) {
+      faviconLinkElement.href = iconHref;
+    } else {
       faviconLinkElement = document.createElement('link');
       faviconLinkElement.rel = 'shortcut icon';
-      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+      faviconLinkElement.href = iconHref;
       document.head.appendChild(faviconLinkElement);
-    } else {
-      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
     }
   }
 
@@ -363,24 +404,24 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   }
 
   getApiUrl(pathname = '') {
-    let baseURL = this.apiClient.axios['defaults']['baseURL'];
+    let baseURL = this.apiClient.axios.defaults.baseURL ?? '';
     if (!baseURL.startsWith('http://') && !baseURL.startsWith('https://')) {
-      const { protocol, host } = window.location;
+      const { protocol, host } = globalThis.window.location;
       baseURL = `${protocol}//${host}${baseURL}`;
     }
-    return baseURL.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
+    return `${trimTrailingSlashes(baseURL)}/${trimLeadingSlashes(pathname)}`;
   }
 
   getRouteUrl(pathname: string) {
-    return this.getPublicPath() + pathname.replace(/^\//g, '');
+    return this.getPublicPath() + trimLeadingSlashes(pathname);
   }
 
   getHref(pathname: string) {
     const name = this.name;
     if (name && name !== 'main') {
-      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
+      return `${this.getPublicPath()}apps/${name}/${trimLeadingSlashes(pathname)}`;
     }
-    return this.getPublicPath() + pathname.replace(/^\//g, '');
+    return this.getPublicPath() + trimLeadingSlashes(pathname);
   }
 
   getComposeProviders() {
@@ -389,15 +430,15 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     return Providers;
   }
 
-  use<T = any>(component: ComponentType, props?: T) {
+  use<T = any>(component: AnyComponent, props?: T) {
     return this.addProvider(component, props);
   }
 
-  addProvider<T = any>(component: ComponentType, props?: T) {
+  addProvider<T = any>(component: AnyComponent, props?: T) {
     return this.providers.push([component, props]);
   }
 
-  addProviders(providers: (ComponentType | [ComponentType, any])[]) {
+  addProviders(providers: (AnyComponent | ComponentAndProps)[]) {
     providers.forEach((provider) => {
       if (Array.isArray(provider)) {
         this.addProvider(provider[0], provider[1]);
@@ -407,17 +448,15 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     });
   }
 
-  getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
+  getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): AnyComponent | undefined {
     const showError = (msg: string) => isShowError && console.error(msg);
     if (!Component) {
       showError(`getComponent called with ${Component}`);
       return;
     }
 
-    if (typeof Component === 'function') return Component;
-
     if (typeof Component === 'string') {
-      const res = get(this.components, Component) as ComponentType<T>;
+      const res = get(this.components, Component) as AnyComponent;
       if (!res) {
         showError(`Component ${Component} not found`);
         return;
@@ -425,27 +464,39 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       return res;
     }
 
+    if (isRenderableComponentType(Component)) {
+      return Component;
+    }
+
     showError(`Component ${Component} should be a string or a React component`);
-    return;
   }
 
-  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T, children?: ReactNode): ReactElement {
-    return React.createElement(this.getComponent(Component), props, children);
+  renderComponent<T extends {}>(
+    Component: ComponentTypeAndString,
+    props?: T,
+    children?: ReactNode,
+  ): ReactElement | null {
+    const ResolvedComponent = this.getComponent(Component);
+    if (!ResolvedComponent) {
+      return null;
+    }
+    return React.createElement(ResolvedComponent, props, children);
   }
 
   /**
    * @internal
    */
-  protected addComponent(component: ComponentType, name?: string) {
-    const componentName = name || component.displayName || component.name;
-    if (!componentName) {
+  protected addComponent(component: AnyComponent, name?: string) {
+    const componentInfo = component as { displayName?: string; name?: string };
+    const componentName = name || componentInfo.displayName || componentInfo.name;
+    if (componentName) {
+      set(this.components, componentName, component);
+    } else {
       console.error('Component must have a displayName or pass name as second argument');
-      return;
     }
-    set(this.components, componentName, component);
   }
 
-  addComponents(components: Record<string, ComponentType>) {
+  addComponents(components: Record<string, AnyComponent>) {
     Object.keys(components).forEach((name) => {
       this.addComponent(components[name], name);
     });
@@ -456,14 +507,17 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   }
 
   getRootComponent() {
+    const model = this.model;
+    const flowEngine = this.flowEngine;
+    const getRootFallback = () => this.getRootFallback();
     const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
       useLayoutEffect(() => {
-        this.model.setProps({ children });
+        model.setProps({ children });
       }, [children]);
 
       return (
-        <FlowEngineProvider engine={this.flowEngine}>
-          <FlowModelRenderer fallback={this.getRootFallback()} model={this.model} />
+        <FlowEngineProvider engine={flowEngine}>
+          <FlowModelRenderer fallback={getRootFallback()} model={model} />
         </FlowEngineProvider>
       );
     };
@@ -472,11 +526,12 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
 
   mount(containerOrSelector: Element | ShadowRoot | string) {
     const container = normalizeContainer(containerOrSelector);
-    if (!container) return;
-    const App = this.getRootComponent();
-    const root = createRoot(container);
-    root.render(<App />);
-    return root;
+    if (container) {
+      const App = this.getRootComponent();
+      const root = createRoot(container);
+      root.render(<App />);
+      return root;
+    }
   }
 
   protected abstract createApiClient(options: TOptions): APIClient;
@@ -485,9 +540,9 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createPluginManager(options: TOptions): PluginManagerBaseLike;
   protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerBaseLike;
   protected createWebSocketClient(options: TOptions) {
-    return new WebSocketClient(options.ws);
+    return new WebSocketClient(options.ws ?? false);
   }
-  protected getDefaultComponents(): Record<string, ComponentType<any> | any> {
+  protected getDefaultComponents(): Record<string, AnyComponent> {
     return {
       AppNotFound,
       AppError,
@@ -506,8 +561,8 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
  * 该模型统一承接 app.load、错误态、维护态和主内容渲染。
  */
 export class ApplicationModel extends FlowModel {
-  #providers: ComponentType;
-  #router: any;
+  #providers?: AnyComponent;
+  #router?: ReturnType<RouterManagerBaseLike['getRouterComponent']>;
 
   get app() {
     return this.context.app as BaseApplication;
@@ -554,10 +609,14 @@ export class ApplicationModel extends FlowModel {
       return content;
     }
 
-    const handleErrors = (error: Error, info: { componentStack: string }) => {
+    const handleErrors = (error: Error, info: ErrorInfo) => {
       console.error(error);
-      const err = new Error();
-      err.stack = info.componentStack.trim();
+      const componentStack = info.componentStack?.trim();
+      if (!componentStack) {
+        return;
+      }
+      const err = new Error('React component stack');
+      err.stack = componentStack;
       console.error(err);
     };
 

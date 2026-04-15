@@ -10,7 +10,6 @@
 import { APIClient, type APIClientOptions } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { type ComponentType } from 'react';
 
 import { BaseApplication, type BaseApplicationOptions } from './BaseApplication';
 import { CollectionFieldInterfaceManager } from './collection-field-interface/CollectionFieldInterfaceManager';
@@ -30,7 +29,7 @@ export interface ApplicationOptions extends BaseApplicationOptions {
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   plugins?: PluginType[];
-  components?: Record<string, ComponentType>;
+  components?: BaseApplicationOptions['components'];
   router?: RouterOptions;
 }
 
@@ -72,7 +71,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   protected createRouterManager(options: ApplicationOptions) {
     const router = new RouterManager(options.router, this);
-    if (typeof options.router?.basename === 'undefined') {
+    if (options.router?.basename === undefined) {
       const publicPath = this.getPublicPath();
       const basename = publicPath === '/' ? undefined : publicPath.replace(/\/$/, '');
       if (basename) {
@@ -83,7 +82,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
   }
 
   protected createPluginManager(options: ApplicationOptions) {
-    return new PluginManager(options.plugins, options.loadRemotePlugins, this);
+    return new PluginManager(options.plugins || [], Boolean(options.loadRemotePlugins), this);
   }
 
   protected createPluginSettingsManager(_options: ApplicationOptions): PluginSettingsManagerLike {
@@ -102,19 +101,23 @@ export class Application extends BaseApplication<ApplicationOptions> {
       this.setWsAuthorized(true);
     });
 
-    this.ws.on('message', (event) => {
+    this.ws.on('message', (event: { data?: string }) => {
       if (!event.data) {
         return;
       }
       const data = JSON.parse(event.data);
 
       if (data?.payload?.refresh) {
-        window.location.reload();
+        globalThis.window.location.reload();
         return;
       }
 
       if (data.type === 'notification') {
-        this.context.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        const notification = this.context.notification as unknown as Record<
+          string,
+          (config: { message?: string }) => void
+        >;
+        notification[data.payload?.type || 'info']?.({ message: data.payload?.message });
         return;
       }
 
@@ -122,7 +125,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
         this.maintained = true;
         this.setMaintaining(false);
         this.error = null;
-        window.location.reload();
+        globalThis.window.location.reload();
         return;
       }
 
