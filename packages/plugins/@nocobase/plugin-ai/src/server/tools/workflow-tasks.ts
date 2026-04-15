@@ -11,6 +11,7 @@ import { Context } from '@nocobase/actions';
 import { DynamicToolsProvider } from '@nocobase/ai';
 import PluginWorkflowServer, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { Plugin } from '@nocobase/server';
+import { DEFAULT_OUTPUT_SCHEMA } from '../workflow/nodes/employee';
 
 export type WorkflowTaskToolProvider = (plugin: Plugin) => DynamicToolsProvider;
 
@@ -39,39 +40,17 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
   const processor = workflowPlugin.createProcessor(execution);
   const config = processor.getParsedValue(flowNode.config, flowNode.id);
 
-  let schema: any;
-  if (!config.structuredOutput?.schema) {
-    schema = {
-      type: 'object',
-      properties: {
-        result: {
-          type: 'object',
-          properties: {
-            response: {
-              type: 'string',
-              description: 'The text message sent to the user can be in any format',
-            },
-          },
-        },
-      },
-      additionalProperties: false,
-    };
-  } else {
-    const result =
-      typeof config.structuredOutput.schema === 'string'
-        ? JSON.parse(config.structuredOutput.schema)
-        : config.structuredOutput.schema;
-    schema = {
-      type: 'object',
-      properties: {
-        result,
-      },
-      additionalProperties: false,
-    };
-  }
+  const outputSchema = config.structuredOutput?.schema ?? DEFAULT_OUTPUT_SCHEMA;
+  const schema = {
+    type: 'object',
+    properties: {
+      result: typeof outputSchema === 'string' ? JSON.parse(outputSchema) : outputSchema,
+    },
+    additionalProperties: false,
+  };
 
   if (config.requiresApproval === 'ai_decision') {
-    schema.properties.requiresApproval = {
+    (schema.properties as any).requiresApproval = {
       type: 'boolean',
       description: 'If result need human to review and do some decision-making, set it to true',
     };

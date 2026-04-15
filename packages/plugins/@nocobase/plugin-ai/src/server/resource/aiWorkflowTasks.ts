@@ -9,6 +9,7 @@
 
 import actions, { Context, Next } from '@nocobase/actions';
 import { ResourceOptions } from '@nocobase/resourcer';
+import { DEFAULT_OUTPUT_SCHEMA } from '../workflow/nodes/employee';
 
 export const aiWorkflowTasks: ResourceOptions = {
   name: 'aiWorkflowTasks',
@@ -175,7 +176,7 @@ export const aiWorkflowTasks: ResourceOptions = {
         toolCallId,
         workflowTitle: task.workflowTitle,
         nodeTitle: task.nodeTitle,
-        structuredOutputSchema: node?.config?.structuredOutput?.schema ?? null,
+        structuredOutputSchema: node?.config?.structuredOutput?.schema ?? DEFAULT_OUTPUT_SCHEMA,
         args: toolCall.args ?? null,
       };
 

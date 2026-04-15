@@ -46,14 +46,9 @@ export class AIEmployeeInstruction extends Instruction {
     const schema = node.config?.structuredOutput?.schema ?? {
       type: 'object',
       properties: {
-        result: {
-          type: 'object',
-          properties: {
-            response: {
-              type: 'string',
-              description: 'The text message sent to the user can be in any format',
-            },
-          },
+        response: {
+          type: 'string',
+          description: 'The text message sent to the user can be in any format',
         },
       },
       additionalProperties: false,
@@ -61,10 +56,40 @@ export class AIEmployeeInstruction extends Instruction {
     return {
       label: node.title,
       value: node.key,
-      children: Object.entries(schema.properties ?? {}).map(([key, value]) => ({
-        label: (value as any).title ?? key,
-        value: key,
-      })),
+      children: traversal(schema),
     };
   }
 }
+
+const traversal = (schema: TSchema) => {
+  const transform = (t: TSchema, parent?: string) =>
+    Object.entries(t.properties ?? {}).map(([key, value]) => [key, value, parent] as const);
+  const queue = transform(schema);
+  const map = new Map();
+  const result: any[] = [];
+  while (queue.length > 0) {
+    const head = queue.shift();
+    if (!head) {
+      continue;
+    }
+    const [key, value, parent] = head;
+    const children: any[] = [];
+    map.set(key, children);
+    const target = map.get(parent) ?? result;
+    target.push({
+      label: value.title ?? key,
+      value: key,
+      children,
+    });
+    queue.push(...transform(value, key));
+  }
+  return result;
+};
+
+type TSchema = {
+  title?: string;
+  type: string;
+  properties: {
+    [key: string]: TSchema;
+  };
+};
