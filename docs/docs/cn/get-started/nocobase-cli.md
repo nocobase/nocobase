@@ -48,7 +48,7 @@ npm install -g nocobase
 
 安装完成后，运行 `nb --version` 确认安装成功。
 
-### 第二步：初始化工作目录
+### 第二步：初始化并启动
 
 ```bash
 mkdir my-nocobase
@@ -56,64 +56,17 @@ cd my-nocobase
 nb init
 ```
 
-`nb init` 会引导你完成交互式配置，包括选择安装方式和设置数据库连接。
+`nb init` 是一个交互式向导，会引导你完成整个流程：
 
-### 第三步：下载 NocoBase
-
-NocoBase 支持三种安装方式：
-
-```bash
-# Docker 安装（推荐，数据库已内置，无需额外配置）
-nb download --source=docker
-
-# create-nocobase-app 安装（需要自己准备数据库）
-nb download --source=create-nocobase-app
-
-# Git 源码安装（需要自己准备数据库）
-nb download --source=git
-```
+1. 询问你是否已经安装过 NocoBase
+2. 如果没有——让你选择安装方式（Docker / create-nocobase-app / Git 源码），然后自动下载、配置环境、安装并启动
+3. 如果已有——引导你添加应用环境（填写 API 地址和 Token）
 
 :::tip 提示
 
-不确定选哪种？Docker 安装最简单，数据库已经内置，适合快速体验。如果你需要开发插件或深度定制，用 create-nocobase-app 或 Git 源码安装。
+不确定选哪种安装方式？Docker 最简单，数据库已经内置，适合快速体验。如果你需要开发插件或深度定制，用 create-nocobase-app 或 Git 源码安装（需要自己准备数据库，推荐 PostgreSQL）。
 
 :::
-
-### 第四步：配置环境
-
-添加一个本地开发环境：
-
-```bash
-nb env add --name local --app-root-path ./my-nocobase-app
-```
-
-如果选择了 create-nocobase-app 或 Git 源码安装，你需要配置数据库连接。`nb init` 会生成一个 `.env` 文件，你需要填写以下信息：
-
-```bash
-# 数据库类型：postgres | mysql | mariadb
-DB_DIALECT=postgres
-
-# 数据库连接信息
-DB_HOST=localhost
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
-```
-
-
-### 第五步：安装并启动
-
-```bash
-# 安装
-nb install --env=local
-
-# 构建
-nb build --env=local
-
-# 启动（开发模式，支持热更新）
-nb dev --env=local
-```
 
 启动完成后，打开浏览器访问 `http://localhost:13000`，确认页面可以正常访问。默认的登录账号和密码：
 
@@ -121,6 +74,8 @@ nb dev --env=local
 - 密码：`admin123`
 
 至此 NocoBase 就跑起来了。
+
+`nb init` 背后实际执行了多个命令——下载（`nb download`）、配置环境（`nb env add`）、安装（`nb install`）、构建（`nb build`）和启动（`nb dev`）。如果你后续需要单独执行这些操作，可以查看下面的[构建与运行](#构建与运行)和[命令参考](#命令参考)。
 
 ## 快速开始（AI Agent）
 
