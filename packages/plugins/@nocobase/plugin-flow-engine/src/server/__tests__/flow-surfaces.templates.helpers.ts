@@ -137,9 +137,18 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       interface: 'm2o',
     },
   });
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'secondaryDepartment',
+      type: 'belongsTo',
+      target: 'departments',
+      foreignKey: 'secondaryDepartmentId',
+      interface: 'm2o',
+    },
+  });
 
   await waitForFixtureCollectionsReady(db, {
     departments: ['title'],
-    employees: ['nickname', 'status', 'departmentId'],
+    employees: ['nickname', 'status', 'departmentId', 'secondaryDepartmentId'],
   });
 }

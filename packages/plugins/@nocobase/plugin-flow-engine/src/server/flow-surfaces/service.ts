@@ -3371,7 +3371,8 @@ export class FlowSurfacesService {
       if (resourceReason) {
         return resourceReason;
       }
-      if (String(template.filterByTk || '').trim() && !popupProfile.hasCurrentRecord) {
+      const hasCurrentRecord = popupActionContext?.hasCurrentRecord ?? popupProfile.hasCurrentRecord;
+      if (String(template.filterByTk || '').trim() && !hasCurrentRecord) {
         return buildTemplateMissingContextReason('filterByTk');
       }
       return undefined;
@@ -3591,7 +3592,7 @@ export class FlowSurfacesService {
     const pageSize = normalizeTemplatePageSize(values?.pageSize);
     const [rows, count] = await repo.findAndCount({
       filter,
-      sort: values?.sort,
+      sort: this.getDefaultFlowTemplateSort(values?.sort),
       limit: pageSize,
       offset: (page - 1) * pageSize,
       transaction: options.transaction,
@@ -6172,7 +6173,12 @@ export class FlowSurfacesService {
       { transaction: options.transaction },
     );
     await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
-    await this.applyInlineActionPopup('addAction', created, inlinePopup, options);
+    await this.applyInlineActionPopup('addAction', created, inlinePopup, {
+      ...options,
+      popupActionContext: {
+        hasCurrentRecord: false,
+      },
+    });
     await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
     const result = {
       uid: created,
@@ -6246,7 +6252,12 @@ export class FlowSurfacesService {
       { transaction: options.transaction },
     );
     await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
-    await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, options);
+    await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, {
+      ...options,
+      popupActionContext: {
+        hasCurrentRecord: true,
+      },
+    });
     await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
     const result = {
       uid: created,
@@ -6333,6 +6344,9 @@ export class FlowSurfacesService {
     }
     if (!_.isPlainObject(popup)) {
       throwBadRequest(`flowSurfaces ${actionName} popup must be an object`);
+    }
+    if (!_.isUndefined(popup.tryTemplate) && typeof popup.tryTemplate !== 'boolean') {
+      throwBadRequest(`flowSurfaces ${actionName} popup.tryTemplate must be a boolean`);
     }
     return popup;
   }
@@ -6421,6 +6435,92 @@ export class FlowSurfacesService {
       ...(usage ? { usage } : {}),
       ...(options.expectedType ? { expectedType: options.expectedType } : {}),
     };
+  }
+
+  private normalizeOptionalPopupTryTemplate(actionName: string, value: any, fieldName = 'popup.tryTemplate') {
+    if (_.isUndefined(value)) {
+      return undefined;
+    }
+    if (typeof value !== 'boolean') {
+      throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be a boolean`);
+    }
+    return value;
+  }
+
+  private getDefaultFlowTemplateSort(sort?: string | string[]) {
+    const normalizedSort = _.castArray(sort)
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+    if (normalizedSort.length > 0) {
+      return normalizedSort;
+    }
+    return ['-updatedAt', '-createdAt', 'uid'];
+  }
+
+  private getPopupTryTemplateExpectedAssociationName(targetContext?: FlowSurfaceTemplateListTargetContext) {
+    if (targetContext?.popupProfile?.isPopupSurface) {
+      return String(targetContext.popupProfile.associationName || '').trim() || undefined;
+    }
+    return String(targetContext?.resourceContext?.resourceInit?.associationName || '').trim() || undefined;
+  }
+
+  private getPopupTryTemplatePriority(
+    template: Pick<FlowSurfaceTemplateRow, 'associationName'>,
+    expectedAssociationName?: string,
+  ) {
+    const templateAssociationName = String(template.associationName || '').trim() || undefined;
+    if (!expectedAssociationName) {
+      return templateAssociationName ? null : 0;
+    }
+    if (templateAssociationName === expectedAssociationName) {
+      return 0;
+    }
+    if (!templateAssociationName) {
+      return 1;
+    }
+    return null;
+  }
+
+  private async tryResolvePopupTemplateForHost(
+    actionName: string,
+    popup: Record<string, any> | undefined,
+    hostUid: string | undefined,
+    options: { transaction?: any; popupActionContext?: FlowSurfaceTemplateListPopupActionContext } = {},
+  ) {
+    const normalizedHostUid = String(hostUid || '').trim();
+    if (!normalizedHostUid || !_.isPlainObject(popup) || !popup.tryTemplate || !_.isUndefined(popup.template)) {
+      return null;
+    }
+
+    const repo = this.getFlowTemplateRepository(actionName);
+    const targetContext = await this.loadTemplateListTargetContext({ uid: normalizedHostUid }, options.transaction);
+    const templates = await repo.find({
+      filter: buildTemplateListFilter(undefined, undefined, 'popup'),
+      sort: this.getDefaultFlowTemplateSort(),
+      transaction: options.transaction,
+    });
+    const annotatedTemplates = await this.withTemplateAvailability(
+      await this.withFlowTemplateUsageCounts(templates, actionName, options),
+      {
+        requestedType: 'popup',
+        targetContext,
+        popupActionContext: options.popupActionContext,
+      },
+    );
+    const expectedAssociationName = this.getPopupTryTemplateExpectedAssociationName(targetContext);
+
+    for (const priority of [0, 1] as const) {
+      const matched = annotatedTemplates.find(
+        (template) =>
+          template.available === true &&
+          this.getPopupTryTemplatePriority(template, expectedAssociationName) === priority,
+      );
+      if (matched) {
+        return matched;
+      }
+    }
+
+    return null;
   }
 
   private async getFlowTemplateOrThrow(
@@ -6556,7 +6656,11 @@ export class FlowSurfacesService {
   private async normalizeOpenView(
     actionName: string,
     openView: any,
-    options: { transaction?: any; popupTemplateHostUid?: string } = {},
+    options: {
+      transaction?: any;
+      popupTemplateHostUid?: string;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+    } = {},
   ) {
     if (_.isUndefined(openView) || _.isNull(openView)) {
       return openView;
@@ -6565,6 +6669,26 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} openView must be an object`);
     }
     const normalizedOpenView = _.cloneDeep(openView);
+    const tryTemplate = this.normalizeOptionalPopupTryTemplate(
+      actionName,
+      normalizedOpenView.tryTemplate,
+      'openView.tryTemplate',
+    );
+    delete normalizedOpenView.tryTemplate;
+    if (tryTemplate && _.isUndefined(normalizedOpenView.template)) {
+      const matchedTemplate = await this.tryResolvePopupTemplateForHost(
+        actionName,
+        { tryTemplate: true },
+        options.popupTemplateHostUid,
+        options,
+      );
+      if (matchedTemplate?.uid) {
+        normalizedOpenView.template = {
+          uid: matchedTemplate.uid,
+          mode: 'reference',
+        };
+      }
+    }
     if (!_.isUndefined(normalizedOpenView.template)) {
       const templateRef = this.normalizeFlowTemplateReference(actionName, normalizedOpenView.template, {
         expectedType: 'popup',
@@ -6630,6 +6754,46 @@ export class FlowSurfacesService {
       normalizedOpenView.mode = canonicalMode;
     }
     return normalizedOpenView;
+  }
+
+  private isTryTemplateOnlyOpenViewRequest(openView: any) {
+    if (!_.isPlainObject(openView) || openView.tryTemplate !== true || !_.isUndefined(openView.template)) {
+      return false;
+    }
+    return Object.keys(openView).every((key) => key === 'tryTemplate');
+  }
+
+  private async resolveRecordContextPopupActionContextForHost(
+    current: any,
+    transaction?: any,
+  ): Promise<FlowSurfaceTemplateListPopupActionContext | undefined> {
+    const currentUse = String(current?.use || '').trim();
+    if (
+      !currentUse ||
+      !POPUP_ACTION_USES.has(currentUse) ||
+      !POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(currentUse)
+    ) {
+      return undefined;
+    }
+    const hostContext = await this.resolvePopupHostProfileContext(current, transaction).catch(() => null);
+    if (!hostContext?.recordActionContainerUse) {
+      return undefined;
+    }
+    return {
+      hasCurrentRecord: true,
+    };
+  }
+
+  private unsetPayloadPathAndPruneEmptyParents(payload: Record<string, any>, path: Array<string>) {
+    _.unset(payload, path);
+    for (let index = path.length - 1; index > 0; index -= 1) {
+      const parentPath = path.slice(0, index);
+      const parentValue = _.get(payload, parentPath);
+      if (!_.isPlainObject(parentValue) || Object.keys(parentValue).length > 0) {
+        break;
+      }
+      _.unset(payload, parentPath);
+    }
   }
 
   private isExternalPopupOpenView(openView: any, hostUid?: string) {
@@ -6844,11 +7008,40 @@ export class FlowSurfacesService {
       );
       return;
     }
+    const matchedTemplate = await this.tryResolvePopupTemplateForHost(actionName, popup, fieldHostUid, options);
+    if (matchedTemplate?.uid) {
+      Object.assign(
+        result,
+        await this.configureFieldNode(
+          {
+            uid: fieldHostUid,
+          },
+          {
+            openView: this.buildInlinePopupTemplateOpenView({
+              ...popup,
+              template: {
+                uid: matchedTemplate.uid,
+                mode: 'reference',
+              },
+            }),
+          },
+          {
+            ...options,
+            openViewActionName: actionName,
+          },
+        ),
+      );
+      return;
+    }
     try {
-      Object.assign(result, await this.ensureLocalFieldPopupSurface(actionName, fieldHostUid, options, { popup }));
       if (!popup || !fieldHostUid) {
         return;
       }
+      const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup.layout);
+      if (popup.tryTemplate && !hasLocalPopupContent) {
+        return;
+      }
+      Object.assign(result, await this.ensureLocalFieldPopupSurface(actionName, fieldHostUid, options, { popup }));
       await this.compose(
         {
           target: {
@@ -7225,7 +7418,11 @@ export class FlowSurfacesService {
     actionName: string,
     actionUid: string,
     popup: Record<string, any> | undefined,
-    options: { transaction?: any; autoCompleteDefaultPopup?: boolean },
+    options: {
+      transaction?: any;
+      autoCompleteDefaultPopup?: boolean;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+    },
   ) {
     const actionNode = await this.repository.findModelById(actionUid, {
       transaction: options.transaction,
@@ -7259,8 +7456,35 @@ export class FlowSurfacesService {
       );
       return;
     }
+    const matchedTemplate = await this.tryResolvePopupTemplateForHost(actionName, popup, actionUid, options);
+    if (matchedTemplate?.uid) {
+      await this.configureActionNode(
+        {
+          uid: actionUid,
+        },
+        actionNode.use,
+        {
+          openView: this.buildInlinePopupTemplateOpenView({
+            ...popup,
+            template: {
+              uid: matchedTemplate.uid,
+              mode: 'reference',
+            },
+          }),
+        },
+        {
+          ...options,
+          openViewActionName: actionName,
+        },
+      );
+      return;
+    }
     const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultActionPopup(actionNode, popup, options);
+    const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup?.layout);
     if (_.isUndefined(popup) && !shouldAutoCompleteDefaultPopup) {
+      return;
+    }
+    if (popup?.tryTemplate && !hasLocalPopupContent && !shouldAutoCompleteDefaultPopup) {
       return;
     }
 
@@ -7292,6 +7516,7 @@ export class FlowSurfacesService {
       replaceChartCardSettings?: boolean;
       openViewActionName?: string;
       popupTemplateHostUid?: string;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
     } = {},
   ) {
     validateFlowSurfacePayloadShape('updateSettings', values, 'values');
@@ -7322,6 +7547,9 @@ export class FlowSurfacesService {
     });
 
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
+    const popupActionContext =
+      options.popupActionContext ||
+      (await this.resolveRecordContextPopupActionContextForHost(current, options.transaction));
     await this.normalizeOpenViewForUpdateSettings(
       options.openViewActionName || 'updateSettings',
       current,
@@ -7329,6 +7557,7 @@ export class FlowSurfacesService {
       {
         transaction: options.transaction,
         popupTemplateHostUid: options.popupTemplateHostUid,
+        popupActionContext,
       },
     );
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
@@ -7428,7 +7657,11 @@ export class FlowSurfacesService {
     actionName: string,
     current: any,
     nextPayload: Record<string, any>,
-    options: { transaction?: any; popupTemplateHostUid?: string } = {},
+    options: {
+      transaction?: any;
+      popupTemplateHostUid?: string;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+    } = {},
   ) {
     const openViewPaths: Array<[string, string]> = [
       ['popupSettings', 'openView'],
@@ -7436,25 +7669,35 @@ export class FlowSurfacesService {
     ];
     const popupTemplateHostUid = String(options.popupTemplateHostUid || current?.uid || '').trim() || undefined;
     for (const [flowKey, stepKey] of openViewPaths) {
-      if (!_.has(nextPayload, ['stepParams', flowKey, stepKey])) {
+      const openViewPath = ['stepParams', flowKey, stepKey];
+      if (!_.has(nextPayload, openViewPath)) {
         continue;
       }
-      const currentOpenView = _.get(current, ['stepParams', flowKey, stepKey]);
-      const nextOpenView = await this.normalizeOpenView(
-        actionName,
-        _.get(nextPayload, ['stepParams', flowKey, stepKey]),
-        {
-          transaction: options.transaction,
-          popupTemplateHostUid,
-        },
-      );
+      const requestedOpenView = _.get(nextPayload, openViewPath);
+      const currentOpenView = _.get(current, openViewPath);
+      const nextOpenView = await this.normalizeOpenView(actionName, requestedOpenView, {
+        transaction: options.transaction,
+        popupTemplateHostUid,
+        popupActionContext: options.popupActionContext,
+      });
+      if (
+        this.isTryTemplateOnlyOpenViewRequest(requestedOpenView) &&
+        _.isPlainObject(nextOpenView) &&
+        !Object.keys(nextOpenView).length
+      ) {
+        this.unsetPayloadPathAndPruneEmptyParents(nextPayload, openViewPath);
+        if (_.isEqual(nextPayload.stepParams, current.stepParams)) {
+          delete nextPayload.stepParams;
+        }
+        continue;
+      }
       await this.reconcilePopupOpenViewTransition(
         popupTemplateHostUid,
         currentOpenView,
         nextOpenView,
         options.transaction,
       );
-      _.set(nextPayload, ['stepParams', flowKey, stepKey], nextOpenView);
+      _.set(nextPayload, openViewPath, nextOpenView);
     }
   }
 

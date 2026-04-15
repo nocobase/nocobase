@@ -247,6 +247,7 @@ export type FlowSurfaceNodeSpec = {
   clientKey?: string;
   sortIndex?: number;
   use: string;
+  popup?: Record<string, any>;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;
@@ -264,6 +265,7 @@ export type FlowSurfaceApplyMode = 'replace';
 export type FlowSurfaceComposeMode = 'append' | 'replace';
 
 export type FlowSurfaceApplySpec = {
+  popup?: Record<string, any>;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;

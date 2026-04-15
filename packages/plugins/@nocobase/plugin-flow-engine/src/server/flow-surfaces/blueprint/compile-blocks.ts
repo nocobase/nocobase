@@ -93,7 +93,7 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
 ];
 
 const APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
-const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'blocks', 'layout'];
+const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'tryTemplate', 'blocks', 'layout'];
 const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
 const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
 const APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS = [
@@ -577,6 +577,11 @@ function compilePopup(
   assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
+  const tryTemplate = _.isUndefined(popup.tryTemplate)
+    ? undefined
+    : _.isBoolean(popup.tryTemplate)
+      ? popup.tryTemplate
+      : throwBadRequest(`${context}.tryTemplate must be a boolean`);
   if (template) {
     return {
       popup: {
@@ -614,6 +619,7 @@ function compilePopup(
   const compiledPopup = buildDefinedPayload({
     mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
     template,
+    ...(tryTemplate ? { tryTemplate: true } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
     layout,
   });

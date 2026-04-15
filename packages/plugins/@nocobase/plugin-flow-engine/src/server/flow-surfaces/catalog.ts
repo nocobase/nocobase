@@ -98,6 +98,7 @@ const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.template',
   'openView.template.uid',
   'openView.template.mode',
+  'openView.tryTemplate',
 ];
 const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.mode': OPEN_VIEW_MODE_SCHEMA,
@@ -119,6 +120,7 @@ const OPEN_VIEW_PATH_SCHEMAS = {
     type: 'string',
     enum: ['reference', 'copy'],
   },
+  'openView.tryTemplate': BOOLEAN_SCHEMA,
 };
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
 const TABLE_COLUMN_ALLOWED_PATHS = ['title.title'];

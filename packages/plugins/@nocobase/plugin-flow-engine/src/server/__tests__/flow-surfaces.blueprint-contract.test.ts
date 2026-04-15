@@ -291,6 +291,147 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(collectDescendantNodes(data.surface.tree, (item) => item?.use === 'MarkdownBlockModel')).toHaveLength(0);
   });
 
+  it('should auto-select popup templates through applyBlueprint popup.tryTemplate and keep inline popup fallback on misses', async () => {
+    const sourcePage = await createPage(rootAgent, {
+      title: `Popup tryTemplate source page ${Date.now()}`,
+      tabTitle: 'Source',
+    });
+    const sourceDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: sourcePage.gridUid },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const sourceField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: { uid: sourceDetails.uid },
+          fieldPath: 'nickname',
+          popup: {
+            blocks: [
+              {
+                key: 'employeePopupDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const popupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceField.fieldUid || sourceField.uid },
+          name: `Blueprint popup tryTemplate ${Date.now()}`,
+          description: 'Reusable popup template for applyBlueprint popup.tryTemplate coverage.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Popup tryTemplate blueprint page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Popup tryTemplate blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'nickname',
+                    popup: {
+                      title: 'Employee quick view',
+                      tryTemplate: true,
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'skillDetails',
+                type: 'details',
+                collection: 'skills',
+                fields: [
+                  {
+                    field: 'label',
+                    popup: {
+                      title: 'Skill quick view',
+                      tryTemplate: true,
+                      blocks: [
+                        {
+                          key: 'skillPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'skills',
+                          },
+                          fields: ['label'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const templatedField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname' &&
+        item?.popup?.template?.uid === popupTemplate.uid,
+    )[0];
+    expect(templatedField?.popup?.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+    expect(templatedField?.popup?.pageUid).toBeUndefined();
+    expect(templatedField?.stepParams?.popupSettings?.openView).toMatchObject({
+      title: 'Employee quick view',
+    });
+
+    const fallbackField = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'label' && item?.popup?.pageUid,
+    )[0];
+    expect(fallbackField?.popup?.template).toBeUndefined();
+    expect(fallbackField?.popup?.pageUid).toBeTruthy();
+    expect(
+      collectDescendantNodes(
+        fallbackField,
+        (item) =>
+          item?.use === 'DetailsBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'skills',
+      ),
+    ).toHaveLength(1);
+  });
+
   it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
     const page = await createPage(rootAgent, {
       title: 'Legacy employees',
@@ -1637,7 +1778,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, blocks, layout; unsupported keys: foo',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, tryTemplate, blocks, layout; unsupported keys: foo',
     );
   });
 

@@ -965,6 +965,15 @@ export const flowSurfaceExamples = {
       },
     },
   },
+  addFieldAutoPopupTemplate: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'department.title',
+    popup: {
+      tryTemplate: true,
+    },
+  },
   addAction: {
     target: {
       uid: 'filter-form-block-uid',
@@ -982,6 +991,15 @@ export const flowSurfaceExamples = {
     type: 'link',
     settings: {
       title: 'Open docs',
+    },
+  },
+  addAutoPopupAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'popup',
+    popup: {
+      tryTemplate: true,
     },
   },
   addJsAction: {
@@ -1034,6 +1052,15 @@ export const flowSurfaceExamples = {
           fields: ['username', 'nickname'],
         },
       ],
+    },
+  },
+  addRecordAutoPopupTemplate: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'view',
+    popup: {
+      tryTemplate: true,
     },
   },
   addRecordAddChildAction: {
@@ -1336,6 +1363,9 @@ export const flowSurfaceExamples = {
     },
     mode: 'replace',
     spec: {
+      popup: {
+        tryTemplate: true,
+      },
       subModels: {
         items: [
           {
