@@ -33,7 +33,7 @@ export class PluginFlowEngine extends Plugin {
     ) as Record<string, typeof FlowModel>;
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
-    this.flowEngine.registerActions(filterFormActions);
+    this.flowEngine.registerActions(filterFormActions as any);
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,

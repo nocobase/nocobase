@@ -32,7 +32,6 @@ import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
 import type { PluginClassLike, PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
-import type { PluginSettingsManagerBaseLike } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
 import type {
   ComponentTypeAndString,
@@ -110,7 +109,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public apiClient: APIClient;
   public components: Record<string, AnyComponent> = {};
   public pluginManager: PluginManagerBaseLike;
-  public pluginSettingsManager: PluginSettingsManagerBaseLike;
+  public pluginSettingsManager: any;
   public aiManager!: AIManager;
   public headerActionsManager!: HeaderActionsManager;
   public devDynamicImport?: DevDynamicImport;
@@ -538,7 +537,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createI18n(options: TOptions): i18next;
   protected abstract createRouterManager(options: TOptions): RouterManagerBaseLike;
   protected abstract createPluginManager(options: TOptions): PluginManagerBaseLike;
-  protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManagerBaseLike;
+  protected abstract createPluginSettingsManager(options: TOptions): any;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws ?? false);
   }

@@ -9,7 +9,7 @@
 
 import type { TFuncKey, TOptions } from 'i18next';
 import type { BaseApplication } from './BaseApplication';
-import type { PluginSettingsManagerLike } from './PluginSettingsManager';
+import { Application } from './Application';
 
 /**
  * 插件配置选项。
@@ -24,10 +24,7 @@ export interface PluginOptions<T = any> {
   config?: T;
 }
 
-export class Plugin<
-  T extends PluginOptions<any> = PluginOptions,
-  TApp extends BaseApplication<any> = BaseApplication<any>,
-> {
+export class Plugin<T extends PluginOptions<any> = PluginOptions, TApp extends BaseApplication<any> = Application> {
   constructor(
     public options: T,
     protected app: TApp,
@@ -60,8 +57,8 @@ export class Plugin<
     return this.app.router;
   }
 
-  get pluginSettingsManager(): PluginSettingsManagerLike {
-    return this.app.pluginSettingsManager as PluginSettingsManagerLike;
+  get pluginSettingsManager() {
+    return this.app.pluginSettingsManager;
   }
 
   get schemaInitializerManager() {

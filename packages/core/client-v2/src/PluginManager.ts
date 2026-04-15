@@ -40,12 +40,13 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
   private initPlugins: Promise<void>;
 
   constructor(
-    protected _plugins: PluginType<any, TApp>[],
-    protected loadRemotePlugins: boolean,
+    protected _plugins: PluginType<any, TApp>[] | undefined,
+    protected loadRemotePlugins: boolean | undefined,
     protected app: TApp,
   ) {
     this.app = app;
-    this.initPlugins = this.init(_plugins);
+    this.initPlugins = this.init(_plugins || []);
+    this.loadRemotePlugins = loadRemotePlugins;
   }
 
   /**

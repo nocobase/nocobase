@@ -167,7 +167,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return new PluginManager(options.plugins, options.loadRemotePlugins, this);
   }
 
-  protected createPluginSettingsManager(options: ApplicationOptions) {
+  protected createPluginSettingsManager(options: ApplicationOptions): PluginSettingsManager {
     return new PluginSettingsManager(options.pluginSettings, this);
   }
 
@@ -238,7 +238,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
       await this.loadWebSocket();
       await this.pm.load();
       await this.flowEngine.flowSettings.load();
-    } catch (error) {
+    } catch (error: any) {
       this.hasLoadError = true;
 
       if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
@@ -265,7 +265,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
       this.setWsAuthorized(true);
     });
 
-    this.ws.on('message', (event) => {
+    this.ws.on('message', (event: any) => {
       const data = JSON.parse(event.data);
 
       if (data?.payload?.refresh) {
@@ -274,7 +274,8 @@ export class Application extends BaseApplication<ApplicationOptions> {
       }
 
       if (data.type === 'notification') {
-        this.context.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        // @ts-ignore
+        this.context.notification[data.payload?.type || 'info']?.({ message: data.payload?.message });
         return;
       }
 
@@ -349,11 +350,11 @@ export class Application extends BaseApplication<ApplicationOptions> {
     }
   }
 
-  getGlobalVar(key) {
+  getGlobalVar(key: string) {
     return get(this.globalVars, key);
   }
 
-  getGlobalVarCtx(key) {
+  getGlobalVarCtx(key: string) {
     return get(this.globalVarCtxs, key);
   }
 

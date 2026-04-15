@@ -15,7 +15,7 @@ import { BaseApplication, type BaseApplicationOptions } from './BaseApplication'
 import { CollectionFieldInterfaceManager } from './collection-field-interface/CollectionFieldInterfaceManager';
 import type { PluginType } from './PluginManager';
 import { PluginManager } from './PluginManager';
-import { PluginSettingsManager, type PluginSettingsManagerLike } from './PluginSettingsManager';
+import { PluginSettingsManager } from './PluginSettingsManager';
 import type { RouterOptions } from './RouterManager';
 import { RouterManager } from './RouterManager';
 import type { WebSocketClientOptions } from './WebSocketClient';
@@ -35,7 +35,7 @@ export interface ApplicationOptions extends BaseApplicationOptions {
 
 export class Application extends BaseApplication<ApplicationOptions> {
   public declare dataSourceManager: any;
-  public declare pluginSettingsManager: PluginSettingsManagerLike;
+  public declare pluginSettingsManager: PluginSettingsManager;
 
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient(options.apiClient);
@@ -85,7 +85,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return new PluginManager(options.plugins || [], Boolean(options.loadRemotePlugins), this);
   }
 
-  protected createPluginSettingsManager(_options: ApplicationOptions): PluginSettingsManagerLike {
+  protected createPluginSettingsManager(_options: ApplicationOptions): PluginSettingsManager {
     return new PluginSettingsManager(this);
   }
 
