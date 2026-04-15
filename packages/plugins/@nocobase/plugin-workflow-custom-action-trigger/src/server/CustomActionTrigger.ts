@@ -28,7 +28,7 @@ import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-m
 import Application from '@nocobase/server';
 import { get, pick } from 'lodash';
 import { Context, Next } from '@nocobase/actions';
-import { CONTEXT_TYPE, EVENT_TYPE } from '../common/constants';
+import { CONTEXT_TYPE, EVENT_TYPE, NAMESPACE } from '../common/constants';
 
 type CustomActionTriggerEvent = [WorkflowModel, Record<string, any>?];
 
@@ -147,6 +147,9 @@ export default class CustomActionTrigger extends Trigger {
       }
     }
 
+    // Extract ACL scope filter (e.g., from "own data" scope configuration)
+    const scopeFilter = context.permission?.parsedParams?.filter;
+
     const syncGroup = [];
     const asyncGroup = [];
     for (const workflow of workflows) {
@@ -157,12 +160,15 @@ export default class CustomActionTrigger extends Trigger {
       let data = formData;
       if (filterByTk != null) {
         if (Array.isArray(filterByTk)) {
-          data = (await repository.find({ filterByTk, appends, context })).map((item) =>
+          data = (await repository.find({ filterByTk, appends, context, filter: scopeFilter })).map((item) =>
             Object.assign(item.toJSON(), formData),
           );
         } else {
-          data = await repository.findOne({ filterByTk, appends, context });
+          data = await repository.findOne({ filterByTk, appends, context, filter: scopeFilter });
           if (!data) {
+            if (scopeFilter) {
+              return context.throw(403, 'No permissions');
+            }
             continue;
           }
           if (typeof data.toJSON === 'function') {
@@ -188,11 +194,11 @@ export default class CustomActionTrigger extends Trigger {
 
     this.workflow.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.registerActionHandler('trigger', this.triggerAction);
-      // TODO: ACL on `:trigger` action
-      // dataSource.acl.setAvailableAction('trigger', {
-      //   displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
-      // });
-      dataSource.acl.allow('*', ['trigger'], 'loggedIn');
+      dataSource.acl.setAvailableAction('trigger', {
+        displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
+      });
+      // TODO: ACL on `workflows:trigger` action
+      dataSource.acl.allow('workflows', ['trigger'], 'loggedIn');
     });
 
     (workflow.app.pm.get(PluginErrorHandler) as PluginErrorHandler).errorHandler.register(
