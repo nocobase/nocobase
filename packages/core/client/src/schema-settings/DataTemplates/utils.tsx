@@ -17,7 +17,7 @@ import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 
 export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
