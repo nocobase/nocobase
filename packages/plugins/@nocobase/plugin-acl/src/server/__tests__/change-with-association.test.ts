@@ -300,6 +300,51 @@ describe('Change with association', async () => {
     });
   });
 
+  test('associate only, update, should keep empty array for clearing relations', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'update',
+            fields: ['name', 'assoc1'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'update',
+      params: {
+        values: {
+          name: 'test-1',
+          assoc1: [],
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      assoc1: [],
+    });
+  });
+
   test('allow associate one exist record key', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
       values: {
