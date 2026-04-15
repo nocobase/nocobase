@@ -8,10 +8,11 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { ToolsUIProperties, useAPIClient, useRequest } from '@nocobase/client';
-import { Button, Card, Descriptions, Flex, Spin, Typography } from 'antd';
+import { lazy, ToolsUIProperties, useAPIClient, useRequest } from '@nocobase/client';
+import { Button, Card, Descriptions, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
+const { Markdown } = lazy(() => import('../../chatbox/markdown/Markdown'), 'Markdown');
 
 type WorkflowTaskOutputSchema = {
   title?: string;
@@ -49,7 +50,7 @@ const formatValue = (value: unknown): React.ReactNode => {
     return '-';
   }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
+    return <Markdown message={{ content: String(value) }} />;
   }
   return <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(value, null, 2)}</Typography.Text>;
 };
@@ -100,7 +101,12 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
     <Card
       loading={loading}
       style={{ margin: '12px 0' }}
-      title={cardData?.workflowTitle || t('Workflow task')}
+      title={
+        <Space split="-" wrap>
+          {<Typography.Text>{cardData?.workflowTitle || t('Workflow task')}</Typography.Text>}
+          {cardData?.nodeTitle ? <Typography.Text>{cardData.nodeTitle}</Typography.Text> : null}
+        </Space>
+      }
       actions={[
         <Button
           key="reject"
@@ -138,12 +144,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
         </Button>,
       ]}
     >
-      <Descriptions
-        title={cardData?.nodeTitle ? <Typography.Text type="secondary">{cardData.nodeTitle}</Typography.Text> : null}
-        layout="vertical"
-        column={2}
-        items={descriptionItems}
-      />
+      <Descriptions layout="vertical" column={1} items={descriptionItems} />
     </Card>
   );
 };
