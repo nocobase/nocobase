@@ -9,6 +9,8 @@
 
 import _ from 'lodash';
 import {
+  FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS,
+  FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
   createFlowSurfacesContractContext,
   createPage,
   createMenu,
@@ -64,7 +66,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
   }
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
+      enabledPluginAliases: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
+    });
     ({ rootAgent, flowRepo, routesRepo } = context);
   }, 120000);
 

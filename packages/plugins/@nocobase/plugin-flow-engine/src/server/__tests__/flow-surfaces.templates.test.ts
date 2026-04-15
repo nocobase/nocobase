@@ -575,7 +575,7 @@ describe('flowSurfaces templates', () => {
     expect(copiedAction.popupPageUid).toBeTruthy();
     expect(copiedAction.popupTabUid).toBeTruthy();
     expect(copiedAction.popupGridUid).toBeTruthy();
-    await expectTemplateUsage(rootAgent, template.uid, 3);
+    await expectTemplateUsage(rootAgent, template.uid, 4);
     const copiedActionSurface = await getSurface(rootAgent, { uid: copiedAction.uid });
     expect(copiedActionSurface.tree.popup.mode).toBe('copy');
     expect(copiedActionSurface.tree.popup.pageUid).toBe(copiedAction.popupPageUid);
@@ -997,7 +997,7 @@ describe('flowSurfaces templates', () => {
     expect(copiedField.popupPageUid).toBeTruthy();
     expect(copiedField.popupTabUid).toBeTruthy();
     expect(copiedField.popupGridUid).toBeTruthy();
-    await expectTemplateUsage(rootAgent, template.uid, 2);
+    await expectTemplateUsage(rootAgent, template.uid, 3);
     const copiedFieldSurface = await getSurface(rootAgent, { uid: copiedField.fieldUid || copiedField.uid });
     expect(copiedFieldSurface.tree.popup.mode).toBe('copy');
     expect(copiedFieldSurface.tree.popup.pageUid).toBe(copiedField.popupPageUid);
