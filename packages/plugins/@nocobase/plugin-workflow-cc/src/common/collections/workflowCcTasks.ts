@@ -12,7 +12,7 @@ import { NAMESPACE } from '../constants';
 export default {
   name: 'workflowCcTasks',
   filterTargetKey: 'id',
-  simplePagination: true,
+  simplePaginate: true,
   dumpRules: {
     group: 'log',
   },
