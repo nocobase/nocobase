@@ -473,72 +473,31 @@ type AssignValueFieldSettingsInit = {
   fieldPath?: string;
 };
 
-type AssignValueFieldModelSource = {
-  currentUse?: string;
-  stepParams: Record<string, any>;
-};
+const ASSIGN_VALUE_IGNORED_PROP_KEYS = new Set([
+  'value',
+  'defaultValue',
+  'onChange',
+  'onClick',
+  'open',
+  'searchText',
+  'dropdownRender',
+  'popupRender',
+  'optionRender',
+]);
 
 function getAssignValueOriginFieldModel(itemModel: any) {
   return itemModel?.customFieldModelInstance || getAssignValueSubField(itemModel);
 }
 
-function resolveAssignValueFieldModelSource(itemModel: any): AssignValueFieldModelSource {
+function resolveAssignValueCurrentFieldModelUse(itemModel: any): string | undefined {
   const subField = getAssignValueSubField(itemModel);
-  const originFieldModel = getAssignValueOriginFieldModel(itemModel);
   const subFieldBindingUse =
     typeof subField?.stepParams?.fieldBinding?.use === 'string' ? subField.stepParams.fieldBinding.use : undefined;
   const subFieldUse = subField?.use;
   const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
   const customFieldModelUse = customFieldSettings?.fieldModel || itemModel?.customFieldModelInstance?.use;
 
-  return {
-    currentUse: subFieldBindingUse || subFieldUse || customFieldModelUse,
-    stepParams: (((originFieldModel as any)?.stepParams as Record<string, any>) || {}) as Record<string, any>,
-  };
-}
-
-function selectAssignValueFieldModelUse(options: {
-  currentUse?: string;
-  defaultBindingUse?: string;
-  isAssociationField?: boolean;
-  preferFormItemFieldModel?: boolean;
-}) {
-  const { currentUse, defaultBindingUse, isAssociationField, preferFormItemFieldModel } = options;
-  const candidates = isAssociationField
-    ? [defaultBindingUse, currentUse]
-    : preferFormItemFieldModel
-      ? [currentUse, defaultBindingUse]
-      : [defaultBindingUse, currentUse];
-
-  return candidates.find((candidate): candidate is string => typeof candidate === 'string' && !!candidate);
-}
-
-function buildAssignValueFieldStepParams(
-  originStepParams: Record<string, any>,
-  fieldSettingsInit?: AssignValueFieldSettingsInit,
-): Record<string, any> {
-  // 赋值编辑器直接创建最终字段模型，避免 FieldModel.resolveUse 再次根据继承的 fieldBinding.use
-  // 跳回 SubForm/SubTable/PopupSubTable 等原表单组件。
-  const { fieldBinding: _ignoredFieldBinding, ...restStepParams } = originStepParams || {};
-  const stepParams: Record<string, any> = {
-    ...restStepParams,
-  };
-
-  if (!fieldSettingsInit?.collectionName || !fieldSettingsInit?.fieldPath) {
-    return stepParams;
-  }
-
-  const fieldSettings = isPlainObject(stepParams.fieldSettings) ? stepParams.fieldSettings : {};
-  const prevInit = isPlainObject(fieldSettings.init) ? fieldSettings.init : {};
-  stepParams.fieldSettings = {
-    ...fieldSettings,
-    init: {
-      ...prevInit,
-      ...fieldSettingsInit,
-    },
-  };
-
-  return stepParams;
+  return subFieldBindingUse || subFieldUse || customFieldModelUse;
 }
 
 function resolveAssignValueFieldSettingsInit(options: {
@@ -565,6 +524,39 @@ function resolveAssignValueFieldSettingsInit(options: {
   };
 }
 
+function sanitizeAssignValueInheritedProps(props?: Record<string, any>) {
+  const nextProps: Record<string, any> = {};
+  for (const [key, value] of Object.entries(props || {})) {
+    if (ASSIGN_VALUE_IGNORED_PROP_KEYS.has(key) || /^on[A-Z]/.test(key)) {
+      continue;
+    }
+    nextProps[key] = value;
+  }
+  return nextProps;
+}
+
+function resolveAssignValueFieldProps(options: {
+  placeholder?: string;
+  originProps?: Record<string, any>;
+  customFieldProps?: Record<string, any>;
+  collectionField?: Pick<CollectionField, 'isAssociationField'> | null;
+}) {
+  const { placeholder, originProps, customFieldProps, collectionField } = options;
+  const sanitizedOriginProps = sanitizeAssignValueInheritedProps(originProps);
+  const sanitizedCustomFieldProps = sanitizeAssignValueInheritedProps(customFieldProps);
+  const nextProps: Record<string, any> = {
+    placeholder,
+    ...sanitizedOriginProps,
+    ...sanitizedCustomFieldProps,
+  };
+
+  if (collectionField?.isAssociationField?.()) {
+    nextProps.quickCreate = 'none';
+  }
+
+  return nextProps;
+}
+
 export function resolveAssignValueFieldModelConfig(options: {
   itemModel: any;
   defaultBindingUse?: string;
@@ -573,17 +565,40 @@ export function resolveAssignValueFieldModelConfig(options: {
   fieldSettingsInit?: AssignValueFieldSettingsInit;
 }): { use?: string; stepParams: Record<string, any> } {
   const { itemModel, defaultBindingUse, collectionField, preferFormItemFieldModel, fieldSettingsInit } = options;
-  const source = resolveAssignValueFieldModelSource(itemModel);
-  const use = selectAssignValueFieldModelUse({
-    currentUse: source.currentUse,
-    defaultBindingUse,
-    isAssociationField: !!collectionField?.isAssociationField?.(),
-    preferFormItemFieldModel,
-  });
+  const currentFieldModelUse = resolveAssignValueCurrentFieldModelUse(itemModel);
+  const useCandidates = collectionField?.isAssociationField?.()
+    ? [defaultBindingUse, currentFieldModelUse]
+    : preferFormItemFieldModel
+      ? [currentFieldModelUse, defaultBindingUse]
+      : [defaultBindingUse, currentFieldModelUse];
+  const use = useCandidates.find((candidate): candidate is string => typeof candidate === 'string' && !!candidate);
+
+  // 赋值编辑器直接创建最终字段模型，避免 FieldModel.resolveUse 再次根据继承的 fieldBinding.use
+  // 跳回 SubForm/SubTable/PopupSubTable 等原表单组件。
+  const originFieldModel = getAssignValueOriginFieldModel(itemModel);
+  const { fieldBinding: _ignoredFieldBinding, ...restStepParams } = (((originFieldModel as any)?.stepParams as Record<
+    string,
+    any
+  >) || {}) as Record<string, any>;
+  const stepParams: Record<string, any> = {
+    ...restStepParams,
+  };
+
+  if (fieldSettingsInit?.collectionName && fieldSettingsInit?.fieldPath) {
+    const fieldSettings = isPlainObject(stepParams.fieldSettings) ? stepParams.fieldSettings : {};
+    const prevInit = isPlainObject(fieldSettings.init) ? fieldSettings.init : {};
+    stepParams.fieldSettings = {
+      ...fieldSettings,
+      init: {
+        ...prevInit,
+        ...fieldSettingsInit,
+      },
+    };
+  }
 
   return {
     use,
-    stepParams: buildAssignValueFieldStepParams(source.stepParams, fieldSettingsInit),
+    stepParams,
   };
 }
 
@@ -870,7 +885,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         ? dataSourceManager?.getDataSource?.(effectiveCollection.dataSourceKey)
         : null);
     const originProps = ((originFieldModel as any)?.props || {}) as Record<string, any>;
-    const { value: _originValue, defaultValue: _originDefaultValue, ...originPropsWithoutValue } = originProps;
 
     const fields = typeof effectiveCollection?.getFields === 'function' ? effectiveCollection.getFields() || [] : [];
     const f =
@@ -901,6 +915,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!effectiveFieldModelUse) return;
 
     const customFieldProps = itemModelAny?.customFieldProps || customFieldSettings?.fieldModelProps || {};
+    const tempFieldProps = resolveAssignValueFieldProps({
+      placeholder,
+      originProps,
+      customFieldProps,
+      collectionField: effectiveCollectionField,
+    });
 
     const created = engine?.createModel?.({
       use: 'VariableFieldFormModel',
@@ -909,11 +929,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           {
             use: effectiveFieldModelUse,
             stepParams: tempFieldStepParams,
-            props: {
-              placeholder,
-              ...originPropsWithoutValue,
-              ...customFieldProps,
-            },
+            props: tempFieldProps,
           },
         ],
       },
