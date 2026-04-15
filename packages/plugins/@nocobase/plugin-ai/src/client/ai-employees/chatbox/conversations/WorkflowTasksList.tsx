@@ -147,8 +147,8 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
                   title={
                     <Space>
                       {!item.read && <Badge status="error" />}
-                      <Typography.Text strong ellipsis>
-                        {executionIdText}
+                      <Typography.Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>
+                        {item.workflowTitle}
                       </Typography.Text>
                     </Space>
                   }
@@ -164,17 +164,11 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
                   styles={{ body: { padding: '10px 12px' } }}
                 >
                   <Flex vertical gap={6}>
-                    <Flex align="flex-start" justify="space-between" gap={token.marginXS}>
-                      <Flex align="center" gap={token.marginXS} style={{ minWidth: 0, flex: 1 }}>
-                        <Typography.Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>
-                          {item.workflowTitle}
-                        </Typography.Text>
-                      </Flex>
-                    </Flex>
-                    <Typography.Text type="secondary" ellipsis>
-                      {item.nodeTitle}
-                    </Typography.Text>
-                    {createdAtText ? <Typography.Text type="secondary">{createdAtText}</Typography.Text> : null}
+                    <Typography.Text ellipsis>{item.nodeTitle}</Typography.Text>
+                    <Space direction="vertical">
+                      {createdAtText ? <Typography.Text type="secondary">{createdAtText}</Typography.Text> : null}
+                      {executionIdText ? <Typography.Text type="secondary">{executionIdText}</Typography.Text> : null}
+                    </Space>
                   </Flex>
                 </Card>
               </div>
