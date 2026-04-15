@@ -155,35 +155,29 @@ jobs:
         run: |
           set -euo pipefail
           PACKAGE_JSONS=$(
-            node - <<'EOF'
-            const fs = require('fs');
-            const path = require('path');
-
-            const root = path.resolve('packages/pro-plugins');
-            const results = [];
-
-            function walk(dir) {
-              for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-                if (entry.name === 'node_modules') continue;
-                const fullPath = path.join(dir, entry.name);
-
-                if (entry.isDirectory()) {
-                  walk(fullPath);
-                  continue;
+            node -e "
+              const fs = require('fs');
+              const path = require('path');
+              const root = path.resolve('packages/pro-plugins');
+              const results = [];
+              function walk(dir) {
+                for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                  if (entry.name === 'node_modules') continue;
+                  const fullPath = path.join(dir, entry.name);
+                  if (entry.isDirectory()) {
+                    walk(fullPath);
+                    continue;
+                  }
+                  if (entry.name !== 'package.json') continue;
+                  if (fullPath === path.join(root, 'package.json')) continue;
+                  const pkg = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                  if (pkg.private === true) continue;
+                  results.push(fullPath);
                 }
-
-                if (entry.name !== 'package.json') continue;
-                if (fullPath === root + '/package.json') continue;
-
-                const pkg = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-                if (pkg.private === true) continue;
-                results.push(fullPath);
               }
-            }
-
-            walk(root);
-            results.sort().forEach((file) => console.log(file));
-            EOF
+              walk(root);
+              results.sort().forEach((file) => console.log(file));
+            "
           )
 
           if [[ -n "$PACKAGE_JSONS" ]]; then
