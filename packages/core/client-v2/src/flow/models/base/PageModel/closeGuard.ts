@@ -11,6 +11,7 @@ type CloseGuardContext = {
   inputArgs?: {
     dirty?: {
       hasDirtyForms?: boolean;
+      formModelUids?: string[];
     };
     controller?: {
       prevent?: () => void;

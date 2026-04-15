@@ -58,6 +58,8 @@ export interface RouterManagerBaseLike {
   get(name: string): RouteType | undefined;
   has(name: string): boolean;
   remove(name: string): void;
+  getBasename(): string | undefined;
+  isSkippedAuthCheckRoute(pathname: string): boolean;
   getRouterComponent(children?: React.ReactNode): React.FC<{ BaseLayout?: ComponentType }>;
 }
 

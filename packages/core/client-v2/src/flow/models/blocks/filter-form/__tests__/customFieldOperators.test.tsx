@@ -30,7 +30,7 @@ function createEngineWithCollections() {
   const engine = new FlowEngine();
   engine.registerModels({ HostModel });
   const ds = engine.dataSourceManager.getDataSource('main');
-  ds.addCollection({
+  ds?.addCollection({
     name: 'users',
     titleField: 'uid',
     filterTargetKey: 'id',
@@ -63,7 +63,7 @@ function createEngineWithCollections() {
       },
     ],
   });
-  ds.addCollection({
+  ds?.addCollection({
     name: 'posts',
     fields: [
       {
@@ -576,7 +576,7 @@ describe('custom field operators', () => {
     );
 
     await waitFor(() => {
-      expect(form.values?.operator).toBe('$eq');
+      expect((form.values as any)?.operator).toBe('$eq');
     });
 
     await act(async () => {
@@ -586,7 +586,7 @@ describe('custom field operators', () => {
     });
 
     await waitFor(() => {
-      expect(form.values?.operator).toBe('$match');
+      expect((form.values as any)?.operator).toBe('$match');
     });
   });
 

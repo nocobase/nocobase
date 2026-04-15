@@ -89,7 +89,7 @@ describe('FilterForm custom field record select', () => {
     engine.registerModels({ HostModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       titleField: 'name',
       filterTargetKey: 'id',
@@ -98,7 +98,7 @@ describe('FilterForm custom field record select', () => {
         { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
       ],
     });
-    ds.addCollection({
+    ds?.addCollection({
       name: 'posts',
       filterTargetKey: 'id',
       fields: [
@@ -143,7 +143,7 @@ describe('FilterForm custom field record select', () => {
     engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       titleField: 'name',
       filterTargetKey: 'id',
@@ -189,7 +189,7 @@ describe('FilterForm custom field record select', () => {
     engine.registerModels({ HostScalarSourceModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'roles',
       fields: [
         { name: 'uid', type: 'string', interface: 'input', filterable: { operators: [] } },
@@ -224,11 +224,11 @@ describe('FilterForm custom field record select', () => {
     engine.registerModels({ HostModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'roles',
       fields: [{ name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } }],
     });
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       titleField: 'nickname',
       filterTargetKey: 'id',
@@ -252,7 +252,7 @@ describe('FilterForm custom field record select', () => {
         },
       ],
     });
-    ds.addCollection({
+    ds?.addCollection({
       name: 'posts',
       fields: [
         {
@@ -281,7 +281,7 @@ describe('FilterForm custom field record select', () => {
     );
 
     await waitFor(() => {
-      const value = form.values?.props as any;
+      const value = (form.values as any)?.props as any;
       expect(value.recordSelectTargetCollection).toBe('users');
     });
 
@@ -316,7 +316,7 @@ describe('FilterForm custom field record select', () => {
     });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'posts',
       fields: [
         { name: 'title', type: 'string', interface: 'input', filterable: { operators: [] } },
@@ -432,7 +432,7 @@ describe('FilterForm custom field record select', () => {
     });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       titleField: 'nickname',
       filterTargetKey: 'id',
@@ -475,7 +475,7 @@ describe('FilterForm custom field record select', () => {
     engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       titleField: 'name',
       filterTargetKey: 'id',
@@ -540,7 +540,7 @@ describe('FilterForm custom field record select', () => {
     engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       titleField: 'name',
       filterTargetKey: 'id',

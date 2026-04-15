@@ -9,12 +9,25 @@
 
 import type { TFuncKey, TOptions } from 'i18next';
 import type { BaseApplication } from './BaseApplication';
+import type { PluginSettingsManagerLike } from './PluginSettingsManager';
 
-export interface PluginOptions {
+/**
+ * 插件配置选项。
+ *
+ * 作为 Plugin 类的泛型参数，描述插件注册时可接收的配置项。
+ *
+ * @template T 插件自定义配置类型
+ */
+export interface PluginOptions<T = any> {
+  name?: string;
   packageName?: string;
+  config?: T;
 }
 
-export class Plugin<T extends PluginOptions = PluginOptions, TApp extends BaseApplication<any> = BaseApplication<any>> {
+export class Plugin<
+  T extends PluginOptions<any> = PluginOptions,
+  TApp extends BaseApplication<any> = BaseApplication<any>,
+> {
   constructor(
     public options: T,
     protected app: TApp,
@@ -47,8 +60,8 @@ export class Plugin<T extends PluginOptions = PluginOptions, TApp extends BaseAp
     return this.app.router;
   }
 
-  get pluginSettingsManager() {
-    return this.app.pluginSettingsManager;
+  get pluginSettingsManager(): PluginSettingsManagerLike {
+    return this.app.pluginSettingsManager as PluginSettingsManagerLike;
   }
 
   get schemaInitializerManager() {

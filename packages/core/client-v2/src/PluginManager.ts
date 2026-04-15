@@ -8,10 +8,9 @@
  */
 
 import type { BaseApplication } from './BaseApplication';
-import type { Plugin } from './Plugin';
+import type { Plugin, PluginOptions } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
-export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
 export type PluginClassLike = new (options: any, app: any) => any;
 export type PluginTypeLike = PluginClassLike | [PluginClassLike, PluginOptions<any>];
 export type PluginClass<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> = new (
@@ -110,7 +109,7 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
     return this.pluginInstances.get(nameOrPluginClass.default || nameOrPluginClass);
   }
 
-  protected getInstance<T>(plugin: PluginClass<T, TApp>, opts?: PluginOptions<T>) {
+  protected getInstance<T>(plugin: PluginClass<T, TApp>, opts: PluginOptions<T> = {}) {
     return new plugin(opts, this.app);
   }
 

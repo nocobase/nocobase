@@ -48,7 +48,7 @@ describe('rebuildFieldSubModel', () => {
           stepParams: {
             fieldBinding: { use: 'FieldModel' },
             fieldSettings: { init: { initKey: true } },
-          },
+          } as any,
         },
       },
     });
@@ -85,7 +85,7 @@ describe('rebuildFieldSubModel', () => {
           stepParams: {
             fieldBinding: { use: 'FieldModel' },
             fieldSettings: { init: { initKey: true } },
-          },
+          } as any,
           subModels: {
             columns: [
               { use: DummyColumnModel, uid: 'col-1', sortIndex: 0 },

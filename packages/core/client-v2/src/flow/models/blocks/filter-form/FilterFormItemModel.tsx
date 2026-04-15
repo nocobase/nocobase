@@ -363,7 +363,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
       ];
     }
 
-    return allModelInstances.map((model: CollectionBlockModel) => {
+    return allModelInstances.map((model: any) => {
       return {
         key: model.uid,
         label: (
@@ -413,10 +413,10 @@ export class FilterFormItemModel extends FilterableItemModel<{
     });
   }
 
-  operator: string;
+  operator!: string;
   mounted = false;
 
-  private debouncedDoFilter: ReturnType<typeof debounce>;
+  private debouncedDoFilter!: ReturnType<typeof debounce>;
   private lastAutoTriggerValue: any;
   private autoTriggerInitialized = false;
 
@@ -437,7 +437,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return operatorList.find((op) => op.value === operator) || null;
   }
 
-  onInit(options) {
+  onInit(options: any) {
     super.onInit(options);
     // 创建防抖的 doFilter 方法，延迟 300ms
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
@@ -543,7 +543,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     }
   };
 
-  getValueProps(value) {
+  getValueProps(value: any) {
     if (this.context.blockModel.autoTriggerFilter) {
       if (!this.autoTriggerInitialized) {
         this.autoTriggerInitialized = true;
@@ -561,7 +561,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     };
   }
 
-  renderItem() {
+  renderItem(): any {
     const fieldModel = this.subModels.field as FieldModel;
     return (
       <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
@@ -575,6 +575,7 @@ FilterFormItemModel.define({
   label: tExpr('Block list'),
 });
 
+// @ts-ignore
 FilterFormItemModel.registerFlow({
   key: 'filterFormItemSettings',
   sort: 300,
@@ -588,7 +589,7 @@ FilterFormItemModel.registerFlow({
             'x-component': 'Input',
             'x-decorator': 'FormItem',
             'x-reactions': (field) => {
-              const model = ctx.model;
+              const model = ctx.model as unknown as FilterFormItemModel;
               const originTitle =
                 model.collectionField?.title || ctx.filterField?.title || ctx.filterField?.name || model.fieldPath;
               field.decoratorProps = {
@@ -618,6 +619,7 @@ FilterFormItemModel.registerFlow({
     // },
     init: {
       async handler(ctx, params) {
+        const filterModel = ctx.model as unknown as FilterFormItemModel;
         const normalizedFilterField = params.filterField
           ? {
               ...params.filterField,
@@ -629,13 +631,13 @@ FilterFormItemModel.registerFlow({
         });
 
         ctx.model.setProps({
-          name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
+          name: `${filterModel.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
         });
 
-        let collectionField = ctx.model.collectionField;
+        let collectionField = filterModel.collectionField;
         // SQL 图表筛选等场景下没有 collectionName/dataSourceKey，无法解析真实 collectionField。
-        // 此时用 filterField 元数据注入一个虚拟字段，避免误显示“字段已删除”占位。
-        const fieldSettingsInitParams = ctx.model.getFieldSettingsInitParams?.() || {};
+        // 此时用 filterField 元数据注入一个虚拟字段，避免误显示"字段已删除"占位。
+        const fieldSettingsInitParams = filterModel.getFieldSettingsInitParams?.() || {};
         const hasCollectionContext = !!(
           // @ts-ignore
           (fieldSettingsInitParams?.dataSourceKey && fieldSettingsInitParams?.collectionName)
@@ -764,6 +766,7 @@ FilterFormItemModel.registerFlow({
   },
 });
 
+// @ts-ignore
 FilterFormItemModel.registerFlow({
   key: 'fieldSettings',
   title: tExpr('Field settings'),

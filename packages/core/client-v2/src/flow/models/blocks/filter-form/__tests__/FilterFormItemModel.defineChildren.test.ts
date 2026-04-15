@@ -36,7 +36,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
   it('groups association target fields and supports recursive paths', async () => {
     const engine = new FlowEngine();
     engine.registerModels({
-      FilterFormItemModel,
+      FilterFormItemModel: FilterFormItemModel as any,
       DummyCollectionBlockModel,
       InputFieldModel,
       NumberFieldModel,
@@ -44,7 +44,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds?.addCollection({
       name: 'departments',
       filterTargetKey: 'id',
       fields: [
@@ -59,7 +59,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
         },
       ],
     });
-    ds.addCollection({
+    ds?.addCollection({
       name: 'users',
       filterTargetKey: 'id',
       fields: [
@@ -92,7 +92,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     expect(filterFields.some((field: any) => field.name === 'department')).toBe(true);
     const departmentField = filterFields.find((field: any) => field.name === 'department');
     expect(departmentField?.target).toBe('departments');
-    expect(departmentField?.targetCollection).toBeTruthy();
+    expect((departmentField as any)?.targetCollection).toBeTruthy();
 
     const blockGridModel = {
       filterSubModels: (_key: string, predicate: (item: any) => boolean) => [model].filter(predicate),
@@ -142,10 +142,10 @@ describe('FilterFormItemModel defineChildren association fields', () => {
 
     const targetItem = managerFieldsGroup?.children?.find((item: any) => item.key === 'department.manager.name');
     const createOptions = await targetItem.createModelOptions();
-    const filterItem = engine.createModel<FilterFormItemModel>({
+    const filterItem = engine.createModel({
       uid: 'filter-item',
       ...createOptions,
-    } as any);
+    } as any) as unknown as FilterFormItemModel;
 
     expect(filterItem.fieldPath).toBe('department.manager.name');
     expect(filterItem.collectionField).toBeTruthy();
@@ -154,11 +154,11 @@ describe('FilterFormItemModel defineChildren association fields', () => {
   it('provides fallback field metadata for sql fields without collection context', async () => {
     const engine = new FlowEngine();
     engine.registerModels({
-      FilterFormItemModel,
+      FilterFormItemModel: FilterFormItemModel as any,
       NumberFieldModel,
     });
 
-    const filterItem = engine.createModel<FilterFormItemModel>({
+    const filterItem = engine.createModel({
       uid: 'sql-filter-item',
       use: 'FilterFormItemModel',
       stepParams: {
@@ -183,7 +183,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
           use: 'NumberFieldModel',
         },
       },
-    } as any);
+    } as any) as unknown as FilterFormItemModel;
 
     await filterItem.dispatchEvent('beforeRender');
 
@@ -195,18 +195,18 @@ describe('FilterFormItemModel defineChildren association fields', () => {
   it('keeps deleted-field detection when collection context exists', async () => {
     const engine = new FlowEngine();
     engine.registerModels({
-      FilterFormItemModel,
+      FilterFormItemModel: FilterFormItemModel as any,
       NumberFieldModel,
     });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
+    ds!.addCollection({
       name: 'users',
       filterTargetKey: 'id',
       fields: [{ name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } }],
     });
 
-    const filterItem = engine.createModel<FilterFormItemModel>({
+    const filterItem = engine.createModel({
       uid: 'deleted-field-item',
       use: 'FilterFormItemModel',
       stepParams: {
@@ -233,7 +233,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
           use: 'NumberFieldModel',
         },
       },
-    } as any);
+    } as any) as unknown as FilterFormItemModel;
 
     await filterItem.dispatchEvent('beforeRender');
 
@@ -243,11 +243,11 @@ describe('FilterFormItemModel defineChildren association fields', () => {
   it('uses field name as fallback label when sql filter field title is missing', async () => {
     const engine = new FlowEngine();
     engine.registerModels({
-      FilterFormItemModel,
+      FilterFormItemModel: FilterFormItemModel as any,
       NumberFieldModel,
     });
 
-    const filterItem = engine.createModel<FilterFormItemModel>({
+    const filterItem = engine.createModel({
       uid: 'sql-filter-item-no-title',
       use: 'FilterFormItemModel',
       stepParams: {
@@ -271,7 +271,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
           use: 'NumberFieldModel',
         },
       },
-    } as any);
+    } as any) as unknown as FilterFormItemModel;
 
     await filterItem.dispatchEvent('beforeRender');
 
@@ -281,11 +281,11 @@ describe('FilterFormItemModel defineChildren association fields', () => {
   it('applies getComponentProps from fallback sql field metadata', async () => {
     const engine = new FlowEngine();
     engine.registerModels({
-      FilterFormItemModel,
+      FilterFormItemModel: FilterFormItemModel as any,
       NumberFieldModel,
     });
 
-    const filterItem = engine.createModel<FilterFormItemModel>({
+    const filterItem = engine.createModel({
       uid: 'sql-filter-item-component-props',
       use: 'FilterFormItemModel',
       stepParams: {
@@ -316,7 +316,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
           use: 'NumberFieldModel',
         },
       },
-    } as any);
+    } as any) as unknown as FilterFormItemModel;
 
     await filterItem.dispatchEvent('beforeRender');
 

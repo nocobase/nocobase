@@ -134,7 +134,7 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
 
     expect(linkageAssignHandler).toHaveBeenCalledTimes(1);
     expect(setFormValues).toHaveBeenCalledTimes(1);
-    const [patches, options] = setFormValues.mock.calls[0];
+    const [patches, options] = setFormValues.mock.calls[0] as unknown as [any, any];
     expect(patches).toEqual([
       {
         path: ['users', 0, 'name'],
@@ -386,7 +386,7 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
 
     expect(linkageAssignHandler).toHaveBeenCalledTimes(1);
     expect(setFormValues).toHaveBeenCalledTimes(1);
-    const [patches, options] = setFormValues.mock.calls[0];
+    const [patches, options] = setFormValues.mock.calls[0] as unknown as [any, any];
     expect(patches).toEqual([
       {
         path: ['users', 0, 'name'],
@@ -522,7 +522,7 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
 
     expect(linkageAssignHandler).toHaveBeenCalledTimes(1);
     expect(setFormValues).toHaveBeenCalledTimes(1);
-    const [patches, options] = setFormValues.mock.calls[0];
+    const [patches, options] = setFormValues.mock.calls[0] as unknown as [any, any];
     expect(patches).toEqual([
       {
         path: ['users', 0, 'name'],

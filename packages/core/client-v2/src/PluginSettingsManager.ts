@@ -96,11 +96,14 @@ export interface PluginSettingsManagerBaseLike {
   has(name: string): boolean;
   get(name: string, filterAuth?: boolean): PluginSettingsPageLike | null;
   getList(filterAuth?: boolean): PluginSettingsPageLike[];
+  getRouteName(name: string): string;
   getRoutePath(name: string): string;
   getAclSnippets(): (string | null)[];
 }
 
 export interface PluginSettingsManagerLike extends PluginSettingsManagerBaseLike {
+  get(name: string, filterAuth?: boolean): PluginSettingsPageType | null;
+  getList(filterAuth?: boolean): PluginSettingsPageType[];
   addMenuItem(options: PluginSettingsMenuItemOptions): void;
   addPageTabItem(options: PluginSettingsPageItemOptions): void;
 }
