@@ -65,12 +65,14 @@ Suponha que existam quatro nós: `node1`, `node2`, `node3` e `node4`. Eles podem
 Ao desenvolver plugins de negócio, você pode separar serviços que consomem muitos recursos, com base nos requisitos do cenário. Isso pode ser alcançado das seguintes maneiras:
 
 1. Defina um novo identificador de serviço, por exemplo, `my-plugin:process`, para a configuração da variável de ambiente, e forneça a documentação correspondente.
-2. Na lógica de negócio do lado do servidor do plugin, utilize a interface `app.serving()` para verificar o ambiente e determinar se o nó atual deve fornecer um serviço específico com base na variável de ambiente.
+2. Na lógica de negócio do lado do servidor do plugin, utilize a interface `serving()` para verificar o ambiente e determinar se o nó atual deve fornecer um serviço específico com base na variável de ambiente.
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
 // No código do lado do servidor do plugin
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
   // Processa a lógica de negócio para este serviço
 } else {
   // Não processa a lógica de negócio para este serviço
