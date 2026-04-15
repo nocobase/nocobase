@@ -1,7 +1,7 @@
 name: Manual npm publish
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.tag }}
+  group: ${{ github.workflow }}-${{ inputs.tag }}
   cancel-in-progress: true
 
 on:
@@ -11,26 +11,22 @@ on:
         description: 'Git tag to publish, for example v1.7.0 or v2.0.0-beta.1'
         required: true
         type: string
-  pull_request:
-    paths:
-      - '.github/workflows/manual-npm-publish.yml'
 
 jobs:
   get-plugins:
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
-      require_tag: ${{ github.event_name == 'pull_request' && 'v1.7.20' || inputs.tag }}
+      require_tag: ${{ inputs.tag }}
       # For v1.x maintenance releases, only include repos that have the v1 branch.
       # For v2+ we keep the original behavior (no filtering at this stage).
-      require_branch: ${{ startsWith(github.event_name == 'pull_request' && 'v1.7.20' || inputs.tag, 'v1.') && 'v1' || '' }}
+      require_branch: ${{ startsWith(inputs.tag, 'v1.') && 'v1' || '' }}
     secrets: inherit
 
   publish-npm:
     needs: get-plugins
     runs-on: ubuntu-latest
     env:
-      TARGET_TAG: ${{ github.event_name == 'pull_request' && 'v1.7.20' || inputs.tag }}
-      DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+      TARGET_TAG: ${{ inputs.tag }}
     steps:
       - name: Set Node.js 20
         uses: actions/setup-node@v3
@@ -39,7 +35,7 @@ jobs:
 
       - name: Print mode
         run: |
-          echo "Mode: ${{ env.DRY_RUN == 'true' && 'dry-run' || 'publish' }}"
+          echo "Mode: publish"
           echo "Target tag: $TARGET_TAG"
 
       - uses: actions/create-github-app-token@v1
@@ -84,7 +80,6 @@ jobs:
           ref: ${{ env.TARGET_TAG }}
 
       - name: Send curl request and parse response
-        if: ${{ env.DRY_RUN != 'true' }}
         env:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
           PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
@@ -202,7 +197,7 @@ jobs:
           fi
 
       - name: publish pkg.nocobase.com
-        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' && env.DRY_RUN != 'true' }}
+        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
         shell: bash
         run: |
           git reset --hard
@@ -217,24 +212,8 @@ jobs:
           ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
           EOF
 
-      - name: Dry run summary
-        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
-        shell: bash
-        run: |
-          if [[ "$DRY_RUN" != "true" ]]; then
-            exit 0
-          fi
-          echo "Dry run only. Packages that would be published to pkg registries:"
-          while IFS= read -r package_json; do
-            [[ -n "$package_json" ]] || continue
-            package_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json")
-            echo "$package_name"
-          done <<'EOF'
-          ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
-          EOF
-
       - name: publish pkg-src.nocobase.com
-        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' && env.DRY_RUN != 'true' }}
+        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
         shell: bash
         run: |
           git reset --hard
