@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export {run} from '@oclif/core'
+export { run } from '@oclif/core';
