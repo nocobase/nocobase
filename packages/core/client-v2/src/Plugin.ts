@@ -47,10 +47,6 @@ export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication
     return this.app.pluginSettingsManager;
   }
 
-  get pluginSettingsRouter() {
-    return this.app.pluginSettingsManager;
-  }
-
   get schemaInitializerManager() {
     // @ts-ignore
     return this.app.schemaInitializerManager;

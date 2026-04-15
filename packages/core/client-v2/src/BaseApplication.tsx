@@ -102,7 +102,6 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setData: (data: Record<string, any>) => void;
       setMeta: (meta: Record<string, any>) => void;
     };
-    pluginSettingsRouter: PluginSettingsManagerBaseLike;
     pluginManager: PluginManagerBaseLike;
   };
   public systemSettings: SystemSettingsSource;
@@ -153,9 +152,6 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     this.configureRuntimeAdapters();
     this.context.defineProperty('pluginManager', {
       get: () => this.pluginManager,
-    });
-    this.context.defineProperty('pluginSettingsRouter', {
-      get: () => this.pluginSettingsManager,
     });
     this.configureBaseContext();
     this.configureContext();
