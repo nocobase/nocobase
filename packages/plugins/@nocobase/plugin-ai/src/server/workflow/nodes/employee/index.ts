@@ -37,7 +37,19 @@ export class AIEmployeeInstruction extends Instruction {
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
 
     const toolName = 'aiEmployeeWorkflowTaskOutput';
-    const systemMessage = `You are invoked by workflow, after done your job, call tool **${toolName}**\n\n${
+    const workflowSystemPrompt = `
+You are being driven by a workflow.
+You are not acting freely, and your output must be returned to that workflow.
+Your first priority is to use the tool **${toolName}**.
+You must call **${toolName}** to deliver your final result back to the workflow.
+Do not output the final result in a normal assistant message before calling the tool.
+In this workflow context, direct assistant output cannot be seen by the user and will not help complete the task.
+For maximum efficiency, put the result directly into the tool call payload of **${toolName}** instead of replying first and calling the tool afterward.
+Do not treat tool usage as optional.
+Do not skip it.
+Do not end your task without calling **${toolName}**.
+`.trim();
+    const systemMessage = `${workflowSystemPrompt}\n\n${
       typeof message.system === 'object' ? JSON.stringify(message.system) : message.system
     }`;
     const userMessage = typeof message.user === 'object' ? JSON.stringify(message.user) : message.user;
