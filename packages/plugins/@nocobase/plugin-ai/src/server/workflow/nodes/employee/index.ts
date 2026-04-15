@@ -362,9 +362,6 @@ export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
       return;
     }
     const values = model.toJSON();
-    if (values.status !== 'pending_acceptance') {
-      return;
-    }
     options.transaction?.afterCommit(async () => {
       const assignees = await plugin.db.getRepository('usersAiWorkflowTasks').find({
         filter: {
@@ -375,14 +372,16 @@ export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
         return;
       }
 
-      await plugin.db.getRepository('usersAiWorkflowTasks').update({
-        values: {
-          read: false,
-        },
-        filter: {
-          aiWorkflowTaskId: values.id,
-        },
-      });
+      if (values.status === 'pending_acceptance') {
+        await plugin.db.getRepository('usersAiWorkflowTasks').update({
+          values: {
+            read: false,
+          },
+          filter: {
+            aiWorkflowTaskId: values.id,
+          },
+        });
+      }
 
       for (const assignee of assignees) {
         plugin.app.emit('ws:sendToUser', {

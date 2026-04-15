@@ -12,12 +12,13 @@ import { Bubble } from '@ant-design/x';
 import { Spin, Layout, Divider, Button } from 'antd';
 import { RightOutlined, DownOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { useToken } from '@nocobase/client';
+import { useApp, useToken } from '@nocobase/client';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
 import { flattenMessages, formatConversationDuration, RenderedItem } from './utils';
+import { useWorkflowTasks } from './hooks/useWorkflowTasks';
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -168,6 +169,36 @@ export const Messages: React.FC = () => {
       <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
     );
   };
+
+  const app = useApp();
+  const setReadonly = useChatBoxStore.use.setReadonly();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const { acceptWorkflowTask, getWorkflowTaskBySession } = useWorkflowTasks();
+  const updateReadonly = useMemo(
+    () => async (sessionId: string) => {
+      await acceptWorkflowTask(sessionId);
+      const task = await getWorkflowTaskBySession(sessionId);
+      setReadonly(task?.readonly === true);
+    },
+    [acceptWorkflowTask, getWorkflowTaskBySession, setReadonly],
+  );
+  const onAIEmployeeTaskStatusUpdate = useMemo(
+    () => (e: any) => {
+      const { sessionId, status } = e.detail;
+      if (status !== 'processing') {
+        messagesService.run(sessionId);
+        setResponseLoading(false);
+        updateReadonly(sessionId).catch(console.log);
+      }
+    },
+    [messagesService, updateReadonly, setResponseLoading],
+  );
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    };
+  }, [app.eventBus, onAIEmployeeTaskStatusUpdate]);
 
   return (
     <Layout.Content

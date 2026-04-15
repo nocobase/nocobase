@@ -15,6 +15,8 @@ import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { JobStatusOptionsMap } from '@nocobase/plugin-workflow/client';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { uid } from '@formily/shared';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
@@ -33,6 +35,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
     getWorkflowTaskBySession,
   } = useWorkflowTasks();
   const setReadonly = useChatBoxStore.use.setReadonly();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
 
   const onSelectWorkflowTask = useCallback(
     async (sessionId: string) => {
@@ -41,11 +44,13 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
       let username: string | undefined;
       let model: ModelRef | undefined;
       let readonly = false;
+      let responseLoading = false;
       try {
         const task = await getWorkflowTaskBySession(sessionId);
         username = task?.config?.username;
         model = task?.config?.model;
         readonly = task?.readonly === true;
+        responseLoading = task?.status === 'processing';
       } catch {
         username = undefined;
         model = undefined;
@@ -53,6 +58,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
 
       refresh();
       setReadonly(readonly);
+      setResponseLoading(responseLoading);
       onOpenConversation(sessionId, username, model);
     },
     [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh, setReadonly],

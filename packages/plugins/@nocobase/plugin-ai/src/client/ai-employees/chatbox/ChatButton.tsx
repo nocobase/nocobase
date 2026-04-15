@@ -19,6 +19,7 @@ import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-eng
 import { isLeader } from '../built-in/utils';
 import { useLocation } from 'react-router-dom';
 import { useWorkflowTasks } from './hooks/useWorkflowTasks';
+import { useChatMessagesStore } from './stores/chat-messages';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -39,6 +40,7 @@ export const ChatButton: React.FC = observer(() => {
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
   const setReadonly = useChatBoxStore.use.setReadonly();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
 
   const { switchAIEmployee } = useChatBoxActions();
 
@@ -54,6 +56,7 @@ export const ChatButton: React.FC = observer(() => {
         onClick={() => {
           setDropdownOpen(false);
           setReadonly(false);
+          setResponseLoading(false);
           setOpen(true);
           const leaderEmployee = aiEmployees.find(isLeader);
           if (leaderEmployee) {
