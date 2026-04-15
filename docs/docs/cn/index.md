@@ -17,6 +17,22 @@ hero:
       link: https://github.com/nocobase/nocobase
 
 features:
+  - title: 开始
+    details: 了解 NocoBase 如何使用，并完成安装部署。
+    items:
+      - title: NocoBase 使用入门
+        details: 了解 NocoBase 的核心概念和基本操作。
+        link: /get-started/how-nocobase-works
+      - title: NocoBase CLI
+        details: NocoBase 的命令行工具，用于安装、升级与部署，同时支持 AI Agent 协同操作。
+        link: /get-started/nocobase-cli
+      - title: 安装与升级插件
+        details: 了解如何添加、管理和更新插件，扩展系统能力。
+        link: /get-started/install-upgrade-plugins
+      - title: 教程
+        details: 从零开始，跟着教程一步步搭建真实项目。
+        link: /tutorials/v2/
+
   - title: AI
     details: 让 AI 融入 NocoBase 的搭建、使用和开发全流程。
     items:
@@ -29,22 +45,6 @@ features:
       - title: AI 开发
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
-
-  - title: 上手
-    details: 了解 NocoBase 如何使用，并完成安装部署。
-    items:
-      - title: NocoBase 使用入门
-        details: 了解 NocoBase 的核心概念和基本操作。
-        link: /get-started/how-nocobase-works
-      - title: 安装、升级、部署
-        details: 从零开始安装 NocoBase，完成版本升级与生产环境部署。
-        link: /get-started/quickstart
-      - title: 安装与升级插件
-        details: 了解如何添加、管理和更新插件，扩展系统能力。
-        link: /get-started/install-upgrade-plugins
-      - title: 教程
-        details: 从零开始，跟着教程一步步搭建真实项目。
-        link: /tutorials/v2/
 
   - title: 进阶
     details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。

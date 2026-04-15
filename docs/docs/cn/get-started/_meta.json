@@ -16,8 +16,8 @@
   },
   {
     "type": "custom-link",
-    "label": "AI",
-    "link": "/get-started/ai"
+    "label": "NocoBase CLI",
+    "link": "/get-started/nocobase-cli"
   },
   {
     "type": "custom-link",
