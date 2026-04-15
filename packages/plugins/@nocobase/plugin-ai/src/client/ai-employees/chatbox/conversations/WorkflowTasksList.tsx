@@ -8,28 +8,16 @@
  */
 
 import React, { useCallback } from 'react';
-import { Badge, Card, List, Spin, Tag, theme } from 'antd';
+import { Badge, Card, Flex, List, Space, Spin, Tag, Typography, theme } from 'antd';
+import { useCompile } from '@nocobase/client';
+import { dayjs } from '@nocobase/utils/client';
 import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
-import { namespace, useT } from '../../../locale';
+import { JobStatusOptionsMap } from '@nocobase/plugin-workflow/client';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
-};
-
-const getStatusTagColor = (status: string) => {
-  switch (status) {
-    case 'approved':
-      return 'success';
-    case 'pending_approval':
-    case 'pending_acceptance':
-      return 'warning';
-    case 'processing':
-      return 'processing';
-    default:
-      return 'default';
-  }
 };
 
 export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksListOptions) => {
@@ -58,7 +46,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
       setReadonly(readonly);
       onOpenConversation(sessionId, username, model);
     },
-    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh],
+    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh, setReadonly],
   );
 
   return {
@@ -75,25 +63,7 @@ export type WorkflowTasksListController = ReturnType<typeof useWorkflowTasksList
 
 export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListController }> = ({ controller }) => {
   const { token } = theme.useToken();
-  const t = useT();
-
-  const getStatusDesc = useCallback(
-    (status: string) => {
-      switch (status) {
-        case 'approved':
-          return t('Approved', { ns: namespace });
-        case 'pending_approval':
-          return t('Approval pending', { ns: namespace });
-        case 'pending_acceptance':
-          return t('Acceptance pending', { ns: namespace });
-        case 'processing':
-          return t('Processing', { ns: namespace });
-        default:
-          return status;
-      }
-    },
-    [t],
-  );
+  const compile = useCompile();
 
   if (controller.loading && !controller.workflowTasks.length) {
     return (
@@ -109,73 +79,57 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
   if (!controller.workflowTasks.length) {
     return <ListEmpty />;
   }
-
   return (
     <List
       dataSource={controller.workflowTasks}
       split={false}
       style={{ padding: '10px 12px 12px' }}
-      renderItem={(item) => (
-        <List.Item key={item.sessionId} style={{ padding: '0 0 8px' }}>
-          <Card
-            size="small"
-            hoverable
-            onClick={() => controller.onSelectWorkflowTask(item.sessionId)}
-            style={{ width: '100%', backgroundColor: token.colorBgContainer }}
-            styles={{ body: { padding: '10px 12px' } }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 8,
-              }}
+      renderItem={(item) => {
+        const jobStatusOption = typeof item.jobStatus !== 'undefined' ? JobStatusOptionsMap[item.jobStatus] : null;
+        const createdAtText = item.createdAt ? dayjs(item.createdAt).format('YYYY-MM-DD HH:mm:ss') : null;
+        const executionIdText =
+          item.executionId !== null && typeof item.executionId !== 'undefined' ? `#${item.executionId}` : null;
+
+        return (
+          <List.Item key={item.sessionId} style={{ padding: '0 0 8px' }}>
+            <Card
+              type="inner"
+              title={
+                <Space>
+                  {!item.read && <Badge status="error" />}
+                  <Typography.Text strong ellipsis>
+                    {executionIdText}
+                  </Typography.Text>
+                </Space>
+              }
+              extra={
+                <Tag color={jobStatusOption?.color ?? 'default'} icon={jobStatusOption?.icon}>
+                  {jobStatusOption?.label ? compile(jobStatusOption.label) : '-'}
+                </Tag>
+              }
+              size="small"
+              hoverable
+              onClick={() => controller.onSelectWorkflowTask(item.sessionId)}
+              style={{ width: '100%', backgroundColor: token.colorBgContainer }}
+              styles={{ body: { padding: '10px 12px' } }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  minWidth: 0,
-                  flex: 1,
-                }}
-              >
-                {!item.read ? (
-                  <Badge dot>
-                    <span style={{ width: 8, height: 8, display: 'inline-block' }} />
-                  </Badge>
-                ) : null}
-                <div
-                  style={{
-                    fontWeight: 500,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.workflowTitle}
-                </div>
-              </div>
-              <Tag color={getStatusTagColor(item.status)} style={{ marginInlineEnd: 0 }}>
-                {getStatusDesc(item.status)}
-              </Tag>
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontSize: 12,
-                color: 'rgba(0, 0, 0, 0.45)',
-              }}
-            >
-              {item.nodeTitle}
-            </div>
-          </Card>
-        </List.Item>
-      )}
+              <Flex vertical gap={6}>
+                <Flex align="flex-start" justify="space-between" gap={token.marginXS}>
+                  <Flex align="center" gap={token.marginXS} style={{ minWidth: 0, flex: 1 }}>
+                    <Typography.Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>
+                      {item.workflowTitle}
+                    </Typography.Text>
+                  </Flex>
+                </Flex>
+                <Typography.Text type="secondary" ellipsis>
+                  {item.nodeTitle}
+                </Typography.Text>
+                {createdAtText ? <Typography.Text type="secondary">{createdAtText}</Typography.Text> : null}
+              </Flex>
+            </Card>
+          </List.Item>
+        );
+      }}
     />
   );
 };

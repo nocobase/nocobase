@@ -13,14 +13,17 @@ import { Empty } from 'antd';
 export type WorkflowTask = {
   id: string;
   sessionId: string;
+  executionId?: number | string;
   workflowTitle: string;
   nodeTitle: string;
   status: string;
+  jobStatus?: number;
   read?: boolean;
   config?: {
     username?: string;
     [key: string]: any;
   } | null;
+  createdAt?: string;
   updatedAt?: string;
 };
 

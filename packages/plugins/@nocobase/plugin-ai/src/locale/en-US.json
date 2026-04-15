@@ -394,6 +394,14 @@
   "Approval pending": "Approval pending",
   "Acceptance pending": "Acceptance pending",
   "Processing": "Processing",
+  "Pending": "Pending",
+  "Resolved": "Resolved",
+  "Failed": "Failed",
+  "Error": "Error",
+  "Aborted": "Aborted",
+  "Canceled": "Canceled",
+  "Rejected": "Rejected",
+  "Retry needed": "Retry needed",
   "Approve": "Approve",
   "Reject": "Reject"
 }

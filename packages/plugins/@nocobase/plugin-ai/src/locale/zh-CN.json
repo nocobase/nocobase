@@ -401,6 +401,14 @@
   "Approval pending": "待审批",
   "Acceptance pending": "待接受",
   "Processing": "处理中",
+  "Pending": "待处理",
+  "Resolved": "完成",
+  "Failed": "失败",
+  "Error": "出错",
+  "Aborted": "已终止",
+  "Canceled": "已取消",
+  "Rejected": "已拒绝",
+  "Retry needed": "需重试",
   "Approve": "批准",
   "Reject": "拒绝"
 }

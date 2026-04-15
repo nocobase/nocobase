@@ -10,6 +10,23 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import { ResourceOptions } from '@nocobase/resourcer';
 import { DEFAULT_OUTPUT_SCHEMA } from '../workflow/nodes/employee';
+import { JOB_STATUS } from '@nocobase/plugin-workflow';
+
+export const parseAiWorkflowTaskListRecord = (
+  record: any,
+  userId: string | number,
+  jobStatusMap: Map<string, number>,
+) => {
+  const users = record?.users || [];
+  const currentUser = users.find(
+    (user: { id?: string | number; usersAiWorkflowTasks?: { read?: boolean } }) => String(user?.id) === String(userId),
+  );
+  return {
+    ...(record?.toJSON() ?? {}),
+    read: currentUser?.usersAiWorkflowTasks?.read ?? false,
+    jobStatus: jobStatusMap.get(String(record?.jobId ?? record?.get?.('jobId'))) ?? JOB_STATUS.PENDING,
+  };
+};
 
 export const aiWorkflowTasks: ResourceOptions = {
   name: 'aiWorkflowTasks',
@@ -45,19 +62,31 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       await actions.list(ctx, async () => {});
 
-      const parseRead = (record: any) => {
-        const users = record?.users || [];
-        const currentUser = users.find(
-          (user: { id?: string | number; usersAiWorkflowTasks?: { read?: boolean } }) =>
-            String(user?.id) === String(userId),
-        );
-        return {
-          ...(record?.toJSON() ?? {}),
-          read: currentUser?.usersAiWorkflowTasks?.read ?? false,
-        };
-      };
+      const jobIds = Array.from(
+        new Set(
+          (ctx.body.rows || [])
+            .map((record: any) => record?.jobId ?? record?.get?.('jobId'))
+            .filter((jobId: string | number | null | undefined) => jobId != null),
+        ),
+      );
+      const jobs = jobIds.length
+        ? await ctx.db.getRepository('jobs').find({
+            filter: {
+              id: {
+                $in: jobIds,
+              },
+            },
+            fields: ['id', 'status'],
+          })
+        : [];
+      const jobStatusMap = new Map(
+        jobs.map((job: any) => [
+          String(job?.id ?? job?.get?.('id')),
+          job?.status ?? job?.get?.('status') ?? JOB_STATUS.PENDING,
+        ]),
+      );
 
-      ctx.body.rows = ctx.body.rows.map(parseRead);
+      ctx.body.rows = ctx.body.rows.map((record: any) => parseAiWorkflowTaskListRecord(record, userId, jobStatusMap));
 
       await next();
     },
