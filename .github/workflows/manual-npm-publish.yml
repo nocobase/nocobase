@@ -91,19 +91,11 @@ jobs:
           fi
 
           if [[ '${{ needs.get-plugins.outputs.all-plugins }}' != '[]' ]]; then
-            echo "Released plugins with tag $TAG:"
-            cat <<'EOF'
-            ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), '
-') }}
-            EOF
+            echo "Released plugins with tag $TAG: ${{ needs.get-plugins.outputs.all-plugins }}"
           fi
 
           if [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' != '[]' ]]; then
-            echo "Unreleased plugins with tag $TAG:"
-            cat <<'EOF'
-            ${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), '
-') }}
-            EOF
+            echo "Unreleased plugins with tag $TAG: ${{ needs.get-plugins.outputs.unreleased-plugins }}"
           fi
 
       - uses: actions/create-github-app-token@v1
