@@ -43,7 +43,7 @@ NocoBase CLI 依赖 Node.js v20 及以上版本。如果你还没有安装，可
 ### 第一步：安装 CLI
 
 ```bash
-npm install -g nocobase
+npm install -g @nocobase/cli@alpha
 ```
 
 安装完成后，运行 `nb --version` 确认安装成功。
@@ -86,7 +86,7 @@ nb init
 先确认用户已安装 Node.js v20 及以上版本（运行 `node -v` 检查）。如果没有，引导用户通过 [nvm](https://github.com/nvm-sh/nvm)、[fnm](https://github.com/Schniz/fnm) 或 [Node.js 官网](https://nodejs.org/) 安装。
 
 ```bash
-npm install -g nocobase
+npm install -g @nocobase/cli@alpha
 ```
 
 运行 `nb --version` 确认安装成功。然后安装 Skills——这是 AI 搭建和 AI 开发的基础：
@@ -143,13 +143,13 @@ DB_PASSWORD=nocobase
 nb env add --name local --app-root-path ./my-nocobase-app
 
 # 安装
-nb install --env=local
+nb install
 
 # 构建
-nb build --env=local
+nb build
 
 # 启动
-nb start --env=local
+nb start
 ```
 
 启动完成后，告诉用户打开浏览器访问 `http://localhost:13000`，确认页面可以正常访问。默认的登录账号和密码：
@@ -176,21 +176,21 @@ nb env add --scope project --name prod --base-url http://example.com/api --token
 
 ```bash
 # 构建
-nb build --env=local
+nb build
 
 # 启动（生产模式）
-nb start --env=local
+nb start
 
 # 启动（开发模式，支持热更新）
-nb dev --env=local
+nb dev
 
 # 重启
-nb restart --env=local
+nb restart
 ```
 
 ### 远程环境
 
-远程环境只支持 `start` 和 `restart`：
+远程环境只支持 `start` 和 `restart`，需要通过 `--env` 指定环境名：
 
 ```bash
 nb start --env=test
@@ -215,7 +215,7 @@ nb publish --from=local --to=test
 部署完成后，通过 CLI 激活需要的插件：
 
 ```bash
-nb pm enable <plugin-name> --env=local
+nb pm enable <plugin-name>
 ```
 
 `nb pm enable` 会自动选择可用的方式来激活——优先通过服务端命令，如果服务端命令不可用则调用 API。如果都没有权限，会提示无法激活。
@@ -225,7 +225,7 @@ nb pm enable <plugin-name> --env=local
 ## 升级
 
 ```bash
-nb upgrade --env=local
+nb upgrade
 ```
 
 <!-- TODO: 补充升级的详细流程和注意事项 -->
