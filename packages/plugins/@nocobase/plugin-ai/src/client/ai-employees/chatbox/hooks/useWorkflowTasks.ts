@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { WorkflowTask } from '../conversations/common';
+import { useLoadMoreObserver } from './useLoadMoreObserver';
 
 export const useWorkflowTasks = () => {
   const api = useAPIClient();
@@ -26,8 +27,8 @@ export const useWorkflowTasks = () => {
   const setLoading = useWorkflowTasksStore.use.setLoading();
   const setKeyword = useWorkflowTasksStore.use.setKeyword();
 
-  const workflowTasksService = useRequest<{ data: WorkflowTask[] }>(
-    async (search = '') => {
+  const workflowTasksService = useRequest<{ data: WorkflowTask[]; meta?: { page?: number; totalPage?: number } }>(
+    async (page = 1, search = '') => {
       const filter: any = {};
       if (search) {
         filter.$or = [
@@ -41,10 +42,11 @@ export const useWorkflowTasks = () => {
         setLoading(true);
         const res = await workflowTasksResource.list({
           sort: ['-updatedAt'],
-          pageSize: 50,
+          page,
+          pageSize: 15,
           filter,
         });
-        setWorkflowTasks(res?.data?.data || []);
+        return res?.data;
       } catch (error) {
         throw error;
       } finally {
@@ -53,6 +55,21 @@ export const useWorkflowTasks = () => {
     },
     {
       manual: false,
+      onSuccess: (data, params) => {
+        const page = params[0] || 1;
+        const nextData = data?.data || [];
+
+        if (page === 1) {
+          setWorkflowTasks(nextData);
+          return;
+        }
+
+        setWorkflowTasks((prev) => {
+          const prevSessionIds = new Set(prev.map((item) => item.sessionId));
+          const appended = nextData.filter((item) => !prevSessionIds.has(item.sessionId));
+          return [...prev, ...appended];
+        });
+      },
     },
   );
 
@@ -69,15 +86,35 @@ export const useWorkflowTasks = () => {
   const runSearch = useCallback(
     (nextKeyword = '') => {
       setKeyword(nextKeyword);
-      workflowTasksService.run(nextKeyword);
+      workflowTasksService.run(1, nextKeyword);
     },
     [setKeyword, workflowTasksService],
   );
 
   const refresh = useCallback(() => {
-    workflowTasksService.run(keyword || '');
+    workflowTasksService.run(1, keyword || '');
     unreadWorkflowTaskCountService.run();
   }, [keyword, unreadWorkflowTaskCountService, workflowTasksService]);
+
+  const workflowTasksServiceRef = useRef(workflowTasksService);
+  workflowTasksServiceRef.current = workflowTasksService;
+
+  const loadMoreWorkflowTasks = useCallback(async () => {
+    const currentWorkflowTasksService = workflowTasksServiceRef.current;
+    const meta = currentWorkflowTasksService.data?.meta;
+
+    if (currentWorkflowTasksService.loading || (meta && meta.page >= meta.totalPage)) {
+      return;
+    }
+
+    await currentWorkflowTasksService.runAsync(meta?.page ? meta.page + 1 : 1, keyword || '');
+  }, [keyword]);
+
+  const { ref: lastWorkflowTaskRef } = useLoadMoreObserver({ loadMore: loadMoreWorkflowTasks });
+  const hasMore =
+    workflowTasksService.data?.meta?.page && workflowTasksService.data?.meta?.totalPage
+      ? workflowTasksService.data.meta.page < workflowTasksService.data.meta.totalPage
+      : false;
 
   const acceptWorkflowTask = useCallback(
     async (sessionId: string) => {
@@ -111,6 +148,9 @@ export const useWorkflowTasks = () => {
     unreadCount,
     runSearch,
     refresh,
+    hasMore,
+    loadMoreWorkflowTasks,
+    lastWorkflowTaskRef,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
   };
