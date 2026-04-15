@@ -15,13 +15,13 @@ class CurrentUserSummaryItemModel extends UserCenterTextItemModel {
 
   section = 'profile' as const;
   sort = 0;
-  label = 'Current user';
 
   async prepare() {
     const user = this.context.user || {};
-    this.value = user.nickname || user.username || user.email || '';
-    this.description = user.email || user.username || '';
-    this.ready = Boolean(this.value || this.description);
+    this.label = user.nickname || user.username || user.email || '';
+    this.value = undefined;
+    this.description = undefined;
+    this.ready = Boolean(this.label);
   }
 }
 
@@ -31,7 +31,6 @@ class SignOutItemModel extends UserCenterActionItemModel {
   section = 'danger' as const;
   sort = 1000;
   label = 'Sign out';
-  danger = true;
 
   async onClick() {
     const response = await this.context.api.auth.signOut();

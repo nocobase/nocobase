@@ -40,27 +40,32 @@ const userCenterTriggerClassName = css`
 `;
 
 const userCenterDropdownClassName = css`
-  min-width: 260px;
-  max-width: min(320px, calc(100vw - 24px));
-  padding: 8px 0;
-  border-radius: 8px;
+  width: max-content;
+  min-width: 204px;
+  max-width: min(240px, calc(100vw - 24px));
+  padding: var(--nb-user-center-overlay-padding);
+  border-radius: var(--nb-user-center-border-radius);
   background: var(--nb-user-center-bg);
-  box-shadow: var(--ant-box-shadow-secondary);
+  box-shadow: var(--nb-user-center-shadow);
 
   .nb-user-center-loading,
   .nb-user-center-empty {
-    padding: 16px;
+    padding: var(--nb-user-center-section-padding);
   }
 
   .nb-user-center-item {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
+    gap: var(--nb-user-center-item-gap);
     width: 100%;
-    padding: 10px 12px;
+    padding: var(--nb-user-center-item-padding);
     border: 0;
+    border-radius: calc(var(--nb-user-center-border-radius) - 2px);
     background: none;
     color: var(--nb-user-center-text);
+    font-size: var(--nb-user-center-font-size);
+    line-height: var(--nb-user-center-line-height);
     text-align: left;
   }
 
@@ -69,7 +74,7 @@ const userCenterDropdownClassName = css`
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    gap: 2px;
+    gap: 0;
   }
 
   .nb-user-center-item-label,
@@ -105,16 +110,50 @@ const userCenterDropdownClassName = css`
     opacity: 0.6;
   }
 
-  .nb-user-center-item-danger .nb-user-center-item-label {
-    color: var(--ant-colorError);
+  .nb-user-center-item-text {
+    cursor: default;
+  }
+
+  .nb-user-center-item-text .nb-user-center-item-label {
+    color: var(--nb-user-center-text-secondary);
+  }
+
+  .nb-user-center-item-text .nb-user-center-item-main {
+    gap: 0;
+  }
+
+  .nb-user-center-item-select {
+    cursor: pointer;
+  }
+
+  .nb-user-center-item-select:hover {
+    background: var(--nb-user-center-hover-bg);
   }
 
   .nb-user-center-item-select .ant-select {
-    min-width: 120px;
+    min-width: 100px;
+    color: var(--nb-user-center-text);
+    text-align: right;
+  }
+
+  .nb-user-center-item-select .ant-select-selector {
+    padding: 0 11px !important;
+    text-align: right;
+  }
+
+  .nb-user-center-item-select .ant-select-selection-item {
+    padding: 0 18px 0 0 !important;
+    height: 30px;
+    line-height: 30px;
+    text-align: right;
+  }
+
+  .nb-user-center-item-select .ant-select-selection-wrap {
+    justify-content: flex-end;
   }
 
   .ant-divider {
-    margin: 6px 0;
+    margin: var(--nb-user-center-divider-margin) 0;
   }
 `;
 
@@ -124,6 +163,15 @@ function getUserCenterDropdownVars(token: ReturnType<typeof theme.useToken>['tok
     '--nb-user-center-hover-bg': token.colorFillTertiary,
     '--nb-user-center-text': token.colorText,
     '--nb-user-center-text-secondary': token.colorTextDescription,
+    '--nb-user-center-shadow': token.boxShadowSecondary,
+    '--nb-user-center-border-radius': `${token.borderRadiusLG}px`,
+    '--nb-user-center-overlay-padding': `${token.paddingXXS}px`,
+    '--nb-user-center-section-padding': `${token.paddingSM}px`,
+    '--nb-user-center-item-gap': `${token.marginXS}px`,
+    '--nb-user-center-item-padding': `${token.paddingXS}px ${token.paddingSM}px`,
+    '--nb-user-center-font-size': `${token.fontSize}px`,
+    '--nb-user-center-line-height': String(token.lineHeight),
+    '--nb-user-center-divider-margin': `${token.marginXXS}px`,
   } as React.CSSProperties;
 }
 
@@ -231,7 +279,7 @@ const UserCenterTextItemView = observer(
     const { model } = props;
 
     return (
-      <div className="nb-user-center-item">
+      <div className="nb-user-center-item nb-user-center-item-text">
         <div className="nb-user-center-item-main">
           <span className="nb-user-center-item-label">{model.getLabelNode()}</span>
           {model.description ? (
@@ -298,8 +346,9 @@ const UserCenterSelectItemView = observer(
           ) : null}
         </div>
         <Select
-          size="small"
+          bordered={false}
           value={model.value}
+          popupMatchSelectWidth={false}
           options={(model.options || []).map((option) => ({
             ...option,
             label: model.resolveNode(option.label),
@@ -406,7 +455,7 @@ const UserCenterTopbarActionView = observer(
 
     return model.renderWrapper(
       <Dropdown
-        trigger={['click']}
+        trigger={['hover']}
         placement="bottomRight"
         open={open}
         onOpenChange={setOpen}
@@ -428,7 +477,6 @@ export class UserCenterTopbarActionModel extends TopbarActionModel {
   actionId = USER_CENTER_ACTION_ID;
   testId = 'user-center-button';
   icon = (<UserOutlined />);
-  tooltip = 'Current user';
 
   private async discoverItems() {
     const subclasses = await this.flowEngine.getSubclassesOfAsync('UserCenterItemModel', (ModelClass) => {
