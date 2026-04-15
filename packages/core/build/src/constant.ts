@@ -63,7 +63,7 @@ export const CORE_CLIENT_V2 = path.join(PACKAGES_PATH, 'core/client-v2');
 export const ESM_PACKAGES = ['@nocobase/client-v2', '@nocobase/test'];
 export const CJS_EXCLUDE_PACKAGES = [
   path.join(PACKAGES_PATH, 'core/build'),
-  path.join(PACKAGES_PATH, 'core/cli'),
+  path.join(PACKAGES_PATH, 'core/cli-v1'),
   CORE_CLIENT,
   CORE_CLIENT_V2,
 ];

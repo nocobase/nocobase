@@ -1,18 +1,33 @@
 {
   "name": "@nocobase/cli",
   "version": "2.1.0-alpha.16",
-  "description": "",
+  "description": "NocoBase CLI based on oclif",
   "license": "Apache-2.0",
-  "main": "./src/index.js",
-  "bin": {},
-  "dependencies": {},
-  "devDependencies": {
-    "@nocobase/devtools": "2.1.0-alpha.16"
+  "main": "lib/index.js",
+  "bin": {
+    "nocobase": "./bin/run.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase.git",
-    "directory": "packages/core/cli"
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "dependencies": {
+    "@oclif/core": "^4.5.6",
+    "@oclif/plugin-help": "^6.2.44",
+    "@oclif/plugin-plugins": "^5.4.61"
   },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  "oclif": {
+    "bin": "nocobase",
+    "dirname": "nocobase",
+    "commands": "./lib/commands",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topicSeparator": " ",
+    "topics": {
+      "hello": {
+        "description": "Say hello to the world and others"
+      }
+    }
+  }
 }
