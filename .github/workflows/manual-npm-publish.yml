@@ -19,6 +19,7 @@ jobs:
   get-plugins:
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
+      require_tag: ${{ github.event_name == 'pull_request' && 'v1.7.20' || inputs.tag }}
       # For v1.x maintenance releases, only include repos that have the v1 branch.
       # For v2+ we keep the original behavior (no filtering at this stage).
       require_branch: ${{ startsWith(github.event_name == 'pull_request' && 'v1.7.20' || inputs.tag, 'v1.') && 'v1' || '' }}
@@ -63,7 +64,6 @@ jobs:
 
           TAG="$TARGET_TAG"
           required_missing=()
-          publish_repos=()
 
           has_tag() {
             local repo="$1"
@@ -82,28 +82,14 @@ jobs:
             exit 1
           fi
 
-          while IFS= read -r repo; do
-            [[ -n "$repo" ]] || continue
-            if has_tag "$repo"; then
-              publish_repos+=("$repo")
-            fi
-          done < <(
-            {
-              echo '${{ steps.get-info.outputs.allProRepos }}'
-              echo '${{ needs.get-plugins.outputs.custom-plugins }}'
-            } | jq -r '.[]'
-          )
-
-          if [[ ${#publish_repos[@]} -eq 0 ]]; then
+          if [[ '${{ steps.get-info.outputs.allProRepos }}' == '[]' ]]; then
             echo "No plugin repos contain tag $TAG." >&2
             exit 1
           fi
 
           printf 'Repos to publish for %s:\n' "$TAG"
-          printf '%s\n' "${publish_repos[@]}"
-
-          repos_json=$(printf '%s\n' "${publish_repos[@]}" | jq -R . | jq -s -c .)
-          echo "proRepos=$repos_json" >> "$GITHUB_OUTPUT"
+          echo '${{ steps.get-info.outputs.allProRepos }}' | jq -r '.[]'
+          echo "proRepos=${{ steps.get-info.outputs.allProRepos }}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.validate-token.outputs.token }}
 
