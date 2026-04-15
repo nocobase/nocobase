@@ -103,6 +103,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  rawTimezone?: string;
   logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
