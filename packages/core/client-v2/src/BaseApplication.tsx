@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { APIClient, getSubAppName } from '@nocobase/sdk';
 import type { i18n as i18next } from 'i18next';
-import { get, merge, set } from 'lodash-es';
+import { get, merge, set } from 'lodash';
 import React, { ComponentType, FC, ReactElement, ReactNode, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
