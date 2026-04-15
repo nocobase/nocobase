@@ -43,11 +43,11 @@ jobs:
           echo "Target tag: $TARGET_TAG"
 
       - uses: actions/create-github-app-token@v1
-        id: validate-token
+        id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          owner: nocobase
+          repositories: pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }}${{ needs.get-plugins.outputs.all-plugins != '[]' && needs.get-plugins.outputs.unreleased-plugins != '[]' && ',' || '' }}${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), ',') }}
           skip-token-revoke: true
 
       - name: Resolve repos with this tag
@@ -56,30 +56,10 @@ jobs:
           set -euo pipefail
 
           TAG="$TARGET_TAG"
-          required_missing=()
 
-          has_tag() {
-            local repo="$1"
-            gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" >/dev/null 2>&1
-          }
-
-          for repo in pro-plugins; do
-            if ! has_tag "$repo"; then
-              required_missing+=("$repo")
-            fi
-          done
-
-          if [[ ${#required_missing[@]} -gt 0 ]]; then
-            echo "Missing required tag $TAG in repos:" >&2
-            printf '%s\n' "${required_missing[@]}" >&2
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' && '${{ needs.get-plugins.outputs.unreleased-plugins }}' == '[]' ]]; then
+            echo "No plugin repos contain tag $TAG." >&2
             exit 1
-          fi
-
-          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' ]]; then
-            if [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' == '[]' ]]; then
-              echo "No plugin repos contain tag $TAG." >&2
-              exit 1
-            fi
           fi
 
           if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' ]]; then
@@ -97,16 +77,6 @@ jobs:
           if [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' != '[]' ]]; then
             echo "Unreleased plugins with tag $TAG: ${{ needs.get-plugins.outputs.unreleased-plugins }}"
           fi
-
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ vars.NOCOBASE_APP_ID }}
-          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }}${{ needs.get-plugins.outputs.all-plugins != '[]' && needs.get-plugins.outputs.unreleased-plugins != '[]' && ',' || '' }}${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), ',') }}
-          skip-token-revoke: true
-        env:
-          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
 
       - name: Checkout
         uses: actions/checkout@v3
