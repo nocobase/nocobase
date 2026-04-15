@@ -485,6 +485,8 @@ const ASSIGN_VALUE_IGNORED_PROP_KEYS = new Set([
   'optionRender',
 ]);
 
+const ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE = 'RecordSelectFieldModel';
+
 function getAssignValueOriginFieldModel(itemModel: any) {
   return itemModel?.customFieldModelInstance || getAssignValueSubField(itemModel);
 }
@@ -551,6 +553,7 @@ function resolveAssignValueFieldProps(options: {
   };
 
   if (collectionField?.isAssociationField?.()) {
+    delete nextProps.mode;
     nextProps.quickCreate = 'none';
   }
 
@@ -567,7 +570,7 @@ export function resolveAssignValueFieldModelConfig(options: {
   const { itemModel, defaultBindingUse, collectionField, preferFormItemFieldModel, fieldSettingsInit } = options;
   const currentFieldModelUse = resolveAssignValueCurrentFieldModelUse(itemModel);
   const useCandidates = collectionField?.isAssociationField?.()
-    ? [defaultBindingUse, currentFieldModelUse]
+    ? [ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE, defaultBindingUse, currentFieldModelUse]
     : preferFormItemFieldModel
       ? [currentFieldModelUse, defaultBindingUse]
       : [defaultBindingUse, currentFieldModelUse];

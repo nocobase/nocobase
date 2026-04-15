@@ -62,7 +62,7 @@ describe('FieldAssignValueInput path resolve', () => {
     ).toBe('DateTimeFilterFieldModel');
   });
 
-  it('prefers editable default binding for association fields and strips inherited fieldBinding', () => {
+  it('forces RecordSelectFieldModel for association fields and strips inherited fieldBinding', () => {
     const model = {
       customFieldModelInstance: {
         use: 'SubFormFieldModel',
@@ -89,7 +89,7 @@ describe('FieldAssignValueInput path resolve', () => {
 
     const result = resolveAssignValueFieldModelConfig({
       itemModel: model,
-      defaultBindingUse: 'RecordSelectFieldModel',
+      defaultBindingUse: 'UploadAttachmentFieldModel',
       collectionField: {
         isAssociationField: () => true,
       } as any,
