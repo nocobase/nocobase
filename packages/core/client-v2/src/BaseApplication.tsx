@@ -83,12 +83,12 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public components: Record<string, ComponentType<any> | any> = {};
   public pluginManager: PluginManagerBaseLike;
   public pluginSettingsManager: PluginSettingsManagerBaseLike;
-  public aiManager: AIManager;
-  public headerActionsManager: HeaderActionsManager;
+  public aiManager!: AIManager;
+  public headerActionsManager!: HeaderActionsManager;
   public devDynamicImport: DevDynamicImport;
-  public requirejs: RequireJS;
+  public requirejs!: RequireJS;
   public name: string;
-  public favicon: string;
+  public favicon!: string;
   public flowEngine: FlowEngine;
   public dataSourceManager: any;
   public context: FlowEngineContext & {
@@ -104,7 +104,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     };
     pluginManager: PluginManagerBaseLike;
   };
-  public systemSettings: SystemSettingsSource;
+  public systemSettings!: SystemSettingsSource;
   maintained = false;
   maintaining = false;
   error = null;
@@ -315,7 +315,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   }
 
   updateFavicon(favicon?: string) {
-    let faviconLinkElement: HTMLLinkElement = document.querySelector('link[rel="shortcut icon"]');
+    let faviconLinkElement = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
 
     if (favicon) {
       this.favicon = favicon;
