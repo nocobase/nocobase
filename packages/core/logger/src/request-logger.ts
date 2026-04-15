@@ -17,7 +17,7 @@ const defaultRequestWhitelist = [
   'header.x-locale',
   'header.x-authenticator',
   'header.x-data-source',
-  'referer',
+  'header.referer',
 ];
 const defaultResponseWhitelist = ['status'];
 const defaultActionBlackList = [

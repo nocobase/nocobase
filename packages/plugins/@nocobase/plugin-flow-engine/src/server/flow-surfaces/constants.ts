@@ -7,10 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export { FLOW_SURFACE_PLAN_STEP_ACTIONS } from './planning/action-specs';
+
 export const FLOW_SURFACES_ACTION_NAMES = [
   'catalog',
   'context',
   'get',
+  'describeSurface',
+  'getReactionMeta',
+  'setFieldValueRules',
+  'setBlockLinkageRules',
+  'setFieldLinkageRules',
+  'setActionLinkageRules',
+  'applyBlueprint',
+  'listTemplates',
+  'getTemplate',
+  'saveTemplate',
+  'updateTemplate',
+  'destroyTemplate',
+  'convertTemplateToCopy',
   'compose',
   'configure',
   'createMenu',
@@ -48,6 +63,10 @@ export const FLOW_SURFACES_READ_ACTION_NAMES = [
   'catalog',
   'context',
   'get',
+  'describeSurface',
+  'getReactionMeta',
+  'listTemplates',
+  'getTemplate',
 ] as const satisfies readonly FlowSurfacesActionName[];
 
 export const FLOW_SURFACE_MUTATE_OP_TYPES = [
@@ -78,6 +97,19 @@ export const FLOW_SURFACES_ACTION_METHODS: Record<FlowSurfacesActionName, 'get' 
   catalog: 'post',
   context: 'post',
   get: 'get',
+  describeSurface: 'post',
+  getReactionMeta: 'post',
+  setFieldValueRules: 'post',
+  setBlockLinkageRules: 'post',
+  setFieldLinkageRules: 'post',
+  setActionLinkageRules: 'post',
+  applyBlueprint: 'post',
+  listTemplates: 'post',
+  getTemplate: 'post',
+  saveTemplate: 'post',
+  updateTemplate: 'post',
+  destroyTemplate: 'post',
+  convertTemplateToCopy: 'post',
   compose: 'post',
   configure: 'post',
   createMenu: 'post',

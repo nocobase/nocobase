@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { namespace } from '../../../locale';
 
 export type BusinessReportChart = {
   title?: string;
@@ -88,7 +89,7 @@ export function buildReportMarkdown(report: BusinessReportRenderState, options?:
   const generatedAt = formatReportGeneratedAt(normalizedReport.generatedAt, options?.locale);
 
   if (generatedAt) {
-    parts.push(`_${i18n.t('Generated at')}: ${generatedAt}_`);
+    parts.push(`_${i18n.t('Generated at', { ns: [namespace, 'client'], nsMode: 'fallback' })}: ${generatedAt}_`);
   }
 
   if (normalizedReport.summary) {

@@ -10,7 +10,7 @@
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
 // @ts-ignore
-import pkg from '../../../package.json';
+import pkg from '../../../../../package.json';
 
 function normalizeChartsInput(value: unknown) {
   if (typeof value !== 'string') {
@@ -37,7 +37,7 @@ const chartSchema = z.object({
 });
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("ai.tools.businessReportGenerator.title", { ns: "${pkg.name}" })}}`,

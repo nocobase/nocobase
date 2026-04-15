@@ -14,21 +14,29 @@ import {
   resolveSupportedActionCatalogItem,
   resolveSupportedBlockCatalogItem,
   resolveSupportedFieldCapability,
-} from './catalog';
+} from '../catalog';
 import {
   FLOW_SURFACE_DETAILS_BLOCK_USES,
   FLOW_SURFACE_FILTER_FORM_BLOCK_USES,
   FLOW_SURFACE_FORM_BLOCK_USES,
-  FLOW_SURFACE_FIELD_WRAPPER_USES,
   isActionContainerUse,
   isBlockContainerUse,
   isFieldContainerUse,
   isFieldWrapperUse,
-  isGridUse,
   isPopupHostUse,
-} from './placement';
-import { FlowSurfaceBadRequestError } from './errors';
-import type { FlowSurfaceApplySpec, FlowSurfaceMutateOp, FlowSurfaceNodeSpec, FlowSurfaceWriteTarget } from './types';
+} from '../placement';
+import { FlowSurfaceBadRequestError } from '../errors';
+import { CREATABLE_STANDALONE_FIELD_USES, FIELD_WRAPPER_USES } from '../node-use-sets';
+import type { FlowSurfaceApplySpec, FlowSurfaceMutateOp, FlowSurfaceNodeSpec, FlowSurfaceWriteTarget } from '../types';
+import {
+  didItemRefsChange,
+  emitLayoutOp,
+  emitMoveOps,
+  emitMovePopupTabOps,
+  emitMoveTabOps,
+  omitLayoutProps,
+} from './layout';
+import { hasExplicitSubModelKey, matchesObjectChild, normalizeChildren, planArrayChildMatches } from './matching';
 
 type CompilerState = {
   seq: number;
@@ -58,20 +66,19 @@ type PopupShellBootstrapResult = {
   placeholderRef: CompiledNodeRef | null;
 };
 
-type ArrayChildMatchPlan = {
-  matchesByDesiredIndex: Map<number, FlowSurfaceNodeSpec>;
-  matchedCurrentUids: Set<string>;
-};
-
 function makeOpRef(path: string) {
-  return { ref: path };
+  const normalized = String(path || '').trim();
+  const [step, ...rest] = normalized.split('.');
+  return {
+    step,
+    ...(rest.length ? { path: rest.join('.') } : {}),
+  };
 }
 
 const FORM_GRID_USES = new Set(['FormGridModel', 'AssignFormGridModel']);
 const ACTION_USES = new Set(Array.from(ACTION_KEY_BY_USE.keys()));
 const BLOCK_USES = new Set(Array.from(BLOCK_KEY_BY_USE.keys()));
-const FIELD_WRAPPER_USES = FLOW_SURFACE_FIELD_WRAPPER_USES;
-const STANDALONE_FIELD_USES = new Set(['JSColumnModel', 'JSItemModel']);
+const STANDALONE_FIELD_USES = CREATABLE_STANDALONE_FIELD_USES;
 const FORM_BLOCK_USES = FLOW_SURFACE_FORM_BLOCK_USES;
 const DETAILS_BLOCK_USES = FLOW_SURFACE_DETAILS_BLOCK_USES;
 const FILTER_FORM_BLOCK_USES = FLOW_SURFACE_FILTER_FORM_BLOCK_USES;
@@ -889,45 +896,6 @@ function emitDomainSettingOps(
   }
 }
 
-function emitLayoutOp(
-  ops: FlowSurfaceMutateOp[],
-  target: FlowSurfaceWriteTarget,
-  currentNode: any,
-  desiredNode: Pick<FlowSurfaceNodeSpec, 'props' | 'use'>,
-  childSync: SyncChildrenResult,
-) {
-  const explicitLayout = resolveLayoutRefs(extractLayout(desiredNode.props), childSync.childClientKeyRefs);
-  const desiredLayout =
-    explicitLayout ||
-    (isGridNode(currentNode?.use || desiredNode.use) && childSync.itemsSpecified
-      ? buildAutoLayout(childSync.finalItemRefs.map((item) => item.uidRef))
-      : null);
-  if (!desiredLayout) {
-    return;
-  }
-  if (!hasRefValue(desiredLayout) && _.isEqual(desiredLayout, extractLayout(currentNode?.props))) {
-    return;
-  }
-  ops.push({
-    type: 'setLayout',
-    target,
-    values: desiredLayout,
-  });
-}
-
-function emitMoveOps(ops: FlowSurfaceMutateOp[], desiredRefs: CompiledNodeRef[]) {
-  for (let index = desiredRefs.length - 2; index >= 0; index -= 1) {
-    ops.push({
-      type: 'moveNode',
-      values: {
-        sourceUid: desiredRefs[index].uidRef,
-        targetUid: desiredRefs[index + 1].uidRef,
-        position: 'before',
-      },
-    });
-  }
-}
-
 function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse?: string): CompiledNodeRef | null {
   if (!parentRef.sourceOpId || !childUse) {
     return null;
@@ -1034,190 +1002,8 @@ function resolveRecordActionCreateTargetUidRef(parentRef: CompiledNodeRef, curre
   );
 }
 
-function normalizeChildren(input: any): FlowSurfaceNodeSpec[] {
-  if (!input) {
-    return [];
-  }
-  return _.castArray(input as any).filter(Boolean) as FlowSurfaceNodeSpec[];
-}
-
-function hasExplicitSubModelKey(node: Pick<FlowSurfaceNodeSpec, 'subModels'> | FlowSurfaceApplySpec, key: string) {
-  return !!node?.subModels && Object.prototype.hasOwnProperty.call(node.subModels, key);
-}
-
-function matchesObjectChild(currentChild: any, desiredChild: FlowSurfaceNodeSpec) {
-  return currentChild.uid === desiredChild.uid || (!desiredChild.uid && currentChild.use === desiredChild.use);
-}
-
-function planArrayChildMatches(
-  currentChildren: FlowSurfaceNodeSpec[],
-  desiredChildren: FlowSurfaceNodeSpec[],
-  parentUse: string,
-  subKey: string,
-): ArrayChildMatchPlan {
-  const matchesByDesiredIndex = new Map<number, FlowSurfaceNodeSpec>();
-  const matchedCurrentUids = new Set<string>();
-  const remainingDesiredByUse = new Map<string, number[]>();
-
-  for (const [desiredIndex, desiredChild] of desiredChildren.entries()) {
-    const matchedCurrent = findExactArrayChildMatch(currentChildren, desiredChild, matchedCurrentUids);
-    if (matchedCurrent) {
-      matchesByDesiredIndex.set(desiredIndex, matchedCurrent);
-      if (matchedCurrent.uid) {
-        matchedCurrentUids.add(matchedCurrent.uid);
-      }
-      continue;
-    }
-
-    if (desiredChild?.use && !desiredChild.uid) {
-      const desiredIndexes = remainingDesiredByUse.get(desiredChild.use) || [];
-      desiredIndexes.push(desiredIndex);
-      remainingDesiredByUse.set(desiredChild.use, desiredIndexes);
-    }
-  }
-
-  const remainingCurrentByUse = new Map<string, FlowSurfaceNodeSpec[]>();
-  for (const currentChild of currentChildren) {
-    if (!currentChild?.use || matchedCurrentUids.has(currentChild.uid || '')) {
-      continue;
-    }
-    const currentGroup = remainingCurrentByUse.get(currentChild.use) || [];
-    currentGroup.push(currentChild);
-    remainingCurrentByUse.set(currentChild.use, currentGroup);
-  }
-
-  const uses = new Set<string>([...remainingCurrentByUse.keys(), ...remainingDesiredByUse.keys()]);
-  for (const use of uses) {
-    const currentGroup = remainingCurrentByUse.get(use) || [];
-    const desiredIndexes = remainingDesiredByUse.get(use) || [];
-    const shouldReuseByOrder = currentGroup.length > 1 || desiredIndexes.length > 1;
-    // Reuse unresolved same-use siblings by persisted order only when the pairing is deterministic.
-    if (
-      currentGroup.length > 0 &&
-      desiredIndexes.length > 0 &&
-      currentGroup.length !== desiredIndexes.length &&
-      shouldReuseByOrder
-    ) {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces apply cannot safely match duplicate '${use}' nodes under '${parentUse}.${subKey}' without explicit uid or signature`,
-      );
-    }
-
-    if (!shouldReuseByOrder) {
-      continue;
-    }
-
-    const reuseCount = Math.min(currentGroup.length, desiredIndexes.length);
-    for (let index = 0; index < reuseCount; index += 1) {
-      const currentChild = currentGroup[index];
-      const desiredIndex = desiredIndexes[index];
-      matchesByDesiredIndex.set(desiredIndex, currentChild);
-      if (currentChild?.uid) {
-        matchedCurrentUids.add(currentChild.uid);
-      }
-    }
-  }
-
-  return {
-    matchesByDesiredIndex,
-    matchedCurrentUids,
-  };
-}
-
-function findExactArrayChildMatch(
-  currentChildren: FlowSurfaceNodeSpec[],
-  desiredChild: FlowSurfaceNodeSpec,
-  matchedCurrent: Set<string>,
-) {
-  if (desiredChild.uid) {
-    return currentChildren.find((item) => item?.uid === desiredChild.uid);
-  }
-
-  const desiredStrongSignature = getStrongNodeSignature(desiredChild);
-  if (desiredStrongSignature) {
-    return currentChildren.find(
-      (item) => !matchedCurrent.has(item.uid || '') && getStrongNodeSignature(item) === desiredStrongSignature,
-    );
-  }
-
-  const desiredWeakSignature = getWeakNodeSignature(desiredChild);
-  if (desiredWeakSignature) {
-    return currentChildren.find(
-      (item) => !matchedCurrent.has(item.uid || '') && getWeakNodeSignature(item) === desiredWeakSignature,
-    );
-  }
-
-  return undefined;
-}
-
-function getStrongNodeSignature(node: any) {
-  if (!node?.use) {
-    return null;
-  }
-
-  const resourceInit = _.get(node, ['stepParams', 'resourceSettings', 'init']);
-  if (
-    resourceInit?.dataSourceKey ||
-    resourceInit?.collectionName ||
-    resourceInit?.associationName ||
-    resourceInit?.associationPathName ||
-    !_.isUndefined(resourceInit?.sourceId)
-  ) {
-    return [
-      'resource',
-      node.use,
-      resourceInit.dataSourceKey || '',
-      resourceInit.collectionName || '',
-      resourceInit.associationName || '',
-      resourceInit.associationPathName || '',
-      _.isUndefined(resourceInit.sourceId) ? '' : String(resourceInit.sourceId),
-    ].join(':');
-  }
-
-  const fieldInit =
-    _.get(node, ['stepParams', 'fieldSettings', 'init']) ||
-    _.get(node, ['subModels', 'field', 'stepParams', 'fieldSettings', 'init']);
-  if (fieldInit?.fieldPath) {
-    return [
-      'field',
-      node.use,
-      fieldInit.dataSourceKey || '',
-      fieldInit.collectionName || '',
-      fieldInit.associationPathName || '',
-      fieldInit.fieldPath,
-    ].join(':');
-  }
-
-  if (node.use === 'TableActionsColumnModel') {
-    return 'slot:table-actions-column';
-  }
-
-  return null;
-}
-
-function getWeakNodeSignature(node: any) {
-  if (!node?.use) {
-    return null;
-  }
-
-  const title =
-    _.get(node, ['stepParams', 'pageTabSettings', 'tab', 'title']) ||
-    _.get(node, ['stepParams', 'buttonSettings', 'general', 'title']) ||
-    _.get(node, ['props', 'title']);
-
-  if (typeof title === 'string' && title.trim()) {
-    return ['title', node.use, title.trim()].join(':');
-  }
-
-  return null;
-}
-
 function isFieldWrapperNode(use?: string) {
   return isFieldWrapperUse(use);
-}
-
-function isGridNode(use?: string) {
-  return isGridUse(use);
 }
 
 function isFieldContainer(parentUse?: string, subKey?: string) {
@@ -1236,104 +1022,9 @@ function extractResourceInit(node: FlowSurfaceNodeSpec) {
   return _.get(node, ['stepParams', 'resourceSettings', 'init']);
 }
 
-function extractLayout(props?: Record<string, any>) {
-  if (!props || (!('rows' in props) && !('sizes' in props) && !('rowOrder' in props))) {
-    return null;
-  }
-  return {
-    rows: props.rows || {},
-    sizes: props.sizes || {},
-    rowOrder: props.rowOrder || Object.keys(props.rows || {}),
-  };
-}
-
-function omitLayoutProps(props?: Record<string, any>) {
-  if (!props) {
-    return props;
-  }
-  const next = _.omit(props, ['rows', 'sizes', 'rowOrder']);
-  return Object.keys(next).length ? next : undefined;
-}
-
-function resolveLayoutRefs(layout: ReturnType<typeof extractLayout>, childClientKeyRefs: Record<string, any>) {
-  if (!layout) {
-    return layout;
-  }
-  return {
-    rows: Object.fromEntries(
-      Object.entries(layout.rows || {}).map(([rowId, cells]) => [
-        rowId,
-        _.castArray(cells).map((cell) =>
-          _.castArray(cell).map((itemUid) => childClientKeyRefs[itemUid as string] ?? itemUid),
-        ),
-      ]),
-    ),
-    sizes: layout.sizes || {},
-    rowOrder: layout.rowOrder || [],
-  };
-}
-
-function hasRefValue(value: any): boolean {
-  if (Array.isArray(value)) {
-    return value.some((item) => hasRefValue(item));
-  }
-  if (_.isPlainObject(value)) {
-    if (typeof value.ref === 'string') {
-      return true;
-    }
-    return Object.values(value).some((item) => hasRefValue(item));
-  }
-  return false;
-}
-
-export function buildAutoLayout(itemRefs: any[]) {
-  if (!itemRefs.length) {
-    return {
-      rows: {},
-      sizes: {},
-      rowOrder: [],
-    };
-  }
-  return {
-    rows: Object.fromEntries(itemRefs.map((itemRef, index) => [`autoRow${index + 1}`, [[itemRef]]])),
-    sizes: Object.fromEntries(itemRefs.map((_, index) => [`autoRow${index + 1}`, [24]])),
-    rowOrder: itemRefs.map((_, index) => `autoRow${index + 1}`),
-  };
-}
-
-function didItemRefsChange(currentChildren: FlowSurfaceNodeSpec[], desiredRefs: CompiledNodeRef[]) {
-  if (currentChildren.length !== desiredRefs.length) {
-    return true;
-  }
-  return desiredRefs.some(
-    (item, index) => typeof item.uidRef !== 'string' || currentChildren[index]?.uid !== item.uidRef,
-  );
-}
-
 function nextOpId(state: CompilerState, prefix: string) {
   state.seq += 1;
   return `${prefix}_${state.seq}`;
-}
-
-function emitMoveTabOps(ops: FlowSurfaceMutateOp[], desiredRefs: CompiledNodeRef[]) {
-  emitOrderedTabMoves(ops, desiredRefs, 'moveTab');
-}
-
-function emitOrderedTabMoves(
-  ops: FlowSurfaceMutateOp[],
-  desiredRefs: CompiledNodeRef[],
-  type: 'moveTab' | 'movePopupTab',
-) {
-  for (let index = desiredRefs.length - 2; index >= 0; index -= 1) {
-    ops.push({
-      type,
-      values: {
-        sourceUid: desiredRefs[index].uidRef,
-        targetUid: desiredRefs[index + 1].uidRef,
-        position: 'before',
-      },
-    });
-  }
 }
 
 function bindClientKey(state: CompilerState, clientKey: string | undefined, uid: any) {
@@ -1395,7 +1086,7 @@ function syncPopupTabs(
     }
   }
 
-  emitOrderedTabMoves(ops, desiredRefs, 'movePopupTab');
+  emitMovePopupTabOps(ops, desiredRefs);
   return result;
 }
 

@@ -6,13 +6,7 @@ introduction:
   title: '{{t("ai.skills.businessAnalysisReport.title", { ns: "@nocobase/plugin-ai" })}}'
   about: '{{t("ai.skills.businessAnalysisReport.about", { ns: "@nocobase/plugin-ai" })}}'
 tools:
-  - getDataSources
-  - getCollectionNames
-  - getCollectionMetadata
-  - searchFieldMetadata
-  - dataQuery
-  - dataSourceQuery
-  - dataSourceCounting
+  - getSkill
   - businessReportGenerator
 ---
 
@@ -30,17 +24,19 @@ Your job is to understand the business question, use the data-query workflow to 
 
 ## 2. Use the data-query workflow before reporting
 
-- If the user did not explicitly name a data source, call `getDataSources` first.
+- For every request that needs business data, your first tool call must be `getSkill` with `skillName="data-query"`.
+- Do not inspect schema, write SQL, describe query results, or call `businessReportGenerator` before `data-query` has been loaded.
+- After loading `data-query`, follow that skill's workflow and use the tools it activates.
+- The loaded `data-query` workflow is responsible for loading `data-metadata` when schema or field discovery is needed. Do not bypass that dependency chain by inventing schema details yourself.
+- If the user did not explicitly name a data source, follow the loaded `data-query` workflow to discover the correct data source first.
 - If multiple available data sources could plausibly contain relevant business data, inspect each candidate data source before deciding the analysis scope.
 - Do not silently analyze only one data source when multiple relevant data sources are available.
 - In the final report, state which data sources were included and explicitly mention any relevant data sources that were excluded, with the reason.
-- When you must generate explicit datetime filter values yourself, generate them in UTC using ISO 8601 timestamps with a trailing `Z`.
-- Do not generate local offsets such as `+09:00` or `-05:00`, and do not provide timezone values yourself.
-- If timezone affects whether a boundary record belongs to one period or another, verify the boundary with raw records and state that the generated filter values use UTC.
-- Inspect the schema with `getCollectionNames`, `getCollectionMetadata`, or `searchFieldMetadata`.
-- Use `dataQuery` for grouped metrics, trends, comparisons, rankings, and post-aggregation filtering.
-- Use `dataSourceQuery` for raw-row inspection and anomaly checks.
-- Use `dataSourceCounting` only for the simplest count scenario.
+- For all date filtering, follow the `data-query` workflow's frontend date filter contract instead of inventing a report-specific format.
+- For business calendar queries, prefer the frontend date operators and value shapes defined by the `data-query` skill and its query tools.
+- Do not expand month, week, or day calendar requests into UTC boundary timestamps unless the user explicitly asks for exact timestamp comparison.
+- If the user explicitly asks for timezone-based boundary analysis, state the timezone assumption and verify boundary-sensitive cases with raw records when necessary, while still following the same frontend date filter contract.
+- Use the tools activated by the loaded `data-query` skill for schema inspection and data retrieval.
 
 Do not guess collection names, relation paths, or aliases.
 
@@ -55,6 +51,7 @@ When the report needs mixed text-and-chart layout, place charts inline by adding
 Call `businessReportGenerator` at most once for the same user request unless the user explicitly asks you to regenerate the whole report.
 If the report tool succeeds, stop and return the result instead of making follow-up retry calls to add charts.
 If you cannot produce valid charts in that single call, omit `charts` and complete the report as markdown-only.
+Never call `businessReportGenerator` with guessed numbers, guessed SQL, or guessed query results. Query first, then report.
 
 The report should usually include:
 
@@ -87,11 +84,5 @@ Prefer this structure:
 
 # Available Tools
 
-- `getDataSources`
-- `getCollectionNames`
-- `getCollectionMetadata`
-- `searchFieldMetadata`
-- `dataQuery`
-- `dataSourceQuery`
-- `dataSourceCounting`
+- `getSkill`: Load the `data-query` skill before any schema inspection or query work so its workflow and tools become available in the current conversation.
 - `businessReportGenerator`
