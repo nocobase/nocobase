@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import moment from 'moment-timezone';
 import { Sequelize } from 'sequelize';
 
@@ -7,12 +16,14 @@ export type Fn = ReturnType<typeof Sequelize.fn>;
 
 export abstract class QueryFormatter {
   sequelize: Sequelize;
+  rawTimezone?: string;
 
-  constructor(sequelize: Sequelize) {
+  constructor(sequelize: Sequelize, rawTimezone?: string) {
     this.sequelize = sequelize;
+    this.rawTimezone = rawTimezone;
   }
 
-  abstract formatDate(field: Col, format: string, timezone?: string): Fn | Col;
+  abstract formatDate(field: Col, format: string, timezone?: string, preserveLocalTime?: boolean): Fn | Col;
 
   abstract formatUnixTimestamp(
     field: string,
@@ -57,6 +68,7 @@ export abstract class QueryFormatter {
       case 'datetimeTz':
         return this.formatDate(col, format, timezone);
       case 'datetimeNoTz':
+        return this.formatDate(col, format, undefined, true);
       case 'dateOnly':
       case 'time':
         return this.formatDate(col, format);

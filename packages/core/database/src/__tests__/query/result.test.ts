@@ -45,4 +45,12 @@ describe('query result', () => {
       }),
     ).toEqual([{ createdAt: '2023-01' }]);
   });
+
+  it('should keep dateOnly result as string', () => {
+    expect(
+      normalizeQueryResult([{ dateOnly: '2024-05-14' }], {
+        dateOnly: { type: 'dateOnly' },
+      }),
+    ).toEqual([{ dateOnly: '2024-05-14' }]);
+  });
 });
