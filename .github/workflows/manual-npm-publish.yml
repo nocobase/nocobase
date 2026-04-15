@@ -37,12 +37,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Get info
-        id: get-info
-        shell: bash
-        run: |
-          echo "allProRepos=${{ needs.get-plugins.outputs.all-plugins }}" >> "$GITHUB_OUTPUT"
-
       - name: Print mode
         run: |
           echo "Mode: ${{ env.DRY_RUN == 'true' && 'dry-run' || 'publish' }}"
@@ -57,7 +51,6 @@ jobs:
           skip-token-revoke: true
 
       - name: Resolve repos with this tag
-        id: resolve-repos
         shell: bash
         run: |
           set -euo pipefail
@@ -82,24 +75,46 @@ jobs:
             exit 1
           fi
 
-          if [[ '${{ steps.get-info.outputs.allProRepos }}' == '[]' ]]; then
-            echo "No plugin repos contain tag $TAG." >&2
-            exit 1
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' ]]; then
+            if [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' == '[]' ]]; then
+              echo "No plugin repos contain tag $TAG." >&2
+              exit 1
+            fi
           fi
 
-          printf 'Repos to publish for %s:\n' "$TAG"
-          echo '${{ steps.get-info.outputs.allProRepos }}' | jq -r '.[]'
-          echo "proRepos=${{ steps.get-info.outputs.allProRepos }}" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' ]]; then
+            echo "Only unreleased plugin repos contain tag $TAG."
+          elif [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' == '[]' ]]; then
+            echo "No unreleased plugin repos contain tag $TAG."
+          else
+            echo "Resolved released and unreleased plugin repos for $TAG successfully."
+          fi
+
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' != '[]' ]]; then
+            echo "Released plugins with tag $TAG:"
+            cat <<'EOF'
+            ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), '
+') }}
+            EOF
+          fi
+
+          if [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' != '[]' ]]; then
+            echo "Unreleased plugins with tag $TAG:"
+            cat <<'EOF'
+            ${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), '
+') }}
+            EOF
+          fi
 
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: pro-plugins,${{ join(fromJSON(steps.resolve-repos.outputs.proRepos), ',') }}
+          repositories: pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }}${{ needs.get-plugins.outputs.all-plugins != '[]' && needs.get-plugins.outputs.unreleased-plugins != '[]' && ',' || '' }}${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), ',') }}
           skip-token-revoke: true
+        env:
+          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -139,13 +154,28 @@ jobs:
           ref: ${{ env.TARGET_TAG }}
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Clone pro repos
+      - name: Clone released pro repos
+        if: ${{ needs.get-plugins.outputs.all-plugins != '[]' }}
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(steps.resolve-repos.outputs.proRepos), ' ') }}
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
           do
             git clone -b $TARGET_TAG https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
+
+      - name: Clone unreleased pro repos
+        if: ${{ needs.get-plugins.outputs.unreleased-plugins != '[]' }}
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), ' ') }}
+          do
+            if [[ -d "packages/pro-plugins/@nocobase/$repo" ]]; then
+              continue
+            fi
+            git clone -b $TARGET_TAG https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+        env:
+          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
 
       - name: Build Pro plugins
         run: |
@@ -159,18 +189,42 @@ jobs:
         run: |
           set -euo pipefail
           PACKAGE_JSONS=$(
-            find packages/pro-plugins -name package.json \
-              -not -path '*/node_modules/*' \
-              -not -path 'packages/pro-plugins/package.json' \
-              -exec jq -r 'select(.private != true) | input_filename' {} + \
-              | sort
+            node - <<'EOF'
+            const fs = require('fs');
+            const path = require('path');
+
+            const root = path.resolve('packages/pro-plugins');
+            const results = [];
+
+            function walk(dir) {
+              for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                if (entry.name === 'node_modules') continue;
+                const fullPath = path.join(dir, entry.name);
+
+                if (entry.isDirectory()) {
+                  walk(fullPath);
+                  continue;
+                }
+
+                if (entry.name !== 'package.json') continue;
+                if (fullPath === root + '/package.json') continue;
+
+                const pkg = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                if (pkg.private === true) continue;
+                results.push(fullPath);
+              }
+            }
+
+            walk(root);
+            results.sort().forEach((file) => console.log(file));
+            EOF
           )
 
           if [[ -n "$PACKAGE_JSONS" ]]; then
             echo "Packages to publish:"
             while IFS= read -r package_json; do
               [[ -n "$package_json" ]] || continue
-              jq -r '.name' "$package_json"
+              node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json"
             done <<< "$PACKAGE_JSONS"
             echo "count=1" >> "$GITHUB_OUTPUT"
             {
@@ -196,7 +250,7 @@ jobs:
           while IFS= read -r package_json; do
             [[ -n "$package_json" ]] || continue
             package_dir=$(dirname "$package_json")
-            package_name=$(jq -r '.name' "$package_json")
+            package_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json")
             echo "Publishing $package_name to pkg.nocobase.com"
             npm publish "$package_dir" --registry https://pkg.nocobase.com
           done <<'EOF'
@@ -213,7 +267,7 @@ jobs:
           echo "Dry run only. Packages that would be published to pkg registries:"
           while IFS= read -r package_json; do
             [[ -n "$package_json" ]] || continue
-            package_name=$(jq -r '.name' "$package_json")
+            package_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json")
             echo "$package_name"
           done <<'EOF'
           ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
@@ -229,7 +283,7 @@ jobs:
           while IFS= read -r package_json; do
             [[ -n "$package_json" ]] || continue
             package_dir=$(dirname "$package_json")
-            package_name=$(jq -r '.name' "$package_json")
+            package_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json")
             echo "Publishing $package_name to pkg-src.nocobase.com"
             npm publish "$package_dir" --registry https://pkg-src.nocobase.com
           done <<'EOF'
