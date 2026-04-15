@@ -121,7 +121,7 @@ export class PluginSimpleActionClient extends Plugin {
 
 ## 完整源码
 
-- [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-action) — 三种操作场景的完整示例
+- [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action) — 三种操作场景的完整示例
 
 ## 相关链接
 

@@ -34,7 +34,7 @@ keywords: "插件设置页,pluginSettingsManager,addMenuItem,addPageTabItem,Antd
 
 ![20260407161139](https://static-docs.nocobase.com/20260407161139.png)
 
-完整源码见 [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-settings-page)。如果你想直接在本地跑起来看效果：
+完整源码见 [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page)。如果你想直接在本地跑起来看效果：
 
 ```bash
 yarn pm enable @nocobase-example/plugin-settings-page
@@ -379,7 +379,7 @@ yarn pm enable @my-project/plugin-settings-page
 
 ## 完整源码
 
-- [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-settings-page) — 插件设置页完整示例
+- [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page) — 插件设置页完整示例
 
 ## 小结
 

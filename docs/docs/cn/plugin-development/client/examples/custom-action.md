@@ -31,7 +31,7 @@ keywords: "自定义操作,ActionModel,ActionSceneEnum,操作按钮,NocoBase"
   <source src="https://static-docs.nocobase.com/iShot_2026-04-08_17.55.43.mp4" type="video/mp4">
 </video>
 
-完整源码见 [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-action)。如果你想直接在本地跑起来看效果：
+完整源码见 [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action)。如果你想直接在本地跑起来看效果：
 
 ```bash
 yarn pm enable @nocobase-example/plugin-simple-action
@@ -247,7 +247,7 @@ yarn pm enable @my-project/plugin-simple-action
 
 ## 完整源码
 
-- [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-action) — 三种操作场景的完整示例
+- [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action) — 三种操作场景的完整示例
 
 ## 小结
 

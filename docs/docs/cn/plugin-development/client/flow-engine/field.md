@@ -66,7 +66,7 @@ export class PluginFieldSimpleClient extends Plugin {
 
 ## 完整源码
 
-- [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-field-simple) — 自定义字段组件示例
+- [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple) — 自定义字段组件示例
 
 ## 相关链接
 

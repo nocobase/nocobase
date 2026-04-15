@@ -182,8 +182,8 @@ export class MyPlugin extends Plugin {
 
 ## 完整源码
 
-- [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-block) — BlockModel 示例
-- [@nocobase-example/plugin-collection-block](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-collection-block) — CollectionBlockModel 示例
+- [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block) — BlockModel 示例
+- [@nocobase-example/plugin-collection-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-collection-block) — CollectionBlockModel 示例
 
 ## 相关链接
 

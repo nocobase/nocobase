@@ -33,7 +33,7 @@ keywords: "自定义区块,BlockModel,registerFlow,uiSchema,renderComponent,Noco
   <source src="https://static-docs.nocobase.com/iShot_2026-04-07_17.23.49.mp4" type="video/mp4">
 </video>
 
-完整源码见 [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-block)。如果你想直接在本地跑起来看效果：
+完整源码见 [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)。如果你想直接在本地跑起来看效果：
 
 ```bash
 yarn pm enable @nocobase-example/plugin-simple-block
@@ -175,7 +175,7 @@ yarn pm enable @my-project/plugin-simple-block
 
 ## 完整源码
 
-- [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/main/packages/plugins/%40nocobase-example/plugin-simple-block) — 自定义展示区块完整示例
+- [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block) — 自定义展示区块完整示例
 
 ## 小结
 
