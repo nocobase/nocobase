@@ -10,7 +10,11 @@
 import type { TFuncKey, TOptions } from 'i18next';
 import type { BaseApplication } from './BaseApplication';
 
-export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication<any>> {
+export interface PluginOptions {
+  packageName?: string;
+}
+
+export class Plugin<T extends PluginOptions = PluginOptions, TApp extends BaseApplication<any> = BaseApplication<any>> {
   constructor(
     public options: T,
     protected app: TApp,
@@ -73,6 +77,6 @@ export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication
   async load() {}
 
   t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
-    return this.app.i18n.t(text, { ns: this.options?.['packageName'], ...(options as any) });
+    return this.app.i18n.t(text, { ns: this.options?.packageName, ...(options as any) });
   }
 }
