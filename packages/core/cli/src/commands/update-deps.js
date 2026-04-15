@@ -44,7 +44,7 @@ module.exports = (cli) => {
       } else if (pkg.version.includes('beta')) {
         distTag = 'beta';
       }
-      const { stdout } = await run('npm', ['info', `@nocobase/cli@${distTag}`, 'version'], {
+      const { stdout } = await run('npm', ['info', `@nocobase/app@${distTag}`, 'version'], {
         stdio: 'pipe',
       });
       if (!options.force && pkg.version === stdout) {
@@ -56,8 +56,8 @@ module.exports = (cli) => {
       const descJson = await readJSON(descPath, 'utf8');
       const sourcePath = resolve(__dirname, '../../templates/create-app-package.json');
       const sourceJson = await readJSON(sourcePath, 'utf8');
-      if (descJson['dependencies']?.['@nocobase/cli']) {
-        descJson['dependencies']['@nocobase/cli'] = stdout;
+      if (descJson['dependencies']?.['@nocobase/app']) {
+        descJson['dependencies']['@nocobase/app'] = stdout;
       }
       if (descJson['devDependencies']?.['@nocobase/devtools']) {
         descJson['devDependencies']['@nocobase/devtools'] = stdout;
