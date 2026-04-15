@@ -116,11 +116,13 @@ export const aiWorkflowTasks: ResourceOptions = {
         },
       });
 
+      const readonly = task.status !== 'pending_approval' || task.acceptedUserId !== userId;
+
       ctx.body = {
         ...(task?.toJSON?.() ?? task),
         read: usersAiWorkflowTasks?.read ?? true,
         config: node?.config ?? null,
-        readonly: task.acceptedUserId !== null && task.acceptedUserId !== userId,
+        readonly,
       };
 
       await next();
