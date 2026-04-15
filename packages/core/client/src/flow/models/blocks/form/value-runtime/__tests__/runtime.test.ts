@@ -71,6 +71,15 @@ function createFieldContext(runtime: FormValueRuntime) {
     const runner = new JSRunner({ globals: { ctx: this, ...(variables || {}) }, timeoutMs: options?.timeoutMs });
     return runner.run(code);
   });
+  ctx.defineMethod('getVar', async function (this: any, varPath: string) {
+    const raw = typeof varPath === 'string' ? varPath : String(varPath ?? '');
+    const s = raw.trim();
+    if (!s) return undefined;
+    if (s !== 'ctx' && !s.startsWith('ctx.')) {
+      throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
+    }
+    return this.resolveJsonTemplate(`{{ ${s} }}`);
+  });
   ctx.defineMethod('resolveJsonTemplate', async function (this: any, template: any) {
     const resolveAny = (val: any): any => {
       if (typeof val === 'string') {
@@ -1239,6 +1248,105 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: { logic: '$and', items: [] },
         value: '{{ ctx.item.value.nickname }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'display'])).toBe('A'));
+    await waitFor(() => expect(formStub.getFieldValue(['users', 1, 'display'])).toBe('B'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['users', 1, 'nickname'], value: 'C' }], { source: 'user' });
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 1, 'display'])).toBe('C'));
+    expect(formStub.getFieldValue(['users', 0, 'display'])).toBe('A');
+  });
+
+  it('supports ctx.getVar("ctx.item.value.*") in RunJS assign value for to-many fork models', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      users: [
+        { nickname: 'A', display: '' },
+        { nickname: 'B', display: '' },
+      ],
+    });
+
+    const blockModel: any = {
+      uid: 'form-assign-item-getvar',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userRowCollection: any = { getField: () => null };
+    const usersField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: userRowCollection };
+    const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: rootCollection });
+    blockModel.context = blockCtx;
+
+    const masterModel: any = {
+      uid: 'users.display.getvar',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'users.display' };
+        }
+        return undefined;
+      },
+    };
+    const masterCtx = createFieldContext(runtime);
+    masterCtx.defineProperty('blockModel', { value: blockModel });
+    masterCtx.defineProperty('model', { value: masterModel });
+    masterModel.context = masterCtx;
+
+    const createRowModel = (forkId: string) => {
+      const rowModel: any = {
+        uid: 'users.display.getvar',
+        isFork: true,
+        forkId,
+        subModels: { field: {} },
+        getStepParams(flowKey: string, stepKey: string) {
+          if (flowKey === 'fieldSettings' && stepKey === 'init') {
+            return { fieldPath: 'users.display' };
+          }
+          return undefined;
+        },
+      };
+      const rowCtx = createFieldContext(runtime);
+      rowCtx.defineProperty('blockModel', { value: blockModel });
+      rowCtx.defineProperty('fieldIndex', { value: [forkId] });
+      rowCtx.defineProperty('model', { value: rowModel });
+      rowModel.context = rowCtx;
+      return rowModel;
+    };
+
+    const row0 = createRowModel('users:0');
+    const row1 = createRowModel('users:1');
+    masterModel.forks = new Set([row0, row1]);
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (cb: any) => {
+          cb(masterModel);
+        },
+      },
+    });
+
+    runtime.syncAssignRules([
+      {
+        key: 'r-getvar-item',
+        enable: true,
+        targetPath: 'users.display',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: {
+          code: `const nickname = await ctx.getVar('ctx.item.value.nickname'); return nickname;`,
+          version: 'v2',
+        },
       },
     ]);
 

@@ -10,7 +10,7 @@
 import { observer as originalObserver, IObserverOptions, ReactFC } from '@formily/reactive-react';
 import React, { useMemo, useEffect, useRef } from 'react';
 import { useFlowContext } from '../FlowContextProvider';
-import { autorun } from '@formily/reactive';
+import { reaction } from '@formily/reactive';
 import { FlowEngineContext } from '..';
 
 type ObserverComponentProps<P, Options extends IObserverOptions> = Options extends {
@@ -30,12 +30,67 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
     const ctxRef = useRef(ctx);
     ctxRef.current = ctx;
 
-    // Store the pending disposer to avoid creating multiple listeners
+    // 保存延迟更新的监听器，避免重复创建监听。
     const pendingDisposerRef = useRef<(() => void) | null>(null);
+    // 保存延迟创建监听器的定时器，避免组件卸载后仍继续调度。
+    const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Cleanup on unmount
+    /**
+     * 清理挂起的可见性监听器。
+     *
+     * @example
+     * ```typescript
+     * clearPendingDisposer();
+     * ```
+     */
+    const clearPendingDisposer = () => {
+      if (pendingDisposerRef.current) {
+        pendingDisposerRef.current();
+        pendingDisposerRef.current = null;
+      }
+    };
+
+    /**
+     * 清理挂起的定时器。
+     *
+     * @example
+     * ```typescript
+     * clearPendingTimer();
+     * ```
+     */
+    const clearPendingTimer = () => {
+      if (pendingTimerRef.current) {
+        clearTimeout(pendingTimerRef.current);
+        pendingTimerRef.current = null;
+      }
+    };
+
+    /**
+     * 判断当前页面与标签页是否允许立即更新。
+     *
+     * @returns 当前上下文是否处于可更新状态。
+     * @example
+     * ```typescript
+     * if (isContextActive()) {
+     *   updater();
+     * }
+     * ```
+     */
+    const isContextActive = () => {
+      const pageActive = getPageActive(ctxRef.current);
+      const tabActive = ctxRef.current?.tabActive?.value;
+
+      return pageActive !== false && tabActive !== false;
+    };
+
+    // 组件卸载时统一清理所有挂起任务，避免异步回调在卸载后继续运行。
     useEffect(() => {
       return () => {
+        if (pendingTimerRef.current) {
+          clearTimeout(pendingTimerRef.current);
+          pendingTimerRef.current = null;
+        }
+
         if (pendingDisposerRef.current) {
           pendingDisposerRef.current();
           pendingDisposerRef.current = null;
@@ -47,38 +102,45 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
       () =>
         originalObserver(Component, {
           scheduler(updater) {
-            const pageActive = getPageActive(ctxRef.current);
-            const tabActive = ctxRef.current?.tabActive?.value;
+            if (!isContextActive()) {
+              if (pendingTimerRef.current || pendingDisposerRef.current) {
+                return;
+              }
 
-            if (pageActive === false || tabActive === false) {
-              // Avoid stack overflow
-              setTimeout(() => {
-                // If there is already a pending updater, do nothing
+              // 通过异步任务打断同步调度，避免连续触发时形成递归更新。
+              pendingTimerRef.current = setTimeout(() => {
+                pendingTimerRef.current = null;
+
                 if (pendingDisposerRef.current) {
                   return;
                 }
 
-                // Delay the update until the page and tab become active
-                const disposer = autorun(() => {
-                  if (
-                    ctxRef.current?.pageActive?.value &&
-                    (ctxRef.current?.tabActive?.value === true || ctxRef.current?.tabActive?.value === undefined)
-                  ) {
+                if (isContextActive()) {
+                  updater();
+                  return;
+                }
+
+                // 只监听组合后的“是否可更新”状态，条件恢复后执行一次并立即销毁。
+                pendingDisposerRef.current = reaction(
+                  () => isContextActive(),
+                  (active) => {
+                    if (!active) {
+                      return;
+                    }
+
+                    clearPendingDisposer();
                     updater();
-                    disposer?.();
-                    pendingDisposerRef.current = null;
-                  }
-                });
-                pendingDisposerRef.current = disposer;
+                  },
+                  {
+                    name: 'FlowObserverPendingUpdate',
+                  },
+                );
               });
               return;
             }
 
-            // If we are updating immediately, clear any pending disposer
-            if (pendingDisposerRef.current) {
-              pendingDisposerRef.current();
-              pendingDisposerRef.current = null;
-            }
+            clearPendingTimer();
+            clearPendingDisposer();
 
             updater();
           },

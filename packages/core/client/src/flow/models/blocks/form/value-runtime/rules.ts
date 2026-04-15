@@ -1231,11 +1231,10 @@ export class RuleEngine {
     if (this.shouldSkipToManyAssociationWriteWithoutIndex(baseCtx, ensuredTargetNamePath)) return;
 
     const nextSnapshot = normalizedResolvedForTarget;
-    const currentValue = this.options.getFormValueAtPath(ensuredTargetNamePath);
     const semanticallyEqual = this.isAssociationTargetSemanticallyEqual(
       baseCtx,
       ensuredTargetNamePath,
-      currentValue,
+      this.options.getFormValueAtPath(ensuredTargetNamePath),
       nextSnapshot,
     );
     if (semanticallyEqual) return;
@@ -1670,8 +1669,7 @@ export class RuleEngine {
     } catch {
       // ignore
     }
-    const baseOptions =
-      typeof baseCtx?.getPropertyOptions === 'function' ? baseCtx.getPropertyOptions('formValues') : null;
+    const baseOptions = baseCtx?.getPropertyOptions?.('formValues');
     if (baseOptions && typeof baseOptions === 'object') {
       ctx.defineProperty('formValues', {
         ...baseOptions,
@@ -1694,17 +1692,10 @@ export class RuleEngine {
     //    （如 PopupSubTable 新增弹窗传入的 parentItem 链）
     let itemCached: any;
     let itemCachedReady = false;
-    const getFallbackItem = () => {
-      try {
-        return baseCtx?.item;
-      } catch {
-        return undefined;
-      }
-    };
     const getItem = () => {
       if (!itemCachedReady) {
         const chainItem = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath);
-        itemCached = typeof chainItem === 'undefined' ? getFallbackItem() : chainItem;
+        itemCached = chainItem ?? baseCtx?.item;
         itemCachedReady = true;
       }
       return itemCached;
@@ -1836,18 +1827,32 @@ export class RuleEngine {
       const sep = rest.indexOf(':');
       const varName = sep >= 0 ? rest.slice(0, sep) : rest;
       const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
+      const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
 
       // 特殊变量：item 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parentItem/index 链依赖 fieldIndex。
       if (varName === 'item') {
-        const disposer = reaction(
+        const fieldIndexDisposer = reaction(
           () => this.getFieldIndexSignature(baseCtx),
           () => this.scheduleRule(rule.id),
         );
-        state.depDisposers.push(disposer);
+        state.depDisposers.push(fieldIndexDisposer);
+
+        if (depPath.length) {
+          const trackingFormValues = this.options.createTrackingFormValues({ deps: new Set(), wildcard: false });
+          const itemValueDisposer = reaction(
+            () => {
+              const targetPath = rule.getTarget?.();
+              const targetNamePath = targetPath ? this.options.tryResolveNamePath(baseCtx, targetPath) : null;
+              const itemRoot = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath) ?? baseCtx?.item;
+              return _.get(itemRoot, depPath);
+            },
+            () => this.scheduleRule(rule.id),
+          );
+          state.depDisposers.push(itemValueDisposer);
+        }
         continue;
       }
 
-      const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
       const disposer = reaction(
         () => {
           const root = baseCtx ? baseCtx[varName] : undefined;

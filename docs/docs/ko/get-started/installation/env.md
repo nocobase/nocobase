@@ -358,6 +358,27 @@ TELEMETRY_METRIC_READER=console,prometheus
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_WHITELIST
+
+SSRF(서버 측 요청 위조) 공격을 방지하기 위한 서버 발신 HTTP 요청 허용 대상 화이트리스트입니다. 쉼표로 구분된 정확한 IP, CIDR 범위, 정확한 호스트명, 단일 레벨 와일드카드 서브도메인을 지정할 수 있습니다.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**적용 범위**: 워크플로우 "HTTP 요청" 노드 및 커스텀 요청 액션 버튼. 상대 경로 요청(NocoBase 자체 API 호출)은 영향을 받지 않습니다.
+
+**미설정 시**: 모든 `http`/`https` 외부 요청이 허용됩니다(기존 동작). **설정 시**: 화이트리스트 항목과 일치하는 호스트로의 요청만 허용되며, 일치하지 않는 요청은 오류가 발생합니다.
+
+지원 형식:
+
+| 형식 | 예시 | 매칭 대상 |
+| --- | --- | --- |
+| 정확한 IPv4 | `1.2.3.4` | 해당 IP만 |
+| IPv4 CIDR | `10.0.0.0/8` | 서브넷 내 모든 IP |
+| 정확한 호스트명 | `api.example.com` | 해당 호스트명만 |
+| 와일드카드 서브도메인 | `*.example.com` | 1단계 서브도메인(예: `foo.example.com`). `example.com` 또는 `a.b.example.com`은 **불일치** |
+
 ## 실험적 환경 변수
 
 ### APPEND_PRESET_LOCAL_PLUGINS

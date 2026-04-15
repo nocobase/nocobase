@@ -26,7 +26,7 @@ Klicken Sie in der Workflow-Konfiguration auf die Plus-Schaltfläche („+“) i
 
 ## Knotenkonfiguration
 
-![SQL-Knoten_Knotenkonfiguration](https://static-docs.nocobase.com/20240904002334.png)
+![SQL-Knoten_Knotenkonfiguration](https://static-docs.nocobase.com/20260414235136.png)
 
 ### Datenquelle
 
@@ -38,7 +38,19 @@ Die Datenquelle muss eine Datenbank-Datenquelle sein, wie zum Beispiel die Haupt
 
 Bearbeiten Sie die SQL-Anweisung. Derzeit wird nur eine SQL-Anweisung unterstützt.
 
-Fügen Sie die benötigten Variablen über die Schaltfläche für Variablen in der oberen rechten Ecke des Editors ein. Vor der Ausführung werden diese Variablen durch Textersetzung mit ihren entsprechenden Werten ersetzt. Der so entstandene Text wird dann als endgültige SQL-Anweisung verwendet und zur Abfrage an die Datenbank gesendet.
+:::info
+Ab `v2.0.30` wird aus Sicherheitsgründen die direkte Textersetzung von Variablen in SQL-Anweisungen nicht mehr unterstützt. Stattdessen müssen parametrisierte Abfragen verwendet werden.
+:::
+
+In SQL-Anweisungen können Variablen aus dem Prozesskontext verwendet werden, müssen aber im Format `:variableName` als Platzhalter angegeben werden, zum Beispiel:
+
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
+
+### Parameterliste
+
+In der obigen SQL-Anweisung ist `:userId` ein Platzhalter. Die Ersetzung der Platzhalter muss in der „Parameterliste" konfiguriert werden. Der Variablenname entspricht dem Namen aus dem Platzhalter, z.B. `userId`, und der Wert kann mit dem Variablenauswähler aus dem Prozesskontext ausgewählt werden.
 
 ## Ergebnis der Knotenausführung
 

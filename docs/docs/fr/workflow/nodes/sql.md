@@ -26,7 +26,7 @@ Dans l'interface de configuration du flux de travail, cliquez sur le bouton plus
 
 ## Configuration du nœud
 
-![Nœud SQL_Configuration du nœud](https://static-docs.nocobase.com/20240904002334.png)
+![Nœud SQL_Configuration du nœud](https://static-docs.nocobase.com/20260414235136.png)
 
 ### Source de données
 
@@ -38,7 +38,19 @@ La source de données doit être de type base de données, comme la source de do
 
 Modifiez l'instruction SQL. Actuellement, une seule instruction SQL est prise en charge.
 
-Insérez les variables nécessaires à l'aide du bouton de variable situé dans le coin supérieur droit de l'éditeur. Avant l'exécution, ces variables seront remplacées par leurs valeurs correspondantes via une substitution de texte. Le texte résultant sera ensuite utilisé comme instruction SQL finale et envoyé à la base de données pour exécution.
+:::info
+Depuis la version `v2.0.30`, pour des raisons de sécurité, la substitution directe de variables par texte dans les instructions SQL n'est plus prise en charge. Les requêtes paramétrées doivent être utilisées à la place.
+:::
+
+Les variables du contexte du processus peuvent être utilisées dans les instructions SQL, mais doivent être indiquées au format `:variableName`, par exemple :
+
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
+
+### Liste de paramètres
+
+Dans l'instruction SQL ci-dessus, `:userId` est un espace réservé. Le remplacement des espaces réservés doit être configuré dans la « Liste de paramètres ». Le nom de la variable utilise le nom de l'espace réservé, par exemple `userId`, et la valeur peut être sélectionnée depuis le contexte du processus à l'aide du sélecteur de variables.
 
 ## Résultat de l'exécution du nœud
 

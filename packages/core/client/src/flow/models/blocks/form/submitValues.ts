@@ -165,6 +165,44 @@ export function getValidationNamePathsExcludingHiddenModels(blockModel: FormBloc
   return names.filter((namePath) => !hiddenPaths.some((hiddenPath) => isNamePathPrefix(hiddenPath, namePath)));
 }
 
+export function shouldSkipSubmitValidation(
+  model:
+    | {
+        getStepParams?: (flowKey: string, stepKey: string) => { skipValidator?: boolean } | undefined;
+      }
+    | null
+    | undefined,
+) {
+  return model?.getStepParams?.('submitSettings', 'skipRequiredValidation')?.skipValidator === true;
+}
+
+export async function validateSubmitForm(options: {
+  form?: { validateFields?: (nameList?: any) => Promise<any> } | null;
+  blockModel?: FormBlockModel | null;
+  flowSettingsEnabled?: boolean;
+  skipValidator?: boolean;
+}) {
+  const { form, blockModel, flowSettingsEnabled, skipValidator } = options;
+  if (skipValidator) {
+    return;
+  }
+
+  if (!form || typeof form.validateFields !== 'function') {
+    return;
+  }
+
+  const validateNamePaths =
+    flowSettingsEnabled && blockModel ? getValidationNamePathsExcludingHiddenModels(blockModel) : null;
+  if (Array.isArray(validateNamePaths)) {
+    if (validateNamePaths.length) {
+      await form.validateFields(validateNamePaths as any);
+    }
+    return;
+  }
+
+  await form.validateFields();
+}
+
 /**
  * 提交前过滤：移除当前表单 block 中被「联动规则隐藏」的字段值（`model.hidden === true`）。
  *

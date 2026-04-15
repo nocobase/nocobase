@@ -5,6 +5,43 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.37](https://github.com/nocobase/nocobase/compare/v2.0.36...v2.0.37) - 2026-04-14
+
+### 🚀 优化
+
+- **[undefined]**
+  - 为法语 README 添加目录 ([#9037](https://github.com/nocobase/nocobase/pull/9037)) by @saraTabbane
+
+  - 在 README.zh-CN.md 中添加目录 ([#9038](https://github.com/nocobase/nocobase/pull/9038)) by @gaston98765
+
+  - 新增阿拉伯语文档首页翻译 ([#9043](https://github.com/nocobase/nocobase/pull/9043)) by @gaston98765
+
+  - 文档：新增 get-started 入门页面的阿拉伯语翻译 ([#9044](https://github.com/nocobase/nocobase/pull/9044)) by @gaston98765
+
+- **[client]** 添加表单必填校验开关 ([#9060](https://github.com/nocobase/nocobase/pull/9060)) by @jiannx
+
+### 🐛 修复
+
+- **[utils]** 为服务端发送 HTTP 请求增加安全控制，以避免可能的 SSRF 隐患 ([#9079](https://github.com/nocobase/nocobase/pull/9079)) by @mytharcher
+参考文档：[环境变量](https://docs.nocobase.com/cn/get-started/installation/env)
+## [v2.0.36](https://github.com/nocobase/nocobase/compare/v2.0.35...v2.0.36) - 2026-04-10
+
+### 🐛 修复
+
+- **[client]** 子表格添加多对多报错 ([#9070](https://github.com/nocobase/nocobase/pull/9070)) by @jiannx
+
+- **[flow-engine]** 修复外部数据源多对一字段无法在表格区块中添加 ([#9068](https://github.com/nocobase/nocobase/pull/9068)) by @jiannx
+
+- **[通知管理]** 修复站内信通知在工作流场景下的发送性能问题，降低同步发送路径阻塞 ([#9066](https://github.com/nocobase/nocobase/pull/9066)) by @mytharcher
+
+## [v2.0.35](https://github.com/nocobase/nocobase/compare/v2.0.34...v2.0.35) - 2026-04-09
+
+### 🐛 修复
+
+- **[client]** 修复子表格的数据选择按钮打开的弹窗中无法正确解析上级项变量值的问题。 ([#8996](https://github.com/nocobase/nocobase/pull/8996)) by @gchust
+
+- **[数据表字段：代码]** 修正代码字段的 UI 类型 ([#9061](https://github.com/nocobase/nocobase/pull/9061)) by @2013xile
+
 ## [v2.0.34](https://github.com/nocobase/nocobase/compare/v2.0.33...v2.0.34) - 2026-04-08
 
 ### 🎉 新特性
