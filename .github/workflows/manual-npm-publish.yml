@@ -1,0 +1,223 @@
+name: Manual npm publish
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.tag }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to publish, for example v1.7.0 or v2.0.0-beta.1'
+        required: true
+        type: string
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    with:
+      # For v1.x maintenance releases, only include repos that have the v1 branch.
+      # For v2+ we keep the original behavior (no filtering at this stage).
+      require_branch: ${{ startsWith(inputs.tag, 'v1.') && 'v1' || '' }}
+    secrets: inherit
+
+  publish-npm:
+    needs: get-plugins
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Get info
+        id: get-info
+        shell: bash
+        run: |
+          echo "allProRepos=${{ needs.get-plugins.outputs.all-plugins }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/create-github-app-token@v1
+        id: validate-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          skip-token-revoke: true
+
+      - name: Resolve repos with this tag
+        id: resolve-repos
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG='${{ inputs.tag }}'
+          required_missing=()
+          publish_repos=()
+
+          has_tag() {
+            local repo="$1"
+            gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" >/dev/null 2>&1
+          }
+
+          for repo in pro-plugins; do
+            if ! has_tag "$repo"; then
+              required_missing+=("$repo")
+            fi
+          done
+
+          if [[ ${#required_missing[@]} -gt 0 ]]; then
+            echo "Missing required tag $TAG in repos:" >&2
+            printf '%s\n' "${required_missing[@]}" >&2
+            exit 1
+          fi
+
+          while IFS= read -r repo; do
+            [[ -n "$repo" ]] || continue
+            if has_tag "$repo"; then
+              publish_repos+=("$repo")
+            fi
+          done < <(
+            {
+              echo '${{ steps.get-info.outputs.allProRepos }}'
+              echo '${{ needs.get-plugins.outputs.custom-plugins }}'
+            } | jq -r '.[]'
+          )
+
+          if [[ ${#publish_repos[@]} -eq 0 ]]; then
+            echo "No plugin repos contain tag $TAG." >&2
+            exit 1
+          fi
+
+          printf 'Repos to publish for %s:\n' "$TAG"
+          printf '%s\n' "${publish_repos[@]}"
+
+          repos_json=$(printf '%s\n' "${publish_repos[@]}" | jq -R . | jq -s -c .)
+          echo "proRepos=$repos_json" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: pro-plugins,${{ join(fromJSON(steps.resolve-repos.outputs.proRepos), ',') }}
+          skip-token-revoke: true
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Send curl request and parse response
+        env:
+          PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
+          PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
+        run: |
+          mkdir git-ci-cache
+          apt-get update && apt-get install -y jq
+          response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token1=$(echo "$response1" | jq -r '.token')
+          response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token2=$(echo "$response2" | jq -r '.token')
+          echo "PKG_NOCOBASE_TOKEN=$token1" >> "$GITHUB_ENV"
+          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> "$GITHUB_ENV"
+
+      - name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ref: ${{ inputs.tag }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(steps.resolve-repos.outputs.proRepos), ' ') }}
+          do
+            git clone -b ${{ inputs.tag }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+
+      - name: Build Pro plugins
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build packages/pro-plugins
+
+      - name: Resolve pro plugin scopes
+        id: pro-plugin-scopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_JSONS=$(
+            find packages/pro-plugins -name package.json \
+              -not -path '*/node_modules/*' \
+              -not -path 'packages/pro-plugins/package.json' \
+              -exec jq -r 'select(.private != true) | input_filename' {} + \
+              | sort
+          )
+
+          if [[ -n "$PACKAGE_JSONS" ]]; then
+            echo "Packages to publish:"
+            while IFS= read -r package_json; do
+              [[ -n "$package_json" ]] || continue
+              jq -r '.name' "$package_json"
+            done <<< "$PACKAGE_JSONS"
+            echo "count=1" >> "$GITHUB_OUTPUT"
+            {
+              echo 'package_jsons<<EOF'
+              printf '%s\n' "$PACKAGE_JSONS"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "No pro plugin packages to publish."
+            echo "count=0" >> "$GITHUB_OUTPUT"
+            {
+              echo 'package_jsons<<EOF'
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: publish pkg.nocobase.com
+        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
+        shell: bash
+        run: |
+          git reset --hard
+          npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
+          while IFS= read -r package_json; do
+            [[ -n "$package_json" ]] || continue
+            package_dir=$(dirname "$package_json")
+            package_name=$(jq -r '.name' "$package_json")
+            echo "Publishing $package_name to pkg.nocobase.com"
+            npm publish "$package_dir" --registry https://pkg.nocobase.com
+          done <<'EOF'
+          ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
+          EOF
+
+      - name: publish pkg-src.nocobase.com
+        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
+        shell: bash
+        run: |
+          git reset --hard
+          bash generate-npmignore.sh ignore-src
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
+          while IFS= read -r package_json; do
+            [[ -n "$package_json" ]] || continue
+            package_dir=$(dirname "$package_json")
+            package_name=$(jq -r '.name' "$package_json")
+            echo "Publishing $package_name to pkg-src.nocobase.com"
+            npm publish "$package_dir" --registry https://pkg-src.nocobase.com
+          done <<'EOF'
+          ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
+          EOF
