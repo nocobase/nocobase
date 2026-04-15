@@ -48,16 +48,6 @@ const TZ_AWARE_DATE_INTERFACES = new Set(['datetime', 'createdAt', 'updatedAt', 
 const DATE_ONLY_OUTPUT_FORMAT = 'YYYY-MM-DD';
 const DATETIME_NO_TZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
-type AssignValueNestedAssociationFieldResolution = {
-  collection: any;
-  fieldName: string;
-  collectionField?: CollectionField;
-  associationPath?: string;
-  associationField?: CollectionField;
-  associationCollection?: any;
-  isAssociationKeyPath?: boolean;
-};
-
 export type DateVariableExactNormalizeMode = 'none' | 'date' | 'datetimeNoTz' | 'iso';
 
 const DATE_DYNAMIC_OPTION_KEYS = [
@@ -360,7 +350,6 @@ type ResolvedFieldContext = {
   fieldPath: string | null;
   fieldName: string | null;
   collectionField: CollectionField | null;
-  nestedAssociation: AssignValueNestedAssociationFieldResolution | null;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -473,198 +462,129 @@ export function resolveAssignValueFieldPath(itemModel: any): string | undefined 
   return init?.fieldPath || getFormItemPreferredFieldPath(itemModel);
 }
 
-export function buildAssignValueFieldStepParams(options: {
-  originStepParams?: Record<string, any>;
-  effectiveFieldModelUse?: string;
+function getAssignValueSubField(itemModel: any) {
+  const subField = itemModel?.subModels?.field;
+  return subField && !Array.isArray(subField) ? subField : undefined;
+}
+
+type AssignValueFieldSettingsInit = {
   dataSourceKey?: string;
   collectionName?: string;
   fieldPath?: string;
-}): Record<string, any> {
-  const { originStepParams, effectiveFieldModelUse, dataSourceKey, collectionName, fieldPath } = options;
-  const nextStepParams: Record<string, any> = {
-    ...((originStepParams as Record<string, any>) || {}),
-  };
+};
 
-  if (effectiveFieldModelUse) {
-    nextStepParams.fieldBinding = {
-      ...(nextStepParams.fieldBinding || {}),
-      use: effectiveFieldModelUse,
-    };
-  }
+type AssignValueFieldModelSource = {
+  currentUse?: string;
+  stepParams: Record<string, any>;
+};
 
-  if (collectionName && fieldPath) {
-    nextStepParams.fieldSettings = {
-      ...(nextStepParams.fieldSettings || {}),
-      init: {
-        ...(nextStepParams.fieldSettings?.init || {}),
-        dataSourceKey,
-        collectionName,
-        fieldPath,
-      },
-    };
-  }
-
-  return nextStepParams;
+function getAssignValueOriginFieldModel(itemModel: any) {
+  return itemModel?.customFieldModelInstance || getAssignValueSubField(itemModel);
 }
 
-function normalizeAssignValueAssociationTargetKeys(associationField?: CollectionField | null): string[] {
-  const targetCollection = (associationField as any)?.targetCollection;
-  const raw =
-    (associationField as any)?.options?.targetKey ??
-    targetCollection?.filterTargetKey ??
-    targetCollection?.filterByTk ??
-    'id';
-
-  if (Array.isArray(raw)) {
-    return raw.filter((item): item is string => typeof item === 'string' && !!item);
-  }
-
-  if (typeof raw === 'string' && raw) {
-    return [raw];
-  }
-
-  return ['id'];
-}
-
-export function resolveAssignValueNestedAssociationField(
-  rootCollection: any,
-  path: string,
-): AssignValueNestedAssociationFieldResolution | null {
-  if (!rootCollection || typeof path !== 'string' || !path.includes('.')) return null;
-
-  const segs = path
-    .split('.')
-    .map((seg) => seg.trim())
-    .filter(Boolean);
-  if (segs.length < 2) return null;
-
-  let cur = rootCollection;
-  let deepestAssociationField: CollectionField | undefined;
-  let deepestAssociationCollection: any;
-  const associationSegs: string[] = [];
-
-  for (let i = 0; i < segs.length; i++) {
-    const seg = segs[i];
-    const isLast = i === segs.length - 1;
-    const cf = typeof cur?.getField === 'function' ? (cur.getField(seg) as CollectionField | undefined) : undefined;
-    if (!cf) return null;
-
-    if (isLast) {
-      const isAssociationKeyPath =
-        !!deepestAssociationField &&
-        associationSegs.length === segs.length - 1 &&
-        normalizeAssignValueAssociationTargetKeys(deepestAssociationField).includes(seg);
-
-      return {
-        collection: cur,
-        fieldName: seg,
-        collectionField: cf,
-        associationPath: associationSegs.join('.'),
-        associationField: deepestAssociationField,
-        associationCollection: deepestAssociationCollection,
-        isAssociationKeyPath,
-      };
-    }
-
-    if (!cf?.isAssociationField?.() || !cf?.targetCollection) {
-      return null;
-    }
-
-    deepestAssociationField = cf;
-    deepestAssociationCollection = cur;
-    associationSegs.push(seg);
-    cur = cf.targetCollection;
-  }
-
-  return null;
-}
-
-const ASSOCIATION_VALUE_EDITOR_MODEL_USES = new Set([
-  'RecordSelectFieldModel',
-  'RecordPickerFieldModel',
-  'CascadeSelectFieldModel',
-  'UploadFieldModel',
-]);
-
-export function resolveAssignValueEditorFieldContext(options: {
-  collection: any;
-  fieldPath: string;
-  fieldName: string;
-  collectionField?: CollectionField | null;
-  nestedAssociation?: AssignValueNestedAssociationFieldResolution | null;
-  effectiveFieldModelUse?: string;
-}) {
-  const { collection, fieldPath, fieldName, collectionField, nestedAssociation, effectiveFieldModelUse } = options;
-
-  const shouldUseAssociationKeyFieldContext = Boolean(
-    nestedAssociation?.isAssociationKeyPath &&
-      nestedAssociation?.associationCollection &&
-      nestedAssociation?.associationField?.isAssociationField?.() &&
-      !collectionField?.isAssociationField?.() &&
-      effectiveFieldModelUse &&
-      ASSOCIATION_VALUE_EDITOR_MODEL_USES.has(effectiveFieldModelUse),
-  );
-
-  if (!shouldUseAssociationKeyFieldContext) {
-    return {
-      collection,
-      fieldPath,
-      fieldName,
-      collectionField,
-    };
-  }
-
-  return {
-    collection: nestedAssociation?.associationCollection || collection,
-    fieldPath: nestedAssociation?.associationPath || fieldPath,
-    fieldName: (nestedAssociation?.associationField as any)?.name || fieldName,
-    collectionField: nestedAssociation?.associationField || collectionField,
-  };
-}
-
-export function resolveAssignValueFieldModelUse(options: {
-  itemModel: any;
-  fieldModelUse?: string;
-  collectionField?: CollectionField | null;
-  preferFormItemFieldModel?: boolean;
-}): string | undefined {
-  const { itemModel, fieldModelUse, collectionField, preferFormItemFieldModel } = options;
-  const subField = itemModel?.subModels?.field;
-  const subFieldUse = subField && !Array.isArray(subField) ? subField.use : undefined;
+function resolveAssignValueFieldModelSource(itemModel: any): AssignValueFieldModelSource {
+  const subField = getAssignValueSubField(itemModel);
+  const originFieldModel = getAssignValueOriginFieldModel(itemModel);
+  const subFieldBindingUse =
+    typeof subField?.stepParams?.fieldBinding?.use === 'string' ? subField.stepParams.fieldBinding.use : undefined;
+  const subFieldUse = subField?.use;
   const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
   const customFieldModelUse = customFieldSettings?.fieldModel || itemModel?.customFieldModelInstance?.use;
 
-  const normalizeForAssignContext = (modelUse?: string): string | undefined => {
-    if (!modelUse) return modelUse;
+  return {
+    currentUse: subFieldBindingUse || subFieldUse || customFieldModelUse,
+    stepParams: (((originFieldModel as any)?.stepParams as Record<string, any>) || {}) as Record<string, any>,
+  };
+}
 
-    // 字段赋值/字段默认值等“值编辑”场景中，文件关系字段更适合使用 RecordSelect，
-    // 而不是默认的 UploadFieldModel（上传器语义不适合“直接赋值已有记录”）。
-    if (modelUse === 'UploadFieldModel' && collectionField?.targetCollection?.template === 'file') {
-      return 'RecordSelectFieldModel';
-    }
+function selectAssignValueFieldModelUse(options: {
+  currentUse?: string;
+  defaultBindingUse?: string;
+  isAssociationField?: boolean;
+  preferFormItemFieldModel?: boolean;
+}) {
+  const { currentUse, defaultBindingUse, isAssociationField, preferFormItemFieldModel } = options;
+  const candidates = isAssociationField
+    ? [defaultBindingUse, currentUse]
+    : preferFormItemFieldModel
+      ? [currentUse, defaultBindingUse]
+      : [defaultBindingUse, currentUse];
 
-    return modelUse;
+  return candidates.find((candidate): candidate is string => typeof candidate === 'string' && !!candidate);
+}
+
+function buildAssignValueFieldStepParams(
+  originStepParams: Record<string, any>,
+  fieldSettingsInit?: AssignValueFieldSettingsInit,
+): Record<string, any> {
+  // 赋值编辑器直接创建最终字段模型，避免 FieldModel.resolveUse 再次根据继承的 fieldBinding.use
+  // 跳回 SubForm/SubTable/PopupSubTable 等原表单组件。
+  const { fieldBinding: _ignoredFieldBinding, ...restStepParams } = originStepParams || {};
+  const stepParams: Record<string, any> = {
+    ...restStepParams,
   };
 
-  const fallbackAssociationModelUse = collectionField?.isAssociationField?.() ? 'RecordSelectFieldModel' : undefined;
-
-  if (preferFormItemFieldModel) {
-    return subFieldUse || customFieldModelUse || fieldModelUse;
+  if (!fieldSettingsInit?.collectionName || !fieldSettingsInit?.fieldPath) {
+    return stepParams;
   }
 
-  const normalizedDefaultModelUse = normalizeForAssignContext(fieldModelUse);
-  if (normalizedDefaultModelUse) {
-    return normalizedDefaultModelUse;
+  const fieldSettings = isPlainObject(stepParams.fieldSettings) ? stepParams.fieldSettings : {};
+  const prevInit = isPlainObject(fieldSettings.init) ? fieldSettings.init : {};
+  stepParams.fieldSettings = {
+    ...fieldSettings,
+    init: {
+      ...prevInit,
+      ...fieldSettingsInit,
+    },
+  };
+
+  return stepParams;
+}
+
+function resolveAssignValueFieldSettingsInit(options: {
+  itemModel: any;
+  collection?: { dataSourceKey?: string; name?: string } | null;
+  fieldPath?: string | null;
+  fieldName?: string | null;
+}): AssignValueFieldSettingsInit | undefined {
+  const { itemModel, collection, fieldPath, fieldName } = options;
+  if (!collection?.name || !fieldPath) {
+    return undefined;
   }
 
-  // “字段值 / 默认值”这类值编辑场景中，关系字段不应继承当前表单项上切换后的展示组件
-  // （例如 PopupSubTable / UploadFieldModel），而应退回到值编辑语义更合适的 RecordSelect。
-  if (fallbackAssociationModelUse) {
-    return fallbackAssociationModelUse;
-  }
+  const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
+  const customFieldName = typeof customFieldSettings?.name === 'string' ? customFieldSettings.name : undefined;
+  const normalizedFieldPath = fieldPath.startsWith(`${CUSTOM_FIELD_TARGET_PATH_PREFIX}:`)
+    ? customFieldName || fieldName || fieldPath
+    : fieldPath;
 
-  // 仅在没有绑定 collection field 的自定义字段场景下，才回退到表单项自己的自定义字段模型。
-  return customFieldModelUse;
+  return {
+    dataSourceKey: collection.dataSourceKey,
+    collectionName: collection.name,
+    fieldPath: normalizedFieldPath,
+  };
+}
+
+export function resolveAssignValueFieldModelConfig(options: {
+  itemModel: any;
+  defaultBindingUse?: string;
+  collectionField?: Pick<CollectionField, 'isAssociationField'> | null;
+  preferFormItemFieldModel?: boolean;
+  fieldSettingsInit?: AssignValueFieldSettingsInit;
+}): { use?: string; stepParams: Record<string, any> } {
+  const { itemModel, defaultBindingUse, collectionField, preferFormItemFieldModel, fieldSettingsInit } = options;
+  const source = resolveAssignValueFieldModelSource(itemModel);
+  const use = selectAssignValueFieldModelUse({
+    currentUse: source.currentUse,
+    defaultBindingUse,
+    isAssociationField: !!collectionField?.isAssociationField?.(),
+    preferFormItemFieldModel,
+  });
+
+  return {
+    use,
+    stepParams: buildAssignValueFieldStepParams(source.stepParams, fieldSettingsInit),
+  };
 }
 
 /**
@@ -706,10 +626,33 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return findFormItemModelByFieldPath(flowCtx.model, targetPath);
   }, [flowCtx.model, targetPath]);
 
-  const rootCollection = React.useMemo(() => getCollectionFromModel((flowCtx as any).model), [flowCtx.model]);
-  const nestedAssociation = React.useMemo(
-    () => resolveAssignValueNestedAssociationField(rootCollection, targetPath),
-    [rootCollection, targetPath],
+  // 兜底：表单上未配置但来自关联字段 target collection 的嵌套属性（如 `user.name`）
+  const resolveNestedAssociationField = React.useCallback(
+    (
+      rootCollection: any,
+      path: string,
+    ): { collection: any; fieldName: string; collectionField?: CollectionField } | null => {
+      if (!rootCollection || typeof path !== 'string' || !path.includes('.')) return null;
+      const segs = path.split('.').filter(Boolean);
+      if (segs.length < 2) return null;
+
+      let cur = rootCollection;
+      for (let i = 0; i < segs.length; i++) {
+        const seg = segs[i];
+        const isLast = i === segs.length - 1;
+        const cf = typeof cur?.getField === 'function' ? (cur.getField(seg) as CollectionField | undefined) : undefined;
+        if (!cf) return null;
+        if (isLast) {
+          return { collection: cur, fieldName: seg, collectionField: cf };
+        }
+        if (!cf?.isAssociationField?.() || !cf?.targetCollection) {
+          return null;
+        }
+        cur = cf.targetCollection;
+      }
+      return null;
+    },
+    [],
   );
 
   const resolved = React.useMemo<ResolvedFieldContext>(() => {
@@ -748,11 +691,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         fieldPath: fieldPath || null,
         fieldName: fieldName || null,
         collectionField: cf || null,
-        nestedAssociation,
       };
     }
 
     // 2) 未配置字段：优先按根集合解析顶层字段（例如 foo / user）
+    const rootCollection = getCollectionFromModel((flowCtx as any).model);
     const blockModel = (flowCtx as any).model?.context?.blockModel || (flowCtx as any).model;
     const empty: ResolvedFieldContext = {
       itemModel: null,
@@ -762,7 +705,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       fieldPath: null,
       fieldName: null,
       collectionField: null,
-      nestedAssociation,
     };
 
     const topLevelField =
@@ -782,14 +724,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         fieldPath: fieldName,
         fieldName,
         collectionField: topLevelField || null,
-        nestedAssociation,
       };
     }
 
     // 3) 兜底：表单上未配置但来自关联字段 target collection 的嵌套属性（如 `user.name`）
-    if (!nestedAssociation) return empty;
-    const collection = nestedAssociation.collection;
-    const fieldName = nestedAssociation.fieldName;
+    const nested = resolveNestedAssociationField(rootCollection, targetPath);
+    if (!nested) return empty;
+    const collection = nested.collection;
+    const fieldName = nested.fieldName;
     const dataSourceManager = flowCtx.model?.context?.dataSourceManager;
     const dataSource =
       (collection?.dataSourceKey ? dataSourceManager?.getDataSource?.(collection.dataSourceKey) : undefined) || null;
@@ -798,11 +740,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       collection,
       dataSource,
       blockModel,
-      fieldPath: nestedAssociation.fieldName,
+      fieldPath: fieldName,
       fieldName,
-      collectionField: nestedAssociation.collectionField || null,
+      collectionField: nested.collectionField || null,
     };
-  }, [flowCtx.model, itemModel, nestedAssociation, rootCollection, targetPath]);
+  }, [flowCtx.model, itemModel, resolveNestedAssociationField, targetPath]);
 
   const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
   const itemCollectionField = (resolved?.itemModel as any)?.context?.collectionField;
@@ -916,83 +858,55 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const itemModelAny = itemModel as any;
     const engine = resolved?.itemModel?.context?.engine || (flowCtx as any).model?.context?.engine;
     if (!engine) return;
-
     const dataSourceManager = itemModelAny?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
     const effectiveCollection =
       collection || getCollectionFromModel(itemModelAny) || getCollectionFromModel(flowCtx.model);
-    const originFieldModel = itemModelAny?.customFieldModelInstance || itemModelAny?.subModels?.field;
+    const originFieldModel = getAssignValueOriginFieldModel(itemModelAny);
     const originCollectionField = (originFieldModel as any)?.context?.collectionField as CollectionField | undefined;
+    const effectiveCollectionField = (cf as CollectionField | null) || originCollectionField || undefined;
+    const effectiveDataSource =
+      dataSource ||
+      (effectiveCollection?.dataSourceKey
+        ? dataSourceManager?.getDataSource?.(effectiveCollection.dataSourceKey)
+        : null);
     const originProps = ((originFieldModel as any)?.props || {}) as Record<string, any>;
     const { value: _originValue, defaultValue: _originDefaultValue, ...originPropsWithoutValue } = originProps;
-    const baseCollectionField = (cf as CollectionField | null) || originCollectionField || undefined;
+
     const fields = typeof effectiveCollection?.getFields === 'function' ? effectiveCollection.getFields() || [] : [];
-    const resolvedField =
+    const f =
       fields.find((x: any) => x?.name === fieldName) ||
       (typeof effectiveCollection?.getField === 'function'
         ? (effectiveCollection.getField(fieldName) as any)
         : undefined) ||
-      baseCollectionField;
+      effectiveCollectionField;
 
-    const binding = resolvedField
-      ? EditableItemModel.getDefaultBindingByField(
-          resolved?.itemModel?.context || flowCtx.model?.context,
-          resolvedField,
-        )
+    const binding = f
+      ? EditableItemModel.getDefaultBindingByField(resolved?.itemModel?.context || flowCtx.model?.context, f)
       : null;
-    const effectiveFieldModelUse = resolveAssignValueFieldModelUse({
+    const defaultBindingUse: string | undefined = binding?.modelName;
+    const customFieldSettings = itemModelAny?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
+    const fieldSettingsInit = resolveAssignValueFieldSettingsInit({
       itemModel,
-      fieldModelUse: binding?.modelName,
-      collectionField: (resolvedField as CollectionField | undefined) || baseCollectionField || cf,
-      preferFormItemFieldModel,
-    });
-    if (!effectiveFieldModelUse) return;
-
-    const editorFieldContext = resolveAssignValueEditorFieldContext({
       collection: effectiveCollection,
       fieldPath,
       fieldName,
-      collectionField: (resolvedField as CollectionField | undefined) || baseCollectionField || cf,
-      nestedAssociation: resolved?.nestedAssociation,
-      effectiveFieldModelUse,
     });
-    const tempCollection = editorFieldContext.collection || effectiveCollection;
-    const tempFieldPath = editorFieldContext.fieldPath || fieldPath;
-    const tempFieldName = editorFieldContext.fieldName || fieldName;
-    const tempCollectionField =
-      (tempCollection && tempFieldName && typeof tempCollection?.getField === 'function'
-        ? (tempCollection.getField(tempFieldName) as CollectionField | undefined)
-        : undefined) ||
-      editorFieldContext.collectionField ||
-      (resolvedField as CollectionField | undefined) ||
-      baseCollectionField;
-    const tempDataSource =
-      (tempCollection?.dataSourceKey ? dataSourceManager?.getDataSource?.(tempCollection.dataSourceKey) : undefined) ||
-      dataSource ||
-      null;
+    const { use: effectiveFieldModelUse, stepParams: tempFieldStepParams } = resolveAssignValueFieldModelConfig({
+      itemModel,
+      defaultBindingUse,
+      collectionField: effectiveCollectionField,
+      preferFormItemFieldModel,
+      fieldSettingsInit,
+    });
+    if (!effectiveFieldModelUse) return;
 
-    const customFieldSettings = itemModelAny?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
     const customFieldProps = itemModelAny?.customFieldProps || customFieldSettings?.fieldModelProps || {};
-    const customFieldName = typeof customFieldSettings?.name === 'string' ? customFieldSettings.name : undefined;
-    const normalizedFieldPath = tempFieldPath.startsWith(`${CUSTOM_FIELD_TARGET_PATH_PREFIX}:`)
-      ? customFieldName || tempFieldName
-      : tempFieldPath;
-    const tempFieldStepParams = buildAssignValueFieldStepParams({
-      originStepParams: (originFieldModel as any)?.stepParams as Record<string, any>,
-      effectiveFieldModelUse,
-      dataSourceKey: tempCollection?.dataSourceKey,
-      collectionName: tempCollection?.name,
-      fieldPath: normalizedFieldPath,
-    });
 
     const created = engine?.createModel?.({
       use: 'VariableFieldFormModel',
       subModels: {
         fields: [
           {
-            // 字段赋值编辑器优先使用“值编辑”场景下更合适的模型：
-            // - 常规情况回到字段绑定的可编辑模型
-            // - 文件关系等特殊场景改用 RecordSelectFieldModel
-            // - 仅在 preferFormItemFieldModel=true（如筛选表单默认值）时，才复用当前表单字段模型
             use: effectiveFieldModelUse,
             stepParams: tempFieldStepParams,
             props: {
@@ -1006,9 +920,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     });
     if (!created) return;
 
-    if (tempCollection) created.context?.defineProperty?.('collection', { value: tempCollection });
-    if (tempDataSource) created.context?.defineProperty?.('dataSource', { value: tempDataSource });
-    if (tempCollectionField) created.context?.defineProperty?.('collectionField', { value: tempCollectionField });
+    // 注入上下文（集合/数据源/字段/区块/资源）
+    if (effectiveCollection) created.context?.defineProperty?.('collection', { value: effectiveCollection });
+    if (effectiveDataSource) created.context?.defineProperty?.('dataSource', { value: effectiveDataSource });
+    if (effectiveCollectionField)
+      created.context?.defineProperty?.('collectionField', { value: effectiveCollectionField });
     if (blockModel) created.context?.defineProperty?.('blockModel', { value: blockModel });
     if (created.context) {
       Object.defineProperty(created.context, 'resource', {
@@ -1018,8 +934,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       });
     }
 
+    // 字段模型基础属性设定
     const fm = created?.subModels?.fields?.[0];
-    const multiple = isToManyAssociationField(tempCollectionField);
+    const multiple = isToManyAssociationField(effectiveCollectionField);
     const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
     const overrideLabel =
       typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label
@@ -1037,12 +954,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       style: nextStyle,
     });
     fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
-    ensureOptionsFromUiSchemaEnumIfAbsent(fm, tempCollectionField);
-
+    // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
+    ensureOptionsFromUiSchemaEnumIfAbsent(fm, effectiveCollectionField);
+    // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
+    // 仅当未显式传入 mode 时设置，避免覆盖外部自定义
     const modePropExists = typeof (fm as any)?.props?.mode !== 'undefined';
-    const modeFromSchema = (tempCollectionField?.uiSchema as any)?.['x-component-props']?.mode;
+    const modeFromSchema = (effectiveCollectionField?.uiSchema as any)?.['x-component-props']?.mode;
     const nextMode =
-      tempCollectionField?.interface === 'multipleSelect'
+      effectiveCollectionField?.interface === 'multipleSelect'
         ? typeof modeFromSchema === 'string'
           ? modeFromSchema
           : 'multiple'
@@ -1052,14 +971,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!modePropExists && nextMode) {
       fm?.setProps?.({ mode: nextMode });
     }
-
-    if (tempCollectionField?.targetCollection) {
-      const targetCol = tempCollectionField.targetCollection;
+    if (effectiveCollectionField?.targetCollection) {
+      const targetCol = effectiveCollectionField.targetCollection;
       const prevFieldNames = (fm?.props?.fieldNames as { label?: unknown; value?: unknown } | undefined) || {};
       const valueKey =
         (typeof associationFieldNamesOverride?.value === 'string' && associationFieldNamesOverride.value) ||
         (typeof prevFieldNames?.value === 'string' && prevFieldNames.value) ||
-        tempCollectionField?.targetKey ||
+        effectiveCollectionField?.targetKey ||
         targetCol?.filterTargetKey ||
         'id';
       const inheritedLabel =
