@@ -974,6 +974,28 @@ export const flowSurfaceExamples = {
       tryTemplate: true,
     },
   },
+  addFieldSavePopupTemplate: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'nickname',
+    popup: {
+      blocks: [
+        {
+          key: 'employee-popup-details',
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+          fields: ['nickname'],
+        },
+      ],
+      saveAsTemplate: {
+        name: 'employee-popup-template',
+        description: 'Save this explicit field popup as a reusable popup template.',
+      },
+    },
+  },
   addAction: {
     target: {
       uid: 'filter-form-block-uid',
@@ -1000,6 +1022,28 @@ export const flowSurfaceExamples = {
     type: 'popup',
     popup: {
       tryTemplate: true,
+    },
+  },
+  addSavePopupAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'popup',
+    popup: {
+      blocks: [
+        {
+          key: 'employee-popup-table',
+          type: 'table',
+          resource: {
+            binding: 'currentCollection',
+          },
+          fields: ['username', 'nickname'],
+        },
+      ],
+      saveAsTemplate: {
+        name: 'employee-popup-template',
+        description: 'Save this explicit action popup as a reusable popup template.',
+      },
     },
   },
   addJsAction: {
@@ -1061,6 +1105,28 @@ export const flowSurfaceExamples = {
     type: 'view',
     popup: {
       tryTemplate: true,
+    },
+  },
+  addRecordSavePopupTemplate: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'view',
+    popup: {
+      blocks: [
+        {
+          key: 'employee-record-popup-details',
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+          fields: ['username', 'nickname'],
+        },
+      ],
+      saveAsTemplate: {
+        name: 'employee-popup-template',
+        description: 'Save this explicit record-action popup as a reusable popup template.',
+      },
     },
   },
   addRecordAddChildAction: {

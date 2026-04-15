@@ -93,7 +93,15 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
 ];
 
 const APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
-const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'tryTemplate', 'blocks', 'layout'];
+const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
+  'title',
+  'mode',
+  'template',
+  'tryTemplate',
+  'saveAsTemplate',
+  'blocks',
+  'layout',
+];
 const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
 const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
 const APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS = [
@@ -582,6 +590,20 @@ function compilePopup(
     : _.isBoolean(popup.tryTemplate)
       ? popup.tryTemplate
       : throwBadRequest(`${context}.tryTemplate must be a boolean`);
+  const saveAsTemplate = _.isUndefined(popup.saveAsTemplate)
+    ? undefined
+    : _.isPlainObject(popup.saveAsTemplate)
+      ? {
+          name: assertNonEmptyString(popup.saveAsTemplate.name, `${context}.saveAsTemplate.name`),
+          description: assertNonEmptyString(popup.saveAsTemplate.description, `${context}.saveAsTemplate.description`),
+        }
+      : throwBadRequest(`${context}.saveAsTemplate must be an object`);
+  if (saveAsTemplate && template) {
+    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
+  }
+  if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
+    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.tryTemplate`);
+  }
   if (template) {
     return {
       popup: {
@@ -595,6 +617,9 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
+  if (saveAsTemplate && !popupBlocks.length) {
+    throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
+  }
   const compiledBlocks = popupBlocks.length
     ? compileBlocks(
         popupBlocks,
@@ -620,6 +645,7 @@ function compilePopup(
     mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
     template,
     ...(tryTemplate ? { tryTemplate: true } : {}),
+    ...(saveAsTemplate ? { saveAsTemplate } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
     layout,
   });

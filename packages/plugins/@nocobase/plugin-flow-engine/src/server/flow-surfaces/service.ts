@@ -312,6 +312,11 @@ type FlowSurfaceSqlChartPreview = {
   riskyHints?: FlowSurfaceChartHint[];
 };
 
+type FlowSurfacePopupSaveAsTemplate = {
+  name: string;
+  description: string;
+};
+
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel']);
 const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -6345,10 +6350,85 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(popup)) {
       throwBadRequest(`flowSurfaces ${actionName} popup must be an object`);
     }
-    if (!_.isUndefined(popup.tryTemplate) && typeof popup.tryTemplate !== 'boolean') {
-      throwBadRequest(`flowSurfaces ${actionName} popup.tryTemplate must be a boolean`);
+    const normalizedPopup = _.cloneDeep(popup);
+    const tryTemplate = this.normalizeOptionalPopupTryTemplate(actionName, normalizedPopup.tryTemplate);
+    const saveAsTemplate = this.normalizePopupSaveAsTemplate(actionName, normalizedPopup.saveAsTemplate);
+    if (saveAsTemplate && !_.isUndefined(normalizedPopup.template)) {
+      throwBadRequest(`flowSurfaces ${actionName} popup.saveAsTemplate cannot be combined with popup.template`);
     }
-    return popup;
+    if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
+      throwBadRequest(`flowSurfaces ${actionName} popup.saveAsTemplate cannot be combined with popup.tryTemplate`);
+    }
+    if (_.isUndefined(tryTemplate)) {
+      delete normalizedPopup.tryTemplate;
+    } else {
+      normalizedPopup.tryTemplate = tryTemplate;
+    }
+    if (_.isUndefined(saveAsTemplate)) {
+      delete normalizedPopup.saveAsTemplate;
+    } else {
+      normalizedPopup.saveAsTemplate = saveAsTemplate;
+    }
+    return normalizedPopup;
+  }
+
+  private normalizePopupSaveAsTemplate(
+    actionName: string,
+    value: any,
+    fieldName = 'popup.saveAsTemplate',
+  ): FlowSurfacePopupSaveAsTemplate | undefined {
+    if (_.isUndefined(value)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${fieldName} must be an object`);
+    }
+    return {
+      name: normalizeRequiredTemplateString(actionName, value.name, `${fieldName}.name`),
+      description: normalizeRequiredTemplateString(actionName, value.description, `${fieldName}.description`),
+    };
+  }
+
+  private hasInlinePopupSaveAsTemplateSource(popup: Record<string, any> | undefined) {
+    return hasFlowSurfaceInlinePopupBlocks(popup);
+  }
+
+  private assertInlinePopupSaveAsTemplateSource(actionName: string, popup: Record<string, any> | undefined) {
+    if (!popup?.saveAsTemplate) {
+      return;
+    }
+    if (!this.hasInlinePopupSaveAsTemplateSource(popup)) {
+      throwBadRequest(`flowSurfaces ${actionName} popup.saveAsTemplate requires explicit local popup.blocks`);
+    }
+  }
+
+  private clearPopupSurfaceKeys(result: Record<string, any>) {
+    delete result.popupPageUid;
+    delete result.popupTabUid;
+    delete result.popupGridUid;
+  }
+
+  private async savePopupAsTemplate(
+    hostUid: string | undefined,
+    popup: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    const normalizedHostUid = String(hostUid || '').trim();
+    const saveAsTemplate = popup?.saveAsTemplate as FlowSurfacePopupSaveAsTemplate | undefined;
+    if (!normalizedHostUid || !saveAsTemplate) {
+      return;
+    }
+    await this.saveTemplate(
+      {
+        target: {
+          uid: normalizedHostUid,
+        },
+        name: saveAsTemplate.name,
+        description: saveAsTemplate.description,
+        saveMode: 'convert',
+      },
+      options,
+    );
   }
 
   private buildInlinePopupTemplateOpenView(popup: Record<string, any>) {
@@ -7037,6 +7117,7 @@ export class FlowSurfacesService {
       if (!popup || !fieldHostUid) {
         return;
       }
+      this.assertInlinePopupSaveAsTemplateSource(actionName, popup);
       const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup.layout);
       if (popup.tryTemplate && !hasLocalPopupContent) {
         return;
@@ -7054,6 +7135,11 @@ export class FlowSurfacesService {
         options,
       );
       Object.assign(result, await this.collectPopupSurfaceKeys(fieldHostUid, options.transaction));
+      if (popup.saveAsTemplate) {
+        await this.savePopupAsTemplate(fieldHostUid, popup, options);
+        this.clearPopupSurfaceKeys(result);
+        Object.assign(result, await this.collectPopupSurfaceKeys(fieldHostUid, options.transaction));
+      }
     } catch (error: any) {
       rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} popup invalid`);
     }
@@ -7434,6 +7520,11 @@ export class FlowSurfacesService {
 
     const openView = this.resolvePopupHostOpenView(actionNode);
     if (this.isExternalPopupOpenView(openView, actionNode?.uid)) {
+      if (popup?.saveAsTemplate) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} popup.saveAsTemplate cannot be combined with external openView.uid`,
+        );
+      }
       if (_.isUndefined(popup) || this.isSemanticallyEmptyInlinePopup(popup)) {
         return;
       }
@@ -7480,6 +7571,7 @@ export class FlowSurfacesService {
       return;
     }
     const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultActionPopup(actionNode, popup, options);
+    this.assertInlinePopupSaveAsTemplateSource(actionName, popup);
     const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup?.layout);
     if (_.isUndefined(popup) && !shouldAutoCompleteDefaultPopup) {
       return;
@@ -7503,6 +7595,9 @@ export class FlowSurfacesService {
           },
           options,
         );
+      }
+      if (popup?.saveAsTemplate) {
+        await this.savePopupAsTemplate(actionUid, popup, options);
       }
     } catch (error: any) {
       rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} popup invalid`);

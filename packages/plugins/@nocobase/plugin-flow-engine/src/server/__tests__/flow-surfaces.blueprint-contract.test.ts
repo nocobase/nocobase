@@ -21,6 +21,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { expectTemplateUsage, getListData } from './flow-surfaces.templates.helpers';
 
 describe('flowSurfaces applyBlueprint contract', () => {
   let context: FlowSurfacesContractContext;
@@ -430,6 +431,146 @@ describe('flowSurfaces applyBlueprint contract', () => {
           item?.use === 'DetailsBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'skills',
       ),
     ).toHaveLength(1);
+  });
+
+  it('should save inline popup content as templates through applyBlueprint popup.saveAsTemplate', async () => {
+    const unique = Date.now();
+    const fieldTemplateName = `Blueprint popup saveAsTemplate field ${unique}`;
+    const actionTemplateName = `Blueprint popup saveAsTemplate action ${unique}`;
+    const recordActionTemplateName = `Blueprint popup saveAsTemplate record ${unique}`;
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Popup saveAsTemplate blueprint page ${unique}`,
+          },
+        },
+        page: {
+          title: 'Popup saveAsTemplate blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'employeeNickname',
+                    field: 'nickname',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeePopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: fieldTemplateName,
+                        description: 'Popup template saved from applyBlueprint field popup.',
+                      },
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'employeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+                actions: [
+                  {
+                    key: 'employeePopupAction',
+                    type: 'popup',
+                    title: 'Open employee popup',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeePopupTable',
+                          type: 'table',
+                          resource: {
+                            binding: 'currentCollection',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: actionTemplateName,
+                        description: 'Popup template saved from applyBlueprint action popup.',
+                      },
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    key: 'employeeViewAction',
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeeRecordPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['status'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: recordActionTemplateName,
+                        description: 'Popup template saved from applyBlueprint record action popup.',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+
+    async function expectSavedTemplateReference(templateName: string) {
+      const listed = getListData(
+        await rootAgent.resource('flowSurfaces').listTemplates({
+          values: {
+            type: 'popup',
+            search: templateName,
+          },
+        }),
+      );
+      const template = listed.rows.find((row: any) => row.name === templateName);
+      expect(template?.uid).toBeTruthy();
+      const matchedNode = collectDescendantNodes(
+        data.surface.tree,
+        (item) => item?.popup?.template?.uid === template.uid,
+      )[0];
+      expect(matchedNode?.popup?.template).toMatchObject({
+        uid: template.uid,
+        mode: 'reference',
+      });
+      expect(matchedNode?.popup?.pageUid).toBeUndefined();
+      expect(matchedNode?.popup?.tabUid).toBeUndefined();
+      expect(matchedNode?.popup?.gridUid).toBeUndefined();
+      await expectTemplateUsage(rootAgent, template.uid, 1);
+      return template;
+    }
+
+    await expectSavedTemplateReference(fieldTemplateName);
+    await expectSavedTemplateReference(actionTemplateName);
+    await expectSavedTemplateReference(recordActionTemplateName);
   });
 
   it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
@@ -1778,7 +1919,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, tryTemplate, blocks, layout; unsupported keys: foo',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, tryTemplate, saveAsTemplate, blocks, layout; unsupported keys: foo',
     );
   });
 

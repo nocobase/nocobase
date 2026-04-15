@@ -418,7 +418,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also set `popup.saveAsTemplate={ name, description }` to convert the newly created local popup into a saved popup template immediately. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
@@ -447,7 +447,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template` or set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or set `popup.saveAsTemplate={ name, description }` to immediately save newly created local popup content as a popup template reference. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
     ),
     requestBody: {
       required: true,
@@ -722,7 +722,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
     ),
     requestBody: {
       required: true,
@@ -754,6 +754,10 @@ const actionDocs: Record<string, any> = {
               summary: 'Create a bound field and let the backend auto-select a compatible popup template',
               value: examples.addFieldAutoPopupTemplate,
             },
+            savePopupTemplate: {
+              summary: 'Create a bound field and immediately save its explicit local popup as a popup template',
+              value: examples.addFieldSavePopupTemplate,
+            },
           },
         },
       },
@@ -764,7 +768,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored.',
     ),
     requestBody: {
       required: true,
@@ -792,6 +796,11 @@ const actionDocs: Record<string, any> = {
               summary: 'Create a popup-capable action and let the backend auto-select a compatible popup template',
               value: examples.addAutoPopupAction,
             },
+            savePopupTemplate: {
+              summary:
+                'Create a popup-capable action and immediately save its explicit local popup as a popup template',
+              value: examples.addSavePopupAction,
+            },
           },
         },
       },
@@ -802,7 +811,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
+      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. \`popup.saveAsTemplate={ name, description }\` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
     ),
     requestBody: {
       required: true,
@@ -827,6 +836,11 @@ const actionDocs: Record<string, any> = {
                 'Create a view/edit-like record action and let the backend auto-select a compatible popup template',
               value: examples.addRecordAutoPopupTemplate,
             },
+            savePopupTemplate: {
+              summary:
+                'Create a view/edit-like record action and immediately save its explicit local popup as a popup template',
+              value: examples.addRecordSavePopupTemplate,
+            },
           },
         },
       },
@@ -846,7 +860,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple fields sequentially under the same target. The request may either import one shared `template` or create explicit `fields[]`. Each item may include `settings`, and popup-capable fields may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple fields sequentially under the same target. The request may either import one shared `template` or create explicit `fields[]`. Each item may include `settings`, and popup-capable fields may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -855,7 +869,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple non-record actions sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple non-record actions sequentially under the same target. Each item may include `settings`, and popup-capable actions may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply. Record actions do not belong to this entry and should use `addRecordActions` instead. Each failed item always returns an `error` with `message/type/code/status`.',
+      'Creates multiple non-record actions sequentially under the same target. Each item may include `settings`, and popup-capable actions may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply. Record actions do not belong to this entry and should use `addRecordActions` instead. Each failed item always returns an `error` with `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddActionsRequest', examples.addActions),
     responses: responses('FlowSurfaceAddActionsResult'),
@@ -864,7 +878,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple record actions sequentially under the same record-capable owner target',
     description: valuesCompatibilityNote(
-      `Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Each item may include \`settings\`, and popup-capable actions may also include \`popup\` directly for local popup content or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored. Raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an \`error\` with \`message/type/code/status\`.`,
+      `Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Each item may include \`settings\`, and popup-capable actions may also include \`popup\` directly for local popup content or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. \`popup.saveAsTemplate={ name, description }\` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored. Raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an \`error\` with \`message/type/code/status\`.`,
     ),
     requestBody: {
       required: true,
@@ -2075,6 +2089,21 @@ const schemas = {
   FlowSurfacePopupTemplateRef: {
     allOf: [ref('FlowSurfaceTemplateRef')],
   },
+  FlowSurfacePopupSaveAsTemplate: {
+    type: 'object',
+    required: ['name', 'description'],
+    properties: {
+      name: {
+        type: 'string',
+        description: 'Template name saved immediately from explicit local popup content.',
+      },
+      description: {
+        type: 'string',
+        description: 'Template description saved immediately from explicit local popup content.',
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceComposeActionPopup: {
     type: 'object',
     anyOf: [
@@ -2097,6 +2126,11 @@ const schemas = {
         type: 'boolean',
         description:
           'When true and no explicit popup.template is provided, the backend tries to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, the request silently falls back to local/default popup behavior.',
+      },
+      saveAsTemplate: {
+        allOf: [ref('FlowSurfacePopupSaveAsTemplate')],
+        description:
+          'Immediately saves explicit local popup blocks as a popup template and converts the created popup to that template reference. Requires local `popup.blocks` and cannot be combined with `popup.template` or `popup.tryTemplate`.',
       },
       mode: {
         type: 'string',
@@ -2132,6 +2166,11 @@ const schemas = {
         type: 'boolean',
         description:
           'When true and no explicit popup.template is provided, the backend tries to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, the request silently falls back to local/default popup behavior.',
+      },
+      saveAsTemplate: {
+        allOf: [ref('FlowSurfacePopupSaveAsTemplate')],
+        description:
+          'Immediately saves explicit local popup blocks as a popup template and converts the created popup to that template reference. Requires local `popup.blocks` and cannot be combined with `popup.template` or `popup.tryTemplate`.',
       },
       mode: {
         type: 'string',
@@ -3139,6 +3178,11 @@ const schemas = {
         type: 'boolean',
         description:
           'When true and no explicit popup.template is provided, applyBlueprint asks the backend to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, inline popup blocks/layout still act as the fallback if present.',
+      },
+      saveAsTemplate: {
+        allOf: [ref('FlowSurfacePopupSaveAsTemplate')],
+        description:
+          'Immediately saves explicit local popup blocks as a popup template and converts the created popup to that template reference. Requires local `popup.blocks` and cannot be combined with `popup.template` or `popup.tryTemplate`.',
       },
       blocks: {
         type: 'array',
