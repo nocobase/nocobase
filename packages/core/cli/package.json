@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "bin": {
+    "nb": "./bin/run.js",
     "nocobase": "./bin/run.js"
   },
   "files": [
