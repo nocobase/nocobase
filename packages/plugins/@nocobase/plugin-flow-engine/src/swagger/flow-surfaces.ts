@@ -57,6 +57,7 @@ const ACTION_TYPE_ENUM = [
   'reset',
   'collapse',
 ];
+const APPLY_BLUEPRINT_ACTION_TYPE_ENUM = ACTION_TYPE_ENUM.filter((item) => item !== 'addChild');
 const NON_RECORD_ACTION_TYPE_ENUM = [
   'filter',
   'addNew',
@@ -107,6 +108,10 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'actionPanel',
   'jsBlock',
 ];
+const ADD_CHILD_TREE_TABLE_NOTE =
+  '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled.';
+const APPLY_BLUEPRINT_ADD_CHILD_NOTE =
+  '`addChild` is not auto-promoted from `actions`; author it only under `recordActions`, and only when the live target `catalog.recordActions` exposes it for a tree table.';
 const REACTION_FINGERPRINT_DESCRIPTION =
   'Optional optimistic-concurrency fingerprint from `getReactionMeta.capabilities[].fingerprint`. When provided, the write fails with HTTP 409 if the current slot fingerprint no longer matches.';
 const REACTION_RULES_REPLACE_DESCRIPTION =
@@ -717,7 +722,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
     ),
     requestBody: {
       required: true,
@@ -755,7 +760,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored.',
     ),
     requestBody: {
       required: true,
@@ -789,7 +794,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      'Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode.',
+      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
     ),
     requestBody: {
       required: true,
@@ -800,6 +805,10 @@ const actionDocs: Record<string, any> = {
             view: {
               summary: 'Create a view action under a table record-action owner target',
               value: examples.addRecordAction,
+            },
+            addChild: {
+              summary: 'Create an addChild record action on a tree table target',
+              value: examples.addRecordAddChildAction,
             },
             js: {
               summary: 'Create a JS record action under a details block owner target',
@@ -824,7 +833,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple fields sequentially under the same target. The request may either import one shared `template` or create explicit `fields[]`. Each item may include `settings`, and popup-capable fields may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. Raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple fields sequentially under the same target. The request may either import one shared `template` or create explicit `fields[]`. Each item may include `settings`, and popup-capable fields may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -833,7 +842,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple non-record actions sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple non-record actions sequentially under the same target. Each item may include `settings`, and popup-capable actions may also include `popup`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply. Record actions do not belong to this entry and should use `addRecordActions` instead. Each failed item always returns an `error` with `message/type/code/status`.',
+      'Creates multiple non-record actions sequentially under the same target. Each item may include `settings`, and popup-capable actions may also include `popup` directly for local popup content or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply. Record actions do not belong to this entry and should use `addRecordActions` instead. Each failed item always returns an `error` with `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddActionsRequest', examples.addActions),
     responses: responses('FlowSurfaceAddActionsResult'),
@@ -842,9 +851,26 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple record actions sequentially under the same record-capable owner target',
     description: valuesCompatibilityNote(
-      'Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. Each item may include `settings`, and popup-capable actions may also include `popup`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an `error` with `message/type/code/status`.',
+      `Creates multiple record actions sequentially under the same target. The target must be a record-capable owner target, and the server resolves the canonical record-action container automatically. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Each item may include \`settings\`, and popup-capable actions may also include \`popup\` directly for local popup content or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored. Raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Each failed item always returns an \`error\` with \`message/type/code/status\`.`,
     ),
-    requestBody: requestBody('FlowSurfaceAddRecordActionsRequest', examples.addRecordActions),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceAddRecordActionsRequest'),
+          examples: {
+            basic: {
+              summary: 'Create multiple standard record actions under a table owner target',
+              value: examples.addRecordActions,
+            },
+            addChild: {
+              summary: 'Create addChild under a tree table owner target',
+              value: examples.addRecordAddChildActions,
+            },
+          },
+        },
+      },
+    },
     responses: responses('FlowSurfaceAddRecordActionsResult'),
   },
   updateSettings: {
@@ -3105,6 +3131,7 @@ const schemas = {
     oneOf: [
       {
         type: 'string',
+        enum: APPLY_BLUEPRINT_ACTION_TYPE_ENUM,
       },
       {
         type: 'object',
@@ -3113,9 +3140,8 @@ const schemas = {
           key: { type: 'string' },
           type: {
             type: 'string',
-            enum: ACTION_TYPE_ENUM,
-            description:
-              'Action type. On record-capable blocks (`table`, `details`, `list`, `gridCard`), record actions such as `view`, `edit`, `updateRecord`, and `delete` should normally be authored under `recordActions`; applyBlueprint also auto-promotes them from `actions` for convenience. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+            enum: APPLY_BLUEPRINT_ACTION_TYPE_ENUM,
+            description: `Action type. On record-capable blocks (\`table\`, \`details\`, \`list\`, \`gridCard\`), record actions such as \`view\`, \`edit\`, \`updateRecord\`, \`delete\`, and \`duplicate\` should normally be authored under \`recordActions\`; applyBlueprint also auto-promotes those common record actions from \`actions\` for convenience. ${APPLY_BLUEPRINT_ADD_CHILD_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -3131,6 +3157,7 @@ const schemas = {
     oneOf: [
       {
         type: 'string',
+        enum: RECORD_ACTION_TYPE_ENUM,
       },
       {
         type: 'object',
@@ -3140,8 +3167,7 @@ const schemas = {
           type: {
             type: 'string',
             enum: RECORD_ACTION_TYPE_ENUM,
-            description:
-              'Record-action type for record-capable blocks such as `table`, `details`, `list`, and `gridCard`. For custom `edit` popups, include exactly one `editForm` block inside popup.blocks.',
+            description: `Record-action type for record-capable blocks such as \`table\`, \`details\`, \`list\`, and \`gridCard\`. ${ADD_CHILD_TREE_TABLE_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
@@ -3196,8 +3222,7 @@ const schemas = {
       },
       actions: {
         type: 'array',
-        description:
-          'Block-level actions. On record-capable blocks, `view`, `edit`, `updateRecord`, and `delete` should normally go to `recordActions`; applyBlueprint auto-promotes those common record actions when they are written here.',
+        description: `Block-level actions. On record-capable blocks, \`view\`, \`edit\`, \`updateRecord\`, \`delete\`, and \`duplicate\` should normally go to \`recordActions\`; applyBlueprint auto-promotes those common record actions when they are written here. ${APPLY_BLUEPRINT_ADD_CHILD_NOTE}`,
         items: ref('FlowSurfaceApplyBlueprintActionSpec'),
       },
       recordActions: {

@@ -206,6 +206,8 @@ export class AIConversationsManager {
           const tool = toolsMap.get(toolCall.name);
           const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
           toolCall.invokeStatus = toolMessage?.invokeStatus;
+          toolCall.invokeStartTime = toolMessage?.invokeStartTime;
+          toolCall.invokeEndTime = toolMessage?.invokeEndTime;
           toolCall.auto = toolMessage?.auto;
           toolCall.status = toolMessage?.status;
           toolCall.content = toolMessage?.content;

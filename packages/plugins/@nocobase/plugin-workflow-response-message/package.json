@@ -11,6 +11,9 @@
   "homepage": "https://docs.nocobase.com/handbook/workflow-response-message",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-response-message",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-response-message",
+  "devDependencies": {
+    "joi": "^17.13.3"
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-workflow": "2.x",

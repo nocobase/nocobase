@@ -80,7 +80,7 @@ describe('workflow > instructions > mailer > validation', () => {
     const { status } = await agent.resource('workflows.nodes', workflow.id).create({
       values: {
         type: 'mailer',
-        config: { provider: { host: 'smtp.example.com', from: '{{$variable.from}}' } },
+        config: { provider: { host: 'smtp.example.com' }, from: '{{$variable.from}}' },
       },
     });
     expect(status).toBe(200);
@@ -90,7 +90,7 @@ describe('workflow > instructions > mailer > validation', () => {
     const { status } = await agent.resource('workflows.nodes', workflow.id).create({
       values: {
         type: 'mailer',
-        config: { provider: { host: 'smtp.example.com', to: ['{{$context.data.email}}'] } },
+        config: { provider: { host: 'smtp.example.com' }, to: ['{{$context.data.email}}'] },
       },
     });
     expect(status).toBe(200);
@@ -103,9 +103,9 @@ describe('workflow > instructions > mailer > validation', () => {
         config: {
           provider: {
             host: 'smtp.example.com',
-            cc: ['{{$context.data.cc}}'],
-            bcc: ['{{$context.data.bcc}}'],
           },
+          cc: ['{{$context.data.cc}}'],
+          bcc: ['{{$context.data.bcc}}'],
         },
       },
     });

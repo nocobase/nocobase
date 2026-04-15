@@ -1036,6 +1036,20 @@ export const flowSurfaceExamples = {
       ],
     },
   },
+  addRecordAddChildAction: {
+    target: {
+      uid: 'tree-table-block-uid',
+    },
+    type: 'addChild',
+    settings: {
+      title: 'Add child category',
+      openView: {
+        dataSourceKey: 'main',
+        collectionName: 'categories',
+        mode: 'drawer',
+      },
+    },
+  },
   addRecordJsAction: {
     target: {
       uid: 'details-block-uid',
@@ -1177,6 +1191,25 @@ export const flowSurfaceExamples = {
         type: 'delete',
         settings: {
           title: 'Delete user',
+        },
+      },
+    ],
+  },
+  addRecordAddChildActions: {
+    target: {
+      uid: 'tree-table-block-uid',
+    },
+    recordActions: [
+      {
+        key: 'addChild',
+        type: 'addChild',
+        settings: {
+          title: 'Add child category',
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'categories',
+            mode: 'drawer',
+          },
         },
       },
     ],

@@ -9,6 +9,8 @@
 
 import _ from 'lodash';
 import {
+  FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS,
+  FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
   createFlowSurfacesContractContext,
   createPage,
   createMenu,
@@ -64,7 +66,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
   }
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
+      enabledPluginAliases: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
+    });
     ({ rootAgent, flowRepo, routesRepo } = context);
   }, 120000);
 
@@ -157,6 +162,133 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(getRouteBackedTabs(data.surface).map((tab: any) => tab?.props?.title)).toEqual(['Overview', 'Summary']);
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
+  });
+
+  it('should ignore local popup blocks/layout/mode when applyBlueprint binds popup.template', async () => {
+    const sourcePage = await createPage(rootAgent, {
+      title: `Popup template source page ${Date.now()}`,
+      tabTitle: 'Source',
+    });
+    const sourceDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: sourcePage.gridUid },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const sourceField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: { uid: sourceDetails.uid },
+          fieldPath: 'nickname',
+          popup: {
+            blocks: [
+              {
+                key: 'sourcePopupDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const popupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceField.fieldUid || sourceField.uid },
+          name: `Blueprint popup template ${Date.now()}`,
+          description: 'Reusable popup template for applyBlueprint mixed popup payload coverage.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            title: `Popup template blueprint group ${Date.now()}`,
+          },
+          item: {
+            title: `Popup template blueprint page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Popup template blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'nickname',
+                    popup: {
+                      title: 'Employee quick view',
+                      template: {
+                        uid: popupTemplate.uid,
+                        mode: 'reference',
+                      },
+                      mode: 'append',
+                      blocks: [
+                        {
+                          key: 'ignoredPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'employees',
+                          },
+                          fields: ['status'],
+                        },
+                      ],
+                      layout: {
+                        rows: [['ignoredPopupDetails']],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const templatedField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname' &&
+        item?.popup?.template?.uid === popupTemplate.uid,
+    )[0];
+
+    expect(templatedField?.popup?.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+    expect(templatedField?.popup?.pageUid).toBeUndefined();
+    expect(templatedField?.popup?.tabUid).toBeUndefined();
+    expect(templatedField?.popup?.gridUid).toBeUndefined();
+    expect(templatedField?.stepParams?.popupSettings?.openView).toMatchObject({
+      title: 'Employee quick view',
+    });
+    expect(collectDescendantNodes(data.surface.tree, (item) => item?.use === 'MarkdownBlockModel')).toHaveLength(0);
   });
 
   it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
@@ -1020,6 +1152,162 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'ViewActionModel',
       'EditActionModel',
     ]);
+  });
+
+  it('should reject addChild written under actions in applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Misplaced addChild page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                fields: ['title'],
+                actions: [{ type: 'addChild', title: 'Add child category' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('tabs[0].blocks[0].actions[0]');
+    expect(readErrorMessage(executeRes)).toContain('must be authored under recordActions');
+  });
+
+  it('should reject addChild string shorthand written under actions in applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Misplaced addChild shorthand page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                fields: ['title'],
+                actions: ['addChild'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(readErrorMessage(executeRes)).toContain('tabs[0].blocks[0].actions[0]');
+    expect(readErrorMessage(executeRes)).toContain('must be authored under recordActions');
+  });
+
+  it('should only allow addChild under recordActions when applyBlueprint targets a tree table', async () => {
+    const invalidRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Invalid addChild blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                fields: ['title'],
+                recordActions: [{ type: 'addChild', title: 'Add child category' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('tree table');
+
+    const validRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Valid addChild blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+                recordActions: [{ type: 'addChild', title: 'Add child category' }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(validRes.status).toBe(200);
+    const data = getData(validRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
+
+    const validStringRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Valid addChild shorthand blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+                recordActions: ['addChild'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(validStringRes.status).toBe(200);
   });
 
   it('should reject unsupported applyBlueprint top-level keys', async () => {

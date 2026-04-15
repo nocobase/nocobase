@@ -480,6 +480,51 @@ describe('flowSurfaces templates', () => {
     expect(getPopupOpenView(referencedActionSurface.tree)?.uid).toBeUndefined();
     await expectTemplateUsage(rootAgent, template.uid, 2);
 
+    const referencedActionWithIgnoredLocalPopup = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'popup',
+          popup: {
+            title: 'Employee quick view',
+            template: {
+              uid: template.uid,
+              mode: 'reference',
+            },
+            mode: 'append',
+            blocks: [
+              {
+                key: 'ignored-details',
+                type: 'details',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                fields: ['status'],
+              },
+            ],
+            layout: {
+              rows: [['ignored-details']],
+            },
+          },
+        },
+      }),
+    );
+    const referencedActionWithIgnoredLocalPopupSurface = await getSurface(rootAgent, {
+      uid: referencedActionWithIgnoredLocalPopup.uid,
+    });
+    expect(referencedActionWithIgnoredLocalPopupSurface.tree.popup.template).toMatchObject({
+      uid: template.uid,
+      mode: 'reference',
+    });
+    expect(referencedActionWithIgnoredLocalPopupSurface.tree.popup.pageUid).toBeUndefined();
+    expect(referencedActionWithIgnoredLocalPopupSurface.tree.popup.tabUid).toBeUndefined();
+    expect(referencedActionWithIgnoredLocalPopupSurface.tree.popup.gridUid).toBeUndefined();
+    expect(getPopupOpenView(referencedActionWithIgnoredLocalPopupSurface.tree)).toMatchObject({
+      title: 'Employee quick view',
+    });
+    await expectTemplateUsage(rootAgent, template.uid, 3);
+
     const referencedRecordAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
         values: {
@@ -499,7 +544,7 @@ describe('flowSurfaces templates', () => {
       uid: template.uid,
       mode: 'reference',
     });
-    await expectTemplateUsage(rootAgent, template.uid, 3);
+    await expectTemplateUsage(rootAgent, template.uid, 4);
 
     const referencedPopupMutation = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -530,7 +575,7 @@ describe('flowSurfaces templates', () => {
     expect(copiedAction.popupPageUid).toBeTruthy();
     expect(copiedAction.popupTabUid).toBeTruthy();
     expect(copiedAction.popupGridUid).toBeTruthy();
-    await expectTemplateUsage(rootAgent, template.uid, 3);
+    await expectTemplateUsage(rootAgent, template.uid, 4);
     const copiedActionSurface = await getSurface(rootAgent, { uid: copiedAction.uid });
     expect(copiedActionSurface.tree.popup.mode).toBe('copy');
     expect(copiedActionSurface.tree.popup.pageUid).toBe(copiedAction.popupPageUid);
@@ -592,7 +637,7 @@ describe('flowSurfaces templates', () => {
       uid: template.uid,
       mode: 'reference',
     });
-    await expectTemplateUsage(rootAgent, template.uid, 4);
+    await expectTemplateUsage(rootAgent, template.uid, 5);
 
     const convertedPopup = getData(
       await rootAgent.resource('flowSurfaces').convertTemplateToCopy({
@@ -610,7 +655,7 @@ describe('flowSurfaces templates', () => {
     expect(referencedActionSurface.tree.popup?.gridUid).toBeTruthy();
     expect(getPopupOpenView(referencedActionSurface.tree)?.popupTemplateContext).toBeUndefined();
     expect(getPopupOpenView(referencedActionSurface.tree)?.uid).toBeUndefined();
-    await expectTemplateUsage(rootAgent, template.uid, 3);
+    await expectTemplateUsage(rootAgent, template.uid, 4);
 
     getData(
       await rootAgent.resource('flowSurfaces').removeNode({
@@ -619,7 +664,7 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    await expectTemplateUsage(rootAgent, template.uid, 2);
+    await expectTemplateUsage(rootAgent, template.uid, 3);
 
     getData(
       await rootAgent.resource('flowSurfaces').removeNode({
@@ -628,12 +673,21 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    await expectTemplateUsage(rootAgent, template.uid, 1);
+    await expectTemplateUsage(rootAgent, template.uid, 2);
 
     getData(
       await rootAgent.resource('flowSurfaces').removeNode({
         values: {
           target: { uid: configurableAction.uid },
+        },
+      }),
+    );
+    await expectTemplateUsage(rootAgent, template.uid, 1);
+
+    getData(
+      await rootAgent.resource('flowSurfaces').removeNode({
+        values: {
+          target: { uid: referencedActionWithIgnoredLocalPopup.uid },
         },
       }),
     );
@@ -870,6 +924,46 @@ describe('flowSurfaces templates', () => {
     expect(getPopupOpenView(referencedFieldSurface.tree)?.uid).toBeUndefined();
     await expectTemplateUsage(rootAgent, template.uid, 2);
 
+    const referencedFieldWithIgnoredLocalPopup = await addFieldData(rootAgent, {
+      target: { uid: sourceDetails.uid },
+      fieldPath: 'nickname',
+      popup: {
+        title: 'Employee status quick view',
+        template: {
+          uid: template.uid,
+          mode: 'reference',
+        },
+        mode: 'append',
+        blocks: [
+          {
+            key: 'ignored-field-popup-details',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['status'],
+          },
+        ],
+        layout: {
+          rows: [['ignored-field-popup-details']],
+        },
+      },
+    });
+    const referencedFieldWithIgnoredLocalPopupSurface = await getSurface(rootAgent, {
+      uid: referencedFieldWithIgnoredLocalPopup.fieldUid || referencedFieldWithIgnoredLocalPopup.uid,
+    });
+    expect(referencedFieldWithIgnoredLocalPopupSurface.tree.popup.template).toMatchObject({
+      uid: template.uid,
+      mode: 'reference',
+    });
+    expect(referencedFieldWithIgnoredLocalPopupSurface.tree.popup.pageUid).toBeUndefined();
+    expect(referencedFieldWithIgnoredLocalPopupSurface.tree.popup.tabUid).toBeUndefined();
+    expect(referencedFieldWithIgnoredLocalPopupSurface.tree.popup.gridUid).toBeUndefined();
+    expect(getPopupOpenView(referencedFieldWithIgnoredLocalPopupSurface.tree)).toMatchObject({
+      title: 'Employee status quick view',
+    });
+    await expectTemplateUsage(rootAgent, template.uid, 3);
+
     const referencedFieldPopupMutation = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: { uid: referencedField.fieldUid || referencedField.uid },
@@ -903,7 +997,7 @@ describe('flowSurfaces templates', () => {
     expect(copiedField.popupPageUid).toBeTruthy();
     expect(copiedField.popupTabUid).toBeTruthy();
     expect(copiedField.popupGridUid).toBeTruthy();
-    await expectTemplateUsage(rootAgent, template.uid, 2);
+    await expectTemplateUsage(rootAgent, template.uid, 3);
     const copiedFieldSurface = await getSurface(rootAgent, { uid: copiedField.fieldUid || copiedField.uid });
     expect(copiedFieldSurface.tree.popup.mode).toBe('copy');
     expect(copiedFieldSurface.tree.popup.pageUid).toBe(copiedField.popupPageUid);
@@ -959,7 +1053,7 @@ describe('flowSurfaces templates', () => {
       uid: template.uid,
       mode: 'reference',
     });
-    await expectTemplateUsage(rootAgent, template.uid, 3);
+    await expectTemplateUsage(rootAgent, template.uid, 4);
 
     const altSourceDetails = await addBlockData(rootAgent, {
       target: { uid: page.gridUid },
@@ -1013,7 +1107,7 @@ describe('flowSurfaces templates', () => {
       uid: altTemplate.uid,
       mode: 'reference',
     });
-    await expectTemplateUsage(rootAgent, template.uid, 2);
+    await expectTemplateUsage(rootAgent, template.uid, 3);
     await expectTemplateUsage(rootAgent, altTemplate.uid, 1);
 
     const convertedFieldPopup = getData(
@@ -1041,12 +1135,23 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    await expectTemplateUsage(rootAgent, template.uid, 1);
+    await expectTemplateUsage(rootAgent, template.uid, 2);
 
     getData(
       await rootAgent.resource('flowSurfaces').removeNode({
         values: {
           target: { uid: sourceField.fieldUid || sourceField.uid },
+        },
+      }),
+    );
+    await expectTemplateUsage(rootAgent, template.uid, 1);
+
+    getData(
+      await rootAgent.resource('flowSurfaces').removeNode({
+        values: {
+          target: {
+            uid: referencedFieldWithIgnoredLocalPopup.fieldUid || referencedFieldWithIgnoredLocalPopup.uid,
+          },
         },
       }),
     );
