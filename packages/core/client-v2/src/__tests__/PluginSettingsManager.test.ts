@@ -15,8 +15,8 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo', showTabs: true });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced', sort: 10 });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced', sort: 10 });
 
     const list = app.pluginSettingsManager.getList();
 
@@ -44,7 +44,7 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
 
     const menu = app.pluginSettingsManager.get('demo') as any;
     const list = app.pluginSettingsManager.getList() as any[];
@@ -62,8 +62,8 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced' });
 
     expect(app.pluginSettingsManager.getRouteName('demo')).toBe('admin.settings.demo');
     expect(app.pluginSettingsManager.getRouteName('demo.advanced')).toBe('admin.settings.demo.advanced');
@@ -83,7 +83,7 @@ describe('PluginSettingsManager v2', () => {
     });
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({
+    app.pluginSettingsManager.addPageTabItem({
       menuKey: 'demo',
       key: 'index',
       title: 'Overview',
@@ -98,8 +98,13 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo', showTabs: true });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced', sort: 1 });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced next', hidden: true });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced', sort: 1 });
+    app.pluginSettingsManager.addPageTabItem({
+      menuKey: 'demo',
+      key: 'advanced',
+      title: 'Advanced next',
+      hidden: true,
+    });
 
     expect(app.pluginSettingsManager.get('demo.advanced')).toMatchObject({
       title: 'Advanced next',
@@ -113,8 +118,8 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced' });
 
     app.pluginSettingsManager.remove('demo.advanced');
     expect(app.pluginSettingsManager.has('demo.advanced')).toBe(false);
@@ -132,7 +137,7 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo', hidden: true });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview', hidden: true });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview', hidden: true });
 
     expect(app.pluginSettingsManager.get('demo')).toMatchObject({ hidden: true });
     expect(app.pluginSettingsManager.get('demo.index')).toMatchObject({ hidden: true });
@@ -143,8 +148,8 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview', hidden: true });
-    app.pluginSettingsManager.addPageItem({
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview', hidden: true });
+    app.pluginSettingsManager.addPageTabItem({
       menuKey: 'demo',
       key: 'blocked',
       title: 'Blocked',
@@ -162,7 +167,7 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     expect(() => {
-      app.pluginSettingsManager.addPageItem({ menuKey: 'missing', key: 'index', title: 'Overview' });
+      app.pluginSettingsManager.addPageTabItem({ menuKey: 'missing', key: 'index', title: 'Overview' });
     }).toThrow(/menuKey=missing/);
   });
 
@@ -176,7 +181,7 @@ describe('PluginSettingsManager v2', () => {
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
 
     expect(() => {
-      app.pluginSettingsManager.addPageItem({ menuKey: 'demo.group', key: 'index', title: 'Overview' });
+      app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo.group', key: 'index', title: 'Overview' });
     }).toThrow(/menuKey=demo\.group/);
   });
 
@@ -184,7 +189,7 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo', aclSnippet: 'pm.demo.menu' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
     app.pluginSettingsManager.setAclSnippets(['!pm.demo.menu']);
 
     const menu = app.pluginSettingsManager.get('demo');
@@ -201,10 +206,10 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
 
     expect(() => {
-      app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'index', title: 'Overview next' });
+      app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview next' });
     }).not.toThrow();
 
     expect(app.pluginSettingsManager.get('demo.index')).toMatchObject({ title: 'Overview next' });
@@ -214,7 +219,7 @@ describe('PluginSettingsManager v2', () => {
     const app = createMockClient();
 
     app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
-    app.pluginSettingsManager.addPageItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'advanced', title: 'Advanced' });
 
     expect(() => {
       app.pluginSettingsManager.addMenuItem({ key: 'demo/advanced', title: 'Bad menu' });

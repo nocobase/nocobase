@@ -141,7 +141,7 @@ describe('app', () => {
           key: 'demo',
           title: 'Demo',
         });
-        this.pluginSettingsManager.addPageItem({
+        this.pluginSettingsManager.addPageTabItem({
           menuKey: 'demo',
           key: 'index',
           title: 'Demo',

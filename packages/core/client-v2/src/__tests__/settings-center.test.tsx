@@ -218,7 +218,7 @@ describe('settings center', () => {
     class HiddenSettingsPlugin extends Plugin {
       async load() {
         this.pluginSettingsManager.addMenuItem({ key: 'hidden-demo', title: 'Hidden demo' });
-        this.pluginSettingsManager.addPageItem({
+        this.pluginSettingsManager.addPageTabItem({
           menuKey: 'hidden-demo',
           key: 'index',
           title: 'Hidden demo',
@@ -245,7 +245,7 @@ describe('settings center', () => {
     class ProtectedSettingsPlugin extends Plugin {
       async load() {
         this.pluginSettingsManager.addMenuItem({ key: 'secure-demo', title: 'Secure demo' });
-        this.pluginSettingsManager.addPageItem({
+        this.pluginSettingsManager.addPageTabItem({
           menuKey: 'secure-demo',
           key: 'index',
           title: 'Secure demo',
@@ -278,7 +278,7 @@ describe('settings center', () => {
           title: 'Menu ACL Demo',
           aclSnippet: 'pm.menu-acl-demo.menu',
         });
-        this.pluginSettingsManager.addPageItem({
+        this.pluginSettingsManager.addPageTabItem({
           menuKey: 'menu-acl-demo',
           key: 'index',
           title: 'Menu ACL Demo',

@@ -233,7 +233,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       aclSnippet: 'pm',
       sort: -200,
     });
-    this.app.pluginSettingsManager.addPageItem({
+    this.app.pluginSettingsManager.addPageTabItem({
       menuKey: 'plugin-manager',
       key: 'index',
       title: this.app.i18n.t('Plugin manager'),
@@ -248,7 +248,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,
     });
-    this.app.pluginSettingsManager.addPageItem({
+    this.app.pluginSettingsManager.addPageTabItem({
       menuKey: 'system-settings',
       key: 'index',
       title: this.app.i18n.t('System settings'),

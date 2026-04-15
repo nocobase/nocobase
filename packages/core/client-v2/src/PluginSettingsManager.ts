@@ -102,7 +102,7 @@ export interface PluginSettingsManagerBaseLike {
 
 export interface PluginSettingsManagerLike extends PluginSettingsManagerBaseLike {
   addMenuItem(options: PluginSettingsMenuItemOptions): void;
-  addPageItem(options: PluginSettingsPageItemOptions): void;
+  addPageTabItem(options: PluginSettingsPageItemOptions): void;
 }
 
 interface InternalMenuItemRecord extends PluginSettingsMenuItemOptions {
@@ -123,7 +123,7 @@ interface InternalPageItemRecord extends PluginSettingsPageItemOptions {
  * @example
  * ```typescript
  * app.pluginSettingsManager.addMenuItem({ key: 'system-settings', title: 'System settings' });
- * app.pluginSettingsManager.addPageItem({ menuKey: 'system-settings', key: 'index', componentLoader: async () => ({ default: Page }) });
+ * app.pluginSettingsManager.addPageTabItem({ menuKey: 'system-settings', key: 'index', componentLoader: async () => ({ default: Page }) });
  * ```
  */
 export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
@@ -228,7 +228,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
    * @returns {void}
    * @throws {Error} 当 menu 不存在或路径冲突时抛错
    */
-  addPageItem(options: PluginSettingsPageItemOptions) {
+  addPageTabItem(options: PluginSettingsPageItemOptions) {
     this.assertMenuKey(options.menuKey, 'menuKey');
 
     const menu = this.menus[options.menuKey];
