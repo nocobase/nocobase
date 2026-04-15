@@ -1,0 +1,37 @@
+{
+  "name": "@nocobase/cli-v1",
+  "version": "2.1.0-alpha.16",
+  "description": "",
+  "license": "Apache-2.0",
+  "main": "./src/index.js",
+  "bin": {
+    "nocobase-v1": "./bin/index.js"
+  },
+  "dependencies": {
+    "@nocobase/license-kit": "^0.3.8",
+    "@types/fs-extra": "^11.0.1",
+    "@umijs/utils": "3.5.20",
+    "chalk": "^4.1.1",
+    "commander": "^9.2.0",
+    "deepmerge": "^4.3.1",
+    "dotenv": "^16.0.0",
+    "execa": "^5.1.1",
+    "fast-glob": "^3.3.1",
+    "fs-extra": "^11.1.1",
+    "p-all": "3.0.0",
+    "pm2": "^6.0.5",
+    "portfinder": "^1.0.28",
+    "tar": "^7.4.3",
+    "tree-kill": "^1.2.2",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@nocobase/devtools": "2.1.0-alpha.16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/core/cli"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}
