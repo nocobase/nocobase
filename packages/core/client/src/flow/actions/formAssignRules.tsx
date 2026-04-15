@@ -34,14 +34,6 @@ const FormAssignRulesUI = observer(
       return collectLegacyDefaultValueRulesFromFormModel(ctx.model);
     }, [ctx.model]);
 
-    const getValueInputProps = React.useCallback(() => {
-      // 表单区块的“字段值”应使用字段的默认可编辑模型，
-      // 不应继承当前表单项上切换后的展示组件（如 PopupSubTableFieldModel）。
-      return {
-        preferFormItemFieldModel: false,
-      };
-    }, []);
-
     // 兼容：将字段级默认值（editItemSettings/formItemSettings.initialValue）合并到表单级 assignRules 里展示。
     // 仅在首次打开时合并，后续以当前 step 表单值为准（便于用户在此处编辑/删除后统一保存）。
     const hasInitializedMergeRef = React.useRef(false);
@@ -95,7 +87,6 @@ const FormAssignRulesUI = observer(
         value={value}
         onChange={handleChange}
         showValueEditorWhenNoField
-        getValueInputProps={getValueInputProps}
         isTitleFieldCandidate={isTitleFieldCandidate}
         onSyncAssociationTitleField={onSyncAssociationTitleField}
         enableDateVariableAsConstant
