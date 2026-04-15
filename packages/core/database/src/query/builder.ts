@@ -225,14 +225,24 @@ export function buildQuery(database: Database, collection: Collection, options: 
 }
 
 export function normalizeQueryResult(data: any[], fieldMap: Record<string, any>) {
+  const dateTypes = ['date', 'datetime', 'datetimeTz', 'datetimeNoTz', 'dateOnly'];
+
   return data.map((record: any) => {
     Object.entries(record).forEach(([key, value]) => {
       if (value === null || value === undefined) {
         return;
       }
-      const type = fieldMap[key]?.type;
+      const field = fieldMap[key];
+      const type = field?.type;
       if (['bigInt', 'integer', 'float', 'double', 'decimal'].includes(type)) {
         record[key] = Number(value);
+        return;
+      }
+      if (!field?.format && dateTypes.includes(type) && !(value instanceof Date)) {
+        const dateValue = new Date(value as string | number);
+        if (!Number.isNaN(dateValue.getTime())) {
+          record[key] = dateValue;
+        }
       }
     });
     return record;
