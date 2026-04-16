@@ -50,9 +50,17 @@ const formatValue = (value: unknown): React.ReactNode => {
     return '-';
   }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return <Markdown message={{ content: String(value) }} />;
+    return (
+      <div style={{ width: '100%', overflowX: 'auto' }}>
+        <Markdown message={{ content: String(value) }} />
+      </div>
+    );
   }
-  return <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(value, null, 2)}</Typography.Text>;
+  return (
+    <div style={{ width: '100%', overflowX: 'auto' }}>
+      <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(value, null, 2)}</Typography.Text>
+    </div>
+  );
 };
 
 export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, any>>> = ({
