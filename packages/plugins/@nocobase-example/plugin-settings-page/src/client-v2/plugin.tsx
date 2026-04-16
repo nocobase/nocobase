@@ -8,13 +8,14 @@
  */
 
 import { Plugin, Application } from '@nocobase/client-v2';
+import React from 'react';
 
 export class PluginSettingsPageClientV2 extends Plugin<any, Application> {
   async load() {
     // Register menu entryj
     this.pluginSettingsManager.addMenuItem({
       key: 'external-api',
-      title: this.t('External API Settings'),
+      title: this.t('External API Settings') as unknown as string,
       icon: 'ApiOutlined',
     });
 
@@ -22,7 +23,7 @@ export class PluginSettingsPageClientV2 extends Plugin<any, Application> {
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'external-api',
       key: 'index',
-      title: this.t('API Configuration'),
+      title: this.t('API Configuration') as unknown as string,
       componentLoader: () => import('./pages/ExternalApiSettingsPage'),
       sort: -1,
     });
@@ -31,7 +32,7 @@ export class PluginSettingsPageClientV2 extends Plugin<any, Application> {
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'external-api',
       key: 'about',
-      title: this.t('About'),
+      title: this.t('About') as unknown as string,
       componentLoader: () => import('./pages/AboutPage'),
     });
   }

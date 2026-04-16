@@ -25,7 +25,7 @@ export class PluginSettingsPageServer extends Plugin {
         // POST /api/externalApi:set — 保存配置
         async set(ctx, next) {
           const repo = ctx.db.getRepository('externalApiSettings');
-          const values = ctx.action.params.values;
+          const values = ctx.action?.params?.values;
           const existing = await repo.findOne();
           if (existing) {
             await repo.update({ values, filter: { id: existing.id } });

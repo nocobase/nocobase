@@ -4,7 +4,7 @@
 
 # Роутер
 
-Клиент NocoBase предоставляет гибкий менеджер маршрутизации, который позволяет расширять страницы и страницы настроек плагинов с помощью `router.add()` и `pluginSettingsRouter.add()`.
+Клиент NocoBase предоставляет гибкий менеджер маршрутизации, который позволяет расширять страницы и страницы настроек плагинов с помощью `router.add()` и `pluginSettingsManager`.
 
 ## Зарегистрированные маршруты страниц по умолчанию
 
@@ -78,49 +78,54 @@ this.router.add('root.user', {
 
 ## Расширение страниц настроек плагинов
 
-Добавляйте страницы настроек плагина с помощью `pluginSettingsRouter.add()`. Как и для обычных маршрутов, для страниц настроек также следует использовать `componentLoader`.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // Заголовок страницы настроек
-      icon: 'ApiOutlined', // Иконка меню страницы настроек
-      // Динамический импорт: модуль страницы загружается только при переходе на эту страницу настроек
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
       componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-Пример многоуровневой маршрутизации
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Маршрут верхнего уровня
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      element: <Outlet />,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // Дочерние маршруты
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      // Динамический импорт: модуль страницы загружается только при переходе на эту страницу настроек
-      componentLoader: () => import('./settings/Demo1Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      componentLoader: () => import('./settings/Demo2Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }
