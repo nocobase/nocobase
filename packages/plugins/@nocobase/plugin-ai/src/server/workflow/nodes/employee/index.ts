@@ -63,6 +63,7 @@ Do not end your task without calling **${toolName}**.
 
     const runner = async () => {
       const { conversation, aiWorkflowTasks } = await this.createWorkflowTask({
+        userId: input?.result?.user?.id ?? userId,
         username,
         userMessage,
         systemMessage,
@@ -152,6 +153,7 @@ Do not end your task without calling **${toolName}**.
   }
 
   private async createWorkflowTask({
+    userId,
     username,
     userMessage,
     systemMessage,
@@ -162,6 +164,7 @@ Do not end your task without calling **${toolName}**.
     processor,
     job,
   }: {
+    userId: string;
     username: string;
     userMessage: string;
     systemMessage: string;
@@ -204,18 +207,17 @@ Do not end your task without calling **${toolName}**.
         transaction,
       });
 
-      if (requiresApproval !== 'no_required') {
-        const userIds = await parseAssignees(node, processor);
-        if (userIds?.length) {
-          await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
-            values: userIds.map((userId) => ({
-              userId,
-              aiWorkflowTaskId: aiWorkflowTasks.id,
-              read: true,
-            })),
-            transaction,
-          });
-        }
+      const userIds = await parseAssignees(node, processor);
+      const assignees = userIds?.length ? userIds : [userId];
+      if (assignees?.length) {
+        await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
+          values: assignees.map((userId) => ({
+            userId,
+            aiWorkflowTaskId: aiWorkflowTasks.id,
+            read: true,
+          })),
+          transaction,
+        });
       }
 
       return { conversation, aiWorkflowTasks };
