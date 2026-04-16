@@ -290,7 +290,7 @@ const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode; fallbackParentRout
   const isHeaderDesignerButton = !parentRoute;
 
   useEffect(() => {
-    if (divRef.current && isHeaderDesignerButton) {
+    if (divRef.current && isHeaderDesignerButton && divRef.current.parentElement?.parentElement) {
       // 顶部 Add menu item 按钮放置在右侧
       divRef.current.parentElement.parentElement.style.order = '999';
       divRef.current.parentElement.parentElement.style.paddingLeft = '0';
