@@ -411,5 +411,6 @@
   "Retry needed": "需重试",
   "Approve": "批准",
   "Reject": "拒绝",
-  "Task executing": "任务执行中"
+  "Task executing": "任务执行中",
+  "Response result": "结果"
 }

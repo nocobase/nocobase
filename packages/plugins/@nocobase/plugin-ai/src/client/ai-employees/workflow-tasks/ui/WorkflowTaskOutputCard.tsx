@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { lazy, ToolsUIProperties, useAPIClient, useRequest } from '@nocobase/client';
+import { lazy, ToolsUIProperties, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { Button, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
@@ -69,6 +69,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
   decisions,
 }) => {
   const t = useT();
+  const compile = useCompile();
   const api = useAPIClient();
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const readonly = useChatBoxStore.use.readonly();
@@ -99,7 +100,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
     if (schema?.properties && result && typeof result === 'object') {
       return Object.entries(schema.properties).map(([key, item]) => ({
         key,
-        label: item?.title || key,
+        label: compile(item?.title) || key,
         children: formatValue(result[key]),
       }));
     }
@@ -107,7 +108,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
     return [
       {
         key: 'result',
-        label: schema?.title || t('Result'),
+        label: compile(schema?.title) || t('Response result'),
         children: formatValue(result ?? cardData?.args),
       },
     ];

@@ -404,6 +404,7 @@ export const DEFAULT_OUTPUT_SCHEMA = {
   type: 'object',
   properties: {
     response: {
+      title: `{{t("Response result", { ns: "@nocobase/plugin-ai" })}}`,
       type: 'string',
       description: 'The text message sent to the user can be in any format',
     },
