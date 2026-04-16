@@ -1107,7 +1107,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         effectiveCollectionField?.targetKey ??
         targetCol?.filterTargetKey ??
         'id';
-      const labelKey = associationFieldNamesOverride?.label ?? prevFieldNames?.label ?? targetCol?.titleField;
+      const labelKey =
+        associationFieldNamesOverride?.label ??
+        prevFieldNames?.label ??
+        effectiveCollectionField?.targetCollectionTitleFieldName;
       fm?.setProps?.({
         fieldNames: {
           ...prevFieldNames,
