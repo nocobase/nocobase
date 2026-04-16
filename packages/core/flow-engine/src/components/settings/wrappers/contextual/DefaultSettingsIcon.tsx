@@ -625,7 +625,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const cleanups: Array<() => void> = [];
 
     walkSubModels(model, { maxDepth: menuLevels, mode: 'visited' }, (targetModel, { depth }) => {
-      const eventNames = ['onStepParamsChanged', 'onSettingsChanged'];
+      const eventNames = ['onStepParamsChanged'];
       if (depth === 1) {
         eventNames.push('onSubModelAdded', 'onSubModelRemoved', 'onSubModelReplaced');
       }

@@ -733,64 +733,6 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       expect(items.some((it) => String(it.key || '').startsWith('items[0]:childFlow:childStep'))).toBe(true);
     });
   });
-
-  it('refreshes menu when hideInSettings depends on model props', async () => {
-    class TestFlowModel extends FlowModel {}
-    const engine = new FlowEngine();
-    const model = new TestFlowModel({
-      uid: 'props-current',
-      flowEngine: engine,
-      props: {
-        pattern: 'readPretty',
-      },
-    });
-
-    TestFlowModel.registerFlow({
-      key: 'dynamicFlowByProps',
-      title: 'Dynamic Flow By Props',
-      steps: {
-        onlyWhenReadPretty: {
-          title: 'Only When ReadPretty',
-          hideInSettings: (ctx) => ctx.model.getProps().pattern !== 'readPretty',
-          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
-        },
-      },
-    });
-
-    render(
-      React.createElement(
-        ConfigProvider as any,
-        null,
-        React.createElement(
-          App as any,
-          null,
-          React.createElement(DefaultSettingsIcon as any, {
-            model,
-            showCopyUidButton: true,
-            showDeleteButton: false,
-          }),
-        ),
-      ),
-    );
-
-    await waitFor(() => {
-      const menu = (globalThis as any).__lastDropdownMenu;
-      expect(menu).toBeTruthy();
-      const items = (menu?.items || []) as any[];
-      expect(items.some((it) => String(it.key || '') === 'dynamicFlowByProps:onlyWhenReadPretty')).toBe(true);
-    });
-
-    await act(async () => {
-      model.setProps({ pattern: 'editable' });
-      model.emitter.emit('onSettingsChanged', { pattern: 'editable' });
-    });
-
-    await waitFor(() => {
-      const menu = (globalThis as any).__lastDropdownMenu;
-      const items = (menu?.items || []) as any[];
-      expect(items.some((it) => String(it.key || '') === 'dynamicFlowByProps:onlyWhenReadPretty')).toBe(false);
-    });
-  });
 });
 
 describe('DefaultSettingsIcon - extra menu items', () => {
