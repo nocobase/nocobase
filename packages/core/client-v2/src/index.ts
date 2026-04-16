@@ -15,6 +15,7 @@ export * from './HeaderActionsManager';
 export * from './RouteRepository';
 export * from './acl';
 export * from './ai';
+export * from './authRedirect';
 export * from './components';
 export * from './context';
 export * from './theme';

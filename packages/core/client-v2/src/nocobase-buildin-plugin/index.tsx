@@ -9,19 +9,15 @@
 
 import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { Application } from '../Application';
+import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToLegacySignin } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
-import {
-  AdminSettingsLayout,
-  AdminSettingsLayoutModel,
-  PluginManagerPage,
-  SystemSettingsPage,
-} from '../settings-center';
+import { AdminSettingsLayoutModel } from '../settings-center';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
 type CurrentUserState = {
@@ -115,7 +111,6 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
 const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp();
   const location = useLocation();
-  const navigate = useNavigate();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
@@ -125,8 +120,9 @@ const CurrentUserProvider: FC = ({ children }) => {
     const isSkippedAuthCheckRoute =
       isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) ||
       app.router.isSkippedAuthCheckRoute(pathnameRef.current);
+    const shouldCheckCurrentUser = isAdminRuntimeRoute(pathnameRef.current, app.router.getBasename());
 
-    if (isSkippedAuthCheckRoute) {
+    if (isSkippedAuthCheckRoute || !shouldCheckCurrentUser) {
       // 认证页等免鉴权路由不应再执行 `/auth:check`，否则未登录时会重复鉴权并触发重定向抖动。
       setState({ loading: false });
       return;
@@ -142,12 +138,12 @@ const CurrentUserProvider: FC = ({ children }) => {
 
         const user = res?.data?.data;
         if (user?.id == null) {
-          navigate(`/signin?redirect=${pathnameRef.current}${location.search}`, { replace: true });
+          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, location), { replace: true });
           return;
         }
 
         const userMeta = createCollectionContextMeta(
-          () => app.flowEngine.context.dataSourceManager?.getDataSource('main')?.getCollection('users'),
+          () => app.flowEngine.context.dataSourceManager?.getDataSource('main')?.getCollection('users') || null,
           app.flowEngine.translate('Current user'),
         );
         userMeta.sort = 1000;
@@ -164,19 +160,14 @@ const CurrentUserProvider: FC = ({ children }) => {
             loading: false,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
+        const isAuthError = error?.response?.status === 401 || error?.status === 401;
+        if (isAuthError) {
+          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, location), { replace: true });
+          return;
+        }
         if (mounted) {
           setState({ loading: false });
-        }
-        const isAuthError = error?.response?.status === 401 || error?.status === 401;
-        if (
-          !isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) &&
-          !app.router.isSkippedAuthCheckRoute(pathnameRef.current)
-        ) {
-          navigate(`/signin?redirect=${pathnameRef.current}${location.search}`, { replace: true });
-          if (isAuthError) {
-            return;
-          }
         }
         throw error;
       }
@@ -187,7 +178,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [app, location.search, navigate]);
+  }, [app, location]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
@@ -199,8 +190,18 @@ const CurrentUserProvider: FC = ({ children }) => {
 const RootRedirect: FC = () => {
   const app = useApp();
   const hasToken = !!app?.apiClient?.auth?.token;
-  const to = hasToken ? '/admin' : '/signin?redirect=/admin';
-  return <Navigate replace to={to} />;
+
+  useEffect(() => {
+    if (!hasToken) {
+      redirectToLegacySignin(app, getDefaultV2AdminRedirectPath(app), { replace: true });
+    }
+  }, [app, hasToken]);
+
+  if (!hasToken) {
+    return app.renderComponent('AppSpin');
+  }
+
+  return <Navigate replace to="/admin" />;
 };
 
 /**

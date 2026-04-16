@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, UserCenterActionItemModel, UserCenterTextItemModel } from '@nocobase/client-v2';
+import {
+  getCurrentV2RedirectPath,
+  Plugin,
+  redirectToLegacySignin,
+  resolveLegacySigninRedirect,
+  UserCenterActionItemModel,
+  UserCenterTextItemModel,
+} from '@nocobase/client-v2';
 import { usersLocaleResources } from './locale';
 
 class CurrentUserSummaryItemModel extends UserCenterTextItemModel {
@@ -34,15 +41,16 @@ class SignOutItemModel extends UserCenterActionItemModel {
 
   async onClick() {
     const response = await this.context.api.auth.signOut();
-    const redirect = response?.data?.data?.redirect;
+    const redirect = resolveLegacySigninRedirect(response?.data?.data?.redirect, this.context.app);
 
     if (redirect) {
-      window.location.href = redirect;
+      window.location.replace(redirect);
       return;
     }
 
-    const target = this.context.app.getHref(`signin?redirect=${encodeURIComponent('')}`);
-    window.location.href = target;
+    redirectToLegacySignin(this.context.app, getCurrentV2RedirectPath(this.context.app, window.location), {
+      replace: true,
+    });
   }
 }
 
