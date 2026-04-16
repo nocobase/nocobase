@@ -13,22 +13,32 @@ keywords: "AI 开发,AI Development,NocoBase AI,插件开发,AI 编程,Skills"
 比如，一句提示词就能生成一个完整的水印插件：
 
 ```
-帮我实现一个 NocoBase 的水印插件，要求：在页面上覆盖半透明水印，显示当前登录用户名，
+帮我用 nocobase-plugin-development skill 实现一个 NocoBase 的水印插件，要求：在页面上覆盖半透明水印，显示当前登录用户名，
 防止截图泄密。定时检测水印 DOM 是否被删除，被删除则重新生成。
 在插件设置页里支持配置水印文字、透明度和字号。
-插件名叫 @nocobase-sample/plugin-watermark
+插件名叫 @my-project/plugin-watermark
 ```
 
-AI 会自动完成：创建插件脚手架、编写前端渲染逻辑和防篡改检测、生成后端设置存储 API、搭建插件设置页面、配置权限和国际化。整个过程你只需要描述需求，剩下的交给 AI。
+<video width="100%" height="450" controls>
+  <source src="https://static-docs.nocobase.com/nocobase-plugin-dev-compressed.mp4" type="video/mp4">
+</video>
+
+AI 会自动完成：创建插件脚手架、编写前端渲染逻辑和防篡改检测、生成后端设置存储 API、搭建插件设置页面、配置权限和国际化。整个过程你只需要描述需求，做决策，剩下的事情 AI 会自动处理。
 
 想看完整过程？→ [实战：开发水印插件](./watermark-plugin)
+
+:::warning 注意
+
+AI 开发生成的客户端代码基于 `client-v2`，目前只能在 `/v2/` 路径下使用。NocoBase 正在从 v1 迁移到 v2，v2 还在开发中，可以用于尝鲜体验，不建议直接上生产环境。
+
+:::
 
 ## 快速开始
 
 ### 前置条件
 
 - 一个已经跑起来的 NocoBase 开发环境（[安装指南](/cn/get-started/nocobase-cli)）
-- 一个支持 AI Agent 的编辑器或 CLI 工具（比如 Claude Code、Cursor、VS Code + Copilot、Trae 等）
+- 一个支持 AI Agent 的编辑器或 CLI 工具（比如 Claude Code、Codex、Cursor、VS Code + Copilot、Trae 等）
 
 ### 安装 Skills
 

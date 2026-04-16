@@ -91,7 +91,7 @@ nb init
 
 ## 快速开始（AI Agent）
 
-适合通过 AI Agent（比如 Claude Code、Cursor、Copilot 等）协助安装。AI Agent 不需要执行 `nb init`（那是交互式的），而是直接询问用户后执行对应的命令。
+适合通过 AI Agent（比如 Claude Code、Codex、Cursor、Copilot 等）协助安装。AI Agent 不需要执行 `nb init`（那是交互式的），而是直接询问用户后执行对应的命令。
 
 ### Step 1：检查环境
 
