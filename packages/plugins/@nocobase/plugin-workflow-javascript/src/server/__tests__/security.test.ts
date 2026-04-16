@@ -588,13 +588,23 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
 
   it('Promise-returning module functions should still work after sanitization (fs.promises.readdir)', async () => {
     // Functional regression: async module APIs must still return usable thenables.
-    // Note: sanitizeForSandbox converts Arrays to null-prototype objects for security
-    // (a raw host Array exposes arr.__proto__.constructor → host Function → RCE), so
-    // Array.isArray() returns false — but indexed access and .length still work.
+    // Arrays are converted to null-prototype objects for security (a raw host Array
+    // exposes arr.__proto__.constructor → host Function → RCE), so Array.isArray()
+    // returns false — but a safe Symbol.iterator is attached so for...of, spread,
+    // and destructuring all work as expected.
     const script = `
       const fs = require('fs');
       const entries = await fs.promises.readdir('.');
-      return entries != null && entries.length > 0 && typeof entries[0] === 'string';
+      // indexed access and length
+      const hasEntries = entries.length > 0 && typeof entries[0] === 'string';
+      // for...of (requires Symbol.iterator)
+      let count = 0;
+      for (const entry of entries) {
+        if (typeof entry === 'string') count++;
+      }
+      // spread into a real sandbox Array (requires Symbol.iterator)
+      const arr = [...entries];
+      return hasEntries && count === entries.length && Array.isArray(arr) && arr.length === entries.length;
     `;
 
     const result = await ScriptInstruction.run(script, {}, { logger });

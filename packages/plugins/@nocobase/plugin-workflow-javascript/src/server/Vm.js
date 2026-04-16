@@ -184,6 +184,62 @@ function sanitizeForSandbox(val, parent, cache) {
     return wrapper;
   }
 
+  // Special-case Arrays: copy indexed elements + length, then attach a safe
+  // Symbol.iterator so that for...of, spread ([...arr]), and destructuring
+  // work in sandbox code.  We cannot return a real host Array because its
+  // __proto__.constructor chain leads to the host Function constructor.
+  // The iterator and its result objects are null-prototype plain objects —
+  // they do not expose host-realm constructor chains at any level.
+  if (Array.isArray(val)) {
+    const len = val.length;
+    const cleanArr = Object.create(null);
+    cache.set(val, cleanArr);
+
+    Object.defineProperty(cleanArr, 'length', {
+      value: len,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    });
+
+    for (let i = 0; i < len; i++) {
+      try {
+        cleanArr[i] = sanitizeForSandbox(val[i], null, cache);
+      } catch (_) {
+        // skip unreadable slots
+      }
+    }
+
+    // Attach Symbol.iterator so for...of / spread / destructuring work.
+    Object.defineProperty(cleanArr, Symbol.iterator, {
+      value: hardenFunction(function () {
+        let idx = 0;
+        const iterator = Object.create(null);
+        iterator.next = hardenFunction(function () {
+          const result = Object.create(null);
+          if (idx < len) {
+            result.value = cleanArr[idx++];
+            result.done = false;
+          } else {
+            result.value = undefined;
+            result.done = true;
+          }
+          return result;
+        });
+        // The iterator is self-iterable (iterable iterator protocol).
+        iterator[Symbol.iterator] = hardenFunction(function () {
+          return iterator;
+        });
+        return iterator;
+      }),
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    });
+
+    return cleanArr;
+  }
+
   // Object: re-create as a null-prototype plain object and walk the prototype
   // chain up to MAX_PROTO_DEPTH levels (stopping before Object.prototype) so
   // that methods defined on the object's own prototype are also included
