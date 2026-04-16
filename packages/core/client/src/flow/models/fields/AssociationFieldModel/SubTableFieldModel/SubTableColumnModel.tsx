@@ -40,6 +40,7 @@ import {
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
 import { pattern as patternAction } from '../../../../actions/pattern';
+import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
 
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
   React.useEffect(() => {
@@ -228,6 +229,22 @@ function toSafeSubTableDisplayLabel(value: unknown): string | number | boolean |
   return undefined;
 }
 
+function normalizeSubTableAssociationDisplayValue(collectionField: any, value: any) {
+  if (!isToManyAssociationField(collectionField)) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value && typeof value === 'object' && Array.isArray((value as { rows?: unknown[] }).rows)) {
+    return (value as { rows: unknown[] }).rows;
+  }
+  if (value == null) {
+    return [];
+  }
+  return [value];
+}
+
 export function isSubTableColumnReadPretty(props?: { pattern?: string; readPretty?: boolean }) {
   return props?.pattern === 'readPretty' || props?.readPretty === true;
 }
@@ -376,12 +393,23 @@ export function resolveSubTableColumnReadPrettyDisplayValue(options: {
   parent: {
     props?: { titleField?: string };
     getStepParams?: (flowKey: string, stepKey: string) => { label?: string } | undefined;
-    collectionField?: { targetCollectionTitleFieldName?: string };
+    collectionField?: {
+      targetCollectionTitleFieldName?: string;
+      isAssociationField?: () => boolean;
+      type?: unknown;
+      interface?: unknown;
+    };
   };
   columnFieldPath: string;
   renderedFieldPath?: string;
 }) {
   const { value, parent, columnFieldPath, renderedFieldPath } = options;
+  if (isToManyAssociationField(parent.collectionField)) {
+    return normalizeSubTableAssociationDisplayValue(
+      parent.collectionField,
+      resolveTableColumnReadPrettyValue(value, columnFieldPath, renderedFieldPath),
+    );
+  }
   const titleFieldName = getSubTableColumnTitleFieldName(parent, parent.collectionField);
   if (titleFieldName && value && typeof value === 'object') {
     return value;

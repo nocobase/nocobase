@@ -358,4 +358,47 @@ describe('SubTableColumnModel helper methods', () => {
       }),
     ).toBe(37);
   });
+
+  it('normalizes to-many display-only values from rows payloads for nested subtable fields', () => {
+    expect(
+      resolveSubTableColumnReadPrettyDisplayValue({
+        value: {
+          rows: [
+            { id: 1, nickname: 'Alice' },
+            { id: 2, nickname: 'Bob' },
+          ],
+        },
+        parent: {
+          props: {},
+          collectionField: {
+            isAssociationField: () => true,
+            interface: 'o2m',
+            targetCollectionTitleFieldName: 'nickname',
+          },
+        } as any,
+        columnFieldPath: 'org_o2m.members',
+        renderedFieldPath: 'org_o2m.members',
+      }),
+    ).toEqual([
+      { id: 1, nickname: 'Alice' },
+      { id: 2, nickname: 'Bob' },
+    ]);
+  });
+
+  it('normalizes single relation objects into arrays for nested to-many display models', () => {
+    expect(
+      resolveSubTableColumnReadPrettyDisplayValue({
+        value: { id: 1, nickname: 'Alice' },
+        parent: {
+          props: {},
+          collectionField: {
+            isAssociationField: () => true,
+            interface: 'm2m',
+          },
+        } as any,
+        columnFieldPath: 'org_o2m.roles',
+        renderedFieldPath: 'org_o2m.roles',
+      }),
+    ).toEqual([{ id: 1, nickname: 'Alice' }]);
+  });
 });
