@@ -390,10 +390,37 @@ async function main() {
   return result;
 }
 
+/**
+ * Normalize the script's return value to a plain JSON-compatible value before
+ * sending it back to the host thread.
+ *
+ * Rationale: the job result is always stored in the database as JSON and
+ * re-parsed by subsequent workflow nodes, so JavaScript-specific semantics
+ * (prototype chains, Symbols, functions) have no meaning at this boundary.
+ * A JSON round-trip:
+ *  - converts any null-prototype objects left by sanitizeForSandbox into
+ *    plain objects / proper Arrays that downstream code can use normally,
+ *  - silently drops function-valued properties (expected for serialized data),
+ *  - guarantees structured-clone compatibility for postMessage.
+ * Primitives and null/undefined pass through unchanged.
+ */
+function toJsonResult(value) {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== 'object' && typeof value !== 'function') return value;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_) {
+    // Non-JSON-serializable return value (e.g. circular ref, BigInt).
+    // Fall back to the raw value; postMessage structured clone will either
+    // handle it or throw its own DataCloneError.
+    return value;
+  }
+}
+
 // eslint-disable-next-line promise/catch-or-return
 main()
   .then((result) => {
-    parentPort.postMessage({ type: 'result', result });
+    parentPort.postMessage({ type: 'result', result: toJsonResult(result) });
     // NOTE: due to `process.exit()` will break stdout, it should not be called
     // see: https://nodejs.org/api/process.html#processexitcode
   })

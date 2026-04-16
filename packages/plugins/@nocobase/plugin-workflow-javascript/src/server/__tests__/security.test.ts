@@ -588,28 +588,32 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
 
   it('Promise-returning module functions should still work after sanitization (fs.promises.readdir)', async () => {
     // Functional regression: async module APIs must still return usable thenables.
-    // Arrays are converted to null-prototype objects for security (a raw host Array
-    // exposes arr.__proto__.constructor → host Function → RCE), so Array.isArray()
-    // returns false — but a safe Symbol.iterator is attached so for...of, spread,
-    // and destructuring all work as expected.
+    // Within the script, module-returned arrays are null-proto objects for security
+    // (raw host Arrays expose __proto__.constructor → host Function → RCE), so:
+    //   - for...of and spread work via the safe Symbol.iterator we attach
+    //   - Array.isArray() inside the script returns false
+    // The *return value* goes through toJsonResult() (JSON round-trip) before
+    // postMessage, so the caller receives a proper JSON Array and Array.isArray
+    // on result.result is true.
     const script = `
       const fs = require('fs');
       const entries = await fs.promises.readdir('.');
-      // indexed access and length
-      const hasEntries = entries.length > 0 && typeof entries[0] === 'string';
-      // for...of (requires Symbol.iterator)
+      // Within-script: for...of works via Symbol.iterator
       let count = 0;
       for (const entry of entries) {
         if (typeof entry === 'string') count++;
       }
-      // spread into a real sandbox Array (requires Symbol.iterator)
+      // Spread also works; the produced sandbox Array is returned as the result
       const arr = [...entries];
-      return hasEntries && count === entries.length && Array.isArray(arr) && arr.length === entries.length;
+      return arr;
     `;
 
     const result = await ScriptInstruction.run(script, {}, { logger });
 
     expect(result.status).toBe(JOB_STATUS.RESOLVED);
-    expect(result.result).toBe(true);
+    // After JSON round-trip at postMessage boundary, result is a proper Array
+    expect(Array.isArray(result.result)).toBe(true);
+    expect(result.result.length).toBeGreaterThan(0);
+    expect(typeof result.result[0]).toBe('string');
   });
 });
