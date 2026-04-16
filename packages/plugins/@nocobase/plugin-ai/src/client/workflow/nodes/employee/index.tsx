@@ -43,16 +43,8 @@ export class AIEmployeeInstruction extends Instruction {
   }
 
   useVariables(node) {
-    const schema = node.config?.structuredOutput?.schema ?? {
-      type: 'object',
-      properties: {
-        response: {
-          type: 'string',
-          description: 'The text message sent to the user can be in any format',
-        },
-      },
-      additionalProperties: false,
-    };
+    const outputSchema = node.config.structuredOutput.schema;
+    const schema = typeof outputSchema === 'string' ? JSON.parse(outputSchema) : outputSchema;
     return {
       label: node.title,
       value: node.key,

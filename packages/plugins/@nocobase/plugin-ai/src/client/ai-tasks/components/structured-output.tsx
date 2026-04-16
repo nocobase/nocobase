@@ -39,7 +39,7 @@ export const StructuredOutput: React.FC = () => {
                   ns: namespace,
                 }),
                 type: 'string',
-                default: JSON.stringify(DEFAULT_SCHEMA),
+                default: JSON.stringify(DEFAULT_SCHEMA, null, 2),
                 required: true,
                 description: (
                   <>
