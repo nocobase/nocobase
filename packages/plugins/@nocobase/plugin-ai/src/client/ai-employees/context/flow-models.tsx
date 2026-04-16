@@ -19,6 +19,7 @@ import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/c
 import { FlowUtils } from '../flow';
 import { Space } from 'antd';
 import { dialogController } from '../stores/dialog-controller';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
 type SimplifyComponentNode = {
   uid: string;
@@ -46,8 +47,10 @@ const toSimplifyForm = (model: FormBlockModel) => {
   const result = {
     uid: model.uid,
     fields: [],
+    value: undefined,
   };
   const duplicateFields = new Set();
+  const excludeFieldValues = new Set();
   FlowUtils.walkthrough(model, (model) => {
     if (model instanceof FormItemModel && !duplicateFields.has(model.collectionField.name)) {
       const collectionField = model.collectionField;
@@ -61,9 +64,16 @@ const toSimplifyForm = (model: FormBlockModel) => {
       });
       duplicateFields.add(collectionField.name);
     }
+    if (model instanceof UploadFieldModel) {
+      excludeFieldValues.add(model.props.name);
+    }
   });
   if (model.form) {
-    result['value'] = model.form.getFieldsValue();
+    console.log(excludeFieldValues);
+    result['value'] = model.form.getFieldsValue(true, (meta) => {
+      console.log(meta);
+      return !excludeFieldValues.has(meta.name[0]);
+    });
   }
   return result;
 };
