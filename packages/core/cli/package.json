@@ -37,6 +37,9 @@
     "topics": {
       "env": {
         "description": "Manage NocoBase project environments and update command runtimes."
+      },
+      "api": {
+        "description": "Work with NocoBase API."
       }
     }
   },

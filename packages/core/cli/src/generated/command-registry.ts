@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command } from '@oclif/core';
 import EnvAdd from '../commands/env/add.ts';
 import EnvAuth from '../commands/env/auth.ts';
@@ -57,20 +66,20 @@ function createRuntimeIndexCommand(commandId: string, operation: any) {
 }
 
 const registry: Record<string, any> = {
-  env: Env,
+  // env: Env,
   'env:add': EnvAdd,
   'env:auth': EnvAuth,
   'env:list': EnvList,
   'env:remove': EnvRemove,
   'env:update': EnvUpdate,
   'env:use': EnvUse,
-  resource: Resource,
-  'resource:create': ResourceCreate,
-  'resource:destroy': ResourceDestroy,
-  'resource:get': ResourceGet,
-  'resource:list': ResourceList,
-  'resource:query': ResourceQuery,
-  'resource:update': ResourceUpdate,
+  // 'api:resource': Resource,
+  'api:resource:create': ResourceCreate,
+  'api:resource:destroy': ResourceDestroy,
+  'api:resource:get': ResourceGet,
+  'api:resource:list': ResourceList,
+  'api:resource:query': ResourceQuery,
+  'api:resource:update': ResourceUpdate,
 };
 
 const envName = readEnvName(process.argv.slice(2)) ?? (await getCurrentEnvName());
@@ -80,15 +89,15 @@ const runtime = loadRuntimeSync(env?.runtime?.version);
 for (const operation of runtime?.commands ?? []) {
   const commandSegments = operation.commandId.split(' ');
   const commandKey = commandSegments.join(':');
-  registry[commandKey] = createRuntimeCommand(operation);
+  registry[`api:${commandKey}`] = createRuntimeCommand(operation);
 
-  const topLevelCommandId = commandSegments[0];
-  const modulePrefix = toKebabCase(operation.moduleDisplayName || operation.moduleName || '');
-  const isTopLevelResource = Boolean(topLevelCommandId && modulePrefix && topLevelCommandId !== modulePrefix);
+  // const topLevelCommandId = commandSegments[0];
+  // const modulePrefix = toKebabCase(operation.moduleDisplayName || operation.moduleName || '');
+  // const isTopLevelResource = Boolean(topLevelCommandId && modulePrefix && topLevelCommandId !== modulePrefix);
 
-  if (isTopLevelResource && !registry[topLevelCommandId]) {
-    registry[topLevelCommandId] = createRuntimeIndexCommand(topLevelCommandId, operation);
-  }
+  // if (isTopLevelResource && !registry[`api:${topLevelCommandId}`]) {
+  //   registry[`api:${topLevelCommandId}`] = createRuntimeIndexCommand(`api ${topLevelCommandId}`, operation);
+  // }
 }
 
 export default registry;
