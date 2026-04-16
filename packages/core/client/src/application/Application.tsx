@@ -12,7 +12,6 @@ import {
   BaseApplication,
   type BaseApplicationOptions,
   type ComponentAndProps,
-  type DevDynamicImport,
   type WebSocketClientOptions,
 } from '@nocobase/client-v2';
 import { APIClientOptions, getSubAppName } from '@nocobase/sdk';
@@ -36,6 +35,7 @@ import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import { PluginManager, type PluginType } from './PluginManager';
+import type { PluginClass } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { RouterManager, type RouterOptions } from './RouterManager';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
@@ -95,7 +95,8 @@ interface Variable {
   useCtx: () => any | ((param: { variableName: string }) => Promise<any>);
 }
 
-export type { ComponentAndProps, DevDynamicImport };
+export type { ComponentAndProps };
+export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClass }>;
 
 export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   apiClient?: APIClientOptions | APIClient;
@@ -119,6 +120,7 @@ export class Application extends BaseApplication<
   APIClient,
   PluginSettingsManager
 > {
+  public declare devDynamicImport?: DevDynamicImport;
   public declare schemaInitializerManager: SchemaInitializerManager;
   public declare schemaSettingsManager: SchemaSettingsManager;
   public declare dataSourceManager: DataSourceManager;
@@ -326,6 +328,10 @@ export class Application extends BaseApplication<
 
   addFieldInterfaces(fieldInterfaceClasses: CollectionFieldInterfaceFactory[] = []) {
     return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaces(fieldInterfaceClasses);
+  }
+
+  addFieldInterfaceGroups(groups: Record<string, { label: string; order?: number }>) {
+    return this.dataSourceManager.addFieldInterfaceGroups(groups);
   }
 
   addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption) {

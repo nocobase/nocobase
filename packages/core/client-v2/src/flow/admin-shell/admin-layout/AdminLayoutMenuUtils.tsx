@@ -17,6 +17,7 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { App, Badge, Tooltip } from 'antd';
+import type { HookAPI } from 'antd/es/modal/useModal';
 import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
@@ -290,10 +291,7 @@ const translateMenuNode = (item: AdminLayoutMenuNode, value: any) => {
 /**
  * 经典页面需要整页跳回 v1，先给用户一个明确确认，避免误离开当前 v2 上下文。
  */
-const confirmLegacyPageNavigation = async (options: {
-  item: AdminLayoutMenuNode;
-  confirm?: (config: any) => Promise<boolean> | { then?: (resolve: (confirmed: boolean) => void) => void };
-}) => {
+const confirmLegacyPageNavigation = async (options: { item: AdminLayoutMenuNode; confirm?: HookAPI['confirm'] }) => {
   const { item, confirm } = options;
 
   if (!item._isLegacy || typeof confirm !== 'function') {
