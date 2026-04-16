@@ -473,6 +473,15 @@ type AssignValueFieldSettingsInit = {
   fieldPath?: string;
 };
 
+type AssignValueFieldSource = {
+  originFieldModel?: any;
+  originProps: Record<string, any>;
+  customFieldName?: string;
+  customFieldProps: Record<string, any>;
+  currentAllowMultiple?: boolean;
+  currentFieldModelUse?: string;
+};
+
 const ASSIGN_VALUE_IGNORED_PROP_KEYS = new Set([
   'value',
   'defaultValue',
@@ -486,35 +495,78 @@ const ASSIGN_VALUE_IGNORED_PROP_KEYS = new Set([
 ]);
 
 const ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE = 'RecordSelectFieldModel';
+const ASSIGN_VALUE_ASSOCIATION_WRAPPER_MODEL_USES = new Set([
+  'FieldModel',
+  'SubFormFieldModel',
+  'SubFormListFieldModel',
+  'SubTableFieldModel',
+  'PopupSubTableFieldModel',
+  'RecordPickerFieldModel',
+]);
 
 function getAssignValueOriginFieldModel(itemModel: any) {
   return itemModel?.customFieldModelInstance || getAssignValueSubField(itemModel);
 }
 
-function resolveAssignValueCurrentFieldModelUse(itemModel: any): string | undefined {
-  const subField = getAssignValueSubField(itemModel);
-  const subFieldBindingUse =
-    typeof subField?.stepParams?.fieldBinding?.use === 'string' ? subField.stepParams.fieldBinding.use : undefined;
-  const subFieldUse = subField?.use;
-  const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
-  const customFieldModelUse = customFieldSettings?.fieldModel || itemModel?.customFieldModelInstance?.use;
+function pickAssignValueString(...values: unknown[]) {
+  return values.find((value): value is string => typeof value === 'string' && !!value);
+}
 
-  return subFieldBindingUse || subFieldUse || customFieldModelUse;
+function pickAssignValueBoolean(...values: unknown[]) {
+  return values.find((value): value is boolean => typeof value === 'boolean');
+}
+
+function isAssignValueAssociationWrapperModelUse(use?: string): boolean {
+  return !!use && ASSIGN_VALUE_ASSOCIATION_WRAPPER_MODEL_USES.has(use);
+}
+
+function isAssignValueAssociationSelectModelUse(use?: string): boolean {
+  return use?.endsWith('RecordSelectFieldModel') ?? false;
+}
+
+function resolveAssignValueFieldSource(itemModel: any): AssignValueFieldSource {
+  const subField = getAssignValueSubField(itemModel);
+  const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') ?? {};
+  const originFieldModel = getAssignValueOriginFieldModel(itemModel);
+  const originProps = (originFieldModel?.props ?? {}) as Record<string, any>;
+  const customFieldProps = (itemModel?.customFieldProps ?? customFieldSettings?.fieldModelProps ?? {}) as Record<
+    string,
+    any
+  >;
+
+  return {
+    originFieldModel,
+    originProps,
+    customFieldName: pickAssignValueString(customFieldSettings?.name),
+    customFieldProps,
+    currentAllowMultiple: pickAssignValueBoolean(
+      originFieldModel?.getStepParams?.('selectSettings', 'allowMultiple')?.allowMultiple,
+      originFieldModel?.stepParams?.selectSettings?.allowMultiple?.allowMultiple,
+      originProps?.allowMultiple,
+      originProps?.multiple,
+      customFieldProps?.allowMultiple,
+      customFieldProps?.multiple,
+    ),
+    currentFieldModelUse: pickAssignValueString(
+      subField?.stepParams?.fieldBinding?.use,
+      subField?.use,
+      customFieldSettings?.fieldModel,
+      itemModel?.customFieldModelInstance?.use,
+    ),
+  };
 }
 
 function resolveAssignValueFieldSettingsInit(options: {
-  itemModel: any;
   collection?: { dataSourceKey?: string; name?: string } | null;
+  customFieldName?: string;
   fieldPath?: string | null;
   fieldName?: string | null;
 }): AssignValueFieldSettingsInit | undefined {
-  const { itemModel, collection, fieldPath, fieldName } = options;
+  const { collection, customFieldName, fieldPath, fieldName } = options;
   if (!collection?.name || !fieldPath) {
     return undefined;
   }
 
-  const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
-  const customFieldName = typeof customFieldSettings?.name === 'string' ? customFieldSettings.name : undefined;
   const normalizedFieldPath = fieldPath.startsWith(`${CUSTOM_FIELD_TARGET_PATH_PREFIX}:`)
     ? customFieldName || fieldName || fieldPath
     : fieldPath;
@@ -528,7 +580,7 @@ function resolveAssignValueFieldSettingsInit(options: {
 
 function sanitizeAssignValueInheritedProps(props?: Record<string, any>) {
   const nextProps: Record<string, any> = {};
-  for (const [key, value] of Object.entries(props || {})) {
+  for (const [key, value] of Object.entries(props ?? {})) {
     if (ASSIGN_VALUE_IGNORED_PROP_KEYS.has(key) || /^on[A-Z]/.test(key)) {
       continue;
     }
@@ -560,40 +612,84 @@ function resolveAssignValueFieldProps(options: {
   return nextProps;
 }
 
+function normalizeAssignValueAssociationFieldModelUse(use?: string) {
+  return isAssignValueAssociationWrapperModelUse(use) ? undefined : use;
+}
+
+function resolveAssignValueAssociationFieldModelUse(options: {
+  currentFieldModelUse?: string;
+  defaultBindingUse?: string;
+  preferFormItemFieldModel?: boolean;
+}): string | undefined {
+  const { currentFieldModelUse, defaultBindingUse, preferFormItemFieldModel } = options;
+  const normalizedCurrentFieldModelUse = normalizeAssignValueAssociationFieldModelUse(currentFieldModelUse);
+  const normalizedDefaultBindingUse = normalizeAssignValueAssociationFieldModelUse(defaultBindingUse);
+
+  if (isAssignValueAssociationWrapperModelUse(currentFieldModelUse)) {
+    return normalizedDefaultBindingUse ?? ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE;
+  }
+
+  if (preferFormItemFieldModel) {
+    return normalizedCurrentFieldModelUse ?? normalizedDefaultBindingUse ?? ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE;
+  }
+
+  return normalizedDefaultBindingUse ?? normalizedCurrentFieldModelUse ?? ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE;
+}
+
+function resolveAssignValueFieldMode(options: {
+  fieldModelUse?: string;
+  collectionField?: Pick<CollectionField, 'isAssociationField' | 'interface' | 'uiSchema'> | null;
+}): string | undefined {
+  const { fieldModelUse, collectionField } = options;
+  const modeFromSchema = collectionField?.uiSchema?.['x-component-props']?.mode as string | undefined;
+
+  if (collectionField?.isAssociationField?.() && isAssignValueAssociationSelectModelUse(fieldModelUse)) {
+    return 'Select';
+  }
+
+  if (collectionField?.interface === 'multipleSelect') {
+    return modeFromSchema ?? 'multiple';
+  }
+
+  return modeFromSchema;
+}
+
 export function resolveAssignValueFieldModelConfig(options: {
   itemModel: any;
   defaultBindingUse?: string;
   collectionField?: Pick<CollectionField, 'isAssociationField'> | null;
+  fieldSource?: AssignValueFieldSource;
   preferFormItemFieldModel?: boolean;
   fieldSettingsInit?: AssignValueFieldSettingsInit;
 }): { use?: string; stepParams: Record<string, any> } {
   const { itemModel, defaultBindingUse, collectionField, preferFormItemFieldModel, fieldSettingsInit } = options;
-  const currentFieldModelUse = resolveAssignValueCurrentFieldModelUse(itemModel);
-  const useCandidates = collectionField?.isAssociationField?.()
-    ? [ASSIGN_VALUE_ASSOCIATION_FIELD_MODEL_USE, defaultBindingUse, currentFieldModelUse]
+  const fieldSource = options.fieldSource ?? resolveAssignValueFieldSource(itemModel);
+  const { currentFieldModelUse, originFieldModel } = fieldSource;
+  const use = collectionField?.isAssociationField?.()
+    ? resolveAssignValueAssociationFieldModelUse({
+        currentFieldModelUse,
+        defaultBindingUse,
+        preferFormItemFieldModel,
+      })
     : preferFormItemFieldModel
-      ? [currentFieldModelUse, defaultBindingUse]
-      : [defaultBindingUse, currentFieldModelUse];
-  const use = useCandidates.find((candidate): candidate is string => typeof candidate === 'string' && !!candidate);
+      ? currentFieldModelUse ?? defaultBindingUse
+      : defaultBindingUse ?? currentFieldModelUse;
 
   // 赋值编辑器直接创建最终字段模型，避免 FieldModel.resolveUse 再次根据继承的 fieldBinding.use
   // 跳回 SubForm/SubTable/PopupSubTable 等原表单组件。
-  const originFieldModel = getAssignValueOriginFieldModel(itemModel);
-  const { fieldBinding: _ignoredFieldBinding, ...restStepParams } = (((originFieldModel as any)?.stepParams as Record<
+  const { fieldBinding: _ignoredFieldBinding, ...restStepParams } = (originFieldModel?.stepParams ?? {}) as Record<
     string,
     any
-  >) || {}) as Record<string, any>;
+  >;
   const stepParams: Record<string, any> = {
     ...restStepParams,
   };
 
-  if (fieldSettingsInit?.collectionName && fieldSettingsInit?.fieldPath) {
-    const fieldSettings = isPlainObject(stepParams.fieldSettings) ? stepParams.fieldSettings : {};
-    const prevInit = isPlainObject(fieldSettings.init) ? fieldSettings.init : {};
+  if (fieldSettingsInit) {
     stepParams.fieldSettings = {
-      ...fieldSettings,
+      ...stepParams.fieldSettings,
       init: {
-        ...prevInit,
+        ...stepParams.fieldSettings?.init,
         ...fieldSettingsInit,
       },
     };
@@ -766,6 +862,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
   const itemCollectionField = (resolved?.itemModel as any)?.context?.collectionField;
+  const fieldSource = React.useMemo(() => resolveAssignValueFieldSource(itemModel), [itemModel]);
+  const currentAllowMultiple = React.useMemo(() => {
+    const effectiveCollectionField = (cf as CollectionField | null) || itemCollectionField || null;
+    if (!effectiveCollectionField?.isAssociationField?.() || !isToManyAssociationField(effectiveCollectionField)) {
+      return undefined;
+    }
+    return fieldSource.currentAllowMultiple;
+  }, [cf, fieldSource.currentAllowMultiple, itemCollectionField]);
 
   const sourceInterface = React.useMemo(() => {
     return getFieldInterface(cf) || getFieldInterface(itemCollectionField);
@@ -774,7 +878,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   const sourceCollectionField = (cf as any) || itemCollectionField;
 
   const isArrayValueField = React.useMemo(() => {
-    if (isToManyAssociationField(cf)) return true;
+    if ((cf as any)?.isAssociationField?.() || (itemCollectionField as any)?.isAssociationField?.()) {
+      const effectiveCollectionField = (cf as CollectionField | null) || itemCollectionField || null;
+      if (effectiveCollectionField && isToManyAssociationField(effectiveCollectionField)) {
+        return currentAllowMultiple ?? true;
+      }
+    }
 
     // 部分字段组件（如 Cascader / CascadeSelectList）期望 array 值；若 uiSchema 明确声明为 array，则视为 array 值字段
     const fieldInterface = getFieldInterface(cf);
@@ -784,7 +893,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (schemaType === 'array') return true;
 
     return false;
-  }, [cf]);
+  }, [cf, currentAllowMultiple, itemCollectionField]);
 
   const isDateLikeField = React.useMemo(() => {
     if (sourceInterface && DATE_FIELD_INTERFACES.has(sourceInterface)) {
@@ -879,7 +988,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const dataSourceManager = itemModelAny?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
     const effectiveCollection =
       collection || getCollectionFromModel(itemModelAny) || getCollectionFromModel(flowCtx.model);
-    const originFieldModel = getAssignValueOriginFieldModel(itemModelAny);
+    const { customFieldName, customFieldProps, currentAllowMultiple, originFieldModel, originProps } = fieldSource;
     const originCollectionField = (originFieldModel as any)?.context?.collectionField as CollectionField | undefined;
     const effectiveCollectionField = (cf as CollectionField | null) || originCollectionField || undefined;
     const effectiveDataSource =
@@ -887,7 +996,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       (effectiveCollection?.dataSourceKey
         ? dataSourceManager?.getDataSource?.(effectiveCollection.dataSourceKey)
         : null);
-    const originProps = ((originFieldModel as any)?.props || {}) as Record<string, any>;
 
     const fields = typeof effectiveCollection?.getFields === 'function' ? effectiveCollection.getFields() || [] : [];
     const f =
@@ -901,10 +1009,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       ? EditableItemModel.getDefaultBindingByField(resolved?.itemModel?.context || flowCtx.model?.context, f)
       : null;
     const defaultBindingUse: string | undefined = binding?.modelName;
-    const customFieldSettings = itemModelAny?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
     const fieldSettingsInit = resolveAssignValueFieldSettingsInit({
-      itemModel,
       collection: effectiveCollection,
+      customFieldName,
       fieldPath,
       fieldName,
     });
@@ -912,12 +1019,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       itemModel,
       defaultBindingUse,
       collectionField: effectiveCollectionField,
+      fieldSource,
       preferFormItemFieldModel,
       fieldSettingsInit,
     });
     if (!effectiveFieldModelUse) return;
 
-    const customFieldProps = itemModelAny?.customFieldProps || customFieldSettings?.fieldModelProps || {};
     const tempFieldProps = resolveAssignValueFieldProps({
       placeholder,
       originProps,
@@ -955,12 +1062,17 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
     // 字段模型基础属性设定
     const fm = created?.subModels?.fields?.[0];
-    const multiple = isToManyAssociationField(effectiveCollectionField);
-    const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
-    const overrideLabel =
-      typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label
-        ? associationFieldNamesOverride.label
+    const allowMultiple =
+      effectiveCollectionField?.isAssociationField?.() && isToManyAssociationField(effectiveCollectionField)
+        ? currentAllowMultiple ?? true
         : undefined;
+    const multiple =
+      allowMultiple ??
+      (effectiveCollectionField?.isAssociationField?.()
+        ? isToManyAssociationField(effectiveCollectionField)
+        : undefined);
+    const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
+    const overrideLabel = associationFieldNamesOverride?.label;
     if (overrideLabel && typeof fm?.setStepParams === 'function') {
       fm.setStepParams('selectSettings', 'fieldNames', { label: overrideLabel });
     }
@@ -969,46 +1081,33 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       readPretty: false,
       pattern: 'editable',
       updateAssociation: false,
-      multiple,
       style: nextStyle,
+      ...(multiple !== undefined ? { multiple } : {}),
+      ...(allowMultiple !== undefined ? { allowMultiple } : {}),
     });
     fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
     // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
     ensureOptionsFromUiSchemaEnumIfAbsent(fm, effectiveCollectionField);
-    // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
-    // 仅当未显式传入 mode 时设置，避免覆盖外部自定义
-    const modePropExists = typeof (fm as any)?.props?.mode !== 'undefined';
-    const modeFromSchema = (effectiveCollectionField?.uiSchema as any)?.['x-component-props']?.mode;
-    const nextMode =
-      effectiveCollectionField?.interface === 'multipleSelect'
-        ? typeof modeFromSchema === 'string'
-          ? modeFromSchema
-          : 'multiple'
-        : typeof modeFromSchema === 'string'
-          ? modeFromSchema
-          : undefined;
-    if (!modePropExists && nextMode) {
+    const nextMode = resolveAssignValueFieldMode({
+      fieldModelUse: effectiveFieldModelUse,
+      collectionField: effectiveCollectionField,
+    });
+    const shouldForceMode =
+      effectiveCollectionField?.isAssociationField?.() &&
+      isAssignValueAssociationSelectModelUse(effectiveFieldModelUse);
+    if ((shouldForceMode || (fm as any)?.props?.mode === undefined) && nextMode) {
       fm?.setProps?.({ mode: nextMode });
     }
     if (effectiveCollectionField?.targetCollection) {
       const targetCol = effectiveCollectionField.targetCollection;
       const prevFieldNames = (fm?.props?.fieldNames as { label?: unknown; value?: unknown } | undefined) || {};
       const valueKey =
-        (typeof associationFieldNamesOverride?.value === 'string' && associationFieldNamesOverride.value) ||
-        (typeof prevFieldNames?.value === 'string' && prevFieldNames.value) ||
-        effectiveCollectionField?.targetKey ||
-        targetCol?.filterTargetKey ||
+        associationFieldNamesOverride?.value ??
+        prevFieldNames?.value ??
+        effectiveCollectionField?.targetKey ??
+        targetCol?.filterTargetKey ??
         'id';
-      const inheritedLabel =
-        typeof prevFieldNames?.label === 'string' && prevFieldNames.label ? prevFieldNames.label : undefined;
-      const collectionTitleField =
-        typeof (targetCol as { titleField?: unknown } | null | undefined)?.titleField === 'string'
-          ? (targetCol as { titleField?: string }).titleField
-          : undefined;
-      const labelKey =
-        (typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label) ||
-        inheritedLabel ||
-        collectionTitleField;
+      const labelKey = associationFieldNamesOverride?.label ?? prevFieldNames?.label ?? targetCol?.titleField;
       fm?.setProps?.({
         fieldNames: {
           ...prevFieldNames,
@@ -1034,6 +1133,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     resolved,
     cf,
     itemModel,
+    fieldSource,
     preferFormItemFieldModel,
     associationFieldNamesOverride?.label,
     associationFieldNamesOverride?.value,

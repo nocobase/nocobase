@@ -62,7 +62,7 @@ describe('FieldAssignValueInput path resolve', () => {
     ).toBe('DateTimeFilterFieldModel');
   });
 
-  it('forces RecordSelectFieldModel for association fields and strips inherited fieldBinding', () => {
+  it('drops wrapper association models, prefers editable default binding, and strips inherited fieldBinding', () => {
     const model = {
       customFieldModelInstance: {
         use: 'SubFormFieldModel',
@@ -89,7 +89,7 @@ describe('FieldAssignValueInput path resolve', () => {
 
     const result = resolveAssignValueFieldModelConfig({
       itemModel: model,
-      defaultBindingUse: 'UploadAttachmentFieldModel',
+      defaultBindingUse: 'CascadeSelectListFieldModel',
       collectionField: {
         isAssociationField: () => true,
       } as any,
@@ -100,7 +100,7 @@ describe('FieldAssignValueInput path resolve', () => {
       },
     });
 
-    expect(result.use).toBe('RecordSelectFieldModel');
+    expect(result.use).toBe('CascadeSelectListFieldModel');
     expect(result.stepParams.fieldBinding).toBeUndefined();
     expect(result.stepParams.fieldSettings).toEqual({
       init: {
@@ -109,6 +109,143 @@ describe('FieldAssignValueInput path resolve', () => {
         fieldPath: 'roles',
       },
     });
+  });
+
+  it('uses fieldBinding.use as the current association model and drops wrapper fieldBinding values', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'FieldModel',
+          stepParams: {
+            fieldBinding: {
+              use: 'RecordPickerFieldModel',
+            },
+          },
+        },
+      },
+      getStepParams: () => undefined,
+    };
+
+    expect(
+      resolveAssignValueFieldModelConfig({
+        itemModel: model,
+        defaultBindingUse: 'RecordSelectFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+        } as any,
+      }).use,
+    ).toBe('RecordSelectFieldModel');
+  });
+
+  it('treats FieldModel as an association wrapper and falls back to default binding', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'FieldModel',
+        },
+      },
+      getStepParams: () => undefined,
+    };
+
+    expect(
+      resolveAssignValueFieldModelConfig({
+        itemModel: model,
+        defaultBindingUse: 'CascadeSelectListFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+        } as any,
+        preferFormItemFieldModel: true,
+      }).use,
+    ).toBe('CascadeSelectListFieldModel');
+  });
+
+  it('keeps FilterFormRecordSelectFieldModel when preferFormItemFieldModel is enabled', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'FilterFormRecordSelectFieldModel',
+        },
+      },
+      getStepParams: () => undefined,
+    };
+
+    expect(
+      resolveAssignValueFieldModelConfig({
+        itemModel: model,
+        defaultBindingUse: 'CascadeSelectListFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+        } as any,
+        preferFormItemFieldModel: true,
+      }).use,
+    ).toBe('FilterFormRecordSelectFieldModel');
+  });
+
+  it('keeps FilterFormCustomRecordSelectFieldModel when preferFormItemFieldModel is enabled', () => {
+    const model = {
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'formItemSettings' && stepKey === 'fieldSettings') {
+          return { fieldModel: 'FilterFormCustomRecordSelectFieldModel' };
+        }
+        return undefined;
+      },
+      customFieldModelInstance: {
+        use: 'FilterFormCustomRecordSelectFieldModel',
+      },
+    };
+
+    expect(
+      resolveAssignValueFieldModelConfig({
+        itemModel: model,
+        defaultBindingUse: 'RecordSelectFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+        } as any,
+        preferFormItemFieldModel: true,
+      }).use,
+    ).toBe('FilterFormCustomRecordSelectFieldModel');
+  });
+
+  it('prefers editable default binding for association fields when preferFormItemFieldModel is not enabled', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'FilterFormRecordSelectFieldModel',
+        },
+      },
+      getStepParams: () => undefined,
+    };
+
+    expect(
+      resolveAssignValueFieldModelConfig({
+        itemModel: model,
+        defaultBindingUse: 'CascadeSelectListFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+        } as any,
+      }).use,
+    ).toBe('CascadeSelectListFieldModel');
+  });
+
+  it('falls back to RecordSelectFieldModel when association current/default candidates are unavailable or wrappers', () => {
+    const model = {
+      subModels: {
+        field: {
+          use: 'PopupSubTableFieldModel',
+        },
+      },
+      getStepParams: () => undefined,
+    };
+
+    expect(
+      resolveAssignValueFieldModelConfig({
+        itemModel: model,
+        defaultBindingUse: 'SubTableFieldModel',
+        collectionField: {
+          isAssociationField: () => true,
+        } as any,
+      }).use,
+    ).toBe('RecordSelectFieldModel');
   });
 
   it('prefers default binding for non relation fields when preferFormItemFieldModel is not enabled', () => {
