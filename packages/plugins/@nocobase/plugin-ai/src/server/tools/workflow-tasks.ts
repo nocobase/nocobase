@@ -11,7 +11,6 @@ import { Context } from '@nocobase/actions';
 import { DynamicToolsProvider } from '@nocobase/ai';
 import PluginWorkflowServer, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { Plugin } from '@nocobase/server';
-import { DEFAULT_OUTPUT_SCHEMA } from '../workflow/nodes/employee';
 
 export type WorkflowTaskToolProvider = (plugin: Plugin) => DynamicToolsProvider;
 
@@ -40,7 +39,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
   const processor = workflowPlugin.createProcessor(execution);
   const config = processor.getParsedValue(flowNode.config, flowNode.id);
 
-  const outputSchema = config.structuredOutput?.schema ?? DEFAULT_OUTPUT_SCHEMA;
+  const outputSchema = config.structuredOutput.schema;
   const schema = {
     type: 'object',
     properties: {

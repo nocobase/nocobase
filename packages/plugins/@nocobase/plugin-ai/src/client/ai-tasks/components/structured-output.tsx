@@ -15,6 +15,16 @@ import { tExpr } from '@nocobase/flow-engine';
 
 export const StructuredOutput: React.FC = () => {
   const t = useT();
+  const DEFAULT_SCHEMA = {
+    type: 'object',
+    properties: {
+      response: {
+        title: t('Response result', { ns: namespace }),
+        type: 'string',
+        description: 'The text message sent to the user',
+      },
+    },
+  };
   return (
     <SchemaComponent
       components={{ WorkflowVariableJSON }}
@@ -29,6 +39,8 @@ export const StructuredOutput: React.FC = () => {
                   ns: namespace,
                 }),
                 type: 'string',
+                default: JSON.stringify(DEFAULT_SCHEMA),
+                required: true,
                 description: (
                   <>
                     {t('Syntax references')}:{' '}
