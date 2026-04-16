@@ -22,6 +22,14 @@ import {
   useCreateKanbanBlock,
 } from './KanbanBlockInitializer';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
+import {
+  KanbanBlockModel,
+  KanbanCardItemModel,
+  KanbanCollectionActionGroupModel,
+  KanbanCardViewActionModel,
+  KanbanGroupOptionsTable,
+  KanbanGroupingSelector,
+} from './models';
 
 Kanban.Card = KanbanCard;
 Kanban.CardAdder = Action;
@@ -84,11 +92,19 @@ class PluginKanbanClient extends Plugin {
 
   async load() {
     this.app.use(KanbanPluginProvider);
+    this.app.addComponents({ KanbanGroupingSelector, KanbanGroupOptionsTable });
+    this.flowEngine.flowSettings.registerComponents({ KanbanGroupingSelector, KanbanGroupOptionsTable });
     this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);
     this.app.schemaInitializerManager.add(kanbanCardInitializers);
     this.app.schemaInitializerManager.add(kanbanActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(kanbanActionInitializers);
     this.app.schemaSettingsManager.add(kanbanSettings);
+    this.flowEngine.registerModels({
+      KanbanBlockModel,
+      KanbanCardItemModel,
+      KanbanCollectionActionGroupModel,
+      KanbanCardViewActionModel,
+    });
 
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.kanban', {
