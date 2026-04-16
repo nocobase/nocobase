@@ -41,6 +41,7 @@ import {
   matchesRoutePath,
   toTreeSelectItems,
 } from './AdminLayoutMenuFlowUtils';
+import { resolveAdminRouteRuntimeTarget, toRouterNavigationPath } from './resolveAdminRouteRuntimeTarget';
 
 export * from './AdminLayoutMenuUtils';
 const insertPositionToMethod = {
@@ -53,7 +54,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   private persistedStateHydrated = false;
   private persistedStateHydrating?: Promise<void>;
 
-  onInit(options) {
+  onInit(options: any) {
     super.onInit(options);
     this.syncFromRoute(
       this.props.route as NocoBaseDesktopRoute,
@@ -198,6 +199,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       refreshAfterMutation: false,
     });
 
+    // @ts-ignore
     const moveMethod = insertPositionToMethod[insertPosition];
     if (moveMethod) {
       try {
@@ -393,10 +395,26 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     }
 
     const sibling = prevSibling || nextSibling;
-    const nextPath = sibling
-      ? `/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`
-      : '/';
-    this.context.router.navigate(nextPath);
+    if (!sibling) {
+      this.context.router.navigate('/');
+      return true;
+    }
+
+    const target = resolveAdminRouteRuntimeTarget({
+      app: this.context.app,
+      route: sibling,
+    });
+
+    if (!target.runtimePath) {
+      return true;
+    }
+
+    if (target.navigationMode === 'document') {
+      window.location.assign(target.runtimePath);
+      return true;
+    }
+
+    this.context.router.navigate(toRouterNavigationPath(target.runtimePath, this.context.router?.basename));
     return true;
   }
 
@@ -428,12 +446,24 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     }
 
     if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+      const runtimeTarget = resolveAdminRouteRuntimeTarget({
+        app: this.context.app,
+        route,
+      });
+      const path = route.schemaUid
+        ? `/admin/${route.schemaUid}`
+        : getAdminLayoutMenuVirtualPath('link', `${this.uid}-invalid`);
+
       return {
         name,
         icon,
-        path: `/admin/${route.schemaUid}`,
-        redirect: `/admin/${route.schemaUid}`,
+        path,
+        redirect: route.schemaUid ? `/admin/${route.schemaUid}` : undefined,
         hideInMenu: route.hideInMenu,
+        disabled: !runtimeTarget.runtimePath,
+        _runtimePath: runtimeTarget.runtimePath,
+        _navigationMode: runtimeTarget.navigationMode,
+        _isLegacy: runtimeTarget.isLegacy,
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -457,6 +487,11 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route));
       }
 
+      const runtimeTarget = resolveAdminRouteRuntimeTarget({
+        app: this.context.app,
+        route,
+      });
+
       const groupRoute: AdminLayoutMenuNode = {
         name,
         icon,
@@ -466,6 +501,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
             ? undefined
             : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || route.id}`,
         hideInMenu: route.hideInMenu,
+        _runtimePath: runtimeTarget.runtimePath,
+        _navigationMode: runtimeTarget.navigationMode,
+        _isLegacy: runtimeTarget.isLegacy,
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -473,7 +511,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       };
 
       if (children.length > 0) {
-        groupRoute.routes = children;
+        groupRoute.routes = children as AdminLayoutMenuNode[];
       }
 
       return groupRoute;

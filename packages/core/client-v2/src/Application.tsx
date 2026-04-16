@@ -24,12 +24,12 @@ import CSSVariableProvider from './css-variable/CSSVariableProvider';
 export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
 export { ApplicationModel } from './BaseApplication';
 
-export interface ApplicationOptions extends BaseApplicationOptions {
+export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   apiClient?: APIClientOptions;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   plugins?: PluginType[];
-  components?: BaseApplicationOptions['components'];
+  components?: BaseApplicationOptions<PluginType>['components'];
   router?: RouterOptions;
 }
 

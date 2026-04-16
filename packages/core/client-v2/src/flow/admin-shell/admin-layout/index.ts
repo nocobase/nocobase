@@ -12,6 +12,7 @@ export * from './AdminLayoutModel';
 export * from './AdminLayoutSlotModels';
 export * from './AdminLayoutMenuModels';
 export * from './AdminLayoutMenuFlowUtils';
+export * from './resolveAdminRouteRuntimeTarget';
 export * from './constants';
 export * from './ResetThemeTokenAndKeepAlgorithm';
 export * from './useApplications';
