@@ -30,12 +30,9 @@ const APPROVAL_CONTRACT_REAL_PLUGIN_ALIASES = [
 ] as const;
 const APPROVAL_CONTRACT_REAL_PLUGIN_ALIAS_SET = new Set<string>(APPROVAL_CONTRACT_REAL_PLUGIN_ALIASES);
 
-const APPROVAL_CONTRACT_TEST_ENABLED_PLUGIN_ALIASES = [
-  ...FLOW_SURFACES_TEST_PLUGINS,
-  'notification-manager',
-  'notification-in-app-message',
-  'workflow-approval',
-] as const;
+const APPROVAL_CONTRACT_TEST_ENABLED_PLUGIN_ALIASES = Array.from(
+  new Set([...FLOW_SURFACES_TEST_PLUGINS, 'notification-manager', 'notification-in-app-message', 'workflow-approval']),
+);
 
 const APPROVAL_CONTRACT_TEST_PLUGIN_INSTALLS = [
   ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS.filter((pluginInstall) => {

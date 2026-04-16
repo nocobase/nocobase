@@ -102,6 +102,7 @@ const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
   'blocks',
   'layout',
 ];
+const APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS = ['name', 'description', 'local'];
 const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
 const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
 const APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS = [
@@ -593,10 +594,16 @@ function compilePopup(
   const saveAsTemplate = _.isUndefined(popup.saveAsTemplate)
     ? undefined
     : _.isPlainObject(popup.saveAsTemplate)
-      ? {
+      ? (assertOnlyAllowedKeys(
+          popup.saveAsTemplate,
+          `${context}.saveAsTemplate`,
+          APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS,
+        ),
+        {
           name: assertNonEmptyString(popup.saveAsTemplate.name, `${context}.saveAsTemplate.name`),
           description: assertNonEmptyString(popup.saveAsTemplate.description, `${context}.saveAsTemplate.description`),
-        }
+          local: readOptionalString(popup.saveAsTemplate.local),
+        })
       : throwBadRequest(`${context}.saveAsTemplate must be an object`);
   if (saveAsTemplate && template) {
     throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);

@@ -146,7 +146,11 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceTemplateRef',
       'FlowSurfaceBlockTemplateRef',
       'FlowSurfacePopupTemplateRef',
+      'FlowSurfaceRequestPopupTemplateRef',
+      'FlowSurfaceRequestPopupSaveAsTemplate',
       'FlowSurfaceComposeFieldPopup',
+      'FlowSurfaceComposeRequestFieldPopup',
+      'FlowSurfaceComposeRequestActionPopup',
       'FlowSurfaceComposeRequest',
       'FlowSurfaceComposeResult',
       'FlowSurfaceComposeRecordActionSpec',
@@ -370,10 +374,20 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.$ref).toBeUndefined();
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.$ref).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.tryTemplate.type).toBe('boolean');
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.saveAsTemplate.allOf).toEqual([
-      { $ref: '#/components/schemas/FlowSurfacePopupSaveAsTemplate' },
+      { $ref: '#/components/schemas/FlowSurfaceRequestPopupSaveAsTemplate' },
     ]);
+    expect(schemas.FlowSurfaceRequestPopupTemplateRef.properties.local.type).toBe('string');
+    expect(schemas.FlowSurfaceRequestPopupSaveAsTemplate.properties.local.type).toBe('string');
+    expect(schemas.FlowSurfacePopupTemplateRef.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceTemplateRef' },
+    ]);
+    expect(schemas.FlowSurfacePopupTemplateRef.properties).toBeUndefined();
+    expect(schemas.FlowSurfacePopupSaveAsTemplate.properties.local).toBeUndefined();
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintLayout' },
     ]);
@@ -581,6 +595,8 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('internal flow-surface operations');
     expect(applyBlueprintPath.description).toContain('generic `form`');
     expect(applyBlueprintPath.description).toContain('exactly one `editForm` block');
+    expect(applyBlueprintPath.description).toContain('popup.saveAsTemplate={ name, description, local? }');
+    expect(applyBlueprintPath.description).toContain('popup.template={ local, mode }');
     const applyApprovalBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyApprovalBlueprint'].post;
     expect(applyApprovalBlueprintPath.summary).toContain('approval blueprint');
     expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
@@ -598,6 +614,10 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
       'use `applyApprovalBlueprint` first',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      'popup.saveAsTemplate={ name, description, local? }',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain('popup.template={ local, mode }');
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
       'do not auto-create an approval root',
     );
@@ -694,6 +714,23 @@ describe('flowSurfaces swagger', () => {
       expect.arrayContaining(['addNew', 'popup', 'view', 'edit']),
     );
     expect(schemas.FlowSurfaceListTemplatesRequest.properties.actionScope.enum).toEqual(['block', 'record']);
+    expect(schemas.FlowSurfaceRequestPopupTemplateRef.oneOf).toEqual(
+      expect.arrayContaining([{ required: ['uid'] }, { required: ['local'] }]),
+    );
+    expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
+    );
+    expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.saveAsTemplate.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceRequestPopupSaveAsTemplate' },
+    ]);
+    expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
+    );
+    expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.saveAsTemplate.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceRequestPopupSaveAsTemplate' },
+    ]);
     expect(schemas.FlowSurfaceComposeActionPopup.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfacePopupTemplateRef',
     );
@@ -712,6 +749,7 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfacePopupTemplateRef',
     );
     expect(schemas.FlowSurfaceApplyNodePopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceApplyNodePopup.properties.template.properties?.local).toBeUndefined();
     expect(schemas.FlowSurfacePopupSaveAsTemplate.required).toEqual(['name', 'description']);
     expect(schemas.FlowSurfacePopupSaveAsTemplate.properties.name.type).toBe('string');
     expect(schemas.FlowSurfacePopupSaveAsTemplate.properties.description.type).toBe('string');
@@ -869,10 +907,13 @@ describe('flowSurfaces swagger', () => {
       ]),
     );
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.popup.$ref).toBe(
-      '#/components/schemas/FlowSurfaceComposeFieldPopup',
+      '#/components/schemas/FlowSurfaceComposeRequestFieldPopup',
     );
-    expect(schemas.FlowSurfaceComposeActionPopup.properties.template.$ref).toBe(
-      '#/components/schemas/FlowSurfacePopupTemplateRef',
+    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeRequestActionPopup',
+    );
+    expect(schemas.FlowSurfaceComposeRecordActionSpec.oneOf[1].properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeRequestActionPopup',
     );
     expect(schemas.FlowSurfaceComposeFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);

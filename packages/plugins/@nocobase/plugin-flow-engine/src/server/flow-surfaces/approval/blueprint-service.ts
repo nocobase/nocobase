@@ -213,6 +213,19 @@ export class FlowSurfaceApprovalBlueprintService {
     }
   }
 
+  private buildApprovalBlueprintPageSurfaceRootTree(context: FlowSurfaceApprovalBlueprintBindingContext) {
+    if (context.rootUse === 'TriggerChildPageModel') {
+      return buildApprovalInitiatorSurfaceTree({});
+    }
+    if (context.rootUse === 'ApprovalChildPageModel') {
+      return buildApprovalApproverSurfaceTree({
+        dataSourceKey: context.dataSourceKey,
+        collectionName: context.collectionName,
+      });
+    }
+    throwInternalError(`flowSurfaces applyApprovalBlueprint root use '${context.rootUse}' does not support tabs`);
+  }
+
   private getApprovalBlueprintExpectedTabUse(context: FlowSurfaceApprovalBlueprintBindingContext) {
     return context.rootUse === 'TriggerChildPageModel' ? 'TriggerChildPageTabModel' : 'ApprovalChildPageTabModel';
   }
@@ -279,7 +292,7 @@ export class FlowSurfaceApprovalBlueprintService {
       _.castArray(root?.subModels?.tabs || [])[0];
 
     if (!tab?.uid) {
-      const defaultTree = this.buildApprovalBlueprintSurfaceRootTree(context);
+      const defaultTree = this.buildApprovalBlueprintPageSurfaceRootTree(context);
       const defaultTab = _.castArray(defaultTree?.subModels?.tabs || [])[0];
       await this.deps.repository.upsertModel(
         {

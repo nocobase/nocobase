@@ -285,7 +285,19 @@ export function ensureNoDirectActionScopeKey(actionName: 'addAction' | 'addRecor
   );
 }
 
-export function normalizeComposeFieldSpec(input: any, index: number) {
+export type NormalizedComposeFieldSpec = {
+  index: number;
+  key: string;
+  fieldPath?: string;
+  associationPathName?: string;
+  renderer?: string;
+  type?: string;
+  target?: string;
+  settings: Record<string, any>;
+  popup?: Record<string, any>;
+};
+
+export function normalizeComposeFieldSpec(input: any, index: number): NormalizedComposeFieldSpec {
   if (typeof input === 'string') {
     const fieldPath = String(input || '').trim();
     if (!fieldPath) {

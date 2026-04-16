@@ -1909,6 +1909,536 @@ describe('flowSurfaces templates', () => {
     await expectSavedPopupTemplateReference(composeRecordActionTemplateName, composedViewAction.uid);
   });
 
+  it('should reuse popup templates created earlier in the same compose call via popup.template.local', async () => {
+    const unique = Date.now();
+    const fieldTemplateName = `Compose popup local field ${unique}`;
+    const nestedTemplateName = `Compose popup local nested ${unique}`;
+    const page = await createPage(rootAgent, {
+      title: `Compose popup local page ${unique}`,
+      tabTitle: 'Compose popup local tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'sourceDetails',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: [
+                {
+                  key: 'producerField',
+                  fieldPath: 'nickname',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'producerPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: [
+                          {
+                            key: 'nestedProducerField',
+                            fieldPath: 'status',
+                            popup: {
+                              blocks: [
+                                {
+                                  key: 'nestedPopupDetails',
+                                  type: 'details',
+                                  resource: {
+                                    binding: 'currentRecord',
+                                  },
+                                  fields: ['status'],
+                                },
+                              ],
+                              saveAsTemplate: {
+                                name: nestedTemplateName,
+                                description: 'Nested popup template created earlier in the same compose call.',
+                                local: 'nestedPopupAlias',
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: fieldTemplateName,
+                      description: 'Popup template created earlier in the same compose call.',
+                      local: 'fieldPopupAlias',
+                    },
+                  },
+                },
+                {
+                  key: 'fieldConsumer',
+                  fieldPath: 'status',
+                  popup: {
+                    template: {
+                      local: 'fieldPopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              key: 'employeeTable',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+              recordActions: [
+                {
+                  key: 'fieldPopupRecordConsumer',
+                  type: 'view',
+                  popup: {
+                    template: {
+                      local: 'fieldPopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+                {
+                  key: 'recordActionConsumer',
+                  type: 'view',
+                  popup: {
+                    template: {
+                      local: 'nestedPopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const listedTemplates = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: unique,
+        },
+      }),
+    );
+    const fieldTemplate = listedTemplates.rows.find((row: any) => row.name === fieldTemplateName);
+    const nestedTemplate = listedTemplates.rows.find((row: any) => row.name === nestedTemplateName);
+    expect(fieldTemplate?.uid).toBeTruthy();
+    expect(nestedTemplate?.uid).toBeTruthy();
+
+    const composedDetails = composeRes.blocks.find((item: any) => item.key === 'sourceDetails');
+    const fieldConsumer = composedDetails.fields.find((item: any) => item.key === 'fieldConsumer');
+    const composedTable = composeRes.blocks.find((item: any) => item.key === 'employeeTable');
+    const fieldPopupRecordConsumer = composedTable.recordActions.find(
+      (item: any) => item.key === 'fieldPopupRecordConsumer',
+    );
+    const recordActionConsumer = composedTable.recordActions.find((item: any) => item.key === 'recordActionConsumer');
+
+    const fieldConsumerSurface = await getSurface(rootAgent, {
+      uid: fieldConsumer.fieldUid || fieldConsumer.uid,
+    });
+    expect(fieldConsumerSurface.tree.popup?.template).toMatchObject({
+      uid: fieldTemplate.uid,
+      mode: 'reference',
+    });
+
+    const fieldPopupRecordConsumerSurface = await getSurface(rootAgent, {
+      uid: fieldPopupRecordConsumer.uid,
+    });
+    expect(fieldPopupRecordConsumerSurface.tree.popup?.template).toMatchObject({
+      uid: fieldTemplate.uid,
+      mode: 'reference',
+    });
+
+    const recordActionConsumerSurface = await getSurface(rootAgent, {
+      uid: recordActionConsumer.uid,
+    });
+    expect(recordActionConsumerSurface.tree.popup?.template).toMatchObject({
+      uid: nestedTemplate.uid,
+      mode: 'reference',
+    });
+
+    await expectTemplateUsage(rootAgent, fieldTemplate.uid, 3);
+    await expectTemplateUsage(rootAgent, nestedTemplate.uid, 2);
+  });
+
+  it('should reject invalid compose popup local template alias usage and direct add local aliases', async () => {
+    const unique = Date.now();
+    const page = await createPage(rootAgent, {
+      title: `Compose popup local validation page ${unique}`,
+      tabTitle: 'Compose popup local validation tab',
+    });
+
+    const forwardReferenceRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'forwardRefTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'fieldBeforeActionProducer',
+                fieldPath: 'nickname',
+                popup: {
+                  template: {
+                    local: 'futureActionPopup',
+                    mode: 'reference',
+                  },
+                },
+              },
+            ],
+            actions: [
+              {
+                key: 'laterPopupProducer',
+                type: 'popup',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'futureActionPopupBlock',
+                      type: 'table',
+                      resource: {
+                        binding: 'currentCollection',
+                      },
+                      fields: ['nickname'],
+                    },
+                  ],
+                  saveAsTemplate: {
+                    name: `Future action popup ${unique}`,
+                    description: 'Created too late for field phase consumers.',
+                    local: 'futureActionPopup',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(forwardReferenceRes.status).toBe(400);
+    expect(readErrorMessage(forwardReferenceRes)).toContain(
+      "flowSurfaces compose.blocks[0].fields[0].popup.template.local 'futureActionPopup' must reference an earlier popup.saveAsTemplate.local in the same request",
+    );
+
+    const duplicateAliasRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'duplicateAliasDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'duplicateAliasFieldA',
+                fieldPath: 'nickname',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'duplicateAliasPopupA',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['nickname'],
+                    },
+                  ],
+                  saveAsTemplate: {
+                    name: `Duplicate popup alias A ${unique}`,
+                    description: 'First duplicate alias producer.',
+                    local: 'duplicateAlias',
+                  },
+                },
+              },
+              {
+                key: 'duplicateAliasFieldB',
+                fieldPath: 'status',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'duplicateAliasPopupB',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['status'],
+                    },
+                  ],
+                  saveAsTemplate: {
+                    name: `Duplicate popup alias B ${unique}`,
+                    description: 'Second duplicate alias producer.',
+                    local: 'duplicateAlias',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(duplicateAliasRes.status).toBe(400);
+    expect(readErrorMessage(duplicateAliasRes)).toContain(
+      "flowSurfaces compose.blocks[0].fields[1].popup.saveAsTemplate.local 'duplicateAlias' is duplicated in the same request",
+    );
+
+    const uidAndLocalConflictRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'uidAndLocalConflictDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'uidAndLocalConflictField',
+                fieldPath: 'nickname',
+                popup: {
+                  template: {
+                    uid: 'existing-popup-template',
+                    local: 'unsupportedComposeAlias',
+                    mode: 'reference',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(uidAndLocalConflictRes.status).toBe(400);
+    expect(readErrorMessage(uidAndLocalConflictRes)).toContain(
+      'flowSurfaces compose.blocks[0].fields[0].popup.template cannot combine uid and local',
+    );
+
+    const localTryTemplateConflictRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'localTryTemplateConflictDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'localTryTemplateConflictField',
+                fieldPath: 'status',
+                popup: {
+                  template: {
+                    local: 'composeAliasConflict',
+                    mode: 'reference',
+                  },
+                  tryTemplate: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(localTryTemplateConflictRes.status).toBe(400);
+    expect(readErrorMessage(localTryTemplateConflictRes)).toContain(
+      'flowSurfaces compose.blocks[0].fields[0].popup.template.local cannot be combined with flowSurfaces compose.blocks[0].fields[0].popup.tryTemplate',
+    );
+
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const tableBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const directAddFieldLocalTemplateRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          template: {
+            local: 'unsupportedDirectAddAlias',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    expect(directAddFieldLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddFieldLocalTemplateRes)).toContain(
+      'flowSurfaces addField popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddFieldLocalSaveRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'status',
+        popup: {
+          blocks: [
+            {
+              key: 'unsupportedDirectAddSavePopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['status'],
+            },
+          ],
+          saveAsTemplate: {
+            name: `Unsupported direct add save ${unique}`,
+            description: 'Direct add should reject local popup aliases.',
+            local: 'unsupportedDirectAddAlias',
+          },
+        },
+      },
+    });
+    expect(directAddFieldLocalSaveRes.status).toBe(400);
+    expect(readErrorMessage(directAddFieldLocalSaveRes)).toContain(
+      'flowSurfaces addField popup.saveAsTemplate.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddFieldNestedLocalTemplateRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          blocks: [
+            {
+              key: 'unsupportedDirectAddNestedPopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: [
+                {
+                  key: 'unsupportedDirectAddNestedField',
+                  fieldPath: 'status',
+                  popup: {
+                    template: {
+                      local: 'unsupportedNestedDirectAddAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    expect(directAddFieldNestedLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddFieldNestedLocalTemplateRes)).toContain(
+      'flowSurfaces addField popup.blocks[0].fields[0].popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddActionLocalTemplateRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'popup',
+        popup: {
+          template: {
+            local: 'unsupportedDirectActionAlias',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    expect(directAddActionLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddActionLocalTemplateRes)).toContain(
+      'flowSurfaces addAction popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddRecordActionLocalTemplateRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'view',
+        popup: {
+          template: {
+            local: 'unsupportedDirectRecordActionAlias',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    expect(directAddRecordActionLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddRecordActionLocalTemplateRes)).toContain(
+      'flowSurfaces addRecordAction popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddRecordActionNestedLocalSaveRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'view',
+        popup: {
+          blocks: [
+            {
+              key: 'unsupportedDirectRecordActionNestedPopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: [
+                {
+                  key: 'unsupportedDirectRecordActionNestedField',
+                  fieldPath: 'nickname',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'unsupportedDirectRecordActionNestedSavePopup',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['nickname'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: `Unsupported direct record action nested save ${unique}`,
+                      description: 'Direct add should reject nested local popup aliases too.',
+                      local: 'unsupportedNestedDirectRecordActionAlias',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    expect(directAddRecordActionNestedLocalSaveRes.status).toBe(400);
+    expect(readErrorMessage(directAddRecordActionNestedLocalSaveRes)).toContain(
+      'flowSurfaces addRecordAction popup.blocks[0].fields[0].popup.saveAsTemplate.local is only supported in compose and applyBlueprint',
+    );
+  });
+
   it('should reject invalid popup.saveAsTemplate inputs and unsupported save scenarios', async () => {
     const unique = Date.now();
     const page = await createPage(rootAgent, {

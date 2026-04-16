@@ -42,6 +42,7 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'action-import',
   'action-duplicate',
   'workflow',
+  'workflow-approval',
   'workflow-custom-action-trigger',
   'email-manager',
   'action-template-print',

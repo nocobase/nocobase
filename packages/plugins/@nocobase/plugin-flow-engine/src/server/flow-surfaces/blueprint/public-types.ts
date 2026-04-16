@@ -96,6 +96,7 @@ export type FlowSurfaceApplyBlueprintPopup = {
   saveAsTemplate?: {
     name: string;
     description: string;
+    local?: string;
   };
   blocks?: FlowSurfaceApplyBlueprintBlockSpec[];
   layout?: FlowSurfaceApplyBlueprintLayout;

@@ -586,6 +586,220 @@ describe('flowSurfaces applyBlueprint contract', () => {
     await expectSavedTemplateReference(recordActionTemplateName);
   });
 
+  it('should reuse popup templates created earlier in the same blueprint via popup.template.local', async () => {
+    const unique = Date.now();
+    const templateName = `Blueprint popup local ${unique}`;
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint popup local page ${unique}`,
+          },
+        },
+        page: {
+          title: 'Blueprint popup local page',
+        },
+        tabs: [
+          {
+            key: 'source',
+            title: 'Source',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'producerField',
+                    field: 'nickname',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'producerPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: templateName,
+                        description: 'Popup template created earlier in the same blueprint.',
+                        local: 'blueprintPopupAlias',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            key: 'consumer',
+            title: 'Consumer',
+            blocks: [
+              {
+                key: 'employeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    key: 'consumerAction',
+                    type: 'view',
+                    title: 'View employee',
+                    popup: {
+                      template: {
+                        local: 'blueprintPopupAlias',
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const listed = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: templateName,
+        },
+      }),
+    );
+    const template = listed.rows.find((row: any) => row.name === templateName);
+    expect(template?.uid).toBeTruthy();
+    expect(
+      collectDescendantNodes(data.surface.tree, (item) => item?.popup?.template?.uid === template.uid),
+    ).toHaveLength(2);
+    await expectTemplateUsage(rootAgent, template.uid, 2);
+  });
+
+  it('should reject invalid applyBlueprint popup local template aliases', async () => {
+    const unique = Date.now();
+
+    const undefinedAliasRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint popup local undefined ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'consumerField',
+                    field: 'nickname',
+                    popup: {
+                      template: {
+                        local: 'missingBlueprintPopupAlias',
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(undefinedAliasRes.status).toBe(400);
+    expect(readErrorMessage(undefinedAliasRes)).toContain(
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].popup.template.local 'missingBlueprintPopupAlias' must reference an earlier popup.saveAsTemplate.local in the same request",
+    );
+
+    const duplicateAliasRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint popup local duplicate ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'producerFieldA',
+                    field: 'nickname',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'duplicatePopupA',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: `Blueprint duplicate popup alias A ${unique}`,
+                        description: 'First duplicate alias producer.',
+                        local: 'duplicateBlueprintAlias',
+                      },
+                    },
+                  },
+                  {
+                    key: 'producerFieldB',
+                    field: 'status',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'duplicatePopupB',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['status'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: `Blueprint duplicate popup alias B ${unique}`,
+                        description: 'Second duplicate alias producer.',
+                        local: 'duplicateBlueprintAlias',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(duplicateAliasRes.status).toBe(400);
+    expect(readErrorMessage(duplicateAliasRes)).toContain(
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].fields[1].popup.saveAsTemplate.local 'duplicateBlueprintAlias' is duplicated in the same request",
+    );
+  });
+
   it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
     const page = await createPage(rootAgent, {
       title: 'Legacy employees',

@@ -128,6 +128,10 @@ const REACTION_RULES_REPLACE_DESCRIPTION =
 const REACTION_LOCALIZED_FORM_TARGET_DESCRIPTION =
   'Reaction write target. Use the live block/action uid for localized edits. For form field-value and form field-linkage writes, keep passing the outer form block uid; the backend resolves the inner form-grid slot automatically.';
 const REACTION_OUTER_FORM_TARGET_NOTE = 'Pass the outer form block uid, not the inner form-grid uid.';
+const REQUEST_POPUP_TRY_TEMPLATE_DESCRIPTION =
+  'When true and no explicit popup.template is provided, the backend tries to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, the request silently falls back to local/default popup behavior.';
+const REQUEST_POPUP_SAVE_AS_TEMPLATE_DESCRIPTION =
+  'Immediately saves explicit local popup blocks as a popup template and converts the created popup to that template reference. Requires local `popup.blocks` and cannot be combined with `popup.template` or `popup.tryTemplate`. When `popup.saveAsTemplate.local` is provided, later `popup.template.local` references in the same compose/applyBlueprint call can reuse that saved popup template.';
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
@@ -228,6 +232,47 @@ function buildReactionWriteRequestSchema(ruleSchemaName: string) {
         description:
           'Reserved compatibility flag. Current v1 writes are full replace and return normalized output directly.',
       },
+    },
+    additionalProperties: false,
+  };
+}
+
+function buildFlowSurfaceRequestPopupSchema() {
+  return {
+    type: 'object',
+    anyOf: [
+      {
+        required: ['template'],
+      },
+      {
+        required: ['tryTemplate'],
+      },
+      {
+        anyOf: [{ required: ['title'] }, { required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
+      },
+    ],
+    properties: {
+      title: {
+        type: 'string',
+      },
+      template: ref('FlowSurfaceRequestPopupTemplateRef'),
+      tryTemplate: {
+        type: 'boolean',
+        description: REQUEST_POPUP_TRY_TEMPLATE_DESCRIPTION,
+      },
+      saveAsTemplate: {
+        allOf: [ref('FlowSurfaceRequestPopupSaveAsTemplate')],
+        description: REQUEST_POPUP_SAVE_AS_TEMPLATE_DESCRIPTION,
+      },
+      mode: {
+        type: 'string',
+        enum: ['append', 'replace'],
+      },
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeBlockSpec'),
+      },
+      layout: ref('FlowSurfaceComposeLayout'),
     },
     additionalProperties: false,
   };
@@ -427,7 +472,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also set `popup.saveAsTemplate={ name, description }` to convert the newly created local popup into a saved popup template immediately. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` is the preferred way to target an existing menu group. It is exact-targeting only and cannot be mixed with existing-group metadata such as `icon`, `tooltip`, or `hideInMenu`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When only `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Same-title reuse is title-only; if an existing group\'s metadata must change, use low-level `updateMenu` instead of applyBlueprint create. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also set `popup.saveAsTemplate={ name, description, local? }` to convert the newly created local popup into a saved popup template immediately, and later inline popups in the same blueprint may reuse that freshly created template through `popup.template={ local, mode }`. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
@@ -486,7 +531,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or set `popup.saveAsTemplate={ name, description }` to immediately save newly created local popup content as a popup template reference. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. For approval surfaces, use `applyApprovalBlueprint` first to bootstrap or replace the bound approval root; use `compose` only after that root already exists.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or set `popup.saveAsTemplate={ name, description, local? }` to immediately save newly created local popup content as a popup template reference. Later popup-capable fields and actions in the same compose call may reuse that freshly created template through `popup.template={ local, mode }`. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. For approval surfaces, use `applyApprovalBlueprint` first to bootstrap or replace the bound approval root; use `compose` only after that root already exists.',
     ),
     requestBody: {
       required: true,
@@ -2066,7 +2111,7 @@ const schemas = {
             description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceComposeFieldPopup'),
+          popup: ref('FlowSurfaceComposeRequestFieldPopup'),
         },
         additionalProperties: false,
       },
@@ -2143,6 +2188,49 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceRequestPopupTemplateRef: {
+    type: 'object',
+    oneOf: [{ required: ['uid'] }, { required: ['local'] }],
+    properties: {
+      uid: {
+        type: 'string',
+        description: 'Saved template uid.',
+      },
+      local: {
+        type: 'string',
+        description:
+          'Request-scoped popup template alias produced earlier by `popup.saveAsTemplate.local` in the same compose/applyBlueprint call. The alias itself is not persisted.',
+      },
+      mode: {
+        type: 'string',
+        enum: ['reference', 'copy'],
+        default: 'reference',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRequestPopupSaveAsTemplate: {
+    type: 'object',
+    required: ['name', 'description'],
+    properties: {
+      name: {
+        type: 'string',
+        description: 'Template name saved immediately from explicit local popup content.',
+      },
+      description: {
+        type: 'string',
+        description: 'Template description saved immediately from explicit local popup content.',
+      },
+      local: {
+        type: 'string',
+        description:
+          'Optional request-scoped alias that later `popup.template.local` references can consume within the same compose/applyBlueprint call. The alias itself is not persisted.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceComposeRequestActionPopup: buildFlowSurfaceRequestPopupSchema(),
+  FlowSurfaceComposeRequestFieldPopup: buildFlowSurfaceRequestPopupSchema(),
   FlowSurfaceComposeActionPopup: {
     type: 'object',
     anyOf: [
@@ -2240,7 +2328,7 @@ const schemas = {
             enum: NON_RECORD_ACTION_TYPE_ENUM,
           },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceComposeActionPopup'),
+          popup: ref('FlowSurfaceComposeRequestActionPopup'),
         },
         additionalProperties: false,
       },
@@ -2287,7 +2375,7 @@ const schemas = {
             enum: RECORD_ACTION_TYPE_ENUM,
           },
           settings: ANY_OBJECT_SCHEMA,
-          popup: ref('FlowSurfaceComposeActionPopup'),
+          popup: ref('FlowSurfaceComposeRequestActionPopup'),
         },
         additionalProperties: false,
       },
@@ -3234,16 +3322,16 @@ const schemas = {
         type: 'string',
         enum: ['append', 'replace'],
       },
-      template: ref('FlowSurfacePopupTemplateRef'),
+      template: ref('FlowSurfaceRequestPopupTemplateRef'),
       tryTemplate: {
         type: 'boolean',
         description:
           'When true and no explicit popup.template is provided, applyBlueprint asks the backend to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, inline popup blocks/layout still act as the fallback if present.',
       },
       saveAsTemplate: {
-        allOf: [ref('FlowSurfacePopupSaveAsTemplate')],
+        allOf: [ref('FlowSurfaceRequestPopupSaveAsTemplate')],
         description:
-          'Immediately saves explicit local popup blocks as a popup template and converts the created popup to that template reference. Requires local `popup.blocks` and cannot be combined with `popup.template` or `popup.tryTemplate`.',
+          'Immediately saves explicit local popup blocks as a popup template and converts the created popup to that template reference. Requires local `popup.blocks` and cannot be combined with `popup.template` or `popup.tryTemplate`. When `popup.saveAsTemplate.local` is provided, later `popup.template.local` references in the same blueprint can reuse that saved popup template.',
       },
       blocks: {
         type: 'array',

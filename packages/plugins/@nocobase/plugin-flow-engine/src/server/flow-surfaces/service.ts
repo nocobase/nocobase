@@ -59,6 +59,7 @@ import {
   type FlowSurfaceApplyBlueprintProgram,
   type FlowSurfaceApplyBlueprintReplaceTargetInfo,
 } from './blueprint';
+import { compileTabComposeValues } from './blueprint/compile-blocks';
 import { APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS } from './blueprint/private-utils';
 import type { FlowSurfacePlanOnlyActionName } from './planning/action-specs';
 import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
@@ -103,7 +104,7 @@ import {
   projectCatalogNode as projectSmartCatalogNode,
   type FlowSurfaceCatalogProjectableItem,
 } from './catalog-smart';
-import { compileComposeExecutionPlan } from './compose-compiler';
+import { compileComposeExecutionPlan, type FlowSurfaceComposeNormalizedBlockSpec } from './compose-compiler';
 import { executeComposeRuntime } from './compose-runtime';
 import { SurfaceLocator } from './locator';
 import { isPageModelUse, isPopupHostUse } from './placement';
@@ -326,7 +327,10 @@ type FlowSurfaceSqlChartPreview = {
 type FlowSurfacePopupSaveAsTemplate = {
   name: string;
   description: string;
+  local?: string;
 };
+
+type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
@@ -2916,7 +2920,7 @@ export class FlowSurfacesService {
     }
   }
 
-  private buildPlanningRuntimeDeps() {
+  private buildPlanningRuntimeDeps(options: { popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession } = {}) {
     return {
       normalizeGetTarget: (value: any) => this.normalizeGetTarget(value),
       resolveLocator: (target: FlowSurfaceReadLocator, resolveOptions?: { transaction?: any }) =>
@@ -2942,7 +2946,7 @@ export class FlowSurfacesService {
         action: FlowSurfacePlanOnlyActionName,
         payload: Record<string, any>,
         transaction?: any,
-      ) => this.dispatchPlanOnlyAction(action, payload, transaction),
+      ) => this.dispatchPlanOnlyAction(action, payload, transaction, options),
       dispatchOp: (
         op: FlowSurfaceMutateOp,
         resolvedValues: Record<string, any>,
@@ -2959,32 +2963,39 @@ export class FlowSurfacesService {
     action: FlowSurfacePlanOnlyActionName,
     payload: Record<string, any>,
     transaction?: any,
+    options: { popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession } = {},
   ) {
-    const options = { transaction };
+    const actionOptions = {
+      transaction,
+      popupTemplateAliasSession: options.popupTemplateAliasSession,
+    };
     switch (action) {
       case 'compose':
-        return this.compose(payload as FlowSurfaceComposeValues, options);
+        return this.compose(payload as FlowSurfaceComposeValues, actionOptions);
       case 'configure':
-        return this.configure(payload as FlowSurfaceConfigureValues, options);
+        return this.configure(payload as FlowSurfaceConfigureValues, actionOptions);
       case 'setFieldValueRules':
-        return this.setFieldValueRules(payload as FlowSurfaceReactionWriteValues<FlowSurfaceFieldValueRule>, options);
+        return this.setFieldValueRules(
+          payload as FlowSurfaceReactionWriteValues<FlowSurfaceFieldValueRule>,
+          actionOptions,
+        );
       case 'setBlockLinkageRules':
         return this.setBlockLinkageRules(
           payload as FlowSurfaceReactionWriteValues<FlowSurfaceBlockLinkageRule>,
-          options,
+          actionOptions,
         );
       case 'setFieldLinkageRules':
         return this.setFieldLinkageRules(
           payload as FlowSurfaceReactionWriteValues<FlowSurfaceFieldLinkageRule>,
-          options,
+          actionOptions,
         );
       case 'setActionLinkageRules':
         return this.setActionLinkageRules(
           payload as FlowSurfaceReactionWriteValues<FlowSurfaceActionLinkageRule>,
-          options,
+          actionOptions,
         );
       case 'convertTemplateToCopy':
-        return this.convertTemplateToCopy(payload, options);
+        return this.convertTemplateToCopy(payload, actionOptions);
     }
 
     const unsupportedAction: never = action;
@@ -3117,6 +3128,8 @@ export class FlowSurfacesService {
 
   async applyBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
     const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction);
+    const popupTemplateAliasSession = this.createPopupTemplateAliasSession();
+    this.validateApplyBlueprintPopupTemplateAliases(prepared.document, popupTemplateAliasSession);
     const result = await executeInternalPlan(
       {
         surface: prepared.surface,
@@ -3124,7 +3137,9 @@ export class FlowSurfacesService {
           steps: prepared.steps,
         },
       },
-      this.buildPlanningRuntimeDeps(),
+      this.buildPlanningRuntimeDeps({
+        popupTemplateAliasSession,
+      }),
       options,
     );
     const pageLocator = resolveApplyBlueprintPageLocator(prepared, result);
@@ -4659,12 +4674,18 @@ export class FlowSurfacesService {
 
   async compose(
     values: FlowSurfaceComposeValues,
-    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+    } = {},
   ) {
+    const popupTemplateAliasSession = options.popupTemplateAliasSession || this.createPopupTemplateAliasSession();
     const target = this.normalizeWriteTarget('compose', values?.target, values);
     const mode = this.assertComposeMode(values?.mode);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
+    this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
     const approvalRoot = await this.findApprovalSurfaceRootForNode(gridUid, options.transaction);
@@ -4708,7 +4729,11 @@ export class FlowSurfacesService {
         }
         await this.applyInlineNodeSettings(actionName, targetUid, settings, options);
       },
-      createField: async (payload) => this.addField(payload, options),
+      createField: async (payload) =>
+        this.addField(payload, {
+          ...options,
+          popupTemplateAliasSession,
+        }),
       applyFieldSettings: async (actionName, fieldResult, settings) =>
         this.applyInlineFieldSettings(actionName, fieldResult, settings, options),
       createAction: async (payload) =>
@@ -4716,15 +4741,20 @@ export class FlowSurfacesService {
           ...options,
           enabledPackages,
           autoCompleteDefaultPopup: false,
+          popupTemplateAliasSession,
         }),
       createRecordAction: async (payload) =>
         this.addRecordAction(payload, {
           ...options,
           enabledPackages,
           autoCompleteDefaultPopup: false,
+          popupTemplateAliasSession,
         }),
       applyActionPopup: async (actionName, actionUid, popup) =>
-        this.applyInlineActionPopup(actionName, actionUid, popup, options),
+        this.applyInlineActionPopup(actionName, actionUid, popup, {
+          ...options,
+          popupTemplateAliasSession,
+        }),
       collectActionKeys: async (actionUid) => this.collectComposeActionKeys(actionUid, options.transaction),
       buildExplicitLayoutPayload: async (input) => {
         const finalGrid = await this.repository.findModelById(input.gridUid, {
@@ -5939,7 +5969,11 @@ export class FlowSurfacesService {
 
   async addField(
     values: Record<string, any>,
-    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+    } = {},
   ): Promise<FlowSurfaceAddFieldResult> {
     const templateRef = !_.isUndefined(values?.template)
       ? this.normalizeFlowTemplateReference('addField', values.template, {
@@ -5962,6 +5996,7 @@ export class FlowSurfacesService {
     ]);
     const inlineSettings = this.normalizeInlineSettings('addField', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addField', values.popup);
+    this.assertInlinePopupTemplateAliasesSupported('addField', inlinePopup, options.popupTemplateAliasSession);
     const resolvedTarget = await this.locator.resolve(target, options);
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
@@ -6257,6 +6292,7 @@ export class FlowSurfacesService {
       transaction?: any;
       enabledPackages?: ReadonlySet<string>;
       autoCompleteDefaultPopup?: boolean;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     } = {},
   ) {
     const target = this.normalizeWriteTarget('addAction', values?.target, values);
@@ -6264,6 +6300,7 @@ export class FlowSurfacesService {
     ensureNoRawDirectAddKeys('addAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addAction', values.popup);
+    this.assertInlinePopupTemplateAliasesSupported('addAction', inlinePopup, options.popupTemplateAliasSession);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const container = await this.surfaceContext.resolveActionContainer(target, options.transaction);
     if (getActionContainerScope(container.ownerUse) === 'record') {
@@ -6344,6 +6381,7 @@ export class FlowSurfacesService {
       transaction?: any;
       enabledPackages?: ReadonlySet<string>;
       autoCompleteDefaultPopup?: boolean;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     } = {},
   ) {
     const target = this.normalizeWriteTarget('addRecordAction', values?.target, values);
@@ -6351,6 +6389,7 @@ export class FlowSurfacesService {
     ensureNoRawDirectAddKeys('addRecordAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addRecordAction', values.popup);
+    this.assertInlinePopupTemplateAliasesSupported('addRecordAction', inlinePopup, options.popupTemplateAliasSession);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const container = await this.inspectRecordActionContainer(target, options.transaction);
     const actionCatalogItem = this.resolveAddRecordActionCatalogItem(
@@ -6475,6 +6514,275 @@ export class FlowSurfacesService {
     });
   }
 
+  private createPopupTemplateAliasSession(): FlowSurfacePopupTemplateAliasSession {
+    return new Map<string, string>();
+  }
+
+  private normalizePopupTemplateAliasName(value: any, fieldName: string) {
+    if (_.isUndefined(value)) {
+      return undefined;
+    }
+    if (typeof value !== 'string' || !value.trim()) {
+      throwBadRequest(`${fieldName} must be a non-empty string`);
+    }
+    return value.trim();
+  }
+
+  private readInlinePopupTemplateLocalAlias(
+    popup: Record<string, any> | undefined,
+    fieldName = 'popup.template.local',
+  ): string | undefined {
+    if (!_.isPlainObject(popup?.template)) {
+      return undefined;
+    }
+    return this.normalizePopupTemplateAliasName(popup.template.local, fieldName);
+  }
+
+  private readInlinePopupSaveAsTemplateLocalAlias(
+    popup: Record<string, any> | undefined,
+    fieldName = 'popup.saveAsTemplate.local',
+  ): string | undefined {
+    if (!_.isPlainObject(popup?.saveAsTemplate)) {
+      return undefined;
+    }
+    return this.normalizePopupTemplateAliasName(popup.saveAsTemplate.local, fieldName);
+  }
+
+  private assertInlinePopupTemplateAliasesSupported(
+    actionName: string,
+    popup: Record<string, any> | undefined,
+    popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+    popupPath = 'popup',
+  ) {
+    if (!_.isPlainObject(popup) || popupTemplateAliasSession) {
+      return;
+    }
+
+    if (this.readInlinePopupTemplateLocalAlias(popup, `${popupPath}.template.local`)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${popupPath}.template.local is only supported in compose and applyBlueprint`,
+      );
+    }
+    if (this.readInlinePopupSaveAsTemplateLocalAlias(popup, `${popupPath}.saveAsTemplate.local`)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${popupPath}.saveAsTemplate.local is only supported in compose and applyBlueprint`,
+      );
+    }
+    if (!hasFlowSurfaceInlinePopupBlocks(popup)) {
+      return;
+    }
+    this.assertInlinePopupTemplateAliasesSupportedInBlocks(
+      actionName,
+      _.castArray(popup.blocks || []),
+      popupTemplateAliasSession,
+      `${popupPath}.blocks`,
+    );
+  }
+
+  private assertInlinePopupTemplateAliasesSupportedInBlocks(
+    actionName: string,
+    blocks: Array<Record<string, any>> | undefined,
+    popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+    blocksPath = 'popup.blocks',
+  ) {
+    if (!blocks?.length || popupTemplateAliasSession) {
+      return;
+    }
+    const normalizedBlocks = _.castArray(blocks || []);
+    (['fields', 'actions', 'recordActions'] as const).forEach((phase) => {
+      normalizedBlocks.forEach((block, blockIndex) => {
+        _.castArray(block?.[phase] || []).forEach((item: any, itemIndex) => {
+          this.assertInlinePopupTemplateAliasesSupported(
+            actionName,
+            _.isPlainObject(item?.popup) ? item.popup : undefined,
+            popupTemplateAliasSession,
+            `${blocksPath}[${blockIndex}].${phase}[${itemIndex}].popup`,
+          );
+        });
+      });
+    });
+  }
+
+  private prepareInlinePopupTemplateAliases(
+    actionName: string,
+    popup: Record<string, any> | undefined,
+    popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+  ) {
+    if (!_.isPlainObject(popup)) {
+      return popup;
+    }
+
+    const template = _.isPlainObject(popup.template) ? popup.template : undefined;
+    const templateLocal = this.readInlinePopupTemplateLocalAlias(popup);
+    if (templateLocal) {
+      if (String(template?.uid || '').trim()) {
+        throwBadRequest(`flowSurfaces ${actionName} popup.template cannot combine popup.template.uid and local`);
+      }
+      if (popup.tryTemplate === true) {
+        throwBadRequest(`flowSurfaces ${actionName} popup.template.local cannot be combined with popup.tryTemplate`);
+      }
+      if (!popupTemplateAliasSession) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} popup.template.local is only supported in compose and applyBlueprint`,
+        );
+      }
+      const matchedTemplateUid = popupTemplateAliasSession.get(templateLocal);
+      if (!matchedTemplateUid) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} popup.template.local '${templateLocal}' must reference an earlier popup.saveAsTemplate.local in the same request`,
+        );
+      }
+      const nextPopup = _.cloneDeep(popup);
+      nextPopup.template = buildDefinedPayload({
+        ..._.omit(template, ['local']),
+        uid: matchedTemplateUid,
+      });
+      return nextPopup;
+    }
+
+    const saveAsTemplateLocal = this.readInlinePopupSaveAsTemplateLocalAlias(popup);
+    if (!saveAsTemplateLocal) {
+      return popup;
+    }
+    if (!popupTemplateAliasSession) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} popup.saveAsTemplate.local is only supported in compose and applyBlueprint`,
+      );
+    }
+    if (popupTemplateAliasSession.has(saveAsTemplateLocal)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} popup.saveAsTemplate.local '${saveAsTemplateLocal}' is duplicated in the same request`,
+      );
+    }
+    return popup;
+  }
+
+  private registerInlinePopupTemplateAlias(
+    actionName: string,
+    popup: Record<string, any> | undefined,
+    savedTemplate: any,
+    popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+  ) {
+    const local = this.readInlinePopupSaveAsTemplateLocalAlias(popup);
+    if (!local) {
+      return;
+    }
+    if (!popupTemplateAliasSession) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} popup.saveAsTemplate.local is only supported in compose and applyBlueprint`,
+      );
+    }
+    if (popupTemplateAliasSession.has(local)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} popup.saveAsTemplate.local '${local}' is duplicated in the same request`,
+      );
+    }
+    const templateUid = String(savedTemplate?.uid || '').trim();
+    if (!templateUid) {
+      throwConflict(
+        `flowSurfaces ${actionName} popup.saveAsTemplate.local '${local}' did not produce a saved template uid`,
+        'FLOW_SURFACE_TEMPLATE_COPY_FAILED',
+      );
+    }
+    popupTemplateAliasSession.set(local, templateUid);
+  }
+
+  private validatePopupTemplateAliasesInBlocks(
+    blocks: Array<Record<string, any>> | undefined,
+    availableAliases: Set<string>,
+    blocksPath: string,
+  ) {
+    const normalizedBlocks = _.castArray(blocks || []);
+    (['fields', 'actions', 'recordActions'] as const).forEach((phase) => {
+      normalizedBlocks.forEach((block, blockIndex) => {
+        _.castArray(block?.[phase] || []).forEach((item: any, itemIndex) => {
+          this.validatePopupTemplateAliasesForItemPopup(
+            _.isPlainObject(item?.popup) ? item.popup : undefined,
+            availableAliases,
+            `${blocksPath}[${blockIndex}].${phase}[${itemIndex}]`,
+          );
+        });
+      });
+    });
+  }
+
+  private validatePopupTemplateAliasesForItemPopup(
+    popup: Record<string, any> | undefined,
+    availableAliases: Set<string>,
+    itemPath: string,
+  ) {
+    if (!_.isPlainObject(popup)) {
+      return;
+    }
+
+    const template = _.isPlainObject(popup.template) ? popup.template : undefined;
+    const templateUid = String(template?.uid || '').trim();
+    const templateLocal = this.readInlinePopupTemplateLocalAlias(popup, `${itemPath}.popup.template.local`);
+    if (templateLocal && templateUid) {
+      throwBadRequest(`${itemPath}.popup.template cannot combine uid and local`);
+    }
+    if (templateLocal && popup.tryTemplate === true) {
+      throwBadRequest(`${itemPath}.popup.template.local cannot be combined with ${itemPath}.popup.tryTemplate`);
+    }
+    if (templateLocal && !availableAliases.has(templateLocal)) {
+      throwBadRequest(
+        `${itemPath}.popup.template.local '${templateLocal}' must reference an earlier popup.saveAsTemplate.local in the same request`,
+      );
+    }
+
+    const hasExplicitTemplate = !!(templateUid || templateLocal);
+    if (!hasExplicitTemplate && hasFlowSurfaceInlinePopupBlocks(popup)) {
+      this.validatePopupTemplateAliasesInBlocks(
+        _.castArray(popup.blocks || []),
+        availableAliases,
+        `${itemPath}.popup.blocks`,
+      );
+    }
+
+    const saveAsTemplateLocal = this.readInlinePopupSaveAsTemplateLocalAlias(
+      popup,
+      `${itemPath}.popup.saveAsTemplate.local`,
+    );
+    if (!saveAsTemplateLocal) {
+      return;
+    }
+    if (availableAliases.has(saveAsTemplateLocal)) {
+      throwBadRequest(
+        `${itemPath}.popup.saveAsTemplate.local '${saveAsTemplateLocal}' is duplicated in the same request`,
+      );
+    }
+    availableAliases.add(saveAsTemplateLocal);
+  }
+
+  private validateComposePopupTemplateAliases(
+    blocks: FlowSurfaceComposeNormalizedBlockSpec[],
+    popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+  ) {
+    const availableAliases = new Set<string>(popupTemplateAliasSession ? popupTemplateAliasSession.keys() : []);
+    this.validatePopupTemplateAliasesInBlocks(
+      blocks as Array<Record<string, any>>,
+      availableAliases,
+      'flowSurfaces compose.blocks',
+    );
+  }
+
+  private validateApplyBlueprintPopupTemplateAliases(
+    document: FlowSurfaceApplyBlueprintDocument,
+    popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+  ) {
+    const availableAliases = new Set<string>(popupTemplateAliasSession ? popupTemplateAliasSession.keys() : []);
+    document.tabs.forEach((tab, tabIndex) => {
+      const composeValues = compileTabComposeValues(tab, document, tabIndex, {
+        mode: document.mode === 'replace' ? 'replace' : 'append',
+      });
+      this.validatePopupTemplateAliasesInBlocks(
+        _.castArray(composeValues.blocks || []),
+        availableAliases,
+        `flowSurfaces applyBlueprint tabs[${tabIndex}].blocks`,
+      );
+    });
+  }
+
   private normalizeInlineSettings(actionName: string, settings: any) {
     if (_.isUndefined(settings)) {
       return undefined;
@@ -6528,6 +6836,7 @@ export class FlowSurfacesService {
     return {
       name: normalizeRequiredTemplateString(actionName, value.name, `${fieldName}.name`),
       description: normalizeRequiredTemplateString(actionName, value.description, `${fieldName}.description`),
+      local: this.normalizePopupTemplateAliasName(value.local, `${fieldName}.local`),
     };
   }
 
@@ -6560,7 +6869,7 @@ export class FlowSurfacesService {
     if (!normalizedHostUid || !saveAsTemplate) {
       return;
     }
-    await this.saveTemplate(
+    return this.saveTemplate(
       {
         target: {
           uid: normalizedHostUid,
@@ -7209,8 +7518,9 @@ export class FlowSurfacesService {
     actionName: string,
     result: FlowSurfaceAddFieldResult,
     popup: Record<string, any> | undefined,
-    options: { transaction?: any },
+    options: { transaction?: any; popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession },
   ) {
+    popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
     const fieldHostUid = result.fieldUid || result.uid;
     if (!_.isUndefined(popup?.template)) {
       Object.assign(
@@ -7278,7 +7588,8 @@ export class FlowSurfacesService {
       );
       Object.assign(result, await this.collectPopupSurfaceKeys(fieldHostUid, options.transaction));
       if (popup.saveAsTemplate) {
-        await this.savePopupAsTemplate(fieldHostUid, popup, options);
+        const savedTemplate = await this.savePopupAsTemplate(fieldHostUid, popup, options);
+        this.registerInlinePopupTemplateAlias(actionName, popup, savedTemplate, options.popupTemplateAliasSession);
         this.clearPopupSurfaceKeys(result);
         Object.assign(result, await this.collectPopupSurfaceKeys(fieldHostUid, options.transaction));
       }
@@ -7656,6 +7967,7 @@ export class FlowSurfacesService {
       transaction?: any;
       autoCompleteDefaultPopup?: boolean;
       popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     },
   ) {
     const actionNode = await this.repository.findModelById(actionUid, {
@@ -7679,6 +7991,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} popup cannot be combined with external openView.uid`);
     }
 
+    popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
     if (popup && hasFlowSurfaceInlinePopupTemplate(popup)) {
       await this.configureActionNode(
         {
@@ -7745,7 +8058,8 @@ export class FlowSurfacesService {
         );
       }
       if (popup?.saveAsTemplate) {
-        await this.savePopupAsTemplate(actionUid, popup, options);
+        const savedTemplate = await this.savePopupAsTemplate(actionUid, popup, options);
+        this.registerInlinePopupTemplateAlias(actionName, popup, savedTemplate, options.popupTemplateAliasSession);
       }
     } catch (error: any) {
       rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} popup invalid`);

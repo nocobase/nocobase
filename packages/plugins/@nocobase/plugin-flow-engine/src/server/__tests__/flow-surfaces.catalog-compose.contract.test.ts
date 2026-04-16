@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { uid } from '@nocobase/utils';
 import {
   addBlockData,
   getComposeBlock,
@@ -29,6 +30,37 @@ describe('flowSurfaces catalog + compose contract', () => {
   let app: FlowSurfacesContractContext['app'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
+
+  async function createSyntheticApprovalSurface() {
+    const pageUid = uid();
+    const tabUid = uid();
+    const gridUid = uid();
+
+    await flowRepo.insertModel({
+      uid: pageUid,
+      use: 'TriggerChildPageModel',
+      subModels: {
+        tabs: [
+          {
+            uid: tabUid,
+            use: 'TriggerChildPageTabModel',
+            subModels: {
+              grid: {
+                uid: gridUid,
+                use: 'TriggerBlockGridModel',
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return {
+      pageUid,
+      tabUid,
+      gridUid,
+    };
+  }
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
@@ -86,6 +118,45 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(emptyCatalog.actions).toBeUndefined();
     expect(emptyCatalog.recordActions).toBeUndefined();
     expect(emptyCatalog.node).toBeUndefined();
+  });
+
+  it('should treat workflow-approval as enabled in the default full test app via stub plugins', async () => {
+    const approvalSurface = await createSyntheticApprovalSurface();
+
+    const catalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: approvalSurface.gridUid,
+          },
+          sections: ['blocks'],
+        },
+      }),
+    );
+    expect(catalog.blocks.map((item: any) => item.key)).toContain('approvalInitiator');
+
+    const composeResult = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: approvalSurface.gridUid,
+          },
+          blocks: [
+            {
+              key: 'initiator',
+              type: 'approvalInitiator',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(getComposeBlock(composeResult, 'initiator').uid).toBeTruthy();
   });
 
   it('should only expose catalog blocks and actions backed by plugins enabled in the current app instance', async () => {

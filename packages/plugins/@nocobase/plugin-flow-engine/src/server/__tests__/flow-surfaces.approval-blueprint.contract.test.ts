@@ -27,12 +27,9 @@ const APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIASES = [
 ] as const;
 const APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIAS_SET = new Set<string>(APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIASES);
 
-const APPROVAL_BLUEPRINT_TEST_ENABLED_PLUGIN_ALIASES = [
-  ...FLOW_SURFACES_TEST_PLUGINS,
-  'notification-manager',
-  'notification-in-app-message',
-  'workflow-approval',
-] as const;
+const APPROVAL_BLUEPRINT_TEST_ENABLED_PLUGIN_ALIASES = Array.from(
+  new Set([...FLOW_SURFACES_TEST_PLUGINS, 'notification-manager', 'notification-in-app-message', 'workflow-approval']),
+);
 
 const APPROVAL_BLUEPRINT_TEST_PLUGIN_INSTALLS = [
   ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS.filter((pluginInstall) => {
