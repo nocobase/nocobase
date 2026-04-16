@@ -13,7 +13,7 @@ features:
         link: /plugin-development
         showOnHome: true
       - title: AI 开发
-        details: 通过 AI 辅助开发 NocoBase 插件，提升开发效率。
+        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
         showOnHome: true
       - title: 前端流引擎（FlowEngine）
