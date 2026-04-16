@@ -65,6 +65,15 @@ export async function build(pkgs: string[]) {
     if (process.argv.includes('--retry') && cachePkg?.pkg) {
       packages = packages.slice(packages.findIndex((item) => item.name === cachePkg.pkg));
     }
+    const cliPackages = packages.find((item) => item.name === '@nocobase/cli');
+    if (cliPackages) {
+      const log = getPkgLog(cliPackages.name);
+      log('running package script "build" (clean + tsc)');
+      await runScript(['build'], cliPackages.location);
+      if (packages.length === 1) {
+        return;
+      }
+    }
     if (packages.length === 0) {
       let msg = '';
       if (pkgs.length) {

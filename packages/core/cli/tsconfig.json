@@ -1,11 +1,20 @@
 {
   "compilerOptions": {
-    "declaration": true,
-    "module": "commonjs",
-    "outDir": "lib",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rewriteRelativeImportExtensions": true,
     "rootDir": "src",
-    "strict": true,
-    "target": "es2022"
+    "outDir": "dist",
+    "declaration": false,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    "skipLibCheck": true,
+    "strict": false
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }
