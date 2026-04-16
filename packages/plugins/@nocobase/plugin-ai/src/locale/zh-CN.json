@@ -410,7 +410,9 @@
   "Rejected": "已拒绝",
   "Retry needed": "需重试",
   "Approve": "批准",
+  "Revise": "修改",
   "Reject": "拒绝",
   "Task executing": "任务执行中",
-  "Response result": "结果"
+  "Response result": "结果",
+  "Please enter and send the modification request": "请输入并发送修改要求"
 }

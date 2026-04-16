@@ -77,6 +77,7 @@ export const Sender: React.FC = () => {
   const senderValue = useChatBoxStore.use.senderValue();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
   const setSenderRef = useChatBoxStore.use.setSenderRef();
   const readonly = useChatBoxStore.use.readonly();
 
@@ -200,6 +201,9 @@ export const Sender: React.FC = () => {
         onPaste={handlePaste}
         onSubmit={handleSubmit}
         onCancel={cancelRequest}
+        onBlur={() => {
+          setShowSenderHint(false);
+        }}
         header={<SenderHeader />}
         loading={responseLoading}
         footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}

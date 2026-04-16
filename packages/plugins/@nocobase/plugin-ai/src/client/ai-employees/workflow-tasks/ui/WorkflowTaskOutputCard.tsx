@@ -9,7 +9,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { lazy, ToolsUIProperties, useAPIClient, useCompile, useRequest } from '@nocobase/client';
-import { Button, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
+import { Button, ButtonProps, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
 const { Markdown } = lazy(() => import('../../chatbox/markdown/Markdown'), 'Markdown');
@@ -71,9 +71,11 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
   const t = useT();
   const compile = useCompile();
   const api = useAPIClient();
-  const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const [action, setAction] = useState<'approve' | 'reject' | 'revise' | null>(null);
   const readonly = useChatBoxStore.use.readonly();
   const disabled = toolCall.invokeStatus !== 'interrupted' || !!action || readonly;
+  const senderRef = useChatBoxStore.use.senderRef();
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
 
   const { data, loading } = useRequest<{ data: WorkflowTaskOutputData }>(
     async () => {
@@ -114,6 +116,12 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
     ];
   }, [cardData?.args, result, schema, t]);
 
+  const actionProps: ButtonProps = {
+    size: 'small',
+    variant: 'link',
+    disabled: disabled || action != null,
+  };
+
   return (
     <Card
       loading={loading}
@@ -126,11 +134,10 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
       }
       actions={[
         <Button
+          {...actionProps}
           key="reject"
           color="danger"
-          variant="link"
           loading={action === 'reject'}
-          disabled={disabled || action != null}
           onClick={async () => {
             setAction('reject');
             try {
@@ -143,11 +150,27 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
           {t('Reject', { ns: namespace })}
         </Button>,
         <Button
+          {...actionProps}
+          key="revise"
+          color="default"
+          loading={action === 'revise'}
+          onClick={async () => {
+            setAction('reject');
+            try {
+              setShowSenderHint(true);
+              senderRef?.current?.focus();
+            } finally {
+              setAction(null);
+            }
+          }}
+        >
+          {t('Revise', { ns: namespace })}
+        </Button>,
+        <Button
+          {...actionProps}
           key="approve"
           color="primary"
-          variant="link"
           loading={action === 'approve'}
-          disabled={disabled || action != null}
           onClick={async () => {
             setAction('approve');
             try {
