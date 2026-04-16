@@ -19,6 +19,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
 import { flattenMessages, formatConversationDuration, RenderedItem } from './utils';
 import { useWorkflowTasks } from './hooks/useWorkflowTasks';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -171,6 +172,7 @@ export const Messages: React.FC = () => {
   };
 
   const app = useApp();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   const setReadonly = useChatBoxStore.use.setReadonly();
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const { acceptWorkflowTask, getWorkflowTaskBySession } = useWorkflowTasks();
@@ -185,13 +187,15 @@ export const Messages: React.FC = () => {
   const onAIEmployeeTaskStatusUpdate = useCallback(
     (e: any) => {
       const { sessionId, status } = e.detail;
-      if (status !== 'processing') {
-        messagesService.run(sessionId);
-        setResponseLoading(false);
-        updateReadonly(sessionId).catch(console.log);
+      if (currentConversation && currentConversation === sessionId) {
+        if (status !== 'processing') {
+          messagesService.run(sessionId);
+          setResponseLoading(false);
+          updateReadonly(sessionId).catch(console.log);
+        }
       }
     },
-    [messagesService, updateReadonly, setResponseLoading],
+    [messagesService, updateReadonly, setResponseLoading, currentConversation],
   );
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);

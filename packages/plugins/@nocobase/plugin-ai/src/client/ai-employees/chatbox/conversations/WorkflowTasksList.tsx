@@ -16,7 +16,6 @@ import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { JobStatusOptionsMap } from '@nocobase/plugin-workflow/client';
 import { useChatMessagesStore } from '../stores/chat-messages';
-import { uid } from '@formily/shared';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
