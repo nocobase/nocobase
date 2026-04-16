@@ -168,6 +168,69 @@ describe('LinkageFilterItem', () => {
     });
   });
 
+  it('passes enum options to single select multi-value operators', async () => {
+    const value = observable({ path: '', operator: '', value: ['draft'] }) as any;
+    const { model, app } = createModel();
+
+    const MultipleKeywordsInput = ({
+      value: inputValue,
+      options,
+    }: {
+      value?: string[];
+      options?: Array<{ label: string; value: string }>;
+    }) => {
+      return (
+        <button
+          type="button"
+          data-testid="keyword-select-input"
+          data-value={JSON.stringify(inputValue || [])}
+          data-options={JSON.stringify(options || [])}
+        >
+          keyword-select-input
+        </button>
+      );
+    };
+    app.addComponents({ MultipleKeywordsInput });
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'select',
+      uiSchema: {
+        'x-component': 'Select',
+        enum: [
+          { label: 'Draft', value: 'draft' },
+          { label: 'Published', value: 'published' },
+        ],
+        'x-filter-operators': [
+          {
+            value: '$in',
+            label: 'is any of',
+            selected: true,
+            schema: {
+              'x-component': 'MultipleKeywordsInput',
+              'x-component-props': { mode: 'tags' },
+            },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    const keywordInput = await screen.findByTestId('keyword-select-input');
+    expect(keywordInput.getAttribute('data-value')).toBe(JSON.stringify(['draft']));
+    expect(keywordInput.getAttribute('data-options')).toBe(
+      JSON.stringify([
+        { label: 'Draft', value: 'draft' },
+        { label: 'Published', value: 'published' },
+      ]),
+    );
+  });
+
   it('normalizes keyword arrays when switching back to a scalar operator', async () => {
     const value = observable({ path: '', operator: '', value: 'foo\nbar' }) as any;
     const { model, app } = createModel();
