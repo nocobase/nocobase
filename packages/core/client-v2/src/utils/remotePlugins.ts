@@ -8,14 +8,14 @@
  */
 
 import type { DevDynamicImport } from '../Application';
-import type { PluginClassLike } from '../PluginManager';
+import type { PluginClass } from '../PluginManager';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
 
 /**
  * @internal
  */
-export function defineDevPlugins(plugins: Record<string, PluginClassLike>) {
+export function defineDevPlugins(plugins: Record<string, PluginClass>) {
   Object.entries(plugins).forEach(([packageName, plugin]) => {
     window.define(`${packageName}/client-v2`, () => plugin);
   });
@@ -58,13 +58,10 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
 /**
  * @internal
  */
-export function processRemotePlugins(
-  pluginData: PluginData[],
-  resolve: (plugins: [string, PluginClassLike][]) => void,
-) {
-  return (...pluginModules: (PluginClassLike & { default?: PluginClassLike })[]) => {
-    const res: [string, PluginClassLike][] = pluginModules
-      .map<[string, PluginClassLike]>((item, index) => [pluginData[index].name, item?.default || item])
+export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins: [string, PluginClass][]) => void) {
+  return (...pluginModules: (PluginClass & { default?: PluginClass })[]) => {
+    const res: [string, PluginClass][] = pluginModules
+      .map<[string, PluginClass]>((item, index) => [pluginData[index].name, item?.default || item])
       .filter((item) => item[1]);
     resolve(res);
 
@@ -85,10 +82,7 @@ export function processRemotePlugins(
 /**
  * @internal
  */
-export function getRemotePlugins(
-  requirejs: any,
-  pluginData: PluginData[] = [],
-): Promise<Array<[string, PluginClassLike]>> {
+export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []): Promise<Array<[string, PluginClass]>> {
   configRequirejs(requirejs, pluginData);
 
   const packageNames = pluginData.map((item) => item.packageName);
@@ -110,13 +104,13 @@ interface GetPluginsOption {
 /**
  * @internal
  */
-export async function getPlugins(options: GetPluginsOption): Promise<Array<[string, PluginClassLike]>> {
+export async function getPlugins(options: GetPluginsOption): Promise<Array<[string, PluginClass]>> {
   const { requirejs, pluginData, devDynamicImport } = options;
   if (pluginData.length === 0) return [];
 
-  const res: Array<[string, PluginClassLike]> = [];
+  const res: Array<[string, PluginClass]> = [];
 
-  const resolveDevPlugins: Record<string, PluginClassLike> = {};
+  const resolveDevPlugins: Record<string, PluginClass> = {};
   if (devDynamicImport) {
     for await (const plugin of pluginData) {
       const pluginModule = await devDynamicImport(plugin.packageName);

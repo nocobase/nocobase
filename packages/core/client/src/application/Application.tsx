@@ -97,7 +97,7 @@ interface Variable {
 
 export type { ComponentAndProps, DevDynamicImport };
 
-export interface ApplicationOptions extends BaseApplicationOptions {
+export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   apiClient?: APIClientOptions | APIClient;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
@@ -112,11 +112,13 @@ export interface ApplicationOptions extends BaseApplicationOptions {
   dataSourceManager?: DataSourceManagerOptions;
 }
 
-export class Application extends BaseApplication<ApplicationOptions, PluginManager> {
-  public declare apiClient: APIClient;
-  public declare router: RouterManager;
-  public declare pluginManager: PluginManager;
-  public declare pluginSettingsManager: PluginSettingsManager;
+export class Application extends BaseApplication<
+  ApplicationOptions,
+  PluginManager,
+  RouterManager,
+  APIClient,
+  PluginSettingsManager
+> {
   public declare schemaInitializerManager: SchemaInitializerManager;
   public declare schemaSettingsManager: SchemaSettingsManager;
   public declare dataSourceManager: DataSourceManager;

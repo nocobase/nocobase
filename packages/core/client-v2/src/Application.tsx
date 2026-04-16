@@ -33,10 +33,14 @@ export interface ApplicationOptions extends BaseApplicationOptions {
   router?: RouterOptions;
 }
 
-export class Application extends BaseApplication<ApplicationOptions, PluginManager> {
+export class Application extends BaseApplication<
+  ApplicationOptions,
+  PluginManager,
+  RouterManager,
+  APIClient,
+  PluginSettingsManager
+> {
   public declare dataSourceManager: any;
-  public declare pluginManager: PluginManager;
-  public declare pluginSettingsManager: PluginSettingsManager;
 
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient(options.apiClient);

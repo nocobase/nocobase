@@ -25,6 +25,7 @@ import {
 import type { BaseApplication } from './BaseApplication';
 import { BlankComponent, RouterContextCleaner } from './components';
 import { RouterBridge } from './components/RouterBridge';
+import { Router } from '@remix-run/router';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -51,23 +52,13 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   skipAuthCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
-
-export interface RouterManagerBaseLike {
-  router: any;
-  add(name: string, route: RouteType): void;
-  get(name: string): RouteType | undefined;
-  has(name: string): boolean;
-  remove(name: string): void;
-  getBasename(): string | undefined;
-  isSkippedAuthCheckRoute(pathname: string): boolean;
-  getRouterComponent(children?: React.ReactNode): React.FC<{ BaseLayout?: ComponentType }>;
-}
+export type RouterComponentType = React.FC<{ BaseLayout?: ComponentType }>;
 
 export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
   public app: TApp;
-  public router;
+  public router!: Router;
   get basename() {
     return this.router.basename;
   }
@@ -219,7 +210,7 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
 
     const routes = this.getRoutesTree();
 
-    const BaseLayoutContext = createContext<ComponentType>(null);
+    const BaseLayoutContext = createContext<ComponentType>((props) => props.children);
 
     const Provider = () => {
       const BaseLayout = useContext(BaseLayoutContext);
@@ -251,7 +242,7 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
       opts,
     );
 
-    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
+    const RenderRouter: RouterComponentType = ({ BaseLayout = BlankComponent }) => {
       return (
         <BaseLayoutContext.Provider value={BaseLayout}>
           <RouterContextCleaner>
@@ -290,8 +281,4 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
   remove(name: string) {
     delete this.routes[name];
   }
-}
-
-export function createRouterManager(options?: RouterOptions, app?: BaseApplication<any>) {
-  return new RouterManager(options, app);
 }
