@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useApp, useMobileLayout } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
 import { Helmet } from 'react-helmet';
@@ -33,8 +33,7 @@ export const ChatBoxLayout: React.FC<{
   useChatBoxEffect();
 
   const app = useApp();
-  const { refresh } = useWorkflowTasks();
-  const onAIEmployeeTaskStatusUpdate = useMemo(() => refresh, [refresh]);
+  const { refresh: onAIEmployeeTaskStatusUpdate } = useWorkflowTasks();
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
     return () => {

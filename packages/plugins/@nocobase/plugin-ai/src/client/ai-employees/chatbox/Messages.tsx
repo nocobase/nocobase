@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bubble } from '@ant-design/x';
 import { Spin, Layout, Divider, Button } from 'antd';
 import { RightOutlined, DownOutlined } from '@ant-design/icons';
@@ -174,16 +174,16 @@ export const Messages: React.FC = () => {
   const setReadonly = useChatBoxStore.use.setReadonly();
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const { acceptWorkflowTask, getWorkflowTaskBySession } = useWorkflowTasks();
-  const updateReadonly = useMemo(
-    () => async (sessionId: string) => {
+  const updateReadonly = useCallback(
+    async (sessionId: string) => {
       await acceptWorkflowTask(sessionId);
       const task = await getWorkflowTaskBySession(sessionId);
       setReadonly(task?.readonly === true);
     },
     [acceptWorkflowTask, getWorkflowTaskBySession, setReadonly],
   );
-  const onAIEmployeeTaskStatusUpdate = useMemo(
-    () => (e: any) => {
+  const onAIEmployeeTaskStatusUpdate = useCallback(
+    (e: any) => {
       const { sessionId, status } = e.detail;
       if (status !== 'processing') {
         messagesService.run(sessionId);
