@@ -21,7 +21,9 @@ import { Application } from './Application';
 export interface PluginOptions<T = any> {
   name?: string;
   packageName?: string;
+  options?: any;
   config?: T;
+  [key: string]: any;
 }
 
 export class Plugin<T extends PluginOptions<any> = PluginOptions, TApp extends BaseApplication<any> = Application> {
