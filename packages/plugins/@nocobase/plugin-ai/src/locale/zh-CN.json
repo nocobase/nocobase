@@ -410,5 +410,6 @@
   "Rejected": "已拒绝",
   "Retry needed": "需重试",
   "Approve": "批准",
-  "Reject": "拒绝"
+  "Reject": "拒绝",
+  "Task executing": "任务执行中"
 }

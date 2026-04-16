@@ -162,23 +162,25 @@ export const aiWorkflowTasks: ResourceOptions = {
         return ctx.throw(403);
       }
 
-      const toolCallId = ctx.action.params.values?.toolCallId;
+      const { messageId, toolCallId } = ctx.action.params.values ?? {};
+      if (!messageId) {
+        return ctx.throw(400, 'messageId is required');
+      }
       if (!toolCallId) {
         return ctx.throw(400, 'toolCallId is required');
       }
-
-      const toolMessage = await ctx.db.getRepository('aiToolMessages').findOne({
+      const message = await ctx.db.getRepository('aiMessages').findOne({
         filter: {
-          toolCallId,
+          messageId,
         },
       });
-      if (!toolMessage) {
-        return ctx.throw(404, 'tool message not found');
+      if (!message) {
+        return ctx.throw(404, 'message not found');
       }
 
       const task = await ctx.db.getRepository('aiWorkflowTasks').findOne({
         filter: {
-          sessionId: toolMessage.sessionId,
+          sessionId: message.sessionId,
           'users.id': userId,
         },
       });
@@ -186,12 +188,7 @@ export const aiWorkflowTasks: ResourceOptions = {
         return ctx.throw(404, 'workflow task not found');
       }
 
-      const message = await ctx.db.getRepository('aiMessages').findOne({
-        filter: {
-          messageId: toolMessage.messageId,
-        },
-      });
-      const toolCalls = message?.get?.('toolCalls') ?? message?.toolCalls ?? [];
+      const toolCalls = message?.toolCalls ?? [];
       const toolCall = Array.isArray(toolCalls) ? toolCalls.find((item: any) => item?.id === toolCallId) : null;
       if (!toolCall) {
         return ctx.throw(404, 'tool call not found');

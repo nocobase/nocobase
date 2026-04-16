@@ -9,7 +9,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { lazy, ToolsUIProperties, useAPIClient, useRequest } from '@nocobase/client';
-import { Button, Card, Descriptions, Space, Typography } from 'antd';
+import { Button, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
 const { Markdown } = lazy(() => import('../../chatbox/markdown/Markdown'), 'Markdown');
@@ -55,7 +55,11 @@ const formatValue = (value: unknown): React.ReactNode => {
   return <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(value, null, 2)}</Typography.Text>;
 };
 
-export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, any>>> = ({ toolCall, decisions }) => {
+export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, any>>> = ({
+  messageId,
+  toolCall,
+  decisions,
+}) => {
   const t = useT();
   const api = useAPIClient();
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
@@ -64,8 +68,12 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
 
   const { data, loading } = useRequest<{ data: WorkflowTaskOutputData }>(
     async () => {
+      if (!messageId) {
+        return null;
+      }
       const res = await api.resource('aiWorkflowTasks').getByToolCall({
         values: {
+          messageId,
           toolCallId: toolCall.id,
         },
       });
@@ -103,7 +111,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
       style={{ margin: '12px 0' }}
       title={
         <Space split="-" wrap>
-          {<Typography.Text>{cardData?.workflowTitle || t('Workflow task')}</Typography.Text>}
+          {<Typography.Text>{cardData?.workflowTitle || t('Task executing')}</Typography.Text>}
           {cardData?.nodeTitle ? <Typography.Text>{cardData.nodeTitle}</Typography.Text> : null}
         </Space>
       }
@@ -144,7 +152,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
         </Button>,
       ]}
     >
-      <Descriptions layout="vertical" column={1} items={descriptionItems} />
+      {cardData ? <Descriptions layout="vertical" column={1} items={descriptionItems} /> : <Skeleton active />}
     </Card>
   );
 };
