@@ -28,12 +28,6 @@ export type PluginData = {
   type: 'local' | 'upload' | 'npm';
 };
 
-export interface PluginManagerBaseLike {
-  add<T = any>(plugin: PluginClassLike, opts?: PluginOptions<T>): Promise<void>;
-  get(nameOrPluginClass: any): any;
-  load(): Promise<void>;
-}
-
 export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();
   protected pluginsAliases: Record<string, Plugin<any, TApp>> = {};

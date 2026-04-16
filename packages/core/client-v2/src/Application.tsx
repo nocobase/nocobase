@@ -33,8 +33,9 @@ export interface ApplicationOptions extends BaseApplicationOptions {
   router?: RouterOptions;
 }
 
-export class Application extends BaseApplication<ApplicationOptions> {
+export class Application extends BaseApplication<ApplicationOptions, PluginManager> {
   public declare dataSourceManager: any;
+  public declare pluginManager: PluginManager;
   public declare pluginSettingsManager: PluginSettingsManager;
 
   protected createApiClient(options: ApplicationOptions) {
@@ -81,7 +82,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return router;
   }
 
-  protected createPluginManager(options: ApplicationOptions) {
+  protected createPluginManager(options: ApplicationOptions): PluginManager {
     return new PluginManager(options.plugins || [], Boolean(options.loadRemotePlugins), this);
   }
 

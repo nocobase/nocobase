@@ -31,7 +31,7 @@ import { AIManager } from './ai';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
-import type { PluginClassLike, PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
+import type { PluginClassLike, PluginManager, PluginTypeLike } from './PluginManager';
 import { RouteRepository } from './RouteRepository';
 import type {
   ComponentTypeAndString,
@@ -99,7 +99,10 @@ export interface BaseApplicationOptions {
  * 该类只负责承接 client 与 client-v2 共用的 Application 骨架，
  * 具体产品行为通过子类钩子补齐。
  */
-export abstract class BaseApplication<TOptions extends BaseApplicationOptions = BaseApplicationOptions> {
+export abstract class BaseApplication<
+  TOptions extends BaseApplicationOptions = BaseApplicationOptions,
+  TPluginManager extends PluginManager<any> = PluginManager<any>,
+> {
   public eventBus = new EventTarget();
   public providers: ComponentAndProps[] = [];
   public router: RouterManagerBaseLike;
@@ -108,7 +111,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, AnyComponent> = {};
-  public pluginManager: PluginManagerBaseLike;
+  public pluginManager: TPluginManager;
   public pluginSettingsManager: any;
   public aiManager!: AIManager;
   public headerActionsManager!: HeaderActionsManager;
@@ -129,7 +132,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setData: (data: Record<string, any>) => void;
       setMeta: (meta: Record<string, any>) => void;
     };
-    pluginManager: PluginManagerBaseLike;
+    pluginManager: TPluginManager;
   };
   public systemSettings!: SystemSettingsSource;
   maintained = false;
@@ -145,7 +148,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     Component: null,
   };
 
-  get pm() {
+  get pm(): TPluginManager {
     return this.pluginManager;
   }
 
@@ -536,7 +539,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createApiClient(options: TOptions): APIClient;
   protected abstract createI18n(options: TOptions): i18next;
   protected abstract createRouterManager(options: TOptions): RouterManagerBaseLike;
-  protected abstract createPluginManager(options: TOptions): PluginManagerBaseLike;
+  protected abstract createPluginManager(options: TOptions): TPluginManager;
   protected abstract createPluginSettingsManager(options: TOptions): any;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws ?? false);

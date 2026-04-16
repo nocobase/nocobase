@@ -112,7 +112,7 @@ export interface ApplicationOptions extends BaseApplicationOptions {
   dataSourceManager?: DataSourceManagerOptions;
 }
 
-export class Application extends BaseApplication<ApplicationOptions> {
+export class Application extends BaseApplication<ApplicationOptions, PluginManager> {
   public declare apiClient: APIClient;
   public declare router: RouterManager;
   public declare pluginManager: PluginManager;
@@ -163,7 +163,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return new RouterManager(options.router, this);
   }
 
-  protected createPluginManager(options: ApplicationOptions) {
+  protected createPluginManager(options: ApplicationOptions): PluginManager {
     return new PluginManager(options.plugins, options.loadRemotePlugins, this);
   }
 
