@@ -48,6 +48,15 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'action-template-print',
 ] as const;
 
+const FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIASES = [
+  'notification-manager',
+  'notification-in-app-message',
+  'workflow',
+  'workflow-approval',
+] as const;
+
+const FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIAS_SET = new Set<string>(FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIASES);
+
 const FLOW_SURFACES_MINIMAL_TEST_PLUGIN_SET = new Set<string>(FLOW_SURFACES_MINIMAL_TEST_PLUGINS);
 
 function toFlowSurfacesStubClassName(pluginAlias: string) {
@@ -111,3 +120,18 @@ export const FLOW_SURFACES_TEST_PLUGIN_INSTALLS = [
     createFlowSurfacesExternalPluginStub,
   ),
 ];
+
+export const FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES = Array.from(
+  new Set([...FLOW_SURFACES_TEST_PLUGINS, ...FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIASES]),
+);
+
+export const FLOW_SURFACES_APPROVAL_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS.filter((pluginInstall) => {
+    if (!Array.isArray(pluginInstall)) {
+      return true;
+    }
+    const pluginName = typeof pluginInstall[1]?.name === 'string' ? pluginInstall[1].name : '';
+    return !FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIAS_SET.has(pluginName);
+  }),
+  ...FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIASES,
+] as const;

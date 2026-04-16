@@ -20,33 +20,10 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
-import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
-
-const APPROVAL_CONTRACT_REAL_PLUGIN_ALIASES = [
-  'notification-manager',
-  'notification-in-app-message',
-  'workflow',
-  'workflow-approval',
-] as const;
-const APPROVAL_CONTRACT_REAL_PLUGIN_ALIAS_SET = new Set<string>(APPROVAL_CONTRACT_REAL_PLUGIN_ALIASES);
-
-const APPROVAL_CONTRACT_TEST_ENABLED_PLUGIN_ALIASES = Array.from(
-  new Set([...FLOW_SURFACES_TEST_PLUGINS, 'notification-manager', 'notification-in-app-message', 'workflow-approval']),
-);
-
-const APPROVAL_CONTRACT_TEST_PLUGIN_INSTALLS = [
-  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS.filter((pluginInstall) => {
-    if (!Array.isArray(pluginInstall)) {
-      return true;
-    }
-    const pluginName = typeof pluginInstall[1]?.name === 'string' ? pluginInstall[1].name : '';
-    return !APPROVAL_CONTRACT_REAL_PLUGIN_ALIAS_SET.has(pluginName);
-  }),
-  'notification-manager',
-  'notification-in-app-message',
-  'workflow',
-  'workflow-approval',
-] as const;
+import {
+  FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
+  FLOW_SURFACES_APPROVAL_TEST_PLUGIN_INSTALLS,
+} from './flow-surfaces.test-plugins';
 
 async function createApprovalSurface(
   flowRepo: FlowModelRepository,
@@ -99,8 +76,8 @@ describe('flowSurfaces approval API contract', () => {
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
-      enabledPluginAliases: APPROVAL_CONTRACT_TEST_ENABLED_PLUGIN_ALIASES,
-      plugins: APPROVAL_CONTRACT_TEST_PLUGIN_INSTALLS,
+      enabledPluginAliases: FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
+      plugins: FLOW_SURFACES_APPROVAL_TEST_PLUGIN_INSTALLS,
     });
     ({ flowRepo, rootAgent } = context);
   }, 120000);
