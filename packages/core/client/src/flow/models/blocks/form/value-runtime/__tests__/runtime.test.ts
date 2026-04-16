@@ -246,6 +246,120 @@ describe('FormValueRuntime (default rules)', () => {
     await runtime.setFormValues(fieldCtx, [{ path: ['y'], value: 30 }], { source: 'user' });
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe(30));
   });
+
+  it('applies subform row initialValue to the absolute fieldPathArray instead of the relative row name', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ users: [{ __is_new__: true, name: '' }] });
+
+    const blockModel: any = {
+      uid: 'form-subform-default-row',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('fieldPathArray', { value: ['users', 0, 'name'] });
+    fieldCtx.defineProperty('item', {
+      get: () => ({
+        index: 0,
+        length: 1,
+        __is_new__: true,
+        __is_stored__: false,
+        value: formStub.getFieldValue(['users', 0]),
+      }),
+      cache: false,
+    });
+
+    const fieldModel: any = {
+      uid: 'users.name',
+      context: fieldCtx,
+      props: observable({
+        name: [0, 'name'],
+        initialValue: 'ABC',
+      }),
+      getProps() {
+        return this.props;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'name'])).toBe('ABC'));
+    expect(formStub.getFieldValue([0, 'name'])).toBeUndefined();
+  });
+
+  it('reads subform row initialValue from the mounted fork props when master props have no initialValue', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ users: [{ __is_new__: true, name: '' }] });
+
+    const blockModel: any = {
+      uid: 'form-subform-default-row-fork-props',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('fieldPathArray', { value: ['users', 0, 'name'] });
+    fieldCtx.defineProperty('item', {
+      get: () => ({
+        index: 0,
+        length: 1,
+        __is_new__: true,
+        __is_stored__: false,
+        value: formStub.getFieldValue(['users', 0]),
+      }),
+      cache: false,
+    });
+
+    const masterModel: any = {
+      uid: 'users.name.master',
+      props: observable({
+        name: ['name'],
+      }),
+      getProps() {
+        return this.props;
+      },
+    };
+
+    const fieldModel: any = {
+      uid: 'users.name',
+      master: masterModel,
+      context: fieldCtx,
+      props: observable({
+        name: [0, 'name'],
+        initialValue: 'ROW_ONLY',
+      }),
+      getProps() {
+        return this.props;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'name'])).toBe('ROW_ONLY'));
+  });
 });
 
 describe('FormValueRuntime (form assign rules)', () => {

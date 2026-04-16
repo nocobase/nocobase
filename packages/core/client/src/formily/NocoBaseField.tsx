@@ -13,13 +13,26 @@ import { useCompile } from '../schema-component/hooks/useCompile';
 import { NocoBaseReactiveField } from './NocoBaseReactiveField';
 import { createNocoBaseField } from './createNocoBaseField';
 
+export function resolveLightweightFieldValue(options: { value: any; schemaDefault: any; record?: any }) {
+  const { value, schemaDefault, record } = options;
+  if (typeof value !== 'undefined') {
+    return value;
+  }
+
+  if (record?.__is_new__ !== true) {
+    return value;
+  }
+
+  return schemaDefault;
+}
+
 /**
  * To maintain high performance of Table, this component removes Formily-related components
  * @param props component props
  * @returns
  */
 export const NocoBaseField = <D extends JSXComponent, C extends JSXComponent>(
-  props: IFieldProps<D, C> & { schema: Schema },
+  props: IFieldProps<D, C> & { schema: Schema; form?: any; record?: any },
 ) => {
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
@@ -28,7 +41,10 @@ export const NocoBaseField = <D extends JSXComponent, C extends JSXComponent>(
 
   // update componentProps to rerender field component
   Object.assign(field.componentProps, fieldSchema['x-component-props']);
-  field.value = props.value;
+  field.form = props.form ?? field.form;
+
+  const schemaDefault = compile(fieldSchema?.default) ?? compile(props.schema?.default);
+  field.value = resolveLightweightFieldValue({ value: props.value, schemaDefault, record: props.record });
 
   return (
     <FieldContext.Provider value={field as any}>

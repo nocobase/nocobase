@@ -691,7 +691,7 @@ export class RuleEngine {
     this.bindMasterInitialValue(master, id);
 
     const getRawPropsInitialValue = () => {
-      const p = (master as any)?.getProps?.() ?? (master as any)?.props;
+      const p = (model as any)?.getProps?.() ?? (model as any)?.props;
       return p?.initialValue;
     };
 
