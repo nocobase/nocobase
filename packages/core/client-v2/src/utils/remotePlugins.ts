@@ -8,7 +8,7 @@
  */
 
 import type { DevDynamicImport } from '../Application';
-import type { PluginClassLike } from '../BaseApplication';
+import type { PluginClassLike } from '../PluginManager';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
 

@@ -12,6 +12,7 @@ import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
 export type FlowSurfacesContractContext = {
@@ -22,8 +23,16 @@ export type FlowSurfacesContractContext = {
   rootAgent: any;
 };
 
-export async function createFlowSurfacesContractContext(): Promise<FlowSurfacesContractContext> {
-  const app = await createFlowSurfacesMockServer();
+export async function createFlowSurfacesContractContext(
+  options: {
+    enabledPluginAliases?: readonly string[];
+    plugins?: readonly any[];
+  } = {},
+): Promise<FlowSurfacesContractContext> {
+  const app = await createFlowSurfacesMockServer({
+    enabledPluginAliases: options.enabledPluginAliases,
+    plugins: options.plugins as any,
+  });
   const db = app.db;
   const flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
   const routesRepo = db.getRepository('desktopRoutes');
@@ -43,6 +52,12 @@ export async function destroyFlowSurfacesContractContext(context?: Partial<FlowS
     await context.app.destroy();
   }
 }
+
+export const FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-templates'] as const;
+export const FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+  'ui-templates',
+] as const;
 
 export function getData(response: any) {
   expect(response.status).toBe(200);
@@ -130,6 +145,14 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       name: 'flow_surface_profiles',
       title: 'Flow surface profiles',
       fields: [{ name: 'bio', type: 'text', interface: 'textarea' }],
+    },
+  });
+  await rootAgent.resource('collections').apply({
+    values: {
+      name: 'categories',
+      title: 'Categories',
+      template: 'tree',
+      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
     },
   });
 
@@ -247,6 +270,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
   });
 
   await waitForFixtureCollectionsReady(db, {
+    categories: ['title', 'parentId'],
     employees: ['nickname', 'status', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],
     skills: ['label'],

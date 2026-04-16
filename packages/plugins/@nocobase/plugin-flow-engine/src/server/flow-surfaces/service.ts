@@ -1070,7 +1070,10 @@ export class FlowSurfacesService {
           ? getAvailableActionCatalogItems(catalogAnalysis.recordActionContainerUse, 'record', enabledPackages)
           : []
         : getAvailableActionCatalogItems(undefined, 'record', enabledPackages);
-      response.recordActions = availableRecordActions.map((item) => this.projectCatalogItem(item, expandFlags));
+      const filteredRecordActions = node
+        ? await this.filterTargetRecordActions(availableRecordActions, node, options.transaction)
+        : availableRecordActions;
+      response.recordActions = filteredRecordActions.map((item) => this.projectCatalogItem(item, expandFlags));
     }
 
     if (catalogAnalysis.selectedSections.includes('node')) {
@@ -6196,7 +6199,7 @@ export class FlowSurfacesService {
     const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addRecordAction', values.popup);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const container = await this.resolveRecordActionContainer(target, options.transaction);
+    const container = await this.inspectRecordActionContainer(target, options.transaction);
     const actionCatalogItem = this.resolveAddRecordActionCatalogItem(
       {
         type: values.type,
@@ -6210,12 +6213,16 @@ export class FlowSurfacesService {
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
       throwBadRequest(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
     }
+    if (this.isAddChildCatalogItem(actionCatalogItem)) {
+      await this.assertAddChildSupportedForOwnerNode(container.ownerNode, 'addRecordAction', options.transaction);
+    }
     assertRequestedActionScope({
       requestedScope: undefined,
       resolvedScope,
       containerUse: container.containerUse,
       context: 'addRecordAction',
     });
+    const materializedContainer = await this.materializeRecordActionContainer(container, options.transaction);
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
@@ -6231,9 +6238,9 @@ export class FlowSurfacesService {
     this.contractGuard.validateNodeTreeAgainstContract(action);
     const created = await this.repository.upsertModel(
       {
-        parentId: container.parentUid,
-        subKey: container.subKey,
-        subType: container.subType,
+        parentId: materializedContainer.parentUid,
+        subKey: materializedContainer.subKey,
+        subType: materializedContainer.subType,
         ...action,
       },
       { transaction: options.transaction },
@@ -6243,8 +6250,8 @@ export class FlowSurfacesService {
     await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
     const result = {
       uid: created,
-      parentUid: container.parentUid,
-      subKey: container.subKey,
+      parentUid: materializedContainer.parentUid,
+      subKey: materializedContainer.subKey,
       scope: actionCatalogItem.scope,
       ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
@@ -6328,6 +6335,15 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} popup must be an object`);
     }
     return popup;
+  }
+
+  private buildInlinePopupTemplateOpenView(popup: Record<string, any>) {
+    const normalizedTitle =
+      _.isUndefined(popup?.title) || _.isNull(popup?.title) ? undefined : String(popup.title).trim() || undefined;
+    return buildDefinedPayload({
+      template: popup?.template,
+      title: normalizedTitle,
+    });
   }
 
   private peekInlineFieldSettingsOpenView(settings: Record<string, any> | undefined, wrapperUse?: string) {
@@ -6803,16 +6819,6 @@ export class FlowSurfacesService {
     }
   }
 
-  private assertInlinePopupTemplateConflict(actionName: string, popup: Record<string, any>) {
-    const forbiddenKeys = ['blocks', 'layout', 'mode'].filter((key) => !_.isUndefined(popup[key]));
-    if (forbiddenKeys.length) {
-      throwBadRequest(
-        `flowSurfaces ${actionName} popup.template cannot be combined with ${forbiddenKeys.join(', ')}`,
-        'FLOW_SURFACE_TEMPLATE_POPUP_CONFLICT',
-      );
-    }
-  }
-
   private async applyInlineFieldPopup(
     actionName: string,
     result: FlowSurfaceAddFieldResult,
@@ -6821,7 +6827,6 @@ export class FlowSurfacesService {
   ) {
     const fieldHostUid = result.fieldUid || result.uid;
     if (!_.isUndefined(popup?.template)) {
-      this.assertInlinePopupTemplateConflict(actionName, popup);
       Object.assign(
         result,
         await this.configureFieldNode(
@@ -6829,9 +6834,7 @@ export class FlowSurfacesService {
             uid: fieldHostUid,
           },
           {
-            openView: {
-              template: popup.template,
-            },
+            openView: this.buildInlinePopupTemplateOpenView(popup),
           },
           {
             ...options,
@@ -7241,16 +7244,13 @@ export class FlowSurfacesService {
     }
 
     if (popup && hasFlowSurfaceInlinePopupTemplate(popup)) {
-      this.assertInlinePopupTemplateConflict(actionName, popup);
       await this.configureActionNode(
         {
           uid: actionUid,
         },
         actionNode.use,
         {
-          openView: {
-            template: popup.template,
-          },
+          openView: this.buildInlinePopupTemplateOpenView(popup),
         },
         {
           ...options,
@@ -8567,7 +8567,78 @@ export class FlowSurfacesService {
     );
   }
 
-  private async resolveRecordActionContainer(target: FlowSurfaceWriteTarget, transaction?: any) {
+  private isAddChildCatalogItem(item?: { key?: string; use?: string } | null) {
+    return item?.key === 'addChild' || item?.use === 'AddChildActionModel';
+  }
+
+  private isTreeCollection(collection?: any) {
+    return collection?.template === 'tree' || collection?.options?.template === 'tree' || collection?.tree === true;
+  }
+
+  private isTreeTableEnabled(node?: any) {
+    return (
+      node?.use === 'TableBlockModel' &&
+      (node?.props?.treeTable === true ||
+        node?.decoratorProps?.treeTable === true ||
+        _.get(node, ['stepParams', 'tableSettings', 'treeTable', 'treeTable']) === true)
+    );
+  }
+
+  private async resolveAddChildOwnerNode(node?: any, transaction?: any) {
+    if (!node?.uid || node?.use !== 'TableActionsColumnModel') {
+      return node;
+    }
+    const ownerUid = node.parentId || (await this.locator.findParentUid(node.uid, transaction));
+    if (!ownerUid) {
+      return node;
+    }
+    return (
+      (await this.repository.findModelById(ownerUid, {
+        transaction,
+        includeAsyncNode: true,
+      })) || node
+    );
+  }
+
+  private async resolveOwnerCollectionForAddChild(node?: any, transaction?: any) {
+    const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
+    const resourceInit =
+      _.get(ownerNode, ['stepParams', 'resourceSettings', 'init']) ||
+      (ownerNode?.uid
+        ? (await this.locator.resolveCollectionContext(ownerNode.uid, transaction).catch(() => null))?.resourceInit
+        : null);
+    return this.resolveCollectionFromInit(resourceInit);
+  }
+
+  private async canUseAddChildOnOwnerNode(node?: any, transaction?: any) {
+    const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
+    if (ownerNode?.use !== 'TableBlockModel' || !this.isTreeTableEnabled(ownerNode)) {
+      return false;
+    }
+    const collection = await this.resolveOwnerCollectionForAddChild(ownerNode, transaction);
+    return this.isTreeCollection(collection);
+  }
+
+  private async assertAddChildSupportedForOwnerNode(node: any, context: string, transaction?: any) {
+    if (await this.canUseAddChildOnOwnerNode(node, transaction)) {
+      return;
+    }
+    throwBadRequest(
+      `flowSurfaces ${context} type 'addChild' only supports tables bound to tree collections with tree table enabled`,
+    );
+  }
+
+  private async filterTargetRecordActions(items: any[], node: any, transaction?: any) {
+    if (!items.some((item) => this.isAddChildCatalogItem(item))) {
+      return items;
+    }
+    if (await this.canUseAddChildOnOwnerNode(node, transaction)) {
+      return items;
+    }
+    return items.filter((item) => !this.isAddChildCatalogItem(item));
+  }
+
+  private async inspectRecordActionContainer(target: FlowSurfaceWriteTarget, transaction?: any) {
     const resolved = await this.locator.resolve(target, { transaction });
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
@@ -8575,16 +8646,17 @@ export class FlowSurfacesService {
 
     if (use === 'TableBlockModel') {
       return {
+        ownerNode: node,
         ownerUid: node.uid,
         ownerUse: use,
         containerUse: 'TableActionsColumnModel',
-        parentUid: await this.ensureTableActionsColumn(node.uid, transaction),
         subKey: 'actions',
         subType: 'array',
       };
     }
     if (use === 'DetailsBlockModel') {
       return {
+        ownerNode: node,
         ownerUid: node.uid,
         ownerUse: use,
         containerUse: use,
@@ -8602,6 +8674,7 @@ export class FlowSurfacesService {
         );
       }
       return {
+        ownerNode: node,
         ownerUid: node.uid,
         ownerUse: use,
         containerUse: use === 'ListBlockModel' ? 'ListItemModel' : 'GridCardItemModel',
@@ -8626,6 +8699,27 @@ export class FlowSurfacesService {
     throwBadRequest(
       `flowSurfaces addRecordAction target '${use || resolved.uid}' is not a supported record action surface`,
     );
+  }
+
+  private async materializeRecordActionContainer(
+    container: {
+      ownerNode?: any;
+      ownerUid: string;
+      ownerUse: string;
+      containerUse: string;
+      parentUid?: string;
+      subKey: string;
+      subType: string;
+    },
+    transaction?: any,
+  ) {
+    if (container.ownerUse !== 'TableBlockModel') {
+      return container;
+    }
+    return {
+      ...container,
+      parentUid: container.parentUid || (await this.ensureTableActionsColumn(container.ownerUid, transaction)),
+    };
   }
 
   private async runBatchCreate(options: {

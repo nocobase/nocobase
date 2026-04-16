@@ -3546,6 +3546,24 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
+    const treeTableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+    });
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: treeTableUid,
+            },
+            changes: {
+              treeTable: true,
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
 
     const tableCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -3583,10 +3601,23 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
+    const treeTableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: treeTableUid,
+          },
+        },
+      }),
+    );
     expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['expandCollapse', 'bulkEdit', 'bulkUpdate', 'upload', 'composeEmail']),
     );
     expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['duplicate', 'composeEmail']),
+    );
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
+    expect(treeTableCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['duplicate', 'addChild', 'composeEmail']),
     );
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
@@ -3610,7 +3641,7 @@ describe('flowSurfaces resource', () => {
     );
 
     const tableBulkEdit = await addAction(rootAgent, tableUid, 'bulkEdit');
-    const rowAddChild = await addRecordAction(rootAgent, tableUid, 'addChild');
+    const rowAddChild = await addRecordAction(rootAgent, treeTableUid, 'addChild');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
     const filterCollapse = await addAction(rootAgent, filterFormUid, 'collapse');
     const detailsTemplatePrint = await addRecordAction(rootAgent, detailsUid, 'templatePrint');
@@ -3628,6 +3659,67 @@ describe('flowSurfaces resource', () => {
       mode: 'drawer',
       size: 'medium',
     });
+  });
+
+  it('should reject addChild on non-tree tables without creating a table actions column', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Add child validation page',
+      tabTitle: 'Add child validation tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const beforeReadback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    const beforeActionColumns = _.castArray(beforeReadback.tree.subModels?.columns || []).filter(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const beforeActionColumnUids = beforeActionColumns.map((item: any) => item?.uid).filter(Boolean);
+    const beforeActionUids = beforeActionColumns.flatMap((item: any) =>
+      _.castArray(item?.subModels?.actions || [])
+        .map((action: any) => action?.uid)
+        .filter(Boolean),
+    );
+    expect(
+      beforeActionColumns.flatMap((item: any) =>
+        _.castArray(item?.subModels?.actions || []).map((action: any) => action?.use),
+      ),
+    ).not.toContain('AddChildActionModel');
+
+    const addChildRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'addChild',
+      },
+    });
+    expect(addChildRes.status).toBe(400);
+    expect(readErrorMessage(addChildRes)).toContain('tree table');
+
+    const afterReadback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    const afterActionColumns = _.castArray(afterReadback.tree.subModels?.columns || []).filter(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const afterActionColumnUids = afterActionColumns.map((item: any) => item?.uid).filter(Boolean);
+    const afterActionUids = afterActionColumns.flatMap((item: any) =>
+      _.castArray(item?.subModels?.actions || [])
+        .map((action: any) => action?.uid)
+        .filter(Boolean),
+    );
+    expect(
+      afterActionColumns.flatMap((item: any) =>
+        _.castArray(item?.subModels?.actions || []).map((action: any) => action?.use),
+      ),
+    ).not.toContain('AddChildActionModel');
+    expect(afterActionColumnUids).toEqual(beforeActionColumnUids);
+    expect(afterActionUids).toEqual(beforeActionUids);
   });
 
   it('should expose js public capabilities consistently across catalog, direct APIs and configure', async () => {
@@ -6800,6 +6892,15 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
     },
   });
 
+  await rootAgent.resource('collections').apply({
+    values: {
+      name: 'categories',
+      title: 'Categories',
+      template: 'tree',
+      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+    },
+  });
+
   await rootAgent.resource('collections').create({
     values: {
       name: 'tasks',
@@ -6898,6 +6999,7 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
 
   if (db) {
     await waitForFixtureCollectionsReady(db, {
+      categories: ['title', 'parentId'],
       departments: ['title', 'location'],
       employees: ['nickname', 'status', 'age', 'bio', 'isManager', 'departmentId'],
       tasks: ['title', 'status', 'employeeId'],

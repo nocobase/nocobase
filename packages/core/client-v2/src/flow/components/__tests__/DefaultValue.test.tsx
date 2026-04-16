@@ -72,7 +72,6 @@ let form: any;
 class HostModel extends FlowModel {
   render() {
     const { value, onChange, metaTree, flags } = (this.props || {}) as any;
-    const fieldModel = this.subModels.field as FlowModel;
     return (
       <FormProvider form={form}>
         <FlowModelProvider model={this}>
@@ -121,7 +120,7 @@ describe('DefaultValue component', () => {
       steps: {
         fieldNames: {
           handler(ctx) {
-            const fromCf = ctx.model.collectionField?.fieldNames;
+            const fromCf = (ctx.model.collectionField as any)?.fieldNames;
             ctx.model.setProps({
               fieldNames: fromCf || { label: 'name', value: 'id' },
               allowMultiple: true,
@@ -197,7 +196,7 @@ describe('DefaultValue component', () => {
         isAssociationField: () => true,
         fieldNames: { label: 'name', value: 'id' },
         targetCollection: {
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -312,7 +311,7 @@ describe('DefaultValue component', () => {
         type: 'belongsToMany',
         fieldNames: { label: 'name', value: 'id' },
         targetCollection: {
-          getField: (name) => ({
+          getField: (name: any) => ({
             name,
             type: 'string',
             interface: 'input',
@@ -390,7 +389,7 @@ describe('DefaultValue component', () => {
         // 底层集合默认仍是 id，用于模拟“默认值弹窗退化显示 id”的真实场景
         fieldNames: { label: 'id', value: 'id' },
         targetCollection: {
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -455,7 +454,7 @@ describe('DefaultValue component', () => {
         isAssociationField: () => true,
         fieldNames: { label: 'id', value: 'id' },
         targetCollection: {
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -525,7 +524,7 @@ describe('DefaultValue component', () => {
           tableName: 'users',
         },
         targetCollection: {
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -609,7 +608,7 @@ describe('DefaultValue component', () => {
     // Wait for component to mount and patches to be applied
     await waitFor(
       () => {
-        expect(host['__dvSetStepParamsPatched']).toBe(true);
+        expect((host as any)['__dvSetStepParamsPatched']).toBe(true);
       },
       { timeout: 2000 },
     );
@@ -677,7 +676,7 @@ describe('DefaultValue component', () => {
 
     await waitFor(
       () => {
-        expect(host['__dvSetStepParamsPatched']).toBe(true);
+        expect((host as any)['__dvSetStepParamsPatched']).toBe(true);
       },
       { timeout: 2000 },
     );
@@ -779,7 +778,7 @@ describe('DefaultValue component', () => {
       steps: {
         fieldNames: {
           handler(ctx) {
-            const fromCf = ctx.model.collectionField?.fieldNames || { label: 'nickname', value: 'id' };
+            const fromCf = (ctx.model.collectionField as any)?.fieldNames || { label: 'nickname', value: 'id' };
             ctx.model.setProps({
               fieldNames: fromCf,
             });
@@ -837,7 +836,7 @@ describe('DefaultValue component', () => {
         isAssociationField: () => true,
         targetCollection: {
           filterTargetKey: 'id',
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -857,7 +856,7 @@ describe('DefaultValue component', () => {
         fieldNames: { label: 'nickname', value: 'id' },
         isAssociationField: () => true,
         targetCollection: {
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -892,7 +891,7 @@ describe('DefaultValue component', () => {
       steps: {
         fieldNames: {
           handler(ctx) {
-            const fromCf = ctx.model.collectionField?.fieldNames || { label: 'nickname', value: 'id' };
+            const fromCf = (ctx.model.collectionField as any)?.fieldNames || { label: 'nickname', value: 'id' };
             ctx.model.setProps({
               fieldNames: fromCf,
             });
@@ -947,7 +946,7 @@ describe('DefaultValue component', () => {
         isAssociationField: () => true,
         targetCollection: {
           filterTargetKey: 'id',
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });
@@ -1224,7 +1223,7 @@ describe('DefaultValue component', () => {
         fieldNames: { label: 'name', value: 'id' },
         isAssociationField: () => true,
         targetCollection: {
-          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+          getField: (name: any) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
         },
       },
     });

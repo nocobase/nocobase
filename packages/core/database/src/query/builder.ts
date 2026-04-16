@@ -29,23 +29,23 @@ const ALLOWED_ORDER_DIRECTIONS = ['ASC', 'DESC'];
 function createQueryFormatter(database: Database): QueryFormatter {
   switch (database.sequelize.getDialect()) {
     case 'sqlite':
-      return new SQLiteQueryFormatter(database.sequelize);
+      return new SQLiteQueryFormatter(database.sequelize, database.options.rawTimezone);
     case 'postgres':
-      return new PostgresQueryFormatter(database.sequelize);
+      return new PostgresQueryFormatter(database.sequelize, database.options.rawTimezone);
     case 'mysql':
     case 'mariadb':
-      return new MySQLQueryFormatter(database.sequelize);
+      return new MySQLQueryFormatter(database.sequelize, database.options.rawTimezone);
     case 'oracle':
-      return new OracleQueryFormatter(database.sequelize);
+      return new OracleQueryFormatter(database.sequelize, database.options.rawTimezone);
     default:
       return new (class extends QueryFormatter {
-        formatDate(field: Col, _format: string, _timezone?: string) {
+        formatDate(field: Col, _format: string, _timezone?: string, _preserveLocalTime?: boolean) {
           return field;
         }
         formatUnixTimestamp(field: string, _format: string, _accuracy?: 'second' | 'millisecond', _timezone?: string) {
           return this.sequelize.col(field);
         }
-      })(database.sequelize);
+      })(database.sequelize, database.options.rawTimezone);
   }
 }
 
@@ -225,14 +225,24 @@ export function buildQuery(database: Database, collection: Collection, options: 
 }
 
 export function normalizeQueryResult(data: any[], fieldMap: Record<string, any>) {
+  const dateTimeTypes = ['date', 'datetime', 'datetimeTz', 'datetimeNoTz'];
+
   return data.map((record: any) => {
     Object.entries(record).forEach(([key, value]) => {
       if (value === null || value === undefined) {
         return;
       }
-      const type = fieldMap[key]?.type;
+      const field = fieldMap[key];
+      const type = field?.type;
       if (['bigInt', 'integer', 'float', 'double', 'decimal'].includes(type)) {
         record[key] = Number(value);
+        return;
+      }
+      if (!field?.format && dateTimeTypes.includes(type) && !(value instanceof Date)) {
+        const dateValue = new Date(value as string | number);
+        if (!Number.isNaN(dateValue.getTime())) {
+          record[key] = dateValue;
+        }
       }
     });
     return record;

@@ -17,6 +17,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { Application } from '../Application';
 
+/** app.error 的运行时结构 */
+interface AppErrorPayload {
+  code?: string;
+  message?: string;
+  command?: { name: string };
+  [key: string]: any;
+}
+
 export const AppSpin = () => {
   return (
     <Spin style={{ position: 'fixed', top: '50%', left: '50%', fontSize: 72, transform: 'translate(-50%, -50%)' }} />
@@ -33,82 +41,84 @@ const getProps = (app: Application) => {
     };
   }
 
-  if (!app.error) {
+  const error = app.error as AppErrorPayload | undefined;
+
+  if (!error) {
     return {};
   }
 
-  if (app.error.code === 'APP_NOT_FOUND') {
+  if (error.code === 'APP_NOT_FOUND') {
     return {
       status: 'warning' as const,
       title: 'App not found',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_WARNING') {
+  if (error.code === 'APP_WARNING') {
     return {
       status: 'warning' as const,
       title: 'App warning',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_PREPARING') {
+  if (error.code === 'APP_PREPARING') {
     return {
       status: 'info' as const,
       icon: <LoadingOutlined />,
       title: 'App preparing',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_INITIALIZING') {
+  if (error.code === 'APP_INITIALIZING') {
     return {
       status: 'info' as const,
       icon: <LoadingOutlined />,
       title: 'App initializing',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_INITIALIZED') {
+  if (error.code === 'APP_INITIALIZED') {
     return {
       status: 'info' as const,
       title: 'App initialized',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (['ENOENT', 'APP_ERROR', 'LOAD_ERROR'].includes(app.error.code)) {
+  if (['ENOENT', 'APP_ERROR', 'LOAD_ERROR'].includes(error.code)) {
     return {
       status: 'error' as const,
       title: 'App error',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_NOT_INSTALLED_ERROR') {
+  if (error.code === 'APP_NOT_INSTALLED_ERROR') {
     return {
       status: 'warning' as const,
       title: 'App not installed',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_STOPPED') {
+  if (error.code === 'APP_STOPPED') {
     return {
       status: 'warning' as const,
       title: 'App stopped',
-      subTitle: app.error?.message,
+      subTitle: error?.message,
     };
   }
 
-  if (app.error.code === 'APP_COMMANDING') {
+  if (error.code === 'APP_COMMANDING') {
     const props = {
       status: 'info' as const,
       icon: <LoadingOutlined />,
-      title: app.error?.command?.name,
-      subTitle: app.error?.message,
+      title: error?.command?.name,
+      subTitle: error?.message,
     };
     const commands = {
       start: {
@@ -139,13 +149,13 @@ const getProps = (app: Application) => {
         title: 'Removing plugin',
       },
     };
-    return { ...props, ...commands[app.error?.command?.name] };
+    return { ...props, ...(error?.command?.name ? commands[error.command.name as keyof typeof commands] : {}) };
   }
 
   return {
     status: 'warning' as const,
     title: 'App warning',
-    subTitle: app.error?.message,
+    subTitle: error?.message,
   };
 };
 
@@ -191,8 +201,8 @@ export const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
           `}
           icon={icon}
           status={status}
-          title={app.i18n.t(title)}
-          subTitle={<div style={{ whiteSpace: 'pre-wrap' }}>{app.i18n.t(subTitle)}</div>}
+          title={title && app.i18n.t(title)}
+          subTitle={<div style={{ whiteSpace: 'pre-wrap' }}>{subTitle && app.i18n.t(subTitle)}</div>}
         />
       </div>
     );
@@ -205,7 +215,12 @@ export const AppMaintainingDialog: FC<{ app: Application; error: Error }> = obse
     const { icon, status, title, subTitle } = getProps(app);
     return (
       <Modal open={true} footer={null} closable={false}>
-        <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(subTitle)} />
+        <Result
+          icon={icon}
+          status={status}
+          title={title && app.i18n.t(title)}
+          subTitle={subTitle && app.i18n.t(subTitle)}
+        />
       </Modal>
     );
   },

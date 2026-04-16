@@ -73,11 +73,14 @@ export const InternalAdminSettingsLayout = () => {
   const { snippets = [] } = useACLRoleContext();
 
   const allSettings = useMemo(
-    () => filterRenderableSettings(app.pluginSettingsManager.getList(false)),
+    () => filterRenderableSettings(app.pluginSettingsManager.getList(false) as PluginSettingsPageType[]),
     [app.pluginSettingsManager],
   );
   const visibleSettings = useMemo(
-    () => filterVisibleSettings(filterRenderableSettings(app.pluginSettingsManager.getList(true))),
+    () =>
+      filterVisibleSettings(
+        filterRenderableSettings(app.pluginSettingsManager.getList(true) as PluginSettingsPageType[]),
+      ),
     [app.pluginSettingsManager],
   );
   const pluginManagerSetting = useMemo(

@@ -9,8 +9,24 @@
 
 import type { TFuncKey, TOptions } from 'i18next';
 import type { BaseApplication } from './BaseApplication';
+import { Application } from './Application';
 
-export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication<any>> {
+/**
+ * 插件配置选项。
+ *
+ * 作为 Plugin 类的泛型参数，描述插件注册时可接收的配置项。
+ *
+ * @template T 插件自定义配置类型
+ */
+export interface PluginOptions<T = any> {
+  name?: string;
+  packageName?: string;
+  options?: any;
+  config?: T;
+  [key: string]: any;
+}
+
+export class Plugin<T extends PluginOptions<any> = PluginOptions, TApp extends BaseApplication<any> = Application> {
   constructor(
     public options: T,
     protected app: TApp,
@@ -47,10 +63,6 @@ export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication
     return this.app.pluginSettingsManager;
   }
 
-  get pluginSettingsRouter(): TApp['pluginSettingsManager'] {
-    return this.app.pluginSettingsManager;
-  }
-
   get schemaInitializerManager() {
     // @ts-ignore
     return this.app.schemaInitializerManager;
@@ -77,6 +89,6 @@ export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication
   async load() {}
 
   t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
-    return this.app.i18n.t(text, { ns: this.options?.['packageName'], ...(options as any) });
+    return this.app.i18n.t(text, { ns: this.options?.packageName, ...(options as any) });
   }
 }

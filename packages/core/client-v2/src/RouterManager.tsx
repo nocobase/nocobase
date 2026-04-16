@@ -39,7 +39,8 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
   renderComponent?: RenderComponentType;
   routes?: Record<string, RouteType>;
 };
-export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
+export type RenderableComponentType<T = any> = React.JSXElementConstructor<T> | React.ExoticComponent<T>;
+export type ComponentTypeAndString<T = any> = RenderableComponentType<T> | string;
 export type ComponentLoaderResult =
   | { default?: ComponentTypeAndString; Component?: ComponentTypeAndString }
   | ComponentTypeAndString;
@@ -57,6 +58,8 @@ export interface RouterManagerBaseLike {
   get(name: string): RouteType | undefined;
   has(name: string): boolean;
   remove(name: string): void;
+  getBasename(): string | undefined;
+  isSkippedAuthCheckRoute(pathname: string): boolean;
   getRouterComponent(children?: React.ReactNode): React.FC<{ BaseLayout?: ComponentType }>;
 }
 
@@ -106,7 +109,7 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
           };
         }
         return {
-          default: loadedComponent as ComponentType<any>,
+          default: loadedComponent,
         };
       }),
     );

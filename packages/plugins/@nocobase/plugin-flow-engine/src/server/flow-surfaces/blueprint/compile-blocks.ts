@@ -120,15 +120,16 @@ const APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS = [
   'associationField',
 ];
 const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
-const APPLY_BLUEPRINT_RECORD_ACTION_TYPES = new Set([
+const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'view',
   'edit',
   'delete',
   'updateRecord',
   'duplicate',
-  'addChild',
 ]);
 const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
+const APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR =
+  "type 'addChild' must be authored under recordActions and is only valid when the live target catalog.recordActions exposes it for a tree collection table with treeTable enabled";
 
 function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
@@ -304,9 +305,12 @@ function splitApplyBlueprintBlockActionsByScope(
   }
   const promotedRecordActions: any[] = [];
   const remainingActions: any[] = [];
-  rawActions.forEach((action) => {
+  rawActions.forEach((action, index) => {
     const actionType = readApplyBlueprintActionType(action);
-    if (actionType && APPLY_BLUEPRINT_RECORD_ACTION_TYPES.has(actionType)) {
+    if (actionType === 'addChild') {
+      throwBadRequest(`${context}.actions[${index}] ${APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR}`);
+    }
+    if (actionType && APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES.has(actionType)) {
       promotedRecordActions.push(action);
       return;
     }
@@ -573,6 +577,14 @@ function compilePopup(
   assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
+  if (template) {
+    return {
+      popup: {
+        template,
+      },
+      popupTitle,
+    };
+  }
   const rawPopupBlocks = readOptionalItems<FlowSurfaceApplyBlueprintBlockSpec>(popup.blocks, `${context}.blocks`);
   const popupBlocks =
     options.ownerActionType === 'edit' && rawPopupBlocks.length

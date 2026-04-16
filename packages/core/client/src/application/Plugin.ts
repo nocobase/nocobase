@@ -8,6 +8,6 @@
  */
 
 import type { Application } from './Application';
-import { Plugin as BasePlugin } from '@nocobase/client-v2';
+import { Plugin as BasePlugin, PluginOptions } from '@nocobase/client-v2';
 
-export class Plugin<T = any> extends BasePlugin<T, Application> {}
+export class Plugin<T extends PluginOptions = PluginOptions> extends BasePlugin<T, Application> {}

@@ -131,7 +131,7 @@ describe('RootPageModel', () => {
     it('should save new tab before moving when route id is missing', async () => {
       const mockActiveModel = {
         uid: 'active-uid',
-        props: { route: { schemaUid: 'active-schema-uid' } },
+        props: { route: { schemaUid: 'active-schema-uid' } as { schemaUid: string; id?: string } },
         save: vi.fn(async () => {
           mockActiveModel.props.route.id = 'active-route-id';
         }),

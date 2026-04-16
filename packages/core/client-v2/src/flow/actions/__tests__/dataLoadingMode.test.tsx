@@ -14,12 +14,12 @@ import { dataLoadingMode } from '../dataLoadingMode';
 describe('dataLoadingMode action (v2)', () => {
   it('hides settings when resource is not list', () => {
     const blockModel = { resource: new SingleRecordResource(new FlowContext()) } as any;
-    expect(dataLoadingMode.hideInSettings?.({ blockModel } as any)).toBe(true);
+    expect((dataLoadingMode.hideInSettings as Function)?.({ blockModel } as any)).toBe(true);
   });
 
   it('shows settings when resource is list', () => {
     const blockModel = { resource: new MultiRecordResource(new FlowContext()) } as any;
-    expect(dataLoadingMode.hideInSettings?.({ blockModel } as any)).toBe(false);
+    expect((dataLoadingMode.hideInSettings as Function)?.({ blockModel } as any)).toBe(false);
   });
 
   it('ignores non-list resource in handler', () => {

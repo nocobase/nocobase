@@ -140,7 +140,7 @@ describe('FilterFormGridModel onModelCreated', () => {
     await gridModel.onModelCreated(subModel);
 
     expect(saveConnectFieldsConfig).toHaveBeenCalledTimes(1);
-    const [, payload] = saveConnectFieldsConfig.mock.calls[0];
+    const [, payload] = saveConnectFieldsConfig.mock.calls[0] as unknown as [any, any];
     expect(payload).toEqual({
       targets: [
         {
@@ -187,7 +187,7 @@ describe('FilterFormGridModel onModelCreated', () => {
     await gridModel.onModelCreated(subModel);
 
     expect(saveConnectFieldsConfig).toHaveBeenCalledTimes(1);
-    const [, payload] = saveConnectFieldsConfig.mock.calls[0];
+    const [, payload] = saveConnectFieldsConfig.mock.calls[0] as unknown as [any, any];
     expect(payload).toEqual({
       targets: [
         {
@@ -234,7 +234,7 @@ describe('FilterFormGridModel onModelCreated', () => {
     await gridModel.onModelCreated(subModel);
 
     expect(saveConnectFieldsConfig).toHaveBeenCalledTimes(1);
-    const [, payload] = saveConnectFieldsConfig.mock.calls[0];
+    const [, payload] = saveConnectFieldsConfig.mock.calls[0] as unknown as [any, any];
     expect(payload).toEqual({
       targets: [
         {

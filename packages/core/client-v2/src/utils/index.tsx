@@ -23,14 +23,18 @@ export function normalizeContainer(container: Element | ShadowRoot | string): El
     }
     return res;
   }
-  if (window.ShadowRoot && container instanceof window.ShadowRoot && container.mode === 'closed') {
+  if (
+    globalThis.window.ShadowRoot &&
+    container instanceof globalThis.window.ShadowRoot &&
+    container.mode === 'closed'
+  ) {
     console.warn(`mounting on a ShadowRoot with \`{mode: "closed"}\` may lead to unpredictable bugs`);
   }
   return container as any;
 }
 
-export const compose = (...components: [ComponentType, any][]) => {
-  const Component = components.reduce<ComponentType>((Parent, child) => {
+export const compose = (...components: [ComponentType<any>, any][]) => {
+  const Component = components.reduce<ComponentType<any>>((Parent, child) => {
     const [Child, childProps] = child;
     const ComposeComponent: FC = ({ children }) => (
       <Parent>
@@ -41,7 +45,7 @@ export const compose = (...components: [ComponentType, any][]) => {
     return ComposeComponent;
   }, BlankComponent);
 
-  return (LastChild?: ComponentType) =>
+  return (LastChild?: ComponentType<any>) =>
     ((props?: any) => {
       return <Component>{LastChild && <LastChild {...props} />}</Component>;
     }) as FC;

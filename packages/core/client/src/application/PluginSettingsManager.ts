@@ -69,13 +69,15 @@ export class PluginSettingsManager {
   protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
   public app: Application;
-  private cachedList = {};
+  private cachedList = {} as Record<string, PluginSettingsPageType[]>;
 
-  constructor(_pluginSettings: Record<string, PluginSettingOptions>, app: Application) {
+  constructor(_pluginSettings: Record<string, PluginSettingOptions> | undefined, app: Application) {
     this.app = app;
-    Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
-      this.add(name, pluginSettingOptions);
-    });
+    if (_pluginSettings) {
+      Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
+        this.add(name, pluginSettingOptions);
+      });
+    }
   }
 
   /**
@@ -227,7 +229,7 @@ export class PluginSettingsManager {
    * @param {boolean} [filterAuth=true] 是否过滤 ACL
    * @returns {PluginSettingsPageType | null} settings 快照
    */
-  get(name: string, filterAuth = true): PluginSettingsPageType {
+  get(name: string, filterAuth = true): PluginSettingsPageType | null {
     const isAllow = this.hasAuth(name);
     const pluginSetting = this.getSetting(name);
     if ((filterAuth && !isAllow) || !pluginSetting) return null;
@@ -235,19 +237,19 @@ export class PluginSettingsManager {
       .sort((a, b) => a.localeCompare(b))
       .map((key) => this.get(pluginSetting.children[key].name, filterAuth))
       .filter(Boolean)
-      .sort((a, b) => (a.sort || 0) - (b.sort || 0));
+      .sort((a, b) => (a?.sort || 0) - (b?.sort || 0));
     const { title, icon, aclSnippet, ...others } = pluginSetting;
     return {
       isTopLevel: name === pluginSetting.topLevelName,
       ...others,
-      aclSnippet: this.getAclSnippet(name),
+      aclSnippet: this.getAclSnippet(name) as string,
       title,
       isAllow,
       label: title,
       icon: this.renderIcon(icon),
       path: this.getRoutePath(name),
       key: name,
-      children: children.length ? children : undefined,
+      children: children.length ? (children as PluginSettingsPageType[]) : undefined,
     };
   }
 
@@ -267,7 +269,7 @@ export class PluginSettingsManager {
       .sort((a, b) => a.localeCompare(b))
       .map((name) => this.get(name, filterAuth))
       .filter(Boolean)
-      .sort((a, b) => (a.sort || 0) - (b.sort || 0)));
+      .sort((a, b) => (a?.sort || 0) - (b?.sort || 0)) as PluginSettingsPageType[]);
   }
 
   /**

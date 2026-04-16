@@ -20,7 +20,7 @@ export class MySQLQueryFormatter extends QueryFormatter {
       .replace(/ss/g, '%S');
   }
 
-  formatDate(field: Col, format: string, timezone?: string) {
+  formatDate(field: Col, format: string, timezone?: string, _preserveLocalTime?: boolean) {
     const fmt = this.convertFormat(format);
     const resolvedTimezone = this.getTimezoneByOffset(timezone);
     if (resolvedTimezone) {

@@ -9,7 +9,13 @@
 
 import { Registry } from '@nocobase/utils/client';
 import type { ComponentType } from 'react';
-import { Plugin, UserCenterSelectItemModel, languageCodes } from '@nocobase/client-v2';
+import {
+  getCurrentV2RedirectPath,
+  Plugin,
+  redirectToLegacySignin,
+  UserCenterSelectItemModel,
+  languageCodes,
+} from '@nocobase/client-v2';
 import debounce from 'lodash/debounce';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
@@ -63,15 +69,6 @@ const AuthErrorCode = {
   SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
   USER_HAS_NO_ROLES_ERR: 'USER_HAS_NO_ROLES_ERR' as const,
 };
-
-function removeBasename(pathname: string, basename?: string) {
-  if (!basename) {
-    return pathname;
-  }
-  const escapedBasename = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`^${escapedBasename.replace(/\/?$/, '')}(\\/|$)`);
-  return pathname.replace(regex, '/') || pathname;
-}
 
 const debouncedRedirect = debounce(
   (handler: () => void) => {
@@ -138,33 +135,37 @@ export class PluginAuthClientV2 extends Plugin {
 
   private installInterceptors() {
     const axios = this.app.apiClient.axios;
-    const resHandler = (res) => {
+    const resHandler = (res: any) => {
       const newToken = res?.headers?.['x-new-token'];
       if (newToken) {
         this.app.apiClient.auth.setToken(newToken);
       }
       return res;
     };
-    const errHandler = (error) => {
+    const errHandler = (error: any) => {
       const newToken = error?.response?.headers?.['x-new-token'];
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;
-      const state = this.app.router.state;
-      const pathname = state?.location?.pathname || window.location.pathname;
-      const search = state?.location?.search || window.location.search;
-      const basename = this.app.router.basename;
+      const locationLike = this.app.router.router?.state?.location || window.location;
+      const pathname = locationLike?.pathname || window.location.pathname;
+      const status = error?.status || error?.response?.status;
 
       if (newToken) {
         this.app.apiClient.auth.setToken(newToken);
       }
 
-      if (error.status === 401 && firstError?.code && AuthErrorCode[firstError.code]) {
+      if (status === 401 && firstError?.code && AuthErrorCode[firstError?.code as keyof typeof AuthErrorCode]) {
         this.app.apiClient.auth.setToken('');
-        this.app.apiClient.auth.setRole(null);
-        this.app.apiClient.auth.setAuthenticator(null);
+        this.app.apiClient.auth.setRole('');
+        this.app.apiClient.auth.setAuthenticator('');
       }
 
-      if (error.status === 401 && !error.config?.skipAuth && firstError?.code && AuthErrorCode[firstError.code]) {
+      if (
+        status === 401 &&
+        !error.config?.skipAuth &&
+        firstError?.code &&
+        AuthErrorCode[firstError?.code as keyof typeof AuthErrorCode]
+      ) {
         if (firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
           throw error;
         }
@@ -174,12 +175,13 @@ export class PluginAuthClientV2 extends Plugin {
           error.config.skipNotify = true;
         }
 
-        if (pathname !== this.app.getHref('signin') && !isSkippedAuthCheckRoute) {
-          const redirectPath = removeBasename(pathname, basename);
+        if (!isSkippedAuthCheckRoute) {
+          const redirectPath = getCurrentV2RedirectPath(this.app, locationLike);
           debouncedRedirect(() => {
-            this.app.apiClient.auth.setToken(null);
-            this.app.router.navigate(`/signin?redirect=${redirectPath}${search}`, { replace: true });
+            this.app.apiClient.auth.setToken('');
+            redirectToLegacySignin(this.app, redirectPath, { replace: true });
           });
+          return new Promise<never>(() => undefined);
         }
       }
       throw error;

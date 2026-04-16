@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { ChatOpenAI } from '@langchain/openai';
-import businessReportGenerator from '../../ai/tools/businessReportGenerator';
+import businessReportGenerator from '../../ai/skills/business-analysis-report/tools/businessReportGenerator';
 import { buildTool } from '../utils';
 
 describe('business report generator tool', () => {

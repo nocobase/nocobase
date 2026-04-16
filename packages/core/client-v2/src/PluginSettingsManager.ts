@@ -73,38 +73,6 @@ export interface PluginSettingsPageType {
   readonly [index: string]: any;
 }
 
-export interface PluginSettingsPageLike {
-  readonly label?: React.ReactNode;
-  readonly title?: React.ReactNode;
-  readonly link?: string;
-  readonly key: string;
-  readonly path: string;
-  readonly sort?: number;
-  readonly name?: string;
-  readonly isAllow?: boolean;
-  readonly topLevelName?: string;
-  readonly aclSnippet?: string | null;
-  readonly hidden?: boolean;
-  readonly children?: readonly PluginSettingsPageLike[];
-  readonly [index: string]: any;
-}
-
-export interface PluginSettingsManagerBaseLike {
-  clearCache(): void;
-  setAclSnippets(aclSnippets: string[]): void;
-  remove(name: string): void;
-  has(name: string): boolean;
-  get(name: string, filterAuth?: boolean): PluginSettingsPageLike | null;
-  getList(filterAuth?: boolean): PluginSettingsPageLike[];
-  getRoutePath(name: string): string;
-  getAclSnippets(): (string | null)[];
-}
-
-export interface PluginSettingsManagerLike extends PluginSettingsManagerBaseLike {
-  addMenuItem(options: PluginSettingsMenuItemOptions): void;
-  addPageTabItem(options: PluginSettingsPageItemOptions): void;
-}
-
 interface InternalMenuItemRecord extends PluginSettingsMenuItemOptions {
   name: string;
   Component: RouteType['Component'];
@@ -333,7 +301,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
    * @param {boolean} [filterAuth=true] 是否按 ACL 过滤
    * @returns {PluginSettingsPageType | null} 快照结果
    */
-  get(name: string, filterAuth = true): PluginSettingsPageType {
+  get(name: string, filterAuth = true): PluginSettingsPageType | null {
     const snapshot = this.buildSnapshot(name, {
       filterAuth,
       includeHidden: true,

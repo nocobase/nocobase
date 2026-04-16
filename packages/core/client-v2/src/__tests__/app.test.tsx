@@ -9,9 +9,8 @@
 
 import { Application, createMockClient, Plugin } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { Outlet } from 'react-router-dom';
 
 const waitForAppReady = async () => {
@@ -28,10 +27,57 @@ const renderApp = async (app: Application) => {
 };
 
 describe('app', () => {
+  describe('base application helpers', () => {
+    const router = { type: 'memory' as const, initialEntries: ['/'] };
+
+    afterEach(() => {
+      document.querySelectorAll('link[rel="shortcut icon"]').forEach((node) => node.remove());
+      vi.restoreAllMocks();
+    });
+
+    it('should normalize helper urls when pathname starts with slash', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api',
+        },
+      });
+
+      expect(() => app.getApiUrl('/test/bar')).not.toThrow();
+      expect(app.getApiUrl('/test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+      expect(app.getRouteUrl('/test')).toBe('/test');
+      expect(app.getHref('/test')).toBe('/test');
+    });
+
+    it('should apply the provided favicon immediately', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/custom-favicon.ico');
+    });
+
+    it('should reject invalid component objects but keep valid exotic components', () => {
+      const app = new Application({ router });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const ForwardRefComponent = React.forwardRef<HTMLDivElement, { label?: string }>((props, ref) => {
+        return <div ref={ref}>{props.label || 'forward ref'}</div>;
+      });
+      ForwardRefComponent.displayName = 'ForwardRefComponent';
+
+      expect(app.getComponent(ForwardRefComponent)).toBe(ForwardRefComponent);
+      expect(app.getComponent({} as any)).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
   it('should mount the app and display "Not Found"', async () => {
     const app = createMockClient();
     const element = document.createElement('div');
-    act(() => app.mount(element));
+    act(() => {
+      app.mount(element);
+    });
     await waitFor(() => expect(element.textContent).toContain('Sorry, the page you visited does not exist.'));
   });
 
@@ -137,11 +183,12 @@ describe('app', () => {
   it('should support plugin settings componentLoader lazy functionality', async () => {
     class PluginHelloClient extends Plugin {
       async load() {
-        this.pluginSettingsManager.addMenuItem({
+        const pluginSettingsManager = this.pluginSettingsManager as any;
+        pluginSettingsManager.addMenuItem({
           key: 'demo',
           title: 'Demo',
         });
-        this.pluginSettingsManager.addPageTabItem({
+        pluginSettingsManager.addPageTabItem({
           menuKey: 'demo',
           key: 'index',
           title: 'Demo',
@@ -201,35 +248,52 @@ describe('app', () => {
   });
 
   it('should handle WebSocket maintaining and running states', async () => {
-    const originalLocation = window.location;
+    const originalLocation = globalThis.window.location;
     const reloadMock = vi.fn();
-    Object.defineProperty(window, 'location', { value: { reload: reloadMock } });
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, reload: reloadMock },
+    });
 
-    class PluginHelloClient extends Plugin {
-      async load() {
-        this.router.add('root', { path: '/', Component: () => <div>Hello</div> });
-        this.app.ws.emit('message', {
+    try {
+      class PluginHelloClient extends Plugin {
+        async load() {
+          this.router.add('root', { path: '/', Component: () => <div>Hello</div> });
+        }
+      }
+
+      const app = createMockClient({
+        plugins: [PluginHelloClient],
+        ws: { url: 'ws://localhost:3000/ws' },
+      });
+
+      await renderApp(app);
+
+      act(() => {
+        app.ws.emit('message', {
           type: 'maintaining',
           payload: { code: 'APP_ERROR', message: 'maintaining error message' },
         });
-      }
+      });
+
+      expect(screen.getByText('maintaining error message')).toBeInTheDocument();
+
+      act(() => {
+        app.ws.emit('message', {
+          type: 'maintaining',
+          payload: { code: 'APP_RUNNING', message: 'app running message' },
+        });
+      });
+
+      await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+      expect(reloadMock).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(globalThis.window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
     }
-
-    const app = createMockClient({
-      plugins: [PluginHelloClient],
-      ws: { url: 'ws://localhost:3000/ws' },
-    });
-
-    await renderApp(app);
-    expect(screen.getByText('maintaining error message')).toBeInTheDocument();
-
-    app.ws.emit('message', {
-      type: 'maintaining',
-      payload: { code: 'APP_RUNNING', message: 'app running message' },
-    });
-    await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
-    expect(screen.getByText('Hello')).toBeInTheDocument();
-    expect(reloadMock).toHaveBeenCalled();
   });
 
   it('should handle plugin load error gracefully', async () => {

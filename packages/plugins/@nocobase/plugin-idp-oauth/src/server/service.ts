@@ -58,6 +58,7 @@ type ProviderContext = {
 
 const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
 const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
+const MAX_CACHE_TTL_MS = 2_147_483_647;
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
@@ -254,9 +255,22 @@ export class IdpOauthService {
   }
 
   private getRequestResourceConfig(ctx: any) {
+    const requestPath = normalizeBasePath(ctx.path || this.getRequestPath(ctx) || '/');
+
     for (const config of this.resourceServers.values()) {
-      const requestPath = this.getResourcePath(config);
-      if (requestPath && ctx.path === requestPath) {
+      const resourcePath = this.getResourcePath(config);
+      if (!resourcePath) {
+        continue;
+      }
+
+      const normalizedResourcePath = normalizeBasePath(resourcePath);
+      const isRootResource = normalizedResourcePath === normalizeBasePath(`${this.getApiBasePath()}/`);
+      const matches =
+        requestPath === normalizedResourcePath ||
+        requestPath.startsWith(`${normalizedResourcePath}/`) ||
+        (isRootResource && requestPath.startsWith(`${this.getApiBasePath()}/`));
+
+      if (matches) {
         return config;
       }
     }
@@ -505,7 +519,7 @@ export class IdpOauthService {
     const cachedInternalToken = await this.bridgeTokenCache.get<string>(bridgeTokenCacheKey);
     const internalToken = cachedInternalToken || (await this.issueInternalToken(user.id, oauthExpiresInMs));
     if (!cachedInternalToken && typeof oauthExpiresInMs === 'number' && oauthExpiresInMs > 0) {
-      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, oauthExpiresInMs);
+      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, Math.min(oauthExpiresInMs, MAX_CACHE_TTL_MS));
     }
     const authorizationHeader = `Bearer ${internalToken}`;
 

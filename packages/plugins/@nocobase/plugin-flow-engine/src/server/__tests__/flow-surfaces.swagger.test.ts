@@ -377,20 +377,40 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[0].enum).toEqual(
+      expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[0].enum).not.toEqual(expect.arrayContaining(['addChild']));
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.enum).toEqual(
       expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
     );
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.enum).not.toEqual(
+      expect.arrayContaining(['addChild']),
+    );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.description).toContain('auto-promotes');
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.description).toContain(
+      'not auto-promoted',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.description).toContain(
       'exactly one `editForm` block',
     );
     expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[0].enum).toEqual(
+      expect.arrayContaining(['addChild']),
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.enum).toEqual(
+      expect.arrayContaining(['addChild']),
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.description).toContain(
+      'catalog.recordActions',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.description).toContain(
       'exactly one `editForm` block',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.description).toContain('auto-promotes');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.description).toContain('not auto-promoted');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.associationPathName.description).toContain(
       'associatedRecords',
     );
@@ -970,6 +990,8 @@ describe('flowSurfaces swagger', () => {
     expect(addRecordActionRequest.examples.view.value.type).toBe('view');
     expect(addRecordActionRequest.examples.view.value.settings.openView.mode).toBe('drawer');
     expect(addRecordActionRequest.examples.view.value.popup.blocks[0].type).toBe('details');
+    expect(addRecordActionRequest.examples.addChild.value.type).toBe('addChild');
+    expect(addRecordActionRequest.examples.addChild.value.settings.openView.collectionName).toBe('categories');
     expect(addRecordActionRequest.examples.js.value.type).toBe('js');
     expect(addRecordActionRequest.examples.js.value.settings.code).toContain('currentRecord');
     expect(swaggerDocument.paths['/flowSurfaces:addRecordAction'].post.description).toContain('table actions column');
@@ -1075,14 +1097,19 @@ describe('flowSurfaces swagger', () => {
 
     const addRecordActionsRequest =
       swaggerDocument.paths['/flowSurfaces:addRecordActions'].post.requestBody.content['application/json'];
-    expect(addRecordActionsRequest.example.recordActions).toHaveLength(3);
-    expect(addRecordActionsRequest.example.recordActions.map((item: any) => item.type)).toEqual([
+    expect(addRecordActionsRequest.examples.basic.value.recordActions).toHaveLength(3);
+    expect(addRecordActionsRequest.examples.basic.value.recordActions.map((item: any) => item.type)).toEqual([
       'view',
       'edit',
       'delete',
     ]);
-    expect(addRecordActionsRequest.example.recordActions[0].settings.openView.mode).toBe('drawer');
-    expect(addRecordActionsRequest.example.recordActions[0].popup.blocks[0].type).toBe('details');
+    expect(addRecordActionsRequest.examples.basic.value.recordActions[0].settings.openView.mode).toBe('drawer');
+    expect(addRecordActionsRequest.examples.basic.value.recordActions[0].popup.blocks[0].type).toBe('details');
+    expect(addRecordActionsRequest.examples.addChild.value.recordActions).toHaveLength(1);
+    expect(addRecordActionsRequest.examples.addChild.value.recordActions[0].type).toBe('addChild');
+    expect(addRecordActionsRequest.examples.addChild.value.recordActions[0].settings.openView.collectionName).toBe(
+      'categories',
+    );
     expect(schemas.FlowSurfaceAddRecordActionsRequest.required).toEqual(['target', 'recordActions']);
     expect(schemas.FlowSurfaceAddRecordActionItem.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddRecordActionItem.properties.popup.$ref).toBe(

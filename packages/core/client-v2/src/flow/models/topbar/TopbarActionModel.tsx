@@ -94,7 +94,7 @@ export function getTopbarPluginSettingsItems(options: {
     settingsByKey.set(item.key, item);
   });
 
-  const orderedSettings = (getMenuItems(normalSettings) || []).map((item) => {
+  const orderedSettings = (getMenuItems(normalSettings) || []).map((item: any) => {
     if (item?.type === 'divider') {
       return item;
     }
@@ -130,8 +130,6 @@ export function getTopbarPluginSettingsItems(options: {
   if (canManagePlugins && pluginManagerSetting) {
     items.push({
       key: pluginManagerSetting.key,
-      name: pluginManagerSetting.name,
-      path: pluginManagerSetting.path,
       icon: pluginManagerSetting.icon || <ApiOutlined />,
       label: <Link to={pluginManagerSetting.path}>{pluginManagerSetting.title || t('Plugin manager')}</Link>,
     });
@@ -333,7 +331,7 @@ const PluginSettingsTopbarAction = observer(
     const [open, setOpen] = useState(false);
     const items = useMemo(() => {
       return getTopbarPluginSettingsItems({
-        settings: app.pluginSettingsManager.getList(true),
+        settings: app.pluginSettingsManager.getList(true) as PluginSettingsPageType[],
         canManagePlugins: snippets.includes('pm'),
         t,
       });
