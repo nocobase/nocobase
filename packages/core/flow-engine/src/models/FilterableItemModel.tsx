@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure } from '@nocobase/flow-engine';
+import type { DefaultStructure } from '../types';
 import { CollectionFieldModel } from './CollectionFieldModel';
 
 export class FilterableItemModel<T extends DefaultStructure = DefaultStructure> extends CollectionFieldModel<T> {}
