@@ -12,6 +12,7 @@ import _ from 'lodash';
 import type { FlowSurfaceCatalogItem, FlowSurfaceNodeDefaults, FlowSurfaceNodeSpec } from './types';
 import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } from './catalog';
 import { CHART_DEFAULT_DATA_SOURCE_KEY } from './chart-config';
+import { buildApprovalActionDefaults, buildApprovalBlockDefaults, buildApprovalFieldTree } from './approval';
 
 type BuildFieldParams = {
   wrapperUse: string;
@@ -214,6 +215,7 @@ export function buildSyntheticRootPageTabModel(options: {
 export function buildBlockTree(options: {
   type?: string;
   use?: string;
+  containerUse?: string;
   resourceInit?: Record<string, any>;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
@@ -223,6 +225,7 @@ export function buildBlockTree(options: {
     {
       type: options.type,
       use: options.use,
+      containerUse: options.containerUse,
     },
     {
       requireCreateSupported: true,
@@ -267,8 +270,26 @@ export function buildBlockTree(options: {
     decoratorProps: _.merge({}, _.cloneDeep(defaults.decoratorProps || {}), _.cloneDeep(options.decoratorProps || {})),
     stepParams: baseStepParams,
   };
+  const approvalBlockDefaults = buildApprovalBlockDefaults(use);
 
-  if (use === 'TableBlockModel') {
+  if (approvalBlockDefaults?.subModels) {
+    model.subModels = {};
+    if (approvalBlockDefaults.subModels.grid?.use) {
+      model.subModels.grid = {
+        uid: uid(),
+        use: approvalBlockDefaults.subModels.grid.use,
+      };
+    }
+    if (Array.isArray(approvalBlockDefaults.subModels.actions) && approvalBlockDefaults.subModels.actions.length) {
+      model.subModels.actions = approvalBlockDefaults.subModels.actions.map((action) => ({
+        uid: uid(),
+        ...buildActionTree({
+          use: action.use,
+          containerUse: use,
+        }),
+      }));
+    }
+  } else if (use === 'TableBlockModel') {
     model.subModels = {
       columns: [buildCanonicalTableActionsColumnNode()],
     };
@@ -387,6 +408,20 @@ export function buildPopupPageTree(options: {
 export function buildFieldTree(params: BuildFieldParams) {
   const wrapperUid = params.uid || uid();
   const innerUid = params.innerUid || uid();
+  const fieldDefaults = getStandaloneFieldDefaults(params.fieldUse);
+  const approvalTree = buildApprovalFieldTree({
+    ...params,
+    uid: wrapperUid,
+    innerUid,
+    fieldDefaults,
+  });
+  if (approvalTree) {
+    return {
+      wrapperUid: approvalTree.wrapperUid,
+      innerUid: approvalTree.innerUid,
+      model: approvalTree.model,
+    };
+  }
   const initPayload = _.pickBy(
     {
       dataSourceKey: params.dataSourceKey,
@@ -423,7 +458,7 @@ export function buildFieldTree(params: BuildFieldParams) {
           props: _.cloneDeep(params.fieldProps || {}),
           stepParams: _.merge(
             {},
-            getStandaloneFieldDefaults(params.fieldUse).stepParams || {},
+            fieldDefaults.stepParams || {},
             _.cloneDeep({
               fieldSettings: {
                 init: initPayload,
@@ -558,14 +593,27 @@ function buildActionDefaults(options: {
   containerUse?: string;
   resourceInit?: Record<string, any>;
 }): FlowSurfaceNodeDefaults {
-  const props = inferActionDefaultProps(options.use, options.catalogItem.scope);
+  const approvalDefaults = buildApprovalActionDefaults(options.use);
+  const props = _.merge(
+    {},
+    inferActionDefaultProps(options.use, options.catalogItem.scope),
+    approvalDefaults?.props || {},
+  );
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
-  const stepParams: Record<string, any> = {
+  const stepParams: Record<string, any> = _.merge({}, _.cloneDeep(approvalDefaults?.stepParams || {}), {
     buttonSettings: {
       general: pickButtonGeneralProps(normalizedProps),
     },
-  };
-  const subModels: Record<string, any> = {};
+  });
+  const subModels: Record<string, any> = _.cloneDeep(approvalDefaults?.subModels || {});
+
+  if (approvalDefaults) {
+    return {
+      props: normalizedProps,
+      stepParams,
+      ...(Object.keys(subModels).length ? { subModels } : {}),
+    };
+  }
 
   if (
     [

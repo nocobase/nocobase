@@ -21,6 +21,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { expectTemplateUsage, getListData } from './flow-surfaces.templates.helpers';
 
 describe('flowSurfaces applyBlueprint contract', () => {
@@ -293,6 +294,18 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should auto-select popup templates through applyBlueprint popup.tryTemplate and keep inline popup fallback on misses', async () => {
+    const popupTryTemplateCollection = `blueprint_popup_try_template_${Date.now()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: popupTryTemplateCollection,
+        title: 'Blueprint popup tryTemplate targets',
+        fields: [{ name: 'nickname', type: 'string', interface: 'input' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [popupTryTemplateCollection]: ['nickname'],
+    });
+
     const sourcePage = await createPage(rootAgent, {
       title: `Popup tryTemplate source page ${Date.now()}`,
       tabTitle: 'Source',
@@ -304,7 +317,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           type: 'details',
           resourceInit: {
             dataSourceKey: 'main',
-            collectionName: 'employees',
+            collectionName: popupTryTemplateCollection,
           },
         },
       }),
@@ -359,7 +372,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 key: 'employeeDetails',
                 type: 'details',
-                collection: 'employees',
+                collection: popupTryTemplateCollection,
                 fields: [
                   {
                     field: 'nickname',

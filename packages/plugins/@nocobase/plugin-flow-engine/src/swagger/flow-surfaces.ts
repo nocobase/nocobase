@@ -12,6 +12,10 @@ import {
   FLOW_SURFACES_ACTION_METHODS,
   FLOW_SURFACES_ACTION_NAMES,
 } from '../server/flow-surfaces/constants';
+import {
+  APPROVAL_ACTION_PUBLIC_KEYS,
+  APPROVAL_BLOCK_PUBLIC_KEYS,
+} from '../server/flow-surfaces/approval/catalog-specs';
 import { flowSurfaceExamples as examples } from './flow-surfaces.examples';
 import { createFlowSurfaceTemplateActionDocs } from './flow-surfaces.template-action-docs';
 import { createFlowSurfaceTemplateSchemas } from './flow-surfaces.template-schemas';
@@ -28,7 +32,7 @@ const FILTER_GROUP_EXAMPLE = {
 const STRING_OR_INTEGER_SCHEMA = {
   oneOf: [{ type: 'string' }, { type: 'integer' }],
 };
-const ACTION_TYPE_ENUM = [
+const BASE_ACTION_TYPE_ENUM = [
   'filter',
   'addNew',
   'popup',
@@ -57,8 +61,10 @@ const ACTION_TYPE_ENUM = [
   'reset',
   'collapse',
 ];
-const APPLY_BLUEPRINT_ACTION_TYPE_ENUM = ACTION_TYPE_ENUM.filter((item) => item !== 'addChild');
-const NON_RECORD_ACTION_TYPE_ENUM = [
+const ACTION_TYPE_ENUM = [...BASE_ACTION_TYPE_ENUM, ...APPROVAL_ACTION_PUBLIC_KEYS];
+const APPLY_BLUEPRINT_ACTION_TYPE_ENUM = BASE_ACTION_TYPE_ENUM.filter((item) => item !== 'addChild');
+const APPROVAL_BLUEPRINT_ACTION_TYPE_ENUM = [...APPROVAL_ACTION_PUBLIC_KEYS];
+const BASE_NON_RECORD_ACTION_TYPE_ENUM = [
   'filter',
   'addNew',
   'popup',
@@ -81,6 +87,7 @@ const NON_RECORD_ACTION_TYPE_ENUM = [
   'reset',
   'collapse',
 ];
+const NON_RECORD_ACTION_TYPE_ENUM = [...BASE_NON_RECORD_ACTION_TYPE_ENUM, ...APPROVAL_ACTION_PUBLIC_KEYS];
 const RECORD_ACTION_TYPE_ENUM = [
   'popup',
   'js',
@@ -108,6 +115,8 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'actionPanel',
   'jsBlock',
 ];
+const APPROVAL_BLUEPRINT_BLOCK_TYPE_ENUM = [...APPROVAL_BLOCK_PUBLIC_KEYS];
+const COMPOSE_BLOCK_TYPE_ENUM = [...APPLY_BLUEPRINT_BLOCK_TYPE_ENUM, ...APPROVAL_BLOCK_PUBLIC_KEYS];
 const ADD_CHILD_TREE_TABLE_NOTE =
   '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled.';
 const APPLY_BLUEPRINT_ADD_CHILD_NOTE =
@@ -442,12 +451,42 @@ const actionDocs: Record<string, any> = {
     },
     responses: responses('FlowSurfaceApplyBlueprintResponse'),
   },
+  applyApprovalBlueprint: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Apply an approval blueprint to initiator, approver, or task-card surfaces',
+    description: valuesCompatibilityNote(
+      "Builds workflow-approval configuration surfaces through the existing flowSurfaces orchestration layer instead of a separate approval resource. This is the preferred whole-surface bootstrap / replace entry for approval initiator, approver, and task-card UIs. Unlike route-backed `applyBlueprint`, this action targets approval-bound FlowModel roots stored on approval workflow trigger config (`workflow.config.approvalUid` / `workflow.config.taskCardUid`) or approval node config (`node.config.approvalUid` / `node.config.taskCardUid`). The backend creates or reuses the correct approval root automatically, rewrites the binding uid, applies a `replace` blueprint to that root, and reconciles approval runtime config derived from approval actions such as withdraw / approve / reject / return / delegate / add-assignee. `surface='initiator'` requires `workflowId` and writes page-like `blocks + layout` into `TriggerChildPageModel -> TriggerChildPageTabModel -> TriggerBlockGridModel`. `surface='approver'` requires `nodeId` and writes page-like `blocks + layout` into `ApprovalChildPageModel -> ApprovalChildPageTabModel -> ApprovalBlockGridModel`. `surface='taskCard'` requires exactly one of `workflowId` or `nodeId` and writes `fields + layout` into `ApplyTaskCardDetailsModel` or `ApprovalTaskCardDetailsModel`. This v1 action does not cover legacy schema-config wiring; it focuses on approval FlowModel construction, binding persistence, and approval runtime-config synchronization. When `layout` is omitted, the backend generates a simple top-to-bottom layout for the resulting blocks or fields.",
+    ),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceApplyApprovalBlueprintRequest'),
+          examples: {
+            initiator: {
+              summary: 'Replace an approval initiator surface on the workflow trigger',
+              value: examples.applyApprovalBlueprintInitiator,
+            },
+            approver: {
+              summary: 'Replace an approval approver surface on one approval node',
+              value: examples.applyApprovalBlueprintApprover,
+            },
+            taskCard: {
+              summary: 'Replace an approval task-card surface on one approval node',
+              value: examples.applyApprovalBlueprintTaskCard,
+            },
+          },
+        },
+      },
+    },
+    responses: responses('FlowSurfaceApplyApprovalBlueprintResponse'),
+  },
   ...templateActionDocs,
   compose: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or set `popup.saveAsTemplate={ name, description }` to immediately save newly created local popup content as a popup template reference. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or set `popup.saveAsTemplate={ name, description }` to immediately save newly created local popup content as a popup template reference. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. For approval surfaces, use `applyApprovalBlueprint` first to bootstrap or replace the bound approval root; use `compose` only after that root already exists.',
     ),
     requestBody: {
       required: true,
@@ -493,7 +532,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action.',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `approvalReturn` and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
     ),
     requestBody: {
       required: true,
@@ -688,7 +727,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`.',
+      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Approval block keys are only exposed under approval grids and do not auto-create an approval root; bootstrap approval surfaces with `applyApprovalBlueprint` first.',
     ),
     requestBody: {
       required: true,
@@ -722,7 +761,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically. Under approval forms, direct field creation preserves the `PatternFormFieldModel` inner node semantics and does not allow standalone `jsItem`.',
     ),
     requestBody: {
       required: true,
@@ -768,7 +807,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. `popup.saveAsTemplate={ name, description }` saves explicit local popup blocks as a popup template and converts the created popup to that reference immediately. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Approval action keys are singleton within one approval form or process form, and flowSurfaces reconciles the related workflow/node runtime config after successful writes.',
     ),
     requestBody: {
       required: true,
@@ -2207,6 +2246,30 @@ const schemas = {
       },
     ],
   },
+  FlowSurfaceApprovalBlueprintActionSpec: {
+    oneOf: [
+      {
+        type: 'string',
+        enum: APPROVAL_BLUEPRINT_ACTION_TYPE_ENUM,
+      },
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          key: {
+            type: 'string',
+          },
+          type: {
+            type: 'string',
+            enum: APPROVAL_BLUEPRINT_ACTION_TYPE_ENUM,
+          },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceComposeActionPopup'),
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
   FlowSurfaceComposeRecordActionSpec: {
     oneOf: [
       {
@@ -2240,20 +2303,7 @@ const schemas = {
       },
       type: {
         type: 'string',
-        enum: [
-          'table',
-          'createForm',
-          'editForm',
-          'details',
-          'filterForm',
-          'list',
-          'gridCard',
-          'markdown',
-          'iframe',
-          'chart',
-          'actionPanel',
-          'jsBlock',
-        ],
+        enum: COMPOSE_BLOCK_TYPE_ENUM,
       },
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
@@ -2272,6 +2322,30 @@ const schemas = {
         description:
           'Public semantic group for record/item-level actions on record-capable blocks such as table/details/list/gridCard.',
         items: ref('FlowSurfaceComposeRecordActionSpec'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApprovalBlueprintBlockSpec: {
+    type: 'object',
+    required: ['key', 'type'],
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: APPROVAL_BLUEPRINT_BLOCK_TYPE_ENUM,
+      },
+      resource: ref('FlowSurfaceBlockResourceInput'),
+      settings: ANY_OBJECT_SCHEMA,
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeFieldSpec'),
+      },
+      actions: {
+        type: 'array',
+        items: ref('FlowSurfaceApprovalBlueprintActionSpec'),
       },
     },
     additionalProperties: false,
@@ -2387,20 +2461,7 @@ const schemas = {
       },
       type: {
         type: 'string',
-        enum: [
-          'table',
-          'createForm',
-          'editForm',
-          'details',
-          'filterForm',
-          'list',
-          'gridCard',
-          'markdown',
-          'iframe',
-          'chart',
-          'actionPanel',
-          'jsBlock',
-        ],
+        enum: COMPOSE_BLOCK_TYPE_ENUM,
       },
       uid: {
         type: 'string',
@@ -3480,6 +3541,88 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApprovalBlueprintSurface: {
+    type: 'string',
+    enum: ['initiator', 'approver', 'taskCard'],
+  },
+  FlowSurfaceApplyApprovalBlueprintBinding: {
+    type: 'object',
+    required: ['resourceName', 'filterByTk', 'configPath'],
+    properties: {
+      resourceName: {
+        type: 'string',
+        enum: ['workflows', 'flow_nodes'],
+      },
+      filterByTk: STRING_OR_INTEGER_SCHEMA,
+      configPath: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyApprovalBlueprintTarget: {
+    type: 'object',
+    required: ['uid'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      workflowId: STRING_OR_INTEGER_SCHEMA,
+      nodeId: STRING_OR_INTEGER_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyApprovalBlueprintRequest: {
+    type: 'object',
+    required: ['surface'],
+    description:
+      "Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to '1'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions.",
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
+      },
+      mode: {
+        type: 'string',
+        enum: ['replace'],
+        default: 'replace',
+      },
+      surface: ref('FlowSurfaceApprovalBlueprintSurface'),
+      workflowId: STRING_OR_INTEGER_SCHEMA,
+      nodeId: STRING_OR_INTEGER_SCHEMA,
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceApprovalBlueprintBlockSpec'),
+        description: 'Page-like approval content for `initiator` and `approver` surfaces.',
+      },
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeFieldSpec'),
+        description: 'Task-card field list for `taskCard` surfaces.',
+      },
+      layout: ref('FlowSurfaceComposeLayout'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyApprovalBlueprintResponse: {
+    type: 'object',
+    required: ['version', 'mode', 'surfaceType', 'target', 'binding', 'surface'],
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
+      },
+      mode: {
+        type: 'string',
+        enum: ['replace'],
+      },
+      surfaceType: ref('FlowSurfaceApprovalBlueprintSurface'),
+      target: ref('FlowSurfaceApplyApprovalBlueprintTarget'),
+      binding: ref('FlowSurfaceApplyApprovalBlueprintBinding'),
+      surface: ref('FlowSurfaceGetResponse'),
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceConfigureRequest: {
     type: 'object',
     required: ['target', 'changes'],
@@ -3953,20 +4096,7 @@ const schemas = {
       target: ref('FlowSurfaceWriteTarget'),
       type: {
         type: 'string',
-        enum: [
-          'table',
-          'createForm',
-          'editForm',
-          'details',
-          'filterForm',
-          'list',
-          'gridCard',
-          'markdown',
-          'iframe',
-          'chart',
-          'actionPanel',
-          'jsBlock',
-        ],
+        enum: COMPOSE_BLOCK_TYPE_ENUM,
       },
       use: {
         type: 'string',
@@ -4230,20 +4360,7 @@ const schemas = {
       },
       type: {
         type: 'string',
-        enum: [
-          'table',
-          'createForm',
-          'editForm',
-          'details',
-          'filterForm',
-          'list',
-          'gridCard',
-          'markdown',
-          'iframe',
-          'chart',
-          'actionPanel',
-          'jsBlock',
-        ],
+        enum: COMPOSE_BLOCK_TYPE_ENUM,
       },
       use: {
         type: 'string',

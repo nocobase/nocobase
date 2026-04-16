@@ -15,6 +15,16 @@ describe('flowSurfaces field semantics', () => {
     expect(normalizeFieldContainerKind('DetailsBlockModel')).toBe('details');
     expect(normalizeFieldContainerKind('ListBlockModel')).toBe('details');
     expect(normalizeFieldContainerKind('GridCardItemModel')).toBe('details');
+    expect(normalizeFieldContainerKind('ApplyTaskCardDetailsModel')).toBe('details');
+    expect(normalizeFieldContainerKind('ApprovalTaskCardGridModel')).toBe('details');
+    expect(normalizeFieldContainerKind('ApprovalDetailsModel')).toBe('details');
+    expect(normalizeFieldContainerKind('ApplyTaskCardDetailsItemModel')).toBe('details');
+  });
+
+  it('should classify approval forms as form kind', () => {
+    expect(normalizeFieldContainerKind('ApplyFormModel')).toBe('form');
+    expect(normalizeFieldContainerKind('ProcessFormModel')).toBe('form');
+    expect(normalizeFieldContainerKind('PatternFormItemModel')).toBe('form');
   });
 
   it('should use association title text display for direct to-many association fields under table and details containers', () => {

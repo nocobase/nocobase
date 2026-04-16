@@ -113,6 +113,13 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyBlueprintReaction',
       'FlowSurfaceApplyBlueprintRequest',
       'FlowSurfaceApplyBlueprintResponse',
+      'FlowSurfaceApprovalBlueprintSurface',
+      'FlowSurfaceApplyApprovalBlueprintBinding',
+      'FlowSurfaceApplyApprovalBlueprintTarget',
+      'FlowSurfaceApprovalBlueprintActionSpec',
+      'FlowSurfaceApprovalBlueprintBlockSpec',
+      'FlowSurfaceApplyApprovalBlueprintRequest',
+      'FlowSurfaceApplyApprovalBlueprintResponse',
       'FlowSurfaceBindKey',
       'FlowSurfaceKeysMap',
       'FlowSurfaceCatalogItem',
@@ -283,6 +290,54 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.reaction.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintReaction',
     );
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.required).toEqual(['surface']);
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.version.enum).toEqual(['1']);
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.mode.enum).toEqual(['replace']);
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.surface.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApprovalBlueprintSurface',
+    );
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.blocks.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApprovalBlueprintBlockSpec',
+    );
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.fields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeFieldSpec',
+    );
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.layout.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeLayout',
+    );
+    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.type.enum).toEqual([
+      'approvalInitiator',
+      'approvalApprover',
+      'approvalInformation',
+    ]);
+    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.actions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApprovalBlueprintActionSpec',
+    );
+    expect(schemas.FlowSurfaceApprovalBlueprintActionSpec.oneOf[0].enum).toEqual(
+      expect.arrayContaining(['approvalSubmit', 'approvalApprove']),
+    );
+    expect(schemas.FlowSurfaceApprovalBlueprintActionSpec.oneOf[0].enum).not.toEqual(
+      expect.arrayContaining(['submit', 'refresh']),
+    );
+    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.template).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('initiator');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('taskCard');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintResponse.required).toEqual([
+      'version',
+      'mode',
+      'surfaceType',
+      'target',
+      'binding',
+      'surface',
+    ]);
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintResponse.properties.surfaceType.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApprovalBlueprintSurface',
+    );
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintBinding.properties.resourceName.enum).toEqual([
+      'workflows',
+      'flow_nodes',
+    ]);
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintTarget.properties.uid.type).toBe('string');
     expect(schemas.FlowSurfaceApplyBlueprintReaction.required).toEqual(['items']);
     expect(schemas.FlowSurfaceApplyBlueprintReaction.description).toContain('whole-page reaction authoring');
     expect(schemas.FlowSurfaceApplyBlueprintReaction.description).toContain('same `(type, target)` slot');
@@ -526,6 +581,33 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('internal flow-surface operations');
     expect(applyBlueprintPath.description).toContain('generic `form`');
     expect(applyBlueprintPath.description).toContain('exactly one `editForm` block');
+    const applyApprovalBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyApprovalBlueprint'].post;
+    expect(applyApprovalBlueprintPath.summary).toContain('approval blueprint');
+    expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
+    expect(applyApprovalBlueprintPath.description).toContain('node.config.approvalUid');
+    expect(applyApprovalBlueprintPath.description).toContain("surface='taskCard'");
+    expect(applyApprovalBlueprintPath.description).toContain('preferred whole-surface bootstrap / replace entry');
+    expect(applyApprovalBlueprintPath.description).toContain('reconciles approval runtime config');
+    const applyApprovalBlueprintRequest = applyApprovalBlueprintPath.requestBody.content['application/json'];
+    expect(applyApprovalBlueprintRequest.examples.initiator.value.surface).toBe('initiator');
+    expect(applyApprovalBlueprintRequest.examples.initiator.value.blocks[0].type).toBe('approvalInitiator');
+    expect(applyApprovalBlueprintRequest.examples.approver.value.surface).toBe('approver');
+    expect(applyApprovalBlueprintRequest.examples.approver.value.blocks[0].type).toBe('approvalApprover');
+    expect(applyApprovalBlueprintRequest.examples.taskCard.value.surface).toBe('taskCard');
+    expect(applyApprovalBlueprintRequest.examples.taskCard.value.fields[0].fieldPath).toBe('nickname');
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      'use `applyApprovalBlueprint` first',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
+      'do not auto-create an approval root',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addField'].post.description).toContain(
+      'does not allow standalone `jsItem`',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addAction'].post.description).toContain(
+      'reconciles the related workflow/node runtime config',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('approval-specific keys');
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
     expect(contextRequest.example?.path).toBe('record');
@@ -703,7 +785,14 @@ describe('flowSurfaces swagger', () => {
       'table/details/list/gridCard',
     );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.type.enum).toEqual(
-      expect.arrayContaining(['table', 'filterForm', 'actionPanel', 'jsBlock']),
+      expect.arrayContaining([
+        'table',
+        'filterForm',
+        'actionPanel',
+        'jsBlock',
+        'approvalInitiator',
+        'approvalApprover',
+      ]),
     );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
@@ -736,6 +825,8 @@ describe('flowSurfaces swagger', () => {
         'reset',
         'collapse',
         'js',
+        'approvalSubmit',
+        'approvalApprove',
       ]),
     );
     expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.type.enum).not.toEqual(
@@ -766,7 +857,16 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeActionResult.properties.popupGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.assignFormUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.type.enum).toEqual(
-      expect.arrayContaining(['link', 'popup', 'duplicate', 'updateRecord', 'templatePrint', 'triggerWorkflow']),
+      expect.arrayContaining([
+        'link',
+        'popup',
+        'duplicate',
+        'updateRecord',
+        'templatePrint',
+        'triggerWorkflow',
+        'approvalSaveDraft',
+        'approvalReject',
+      ]),
     );
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeFieldPopup',
@@ -940,7 +1040,7 @@ describe('flowSurfaces swagger', () => {
       collectionName: 'departments',
     });
     expect(schemas.FlowSurfaceAddBlockRequest.properties.type.enum).toEqual(
-      expect.arrayContaining(['markdown', 'actionPanel', 'jsBlock']),
+      expect.arrayContaining(['markdown', 'actionPanel', 'jsBlock', 'approvalInitiator', 'approvalInformation']),
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
@@ -1005,6 +1105,8 @@ describe('flowSurfaces swagger', () => {
         'collapse',
         'js',
         'jsItem',
+        'approvalSubmit',
+        'approvalDelegate',
       ]),
     );
     expect(schemas.FlowSurfaceAddActionRequest.properties.type.enum).not.toEqual(

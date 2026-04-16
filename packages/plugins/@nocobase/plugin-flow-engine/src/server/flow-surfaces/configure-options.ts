@@ -13,6 +13,7 @@ import type {
   FlowSurfaceConfigureOptions,
   FlowSurfaceContainerKind,
 } from './types';
+import { normalizeApprovalSemanticUse } from './approval';
 
 const stringOption = (
   description?: string,
@@ -493,6 +494,24 @@ const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   version: JS_VERSION,
 };
 
+const APPROVAL_RETURN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
+  approvalReturn: objectOption('Approval return-node settings', {
+    example: {
+      type: 'specific',
+      target: 'approval-node-key',
+    },
+  }),
+};
+
+const APPROVAL_REASSIGN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
+  assigneesScope: objectOption('Approval reassignee scope', {
+    example: {
+      assignees: [1, '{{$context.user.id}}'],
+      extraFieldKey: 'departmentId',
+    },
+  }),
+};
+
 const ACTION_EDIT_MODE_OPTIONS: FlowSurfaceConfigureOptions = {
   editMode: stringOption('Bulk edit mode', { example: 'drawer' }),
 };
@@ -519,11 +538,16 @@ const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
   'initialValue',
   'linkageRules',
   'assignValues',
+  'assigneesScope',
 ]);
 
 const FLOW_CONTEXT_OPTION_KEYS_BY_USE: Record<string, string[]> = {
   RootPageModel: ['documentTitle'],
   RootPageTabModel: ['documentTitle'],
+  TriggerChildPageModel: ['documentTitle'],
+  ApprovalChildPageModel: ['documentTitle'],
+  TriggerChildPageTabModel: ['documentTitle'],
+  ApprovalChildPageTabModel: ['documentTitle'],
 };
 
 function cloneOptions(options: FlowSurfaceConfigureOptions): FlowSurfaceConfigureOptions {
@@ -600,6 +624,11 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'ExportActionModel':
     case 'ExportAttachmentActionModel':
     case 'ImportActionModel':
+    case 'ApplyFormSubmitModel':
+    case 'ApplyFormSaveDraftModel':
+    case 'ApplyFormWithdrawModel':
+    case 'ProcessFormApproveModel':
+    case 'ProcessFormRejectModel':
     case 'TemplatePrintCollectionActionModel':
     case 'TemplatePrintRecordActionModel':
     case 'CollectionTriggerWorkflowActionModel':
@@ -612,6 +641,11 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'FilterFormSubmitActionModel':
     case 'FilterFormResetActionModel':
       return merged(ACTION_LINKAGE_OPTIONS);
+    case 'ProcessFormReturnModel':
+      return merged(ACTION_LINKAGE_OPTIONS, APPROVAL_RETURN_ACTION_OPTIONS);
+    case 'ProcessFormDelegateModel':
+    case 'ProcessFormAddAssigneeModel':
+      return merged(ACTION_LINKAGE_OPTIONS, APPROVAL_REASSIGN_ACTION_OPTIONS);
     default:
       return {};
   }
@@ -619,8 +653,34 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
 
 export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOptions {
   const normalized = String(use || '').trim();
+  const semanticUse = normalizeApprovalSemanticUse(normalized);
   let options: FlowSurfaceConfigureOptions;
   switch (normalized) {
+    case 'TriggerChildPageModel':
+    case 'ApprovalChildPageModel':
+      options = cloneOptions(PAGE_OPTIONS);
+      break;
+    case 'TriggerChildPageTabModel':
+    case 'ApprovalChildPageTabModel':
+      options = cloneOptions(TAB_OPTIONS);
+      break;
+    case 'ApplyFormModel':
+    case 'ProcessFormModel':
+      options = cloneOptions(FORM_COMMON_OPTIONS);
+      break;
+    case 'ApprovalDetailsModel':
+    case 'ApplyTaskCardDetailsModel':
+    case 'ApprovalTaskCardDetailsModel':
+      options = cloneOptions(DETAILS_OPTIONS);
+      break;
+    case 'PatternFormItemModel':
+      options = cloneOptions(FORM_FIELD_WRAPPER_OPTIONS);
+      break;
+    case 'ApprovalDetailsItemModel':
+    case 'ApplyTaskCardDetailsItemModel':
+    case 'ApprovalTaskCardDetailsItemModel':
+      options = cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
+      break;
     case 'RootPageModel':
       options = cloneOptions(PAGE_OPTIONS);
       break;
@@ -694,7 +754,7 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       options = cloneOptions(JS_ITEM_OPTIONS);
       break;
     default:
-      if (isGenericFieldNodeUse(normalized)) {
+      if (isGenericFieldNodeUse(normalized) || isGenericFieldNodeUse(semanticUse)) {
         options = cloneOptions(FIELD_NODE_OPTIONS);
         break;
       }

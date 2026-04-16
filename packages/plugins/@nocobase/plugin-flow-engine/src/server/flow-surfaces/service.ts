@@ -148,6 +148,17 @@ import {
   FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT,
   FLOW_SURFACE_REACTION_UNKNOWN_TARGET_KEY,
 } from './reaction/errors';
+import {
+  APPROVAL_SINGLETON_ACTION_USES,
+  APPROVAL_DETAILS_BLOCK_USES,
+  APPROVAL_DETAILS_GRID_USES,
+  APPROVAL_FORM_BLOCK_USES,
+  APPROVAL_FORM_GRID_USES,
+  FlowSurfaceApprovalBlueprintService,
+  FlowSurfaceApprovalRuntimeConfigService,
+  isApprovalFormContainerUse,
+  normalizeApprovalSemanticUse,
+} from './approval';
 import { buildFieldValueWriteResult, normalizeFieldValueRules } from './reaction/field-value';
 import { buildReactionFingerprint } from './reaction/fingerprint';
 import {
@@ -317,9 +328,14 @@ type FlowSurfacePopupSaveAsTemplate = {
   description: string;
 };
 
-const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
-const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel']);
-const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
+const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
+const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
+const SIMPLE_FORM_BLOCK_USES = new Set([
+  'FormBlockModel',
+  'CreateFormModel',
+  'EditFormModel',
+  ...APPROVAL_FORM_BLOCK_USES,
+]);
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
@@ -339,18 +355,31 @@ const FILTER_TARGET_BLOCK_USES = new Set([
   'MapBlockModel',
   'CommentsBlockModel',
 ]);
-const EDITABLE_FIELD_WRAPPER_USES = new Set(['FormItemModel', 'FilterFormItemModel']);
-const DISPLAY_FIELD_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
+const EDITABLE_FIELD_WRAPPER_USES = new Set(['FormItemModel', 'FilterFormItemModel', 'PatternFormItemModel']);
+const DISPLAY_FIELD_WRAPPER_USES = new Set([
+  'DetailsItemModel',
+  'TableColumnModel',
+  'ApprovalDetailsItemModel',
+  'ApplyTaskCardDetailsItemModel',
+  'ApprovalTaskCardDetailsItemModel',
+]);
 const DISPLAY_COMPONENT_FIELD_WRAPPER_USES = new Set([
   'DetailsItemModel',
   'FormAssociationItemModel',
   'TableColumnModel',
+  'ApprovalDetailsItemModel',
+  'ApplyTaskCardDetailsItemModel',
+  'ApprovalTaskCardDetailsItemModel',
 ]);
 const TITLE_FIELD_SUPPORTED_WRAPPER_USES = new Set([
   'FormItemModel',
   'FormAssociationItemModel',
   'DetailsItemModel',
   'TableColumnModel',
+  'PatternFormItemModel',
+  'ApprovalDetailsItemModel',
+  'ApplyTaskCardDetailsItemModel',
+  'ApprovalTaskCardDetailsItemModel',
 ]);
 const AUTO_TITLE_FIELD_BINDING_WRAPPER_USES = new Set([
   'FormItemModel',
@@ -358,9 +387,19 @@ const AUTO_TITLE_FIELD_BINDING_WRAPPER_USES = new Set([
   'DetailsItemModel',
   'TableColumnModel',
   'FilterFormItemModel',
+  'PatternFormItemModel',
+  'ApprovalDetailsItemModel',
+  'ApplyTaskCardDetailsItemModel',
+  'ApprovalTaskCardDetailsItemModel',
 ]);
 const UI_FIELD_MENU_TABLE_OWNER_USES = new Set(['TableBlockModel']);
-const UI_FIELD_MENU_DETAILS_OWNER_USES = new Set(['DetailsBlockModel', 'GridCardBlockModel', 'GridCardItemModel']);
+const UI_FIELD_MENU_DETAILS_OWNER_USES = new Set([
+  'DetailsBlockModel',
+  'GridCardBlockModel',
+  'GridCardItemModel',
+  ...APPROVAL_DETAILS_BLOCK_USES,
+  ...APPROVAL_DETAILS_GRID_USES,
+]);
 const UI_FIELD_MENU_FORM_OWNER_USES = new Set([
   'FormBlockModel',
   'CreateFormModel',
@@ -368,6 +407,8 @@ const UI_FIELD_MENU_FORM_OWNER_USES = new Set([
   'AssignFormModel',
   'FormGridModel',
   'AssignFormGridModel',
+  ...APPROVAL_FORM_BLOCK_USES,
+  ...APPROVAL_FORM_GRID_USES,
 ]);
 const JS_ACTION_USES = new Set([
   'JSCollectionActionModel',
@@ -402,7 +443,12 @@ const ITEM_CONTEXT_OWNER_USES = new Set([
   'PopupSubTableFieldModel',
   'RecordPickerFieldModel',
 ]);
-const RECORD_CONTEXT_OWNER_USES = new Set(['DetailsBlockModel', 'QuickEditFormModel', 'AssignFormModel']);
+const RECORD_CONTEXT_OWNER_USES = new Set([
+  'DetailsBlockModel',
+  'QuickEditFormModel',
+  'AssignFormModel',
+  ...APPROVAL_DETAILS_BLOCK_USES,
+]);
 const POPUP_RECORD_ACTION_CONTAINER_USES = new Set([
   'TableActionsColumnModel',
   'DetailsBlockModel',
@@ -414,6 +460,9 @@ const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectio
   CreateFormModel: ['new'],
   EditFormModel: ['one', 'many'],
   DetailsBlockModel: ['one', 'many'],
+  ApplyFormModel: ['new'],
+  ProcessFormModel: ['one'],
+  ApprovalDetailsModel: ['one'],
   CommentsBlockModel: ['one', 'many'],
   TableBlockModel: ['many'],
   ListBlockModel: ['many'],
@@ -507,13 +556,22 @@ const UPDATE_SETTINGS_STEP_PARAM_MIRRORS_BY_USE: Partial<Record<string, FlowSurf
   JSColumnModel: TABLE_COLUMN_STEP_PARAM_MIRRORS,
   TableColumnModel: TABLE_FIELD_WRAPPER_STEP_PARAM_MIRRORS,
   FormItemModel: FORM_ITEM_STEP_PARAM_MIRRORS,
+  PatternFormItemModel: FORM_ITEM_STEP_PARAM_MIRRORS,
   DetailsItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
+  ApprovalDetailsItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
+  ApplyTaskCardDetailsItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
+  ApprovalTaskCardDetailsItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
   FormAssociationItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
   FilterFormItemModel: FILTER_FORM_ITEM_STEP_PARAM_MIRRORS,
   FormBlockModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
   CreateFormModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
   EditFormModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  ApplyFormModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  ProcessFormModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
   DetailsBlockModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  ApprovalDetailsModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  ApplyTaskCardDetailsModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  ApprovalTaskCardDetailsModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
   FilterFormBlockModel: FILTER_FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
 };
 
@@ -663,6 +721,32 @@ export class FlowSurfacesService {
       ensureGridChild: (parentUid, use, transaction) => this.ensureGridChild(parentUid, use, transaction),
       ensurePopupSurface: (parentUid, transaction) => this.ensurePopupSurface(parentUid, transaction),
       getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+    });
+  }
+
+  private get approvalRuntimeConfigService() {
+    return new FlowSurfaceApprovalRuntimeConfigService({
+      db: this.db,
+      locator: this.locator,
+      repository: this.repository,
+    });
+  }
+
+  private get approvalBlueprintService() {
+    return new FlowSurfaceApprovalBlueprintService({
+      contractGuard: this.contractGuard,
+      db: this.db,
+      hasDataSource: (dataSourceKey) => !!this.plugin.app.dataSourceManager?.get?.(dataSourceKey),
+      repository: this.repository,
+      removeNodeTreeWithBindings: (uid, transaction) => this.removeNodeTreeWithBindings(uid, transaction),
+      surfaceContext: this.surfaceContext,
+      compose: (values, options) => this.compose(values as FlowSurfaceComposeValues, options),
+      addField: (values, options) => this.addField(values, options),
+      setLayout: (values, options) => this.setLayout(values, options),
+      get: (values, options) => this.get(values, options),
+      buildComposeLayoutPayload: (input) => this.buildComposeLayoutPayload(input),
+      syncApprovalRuntimeConfigForSurfaceRoot: (root, transaction) =>
+        this.approvalRuntimeConfigService.syncApprovalRuntimeConfigForSurfaceRoot(root, transaction),
     });
   }
 
@@ -993,6 +1077,24 @@ export class FlowSurfacesService {
     return structure.tabGrids.some((item) => !!item.grid?.uid);
   }
 
+  private filterCatalogActionsForExistingApprovalSingletons(
+    node: any,
+    availableActions: FlowSurfaceCatalogItem[],
+  ): FlowSurfaceCatalogItem[] {
+    if (!node?.uid || !availableActions.length) {
+      return availableActions;
+    }
+    const existingActionUses = new Set(
+      getNodeSubModelList(node?.subModels?.actions)
+        .map((item) => String(item?.use || '').trim())
+        .filter((use) => APPROVAL_SINGLETON_ACTION_USES.has(use)),
+    );
+    if (!existingActionUses.size) {
+      return availableActions;
+    }
+    return availableActions.filter((item) => !existingActionUses.has(String(item?.use || '').trim()));
+  }
+
   async catalog(
     input: FlowSurfaceCatalogValues,
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
@@ -1066,7 +1168,9 @@ export class FlowSurfacesService {
         : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter(
             (item) => item.scope !== 'record',
           );
-      response.actions = availableActions.map((item) => this.projectCatalogItem(item, expandFlags));
+      response.actions = this.filterCatalogActionsForExistingApprovalSingletons(node, availableActions).map((item) =>
+        this.projectCatalogItem(item, expandFlags),
+      );
     }
 
     if (catalogAnalysis.selectedSections.includes('recordActions')) {
@@ -1641,7 +1745,7 @@ export class FlowSurfacesService {
       resolved || { uid, target: { uid }, kind: 'node' },
       transaction,
     );
-    const childPageIndex = ancestors.findIndex((item) => item?.use === 'ChildPageModel');
+    const childPageIndex = ancestors.findIndex((item) => normalizeApprovalSemanticUse(item?.use) === 'ChildPageModel');
     if (childPageIndex >= 0) {
       return ancestors[childPageIndex + 1] || null;
     }
@@ -3035,6 +3139,26 @@ export class FlowSurfacesService {
       }),
       surface,
     };
+  }
+
+  private async findApprovalSurfaceRootForNode(uid: string, transaction?: any) {
+    return this.approvalRuntimeConfigService.findApprovalSurfaceRootForNode(uid, transaction);
+  }
+
+  private async syncApprovalRuntimeConfigForSurfaceRoot(root: any, transaction?: any) {
+    return this.approvalRuntimeConfigService.syncApprovalRuntimeConfigForSurfaceRoot(root, transaction);
+  }
+
+  private async syncApprovalRuntimeConfigForNode(uid: string, transaction?: any) {
+    return this.approvalRuntimeConfigService.syncApprovalRuntimeConfigForNode(uid, transaction);
+  }
+
+  private async assertApprovalActionSingleton(parentUid: string, actionUse: string, transaction?: any) {
+    return this.approvalRuntimeConfigService.assertApprovalActionSingleton(parentUid, actionUse, transaction);
+  }
+
+  async applyApprovalBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+    return this.approvalBlueprintService.applyApprovalBlueprint(values, options);
   }
 
   private resolveTemplateResourceInfo(input: FlowSurfaceTemplateResourceInfo): FlowSurfaceTemplateResourceInfo {
@@ -4543,6 +4667,7 @@ export class FlowSurfacesService {
     const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
+    const approvalRoot = await this.findApprovalSurfaceRootForNode(gridUid, options.transaction);
     const initialGrid = await this.repository.findModelById(gridUid, {
       transaction: options.transaction,
       includeAsyncNode: true,
@@ -4569,7 +4694,7 @@ export class FlowSurfacesService {
       layout: values.layout,
     });
 
-    return executeComposeRuntime(plan, {
+    const result = await executeComposeRuntime(plan, {
       removeExistingItem: async (uid) => this.removeNodeTreeWithBindings(uid, options.transaction),
       createBlock: async (payload) =>
         this.addBlock(payload, {
@@ -4626,6 +4751,10 @@ export class FlowSurfacesService {
       },
       setLayout: async (payload) => this.setLayout(payload, options),
     });
+    if (approvalRoot) {
+      await this.syncApprovalRuntimeConfigForSurfaceRoot(approvalRoot, options.transaction);
+    }
+    return result;
   }
 
   async configure(values: FlowSurfaceConfigureValues, options: { transaction?: any } = {}) {
@@ -4650,7 +4779,7 @@ export class FlowSurfacesService {
     if (SIMPLE_FORM_BLOCK_USES.has(current?.use || '')) {
       return this.configureFormBlock(target, current.use, values.changes, options);
     }
-    if (current?.use === 'DetailsBlockModel') {
+    if (DETAILS_BLOCK_USES.has(current?.use || '')) {
       return this.configureDetailsBlock(target, values.changes, options);
     }
     if (current?.use === 'FilterFormBlockModel') {
@@ -5488,6 +5617,7 @@ export class FlowSurfacesService {
           context: 'addBlock',
           enabledPackages: options.enabledPackages,
           requireCreateSupported: true,
+          skipContainerValidation: true,
         },
       );
       if (expectedBlock.use !== template.useModel) {
@@ -5682,17 +5812,6 @@ export class FlowSurfacesService {
       throwBadRequest('flowSurfaces addBlock does not allow resource and resourceInit at the same time');
     }
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const catalogItem = resolveSupportedBlockCatalogItem(
-      {
-        type: values.type,
-        use: values.use,
-      },
-      {
-        context: 'addBlock',
-        enabledPackages,
-        requireCreateSupported: true,
-      },
-    );
     let resolvedTarget = await this.locator.resolve(target, options);
     let targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction);
     const targetOpenView = this.resolvePopupHostOpenView(targetNode);
@@ -5707,6 +5826,26 @@ export class FlowSurfacesService {
       targetNode,
       options.transaction,
     );
+    const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
+      target,
+      options.transaction,
+    );
+    const parentNode = await this.repository.findModelById(parentUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const catalogItem = resolveSupportedBlockCatalogItem(
+      {
+        type: values.type,
+        use: values.use,
+        containerUse: parentNode?.use,
+      },
+      {
+        context: 'addBlock',
+        enabledPackages,
+        requireCreateSupported: true,
+      },
+    );
     const resolvedResourceInit = await this.resolvePopupCollectionBlockResourceInit({
       actionName: 'addBlock',
       blockUse: catalogItem.use,
@@ -5720,10 +5859,6 @@ export class FlowSurfacesService {
       resourceInit: resolvedResourceInit,
       resourceField: rawResourceInit ? 'resourceInit' : semanticResource?.kind === 'raw' ? 'resource' : undefined,
     });
-    const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
-      target,
-      options.transaction,
-    );
     const initialGrid = options.deferAutoLayout
       ? null
       : await this.repository.findModelById(parentUid, {
@@ -5732,6 +5867,7 @@ export class FlowSurfacesService {
         });
     const tree = buildBlockTree({
       use: catalogItem.use,
+      containerUse: parentNode?.use,
       resourceInit: resolvedResourceInit,
       props: values.props,
       decoratorProps: values.decoratorProps,
@@ -5830,6 +5966,7 @@ export class FlowSurfacesService {
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
+    const isApprovalFormTarget = isApprovalFormContainerUse(container.ownerUse);
     const requestedStandaloneType =
       typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
     const fieldCapability = resolveSupportedFieldCapability({
@@ -5847,6 +5984,9 @@ export class FlowSurfacesService {
       }
       if (isFilterFormItem) {
         throwBadRequest(`flowSurfaces addField type '${values.type}' is not allowed under filter-form`);
+      }
+      if (isApprovalFormTarget && requestedStandaloneType === 'jsItem') {
+        throwBadRequest(`flowSurfaces addField type 'jsItem' is not allowed under approval form`);
       }
       const node = buildStandaloneFieldNode({
         use: fieldCapability.standaloneUse as 'JSColumnModel' | 'JSItemModel',
@@ -6149,6 +6289,7 @@ export class FlowSurfacesService {
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
       throwBadRequest(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
     }
+    await this.assertApprovalActionSingleton(container.parentUid, actionCatalogItem.use, options.transaction);
     assertRequestedActionScope({
       requestedScope: undefined,
       resolvedScope,
@@ -6185,6 +6326,7 @@ export class FlowSurfacesService {
       },
     });
     await this.syncFlowTemplateUsagesForNodeTree(created, options.transaction);
+    await this.syncApprovalRuntimeConfigForNode(created, options.transaction);
     const result = {
       uid: created,
       parentUid: container.parentUid,
@@ -7165,25 +7307,31 @@ export class FlowSurfacesService {
       });
       const { wrapperChanges, fieldChanges } = splitComposeFieldChanges(settings, wrapperNode?.use);
       if (Object.keys(wrapperChanges).length) {
-        await this.configure(
-          {
-            target: {
-              uid: result.wrapperUid,
+        Object.assign(
+          result,
+          await this.configure(
+            {
+              target: {
+                uid: result.wrapperUid,
+              },
+              changes: wrapperChanges,
             },
-            changes: wrapperChanges,
-          },
-          options,
+            options,
+          ),
         );
       }
       if (Object.keys(fieldChanges).length) {
-        await this.configure(
-          {
-            target: {
-              uid: result.fieldUid,
+        Object.assign(
+          result,
+          await this.configure(
+            {
+              target: {
+                uid: result.fieldUid,
+              },
+              changes: fieldChanges,
             },
-            changes: fieldChanges,
-          },
-          options,
+            options,
+          ),
         );
       }
     } catch (error: any) {
@@ -7711,6 +7859,9 @@ export class FlowSurfacesService {
       await this.syncChartDataBindingsForNode(effectiveNode, options.transaction);
     }
     await this.syncFlowTemplateUsagesForNodeTree(current.uid, options.transaction);
+    if (APPROVAL_SINGLETON_ACTION_USES.has(current.use || '')) {
+      await this.syncApprovalRuntimeConfigForNode(current.uid, options.transaction);
+    }
     return {
       uid: current.uid,
       updated: Object.keys(_.omit(nextPayload, ['uid'])),
@@ -8214,7 +8365,11 @@ export class FlowSurfacesService {
     if (FILTER_TARGET_BLOCK_USES.has(node?.use || '')) {
       await this.removeFilterFormTargetBindings(resolved.uid, options.transaction);
     }
+    const approvalRoot = await this.findApprovalSurfaceRootForNode(resolved.uid, options.transaction);
     await this.removeNodeTreeWithBindings(resolved.uid, options.transaction);
+    if (approvalRoot?.uid && approvalRoot.uid !== resolved.uid) {
+      await this.syncApprovalRuntimeConfigForSurfaceRoot(approvalRoot, options.transaction);
+    }
     return { uid: resolved.uid };
   }
 
@@ -8476,7 +8631,7 @@ export class FlowSurfacesService {
       routeType !== 'tabs' ||
       !routeSchemaUid ||
       String(routeSchemaUid) !== uid ||
-      exactNode?.use === 'ChildPageTabModel'
+      normalizeApprovalSemanticUse(exactNode?.use) === 'ChildPageTabModel'
     ) {
       const recommendedAction =
         actionName === 'updateTab' ? 'updatePopupTab' : actionName === 'moveTab' ? 'movePopupTab' : 'removePopupTab';
@@ -8503,7 +8658,7 @@ export class FlowSurfacesService {
       transaction,
       includeAsyncNode: true,
     });
-    if (popupPage?.use !== 'ChildPageModel') {
+    if (normalizeApprovalSemanticUse(popupPage?.use) !== 'ChildPageModel') {
       throwBadRequest(
         `flowSurfaces ${actionName} only accepts target.uid for popupPageUid; use get(hostUid) and read tree.subModels.page.uid first`,
       );
@@ -8527,7 +8682,10 @@ export class FlowSurfacesService {
           includeAsyncNode: true,
         })
       : null;
-    if (popupTab?.use !== 'ChildPageTabModel' || popupPage?.use !== 'ChildPageModel') {
+    if (
+      normalizeApprovalSemanticUse(popupTab?.use) !== 'ChildPageTabModel' ||
+      normalizeApprovalSemanticUse(popupPage?.use) !== 'ChildPageModel'
+    ) {
       throwBadRequest(
         `flowSurfaces ${actionName} only accepts popup tab uid; use get(hostUid) and read tree.subModels.page.subModels.tabs[].uid first`,
       );
@@ -8572,10 +8730,16 @@ export class FlowSurfacesService {
   }
 
   private assertRemoveNodeResolvedTarget(resolved: FlowSurfaceResolvedTarget, node?: any) {
-    if (resolved.kind === 'page' || ['RootPageModel', 'ChildPageModel'].includes(node?.use || '')) {
+    if (
+      resolved.kind === 'page' ||
+      ['RootPageModel', 'ChildPageModel'].includes(normalizeApprovalSemanticUse(node?.use) || '')
+    ) {
       throwBadRequest(`flowSurfaces removeNode does not support page surfaces; use destroyPage`);
     }
-    if (resolved.kind === 'tab' || ['RootPageTabModel', 'ChildPageTabModel'].includes(node?.use || '')) {
+    if (
+      resolved.kind === 'tab' ||
+      ['RootPageTabModel', 'ChildPageTabModel'].includes(normalizeApprovalSemanticUse(node?.use) || '')
+    ) {
       throwBadRequest(`flowSurfaces removeNode does not support tab surfaces; use removeTab`);
     }
     if (node?.use === 'RouteModel' || (resolved.route && !resolved.node)) {
@@ -9176,6 +9340,7 @@ export class FlowSurfacesService {
             context: 'compose',
             enabledPackages,
             requireCreateSupported: true,
+            skipContainerValidation: true,
           },
         )
       : null;
@@ -10708,6 +10873,22 @@ export class FlowSurfacesService {
         ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: changes.linkageRules } : {}),
       };
     }
+    if (hasOwnDefined(changes, 'approvalReturn')) {
+      if (use !== 'ProcessFormReturnModel') {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support approvalReturn`);
+      }
+      _.set(
+        stepParams,
+        ['clickSettings', 'saveResource', 'approvalReturnNodeSettings'],
+        _.cloneDeep(changes.approvalReturn || {}),
+      );
+    }
+    if (hasOwnDefined(changes, 'assigneesScope')) {
+      if (!['ProcessFormDelegateModel', 'ProcessFormAddAssigneeModel'].includes(use)) {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support assigneesScope`);
+      }
+      _.set(stepParams, ['clickSettings', 'saveResource', 'assigneesScope'], _.cloneDeep(changes.assigneesScope || {}));
+    }
     if (!_.isUndefined(changes.openView)) {
       if (use === 'UploadActionModel') {
         stepParams.selectExitRecordSettings = {
@@ -11228,6 +11409,7 @@ export class FlowSurfacesService {
     enabledPackages?: ReadonlySet<string>;
   }): FlowSurfaceCatalogProjectableItem[] {
     const containerKind = normalizeFieldContainerKind(input.ownerUse);
+    const supportsStandaloneJsItem = containerKind === 'form' && !isApprovalFormContainerUse(input.ownerUse);
     const targetPrefix = input.multiTarget && input.targetLabel ? `${input.targetLabel} / ` : '';
     const fieldMenuEntries = this.buildFieldMenuCandidates({
       ownerUse: input.ownerUse,
@@ -11315,7 +11497,7 @@ export class FlowSurfacesService {
         });
       }
 
-      if (containerKind === 'form') {
+      if (supportsStandaloneJsItem) {
         semanticEntries.push({
           key: 'jsItem',
           label: 'JS / jsItem',
@@ -11380,6 +11562,7 @@ export class FlowSurfacesService {
     });
 
     const containerKind = normalizeFieldContainerKind(input.ownerUse);
+    const supportsStandaloneJsItem = containerKind === 'form' && !isApprovalFormContainerUse(input.ownerUse);
     const targetPrefix = input.multiTarget && input.targetLabel ? `${input.targetLabel} / ` : '';
     const baseEntries = [
       ...directFields.map((field) => ({
@@ -11458,7 +11641,7 @@ export class FlowSurfacesService {
       });
     }
 
-    if (containerKind === 'form') {
+    if (supportsStandaloneJsItem) {
       semanticEntries.push({
         key: 'jsItem',
         label: 'JS / jsItem',
@@ -11828,7 +12011,7 @@ export class FlowSurfacesService {
     const rawPopupLevels: NonNullable<FlowSurfaceContextSemantic['popupLevels']> = [];
     for (let index = 0; index < ancestors.length; index += 1) {
       const node = ancestors[index];
-      if (node?.use !== 'ChildPageModel') {
+      if (normalizeApprovalSemanticUse(node?.use) !== 'ChildPageModel') {
         continue;
       }
       const hostNode = ancestors[index + 1];
@@ -12591,11 +12774,15 @@ export class FlowSurfacesService {
         };
       case 'DetailsItemModel':
       case 'FormAssociationItemModel':
+      case 'ApprovalDetailsItemModel':
+      case 'ApplyTaskCardDetailsItemModel':
+      case 'ApprovalTaskCardDetailsItemModel':
         return {
           flowKey: 'detailItemSettings',
           stepKey: 'model',
         };
       case 'FormItemModel':
+      case 'PatternFormItemModel':
         return {
           flowKey: 'editItemSettings',
           stepKey: 'model',
@@ -12720,9 +12907,10 @@ export class FlowSurfacesService {
     const normalizedTargetUse = this.assertSupportedFieldComponentUse(input.wrapperNode?.use, input.targetFieldUse);
     const fieldSource = this.resolveFieldComponentFieldSource(input.wrapperNode, input.normalizedBinding);
     const defaultProps = getFieldBindingDefaultProps(input.wrapperNode?.use, normalizedTargetUse, fieldSource.field);
+    const shouldPreservePatternFormField = input.wrapperNode?.use === 'PatternFormItemModel';
     const nextFieldNode = {
       uid: innerField.uid,
-      use: normalizedTargetUse,
+      use: shouldPreservePatternFormField ? 'PatternFormFieldModel' : normalizedTargetUse,
       props: _.pickBy(
         {
           ...(innerField.props || {}),
@@ -12817,7 +13005,7 @@ export class FlowSurfacesService {
         return;
       }
 
-      if (current.use === 'ChildPageModel') {
+      if (normalizeApprovalSemanticUse(current.use) === 'ChildPageModel') {
         current.subModels = {
           ...(current.subModels || {}),
           tabs: _.castArray(current.subModels?.tabs || []),

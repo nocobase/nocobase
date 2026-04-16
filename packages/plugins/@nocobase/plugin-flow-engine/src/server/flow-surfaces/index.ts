@@ -168,6 +168,11 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
         service.transaction((transaction) => service.applyBlueprint(getValues(ctx), { transaction })),
       );
     },
+    applyApprovalBlueprint: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.applyApprovalBlueprint(getValues(ctx), { transaction })),
+      );
+    },
     listTemplates: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.listTemplates(getValues(ctx)));
     },

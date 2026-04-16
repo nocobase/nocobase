@@ -15,6 +15,7 @@ import {
   STANDALONE_FIELD_NODE_USES,
   STATIC_CONTENT_BLOCK_USES,
 } from '../node-use-sets';
+import { normalizeApprovalSemanticUse } from '../approval';
 import { throwBadRequest } from '../errors';
 import { isPopupHostUse } from '../placement';
 import { isFieldNodeUse } from '../service-utils';
@@ -22,19 +23,20 @@ import type { FlowSurfaceBindKey } from '../types';
 
 export function buildPlanKeyKind(node: any, resolvedKind?: string) {
   const use = String(node?.use || '').trim();
-  if (use === 'RootPageModel' || resolvedKind === 'page') {
+  const semanticUse = normalizeApprovalSemanticUse(use);
+  if (semanticUse === 'RootPageModel' || resolvedKind === 'page') {
     return 'page';
   }
-  if (use === 'RootPageTabModel' || resolvedKind === 'tab') {
+  if (semanticUse === 'RootPageTabModel' || resolvedKind === 'tab') {
     return 'tab';
   }
-  if (use === 'ChildPageModel') {
+  if (semanticUse === 'ChildPageModel') {
     return 'popupPage';
   }
-  if (use === 'ChildPageTabModel') {
+  if (semanticUse === 'ChildPageTabModel') {
     return 'popupTab';
   }
-  if (use === 'BlockGridModel' || resolvedKind === 'grid') {
+  if (semanticUse === 'BlockGridModel' || resolvedKind === 'grid') {
     return 'grid';
   }
   if (isPopupHostUse(use)) {

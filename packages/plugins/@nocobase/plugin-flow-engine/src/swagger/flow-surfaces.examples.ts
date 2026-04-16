@@ -211,6 +211,85 @@ export const flowSurfaceExamples = {
       },
     ],
   },
+  applyApprovalBlueprintInitiator: {
+    version: '1',
+    surface: 'initiator',
+    workflowId: 101,
+    blocks: [
+      {
+        key: 'initiatorForm',
+        type: 'approvalInitiator',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: ['nickname', 'status'],
+        actions: ['approvalSaveDraft', 'approvalWithdraw'],
+      },
+    ],
+    layout: {
+      rows: [['initiatorForm']],
+    },
+  },
+  applyApprovalBlueprintApprover: {
+    version: '1',
+    surface: 'approver',
+    nodeId: 201,
+    blocks: [
+      {
+        key: 'processForm',
+        type: 'approvalApprover',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: ['nickname'],
+        actions: [
+          'approvalApprove',
+          'approvalReject',
+          {
+            type: 'approvalReturn',
+            settings: {
+              approvalReturn: {
+                type: 'count',
+                count: 1,
+              },
+            },
+          },
+        ],
+      },
+      {
+        key: 'approvalInfo',
+        type: 'approvalInformation',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: ['status'],
+      },
+    ],
+    layout: {
+      rows: [['processForm'], ['approvalInfo']],
+    },
+  },
+  applyApprovalBlueprintTaskCard: {
+    version: '1',
+    surface: 'taskCard',
+    nodeId: 201,
+    fields: [
+      {
+        key: 'nickname',
+        fieldPath: 'nickname',
+      },
+      {
+        key: 'status',
+        fieldPath: 'status',
+      },
+    ],
+    layout: {
+      rows: [['nickname', 'status']],
+    },
+  },
   setFieldValueRules: {
     target: {
       uid: 'employees-form-uid',
