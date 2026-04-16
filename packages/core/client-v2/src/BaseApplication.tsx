@@ -164,7 +164,7 @@ export abstract class BaseApplication<
     return this.wsAuthorized;
   }
 
-  constructor(protected options: TOptions) {
+  constructor(protected options: TOptions = {} as TOptions) {
     this.initRequireJs();
     this.defineObservableState();
     this.devDynamicImport = options.devDynamicImport;

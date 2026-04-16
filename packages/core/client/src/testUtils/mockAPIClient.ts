@@ -19,7 +19,7 @@ class MockAPIClient extends APIClient {
 
 export const mockAPIClient = () => {
   const apiClient = new MockAPIClient();
-  const app = new Application();
+  const app = new Application({});
   apiClient.app = app;
 
   const mockRequest = apiClient.mockAdapter();

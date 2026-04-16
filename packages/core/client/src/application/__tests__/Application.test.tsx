@@ -29,6 +29,16 @@ describe('Application', () => {
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialProvidersLength = 10;
+  it('should support constructing without options', () => {
+    let app: Application | undefined;
+
+    expect(() => {
+      app = new Application();
+    }).not.toThrow();
+    expect(app).toBeDefined();
+    expect(app?.apiClient).toBeDefined();
+  });
+
   it('basic', () => {
     const options = { router };
     const app = new Application(options);
