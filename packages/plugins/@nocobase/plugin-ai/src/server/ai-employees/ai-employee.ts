@@ -306,17 +306,14 @@ export class AIEmployee {
         userDecisions,
       });
 
+      const { threadId } = await this.getCurrentThread();
       const invokeConfig = {
         context: { ctx: this.ctx, decisions: chatContext.decisions, ...context },
         recursionLimit: 100,
+        configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
         writer,
         ...config,
       };
-
-      if (this.from === 'main-agent') {
-        const { threadId } = await this.getCurrentThread();
-        invokeConfig.configurable = { thread_id: threadId };
-      }
 
       const invokeResult = await this.agentInvoke(provider, chatContext, invokeConfig, state);
 
