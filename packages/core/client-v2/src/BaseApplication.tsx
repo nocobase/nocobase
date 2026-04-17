@@ -575,12 +575,12 @@ export class ApplicationModel extends FlowModel {
   }
 
   getProviders() {
-    this.#providers = this.app.getComposeProviders();
+    this.#providers ||= this.app.getComposeProviders();
     return this.#providers;
   }
 
   getRouter() {
-    this.#router = this.app.router.getRouterComponent();
+    this.#router ||= this.app.router.getRouterComponent();
     return this.#router;
   }
 

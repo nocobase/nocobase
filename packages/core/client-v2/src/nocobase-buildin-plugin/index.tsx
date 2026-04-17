@@ -58,6 +58,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const hasBootstrappedRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -72,12 +73,15 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
       return;
     }
 
-    setLoading(true);
+    if (!hasBootstrappedRef.current) {
+      setLoading(true);
+    }
     setError(null);
 
     const run = async () => {
       try {
         await app.dataSourceManager.ensureLoaded();
+        hasBootstrappedRef.current = true;
         if (mounted) {
           setLoading(false);
         }

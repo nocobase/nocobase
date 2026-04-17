@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, createMockClient, Plugin } from '@nocobase/client-v2';
+import { Application, createMockClient, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -305,5 +305,74 @@ describe('app', () => {
     const app = createMockClient({ plugins: [PluginHelloClient] });
     await renderApp(app);
     expect(screen.getByText('plugin load error')).toBeInTheDocument();
+  });
+
+  it('should keep providers mounted when app rerenders', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any],
+      router: { type: 'memory', initialEntries: ['/v2/admin/7vu4c2sdk6h'] },
+    });
+
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: {
+        lang: 'en-US',
+        resources: { client: {} },
+        cron: {},
+      },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Super Admin' } });
+    app.apiMock.onGet('/desktopRoutes:listAccessible').reply(200, { data: [] });
+    app.apiMock.onGet(/flowModels:findOne.*/).reply(200, { data: { uid: 'page-model' } });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.apiMock.history.get.filter((request) => request.url === '/auth:check')).toHaveLength(1);
+    });
+
+    act(() => {
+      app.maintaining = true;
+      app.maintaining = false;
+    });
+
+    await waitFor(() => {
+      expect(app.apiMock.history.get.filter((request) => request.url === '/auth:check')).toHaveLength(1);
+    });
+  });
+
+  it('should not recheck current user when switching admin pages', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any],
+      router: { type: 'memory', initialEntries: ['/v2/admin/7vu4c2sdk6h'] },
+    });
+
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: {
+        lang: 'en-US',
+        resources: { client: {} },
+        cron: {},
+      },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Super Admin' } });
+    app.apiMock.onGet('/desktopRoutes:listAccessible').reply(200, { data: [] });
+    app.apiMock.onGet(/flowModels:findOne.*/).reply(200, { data: { uid: 'page-model' } });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.apiMock.history.get.filter((request) => request.url === '/auth:check')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      await app.router.navigate('/v2/admin/e4qpeoh8suv');
+    });
+
+    await waitFor(() => {
+      expect(app.apiMock.history.get.filter((request) => request.url === '/auth:check')).toHaveLength(1);
+    });
   });
 });
