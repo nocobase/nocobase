@@ -66,6 +66,11 @@ export default defineCollection({
       type: 'jsonb',
     },
     {
+      name: 'llmActiveState',
+      type: 'string', // idle,streaming,invoking,
+      defaultValue: 'idle',
+    },
+    {
       name: 'category',
       type: 'string', // chat, task
       defaultValue: 'chat',

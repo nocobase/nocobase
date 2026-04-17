@@ -232,6 +232,12 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
+    await this.aiConversationsRepo.update({
+      values: { llmActiveState: 'streaming' },
+      filter: {
+        sessionId: this.sessionId,
+      },
+    });
     try {
       const { providerName, model, provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
@@ -261,6 +267,13 @@ export class AIEmployee {
       this.ctx.log.error(err);
       this.sendErrorResponse(err.message || 'Chat error warning');
       return false;
+    } finally {
+      await this.aiConversationsRepo.update({
+        values: { llmActiveState: 'idle' },
+        filter: {
+          sessionId: this.sessionId,
+        },
+      });
     }
   }
 
@@ -280,6 +293,12 @@ export class AIEmployee {
     writer?: (chunk: any) => void;
     context?: any;
   }) {
+    await this.aiConversationsRepo.update({
+      values: { llmActiveState: 'invoking' },
+      filter: {
+        sessionId: this.sessionId,
+      },
+    });
     try {
       const { provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
@@ -310,6 +329,13 @@ export class AIEmployee {
       }
       this.ctx.log.error(err);
       throw err;
+    } finally {
+      await this.aiConversationsRepo.update({
+        values: { llmActiveState: 'idle' },
+        filter: {
+          sessionId: this.sessionId,
+        },
+      });
     }
   }
 
