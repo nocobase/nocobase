@@ -7,12 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import path from 'node:path';
 import { AIMessageChunk } from '@langchain/core/messages';
-import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
-import PluginAIServer from '../../plugin';
 import { LLMProvider } from '../provider';
 import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
 import { CachedDocumentLoader } from '../../document-loader';
@@ -80,10 +77,6 @@ export class KimiProvider extends LLMProvider {
 
   protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
     return attachment.mimetype?.startsWith('image/') ?? false;
-  }
-
-  private get aiPlugin(): PluginAIServer {
-    return this.app.pm.get('ai');
   }
 
   protected get documentLoader(): CachedDocumentLoader {

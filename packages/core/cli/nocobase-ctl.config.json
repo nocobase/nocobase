@@ -1,0 +1,327 @@
+{
+  "moduleGroups": [
+    {
+      "match": [
+        "workflow*",
+        "@nocobase/plugin-workflow*"
+      ],
+      "module": "workflow"
+    },
+    {
+      "match": [
+        "@nocobase/plugin-data-source-main",
+        "@nocobase/plugin-data-source-manager"
+      ],
+      "module": "data-modeling"
+    }
+  ],
+  "modules": {
+    "core": {
+      "name": "core",
+      "description": "NocoBase core resource APIs.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "app",
+          "pm"
+        ],
+        "excludes": [],
+        "overrides": {
+          "app": {
+            "name": "app",
+            "description": "Application management commands.",
+            "topLevel": true
+          },
+          "pm": {
+            "name": "pm",
+            "description": "Plugin manager commands.",
+            "topLevel": true
+          }
+        }
+      }
+    },
+    "acl": {
+      "name": "acl",
+      "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "availableActions",
+          "dataSources",
+          "roles",
+          "rolesResourcesScopes"
+        ],
+        "excludes": [],
+        "overrides": {
+          "availableActions": {
+            "name": "available-actions",
+            "description": "List and inspect configurable ACL actions.",
+            "topLevel": false
+          },
+          "dataSources": {
+            "name": "data-sources",
+            "description": "Manage ACL strategies for data sources.",
+            "topLevel": false
+          },
+          "roles": {
+            "name": "roles",
+            "description": "Manage roles and role-level ACL settings.",
+            "topLevel": false
+          },
+          "rolesResourcesScopes": {
+            "name": "roles-resources-scopes",
+            "description": "Manage role resource scopes and permissions.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "api-keys": {
+      "name": "api-keys",
+      "description": "Allow users to access the HTTP API with API keys.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "apiKeys"
+        ],
+        "excludes": [],
+        "overrides": {
+          "apiKeys": {
+            "name": "api-keys",
+            "description": "Manage API keys.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "auth": {
+      "name": "authenticators",
+      "description": "User authentication management, including password auth, SMS auth, SSO protocols, and extensible providers.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "authenticators"
+        ],
+        "excludes": [],
+        "overrides": {
+          "auth": {
+            "name": "auth",
+            "description": "Authenticate users and manage auth sessions.",
+            "topLevel": false
+          },
+          "authenticators": {
+            "name": "authenticators",
+            "description": "Manage authentication providers and authenticators.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "client": {
+      "name": "client",
+      "description": "Provide the web client interface for the NocoBase server.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "desktopRoutes",
+          "roles"
+        ],
+        "excludes": [],
+        "overrides": {
+          "desktopRoutes": {
+            "name": "desktop-routes",
+            "description": "Manage desktop route permissions and visibility.",
+            "topLevel": true
+          },
+          "roles": {
+            "name": "roles",
+            "description": "Manage client permissions scoped by role.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "data-modeling": {
+      "name": "data-modeling",
+      "description": "Manage data sources, collections, and database modeling resources.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "collections",
+          "fields",
+          "dbViews"
+        ],
+        "excludes": [],
+        "overrides": {
+          "collections": {
+            "name": "collections",
+            "description": "Manage collections and collection metadata.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "apply",
+                "collections:list",
+                "collections:get",
+                "collections:destroy",
+                "collections/{collectionName}/fields:list"
+              ]
+            }
+          },
+          "fields": {
+            "name": "fields",
+            "description": "Manage fields with the compact high-level modeling interface.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "apply"
+              ]
+            }
+          },
+          "dbViews": {
+            "name": "db-views",
+            "description": "Inspect and query database views.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "dbViews:list",
+                "dbViews:get"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "file-manager": {
+      "name": "file-manager",
+      "description": "Provide file storage services, file collections, and attachment fields.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "storages"
+        ],
+        "excludes": [],
+        "overrides": {
+          "storages": {
+            "name": "storages",
+            "description": "Manage storage backends and file storage settings.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "flow-engine": {
+      "name": "flow-engine",
+      "description": "Manage flow surface composition, configuration, layout, and mutation APIs.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "flowSurfaces"
+        ],
+        "excludes": [],
+        "overrides": {
+          "flowSurfaces": {
+            "name": "flow-surfaces",
+            "description": "Compose and mutate page, tab, block, field, and action surfaces.",
+            "topLevel": true
+          }
+        }
+      }
+    },
+    "map": {
+      "name": "map",
+      "description": "Map blocks with support for AMap, Google Maps, and extensible providers.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "map-configuration"
+        ],
+        "excludes": [],
+        "overrides": {
+          "map-configuration": {
+            "name": "map-configuration",
+            "description": "Manage map provider configuration.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "system-settings": {
+      "name": "system-settings",
+      "description": "Adjust system title, logo, language, and other global settings.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "systemSettings"
+        ],
+        "excludes": [],
+        "overrides": {
+          "systemSettings": {
+            "name": "system-settings",
+            "description": "Manage global system settings.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "theme-editor": {
+      "name": "theme-editor",
+      "description": "Customize UI colors and dimensions, save themes, and switch between them.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "themeConfig"
+        ],
+        "excludes": [],
+        "overrides": {
+          "themeConfig": {
+            "name": "theme-config",
+            "description": "Manage theme configuration.",
+            "topLevel": false
+          }
+        }
+      }
+    },
+    "workflow": {
+      "name": "workflow",
+      "description": "A powerful BPM tool that provides the foundation for business automation and extensible triggers and nodes.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "executions",
+          "flow_nodes",
+          "jobs",
+          "userWorkflowTasks",
+          "workflows"
+        ],
+        "excludes": [],
+        "overrides": {
+          "executions": {
+            "name": "executions",
+            "description": "Manage workflow execution records.",
+            "topLevel": false
+          },
+          "flow_nodes": {
+            "name": "flow-nodes",
+            "description": "Manage workflow nodes.",
+            "topLevel": false
+          },
+          "jobs": {
+            "name": "jobs",
+            "description": "Manage workflow jobs.",
+            "topLevel": false
+          },
+          "userWorkflowTasks": {
+            "name": "user-workflow-tasks",
+            "description": "Query current user workflow tasks.",
+            "topLevel": false
+          },
+          "workflows": {
+            "name": "workflows",
+            "description": "Manage workflows and workflow revisions.",
+            "topLevel": false
+          }
+        }
+      }
+    }
+  }
+}

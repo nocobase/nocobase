@@ -43,7 +43,7 @@ export abstract class LLMProvider {
 
   abstract createModel(): BaseChatModel | any;
 
-  get baseURL() {
+  get baseURL(): string | null {
     return null;
   }
 

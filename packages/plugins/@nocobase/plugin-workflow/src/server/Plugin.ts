@@ -11,7 +11,7 @@ import path from 'path';
 
 import { Snowflake } from 'nodejs-snowflake';
 import { Transactionable } from 'sequelize';
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
