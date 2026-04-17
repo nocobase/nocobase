@@ -31,6 +31,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
     refresh,
     hasMore,
     loadMoreWorkflowTasks,
+    lastWorkflowTaskRef,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
   } = useWorkflowTasks();
@@ -89,6 +90,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
     refresh,
     hasMore,
     loadMoreWorkflowTasks,
+    lastWorkflowTaskRef,
   };
 };
 

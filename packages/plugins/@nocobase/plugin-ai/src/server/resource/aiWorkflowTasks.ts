@@ -78,8 +78,8 @@ export const aiWorkflowTasks: ResourceOptions = {
             fields: ['id', 'status'],
           })
         : [];
-      const jobStatusMap = new Map(
-        jobs.map((job: any) => [
+      const jobStatusMap = new Map<string, number>(
+        jobs.map((job: any): [string, number] => [
           String(job?.id ?? job?.get?.('id')),
           job?.status ?? job?.get?.('status') ?? JOB_STATUS.PENDING,
         ]),

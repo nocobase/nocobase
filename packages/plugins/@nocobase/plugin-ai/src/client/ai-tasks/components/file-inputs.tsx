@@ -76,6 +76,7 @@ export const FileInputs: React.FC = observer(() => {
           ) : null}
           <Form.Item label={item.type === 'file_url' ? t('URL') : t('ID')} layout="vertical" required>
             <WorkflowVariableInput
+              variableOptions={{}}
               value={item.value}
               changeOnSelect
               onChange={(value) => updateItem(index, { value })}
