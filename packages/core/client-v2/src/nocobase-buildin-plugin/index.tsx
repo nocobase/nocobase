@@ -114,6 +114,8 @@ const CurrentUserProvider: FC = ({ children }) => {
   const [state, setState] = useState<CurrentUserState>({ loading: true });
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
+  const locationRef = useRef(location);
+  locationRef.current = location;
 
   useEffect(() => {
     let mounted = true;
@@ -138,7 +140,7 @@ const CurrentUserProvider: FC = ({ children }) => {
 
         const user = res?.data?.data;
         if (user?.id == null) {
-          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, location), { replace: true });
+          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
           return;
         }
 
@@ -163,7 +165,7 @@ const CurrentUserProvider: FC = ({ children }) => {
       } catch (error: any) {
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
-          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, location), { replace: true });
+          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
           return;
         }
         if (mounted) {
@@ -178,7 +180,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [app, location]);
+  }, [app]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
