@@ -189,6 +189,7 @@ Do not end your task without calling **${toolName}**.
           tools: [{ name: toolName }],
         },
         transaction,
+        category: 'task',
       });
 
       const aiWorkflowTasks = await this.workflow.db.getRepository('aiWorkflowTasks').create({

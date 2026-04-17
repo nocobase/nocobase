@@ -54,6 +54,7 @@ export default {
           ...filter,
           userId,
           from: filter.from ?? 'main-agent',
+          category: 'chat',
         },
       });
       return actions.list(ctx, next);

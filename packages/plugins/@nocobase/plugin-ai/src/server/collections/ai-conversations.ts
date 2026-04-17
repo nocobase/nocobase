@@ -65,5 +65,10 @@ export default defineCollection({
       name: 'options',
       type: 'jsonb',
     },
+    {
+      name: 'category',
+      type: 'string', // chat, task
+      defaultValue: 'chat',
+    },
   ],
 });

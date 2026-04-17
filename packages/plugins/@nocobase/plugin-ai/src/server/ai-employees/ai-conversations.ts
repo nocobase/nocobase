@@ -32,6 +32,7 @@ export type CreateAIConversationParams = {
   options?: AIConversationsOptions;
   from?: 'main-agent' | 'sub-agent';
   transaction?: Transaction;
+  category?: 'chat' | 'task';
 };
 
 export type UpdateAIConversationParams = {
@@ -66,6 +67,7 @@ export class AIConversationsManager {
     options = {},
     from = 'main-agent',
     transaction,
+    category = 'chat',
   }: CreateAIConversationParams) {
     return await this.aiConversationsRepo.create({
       values: {
@@ -75,6 +77,7 @@ export class AIConversationsManager {
         options,
         thread: 1,
         from,
+        category,
       },
       transaction,
     });
