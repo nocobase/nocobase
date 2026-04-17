@@ -728,6 +728,7 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
     );
     expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.defaultType.enum).toEqual(['view', 'edit']);
     expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.saveAsTemplate.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceRequestPopupSaveAsTemplate' },
     ]);
@@ -742,6 +743,7 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfacePopupTemplateRef',
     );
     expect(schemas.FlowSurfaceComposeFieldPopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeFieldPopup.properties.defaultType.enum).toEqual(['view', 'edit']);
     expect(schemas.FlowSurfaceComposeFieldPopup.properties.saveAsTemplate.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfacePopupSaveAsTemplate' },
     ]);
@@ -1031,6 +1033,7 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldRequest.examples.jsItem.value.settings.code).not.toContain('return record.');
     expect(addFieldRequest.examples.popupTemplate.value.popup.template.uid).toBe('employee-popup-template');
     expect(addFieldRequest.examples.autoPopupTemplate.value.popup.tryTemplate).toBe(true);
+    expect(addFieldRequest.examples.defaultEditPopup.value.popup.defaultType).toBe('edit');
     expect(addFieldRequest.examples.savePopupTemplate.value.popup.saveAsTemplate.name).toBe('employee-popup-template');
     expect(schemas.FlowSurfaceAddFieldRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceAddFieldRequest.oneOf).toHaveLength(2);

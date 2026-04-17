@@ -248,6 +248,9 @@ function buildFlowSurfaceRequestPopupSchema() {
         required: ['tryTemplate'],
       },
       {
+        required: ['defaultType'],
+      },
+      {
         anyOf: [{ required: ['title'] }, { required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
       },
     ],
@@ -259,6 +262,12 @@ function buildFlowSurfaceRequestPopupSchema() {
       tryTemplate: {
         type: 'boolean',
         description: REQUEST_POPUP_TRY_TEMPLATE_DESCRIPTION,
+      },
+      defaultType: {
+        type: 'string',
+        enum: ['view', 'edit'],
+        description:
+          'When popup content is omitted, asks the backend to prefer a compatible popup template first and otherwise auto-generate a default relation popup. Defaults to `view` for field popups.',
       },
       saveAsTemplate: {
         allOf: [ref('FlowSurfaceRequestPopupSaveAsTemplate')],
@@ -837,6 +846,11 @@ const actionDocs: Record<string, any> = {
             autoPopupTemplate: {
               summary: 'Create a bound field and let the backend auto-select a compatible popup template',
               value: examples.addFieldAutoPopupTemplate,
+            },
+            defaultEditPopup: {
+              summary:
+                'Create a relation field and let the backend auto-complete a default edit popup when no explicit popup content is provided',
+              value: examples.addFieldDefaultEditPopup,
             },
             savePopupTemplate: {
               summary: 'Create a bound field and immediately save its explicit local popup as a popup template',
@@ -1740,6 +1754,12 @@ const schemas = {
         description:
           'Apply-only popup shortcut for popup-capable field/action child nodes. When true and no explicit template is provided, the backend tries the same auto-selection rule as add/compose popup inputs.',
       },
+      defaultType: {
+        type: 'string',
+        enum: ['view', 'edit'],
+        description:
+          'When popup content is omitted, asks the backend to prefer a compatible popup template first and otherwise auto-generate a default relation popup of the requested type.',
+      },
     },
     additionalProperties: false,
   },
@@ -2281,6 +2301,9 @@ const schemas = {
         required: ['tryTemplate'],
       },
       {
+        required: ['defaultType'],
+      },
+      {
         anyOf: [{ required: ['title'] }, { required: ['mode'] }, { required: ['blocks'] }, { required: ['layout'] }],
       },
     ],
@@ -2293,6 +2316,12 @@ const schemas = {
         type: 'boolean',
         description:
           'When true and no explicit popup.template is provided, the backend tries to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, the request silently falls back to local/default popup behavior.',
+      },
+      defaultType: {
+        type: 'string',
+        enum: ['view', 'edit'],
+        description:
+          'When popup content is omitted, the backend prefers a compatible popup template first and otherwise auto-generates a default relation popup of the requested type.',
       },
       saveAsTemplate: {
         allOf: [ref('FlowSurfacePopupSaveAsTemplate')],
@@ -3327,6 +3356,12 @@ const schemas = {
         type: 'boolean',
         description:
           'When true and no explicit popup.template is provided, applyBlueprint asks the backend to auto-select one compatible popup template. Non-relation scenes only match non-relation templates. Relation scenes prefer same-relation templates first, then compatible non-relation templates. When no candidate matches, inline popup blocks/layout still act as the fallback if present.',
+      },
+      defaultType: {
+        type: 'string',
+        enum: ['view', 'edit'],
+        description:
+          'When popup content is omitted, applyBlueprint prefers a compatible popup template first and otherwise auto-generates a default relation popup of the requested type.',
       },
       saveAsTemplate: {
         allOf: [ref('FlowSurfaceRequestPopupSaveAsTemplate')],

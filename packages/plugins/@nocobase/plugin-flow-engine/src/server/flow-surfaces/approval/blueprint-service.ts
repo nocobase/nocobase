@@ -186,7 +186,10 @@ export class FlowSurfaceApprovalBlueprintService {
   private buildApprovalBlueprintSurfaceRootTree(context: FlowSurfaceApprovalBlueprintBindingContext) {
     switch (context.rootUse) {
       case 'TriggerChildPageModel':
-        return buildApprovalInitiatorSurfaceTree({});
+        return buildApprovalInitiatorSurfaceTree({
+          dataSourceKey: context.dataSourceKey,
+          collectionName: context.collectionName,
+        });
       case 'ApprovalChildPageModel':
         return buildApprovalApproverSurfaceTree({
           dataSourceKey: context.dataSourceKey,
@@ -215,7 +218,10 @@ export class FlowSurfaceApprovalBlueprintService {
 
   private buildApprovalBlueprintPageSurfaceRootTree(context: FlowSurfaceApprovalBlueprintBindingContext) {
     if (context.rootUse === 'TriggerChildPageModel') {
-      return buildApprovalInitiatorSurfaceTree({});
+      return buildApprovalInitiatorSurfaceTree({
+        dataSourceKey: context.dataSourceKey,
+        collectionName: context.collectionName,
+      });
     }
     if (context.rootUse === 'ApprovalChildPageModel') {
       return buildApprovalApproverSurfaceTree({
@@ -413,10 +419,6 @@ export class FlowSurfaceApprovalBlueprintService {
     context: FlowSurfaceApprovalBlueprintBindingContext,
     transaction?: any,
   ) {
-    if (context.rootUse === 'TriggerChildPageModel') {
-      return;
-    }
-
     const root = await this.deps.repository.findModelById(rootUid, {
       transaction,
       includeAsyncNode: true,
@@ -430,6 +432,22 @@ export class FlowSurfaceApprovalBlueprintService {
       dataSourceKey: context.dataSourceKey,
       collectionName: context.collectionName,
     };
+
+    if (context.rootUse === 'TriggerChildPageModel') {
+      const currentInit = _.get(stepParams, ['TriggerChildPageSettings', 'init']) || {};
+      if (_.isEqual(currentInit, nextInit)) {
+        return;
+      }
+      _.set(stepParams, ['TriggerChildPageSettings', 'init'], nextInit);
+      await this.deps.repository.patch(
+        {
+          uid: rootUid,
+          stepParams,
+        },
+        { transaction },
+      );
+      return;
+    }
 
     if (context.rootUse === 'ApprovalChildPageModel') {
       const currentInit = _.get(stepParams, ['ApprovalChildPageSettings', 'init']) || {};

@@ -87,7 +87,7 @@ const RECORD_ACTION_INTERNAL_CONTAINER_USES = new Set([
   'ListItemModel',
   'GridCardItemModel',
 ]);
-const APPLY_POPUP_ALLOWED_KEYS = new Set(['template', 'tryTemplate']);
+const APPLY_POPUP_ALLOWED_KEYS = new Set(['template', 'tryTemplate', 'defaultType']);
 
 export function compileApplySpec(
   target: FlowSurfaceWriteTarget,
@@ -648,8 +648,11 @@ function normalizeApplyPopup(desiredNode: FlowSurfaceNodeSpec, context: string):
   if (!_.isUndefined(nextPopup.tryTemplate) && typeof nextPopup.tryTemplate !== 'boolean') {
     throw new FlowSurfaceBadRequestError(`${context} popup.tryTemplate must be a boolean`);
   }
+  if (!_.isUndefined(nextPopup.defaultType) && nextPopup.defaultType !== 'view' && nextPopup.defaultType !== 'edit') {
+    throw new FlowSurfaceBadRequestError(`${context} popup.defaultType must be 'view' or 'edit'`);
+  }
 
-  if (_.isUndefined(nextPopup.template) && nextPopup.tryTemplate !== true) {
+  if (_.isUndefined(nextPopup.template) && nextPopup.tryTemplate !== true && _.isUndefined(nextPopup.defaultType)) {
     return undefined;
   }
   if (!isPopupHostUse(desiredNode.use)) {

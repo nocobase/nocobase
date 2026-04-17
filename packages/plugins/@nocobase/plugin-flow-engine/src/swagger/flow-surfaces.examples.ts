@@ -1053,6 +1053,15 @@ export const flowSurfaceExamples = {
       tryTemplate: true,
     },
   },
+  addFieldDefaultEditPopup: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'department.title',
+    popup: {
+      defaultType: 'edit',
+    },
+  },
   addFieldSavePopupTemplate: {
     target: {
       uid: 'details-block-uid',

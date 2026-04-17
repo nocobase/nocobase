@@ -15,6 +15,13 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
+
+const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-templates'] as const;
+const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+  'ui-templates',
+] as const;
 
 describe('flowSurfaces resource', () => {
   let app: MockServer;
@@ -24,7 +31,10 @@ describe('flowSurfaces resource', () => {
   let rootAgent: any;
 
   beforeAll(async () => {
-    app = await createFlowSurfacesMockServer();
+    app = await createFlowSurfacesMockServer({
+      plugins: FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS as any,
+      enabledPluginAliases: FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGINS,
+    });
     db = app.db;
     flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
     routesRepo = db.getRepository('desktopRoutes');
@@ -1708,6 +1718,72 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
       filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
+  });
+
+  it('should auto-complete association field popups with defaultType edit and save them as reusable templates', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Association field default popup page',
+      tabTitle: 'Association field default popup tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const defaultEditPopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        fieldPath: 'department.title',
+        popup: {
+          defaultType: 'edit',
+        },
+      },
+    });
+    expect(defaultEditPopupRes.status).toBe(200);
+    const defaultEditPopupField = getData(defaultEditPopupRes);
+    expect(defaultEditPopupField.popupPageUid).toBeUndefined();
+    expect(defaultEditPopupField.popupTabUid).toBeUndefined();
+    expect(defaultEditPopupField.popupGridUid).toBeUndefined();
+
+    const defaultEditPopupReadback = await getSurface(rootAgent, {
+      uid: defaultEditPopupField.fieldUid,
+    });
+    expect(defaultEditPopupReadback.tree.props?.clickToOpen).toBe(true);
+    expect(defaultEditPopupReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+
+    const templatedPopupUid = defaultEditPopupReadback.tree.popup?.template?.uid;
+    expect(typeof templatedPopupUid).toBe('string');
+
+    const templatedPopup = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: templatedPopupUid,
+        },
+      }),
+    );
+    expect(templatedPopup.type).toBe('popup');
+    expect(templatedPopup.collectionName).toBe('departments');
+    expect(templatedPopup.associationName).toBe('employees.department');
+
+    const templatedPopupSurface = await getSurface(rootAgent, {
+      uid: templatedPopup.targetUid,
+    });
+    const popupBlock = _.castArray(
+      templatedPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(popupBlock?.use).toBe('EditFormModel');
+    const popupFieldPaths = _.castArray(popupBlock?.subModels?.grid?.subModels?.items || [])
+      .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+      .filter(Boolean);
+    expect(popupFieldPaths).not.toContain('employees');
+    expect(popupFieldPaths).not.toContain('manager');
+    const popupActionUses = _.castArray(popupBlock?.subModels?.actions || []).map((item: any) => item?.use);
+    expect(popupActionUses).toContain('FormSubmitActionModel');
   });
 
   it('should support field popup content in addFields and compose field specs', async () => {

@@ -93,6 +93,7 @@ export type FlowSurfaceApplyBlueprintPopup = {
   mode?: 'replace' | 'append';
   template?: Record<string, any>;
   tryTemplate?: boolean;
+  defaultType?: 'view' | 'edit';
   saveAsTemplate?: {
     name: string;
     description: string;

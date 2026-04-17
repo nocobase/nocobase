@@ -199,7 +199,13 @@ export function buildApprovalActionDefaults(use: string): ApprovalActionDefaults
   }
 }
 
-export function buildApprovalInitiatorSurfaceTree(options: { pageUid?: string; tabUid?: string; gridUid?: string }) {
+export function buildApprovalInitiatorSurfaceTree(options: {
+  dataSourceKey: string;
+  collectionName: string;
+  pageUid?: string;
+  tabUid?: string;
+  gridUid?: string;
+}) {
   const pageUid = options.pageUid || uid();
   const tabUid = options.tabUid || uid();
   const gridUid = options.gridUid || uid();
@@ -213,6 +219,12 @@ export function buildApprovalInitiatorSurfaceTree(options: { pageUid?: string; t
           displayTitle: false,
           enableTabs: false,
           title: `{{t("Initiator's interface", { ns: "workflow" })}}`,
+        },
+      },
+      TriggerChildPageSettings: {
+        init: {
+          dataSourceKey: options.dataSourceKey,
+          collectionName: options.collectionName,
         },
       },
     },

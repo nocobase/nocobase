@@ -2723,7 +2723,7 @@ describe('flowSurfaces templates', () => {
     });
   });
 
-  it('should keep popup.tryTemplate miss semantics silent for fields and non-default actions while preserving default popup completion', async () => {
+  it('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while preserving default popup completion', async () => {
     await rootAgent.resource('collections').create({
       values: {
         name: 'popup_try_template_miss_targets',
@@ -2776,11 +2776,49 @@ describe('flowSurfaces templates', () => {
       type: 'details',
       resourceInit: {
         dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const relationFallbackField = await addFieldData(rootAgent, {
+      target: { uid: employeeDetails.uid },
+      fieldPath: 'department',
+      popup: {
+        tryTemplate: true,
+      },
+    });
+    expect(relationFallbackField.popupPageUid).toBeUndefined();
+    expect(relationFallbackField.popupTabUid).toBeUndefined();
+    expect(relationFallbackField.popupGridUid).toBeUndefined();
+    const relationFallbackSurface = await getSurface(rootAgent, {
+      uid: relationFallbackField.fieldUid || relationFallbackField.uid,
+    });
+    expect(relationFallbackSurface.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(relationFallbackSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(relationFallbackSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(relationFallbackSurface.tree.popup?.gridUid).toBeUndefined();
+
+    const relationTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: relationFallbackSurface.tree.popup?.template?.uid,
+        },
+      }),
+    );
+    expect(relationTemplate.collectionName).toBe('departments');
+    expect(relationTemplate.associationName).toBe('employees.department');
+
+    const scalarDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
         collectionName: 'popup_try_template_miss_targets',
       },
     });
     const unmatchedField = await addFieldData(rootAgent, {
-      target: { uid: employeeDetails.uid },
+      target: { uid: scalarDetails.uid },
       fieldPath: 'name',
       popup: {
         tryTemplate: true,

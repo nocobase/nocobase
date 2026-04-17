@@ -136,6 +136,10 @@ describe('flowSurfaces approval blueprint API contract', () => {
       uid: result.target.uid,
     });
     expect(readback.tree.use).toBe('TriggerChildPageModel');
+    expect(readback.tree.stepParams.TriggerChildPageSettings.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
     const tab = readback.tree.subModels.tabs[0];
     expect(tab.use).toBe('TriggerChildPageTabModel');
     expect(tab.subModels.grid.use).toBe('TriggerBlockGridModel');

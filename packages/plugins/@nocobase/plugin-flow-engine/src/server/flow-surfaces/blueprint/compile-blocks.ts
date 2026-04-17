@@ -98,6 +98,7 @@ const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
   'mode',
   'template',
   'tryTemplate',
+  'defaultType',
   'saveAsTemplate',
   'blocks',
   'layout',
@@ -591,6 +592,11 @@ function compilePopup(
     : _.isBoolean(popup.tryTemplate)
       ? popup.tryTemplate
       : throwBadRequest(`${context}.tryTemplate must be a boolean`);
+  const defaultType = _.isUndefined(popup.defaultType)
+    ? undefined
+    : popup.defaultType === 'view' || popup.defaultType === 'edit'
+      ? popup.defaultType
+      : throwBadRequest(`${context}.defaultType must be 'view' or 'edit'`);
   const saveAsTemplate = _.isUndefined(popup.saveAsTemplate)
     ? undefined
     : _.isPlainObject(popup.saveAsTemplate)
@@ -652,6 +658,7 @@ function compilePopup(
     mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
     template,
     ...(tryTemplate ? { tryTemplate: true } : {}),
+    ...(defaultType ? { defaultType } : {}),
     ...(saveAsTemplate ? { saveAsTemplate } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
     layout,
