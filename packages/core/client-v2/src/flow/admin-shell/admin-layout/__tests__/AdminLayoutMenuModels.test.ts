@@ -1121,6 +1121,9 @@ describe('AdminLayoutModel menu items', () => {
   });
 
   it('should hydrate persisted instance flows for admin layout menu models', async () => {
+    engine.context.defineProperty('flowSettingsEnabled', {
+      value: true,
+    });
     engine.setModelRepository({
       findOne: vi.fn().mockResolvedValue({
         uid: 'menu-item-page-1',
@@ -1164,6 +1167,37 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     expect(rerenderSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not hydrate persisted instance flows for admin layout menu models in runtime mode', async () => {
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'menu-item-page-1',
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    engine.setModelRepository({ findOne } as any);
+
+    engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-page-1',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(findOne).not.toHaveBeenCalled();
+    });
   });
 
   it('should expose insert steps and only show insert inner for groups', async () => {

@@ -60,7 +60,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       this.props.route as NocoBaseDesktopRoute,
       this.props.parentRoute as NocoBaseDesktopRoute | undefined,
     );
-    void this.hydratePersistedState();
+    if (this.context.flowSettingsEnabled) {
+      void this.hydratePersistedState();
+    }
   }
 
   syncFromRoute(route: NocoBaseDesktopRoute, parentRoute?: NocoBaseDesktopRoute) {
