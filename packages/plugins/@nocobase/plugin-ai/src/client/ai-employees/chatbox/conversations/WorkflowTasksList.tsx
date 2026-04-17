@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge, Card, Flex, List, Space, Spin, Tag, Typography, theme } from 'antd';
 import { useCompile } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 import { JobStatusOptionsMap } from '@nocobase/plugin-workflow/client';
 import { useChatMessagesStore } from '../stores/chat-messages';
 
@@ -33,37 +34,53 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
     acceptWorkflowTask,
     getWorkflowTaskBySession,
   } = useWorkflowTasks();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   const setReadonly = useChatBoxStore.use.setReadonly();
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const [pendingConversation, setPendingConversation] = useState<string>();
+
+  useEffect(() => {
+    if (pendingConversation && pendingConversation === currentConversation) {
+      setPendingConversation(undefined);
+    }
+  }, [currentConversation, pendingConversation]);
 
   const onSelectWorkflowTask = useCallback(
     async (sessionId: string) => {
-      await acceptWorkflowTask(sessionId);
-
-      let username: string | undefined;
-      let model: ModelRef | undefined;
-      let readonly = false;
-      let responseLoading = false;
+      setPendingConversation(sessionId);
       try {
-        const task = await getWorkflowTaskBySession(sessionId);
-        username = task?.config?.username;
-        model = task?.config?.model;
-        readonly = task?.readonly === true;
-        responseLoading = task?.status === 'processing';
-      } catch {
-        username = undefined;
-        model = undefined;
-      }
+        await acceptWorkflowTask(sessionId);
 
-      refresh();
-      setReadonly(readonly);
-      setResponseLoading(responseLoading);
-      onOpenConversation(sessionId, username, model);
+        let username: string | undefined;
+        let model: ModelRef | undefined;
+        let readonly = false;
+        let responseLoading = false;
+        try {
+          const task = await getWorkflowTaskBySession(sessionId);
+          username = task?.config?.username;
+          model = task?.config?.model;
+          readonly = task?.readonly === true;
+          responseLoading = task?.status === 'processing';
+        } catch {
+          username = undefined;
+          model = undefined;
+        }
+
+        refresh();
+        setReadonly(readonly);
+        setResponseLoading(responseLoading);
+        onOpenConversation(sessionId, username, model);
+      } catch (error) {
+        setPendingConversation(undefined);
+        throw error;
+      }
     },
-    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh, setReadonly],
+    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh, setReadonly, setResponseLoading],
   );
 
   return {
+    currentConversation,
+    selectedConversation: pendingConversation ?? currentConversation,
     loading,
     workflowTasks,
     unreadCount,
@@ -137,6 +154,7 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
           ) : null
         }
         renderItem={(item) => {
+          const selected = item.sessionId === controller.selectedConversation;
           const isLastItem =
             controller.workflowTasks[controller.workflowTasks.length - 1]?.sessionId === item.sessionId;
           const jobStatusOption = typeof item.jobStatus !== 'undefined' ? JobStatusOptionsMap[item.jobStatus] : null;
@@ -165,7 +183,12 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
                   size="small"
                   hoverable
                   onClick={() => controller.onSelectWorkflowTask(item.sessionId)}
-                  style={{ width: '100%', backgroundColor: token.colorBgContainer }}
+                  style={{
+                    width: '100%',
+                    backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                    borderColor: selected ? token.colorPrimary : token.colorBorderSecondary,
+                    boxShadow: selected ? `0 0 0 1px ${token.colorPrimaryBorder}` : undefined,
+                  }}
                   styles={{ body: { padding: '10px 12px' } }}
                 >
                   <Flex vertical gap={6}>

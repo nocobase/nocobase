@@ -63,6 +63,7 @@ export const Conversations: React.FC = memo(() => {
   const openConversation = useCallback(
     (sessionId: string, username?: string, model?: ModelRef) => {
       if (sessionId === currentConversation) {
+        setShowConversations(false);
         return;
       }
       setCurrentConversation(sessionId);
