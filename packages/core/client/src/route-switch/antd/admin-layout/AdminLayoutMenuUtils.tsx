@@ -716,6 +716,10 @@ export const AdminLayoutMenuModelRenderer: FC<{
           showFlowSettings={{
             showBackground: false,
             showBorder: false,
+            style: {
+              left: -16,
+              right: -16,
+            },
           }}
           extraToolbarItems={[
             {
