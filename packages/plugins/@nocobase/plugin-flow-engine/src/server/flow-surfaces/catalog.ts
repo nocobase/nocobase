@@ -2397,7 +2397,7 @@ function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: Readonly
 }
 
 function canUseNestedApprovalAssociationFieldComponent(input: {
-  field: any;
+  field?: any;
   dataSourceKey?: string;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
 }) {

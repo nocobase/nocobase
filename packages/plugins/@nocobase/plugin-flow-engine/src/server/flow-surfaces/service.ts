@@ -763,10 +763,10 @@ export class FlowSurfacesService {
 
   private async setFlowModelNodeAsyncFlag(uid: string, asyncFlag: boolean, transaction?: any) {
     const sequelize = this.db?.sequelize;
-    const queryGenerator = sequelize?.getQueryInterface?.()?.queryGenerator;
+    const queryInterface = sequelize?.getQueryInterface?.();
     const quoteIdentifier =
-      typeof queryGenerator?.quoteIdentifier === 'function'
-        ? (value: string) => queryGenerator.quoteIdentifier(value)
+      typeof queryInterface?.quoteIdentifier === 'function'
+        ? (value: string) => queryInterface.quoteIdentifier(value)
         : (value: string) => `"${value}"`;
 
     if (!sequelize?.query) {
@@ -1330,6 +1330,7 @@ export class FlowSurfacesService {
       }
       const configureOptions = _.cloneDeep(projected.configureOptions || {});
       configureOptions.fieldComponent = {
+        type: configureOptions.fieldComponent?.type || 'string',
         ...(configureOptions.fieldComponent || {}),
         enum: Array.from(supportedFieldUses),
       };
