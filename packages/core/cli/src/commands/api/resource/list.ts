@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core';
-import { buildListArgs, listFlags, runResourceCommand } from '../../lib/resource-command.js';
+import { buildListArgs, listFlags, runResourceCommand } from '../../../lib/resource-command.js';
 
 export default class ResourceList extends Command {
   static summary = 'List records from a resource';
