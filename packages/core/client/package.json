@@ -54,7 +54,7 @@
     "ignore": "^5.2.0",
     "json5": "^2.2.3",
     "liquidjs": "^10.0.0",
-    "lodash": "4.17.21",
+    "lodash": "^4.17.21",
     "lru-cache": "6.0.0",
     "markdown-it": "14.1.0",
     "markdown-it-highlightjs": "3.3.1",

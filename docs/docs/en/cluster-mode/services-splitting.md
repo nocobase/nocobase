@@ -63,12 +63,14 @@ Suppose there are four nodes: `node1`, `node2`, `node3`, and `node4`. They can b
 When developing business plugins, you can split services that consume significant resources based on the requirements of the scenario. This can be achieved in the following ways:
 
 1. Define a new service identifier, for example, `my-plugin:process`, for environment variable configuration, and provide documentation for it.
-2. In the business logic of the plugin's server-side, use the `app.serving()` interface to check the environment and determine whether the current node should provide a specific service based on the environment variable.
+2. In the business logic of the plugin's server-side, use the `serving()` interface to check the environment and determine whether the current node should provide a specific service based on the environment variable.
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
 // In the plugin's server-side code
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
   // Process the business logic for this service
 } else {
   // Do not process the business logic for this service

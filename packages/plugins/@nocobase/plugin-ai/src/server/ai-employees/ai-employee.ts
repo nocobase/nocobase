@@ -590,6 +590,10 @@ export class AIEmployee {
     if (workContextBackground?.length) {
       background = `${background}\n${workContextBackground.join('\n')}`;
     }
+    const addSystemPrompt = userMessages?.filter((it) => it.role == 'system');
+    if (addSystemPrompt.length) {
+      background = `${background}\n${addSystemPrompt.map((it) => it.content).join('\n')}`;
+    }
 
     let knowledgeBase;
     if (this.isEnabledKnowledgeBase() && this.employee.knowledgeBasePrompt && userMessages?.length) {
@@ -1050,7 +1054,7 @@ If information is missing, clearly state it in the summary.</Important>`;
         const contentBlocks = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(this.ctx, attachment);
+            const parsed = await provider.parseAttachment(this.ctx, attachment as any);
             if (parsed.placement === 'system') {
               formattedMessages.push({
                 role: 'system',

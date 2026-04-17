@@ -25,6 +25,7 @@
     "@formily/reactive-react": "^2",
     "@nocobase/client": "2.x",
     "@nocobase/plugin-notification-manager": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "react-router-dom": "^6.x"

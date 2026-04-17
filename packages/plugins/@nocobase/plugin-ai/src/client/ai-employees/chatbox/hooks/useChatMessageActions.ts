@@ -22,6 +22,9 @@ import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { ensureModel } from '../model';
+import { ContextItem } from '../../types';
+import { FlowUtils } from '../../flow';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
 export const useChatMessageActions = () => {
   const app = useApp();
@@ -42,6 +45,7 @@ export const useChatMessageActions = () => {
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const setAbortController = useChatMessagesStore.use.setAbortController();
   const setAttachments = useChatMessagesStore.use.setAttachments();
+  const addAttachments = useChatMessagesStore.use.addAttachments();
   const setContextItems = useChatMessagesStore.use.setContextItems();
   const setWebSearching = useChatMessagesStore.use.setWebSearching();
 
@@ -66,6 +70,24 @@ export const useChatMessageActions = () => {
       });
     },
     [api, aiConfigRepository, setModel],
+  );
+
+  const syncContextAttachments = useCallback(
+    (items: ContextItem | ContextItem[]) => {
+      const contextItems = Array.isArray(items) ? items : [items];
+      for (const item of contextItems.filter((it) => it.type?.startsWith('flow-model'))) {
+        const model = app.flowEngine.getModel(item.uid, true);
+        if (!model) {
+          continue;
+        }
+        FlowUtils.walkthrough(model, (subModel) => {
+          if (subModel instanceof UploadFieldModel && subModel.props?.value?.length) {
+            addAttachments(subModel.props.value.map((it) => ({ ...it, status: 'done' })));
+          }
+        });
+      }
+    },
+    [app, addAttachments],
   );
 
   const messagesService = useRequest<{
@@ -602,6 +624,7 @@ export const useChatMessageActions = () => {
   }, []);
 
   return {
+    syncContextAttachments,
     messagesService,
     sendMessages,
     resendMessages,

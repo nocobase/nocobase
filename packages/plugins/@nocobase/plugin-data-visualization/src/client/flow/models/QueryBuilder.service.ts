@@ -61,6 +61,25 @@ export function aliasOf(val: any): string {
   return Array.isArray(val) ? val.filter(Boolean).join('.') : val || '';
 }
 
+function orderKeyOf(item: any): string {
+  return item?.alias || aliasOf(item?.field);
+}
+
+function findOptionByPath(options: any[] = [], path: string[]): any {
+  if (!path.length) return null;
+
+  let currentOptions = options;
+  let currentOption = null;
+
+  for (const segment of path) {
+    currentOption = (currentOptions || []).find((opt) => opt?.name === segment);
+    if (!currentOption) return null;
+    currentOptions = currentOption?.children || [];
+  }
+
+  return currentOption;
+}
+
 export function buildOrderFieldOptions(
   fieldOptions: any[] = [],
   dimensionsValue: any[] = [],
@@ -69,56 +88,34 @@ export function buildOrderFieldOptions(
   const hasAgg = (measuresValue || []).some((m: any) => !!m?.aggregation);
   if (!hasAgg) return fieldOptions;
 
-  const pickedPaths: string[][] = [];
-
   const toPath = (val: any): string[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val.filter(Boolean).map(String);
     return [String(val)];
   };
 
-  (dimensionsValue || []).forEach((d: any) => {
-    const p = toPath(d?.field);
-    if (p.length) pickedPaths.push(p);
-  });
-  (measuresValue || []).forEach((m: any) => {
-    const p = toPath(m?.field);
-    if (p.length) pickedPaths.push(p);
-  });
+  const selectedFields = [...(dimensionsValue || []), ...(measuresValue || [])];
+  const uniqueOptions = new Map<string, any>();
 
-  if (!pickedPaths.length) return fieldOptions;
+  selectedFields.forEach((item: any) => {
+    const path = toPath(item?.field);
+    const key = orderKeyOf(item);
+    if (!path.length || !key || uniqueOptions.has(key)) {
+      return;
+    }
 
-  const filterTree = (options: any[], paths: string[][]): any[] => {
-    const map = new Map<string, string[][]>();
-    paths.forEach((p) => {
-      const [head, ...tail] = p;
-      if (!head) return;
-      const list = map.get(head) || [];
-      list.push(tail);
-      map.set(head, list);
+    const matched = findOptionByPath(fieldOptions, path);
+    uniqueOptions.set(key, {
+      ...(matched || {}),
+      name: key,
+      key,
+      value: key,
+      title: item?.alias || matched?.title || aliasOf(item?.field),
+      children: undefined,
     });
+  });
 
-    return (options || [])
-      .map((opt) => {
-        const name = opt?.name;
-        const tails = map.get(name);
-        if (!tails) return null;
-
-        const hasNext = tails.some((t) => (t || []).length > 0);
-        if (!hasNext) {
-          return opt;
-        }
-
-        const nextPaths = tails.filter((t) => (t || []).length > 0) as string[][];
-        const children = opt?.children ? filterTree(opt.children, nextPaths) : [];
-        if (!children.length) return null;
-
-        return { ...opt, children };
-      })
-      .filter(Boolean);
-  };
-
-  return filterTree(fieldOptions, pickedPaths);
+  return Array.from(uniqueOptions.values());
 }
 
 // 纯函数：根据维度“字段值”返回格式化选项
@@ -198,17 +195,17 @@ export function validateQuery(query: Record<string, any>): { success: boolean; m
     if (hasAgg) {
       const allowedOrderFields = new Set<string>();
       (query.dimensions || []).forEach((d: any) => {
-        const alias = aliasOf(d?.field);
+        const alias = orderKeyOf(d);
         if (alias) allowedOrderFields.add(alias);
       });
       (query.measures || []).forEach((m: any) => {
-        const alias = aliasOf(m?.field);
+        const alias = orderKeyOf(m);
         if (alias) allowedOrderFields.add(alias);
       });
 
       if (Array.isArray(query.orders) && query.orders.length) {
         for (const order of query.orders) {
-          const alias = aliasOf(order?.field);
+          const alias = orderKeyOf(order);
           if (!alias || !allowedOrderFields.has(alias)) {
             return { success: false, message: 'please select valid sort field' };
           }

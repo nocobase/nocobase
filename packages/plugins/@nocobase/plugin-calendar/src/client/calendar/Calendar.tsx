@@ -81,6 +81,7 @@ function Toolbar(props: ToolbarProps) {
       }, null),
     [],
   );
+
   return (
     <CalendarToolbarContext.Provider value={props}>
       <NocoBaseRecursionField name={toolBarSchema.name} schema={toolBarSchema} />
@@ -282,6 +283,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
       const field = useField();
+      const hasSchemaRuntime = fieldSchema?.properties;
       //nint deal with slot select to show create popup
       const { parseAction } = useACLRoleContext();
       const collection = useCollection();
@@ -423,8 +425,6 @@ export const Calendar: any = withDynamicSchemaProps(
       // 快速创建行程
       const useCreateFormBlockProps = () => {
         const ctx = useFormBlockContext();
-        let startDateValue = currentSelectDate.start;
-        let endDataValue = currentSelectDate.end;
         const startCollectionField = collection.getField(startFieldName);
         const endCollectionField = collection.getField(endFieldName);
 
@@ -443,7 +443,7 @@ export const Calendar: any = withDynamicSchemaProps(
               ...ctx.form?.query(endFieldName).take()?.componentProps,
             };
 
-            startDateValue = handleDateChangeOnForm(
+            const startDateValue = handleDateChangeOnForm(
               currentSelectDate.start,
               startFieldProps.dateOnly,
               startFieldProps.utc,
@@ -451,7 +451,7 @@ export const Calendar: any = withDynamicSchemaProps(
               startFieldProps.showTime,
               startFieldProps.gtm,
             );
-            endDataValue = handleDateChangeOnForm(
+            const endDataValue = handleDateChangeOnForm(
               currentSelectDate.end,
               endFieldProps.dateOnly,
               endFieldProps.utc,
@@ -466,7 +466,13 @@ export const Calendar: any = withDynamicSchemaProps(
               form.setInitialValuesIn([endFieldName], endDataValue);
             }
           }
-        }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
+        }, [
+          ctx.form,
+          ctx.service?.data?.data,
+          ctx.service?.loading,
+          endCollectionField?.uiSchema,
+          startCollectionField?.uiSchema,
+        ]);
         return {
           form: ctx.form,
         };
@@ -494,7 +500,8 @@ export const Calendar: any = withDynamicSchemaProps(
               onView={setView}
               onSelectSlot={(slotInfo) => {
                 setCurrentSelectDate(slotInfo);
-                if (canCreate && enableQuickCreateEvent) {
+                props.onSelectSlot?.(slotInfo);
+                if (hasSchemaRuntime && canCreate && enableQuickCreateEvent) {
                   insertAddNewer(addNew);
                   setVisibleAddNewer(true);
                 }
@@ -507,6 +514,10 @@ export const Calendar: any = withDynamicSchemaProps(
                 if (!record) {
                   return;
                 }
+                props.onSelectEvent?.({ event, record });
+                if (!hasSchemaRuntime) {
+                  return;
+                }
                 record.__event = {
                   ...omit(event, 'title'),
                   start: formatDate(dayjs(event.start)),
@@ -516,7 +527,7 @@ export const Calendar: any = withDynamicSchemaProps(
                 setRecord(record);
                 openPopup({
                   recordData: record,
-                  customActionSchema: findEventSchema(fieldSchema),
+                  customActionSchema: fieldSchema ? findEventSchema(fieldSchema) : undefined,
                 });
               }}
               formats={formats}
@@ -539,27 +550,29 @@ export const Calendar: any = withDynamicSchemaProps(
               }}
             />
           </PopupContextProvider>
-          <ActionContextProvider
-            value={{
-              ...ctx,
-              visible: visibleAddNewer,
-              setVisible: setVisibleAddNewer,
-              openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
-            }}
-          >
-            <CollectionProvider name={collection.name}>
-              <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
-                <NocoBaseRecursionField
-                  onlyRenderProperties
-                  basePath={field?.address}
-                  schema={fieldSchema}
-                  filterProperties={(s) => {
-                    return s['x-component'] === 'AssociationField.AddNewer';
-                  }}
-                />
-              </SchemaComponentOptions>
-            </CollectionProvider>
-          </ActionContextProvider>
+          {hasSchemaRuntime && collection ? (
+            <ActionContextProvider
+              value={{
+                ...ctx,
+                visible: visibleAddNewer,
+                setVisible: setVisibleAddNewer,
+                openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
+              }}
+            >
+              <CollectionProvider name={collection.name}>
+                <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
+                  <NocoBaseRecursionField
+                    onlyRenderProperties
+                    basePath={field?.address}
+                    schema={fieldSchema}
+                    filterProperties={(s) => {
+                      return s['x-component'] === 'AssociationField.AddNewer';
+                    }}
+                  />
+                </SchemaComponentOptions>
+              </CollectionProvider>
+            </ActionContextProvider>
+          ) : null}
         </div>,
       );
     },
