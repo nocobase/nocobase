@@ -244,6 +244,7 @@ const BackgroundWorkingHint: React.FC = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
   const messages = useChatMessagesStore.use.messages();
   const [show, setShow] = useState(false);
+  const messageCount = useRef(0);
   const { updateReadonly } = useWorkflowTasks();
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
 
@@ -269,8 +270,11 @@ const BackgroundWorkingHint: React.FC = () => {
   }, [api, currentConversation, updateReadonly, setResponseLoading]);
 
   useEffect(() => {
-    doStateCheck().catch(console.error);
-  }, [messages, doStateCheck]);
+    if (messages.length !== messageCount.current) {
+      messageCount.current = messages.length;
+      doStateCheck().catch(console.error);
+    }
+  }, [messages]);
 
   if (!currentConversation) {
     return null;
