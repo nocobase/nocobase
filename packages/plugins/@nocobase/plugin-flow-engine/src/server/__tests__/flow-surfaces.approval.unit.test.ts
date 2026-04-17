@@ -9,30 +9,39 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildBlockTree, buildFieldTree } from '../flow-surfaces/builder';
-import { getAvailableBlockCatalogItems, resolveSupportedBlockCatalogItem } from '../flow-surfaces/catalog';
+import {
+  getAvailableBlockCatalogItems,
+  getSupportedFieldComponentUseSet,
+  resolveSupportedBlockCatalogItem,
+} from '../flow-surfaces/catalog';
 import { getConfigureOptionsForUse } from '../flow-surfaces/configure-options';
 import { buildPlanKeyKind } from '../flow-surfaces/planning/key-kind';
 import { getReactionKindsForUse } from '../flow-surfaces/reaction/registry';
 
 describe('flowSurfaces approval surface', () => {
   it('should expose approval blocks only under approval containers', () => {
+    const triggerBlockKeys = getAvailableBlockCatalogItems('TriggerBlockGridModel').map((item) => item.key);
+    const approvalBlockKeys = getAvailableBlockCatalogItems('ApprovalBlockGridModel').map((item) => item.key);
+
     expect(getAvailableBlockCatalogItems().map((item) => item.key)).not.toContain('approvalInitiator');
 
-    expect(getAvailableBlockCatalogItems('TriggerBlockGridModel').map((item) => item.key)).toContain(
-      'approvalInitiator',
-    );
-    expect(getAvailableBlockCatalogItems('TriggerBlockGridModel').map((item) => item.key)).not.toContain(
-      'approvalApprover',
-    );
-    expect(getAvailableBlockCatalogItems('TriggerBlockGridModel').map((item) => item.key)).not.toContain('markdown');
+    expect(triggerBlockKeys).toContain('approvalInitiator');
+    expect(triggerBlockKeys).not.toContain('approvalApprover');
+    expect(triggerBlockKeys).toContain('markdown');
+    expect(triggerBlockKeys).toContain('jsBlock');
+    expect(triggerBlockKeys).not.toContain('table');
+    expect(triggerBlockKeys).not.toContain('details');
+    expect(triggerBlockKeys).not.toContain('list');
+    expect(triggerBlockKeys).not.toContain('iframe');
 
-    expect(getAvailableBlockCatalogItems('ApprovalBlockGridModel').map((item) => item.key)).toContain(
-      'approvalApprover',
-    );
-    expect(getAvailableBlockCatalogItems('ApprovalBlockGridModel').map((item) => item.key)).toContain(
-      'approvalInformation',
-    );
-    expect(getAvailableBlockCatalogItems('ApprovalBlockGridModel').map((item) => item.key)).not.toContain('markdown');
+    expect(approvalBlockKeys).toContain('approvalApprover');
+    expect(approvalBlockKeys).toContain('approvalInformation');
+    expect(approvalBlockKeys).toContain('markdown');
+    expect(approvalBlockKeys).toContain('jsBlock');
+    expect(approvalBlockKeys).not.toContain('table');
+    expect(approvalBlockKeys).not.toContain('details');
+    expect(approvalBlockKeys).not.toContain('list');
+    expect(approvalBlockKeys).not.toContain('iframe');
     expect(getAvailableBlockCatalogItems('ApplyTaskCardGridModel')).toEqual([]);
     expect(getAvailableBlockCatalogItems('ApprovalTaskCardGridModel')).toEqual([]);
   });
@@ -62,10 +71,34 @@ describe('flowSurfaces approval surface', () => {
       ),
     ).toThrow(/not allowed/);
 
-    expect(() =>
+    expect(
       resolveSupportedBlockCatalogItem(
         {
           type: 'markdown',
+          containerUse: 'TriggerBlockGridModel',
+        },
+        {
+          requireCreateSupported: true,
+        },
+      ).use,
+    ).toBe('MarkdownBlockModel');
+
+    expect(
+      resolveSupportedBlockCatalogItem(
+        {
+          type: 'jsBlock',
+          containerUse: 'ApprovalBlockGridModel',
+        },
+        {
+          requireCreateSupported: true,
+        },
+      ).use,
+    ).toBe('JSBlockModel');
+
+    expect(() =>
+      resolveSupportedBlockCatalogItem(
+        {
+          type: 'table',
           containerUse: 'TriggerBlockGridModel',
         },
         {
@@ -162,6 +195,70 @@ describe('flowSurfaces approval surface', () => {
         },
       },
     });
+  });
+
+  it('should expose approval relation fieldComponent sets that match current frontend wrappers', () => {
+    const singleAssociationField = {
+      interface: 'm2o',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+    const multiAssociationField = {
+      interface: 'm2m',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+    const fileAssociationField = {
+      interface: 'm2m',
+      targetCollection: {
+        template: 'file',
+      },
+    };
+
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'PatternFormItemModel', field: singleAssociationField }) || [],
+      ),
+    ).toEqual(['RecordSelectFieldModel', 'RecordPickerFieldModel', 'SubFormFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'PatternFormItemModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual([
+      'RecordSelectFieldModel',
+      'RecordPickerFieldModel',
+      'SubFormListFieldModel',
+      'PatternSubTableFieldModel',
+    ]);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'PatternFormItemModel', field: fileAssociationField }) || [],
+      ),
+    ).toEqual(['RecordSelectFieldModel', 'RecordPickerFieldModel', 'UploadFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'ApprovalDetailsItemModel', field: singleAssociationField }) ||
+          [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubItemFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({
+          containerUse: 'ApplyTaskCardDetailsItemModel',
+          field: multiAssociationField,
+        }) || [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({
+          containerUse: 'ApprovalTaskCardDetailsItemModel',
+          field: multiAssociationField,
+        }) || [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
   });
 
   it('should expose configure options for approval blocks, wrappers and actions', () => {

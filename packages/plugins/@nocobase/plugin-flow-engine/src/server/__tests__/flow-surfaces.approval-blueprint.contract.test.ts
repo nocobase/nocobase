@@ -84,9 +84,25 @@ describe('flowSurfaces approval blueprint API contract', () => {
               fields: ['nickname'],
               actions: ['approvalSaveDraft', 'approvalWithdraw'],
             },
+            {
+              key: 'note',
+              type: 'markdown',
+              settings: {
+                title: 'Approval note',
+                content: '# Approval',
+              },
+            },
+            {
+              key: 'script',
+              type: 'jsBlock',
+              title: 'Approval script',
+              settings: {
+                code: "return 'Approval';",
+              },
+            },
           ],
           layout: {
-            rows: [['applyForm']],
+            rows: [['applyForm'], ['note'], ['script']],
           },
         },
       }),
@@ -131,6 +147,8 @@ describe('flowSurfaces approval blueprint API contract', () => {
     expect(tab.use).toBe('TriggerChildPageTabModel');
     expect(tab.subModels.grid.use).toBe('TriggerBlockGridModel');
     expect(tab.subModels.grid.subModels.items[0].use).toBe('ApplyFormModel');
+    expect(tab.subModels.grid.subModels.items[1].use).toBe('MarkdownBlockModel');
+    expect(tab.subModels.grid.subModels.items[2].use).toBe('JSBlockModel');
     expect(Boolean(findStoredNode(storedNodes, tab.subModels.grid.uid)?.async)).toBe(true);
     expect(tab.subModels.grid.subModels.items[0].stepParams.patternSettings.pattern.pattern).toBe('createNew');
     expect(tab.subModels.grid.subModels.items[0].subModels.actions.map((item: any) => item.use)).toEqual(
@@ -184,6 +202,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
       uid: result.target.uid,
     });
     expect(replacedReadback.tree.subModels.tabs).toHaveLength(1);
+    expect(replacedReadback.tree.subModels.tabs[0].subModels.grid.subModels.items).toHaveLength(1);
     expect(
       replacedReadback.tree.subModels.tabs[0].subModels.grid.subModels.items[0].subModels.actions.map(
         (item: any) => item.use,
@@ -196,7 +215,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
 
     const invalidBlockRes = await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
       values: {
-        surface: 'initiator',
+        surface: 'taskCard',
         workflowId: workflow.id,
         blocks: [
           {
@@ -207,7 +226,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
       },
     });
     expect(invalidBlockRes.status).toBe(400);
-    expect(readErrorMessage(invalidBlockRes)).toContain(`blocks[0].type`);
+    expect(readErrorMessage(invalidBlockRes)).toContain(`surface 'taskCard' does not accept blocks`);
 
     const result = getData(
       await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
@@ -216,16 +235,16 @@ describe('flowSurfaces approval blueprint API contract', () => {
           workflowId: workflow.id,
           fields: [
             {
-              key: 'nickname',
-              fieldPath: 'nickname',
+              key: 'manager',
+              fieldPath: 'manager',
             },
             {
-              key: 'status',
-              fieldPath: 'status',
+              key: 'skills',
+              fieldPath: 'skills',
             },
           ],
           layout: {
-            rows: [['nickname', 'status']],
+            rows: [['manager', 'skills']],
           },
         },
       }),
@@ -257,6 +276,16 @@ describe('flowSurfaces approval blueprint API contract', () => {
     );
     expect(readback.tree.subModels.grid.props.rowOrder).toHaveLength(1);
 
+    const taskCardItems = readback.tree.subModels.grid.subModels.items;
+    const taskCardManagerItem = taskCardItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'manager',
+    );
+    const taskCardSkillsItem = taskCardItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'skills',
+    );
+    expect(taskCardManagerItem?.use).toBe('ApplyTaskCardDetailsItemModel');
+    expect(taskCardSkillsItem?.use).toBe('ApplyTaskCardDetailsItemModel');
+
     const taskCardCatalogRes = await rootAgent.resource('flowSurfaces').catalog({
       values: {
         target: {
@@ -278,6 +307,88 @@ describe('flowSurfaces approval blueprint API contract', () => {
     });
     expect(taskCardAddBlockRes.status).toBe(400);
     expect(readErrorMessage(taskCardAddBlockRes)).toContain('does not support blocks');
+
+    const taskCardManagerCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: taskCardManagerItem.uid,
+          },
+        },
+      }),
+    );
+    const taskCardSkillsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: taskCardSkillsItem.uid,
+          },
+        },
+      }),
+    );
+    expect(taskCardManagerCatalog.node.configureOptions.fieldComponent.enum).toEqual([
+      'DisplayTextFieldModel',
+      'DisplaySubItemFieldModel',
+    ]);
+    expect(taskCardSkillsCatalog.node.configureOptions.fieldComponent.enum).toEqual([
+      'DisplayTextFieldModel',
+      'DisplaySubListFieldModel',
+      'DisplaySubTableFieldModel',
+    ]);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: taskCardManagerItem.uid,
+            },
+            changes: {
+              fieldComponent: 'DisplaySubItemFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: taskCardSkillsItem.uid,
+            },
+            changes: {
+              fieldComponent: 'DisplaySubListFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const taskCardManagerReadback = await getSurface(rootAgent, {
+      uid: taskCardManagerItem.uid,
+    });
+    const taskCardSkillsReadback = await getSurface(rootAgent, {
+      uid: taskCardSkillsItem.uid,
+    });
+    expect(taskCardManagerReadback.tree.stepParams?.detailItemSettings?.model?.use).toBe('DisplaySubItemFieldModel');
+    expect(taskCardManagerReadback.tree.subModels?.field).toMatchObject({
+      use: 'DisplaySubItemFieldModel',
+      stepParams: {
+        fieldBinding: {
+          use: 'DisplaySubItemFieldModel',
+        },
+      },
+    });
+    expect(taskCardSkillsReadback.tree.stepParams?.detailItemSettings?.model?.use).toBe('DisplaySubListFieldModel');
+    expect(taskCardSkillsReadback.tree.subModels?.field).toMatchObject({
+      use: 'DisplaySubListFieldModel',
+      stepParams: {
+        fieldBinding: {
+          use: 'DisplaySubListFieldModel',
+        },
+      },
+    });
 
     const invalidFieldRes = await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
       values: {

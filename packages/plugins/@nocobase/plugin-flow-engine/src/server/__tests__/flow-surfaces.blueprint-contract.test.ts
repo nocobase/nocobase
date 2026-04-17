@@ -204,10 +204,18 @@ describe('flowSurfaces applyBlueprint contract', () => {
       pageSchemaUid,
     });
     const detailsBlock = readback.tree.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items?.[0];
-    const departmentField = collectDescendantNodes(
+    const departmentFieldNodes = collectDescendantNodes(
       detailsBlock,
       (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
-    )[0];
+    );
+    const departmentField =
+      departmentFieldNodes.find(
+        (item) =>
+          item?.props?.clickToOpen === true ||
+          !!item?.popup?.template?.uid ||
+          !!item?.subModels?.page?.uid ||
+          !!item?.stepParams?.popupSettings?.openView,
+      ) || departmentFieldNodes[departmentFieldNodes.length - 1];
     expect(departmentField?.props?.clickToOpen).toBe(true);
 
     if (departmentField?.popup?.template?.uid) {

@@ -48,8 +48,13 @@ import {
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
 import { FlowSurfaceBadRequestError, FlowSurfaceInternalError } from './errors';
-import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
+import {
+  MULTI_VALUE_ASSOCIATION_INTERFACES,
+  normalizeFieldContainerKind,
+  shouldUseAssociationTitleTextDisplay,
+} from './field-semantics';
 import { getRegisteredFieldUses, resolveRegisteredFieldBinding } from './field-binding-registry';
+import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
 const ANY_VALUE_SCHEMA = {};
@@ -388,6 +393,12 @@ const FILTER_FIELD_USE_SET = new Set([
   'PercentFieldModel',
   'InputFieldModel',
 ]);
+const APPROVAL_DETAILS_FIELD_COMPONENT_WRAPPER_USE_SET = new Set([
+  'ApprovalDetailsItemModel',
+  'ApplyTaskCardDetailsItemModel',
+  'ApprovalTaskCardDetailsItemModel',
+]);
+const SINGLE_VALUE_ASSOCIATION_INTERFACES = new Set(['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy']);
 const KNOWN_FIELD_NODE_USES = new Set<string>([
   ...EDITABLE_FIELD_USE_SET,
   ...DISPLAY_FIELD_USE_SET,
@@ -2385,6 +2396,79 @@ function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: Readonly
   }
 }
 
+function canUseNestedApprovalAssociationFieldComponent(input: {
+  field: any;
+  dataSourceKey?: string;
+  getCollection?: (dataSourceKey: string, collectionName: string) => any;
+}) {
+  const getCollection = input.getCollection || (() => null);
+  const targetCollection = resolveFieldTargetCollection(input.field, input.dataSourceKey || 'main', getCollection);
+  if (!targetCollection) {
+    return true;
+  }
+  return (targetCollection?.template || targetCollection?.options?.template) !== 'file';
+}
+
+export function getSupportedFieldComponentUseSet(input: {
+  containerUse: string;
+  field?: any;
+  enabledPackages?: ReadonlySet<string>;
+  dataSourceKey?: string;
+  getCollection?: (dataSourceKey: string, collectionName: string) => any;
+}) {
+  const baseAllowedFieldUses = getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
+  const fieldInterface = String(getFieldInterface(input.field) || '').trim();
+  if (!baseAllowedFieldUses || !fieldInterface) {
+    return baseAllowedFieldUses;
+  }
+
+  const wrapperUse = getApprovalFieldWrapperUse(input.containerUse) || String(input.containerUse || '').trim();
+  const inferredFieldUse = inferFieldUseByContainer(input.containerUse, input.field, {
+    enabledPackages: input.enabledPackages,
+    dataSourceKey: input.dataSourceKey,
+    getCollection: input.getCollection,
+  });
+
+  if (wrapperUse === 'PatternFormItemModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
+          canUseNestedApprovalAssociationFieldComponent(input) ? 'PatternSubTableFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+  }
+
+  if (APPROVAL_DETAILS_FIELD_COMPONENT_WRAPPER_USE_SET.has(wrapperUse)) {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(['DisplayTextFieldModel', 'DisplaySubItemFieldModel', inferredFieldUse].filter(Boolean));
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        ['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel', inferredFieldUse].filter(
+          Boolean,
+        ),
+      );
+    }
+  }
+
+  return baseAllowedFieldUses;
+}
+
 function inferFieldUseByContainer(
   containerUse: string,
   field: any,
@@ -2680,26 +2764,37 @@ const approvalBlockCatalog: FlowSurfaceCatalogItem[] = APPROVAL_BLOCK_CATALOG_SP
 
 export const blockCatalog: FlowSurfaceCatalogItem[] = [...baseBlockCatalog, ...approvalBlockCatalog];
 
-const APPROVAL_EXCLUSIVE_BLOCK_CONTAINER_USE_SET = new Set<string>([
-  ...APPROVAL_BLOCK_GRID_USES,
-  ...APPROVAL_TASK_CARD_GRID_USES,
-]);
+const APPROVAL_PAGE_LIKE_BLOCK_CONTAINER_USE_SET = new Set<string>([...APPROVAL_BLOCK_GRID_USES]);
+const APPROVAL_PAGE_LIKE_GENERIC_BLOCK_KEY_SET = new Set(['markdown', 'jsBlock']);
+const APPROVAL_EXCLUSIVE_BLOCK_CONTAINER_USE_SET = new Set<string>([...APPROVAL_TASK_CARD_GRID_USES]);
+
+function isApprovalPageLikeBlockContainerUse(containerUse?: string) {
+  return APPROVAL_PAGE_LIKE_BLOCK_CONTAINER_USE_SET.has(String(containerUse || '').trim());
+}
 
 function isApprovalExclusiveBlockContainerUse(containerUse?: string) {
   return APPROVAL_EXCLUSIVE_BLOCK_CONTAINER_USE_SET.has(String(containerUse || '').trim());
 }
 
 function isBlockAllowedInContainer(item: FlowSurfaceCatalogItem, containerUse?: string) {
-  if (isApprovalExclusiveBlockContainerUse(containerUse) && !item.allowedContainerUses?.length) {
+  const normalizedContainerUse = String(containerUse || '').trim();
+
+  if (isApprovalExclusiveBlockContainerUse(normalizedContainerUse) && !item.allowedContainerUses?.length) {
     return false;
+  }
+  if (isApprovalPageLikeBlockContainerUse(normalizedContainerUse)) {
+    if (!item.allowedContainerUses?.length) {
+      return APPROVAL_PAGE_LIKE_GENERIC_BLOCK_KEY_SET.has(item.key);
+    }
+    return item.allowedContainerUses.includes(normalizedContainerUse);
   }
   if (!item.allowedContainerUses?.length) {
     return true;
   }
-  if (!containerUse) {
+  if (!normalizedContainerUse) {
     return false;
   }
-  return item.allowedContainerUses.includes(containerUse);
+  return item.allowedContainerUses.includes(normalizedContainerUse);
 }
 
 export function getAvailableBlockCatalogItems(

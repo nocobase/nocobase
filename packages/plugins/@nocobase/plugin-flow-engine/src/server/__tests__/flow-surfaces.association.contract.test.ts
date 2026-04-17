@@ -173,6 +173,18 @@ describe('flowSurfaces association contract', () => {
     expect(rolesWrapperReadback.tree.props?.titleField).toBe('title');
     expect(rolesInnerReadback.tree.props?.titleField).toBe('title');
 
+    if (directRolesInnerReadback.tree.popup?.template?.uid) {
+      getData(
+        await rootAgent.resource('flowSurfaces').convertTemplateToCopy({
+          values: {
+            target: {
+              uid: directRolesField.fieldUid,
+            },
+          },
+        }),
+      );
+    }
+
     const popupDetails = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -255,12 +267,21 @@ describe('flowSurfaces association contract', () => {
       mode: 'drawer',
     });
 
-    const popupPage = rolesInnerWithPopup.tree.subModels?.page;
+    const popupPage =
+      rolesInnerWithPopup.tree.subModels?.page ||
+      (rolesInnerWithPopup.tree.popup?.pageUid
+        ? await getSurface(rootAgent, {
+            uid: rolesInnerWithPopup.tree.popup.pageUid,
+          })
+        : null
+      )?.tree;
     expect(popupPage?.use).toBe('ChildPageModel');
     const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
     expect(popupTab?.use).toBe('ChildPageTabModel');
     expect(popupTab?.subModels?.grid?.use).toBe('BlockGridModel');
-    expect(_.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(popupDetails.uid);
+    expect(_.castArray(popupTab?.subModels?.grid?.subModels?.items || []).map((item: any) => item?.uid)).toContain(
+      popupDetails.uid,
+    );
 
     const popupGridCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -716,7 +737,7 @@ describe('flowSurfaces association contract', () => {
     });
   });
 
-  it('should not auto preserve associationName when an association field is configured as a non-association-field popup', async () => {
+  it('should preserve associationName on association-field popups until it is explicitly cleared', async () => {
     const page = await createPage(rootAgent, {
       title: 'Users roles non-association-field popup page',
       tabTitle: 'Users roles non-association-field popup tab',
@@ -773,9 +794,9 @@ describe('flowSurfaces association contract', () => {
     expect(fieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',
+      associationName: 'users.roles',
       mode: 'dialog',
     });
-    expect(fieldReadback.tree.stepParams?.popupSettings?.openView).not.toHaveProperty('associationName');
 
     expect(
       (

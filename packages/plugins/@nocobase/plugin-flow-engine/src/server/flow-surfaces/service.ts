@@ -19,6 +19,7 @@ import {
   getAvailableActionCatalogItems,
   getNodeContract,
   getSettingsSchemaForUse,
+  getSupportedFieldComponentUseSet,
   resolveSupportedFieldCapability,
   resolveSupportedActionCatalogItem,
   resolveSupportedBlockCatalogItem,
@@ -1195,7 +1196,7 @@ export class FlowSurfacesService {
     }
 
     if (catalogAnalysis.selectedSections.includes('node')) {
-      response.node = this.projectCatalogNode(node, resolved, expandFlags);
+      response.node = this.projectCatalogNode(node, resolved, expandFlags, enabledPackages);
     }
 
     return response;
@@ -1267,13 +1268,49 @@ export class FlowSurfacesService {
     node: any,
     resolved: FlowSurfaceResolvedTarget | null,
     expand: ReturnType<typeof buildCatalogExpandFlags>,
+    enabledPackages?: ReadonlySet<string>,
   ) {
-    return projectSmartCatalogNode(node, resolved, expand, {
+    const projected = projectSmartCatalogNode(node, resolved, expand, {
       getEditableDomains: this.getEditableDomains.bind(this),
       getConfigureOptionsForResolvedNode,
       getSettingsSchema: getSettingsSchemaForUse,
       getNodeContract,
     });
+    return this.patchResolvedNodeConfigureOptions(node, projected, enabledPackages);
+  }
+
+  private patchResolvedNodeConfigureOptions(
+    node: any,
+    projected: ReturnType<typeof projectSmartCatalogNode>,
+    enabledPackages?: ReadonlySet<string>,
+  ) {
+    if (!projected?.configureOptions?.fieldComponent || !node?.use) {
+      return projected;
+    }
+    try {
+      const fieldSource = this.resolveFieldComponentFieldSource(node);
+      const supportedFieldUses = getSupportedFieldComponentUseSet({
+        containerUse: node.use,
+        field: fieldSource.field,
+        enabledPackages,
+        dataSourceKey: fieldSource.fieldSettingsInit?.dataSourceKey,
+        getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      });
+      if (!supportedFieldUses?.size) {
+        return projected;
+      }
+      const configureOptions = _.cloneDeep(projected.configureOptions || {});
+      configureOptions.fieldComponent = {
+        ...(configureOptions.fieldComponent || {}),
+        enum: Array.from(supportedFieldUses),
+      };
+      return {
+        ...projected,
+        configureOptions,
+      };
+    } catch {
+      return projected;
+    }
   }
 
   private projectCatalogItem(
@@ -11130,6 +11167,7 @@ export class FlowSurfacesService {
         innerField,
         targetFieldUse: changes.fieldComponent,
         normalizedBinding,
+        enabledPackages,
         transaction: options.transaction,
       });
       await this.syncFieldComponentStepParams(current, normalizedFieldComponentUse, options.transaction);
@@ -13364,7 +13402,15 @@ export class FlowSurfacesService {
     };
   }
 
-  private assertSupportedFieldComponentUse(wrapperUse: string | undefined, targetFieldUse: string) {
+  private assertSupportedFieldComponentUse(input: {
+    wrapperUse?: string;
+    targetFieldUse: string;
+    field?: any;
+    dataSourceKey?: string;
+    enabledPackages?: ReadonlySet<string>;
+  }) {
+    const { wrapperUse, field, dataSourceKey, enabledPackages } = input;
+    const targetFieldUse = input.targetFieldUse;
     const normalizedTargetUse = String(targetFieldUse || '').trim();
     if (!normalizedTargetUse) {
       throwBadRequest('flowSurfaces configure fieldComponent cannot be empty');
@@ -13373,6 +13419,22 @@ export class FlowSurfacesService {
     const containerUse =
       normalizedWrapperUse === 'FormAssociationItemModel' ? 'DetailsItemModel' : normalizedWrapperUse;
     if (DISPLAY_COMPONENT_FIELD_WRAPPER_USES.has(normalizedWrapperUse)) {
+      if (field) {
+        const supportedFieldUses = getSupportedFieldComponentUseSet({
+          containerUse,
+          field,
+          enabledPackages,
+          dataSourceKey,
+          getCollection: (resolvedDataSourceKey, collectionName) =>
+            this.getCollection(resolvedDataSourceKey, collectionName),
+        });
+        if (!supportedFieldUses?.has(normalizedTargetUse)) {
+          throwBadRequest(
+            `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+          );
+        }
+        return normalizedTargetUse;
+      }
       const contract = resolveSupportedFieldCapability({
         containerUse,
         requestedFieldUse: normalizedTargetUse,
@@ -13385,6 +13447,22 @@ export class FlowSurfacesService {
       return contract.fieldUse;
     }
     if (EDITABLE_FIELD_WRAPPER_USES.has(normalizedWrapperUse)) {
+      if (field) {
+        const supportedFieldUses = getSupportedFieldComponentUseSet({
+          containerUse,
+          field,
+          enabledPackages,
+          dataSourceKey,
+          getCollection: (resolvedDataSourceKey, collectionName) =>
+            this.getCollection(resolvedDataSourceKey, collectionName),
+        });
+        if (!supportedFieldUses?.has(normalizedTargetUse)) {
+          throwBadRequest(
+            `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+          );
+        }
+        return normalizedTargetUse;
+      }
       const contract = resolveSupportedFieldCapability({
         containerUse,
         requestedFieldUse: normalizedTargetUse,
@@ -13425,6 +13503,7 @@ export class FlowSurfacesService {
     innerField: any;
     targetFieldUse: string;
     normalizedBinding?: any;
+    enabledPackages?: ReadonlySet<string>;
     transaction?: any;
   }) {
     const innerField = input.innerField;
@@ -13434,8 +13513,14 @@ export class FlowSurfacesService {
         'FLOW_SURFACE_INNER_FIELD_MISSING',
       );
     }
-    const normalizedTargetUse = this.assertSupportedFieldComponentUse(input.wrapperNode?.use, input.targetFieldUse);
     const fieldSource = this.resolveFieldComponentFieldSource(input.wrapperNode, input.normalizedBinding);
+    const normalizedTargetUse = this.assertSupportedFieldComponentUse({
+      wrapperUse: input.wrapperNode?.use,
+      targetFieldUse: input.targetFieldUse,
+      field: fieldSource.field,
+      dataSourceKey: fieldSource.fieldSettingsInit?.dataSourceKey,
+      enabledPackages: input.enabledPackages,
+    });
     const defaultProps = getFieldBindingDefaultProps(input.wrapperNode?.use, normalizedTargetUse, fieldSource.field);
     const shouldPreservePatternFormField = input.wrapperNode?.use === 'PatternFormItemModel';
     const nextFieldNode = {

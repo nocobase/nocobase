@@ -48,6 +48,16 @@
 - `approvalInformation` -> `ApprovalDetailsModel`
   - 只允许放在 `ApprovalBlockGridModel`
 
+### Page-like generic blocks
+
+- `TriggerBlockGridModel` / `ApprovalBlockGridModel`
+  - 继续承载 approval-specific blocks
+  - 同时允许当前前端审批 UI 已公开支持、且普通 block catalog 也能落地的固定 generic blocks:
+    - `markdown`
+    - `jsBlock`
+  - block 合法性以下游 `catalog` / `addBlock` / `compose` 判定为准，而不是再维护一份 approval blueprint 静态白名单
+- task-card surface 仍然不公开 block authoring，继续保持 `fields + layout`
+
 ### Approval actions
 
 - `approvalSubmit`
@@ -66,13 +76,29 @@
 - `ApplyTaskCardDetailsItemModel`
 - `ApprovalTaskCardDetailsItemModel`
 
+### Approval relation fieldComponent switching
+
+- `PatternFormItemModel`
+  - 单值关系字段: `RecordSelectFieldModel` / `RecordPickerFieldModel` / `SubFormFieldModel`
+  - 多值关系字段: `RecordSelectFieldModel` / `RecordPickerFieldModel` / `SubFormListFieldModel` / `PatternSubTableFieldModel`
+  - 指向 file collection 时，继续保留推导出的默认 binding use，不公开 nested subform / subtable 切换
+- `ApprovalDetailsItemModel` / `ApplyTaskCardDetailsItemModel` / `ApprovalTaskCardDetailsItemModel`
+  - 单值关系字段: `DisplayTextFieldModel` / `DisplaySubItemFieldModel`
+  - 多值关系字段: `DisplayTextFieldModel` / `DisplaySubListFieldModel` / `DisplaySubTableFieldModel`
+- `catalog.node.configureOptions.fieldComponent.enum` 会按当前 wrapper use 与真实字段 interface 动态收窄，`configure(fieldComponent)` 也按同一套 truth source 校验
+
 ## 关键约束
 
 - approval blocks 不应出现在普通 page/block grid 的 catalog 中。
-- `TriggerBlockGridModel` / `ApprovalBlockGridModel` 是 approval-exclusive block container，不应暴露或接受 generic block。
+- `TriggerBlockGridModel` / `ApprovalBlockGridModel` 是 approval page-like block container:
+  - 可以承载 approval blocks
+  - 也可以承载当前已公开支持的固定 generic blocks `markdown` / `jsBlock`
+  - 当前阶段仍不承诺开放完整 generic block catalog，也不包含 workflow / node dynamic data blocks
+- `ApplyTaskCardDetailsModel` / `ApprovalTaskCardDetailsModel` 仍是 block-forbidden surface，不接受 block blueprint，也不接受 incremental `addBlock`
 - approval actions 只应出现在各自 block 的 action 容器中。
 - approval singleton actions 在当前表单已经存在时，不应继续出现在 catalog 中。
 - `PatternFormItemModel` 下的 inner field 必须持久化为 `PatternFormFieldModel`，并把真实字段 use 记录到 `stepParams.fieldBinding.use`。
+- approval relation `fieldComponent` 的公开切换范围必须跟随真实字段 interface 与 wrapper use 动态收窄，不能再靠静态全局枚举推断。
 - approval details / task-card details 复用 details 语义，但保留自己的 wrapper use，以便 client 侧继续走审批专属的模型逻辑。
 
 ## 对外 API 策略
@@ -94,7 +120,7 @@ approval 相关差异通过 `target` 所在的 approval surface 与 catalog key 
 - 自动解析 workflow / node 绑定
 - 自动创建或复用 approval root FlowModel
 - 自动回写 `approvalUid` / `taskCardUid`
-- page-like surface 复用 `compose(..., mode: "replace")`
+- page-like surface 复用 `compose(..., mode: "replace")`，并沿用普通 flowSurfaces block legality 检查
 - task-card surface 复用 `addField + setLayout`
 
 ## 关联文档

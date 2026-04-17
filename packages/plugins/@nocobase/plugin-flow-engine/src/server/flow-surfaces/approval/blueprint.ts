@@ -9,7 +9,6 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
-import { APPROVAL_BLOCK_PUBLIC_KEYS } from './catalog-specs';
 
 export const FLOW_SURFACE_APPROVAL_BLUEPRINT_SURFACES = ['initiator', 'approver', 'taskCard'] as const;
 
@@ -25,8 +24,6 @@ export type FlowSurfaceApplyApprovalBlueprintDocument = {
   fields?: Array<string | Record<string, any>>;
   layout?: Record<string, any>;
 };
-
-const APPROVAL_BLUEPRINT_BLOCK_TYPE_SET = new Set<string>(APPROVAL_BLOCK_PUBLIC_KEYS);
 
 function normalizeApprovalBlueprintVersion(value: any) {
   const normalized = _.isUndefined(value) ? '1' : String(value || '').trim();
@@ -87,14 +84,6 @@ function normalizeBlocks(input: any) {
     }
     if (!_.isUndefined(block.template)) {
       throwBadRequest(`flowSurfaces applyApprovalBlueprint blocks[${index}] does not accept template`);
-    }
-    const type = String(block.type || '').trim();
-    if (!APPROVAL_BLUEPRINT_BLOCK_TYPE_SET.has(type)) {
-      throwBadRequest(
-        `flowSurfaces applyApprovalBlueprint blocks[${index}].type must be one of ${APPROVAL_BLOCK_PUBLIC_KEYS.map(
-          (item) => `'${item}'`,
-        ).join(', ')}`,
-      );
     }
   });
   return normalized;

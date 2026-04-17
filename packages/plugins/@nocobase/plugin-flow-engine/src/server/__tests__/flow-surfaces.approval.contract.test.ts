@@ -86,7 +86,7 @@ describe('flowSurfaces approval API contract', () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
-  it('should expose approval-only block catalogs and reject approval blocks on regular page grids', async () => {
+  it('should expose only approval blocks plus markdown/jsBlock on approval page-like grids and still reject approval blocks on regular page grids', async () => {
     const page = await createPage(rootAgent, {
       title: 'Approval contract page',
       tabTitle: 'Approval contract tab',
@@ -122,9 +122,14 @@ describe('flowSurfaces approval API contract', () => {
     });
     expect(triggerCatalogRes.status).toBe(200);
     const triggerCatalog = getData(triggerCatalogRes);
-    expect(triggerCatalog.blocks.map((item: any) => item.key)).toContain('approvalInitiator');
-    expect(triggerCatalog.blocks.map((item: any) => item.key)).not.toContain('approvalApprover');
-    expect(triggerCatalog.blocks.map((item: any) => item.key)).not.toContain('markdown');
+    const triggerBlockKeys = triggerCatalog.blocks.map((item: any) => item.key);
+    expect(triggerBlockKeys).toContain('approvalInitiator');
+    expect(triggerBlockKeys).not.toContain('approvalApprover');
+    expect(triggerBlockKeys).toEqual(expect.arrayContaining(['markdown', 'jsBlock']));
+    expect(triggerBlockKeys).not.toContain('table');
+    expect(triggerBlockKeys).not.toContain('details');
+    expect(triggerBlockKeys).not.toContain('list');
+    expect(triggerBlockKeys).not.toContain('iframe');
 
     const approvalCatalogRes = await rootAgent.resource('flowSurfaces').catalog({
       values: {
@@ -135,10 +140,14 @@ describe('flowSurfaces approval API contract', () => {
     });
     expect(approvalCatalogRes.status).toBe(200);
     const approvalCatalog = getData(approvalCatalogRes);
-    expect(approvalCatalog.blocks.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['approvalApprover', 'approvalInformation']),
+    const approvalBlockKeys = approvalCatalog.blocks.map((item: any) => item.key);
+    expect(approvalBlockKeys).toEqual(
+      expect.arrayContaining(['approvalApprover', 'approvalInformation', 'markdown', 'jsBlock']),
     );
-    expect(approvalCatalog.blocks.map((item: any) => item.key)).not.toContain('markdown');
+    expect(approvalBlockKeys).not.toContain('table');
+    expect(approvalBlockKeys).not.toContain('details');
+    expect(approvalBlockKeys).not.toContain('list');
+    expect(approvalBlockKeys).not.toContain('iframe');
 
     const invalidAddRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -155,16 +164,64 @@ describe('flowSurfaces approval API contract', () => {
     expect(invalidAddRes.status).toBe(400);
     expect(readErrorMessage(invalidAddRes)).toContain('not allowed');
 
-    const invalidGenericApprovalBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
+    const triggerMarkdown = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: triggerSurface.gridUid,
+          },
+          type: 'markdown',
+        },
+      }),
+    );
+
+    const approvalMarkdown = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: approvalSurface.gridUid,
+          },
+          type: 'markdown',
+        },
+      }),
+    );
+
+    const triggerJsBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: triggerSurface.gridUid,
+          },
+          type: 'jsBlock',
+        },
+      }),
+    );
+
+    const invalidGenericPageLikeBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
-          uid: approvalSurface.gridUid,
+          uid: triggerSurface.gridUid,
         },
-        type: 'markdown',
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
       },
     });
-    expect(invalidGenericApprovalBlockRes.status).toBe(400);
-    expect(readErrorMessage(invalidGenericApprovalBlockRes)).toContain('not allowed');
+    expect(invalidGenericPageLikeBlockRes.status).toBe(400);
+    expect(readErrorMessage(invalidGenericPageLikeBlockRes)).toContain('not allowed');
+
+    const invalidApprovalBlockOnRegularGridRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        type: 'approvalInformation',
+      },
+    });
+    expect(invalidApprovalBlockOnRegularGridRes.status).toBe(400);
+    expect(readErrorMessage(invalidApprovalBlockOnRegularGridRes)).toContain('not allowed');
 
     const applyForm = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
@@ -210,9 +267,15 @@ describe('flowSurfaces approval API contract', () => {
     );
 
     const applyFormReadback = await getSurface(rootAgent, { uid: applyForm.uid });
+    const triggerMarkdownReadback = await getSurface(rootAgent, { uid: triggerMarkdown.uid });
+    const approvalMarkdownReadback = await getSurface(rootAgent, { uid: approvalMarkdown.uid });
+    const triggerJsBlockReadback = await getSurface(rootAgent, { uid: triggerJsBlock.uid });
     const processFormReadback = await getSurface(rootAgent, { uid: processForm.uid });
     const approvalDetailsReadback = await getSurface(rootAgent, { uid: approvalDetails.uid });
 
+    expect(triggerMarkdownReadback.tree.use).toBe('MarkdownBlockModel');
+    expect(approvalMarkdownReadback.tree.use).toBe('MarkdownBlockModel');
+    expect(triggerJsBlockReadback.tree.use).toBe('JSBlockModel');
     expect(applyFormReadback.tree).toMatchObject({
       use: 'ApplyFormModel',
       subModels: {
@@ -519,6 +582,312 @@ describe('flowSurfaces approval API contract', () => {
       stepParams: {
         fieldBinding: {
           use: 'InputFieldModel',
+        },
+      },
+    });
+  });
+
+  it('should switch approval relation field components and expose dynamic fieldComponent enums through catalog', async () => {
+    const triggerSurface = await createApprovalSurface(flowRepo, {
+      pageUse: 'TriggerChildPageModel',
+      tabUse: 'TriggerChildPageTabModel',
+      gridUse: 'TriggerBlockGridModel',
+    });
+    const approvalSurface = await createApprovalSurface(flowRepo, {
+      pageUse: 'ApprovalChildPageModel',
+      tabUse: 'ApprovalChildPageTabModel',
+      gridUse: 'ApprovalBlockGridModel',
+    });
+
+    const applyForm = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: triggerSurface.gridUid,
+          },
+          type: 'approvalInitiator',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const approvalDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: approvalSurface.gridUid,
+          },
+          type: 'approvalInformation',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+
+    const applyManagerField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: applyForm.uid,
+          },
+          fieldPath: 'manager',
+        },
+      }),
+    );
+    const applySkillsField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: applyForm.uid,
+          },
+          fieldPath: 'skills',
+        },
+      }),
+    );
+    const approvalManagerField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: approvalDetails.uid,
+          },
+          fieldPath: 'manager',
+        },
+      }),
+    );
+    const approvalSkillsField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: approvalDetails.uid,
+          },
+          fieldPath: 'skills',
+        },
+      }),
+    );
+
+    const applyManagerCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: applyManagerField.wrapperUid,
+          },
+        },
+      }),
+    );
+    const applySkillsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: applySkillsField.wrapperUid,
+          },
+        },
+      }),
+    );
+    const approvalManagerCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: approvalManagerField.wrapperUid,
+          },
+        },
+      }),
+    );
+    const approvalSkillsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: approvalSkillsField.wrapperUid,
+          },
+        },
+      }),
+    );
+
+    expect(applyManagerCatalog.node.configureOptions.fieldComponent.enum).toEqual([
+      'RecordSelectFieldModel',
+      'RecordPickerFieldModel',
+      'SubFormFieldModel',
+    ]);
+    expect(applySkillsCatalog.node.configureOptions.fieldComponent.enum).toEqual([
+      'RecordSelectFieldModel',
+      'RecordPickerFieldModel',
+      'SubFormListFieldModel',
+      'PatternSubTableFieldModel',
+    ]);
+    expect(approvalManagerCatalog.node.configureOptions.fieldComponent.enum).toEqual([
+      'DisplayTextFieldModel',
+      'DisplaySubItemFieldModel',
+    ]);
+    expect(approvalSkillsCatalog.node.configureOptions.fieldComponent.enum).toEqual([
+      'DisplayTextFieldModel',
+      'DisplaySubListFieldModel',
+      'DisplaySubTableFieldModel',
+    ]);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: applyManagerField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'RecordPickerFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: applyManagerField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'SubFormFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: applySkillsField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'SubFormListFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: applySkillsField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'PatternSubTableFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: approvalManagerField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'DisplaySubItemFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: approvalSkillsField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'DisplaySubListFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: approvalSkillsField.wrapperUid,
+            },
+            changes: {
+              fieldComponent: 'DisplaySubTableFieldModel',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const applyManagerWrapperReadback = await getSurface(rootAgent, {
+      uid: applyManagerField.wrapperUid,
+    });
+    const applyManagerInnerReadback = await getSurface(rootAgent, {
+      uid: applyManagerField.fieldUid,
+    });
+    const applySkillsWrapperReadback = await getSurface(rootAgent, {
+      uid: applySkillsField.wrapperUid,
+    });
+    const applySkillsInnerReadback = await getSurface(rootAgent, {
+      uid: applySkillsField.fieldUid,
+    });
+    const approvalManagerWrapperReadback = await getSurface(rootAgent, {
+      uid: approvalManagerField.wrapperUid,
+    });
+    const approvalManagerInnerReadback = await getSurface(rootAgent, {
+      uid: approvalManagerField.fieldUid,
+    });
+    const approvalSkillsWrapperReadback = await getSurface(rootAgent, {
+      uid: approvalSkillsField.wrapperUid,
+    });
+    const approvalSkillsInnerReadback = await getSurface(rootAgent, {
+      uid: approvalSkillsField.fieldUid,
+    });
+
+    expect(applyManagerWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBe('SubFormFieldModel');
+    expect(applyManagerInnerReadback.tree).toMatchObject({
+      use: 'PatternFormFieldModel',
+      stepParams: {
+        fieldBinding: {
+          use: 'SubFormFieldModel',
+        },
+      },
+    });
+    expect(applySkillsWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBe('PatternSubTableFieldModel');
+    expect(applySkillsInnerReadback.tree).toMatchObject({
+      use: 'PatternFormFieldModel',
+      stepParams: {
+        fieldBinding: {
+          use: 'PatternSubTableFieldModel',
+        },
+      },
+    });
+    expect(approvalManagerWrapperReadback.tree.stepParams?.detailItemSettings?.model?.use).toBe(
+      'DisplaySubItemFieldModel',
+    );
+    expect(approvalManagerInnerReadback.tree).toMatchObject({
+      use: 'DisplaySubItemFieldModel',
+      stepParams: {
+        fieldBinding: {
+          use: 'DisplaySubItemFieldModel',
+        },
+      },
+    });
+    expect(approvalSkillsWrapperReadback.tree.stepParams?.detailItemSettings?.model?.use).toBe(
+      'DisplaySubTableFieldModel',
+    );
+    expect(approvalSkillsInnerReadback.tree).toMatchObject({
+      use: 'DisplaySubTableFieldModel',
+      stepParams: {
+        fieldBinding: {
+          use: 'DisplaySubTableFieldModel',
         },
       },
     });
