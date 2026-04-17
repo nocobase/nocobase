@@ -7,30 +7,78 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {Args, Command, Flags} from '@oclif/core'
+import { Args, Command, Flags } from '@oclif/core';
+import { spawn } from 'node:child_process';
+
+function runNpm(cwd: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('npm', args, {
+      stdio: 'inherit',
+      shell: true,
+      cwd,
+      env: process.env,
+    });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`npm exited with code ${code}`));
+    });
+  });
+}
 
 export default class Build extends Command {
   static override args = {
-    file: Args.string({description: 'file to read'}),
-  }
-  static override description = 'describe the command here'
+    /** Matches `nb build @nocobase/acl @nocobase/actions` — zero or more package names. */
+    packages: Args.string({
+      description: 'package names to build',
+      multiple: true,
+      required: false,
+    }),
+  };
+  static override description = 'Run the legacy NocoBase build (forwards to `npm run build` in the repo root)';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-  ]
+    '<%= config.bin %> <%= command.id %> --no-dts',
+    '<%= config.bin %> <%= command.id %> --sourcemap',
+    '<%= config.bin %> <%= command.id %> @nocobase/acl',
+    '<%= config.bin %> <%= command.id %> @nocobase/acl @nocobase/actions',
+  ];
   static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
-  }
+    'no-dts': Flags.boolean({ description: 'not generate dts' }),
+    sourcemap: Flags.boolean({ description: 'generate sourcemap' }),
+  };
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(Build)
+    const { args, flags } = await this.parse(Build);
+    const packages = args.packages ?? [];
+    const forwarded: string[] = [...packages];
+    if (flags['no-dts']) {
+      forwarded.push('--no-dts');
+    }
+    if (flags.sourcemap) {
+      forwarded.push('--sourcemap');
+    }
 
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from packages/core/cli/src/commands/build.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
+    const npmArgs = ['run', 'build'];
+    if (forwarded.length > 0) {
+      npmArgs.push('--', ...forwarded);
+    }
+
+    try {
+      await runNpm(process.cwd(), npmArgs);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.error(
+        [
+          'Failed to run `npm run build`.',
+          'Run from the NocoBase repo root (where the `build` script runs `nocobase-v1 build`), or invoke the legacy CLI directly.',
+          message,
+        ].join('\n'),
+        { exit: 1 },
+      );
     }
   }
 }
