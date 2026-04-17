@@ -115,20 +115,49 @@ Do not end your task without calling **${toolName}**.
         await resolveUrls(files);
       }
 
-      const result = await aiEmployee.invoke({
-        userMessages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              content: userMessage,
+      let result;
+      let isToolInvoke = false;
+      let retry = 0;
+      do {
+        let userMessages = [];
+        if (retry === 0) {
+          userMessages = [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                content: userMessage,
+              },
+              ...attachmentPart,
             },
-            ...attachmentPart,
-          },
-        ],
-      });
+          ];
+        } else {
+          userMessages = [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                content: `You failed to call the required tool "${toolName}" in your previous response. This is a mandatory step. Call "${toolName}" immediately now and do not respond again without invoking it.`,
+              },
+            },
+          ];
+        }
+        result = await aiEmployee.invoke({ userMessages });
+        isToolInvoke = result.messages
+          .filter((it) => it.type === 'ai')
+          .flatMap((it) => it.tool_calls)
+          .some((it) => it.name === toolName);
+      } while (!isToolInvoke && retry++ < 1);
 
-      await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
+      if (isToolInvoke) {
+        await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
+      } else {
+        job.set({
+          status: JOB_STATUS.ERROR,
+          result: 'AI employee not do job correctly',
+        });
+        await this.workflow.resume(job);
+      }
     };
 
     runner().catch((e) => {
@@ -141,6 +170,7 @@ Do not end your task without calling **${toolName}**.
         status: JOB_STATUS.ERROR,
         result: e.message,
       });
+      this.workflow.resume(job);
     });
 
     processor.exit();
