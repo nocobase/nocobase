@@ -8,26 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { spawn } from 'node:child_process';
-
-function runNpm(cwd: string, args: string[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn('npm', args, {
-      stdio: 'inherit',
-      shell: true,
-      cwd,
-      env: process.env,
-    });
-    child.once('error', reject);
-    child.once('close', (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-      reject(new Error(`npm exited with code ${code}`));
-    });
-  });
-}
+import { runNpm } from '../lib/run-npm.ts';
 
 export default class Build extends Command {
   static override args = {
@@ -47,6 +28,7 @@ export default class Build extends Command {
     '<%= config.bin %> <%= command.id %> @nocobase/acl @nocobase/actions',
   ];
   static override flags = {
+    env: Flags.string({ description: 'Environment', char: 'e', required: false }),
     'no-dts': Flags.boolean({ description: 'not generate dts' }),
     sourcemap: Flags.boolean({ description: 'generate sourcemap' }),
   };
@@ -62,7 +44,7 @@ export default class Build extends Command {
       forwarded.push('--sourcemap');
     }
 
-    const npmArgs = ['run', 'build'];
+    const npmArgs = ['nocobase', 'build'];
     if (forwarded.length > 0) {
       npmArgs.push('--', ...forwarded);
     }
