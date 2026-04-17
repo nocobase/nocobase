@@ -8,14 +8,10 @@
  */
 
 import React from 'react';
-import { GetProp, Popover, Avatar, Space, Spin } from 'antd';
+import { GetProp } from 'antd';
 import { Bubble } from '@ant-design/x';
 import { AIMessage, ErrorMessage, HintMessage, TaskMessage, UserMessage } from './MessageRenderer';
 import { AIEmployee } from '../types';
-import { ProfileCard } from '../ProfileCard';
-import { avatars } from '../avatars';
-import { LoadingOutlined } from '@ant-design/icons';
-import { useT } from '../../locale';
 import { AIThinking } from './AIThinking';
 
 export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
@@ -45,6 +41,11 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
   hint: {
     placement: 'start',
     variant: 'borderless',
+    styles: {
+      content: {
+        margin: '8px 16px',
+      },
+    },
     messageRender: (msg: any) => <HintMessage msg={msg} />,
   },
   task: {
