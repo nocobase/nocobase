@@ -73,10 +73,11 @@ function formatCliEntryError(error, argv) {
 
 try {
   const argv = process.argv.slice(2);
-  await ensureRuntimeFromArgv(argv, {
-    configFile: path.join(root, 'nocobase-ctl.config.json'),
-  });
-
+  if (argv[0] === 'api') {
+    await ensureRuntimeFromArgv(argv, {
+      configFile: path.join(root, 'nocobase-ctl.config.json'),
+    });
+  }
   await run(argv, import.meta.url);
   flush();
 } catch (error) {

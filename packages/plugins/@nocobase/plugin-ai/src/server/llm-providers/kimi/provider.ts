@@ -82,7 +82,7 @@ export class KimiProvider extends LLMProvider {
     return attachment.mimetype?.startsWith('image/') ?? false;
   }
 
-  private get aiPlugin(): PluginAIServer {
+  protected get aiPlugin(): PluginAIServer {
     return this.app.pm.get('ai');
   }
 
