@@ -4,11 +4,10 @@ import {
   Search,
   SocialLinks,
   SwitchAppearance,
-  NavHamburger
 } from '@rspress/core/theme';
 import './index.scss';
 import { NavLangs, NavMenu, NavMenuDivider, NavVersions } from './NavMenu';
-// import { NavHamburger } from '../NavHamburger';
+import { NavHamburger } from '../NavHamburger';
 
 export interface NavProps {
   beforeNavTitle?: React.ReactNode;
