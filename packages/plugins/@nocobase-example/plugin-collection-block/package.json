@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-collection-block",
   "displayName": "Plugin example: Collection block",
   "description": "This plugin demonstrates how to use the collection block feature to create a block for a collection.",
-  "version": "2.1.0-alpha.17",
+  "version": "2.1.0-alpha.18",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
