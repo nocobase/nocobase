@@ -1,6 +1,6 @@
 ---
 title: "发布管理"
-description: "发布管理 skill 用于在多环境之间执行可审计的发布操作。"
+description: "发布管理 Skill 用于在多环境之间执行可审计的发布操作。"
 keywords: "AI 搭建,发布管理,跨环境发布,备份恢复,迁移,回滚"
 ---
 
@@ -8,7 +8,7 @@ keywords: "AI 搭建,发布管理,跨环境发布,备份恢复,迁移,回滚"
 
 ## 简介
 
-发布管理 skill 用于在多环境之间执行可审计的发布操作——支持备份恢复（`backup_restore`）和迁移（`migration`）两种发布方式，关键步骤都有硬闸门保护。
+发布管理 Skill 用于在多环境之间执行可审计的发布操作——支持备份恢复（`backup_restore`）和迁移（`migration`）两种发布方式，关键步骤都有严格的校验逻辑。
 
 ## 安装
 
@@ -18,45 +18,37 @@ npx skills add nocobase/skills --skill nocobase-publish-manage -y
 
 ## 能力范围
 
-可以做：
-
 - 发布前预检：检查源和目标环境状态、必要插件是否就绪
 - 跨环境发布：支持备份恢复和迁移两种方式
 - 发布后验证：自动校验发布结果
 - 异常回滚：按备份包回滚到发布前的状态
 - 可审计执行：每一步都带上下文标注，方便复盘
 
-不能做：
-
-- 不能做单环境安装或升级（用多环境管理 skill）
-- 不能跳过确认闸门直接发布
-- 不能在不具备商业能力（`plugin-migration-manager`）的环境上做迁移
-
 ## 提示词示例
 
-### 场景 A：发布前预检
+### 场景 A：发布到不同环境
 
 ```
-从本地环境发布到测试环境前，先做一下预检
+从开发环境发布到测试环境
 ```
 
-会检查两端环境可用性、版本兼容性和必要插件状态。
+会询问发布方式和发布策略，发布方式分为备份发布和新建发布，发布策略提供了 4 种预设组合。
 
-### 场景 B：备份恢复发布
-
-```
-用 backup-20260415-001 这个备份包恢复到测试环境
-```
-
-需要提供 `publish_method_confirm=backup_restore` 和 `confirm=confirm` 两道确认。
-
-### 场景 C：迁移发布
+### 场景 B：迁移发布
 
 ```
-用 schema_only_all 模板做一次迁移发布到测试环境
+将开发环境迁移到测试环境
 ```
 
-会按模板策略处理用户表和系统表的同步方式。
+![迁移发布](https://static-docs.nocobase.com/20260417151022.png)
+
+### 场景 C：备份还原
+
+```
+用开发环境的备份包还原到测试环境
+```
+
+![备份还原](https://static-docs.nocobase.com/20260417150854.png)
 
 ## 常见问题
 
@@ -64,6 +56,11 @@ npx skills add nocobase/skills --skill nocobase-publish-manage -y
 
 如果你已经有可用的备份包，选 `backup_restore`。如果需要按策略控制哪些数据同步过去（比如只同步结构不同步数据），选 `migration`。
 
-**发布失败后怎么回滚？**
+**没有迁移插件是什么问题？**
 
-用 `action=rollback` 加上之前的备份包标识即可。建议每次发布前开启 `backup_auto=true`，让 skill 自动在变更前备份。
+迁移管理插件需要专业版及以上，详见 [NocoBase 商业版](https://www.nocobase.com/cn/commercial)。
+
+## 相关链接
+
+- [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
+- [安装升级](./env-bootstrap) — 环境检查、安装部署和故障诊断

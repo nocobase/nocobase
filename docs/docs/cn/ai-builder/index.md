@@ -28,13 +28,13 @@ Agent Skills 是可安装到 AI Agent 中的领域知识包。安装后，AI 工
 npx skills add nocobase/skills -y
 ```
 
-### 按需安装单个 skill
+### 按需安装单个 Skill
 
 如果你只需要某个功能域，也可以单独安装：
 
 | Skill | 安装命令 | 说明 |
 |-------|---------|------|
-| [多环境管理](./env-bootstrap) | `npx skills add nocobase/skills --skill nocobase-env-bootstrap -y` | 环境检查、安装部署、升级和故障诊断 |
+| [安装升级](./env-bootstrap) | `npx skills add nocobase/skills --skill nocobase-env-bootstrap -y` | 环境检查、安装部署、升级和故障诊断 |
 | [数据建模](./data-modeling) | `npx skills add nocobase/skills --skill nocobase-data-modeling -y` | 创建和管理数据表、字段、关联关系 |
 | [界面配置](./ui-builder) | `npx skills add nocobase/skills --skill nocobase-ui-builder -y` | 创建和编辑页面、区块、弹窗、交互联动 |
 | [工作流配置](./workflow) | `npx skills add nocobase/skills --skill nocobase-workflow-manage -y` | 创建、编辑、启用和诊断工作流 |
@@ -45,4 +45,6 @@ npx skills add nocobase/skills -y
 
 ## 相关链接
 
-- [AI 员工](/ai-employees) — NocoBase 的智能体能力，支持在业务界面中协作和执行操作
+- [NocoBase CLI](../get-started/nocobase-cli.md) — 安装和管理 NocoBase 的命令行工具
+- [AI 开发](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
+- [AI 员工](../ai-employees/index.md) — NocoBase 的智能体能力，支持在业务界面中协作和执行操作

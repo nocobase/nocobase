@@ -1,6 +1,6 @@
 ---
 title: "解决方案"
-description: "解决方案 skill 用于从 YAML 配置文件批量搭建 NocoBase 应用。"
+description: "解决方案 Skill 用于从 YAML 配置文件批量搭建 NocoBase 应用。"
 keywords: "AI 搭建,解决方案,应用搭建,YAML,批量建表,仪表盘"
 ---
 
@@ -8,7 +8,7 @@ keywords: "AI 搭建,解决方案,应用搭建,YAML,批量建表,仪表盘"
 
 ## 简介
 
-解决方案 skill 用于从 YAML 配置文件批量搭建 NocoBase 应用——一次性创建数据表、配置页面、生成仪表盘和图表。
+解决方案 Skill 用于从 YAML 配置文件批量搭建 NocoBase 应用——一次性创建数据表、配置页面、生成仪表盘和图表。
 
 适合需要快速搭建整套业务系统的场景，比如 CRM、工单管理、进销存等。
 
@@ -30,9 +30,9 @@ npx skills add nocobase/skills --skill nocobase-dsl-reconciler -y
 
 不能做：
 
-- 不适合逐字段微调（用数据建模 skill 更合适）
+- 不适合逐字段微调（用[数据建模 Skill](./data-modeling) 更合适）
 - 不能做数据迁移或数据导入
-- 不能配置权限和工作流（需要配合其他 skill）
+- 不能配置权限和工作流（需要配合其他 Skill）
 
 ## 提示词示例
 
@@ -42,7 +42,7 @@ npx skills add nocobase/skills --skill nocobase-dsl-reconciler -y
 帮我搭建一个工单管理系统，包含仪表盘、工单列表、用户管理、SLA 配置
 ```
 
-skill 会先输出设计方案——列出所有数据表和页面结构，确认后再分轮次执行搭建。
+Skill 会先输出设计方案——列出所有数据表和页面结构，确认后再分轮次执行搭建。
 
 ### 场景 B：修改已有模块
 
@@ -68,4 +68,10 @@ NocoBase 使用 PostgreSQL，列名必须用驼峰写法并加双引号（比如
 
 **搭建后想微调某个字段怎么办？**
 
-整套搭建用解决方案 skill，后续微调用数据建模 skill 或界面配置 skill 更灵活。
+整套搭建用解决方案 Skill，后续微调用[数据建模 Skill](./data-modeling) 或[界面配置 Skill](./ui-builder) 更灵活。
+
+## 相关链接
+
+- [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
+- [数据建模](./data-modeling) — 逐字段微调用数据建模 Skill
+- [界面配置](./ui-builder) — 搭建后微调页面和区块布局
