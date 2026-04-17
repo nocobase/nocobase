@@ -26,6 +26,7 @@ const useSendMessage = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
   const editingMessageId = useChatBoxStore.use.editingMessageId();
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const webSearch = useChatConversationsStore.use.webSearch();
@@ -39,6 +40,7 @@ const useSendMessage = () => {
 
   const { send } = useChatBoxActions();
   const handleSubmit = (content: string) => {
+    setShowSenderHint(false);
     send({
       sessionId: currentConversation,
       aiEmployee: currentEmployee,
