@@ -74,6 +74,18 @@ describe('kanban model utils', () => {
     expect(options.map((item) => item.color)).toEqual(['default', 'red', 'volcano']);
   });
 
+  test('normalizeKanbanGroupOptions falls back to enum title when label is absent', () => {
+    const options = normalizeKanbanGroupOptions([
+      { value: 'todo', title: 'To do' },
+      { value: 'done', name: 'Done name' },
+    ] as any);
+
+    expect(options).toEqual([
+      { value: 'todo', label: 'To do', color: 'default', enabled: true, isUnknown: undefined },
+      { value: 'done', label: 'Done name', color: 'red', enabled: true, isUnknown: undefined },
+    ]);
+  });
+
   test('getKanbanGroupFieldCandidates supports plain collection objects', () => {
     expect(
       getKanbanGroupFieldCandidates({

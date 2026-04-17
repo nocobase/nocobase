@@ -326,31 +326,40 @@ export const KanbanGroupOptionsTable = observer(
     }
 
     return (
-      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: optionsError ? 8 : 0,
+        }}
+      >
         {optionsError ? <Alert type="error" message={optionsError} showIcon /> : null}
         <Spin spinning={optionsLoading}>
-          {dataSource.length ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={dataSource.map((item) => item.key)} strategy={verticalListSortingStrategy}>
-                <Table
-                  pagination={false}
-                  size="small"
-                  rowKey="key"
-                  dataSource={dataSource}
-                  columns={columns}
-                  components={{
-                    body: {
-                      row: SortableRow,
-                    },
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={translate('No options')} />
-          )}
+          <div style={{ width: '100%' }}>
+            {dataSource.length ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                <SortableContext items={dataSource.map((item) => item.key)} strategy={verticalListSortingStrategy}>
+                  <Table
+                    pagination={false}
+                    size="small"
+                    rowKey="key"
+                    dataSource={dataSource}
+                    columns={columns}
+                    components={{
+                      body: {
+                        row: SortableRow,
+                      },
+                    }}
+                  />
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={translate('No options')} />
+            )}
+          </div>
         </Spin>
-      </Space>
+      </div>
     );
   },
 );

@@ -218,7 +218,24 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       resource.addAppends(groupField.name);
     }
 
+    // Forward resource refresh events to model emitter for reliable delivery
+    resource.on('refresh', () => {
+      this.emitter.emit('refresh');
+    });
+
     return resource;
+  }
+
+  onActive(forceRefresh = false) {
+    // Kanban needs dirty-version refresh on view activation (e.g. popup close)
+    // even though it uses manual refresh for initial data loading
+    const saved = this.isManualRefresh;
+    this.isManualRefresh = false;
+    try {
+      super.onActive(forceRefresh);
+    } finally {
+      this.isManualRefresh = saved;
+    }
   }
 
   renderConfigureActions() {
@@ -386,8 +403,16 @@ KanbanBlockModel.registerFlow({
         },
         groupOptions: {
           title: tExpr('Options', { ns: 'kanban' }),
+          type: 'array',
+          required: true,
           'x-component': 'KanbanGroupOptionsTable',
           'x-decorator': 'FormItem',
+          'x-validator': [
+            {
+              min: 1,
+              message: tExpr('At least one option is required', { ns: 'kanban' }),
+            },
+          ],
           'x-reactions': {
             dependencies: ['.groupField'],
             fulfill: {
@@ -419,10 +444,12 @@ KanbanBlockModel.registerFlow({
       },
       handler(ctx, params) {
         const model = ctx.model as KanbanBlockModel;
+        const nextGroupOptions = params.groupOptions || [];
+
         const nextSortField = model.getCompatibleSortFieldName(model.getConfiguredSortFieldName(), params.groupField);
         model.setProps({
           groupField: params.groupField,
-          groupOptions: params.groupOptions || [],
+          groupOptions: nextGroupOptions,
           sortField: nextSortField,
           dragEnabled: nextSortField ? model.getDragEnabled() : false,
         });
@@ -449,7 +476,7 @@ KanbanBlockModel.registerFlow({
           sortField: {
             title: tExpr('Sorting field', { ns: 'kanban' }),
             description: tExpr(
-              'Used to persist kanban drag order. Only sort fields corresponding to the grouping field can be selected, and you can create one here.',
+              'Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected',
               { ns: 'kanban' },
             ),
             required: false,

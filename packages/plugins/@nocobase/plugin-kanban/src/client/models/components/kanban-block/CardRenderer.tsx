@@ -98,12 +98,7 @@ export const LazyCardRenderer = memo(({ model, record, index, columnKey }: LazyC
 }, areLazyCardRendererPropsEqual);
 
 function areLazyCardRendererPropsEqual(prev: LazyCardRendererProps, next: LazyCardRendererProps) {
-  return (
-    prev.model === next.model &&
-    prev.record === next.record &&
-    prev.index === next.index &&
-    prev.columnKey === next.columnKey
-  );
+  return prev.model === next.model && prev.record === next.record && prev.columnKey === next.columnKey;
 }
 
 type DraggableKanbanCardProps = {

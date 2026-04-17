@@ -31,6 +31,7 @@ import { CardPlaceholder } from './kanban-block/CardRenderer';
 import {
   applyKanbanColumnOverride,
   areKanbanRecordListsEqual,
+  type ColumnRefreshMeta,
   createInitialColumnState,
   getRuntimeRecordKey,
   moveKanbanRecordByCoordinates,
@@ -73,14 +74,14 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   const [groupOptionsLoading, setGroupOptionsLoading] = useState(false);
   const [groupOptionsError, setGroupOptionsError] = useState<string>();
   const [columnStates, setColumnStates] = useState<Record<string, ColumnState>>({});
-  const [columnRefreshTokens, setColumnRefreshTokens] = useState<Record<string, number>>({});
-  const [dragPersisting, setDragPersisting] = useState(false);
+  const [columnRefreshMetaByColumn, setColumnRefreshMetaByColumn] = useState<Record<string, ColumnRefreshMeta>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const actionsContainerRef = useRef<HTMLDivElement>(null);
   const errorContainerRef = useRef<HTMLDivElement>(null);
   const columnStatesRef = useRef<Record<string, ColumnState>>({});
   const boardDisplayItemsRef = useRef<Record<string, KanbanRuntimeRecord[]>>({});
   const suppressGlobalRefreshUntilRef = useRef(0);
+  const dragPersistingRef = useRef(false);
   const [containerHeight, setContainerHeight] = useState(0);
   const [actionsHeight, setActionsHeight] = useState(0);
   const [errorHeight, setErrorHeight] = useState(0);
@@ -90,9 +91,9 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   const showActionsBar = !!model.context.flowSettingsEnabled || model.hasSubModel('actions');
   const heightMode = model.decoratorProps?.heightMode;
   const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
-  const dragEnabled = model.canDragSort() && !model.context.flowSettingsEnabled;
-  const dragInteractionEnabled = dragEnabled && !dragPersisting;
-  const crossColumnDragEnabled = model.canCrossColumnDrag() && !model.context.flowSettingsEnabled && !dragPersisting;
+  const dragEnabled = model.canDragSort();
+  const dragInteractionEnabled = dragEnabled;
+  const crossColumnDragEnabled = model.canCrossColumnDrag();
 
   useEffect(() => {
     columnStatesRef.current = columnStates;
@@ -118,20 +119,34 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     return runtimeColumns;
   }, [groupOptions, model]);
 
-  const triggerColumnRefresh = useCallback((columnKeys: Array<string | undefined>) => {
-    const uniqueColumnKeys = [...new Set(columnKeys.filter(Boolean) as string[])];
-    if (!uniqueColumnKeys.length) {
-      return;
-    }
+  const triggerColumnRefresh = useCallback(
+    (
+      columnKeys: Array<string | undefined>,
+      options: {
+        reason: 'global' | 'drag';
+        activeRecordKey?: string;
+      } = { reason: 'global' },
+    ) => {
+      const uniqueColumnKeys = [...new Set(columnKeys.filter(Boolean) as string[])];
+      if (!uniqueColumnKeys.length) {
+        return;
+      }
 
-    setColumnRefreshTokens((prev) => {
-      const next = { ...prev };
-      uniqueColumnKeys.forEach((columnKey) => {
-        next[columnKey] = (next[columnKey] || 0) + 1;
+      setColumnRefreshMetaByColumn((prev) => {
+        const next = { ...prev };
+        uniqueColumnKeys.forEach((columnKey) => {
+          const previousToken = next[columnKey]?.token || 0;
+          next[columnKey] = {
+            token: previousToken + 1,
+            reason: options.reason,
+            activeRecordKey: options.activeRecordKey,
+          };
+        });
+        return next;
       });
-      return next;
-    });
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     const updateMeasuredHeights = () => {
@@ -213,28 +228,27 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   }, [groupField, groupFieldName, model, model.props.groupOptions]);
 
   useEffect(() => {
-    if (model.context.flowSettingsEnabled) {
-      return;
-    }
-
     const handleRefresh = () => {
       if (Date.now() < suppressGlobalRefreshUntilRef.current) {
         suppressGlobalRefreshUntilRef.current = 0;
         return;
       }
 
-      triggerColumnRefresh(columns.map((column) => column.key));
+      triggerColumnRefresh(
+        columns.map((column) => column.key),
+        { reason: 'global' },
+      );
     };
 
-    model.resource.on('refresh', handleRefresh);
+    model.emitter.on('refresh', handleRefresh);
     return () => {
-      model.resource.off('refresh', handleRefresh);
+      model.emitter.off('refresh', handleRefresh);
     };
   }, [columns, model, triggerColumnRefresh, model.context.flowSettingsEnabled]);
 
   useEffect(() => {
     setColumnStates({});
-    setColumnRefreshTokens({});
+    setColumnRefreshMetaByColumn({});
   }, [groupFieldName, groupOptions]);
 
   const boardDisplayItemsByColumn = useMemo(() => {
@@ -272,7 +286,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
       }
 
       const state = columnStates[column.key];
-      const refreshToken = columnRefreshTokens[column.key] || 0;
+      const refreshToken = columnRefreshMetaByColumn[column.key]?.token || 0;
       if (!state) {
         return true;
       }
@@ -287,7 +301,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
 
       return (boardDisplayItemsByColumn[column.key] || []).length > 0;
     });
-  }, [boardDisplayItemsByColumn, columnRefreshTokens, columnStates, columns]);
+  }, [boardDisplayItemsByColumn, columnRefreshMetaByColumn, columnStates, columns]);
 
   const applyPreviewToColumnStates = useCallback(
     (options: {
@@ -364,6 +378,10 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     async (result: DropResult) => {
       const { source, destination } = result;
 
+      if (dragPersistingRef.current) {
+        return;
+      }
+
       if (!destination) {
         return;
       }
@@ -422,14 +440,15 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
 
       const previousColumnStates = columnStatesRef.current;
       const affectedColumnKeys = [...new Set([sourceColumnKey, targetColumnKey])];
+      const activeRecordKey = getRuntimeRecordKey(sourceRecord, model.collection) || String(sourceId);
 
       applyPreviewToColumnStates({
         previewItemsByColumn,
         sourceColumnKey,
         targetColumnKey,
-        activeRecordKey: getRuntimeRecordKey(sourceRecord, model.collection) || String(sourceId),
+        activeRecordKey,
       });
-      setDragPersisting(true);
+      dragPersistingRef.current = true;
 
       try {
         await model.resource.runAction('move', {
@@ -443,13 +462,16 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         suppressGlobalRefreshUntilRef.current = Date.now() + 1500;
 
         if (shouldRefreshColumnsAfterMove(affectedColumnKeys)) {
-          triggerColumnRefresh(affectedColumnKeys);
+          triggerColumnRefresh(affectedColumnKeys, {
+            reason: 'drag',
+            activeRecordKey,
+          });
         }
       } catch (error: any) {
         setColumnStates(previousColumnStates);
         setMoveError(affectedColumnKeys, error?.message || model.translate('Failed to save drag sort'));
       } finally {
-        setDragPersisting(false);
+        dragPersistingRef.current = false;
       }
     },
     [
@@ -493,7 +515,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
             state={columnStates[column.key]}
             displayItems={boardDisplayItemsByColumn[column.key] || []}
             setState={setColumnStates}
-            refreshToken={columnRefreshTokens[column.key] || 0}
+            refreshMeta={columnRefreshMetaByColumn[column.key]}
             fixedHeight={Boolean(contentHeight)}
             dragEnabled={dragEnabled}
             dragInteractionEnabled={dragInteractionEnabled}

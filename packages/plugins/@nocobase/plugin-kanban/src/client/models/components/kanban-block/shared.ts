@@ -41,6 +41,12 @@ export type RuntimeColumn = {
   isUnknown?: boolean;
 };
 
+export type ColumnRefreshMeta = {
+  token: number;
+  reason: 'global' | 'drag';
+  activeRecordKey?: string;
+};
+
 export type KanbanRuntimeRecord = {
   id?: string | number;
   __kanbanRecordKey?: string;
@@ -193,9 +199,56 @@ export const areKanbanRecordListsEqual = (
   return left.every((item, index) => {
     const nextItem = right[index];
     return (
+      item === nextItem &&
       getRuntimeRecordKey(item, collection) === getRuntimeRecordKey(nextItem, collection) &&
       item?.__kanbanColumnKey === nextItem?.__kanbanColumnKey
     );
+  });
+};
+
+export const reuseKanbanRecordReferences = (options: {
+  previousItems?: KanbanRuntimeRecord[];
+  nextItems?: KanbanRuntimeRecord[];
+  collection?: { filterTargetKey?: string | string[]; getFilterByTK?: (record: any) => any };
+  skipRecordKeys?: Array<string | undefined>;
+}) => {
+  const { previousItems = [], nextItems = [], collection, skipRecordKeys = [] } = options;
+  const previousItemMap = new Map<string, KanbanRuntimeRecord>();
+  const skipKeySet = new Set(skipRecordKeys.filter(Boolean).map(String));
+
+  previousItems.forEach((item) => {
+    const recordKey = getRuntimeRecordKey(item, collection);
+    if (recordKey === undefined || recordKey === null) {
+      return;
+    }
+
+    const normalizedKey = String(recordKey);
+    if (!previousItemMap.has(normalizedKey)) {
+      previousItemMap.set(normalizedKey, item);
+    }
+  });
+
+  return nextItems.map((item) => {
+    const recordKey = getRuntimeRecordKey(item, collection);
+    if (recordKey === undefined || recordKey === null) {
+      return item;
+    }
+
+    const normalizedKey = String(recordKey);
+    if (skipKeySet.has(normalizedKey)) {
+      return item;
+    }
+
+    const previousItem = previousItemMap.get(normalizedKey);
+    if (!previousItem) {
+      return item;
+    }
+
+    if (previousItem?.__kanbanColumnKey !== item?.__kanbanColumnKey) {
+      return item;
+    }
+
+    return previousItem;
   });
 };
 

@@ -59,7 +59,7 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
     const onCardClick = this.context.onCardClick as (() => void) | undefined;
     const recordKey = getKanbanRecordKey(record, this.context.collection) || String(index);
     const cardScopeKey = String((this as any).forkId || this.uid || recordKey);
-    const fieldIndex = [`${cardScopeKey}:${index}`];
+    const fieldIndex = [cardScopeKey];
     const grid = this.subModels.grid.createFork({}, `grid-${cardScopeKey}`) as any;
 
     grid.gridContainerRef = React.createRef<HTMLDivElement>();

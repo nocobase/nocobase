@@ -15,11 +15,13 @@ import type { KanbanBlockModel } from '../../KanbanBlockModel';
 import { toKanbanAlphaColor } from '../../utils';
 import { CardPlaceholder, DraggableKanbanCard, LazyCardRenderer } from './CardRenderer';
 import {
+  type ColumnRefreshMeta,
   createColumnResource,
   createInitialColumnState,
   dedupeColumnItemsByRecordKey,
   getRuntimeRecordKey,
   normalizeKanbanRuntimeRecord,
+  reuseKanbanRecordReferences,
   type ColumnState,
   type KanbanRuntimeRecord,
   type RuntimeColumn,
@@ -33,7 +35,7 @@ export const ColumnPanel = ({
   state,
   displayItems,
   setState,
-  refreshToken,
+  refreshMeta,
   fixedHeight,
   dragEnabled,
   dragInteractionEnabled,
@@ -43,7 +45,7 @@ export const ColumnPanel = ({
   state: ColumnState | undefined;
   displayItems: KanbanRuntimeRecord[];
   setState: React.Dispatch<React.SetStateAction<Record<string, ColumnState>>>;
-  refreshToken: number;
+  refreshMeta?: ColumnRefreshMeta;
   fixedHeight: boolean;
   dragEnabled: boolean;
   dragInteractionEnabled: boolean;
@@ -69,6 +71,10 @@ export const ColumnPanel = ({
       const basePageSize = model.getPageSize() || 10;
       const requestPage = append ? requestedLoadedPages : 1;
       const requestPageSize = append ? basePageSize : basePageSize * requestedLoadedPages;
+
+      // Save scroll position before reload so we can restore it after
+      const scrollContainer = scrollContainerRef.current;
+      const savedScrollTop = scrollContainer?.scrollTop ?? 0;
 
       loadingRef.current = true;
       setState((prev) => ({
@@ -102,21 +108,36 @@ export const ColumnPanel = ({
 
         setState((prev) => {
           const previous = prev[column.key] || createInitialColumnState();
+          const resolvedItems = append
+            ? [...previous.items, ...nextItems]
+            : refreshMeta?.reason === 'drag'
+              ? reuseKanbanRecordReferences({
+                  previousItems: previous.items,
+                  nextItems,
+                  collection: model.collection,
+                  skipRecordKeys: [refreshMeta.activeRecordKey],
+                })
+              : nextItems;
+
           return {
             ...prev,
             [column.key]: {
-              items: dedupeColumnItemsByRecordKey(
-                append ? [...previous.items, ...nextItems] : nextItems,
-                model.collection,
-              ),
+              items: dedupeColumnItemsByRecordKey(resolvedItems, model.collection),
               page: resolvedLoadedPages,
               hasNext: resolvedHasNext,
               count: Number.isNaN(metaCount) ? nextItems.length : metaCount,
               loading: false,
-              loadedRefreshToken: refreshToken,
+              loadedRefreshToken: refreshMeta?.token || 0,
             },
           };
         });
+
+        // Restore scroll position after non-append reload
+        if (!append && savedScrollTop > 0 && scrollContainer) {
+          requestAnimationFrame(() => {
+            scrollContainer.scrollTop = savedScrollTop;
+          });
+        }
       } catch (error: any) {
         setState((prev) => ({
           ...prev,
@@ -124,14 +145,14 @@ export const ColumnPanel = ({
             ...(prev[column.key] || createInitialColumnState()),
             loading: false,
             error: error?.message || model.translate('Failed to load data'),
-            loadedRefreshToken: refreshToken,
+            loadedRefreshToken: refreshMeta?.token || 0,
           },
         }));
       } finally {
         loadingRef.current = false;
       }
     },
-    [column, model, refreshToken, setState],
+    [column, model, refreshMeta, setState],
   );
 
   useEffect(() => {
@@ -156,7 +177,7 @@ export const ColumnPanel = ({
 
   useEffect(() => {
     void loadPage(loadedPageCountRef.current, false);
-  }, [column.key, loadPage, refreshToken]);
+  }, [column.key, loadPage, refreshMeta?.token]);
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;

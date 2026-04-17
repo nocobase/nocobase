@@ -375,11 +375,21 @@ export const getKanbanInlineGroupOptions = (field?: any, savedOptions: Array<Par
   return normalizeKanbanGroupOptions(
     enumOptions.map((item: any) => ({
       value: item.value,
-      label: item.label,
+      label: item.label ?? item.title ?? item.uiSchema?.title ?? item.name,
       color: item.color,
     })),
     savedOptions,
   );
+};
+
+const getKanbanGroupOptionLabel = (item: Partial<KanbanGroupOption> & Record<string, any>) => {
+  const resolvedLabel = item?.label ?? item?.title ?? item?.uiSchema?.title ?? item?.name;
+
+  if (typeof resolvedLabel === 'string' || typeof resolvedLabel === 'number' || typeof resolvedLabel === 'boolean') {
+    return String(resolvedLabel);
+  }
+
+  return String(item?.value ?? '');
 };
 
 export const areKanbanGroupOptionsEqual = (
@@ -429,7 +439,7 @@ export const normalizeKanbanGroupOptions = (
     const sourceColor = typeof item.color === 'string' && item.color !== 'default' ? item.color : undefined;
     return {
       value,
-      label: String(saved?.label ?? item.label ?? value),
+      label: saved?.label ? String(saved.label) : getKanbanGroupOptionLabel(item),
       color: String(saved?.color ?? getDefaultKanbanColor(index, sourceColor)),
       enabled: saved?.enabled ?? item.enabled ?? true,
       isUnknown: item.isUnknown ?? saved?.isUnknown,

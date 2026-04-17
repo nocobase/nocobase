@@ -83,6 +83,23 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
   });
 
+  test('grouping uiSchema requires at least one option before save', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const schema = step.uiSchema({ model: { uid: 'kanban-1' }, collection: { name: 'posts' } } as any);
+
+    expect(schema.groupOptions).toMatchObject({
+      type: 'array',
+      required: true,
+      'x-validator': [
+        {
+          min: 1,
+          message: '{{t("At least one option is required", {"ns":"kanban"})}}',
+        },
+      ],
+    });
+  });
+
   test('grouping uiSchema does not embed cyclical runtime objects in component props', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;
@@ -100,8 +117,16 @@ describe('KanbanBlockModel.filterCollection', () => {
       },
       groupOptions: {
         title: '{{t("Options", {"ns":"kanban"})}}',
+        type: 'array',
+        required: true,
         'x-component': 'KanbanGroupOptionsTable',
         'x-decorator': 'FormItem',
+        'x-validator': [
+          {
+            min: 1,
+            message: '{{t("At least one option is required", {"ns":"kanban"})}}',
+          },
+        ],
         'x-reactions': {
           dependencies: ['.groupField'],
           fulfill: {

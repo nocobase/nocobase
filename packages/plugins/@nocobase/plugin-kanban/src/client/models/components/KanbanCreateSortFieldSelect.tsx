@@ -245,7 +245,6 @@ export const KanbanCreateSortFieldSelect = (props: {
           return (
             <Space>
               <span>{label}</span>
-              {renderScopeKeyDescription(data.scopeKey)}
             </Space>
           );
         }}
