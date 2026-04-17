@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Cache } from '@nocobase/cache';
 import { uid } from '@nocobase/utils';
 import fs from 'fs';
 import fse from 'fs-extra';
@@ -15,6 +14,7 @@ import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
 import crypto from 'crypto';
+import { pmListSummary } from '../utils';
 
 import packageJson from '../../../package.json';
 
@@ -231,6 +231,11 @@ export default {
       await next();
     },
     async list(ctx, next) {
+      const { mode } = ctx.action.params;
+      if (mode === 'summary') {
+        ctx.body = await pmListSummary(ctx.app);
+        return next();
+      }
       const locale = ctx.getCurrentLocale();
       const pm = ctx.app.pm as PluginManager;
       // ctx.body = await pm.list({ locale, isPreset: false });
