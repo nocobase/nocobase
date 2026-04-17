@@ -7,30 +7,46 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {Args, Command, Flags} from '@oclif/core'
+import { Command } from '@oclif/core';
+import { spawn } from 'node:child_process';
+
+function runNpmInstallGlobal(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('npm', ['install', '-g', ...args], {
+      stdio: 'inherit',
+      shell: true,
+      env: process.env,
+    });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`npm exited with code ${code}`));
+    });
+  });
+}
 
 export default class SelfUpdate extends Command {
-  static override args = {
-    file: Args.string({description: 'file to read'}),
-  }
-  static override description = 'describe the command here'
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-  ]
-  static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
-  }
+  static override description = 'Update the NocoBase CLI to the latest version';
+  static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(SelfUpdate)
-
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from packages/core/cli/src/commands/self-update.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
+    this.log('Updating NocoBase CLI to the latest version...');
+    try {
+      await runNpmInstallGlobal(['@nocobase/cli']);
+      this.log('Update finished.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.error(
+        [
+          'Failed to update the CLI.',
+          'Try running manually: npm install -g @nocobase/cli',
+          message,
+        ].join('\n'),
+        { exit: 1 },
+      );
     }
   }
 }

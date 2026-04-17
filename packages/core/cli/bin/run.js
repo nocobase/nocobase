@@ -9,6 +9,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const realRoot = fs.realpathSync(root);
 const isSourcePackage = realRoot.split(path.sep).join('/').endsWith('/packages/core/cli');
+let isDev = isSourcePackage;
+if (process.env.NODE_ENV === 'production') {
+  isDev = false;
+}
 
 /**
  * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import tsx`
@@ -30,17 +34,15 @@ function reexecWithTsx() {
   process.exit(result.status === null ? 1 : result.status);
 }
 
-if (isSourcePackage && !process.env._NOCO_CLI_TSX_CHILD) {
+if (isDev && !process.env._NOCO_CLI_TSX_CHILD) {
   reexecWithTsx();
 }
 
-const bootstrapPath = isSourcePackage
-  ? path.join(root, 'src/lib/bootstrap.ts')
-  : path.join(root, 'dist/lib/bootstrap.js');
+const bootstrapPath = isDev ? path.join(root, 'src/lib/bootstrap.ts') : path.join(root, 'dist/lib/bootstrap.js');
 const { ensureRuntimeFromArgv } = await import(pathToFileURL(bootstrapPath).href);
 const { flush, run, settings } = await import('@oclif/core');
 
-if (isSourcePackage) {
+if (isDev) {
   settings.debug = true;
 }
 
