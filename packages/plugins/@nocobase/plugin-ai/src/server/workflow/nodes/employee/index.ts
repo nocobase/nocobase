@@ -18,7 +18,6 @@ import {
 import _ from 'lodash';
 import PluginAIServer from '../../../plugin';
 import { AIEmployee } from '../../../ai-employees/ai-employee';
-import { Model, Transactionable, UpdateOptions } from '@nocobase/database';
 import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
@@ -365,74 +364,5 @@ async function parseAssignees(node, processor): Promise<number[]> {
   return assignees;
 }
 
-export const registerOnJobAbortedHandler = (plugin: PluginAIServer) => {
-  plugin.db.on('jobs.afterBulkUpdate', async (options: any) => {
-    const { model, attributes, where, transaction } = options;
-    if (attributes.status !== JOB_STATUS.ABORTED) {
-      return;
-    }
-    const jobs = await model.findAll({ where, transaction });
-    const aiWorkflowTasks = await plugin.db.getRepository('aiWorkflowTasks').find({
-      filter: {
-        jobId: jobs.map((it) => it.id),
-      },
-      transaction,
-    });
-    if (!aiWorkflowTasks.length) {
-      return;
-    }
-    for (const aiWorkflowTask of aiWorkflowTasks) {
-      await plugin.db.getRepository('aiWorkflowTasks').update({
-        values: { status: 'aborted' },
-        filter: {
-          id: aiWorkflowTask.id,
-        },
-        transaction,
-      });
-    }
-  });
-};
-
-export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
-  plugin.db.on('aiWorkflowTasks.beforeSave', async (model: Model, options: Transactionable) => {
-    if (!model.isNewRecord && !model.changed('status')) {
-      return;
-    }
-    const values = model.toJSON();
-    options.transaction?.afterCommit(async () => {
-      const assignees = await plugin.db.getRepository('usersAiWorkflowTasks').find({
-        filter: {
-          aiWorkflowTaskId: values.id,
-        },
-      });
-      if (!assignees?.length) {
-        return;
-      }
-
-      if (values.status === 'pending_acceptance') {
-        await plugin.db.getRepository('usersAiWorkflowTasks').update({
-          values: {
-            read: false,
-          },
-          filter: {
-            aiWorkflowTaskId: values.id,
-          },
-        });
-      }
-
-      for (const assignee of assignees) {
-        plugin.app.emit('ws:sendToUser', {
-          userId: assignee.userId,
-          message: {
-            type: 'ai-employee-tasks:status',
-            payload: {
-              taskId: values.id,
-              sessionId: values.sessionId,
-              status: values.status,
-            },
-          },
-        });
-      }
-    });
-  });
-};
+export * from './handler';
+export * from './tools';

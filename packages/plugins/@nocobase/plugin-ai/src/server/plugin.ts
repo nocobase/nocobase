@@ -47,8 +47,8 @@ import {
   AIEmployeeInstruction,
   registerAIEmployeeTaskNotification,
   registerOnJobAbortedHandler,
+  getWorkflowTasks,
 } from './workflow/nodes/employee';
-import { getWorkflowTasks } from './tools/workflow-tasks';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 
 export class PluginAIServer extends Plugin {
