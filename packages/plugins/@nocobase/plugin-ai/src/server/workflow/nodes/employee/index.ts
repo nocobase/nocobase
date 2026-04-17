@@ -37,21 +37,33 @@ export class AIEmployeeInstruction extends Instruction {
 
     const toolName = 'aiEmployeeWorkflowTaskOutput';
     const workflowSystemPrompt = `
-You are being driven by a workflow.
-You are not acting freely, and your output must be returned to that workflow.
-Your first priority is to use the tool **${toolName}**.
-You must call **${toolName}** to deliver your final result back to the workflow.
-Do not output the final result in a normal assistant message before calling the tool.
-In this workflow context, direct assistant output cannot be seen by the user and will not help complete the task.
-For maximum efficiency, put the result directly into the tool call payload of **${toolName}** instead of replying first and calling the tool afterward.
-Do not treat tool usage as optional.
-Do not skip it.
-Do not end your task without calling **${toolName}**.
+You are operating inside a workflow.
+Your job is to complete the workflow task and return the final outcome to the workflow, not to reply freely as a normal assistant.
+Use normal assistant messages only for reasoning that leads to tool calls; do not place the final outcome in a normal assistant message.
+When the task is ready to be submitted, you must call **${toolName}** to return it to the workflow.
+Do not treat **${toolName}** as optional, and do not finish the task without calling it.
+Decide the submission in this order:
+1. Choose \`result\` or \`alert\`.
+   - Use \`result\` when there is workflow data that must be passed back for subsequent execution.
+   - Use \`alert\` when there is no workflow data to return and the message is intended for a person instead, such as a status notice, a request for missing information, or a review prompt.
+2. If you use \`alert\`, choose the correct \`alert.type\`.
+   - Use \`info\` for a person-facing notice when no workflow data needs to be returned and execution may continue.
+   - Use \`warning\` when a person needs to pay attention or take action before execution can continue.
+3. Decide \`requiresApproval\` independently from the choice of \`result\` or \`alert\`.
+   - Set \`requiresApproval = true\` only when the workflow still requires human intervention after this submission, such as providing missing information, reviewing the outcome, or making a decision.
+   - Set \`requiresApproval = false\` whenever the workflow can proceed or end without any further human intervention.
+Important: \`alert\` does not imply \`requiresApproval = true\`, and \`result\` does not imply \`requiresApproval = false\`.
+Examples:
+- Completed task with workflow data to return: use \`result\`; set \`requiresApproval = false\` unless human review is still required.
+- Completed task with no workflow data to return, but a person should be informed: use \`alert.type = info\`; put the message in \`alert\`; set \`requiresApproval = false\`.
+- Missing information from a person: use \`alert.type = warning\`; explain what is missing in \`alert\`; set \`requiresApproval = true\`.
 `.trim();
     const systemMessage = `${workflowSystemPrompt}\n\n${
       typeof message.system === 'object' ? JSON.stringify(message.system) : message.system
     }`;
-    const userMessage = typeof message.user === 'object' ? JSON.stringify(message.user) : message.user;
+    const userMessage = `Current workflow task description: \n\n ${
+      typeof message.user === 'object' ? JSON.stringify(message.user) : message.user
+    }`;
 
     const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
@@ -132,35 +144,53 @@ Do not end your task without calling **${toolName}**.
       let isToolInvoke = false;
       let retry = 0;
       do {
-        let userMessages = [];
-        if (retry === 0) {
-          userMessages = [
-            {
-              role: 'user',
-              content: {
-                type: 'text',
-                content: userMessage,
-              },
-              ...attachmentPart,
+        const userMessages = [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              content: userMessage,
             },
-          ];
+            ...attachmentPart,
+          },
+        ];
+        if (retry > 0) {
+          if (retry < 2) {
+            const firstUserMessage = await this.workflow.db
+              .getRepository('aiConversations.messages', conversation.sessionId)
+              .findOne({
+                filter: {
+                  role: 'user',
+                },
+                sort: ['messageId'],
+              });
+            const messageId = firstUserMessage?.messageId;
+            result = await aiEmployee.invoke({ messageId, userMessages });
+          } else {
+            result = await aiEmployee.invoke({
+              userMessages: [
+                {
+                  role: 'user',
+                  content: {
+                    type: 'text',
+                    content: `You failed to call the required tool "aiEmployeeWorkflowTaskOutput" in your previous response.
+Call "aiEmployeeWorkflowTaskOutput" now to submit the workflow outcome.
+Do not send another normal assistant response without invoking it.
+                  `,
+                  },
+                },
+              ],
+            });
+          }
         } else {
-          userMessages = [
-            {
-              role: 'user',
-              content: {
-                type: 'text',
-                content: `You failed to call the required tool "${toolName}" in your previous response. This is a mandatory step. Call "${toolName}" immediately now and do not respond again without invoking it.`,
-              },
-            },
-          ];
+          result = await aiEmployee.invoke({ userMessages });
         }
-        result = await aiEmployee.invoke({ userMessages });
+
         isToolInvoke = result.messages
           .filter((it) => it.type === 'ai')
           .flatMap((it) => it.tool_calls)
           .some((it) => it.name === toolName);
-      } while (!isToolInvoke && retry++ < 1);
+      } while (!isToolInvoke && retry++ < 2);
 
       if (isToolInvoke) {
         await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });

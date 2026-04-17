@@ -9,7 +9,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { lazy, ToolsUIProperties, useAPIClient, useCompile, useRequest } from '@nocobase/client';
-import { Button, ButtonProps, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
+import { Alert, Button, ButtonProps, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
 const { Markdown } = lazy(() => import('../../chatbox/markdown/Markdown'), 'Markdown');
@@ -26,6 +26,11 @@ type WorkflowTaskOutputData = {
   nodeTitle?: string;
   structuredOutputSchema?: WorkflowTaskOutputSchema | string | null;
   args?: {
+    alert?: {
+      title: string;
+      description: string;
+      type: 'info' | 'warning';
+    };
     result?: Record<string, any>;
     [key: string]: any;
   } | null;
@@ -98,6 +103,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
 
   const cardData = data?.data;
   const schema = parseSchema(cardData?.structuredOutputSchema);
+  const alert = cardData?.args?.alert;
   const result = cardData?.args?.result;
   const descriptionItems = useMemo(() => {
     if (schema?.properties && result && typeof result === 'object') {
@@ -108,14 +114,25 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
       }));
     }
 
-    return [
-      {
-        key: 'result',
-        label: compile(schema?.title) || t('Response result'),
-        children: formatValue(result ?? cardData?.args),
-      },
-    ];
-  }, [cardData?.args, result, schema, t]);
+    if (alert) {
+      return [
+        {
+          key: 'alert',
+          label: '',
+          children: (
+            <Space direction="vertical">
+              <Alert type={alert.type} message={alert.title} showIcon />
+              <div style={{ width: '100%', overflowX: 'auto' }}>
+                <Markdown message={{ content: String(alert.description) }} />
+              </div>
+            </Space>
+          ),
+        },
+      ];
+    }
+
+    return [];
+  }, [alert, result, schema, compile]);
 
   const actionProps: ButtonProps = {
     size: 'small',
@@ -175,6 +192,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
           key="approve"
           color="primary"
           loading={action === 'approve'}
+          disabled={disabled || alert != null}
           onClick={async () => {
             setAction('approve');
             try {
