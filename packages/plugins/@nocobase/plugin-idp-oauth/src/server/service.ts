@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { createCacheAdapter } from './cache-adapter';
+import { createDbAdapter } from './db-adapter';
 import { normalizeBasePath } from './utils';
 
 type OidcModule = typeof import('oidc-provider');
@@ -554,7 +554,7 @@ export class IdpOauthService {
     const jwks = await this.getProviderSigningJwks(appName);
 
     return {
-      adapter: createCacheAdapter(this.app.cache, 'idp-oauth'),
+      adapter: createDbAdapter(this.app, 'oidcStates'),
       clients: [],
       scopes: this.getSupportedScopes(),
       jwks,
