@@ -21,19 +21,20 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
       this.model = model;
     }
 
-    private get repo() {
+    get repo() {
       return app.db.getRepository(collectionName);
     }
 
-    private isExpired(record?: any) {
+    isExpired(record?: any) {
       if (!record?.expiresAt) {
         return false;
       }
-      const value = record.expiresAt instanceof Date ? record.expiresAt.getTime() : new Date(record.expiresAt).getTime();
+      const value =
+        record.expiresAt instanceof Date ? record.expiresAt.getTime() : new Date(record.expiresAt).getTime();
       return value <= Date.now();
     }
 
-    private async destroyExpired(record?: any) {
+    async destroyExpired(record?: any) {
       if (!record?.id) {
         return;
       }
@@ -42,7 +43,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
       });
     }
 
-    private async findRecord(filter: Record<string, any>) {
+    async findRecord(filter: Record<string, any>) {
       const record = await this.repo.findOne({
         filter,
       });
