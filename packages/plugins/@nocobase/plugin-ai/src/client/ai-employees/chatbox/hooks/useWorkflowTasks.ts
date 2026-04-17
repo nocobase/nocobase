@@ -12,6 +12,7 @@ import { useAPIClient, useRequest } from '@nocobase/client';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { WorkflowTask } from '../conversations/common';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
+import { useChatBoxStore } from '../stores/chat-box';
 
 export const useWorkflowTasks = () => {
   const api = useAPIClient();
@@ -142,6 +143,16 @@ export const useWorkflowTasks = () => {
     [workflowTasksResource],
   );
 
+  const setReadonly = useChatBoxStore.use.setReadonly();
+  const updateReadonly = useCallback(
+    async (sessionId: string) => {
+      await acceptWorkflowTask(sessionId);
+      const task = await getWorkflowTaskBySession(sessionId);
+      setReadonly(task?.readonly === true);
+    },
+    [acceptWorkflowTask, getWorkflowTaskBySession, setReadonly],
+  );
+
   return {
     loading,
     workflowTasks,
@@ -153,5 +164,6 @@ export const useWorkflowTasks = () => {
     lastWorkflowTaskRef,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
+    updateReadonly,
   };
 };

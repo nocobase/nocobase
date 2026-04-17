@@ -407,5 +407,8 @@
   "Reject": "Reject",
   "Task executing": "Task executing",
   "Response result": "Result",
-  "Please enter and send the modification request": "Please enter and send the modification request"
+  "Please enter and send the modification request": "Please enter and send the modification request",
+  "{{ nickname }} is working in background.": "{{ nickname }} is working in background.",
+  "Click": "Click",
+  "to Refresh.": "to Refresh."
 }

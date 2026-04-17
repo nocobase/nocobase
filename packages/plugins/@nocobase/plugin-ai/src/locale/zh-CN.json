@@ -414,5 +414,8 @@
   "Reject": "拒绝",
   "Task executing": "任务执行中",
   "Response result": "结果",
-  "Please enter and send the modification request": "请输入并发送修改要求"
+  "Please enter and send the modification request": "请输入并发送修改要求",
+  "{{ nickname }} is working in background.": "{{ nickname }} 在后台工作中",
+  "Click": "点击",
+  "to Refresh.": "刷新。"
 }
