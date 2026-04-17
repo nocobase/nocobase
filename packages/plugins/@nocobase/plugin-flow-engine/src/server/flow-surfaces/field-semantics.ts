@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { normalizeApprovalSemanticUse } from './approval';
+
 const FORM_FIELD_CONTAINER_USES = new Set([
   'FormBlockModel',
   'CreateFormModel',
@@ -34,7 +36,7 @@ const TABLE_FIELD_CONTAINER_USES = new Set(['TableBlockModel', 'TableColumnModel
 export const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
 
 export function normalizeFieldContainerKind(containerUse?: string) {
-  const normalized = String(containerUse || '').trim();
+  const normalized = normalizeApprovalSemanticUse(containerUse);
   if (FORM_FIELD_CONTAINER_USES.has(normalized)) {
     return 'form';
   }

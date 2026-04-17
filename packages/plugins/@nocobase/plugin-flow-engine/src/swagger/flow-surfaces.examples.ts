@@ -211,6 +211,85 @@ export const flowSurfaceExamples = {
       },
     ],
   },
+  applyApprovalBlueprintInitiator: {
+    version: '1',
+    surface: 'initiator',
+    workflowId: 101,
+    blocks: [
+      {
+        key: 'initiatorForm',
+        type: 'approvalInitiator',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: ['nickname', 'status'],
+        actions: ['approvalSaveDraft', 'approvalWithdraw'],
+      },
+    ],
+    layout: {
+      rows: [['initiatorForm']],
+    },
+  },
+  applyApprovalBlueprintApprover: {
+    version: '1',
+    surface: 'approver',
+    nodeId: 201,
+    blocks: [
+      {
+        key: 'processForm',
+        type: 'approvalApprover',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: ['nickname'],
+        actions: [
+          'approvalApprove',
+          'approvalReject',
+          {
+            type: 'approvalReturn',
+            settings: {
+              approvalReturn: {
+                type: 'count',
+                count: 1,
+              },
+            },
+          },
+        ],
+      },
+      {
+        key: 'approvalInfo',
+        type: 'approvalInformation',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: ['status'],
+      },
+    ],
+    layout: {
+      rows: [['processForm'], ['approvalInfo']],
+    },
+  },
+  applyApprovalBlueprintTaskCard: {
+    version: '1',
+    surface: 'taskCard',
+    nodeId: 201,
+    fields: [
+      {
+        key: 'nickname',
+        fieldPath: 'nickname',
+      },
+      {
+        key: 'status',
+        fieldPath: 'status',
+      },
+    ],
+    layout: {
+      rows: [['nickname', 'status']],
+    },
+  },
   setFieldValueRules: {
     target: {
       uid: 'employees-form-uid',
@@ -965,6 +1044,46 @@ export const flowSurfaceExamples = {
       },
     },
   },
+  addFieldAutoPopupTemplate: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'department.title',
+    popup: {
+      tryTemplate: true,
+    },
+  },
+  addFieldDefaultEditPopup: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'department.title',
+    popup: {
+      defaultType: 'edit',
+    },
+  },
+  addFieldSavePopupTemplate: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    fieldPath: 'nickname',
+    popup: {
+      blocks: [
+        {
+          key: 'employee-popup-details',
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+          fields: ['nickname'],
+        },
+      ],
+      saveAsTemplate: {
+        name: 'employee-popup-template',
+        description: 'Save this explicit field popup as a reusable popup template.',
+      },
+    },
+  },
   addAction: {
     target: {
       uid: 'filter-form-block-uid',
@@ -982,6 +1101,37 @@ export const flowSurfaceExamples = {
     type: 'link',
     settings: {
       title: 'Open docs',
+    },
+  },
+  addAutoPopupAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'popup',
+    popup: {
+      tryTemplate: true,
+    },
+  },
+  addSavePopupAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'popup',
+    popup: {
+      blocks: [
+        {
+          key: 'employee-popup-table',
+          type: 'table',
+          resource: {
+            binding: 'currentCollection',
+          },
+          fields: ['username', 'nickname'],
+        },
+      ],
+      saveAsTemplate: {
+        name: 'employee-popup-template',
+        description: 'Save this explicit action popup as a reusable popup template.',
+      },
     },
   },
   addJsAction: {
@@ -1034,6 +1184,37 @@ export const flowSurfaceExamples = {
           fields: ['username', 'nickname'],
         },
       ],
+    },
+  },
+  addRecordAutoPopupTemplate: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'view',
+    popup: {
+      tryTemplate: true,
+    },
+  },
+  addRecordSavePopupTemplate: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'view',
+    popup: {
+      blocks: [
+        {
+          key: 'employee-record-popup-details',
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+          fields: ['username', 'nickname'],
+        },
+      ],
+      saveAsTemplate: {
+        name: 'employee-popup-template',
+        description: 'Save this explicit record-action popup as a reusable popup template.',
+      },
     },
   },
   addRecordAddChildAction: {
@@ -1336,6 +1517,9 @@ export const flowSurfaceExamples = {
     },
     mode: 'replace',
     spec: {
+      popup: {
+        tryTemplate: true,
+      },
       subModels: {
         items: [
           {

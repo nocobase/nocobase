@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { APPROVAL_DETAILS_BLOCK_USES, APPROVAL_FIELD_WRAPPER_USES, APPROVAL_FORM_BLOCK_USES } from './approval';
+
 export const COLLECTION_BLOCK_USES = new Set([
   'TableBlockModel',
   'CreateFormModel',
@@ -18,6 +20,8 @@ export const COLLECTION_BLOCK_USES = new Set([
   'GridCardBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  ...APPROVAL_FORM_BLOCK_USES,
+  ...APPROVAL_DETAILS_BLOCK_USES,
 ]);
 
 export const STATIC_CONTENT_BLOCK_USES = new Set([
@@ -34,6 +38,7 @@ export const FIELD_WRAPPER_USES = new Set([
   'DetailsItemModel',
   'FilterFormItemModel',
   'TableColumnModel',
+  ...APPROVAL_FIELD_WRAPPER_USES,
 ]);
 
 export const CREATABLE_STANDALONE_FIELD_USES = new Set(['JSColumnModel', 'JSItemModel']);
@@ -77,6 +82,14 @@ export const ACTION_BUTTON_USES = new Set([
   'JSItemActionModel',
   'FilterFormJSActionModel',
   'JSActionModel',
+  'ApplyFormSubmitModel',
+  'ApplyFormSaveDraftModel',
+  'ApplyFormWithdrawModel',
+  'ProcessFormApproveModel',
+  'ProcessFormRejectModel',
+  'ProcessFormReturnModel',
+  'ProcessFormDelegateModel',
+  'ProcessFormAddAssigneeModel',
 ]);
 
 export const JS_BLOCK_USES = new Set(['JSBlockModel']);

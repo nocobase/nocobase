@@ -33,6 +33,7 @@ export type FlowSurfaceComposeNormalizedFieldSpec = {
   target?: string | Record<string, unknown>;
   settings?: FlowSurfaceComposeObject;
   popup?: FlowSurfaceComposeObject;
+  __autoPopupForRelationField?: boolean;
 };
 
 export type FlowSurfaceComposeNormalizedActionSpec = {
@@ -237,6 +238,7 @@ function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedF
     ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
     ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
     ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
+    ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
   };
 }
 

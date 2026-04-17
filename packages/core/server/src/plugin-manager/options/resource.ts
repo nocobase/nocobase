@@ -137,6 +137,9 @@ export default {
   name: 'pm',
   actions: {
     async add(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const { values = {} } = ctx.action.params;
       if (values?.packageName) {
@@ -168,6 +171,9 @@ export default {
       await next();
     },
     async update(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const values = ctx.action.params.values || {};
       const args = [];

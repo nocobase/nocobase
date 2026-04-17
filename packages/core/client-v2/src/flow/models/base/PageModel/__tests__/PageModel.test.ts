@@ -316,7 +316,7 @@ describe('PageModel', () => {
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
     });
 
-    it('should apply tabs root className in flow settings mode', () => {
+    it('should not apply tabs root className in flow settings mode anymore', () => {
       // @ts-ignore
       pageModel.context = {
         t: (str: string) => str,
@@ -327,8 +327,7 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
 
-      expect(typeof tabsElement.props.className).toBe('string');
-      expect(tabsElement.props.className.length).toBeGreaterThan(0);
+      expect(tabsElement.props.className).toBeUndefined();
     });
 
     it('should not apply tabs root className in normal mode', () => {

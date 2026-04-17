@@ -21,6 +21,8 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
+import { expectTemplateUsage, getListData } from './flow-surfaces.templates.helpers';
 
 describe('flowSurfaces applyBlueprint contract', () => {
   let context: FlowSurfacesContractContext;
@@ -164,6 +166,82 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should auto-complete bare relation fields in applyBlueprint with non-empty view popups', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees relation popup',
+          },
+        },
+        page: {
+          title: 'Employees relation popup',
+          documentTitle: 'Employees relation popup',
+          enableHeader: true,
+          displayTitle: true,
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: ['department'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(executeRes.status).toBe(200);
+    const executeData = getData(executeRes);
+    const pageSchemaUid = executeData.target.pageSchemaUid;
+    const readback = await getSurface(rootAgent, {
+      pageSchemaUid,
+    });
+    const detailsBlock = readback.tree.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items?.[0];
+    const departmentFieldNodes = collectDescendantNodes(
+      detailsBlock,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    );
+    const departmentField =
+      departmentFieldNodes.find(
+        (item) =>
+          item?.props?.clickToOpen === true ||
+          !!item?.popup?.template?.uid ||
+          !!item?.subModels?.page?.uid ||
+          !!item?.stepParams?.popupSettings?.openView,
+      ) || departmentFieldNodes[departmentFieldNodes.length - 1];
+    expect(departmentField?.props?.clickToOpen).toBe(true);
+
+    if (departmentField?.popup?.template?.uid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: departmentField.popup.template.uid,
+          },
+        }),
+      );
+      const popupTemplateSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      const popupTemplateBlock = _.castArray(
+        popupTemplateSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(popupTemplateBlock?.use).toBe('DetailsBlockModel');
+    } else {
+      expect(departmentField?.subModels?.page?.use).toBe('ChildPageModel');
+      const popupBlock = _.castArray(
+        departmentField?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(popupBlock?.use).toBe('DetailsBlockModel');
+    }
+  });
+
   it('should ignore local popup blocks/layout/mode when applyBlueprint binds popup.template', async () => {
     const sourcePage = await createPage(rootAgent, {
       title: `Popup template source page ${Date.now()}`,
@@ -289,6 +367,513 @@ describe('flowSurfaces applyBlueprint contract', () => {
       title: 'Employee quick view',
     });
     expect(collectDescendantNodes(data.surface.tree, (item) => item?.use === 'MarkdownBlockModel')).toHaveLength(0);
+  });
+
+  it('should auto-select popup templates through applyBlueprint popup.tryTemplate and keep inline popup fallback on misses', async () => {
+    const popupTryTemplateCollection = `blueprint_popup_try_template_${Date.now()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: popupTryTemplateCollection,
+        title: 'Blueprint popup tryTemplate targets',
+        fields: [{ name: 'nickname', type: 'string', interface: 'input' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [popupTryTemplateCollection]: ['nickname'],
+    });
+
+    const sourcePage = await createPage(rootAgent, {
+      title: `Popup tryTemplate source page ${Date.now()}`,
+      tabTitle: 'Source',
+    });
+    const sourceDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: sourcePage.gridUid },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: popupTryTemplateCollection,
+          },
+        },
+      }),
+    );
+    const sourceField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: { uid: sourceDetails.uid },
+          fieldPath: 'nickname',
+          popup: {
+            blocks: [
+              {
+                key: 'employeePopupDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const popupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceField.fieldUid || sourceField.uid },
+          name: `Blueprint popup tryTemplate ${Date.now()}`,
+          description: 'Reusable popup template for applyBlueprint popup.tryTemplate coverage.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Popup tryTemplate blueprint page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Popup tryTemplate blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: popupTryTemplateCollection,
+                fields: [
+                  {
+                    field: 'nickname',
+                    popup: {
+                      title: 'Employee quick view',
+                      tryTemplate: true,
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'skillDetails',
+                type: 'details',
+                collection: 'skills',
+                fields: [
+                  {
+                    field: 'label',
+                    popup: {
+                      title: 'Skill quick view',
+                      tryTemplate: true,
+                      blocks: [
+                        {
+                          key: 'skillPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'skills',
+                          },
+                          fields: ['label'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const templatedField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname' &&
+        item?.popup?.template?.uid === popupTemplate.uid,
+    )[0];
+    expect(templatedField?.popup?.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+    expect(templatedField?.popup?.pageUid).toBeUndefined();
+    expect(templatedField?.stepParams?.popupSettings?.openView).toMatchObject({
+      title: 'Employee quick view',
+    });
+
+    const fallbackField = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'label' && item?.popup?.pageUid,
+    )[0];
+    expect(fallbackField?.popup?.template).toBeUndefined();
+    expect(fallbackField?.popup?.pageUid).toBeTruthy();
+    expect(
+      collectDescendantNodes(
+        fallbackField,
+        (item) =>
+          item?.use === 'DetailsBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'skills',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('should save inline popup content as templates through applyBlueprint popup.saveAsTemplate', async () => {
+    const unique = Date.now();
+    const fieldTemplateName = `Blueprint popup saveAsTemplate field ${unique}`;
+    const actionTemplateName = `Blueprint popup saveAsTemplate action ${unique}`;
+    const recordActionTemplateName = `Blueprint popup saveAsTemplate record ${unique}`;
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Popup saveAsTemplate blueprint page ${unique}`,
+          },
+        },
+        page: {
+          title: 'Popup saveAsTemplate blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'employeeNickname',
+                    field: 'nickname',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeePopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: fieldTemplateName,
+                        description: 'Popup template saved from applyBlueprint field popup.',
+                      },
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'employeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+                actions: [
+                  {
+                    key: 'employeePopupAction',
+                    type: 'popup',
+                    title: 'Open employee popup',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeePopupTable',
+                          type: 'table',
+                          resource: {
+                            binding: 'currentCollection',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: actionTemplateName,
+                        description: 'Popup template saved from applyBlueprint action popup.',
+                      },
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    key: 'employeeViewAction',
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeeRecordPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['status'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: recordActionTemplateName,
+                        description: 'Popup template saved from applyBlueprint record action popup.',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+
+    async function expectSavedTemplateReference(templateName: string) {
+      const listed = getListData(
+        await rootAgent.resource('flowSurfaces').listTemplates({
+          values: {
+            type: 'popup',
+            search: templateName,
+          },
+        }),
+      );
+      const template = listed.rows.find((row: any) => row.name === templateName);
+      expect(template?.uid).toBeTruthy();
+      const matchedNode = collectDescendantNodes(
+        data.surface.tree,
+        (item) => item?.popup?.template?.uid === template.uid,
+      )[0];
+      expect(matchedNode?.popup?.template).toMatchObject({
+        uid: template.uid,
+        mode: 'reference',
+      });
+      expect(matchedNode?.popup?.pageUid).toBeUndefined();
+      expect(matchedNode?.popup?.tabUid).toBeUndefined();
+      expect(matchedNode?.popup?.gridUid).toBeUndefined();
+      await expectTemplateUsage(rootAgent, template.uid, 1);
+      return template;
+    }
+
+    await expectSavedTemplateReference(fieldTemplateName);
+    await expectSavedTemplateReference(actionTemplateName);
+    await expectSavedTemplateReference(recordActionTemplateName);
+  });
+
+  it('should reuse popup templates created earlier in the same blueprint via popup.template.local', async () => {
+    const unique = Date.now();
+    const templateName = `Blueprint popup local ${unique}`;
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint popup local page ${unique}`,
+          },
+        },
+        page: {
+          title: 'Blueprint popup local page',
+        },
+        tabs: [
+          {
+            key: 'source',
+            title: 'Source',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'producerField',
+                    field: 'nickname',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'producerPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: templateName,
+                        description: 'Popup template created earlier in the same blueprint.',
+                        local: 'blueprintPopupAlias',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            key: 'consumer',
+            title: 'Consumer',
+            blocks: [
+              {
+                key: 'employeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    key: 'consumerAction',
+                    type: 'view',
+                    title: 'View employee',
+                    popup: {
+                      template: {
+                        local: 'blueprintPopupAlias',
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const listed = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: templateName,
+        },
+      }),
+    );
+    const template = listed.rows.find((row: any) => row.name === templateName);
+    expect(template?.uid).toBeTruthy();
+    expect(
+      collectDescendantNodes(data.surface.tree, (item) => item?.popup?.template?.uid === template.uid),
+    ).toHaveLength(2);
+    await expectTemplateUsage(rootAgent, template.uid, 2);
+  });
+
+  it('should reject invalid applyBlueprint popup local template aliases', async () => {
+    const unique = Date.now();
+
+    const undefinedAliasRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint popup local undefined ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'consumerField',
+                    field: 'nickname',
+                    popup: {
+                      template: {
+                        local: 'missingBlueprintPopupAlias',
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(undefinedAliasRes.status).toBe(400);
+    expect(readErrorMessage(undefinedAliasRes)).toContain(
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].popup.template.local 'missingBlueprintPopupAlias' must reference an earlier popup.saveAsTemplate.local in the same request",
+    );
+
+    const duplicateAliasRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint popup local duplicate ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'producerFieldA',
+                    field: 'nickname',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'duplicatePopupA',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: `Blueprint duplicate popup alias A ${unique}`,
+                        description: 'First duplicate alias producer.',
+                        local: 'duplicateBlueprintAlias',
+                      },
+                    },
+                  },
+                  {
+                    key: 'producerFieldB',
+                    field: 'status',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'duplicatePopupB',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['status'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: `Blueprint duplicate popup alias B ${unique}`,
+                        description: 'Second duplicate alias producer.',
+                        local: 'duplicateBlueprintAlias',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(duplicateAliasRes.status).toBe(400);
+    expect(readErrorMessage(duplicateAliasRes)).toContain(
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].fields[1].popup.saveAsTemplate.local 'duplicateBlueprintAlias' is duplicated in the same request",
+    );
   });
 
   it('should replace an existing page by pageSchemaUid and remove extra tabs', async () => {
@@ -1637,7 +2222,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, blocks, layout; unsupported keys: foo',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, tryTemplate, defaultType, saveAsTemplate, blocks, layout; unsupported keys: foo',
     );
   });
 

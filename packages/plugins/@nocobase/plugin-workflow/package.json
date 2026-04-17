@@ -23,7 +23,7 @@
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",
     "joi": "^17.13.3",
-    "lodash": "4.17.21",
+    "lodash": "4.x",
     "lru-cache": "^11.3.5",
     "nodejs-snowflake": "2.0.1",
     "react": "18.x",

@@ -8,6 +8,7 @@
  */
 
 import type { FlowSurfaceActionScope } from './types';
+import { APPROVAL_ACTION_CONTAINER_USES } from './approval';
 import { FlowSurfaceBadRequestError } from './errors';
 
 const ACTION_SCOPE_SET = new Set<FlowSurfaceActionScope>(['block', 'record', 'form', 'filterForm', 'actionPanel']);
@@ -37,6 +38,7 @@ export const ACTION_CONTAINER_SCOPE_BY_USE: Record<string, FlowSurfaceActionScop
   ...FORM_ACTION_CONTAINER_USES.map((use) => [use, 'form'] as const),
   ...FILTER_FORM_ACTION_CONTAINER_USES.map((use) => [use, 'filterForm'] as const),
   ...ACTION_PANEL_ACTION_CONTAINER_USES.map((use) => [use, 'actionPanel'] as const),
+  ...APPROVAL_ACTION_CONTAINER_USES.map((use) => [use, 'form'] as const),
 ]);
 
 export function getActionContainerScope(containerUse?: string): FlowSurfaceActionScope | null {

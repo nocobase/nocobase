@@ -93,7 +93,17 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
 ];
 
 const APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
-const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'blocks', 'layout'];
+const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
+  'title',
+  'mode',
+  'template',
+  'tryTemplate',
+  'defaultType',
+  'saveAsTemplate',
+  'blocks',
+  'layout',
+];
+const APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS = ['name', 'description', 'local'];
 const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
 const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
 const APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS = [
@@ -577,6 +587,36 @@ function compilePopup(
   assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
+  const tryTemplate = _.isUndefined(popup.tryTemplate)
+    ? undefined
+    : _.isBoolean(popup.tryTemplate)
+      ? popup.tryTemplate
+      : throwBadRequest(`${context}.tryTemplate must be a boolean`);
+  const defaultType = _.isUndefined(popup.defaultType)
+    ? undefined
+    : popup.defaultType === 'view' || popup.defaultType === 'edit'
+      ? popup.defaultType
+      : throwBadRequest(`${context}.defaultType must be 'view' or 'edit'`);
+  const saveAsTemplate = _.isUndefined(popup.saveAsTemplate)
+    ? undefined
+    : _.isPlainObject(popup.saveAsTemplate)
+      ? (assertOnlyAllowedKeys(
+          popup.saveAsTemplate,
+          `${context}.saveAsTemplate`,
+          APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS,
+        ),
+        {
+          name: assertNonEmptyString(popup.saveAsTemplate.name, `${context}.saveAsTemplate.name`),
+          description: assertNonEmptyString(popup.saveAsTemplate.description, `${context}.saveAsTemplate.description`),
+          local: readOptionalString(popup.saveAsTemplate.local),
+        })
+      : throwBadRequest(`${context}.saveAsTemplate must be an object`);
+  if (saveAsTemplate && template) {
+    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
+  }
+  if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
+    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.tryTemplate`);
+  }
   if (template) {
     return {
       popup: {
@@ -590,6 +630,9 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
+  if (saveAsTemplate && !popupBlocks.length) {
+    throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
+  }
   const compiledBlocks = popupBlocks.length
     ? compileBlocks(
         popupBlocks,
@@ -614,6 +657,9 @@ function compilePopup(
   const compiledPopup = buildDefinedPayload({
     mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
     template,
+    ...(tryTemplate ? { tryTemplate: true } : {}),
+    ...(defaultType ? { defaultType } : {}),
+    ...(saveAsTemplate ? { saveAsTemplate } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
     layout,
   });
@@ -647,6 +693,7 @@ function compileField(
     return {
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, fieldPath), `${context}[${index}]`),
       fieldPath,
+      __autoPopupForRelationField: true,
     };
   }
   if (!_.isPlainObject(input)) {

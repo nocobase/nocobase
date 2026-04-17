@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isApprovalTaskCardGridUse, normalizeApprovalSemanticUse } from './approval';
 import { FIELD_WRAPPER_USES } from './node-use-sets';
 import type { FlowSurfaceResolvedTarget } from './types';
 
@@ -57,19 +58,19 @@ export function isPopupHostUse(use?: string) {
 }
 
 export function isFormBlockUse(use?: string) {
-  return FLOW_SURFACE_FORM_BLOCK_USES.has(use || '');
+  return FLOW_SURFACE_FORM_BLOCK_USES.has(normalizeApprovalSemanticUse(use) || '');
 }
 
 export function isDetailsBlockUse(use?: string) {
-  return FLOW_SURFACE_DETAILS_BLOCK_USES.has(use || '');
+  return FLOW_SURFACE_DETAILS_BLOCK_USES.has(normalizeApprovalSemanticUse(use) || '');
 }
 
 export function isFilterFormBlockUse(use?: string) {
-  return FLOW_SURFACE_FILTER_FORM_BLOCK_USES.has(use || '');
+  return FLOW_SURFACE_FILTER_FORM_BLOCK_USES.has(normalizeApprovalSemanticUse(use) || '');
 }
 
 export function isGridUse(use?: string) {
-  return FLOW_SURFACE_GRID_USES.has(use || '');
+  return FLOW_SURFACE_GRID_USES.has(normalizeApprovalSemanticUse(use) || '');
 }
 
 export function isFieldWrapperUse(use?: string) {
@@ -77,7 +78,7 @@ export function isFieldWrapperUse(use?: string) {
 }
 
 export function isPageModelUse(use?: string) {
-  return FLOW_SURFACE_PAGE_MODEL_USES.has(use || '');
+  return FLOW_SURFACE_PAGE_MODEL_USES.has(normalizeApprovalSemanticUse(use) || '');
 }
 
 export function isPageRouteType(routeLike?: any) {
@@ -101,11 +102,15 @@ export function canCatalogAddBlock(input: {
     return true;
   }
 
+  if (isApprovalTaskCardGridUse(node?.use)) {
+    return false;
+  }
+
   if (isGridUse(node?.use) || isPageModelUse(node?.use)) {
     return true;
   }
 
-  if (isPopupHostUse(node?.use) || node?.subModels?.page?.use === 'ChildPageModel') {
+  if (isPopupHostUse(node?.use) || normalizeApprovalSemanticUse(node?.subModels?.page?.use) === 'ChildPageModel') {
     return true;
   }
 
@@ -140,7 +145,9 @@ export function isFieldContainerUse(parentUse?: string, subKey?: string) {
 }
 
 export function isBlockContainerUse(parentUse?: string, subKey?: string) {
-  return subKey === 'items' && (isGridUse(parentUse) || isPopupHostUse(parentUse));
+  return (
+    subKey === 'items' && ((isGridUse(parentUse) && !isApprovalTaskCardGridUse(parentUse)) || isPopupHostUse(parentUse))
+  );
 }
 
 export function isActionContainerUse(parentUse?: string) {

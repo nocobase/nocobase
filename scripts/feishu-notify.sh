@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
-# Send a Feishu interactive card notification for release results.
+# Send a Feishu interactive card notification.
 #
 # Required environment variables:
 #   WEBHOOK_URL   - Feishu bot webhook URL
-#   VERSION       - Release version (e.g. v2.0.34)
+#   TITLE         - Card title
 #   STATUS        - "success" or "failure"
 #   WORKFLOW_URL  - Link to the GitHub Actions run
 #
 # Optional environment variables:
+#   STATUS_TEXT_SUCCESS - Custom success text (defaults to "构建成功")
+#   STATUS_TEXT_FAILURE - Custom failure text (defaults to "构建失败")
+#   CONTENT       - Card body content in lark_md format (defaults to status line)
 #   BUILD_TIME    - Build timestamp (defaults to current time in Asia/Shanghai)
 
 set -euo pipefail
 
 : "${WEBHOOK_URL:?WEBHOOK_URL is required}"
-: "${VERSION:?VERSION is required}"
+: "${TITLE:?TITLE is required}"
 : "${STATUS:?STATUS must be 'success' or 'failure'}"
 : "${WORKFLOW_URL:?WORKFLOW_URL is required}"
 
@@ -21,15 +24,15 @@ BUILD_TIME="${BUILD_TIME:-$(TZ="Asia/Shanghai" date +"%Y-%m-%d %H:%M:%S")}"
 
 if [[ "$STATUS" == "success" ]]; then
   HEADER_TEMPLATE="green"
-  STATUS_TEXT="构建成功"
+  STATUS_TEXT="${STATUS_TEXT_SUCCESS:-构建成功}"
   STATUS_EMOJI="✅"
 else
   HEADER_TEMPLATE="red"
-  STATUS_TEXT="构建失败"
+  STATUS_TEXT="${STATUS_TEXT_FAILURE:-构建失败}"
   STATUS_EMOJI="❌"
 fi
 
-TITLE="NocoBase 版本 ${VERSION} Release 结果通知"
+CONTENT="${CONTENT:-"**时间：**${BUILD_TIME}\n**状态：**${STATUS_EMOJI} ${STATUS_TEXT}"}"
 
 PAYLOAD=$(cat <<EOF
 {
@@ -47,7 +50,7 @@ PAYLOAD=$(cat <<EOF
         "tag": "div",
         "text": {
           "tag": "lark_md",
-          "content": "**版本：**${VERSION}\n**时间：**${BUILD_TIME}\n**状态：**${STATUS_EMOJI} ${STATUS_TEXT}"
+          "content": "${CONTENT}"
         }
       },
       {
@@ -57,7 +60,7 @@ PAYLOAD=$(cat <<EOF
             "tag": "button",
             "text": {
               "tag": "plain_text",
-              "content": "查看构建详情"
+              "content": "查看详情"
             },
             "url": "${WORKFLOW_URL}",
             "type": "primary"

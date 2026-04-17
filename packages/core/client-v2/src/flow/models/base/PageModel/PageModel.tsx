@@ -10,7 +10,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { DragEndEvent } from '@dnd-kit/core';
-import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
@@ -40,22 +39,6 @@ type PageModelStructure = {
     tabs: BasePageTabModel[];
   };
 };
-
-const TABS_DESIGN_MODE_ROOT_CLASS_NAME = css`
-  > .ant-tabs-nav .ant-tabs-tab {
-    min-width: 54px;
-  }
-
-  > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn {
-    display: block;
-    width: 100%;
-  }
-
-  > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn > [data-has-float-menu='true'] {
-    display: block;
-    width: 100%;
-  }
-`;
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
@@ -310,7 +293,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   renderTabs() {
     const tabNavPaddingInlineStart = this.context.themeToken?.paddingLG ?? 16;
-    const rootClassName = this.context.flowSettingsEnabled ? TABS_DESIGN_MODE_ROOT_CLASS_NAME : undefined;
     const leftExtraContent =
       this.tabBarExtraContent.left !== undefined ? (
         this.tabBarExtraContent.left
@@ -339,7 +321,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          className={rootClassName}
           activeKey={
             this.context.view?.navigation?.viewParams
               ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid

@@ -13,6 +13,16 @@ import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
 import { CalendarCollectionTemplate } from './collection-templates/calendar';
 import { useCalendarBlockDecoratorProps } from './hooks/useCalendarBlockDecoratorProps';
+import {
+  CalendarBlockModel,
+  CalendarCollectionActionGroupModel,
+  CalendarEventViewActionModel,
+  CalendarNavActionModel,
+  CalendarQuickCreateActionModel,
+  CalendarTitleActionModel,
+  CalendarTodayActionModel,
+  CalendarViewSelectActionModel,
+} from './models';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import {
   CalendarActionInitializers_deprecated,
@@ -101,6 +111,16 @@ export class PluginCalendarClient extends Plugin {
     return this.colorFieldInterfaces[type];
   }
   async load() {
+    this.flowEngine.registerModels({
+      CalendarBlockModel,
+      CalendarCollectionActionGroupModel,
+      CalendarEventViewActionModel,
+      CalendarNavActionModel,
+      CalendarQuickCreateActionModel,
+      CalendarTitleActionModel,
+      CalendarTodayActionModel,
+      CalendarViewSelectActionModel,
+    });
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
     this.app.schemaInitializerManager.addItem('page:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
