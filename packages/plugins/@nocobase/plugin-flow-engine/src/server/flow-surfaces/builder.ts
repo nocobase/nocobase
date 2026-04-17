@@ -13,6 +13,7 @@ import type { FlowSurfaceCatalogItem, FlowSurfaceNodeDefaults, FlowSurfaceNodeSp
 import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } from './catalog';
 import { CHART_DEFAULT_DATA_SOURCE_KEY } from './chart-config';
 import { buildApprovalActionDefaults, buildApprovalBlockDefaults, buildApprovalFieldTree } from './approval';
+import { getSingleNodeSubModel } from './service-utils';
 
 type BuildFieldParams = {
   wrapperUse: string;
@@ -220,6 +221,7 @@ export function buildBlockTree(options: {
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;
+  flowRegistry?: Record<string, any>;
 }) {
   const use = resolveSupportedBlockCatalogItem(
     {
@@ -299,10 +301,11 @@ export function buildBlockTree(options: {
 
   if (approvalBlockDefaults?.subModels) {
     model.subModels = {};
-    if (approvalBlockDefaults.subModels.grid?.use) {
+    const gridDefaults = getSingleNodeSubModel(approvalBlockDefaults.subModels.grid);
+    if (gridDefaults?.use) {
       model.subModels.grid = {
         uid: uid(),
-        use: approvalBlockDefaults.subModels.grid.use,
+        use: gridDefaults.use,
       };
     }
     if (Array.isArray(approvalBlockDefaults.subModels.actions) && approvalBlockDefaults.subModels.actions.length) {

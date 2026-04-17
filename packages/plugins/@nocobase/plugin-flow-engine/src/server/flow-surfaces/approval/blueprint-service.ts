@@ -67,6 +67,7 @@ type ApprovalBlueprintServiceDeps = {
     FlowModelRepository,
     'findModelById' | 'findModelByParentId' | 'insertModel' | 'upsertModel' | 'patch'
   >;
+  setNodeAsyncFlag: (uid: string, asyncFlag: boolean, transaction?: any) => Promise<void>;
   removeNodeTreeWithBindings: (uid: string, transaction?: any) => Promise<void>;
   surfaceContext: {
     resolveGridNode: (uid: string, transaction?: any) => Promise<any>;
@@ -424,27 +425,13 @@ export class FlowSurfaceApprovalBlueprintService {
     context: FlowSurfaceApprovalBlueprintBindingContext,
     transaction?: any,
   ) {
-    await this.deps.repository.upsertModel(
-      {
-        uid: surfaceRoot.rootUid,
-        use: context.rootUse,
-        async: true,
-      },
-      { transaction },
-    );
+    await this.deps.setNodeAsyncFlag(surfaceRoot.rootUid, true, transaction);
 
     if (context.surface === 'taskCard') {
       return;
     }
 
-    await this.deps.repository.upsertModel(
-      {
-        uid: surfaceRoot.gridUid,
-        use: this.getApprovalBlueprintExpectedGridUse(context),
-        async: true,
-      },
-      { transaction },
-    );
+    await this.deps.setNodeAsyncFlag(surfaceRoot.gridUid, true, transaction);
   }
 
   private async syncApprovalBlueprintSurfaceRoot(
