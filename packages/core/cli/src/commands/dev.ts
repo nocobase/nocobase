@@ -24,6 +24,7 @@ export default class Dev extends Command {
     '<%= config.bin %> <%= command.id %> --inspect 9229',
   ]
   static override flags = {
+    env: Flags.string({ description: 'Environment', char: 'e', required: false }),
     'db-sync': Flags.boolean({ description: 'Sync the database', required: false }),
     port: Flags.string({ description: 'Port', char: 'p', required: false }),
     client: Flags.boolean({ description: 'Client', char: 'c', required: false }),

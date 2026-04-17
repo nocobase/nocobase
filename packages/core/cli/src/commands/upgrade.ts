@@ -17,6 +17,7 @@ export default class Upgrade extends Command {
     '<%= config.bin %> <%= command.id %> --skip-code-update',
   ]
   static override flags = {
+    env: Flags.string({ description: 'Environment', char: 'e', required: false }),
     'skip-code-update': Flags.boolean({ description: 'Skip code update', char: 'S', required: false }),
   }
 

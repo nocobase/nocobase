@@ -21,6 +21,7 @@ export default class Start extends Command {
     '<%= config.bin %> <%= command.id %> --launch-mode pm2',
   ]
   static override flags = {
+    env: Flags.string({ description: 'Environment', char: 'e', required: false }),
     quickstart: Flags.boolean({ description: 'Quickstart the application', required: false }),
     port: Flags.string({ description: 'Port', char: 'p', required: false }),
     daemon: Flags.boolean({ description: 'Run the application as a daemon', char: 'd', required: false }),
