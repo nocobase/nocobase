@@ -2146,7 +2146,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, tryTemplate, saveAsTemplate, blocks, layout; unsupported keys: foo',
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup only accepts keys title, mode, template, tryTemplate, defaultType, saveAsTemplate, blocks, layout; unsupported keys: foo',
     );
   });
 

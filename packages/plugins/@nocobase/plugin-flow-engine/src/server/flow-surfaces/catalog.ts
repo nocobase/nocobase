@@ -644,6 +644,44 @@ PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const TRIGGER_CHILD_PAGE_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: ['title', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'],
+  stepParams: ['pageSettings', 'TriggerChildPageSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+  },
+  eventBindings: {
+    pageSettings: {
+      stepKeys: ['general'],
+    },
+  },
+});
+TRIGGER_CHILD_PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  pageSettings: {
+    allowedPaths: [
+      'general.title',
+      'general.documentTitle',
+      'general.displayTitle',
+      'general.enableTabs',
+      'general.icon',
+      'general.enableHeader',
+    ],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['general'],
+    pathSchemas: {
+      'general.title': STRING_SCHEMA,
+      'general.documentTitle': STRING_SCHEMA,
+      'general.displayTitle': BOOLEAN_SCHEMA,
+      'general.enableTabs': BOOLEAN_SCHEMA,
+      'general.icon': STRING_SCHEMA,
+      'general.enableHeader': BOOLEAN_SCHEMA,
+    },
+  },
+  TriggerChildPageSettings: RESOURCE_SETTINGS_GROUP,
+});
+
 const APPROVAL_CHILD_PAGE_NODE_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'],
@@ -2074,7 +2112,7 @@ function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
 const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['RootPageModel', PAGE_NODE_CONTRACT],
   ['ChildPageModel', PAGE_NODE_CONTRACT],
-  ['TriggerChildPageModel', PAGE_NODE_CONTRACT],
+  ['TriggerChildPageModel', TRIGGER_CHILD_PAGE_NODE_CONTRACT],
   ['ApprovalChildPageModel', APPROVAL_CHILD_PAGE_NODE_CONTRACT],
   ['RootPageTabModel', TAB_NODE_CONTRACT],
   ['ChildPageTabModel', TAB_NODE_CONTRACT],

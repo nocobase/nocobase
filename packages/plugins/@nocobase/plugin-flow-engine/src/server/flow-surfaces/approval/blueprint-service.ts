@@ -163,6 +163,10 @@ export class FlowSurfaceApprovalBlueprintService {
     if (!workflow) {
       throwBadRequest(`flowSurfaces applyApprovalBlueprint node '${document.nodeId}' is missing its workflow relation`);
     }
+    const resolvedNodeId = node.get?.('id') || node.id || document.nodeId;
+    if (_.isNil(resolvedNodeId)) {
+      throwInternalError(`flowSurfaces applyApprovalBlueprint node id could not be resolved`);
+    }
     const workflowConfig = _.cloneDeep(workflow.get?.('config') || workflow.config || {});
     const nodeConfig = _.cloneDeep(node.get?.('config') || node.config || {});
     const collection = this.parseApprovalBlueprintCollection(workflowConfig.collection);
@@ -170,14 +174,14 @@ export class FlowSurfaceApprovalBlueprintService {
       surface: document.surface,
       ...collection,
       bindingResource: 'flow_nodes',
-      filterByTk: node.get?.('id') || node.id || document.nodeId!,
+      filterByTk: resolvedNodeId,
       rootUse: document.surface === 'approver' ? 'ApprovalChildPageModel' : 'ApprovalTaskCardDetailsModel',
       rootUidKey: document.surface === 'approver' ? 'approvalUid' : 'taskCardUid',
       existingUid:
         String(document.surface === 'approver' ? nodeConfig.approvalUid || '' : nodeConfig.taskCardUid || '').trim() ||
         undefined,
       workflowId: workflow.get?.('id') || workflow.id,
-      nodeId: node.get?.('id') || node.id || document.nodeId!,
+      nodeId: resolvedNodeId,
       workflow,
       node,
     };

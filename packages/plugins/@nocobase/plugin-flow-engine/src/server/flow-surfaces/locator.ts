@@ -79,6 +79,7 @@ export class SurfaceLocator {
       const model = await this.repository.findModelById(cursor, { transaction, includeAsyncNode: true });
       const resourceInit =
         _.get(model, ['stepParams', 'resourceSettings', 'init']) ||
+        _.get(model, ['stepParams', 'TriggerChildPageSettings', 'init']) ||
         _.get(model, ['stepParams', 'ApprovalChildPageSettings', 'init']) ||
         (model?.use === 'ChartBlockModel'
           ? getChartBuilderResourceInit(_.get(model, ['stepParams', 'chartSettings', 'configure']))
