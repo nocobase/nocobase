@@ -43,7 +43,11 @@ import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
-import { AIEmployeeInstruction, registerAIEmployeeTaskNotification } from './workflow/nodes/employee';
+import {
+  AIEmployeeInstruction,
+  registerAIEmployeeTaskNotification,
+  registerOnJobAbortedHandler,
+} from './workflow/nodes/employee';
 import { getWorkflowTasks } from './tools/workflow-tasks';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 
@@ -108,6 +112,7 @@ export class PluginAIServer extends Plugin {
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
+    registerOnJobAbortedHandler(this);
   }
 
   registerLLMProviders() {

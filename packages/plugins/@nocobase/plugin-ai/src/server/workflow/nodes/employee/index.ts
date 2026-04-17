@@ -18,7 +18,7 @@ import {
 import _ from 'lodash';
 import PluginAIServer from '../../../plugin';
 import { AIEmployee } from '../../../ai-employees/ai-employee';
-import { Model, Transactionable } from '@nocobase/database';
+import { Model, Transactionable, UpdateOptions } from '@nocobase/database';
 import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
@@ -279,6 +279,9 @@ Do not end your task without calling **${toolName}**.
         values: { status: 'approved' },
         filter: {
           id: aiWorkflowTasks.id,
+          status: {
+            $ne: 'aborted',
+          },
         },
       });
     } else if (requiresApproval !== 'no_required') {
@@ -286,6 +289,9 @@ Do not end your task without calling **${toolName}**.
         values: { status: 'pending_acceptance' },
         filter: {
           id: aiWorkflowTasks.id,
+          status: {
+            $ne: 'aborted',
+          },
         },
       });
     }
@@ -357,6 +363,34 @@ async function parseAssignees(node, processor): Promise<number[]> {
 
   return assignees;
 }
+
+export const registerOnJobAbortedHandler = (plugin: PluginAIServer) => {
+  plugin.db.on('jobs.afterBulkUpdate', async (options: any) => {
+    const { model, attributes, where, transaction } = options;
+    if (attributes.status !== JOB_STATUS.ABORTED) {
+      return;
+    }
+    const jobs = await model.findAll({ where, transaction });
+    const aiWorkflowTasks = await plugin.db.getRepository('aiWorkflowTasks').find({
+      filter: {
+        jobId: jobs.map((it) => it.id),
+      },
+      transaction,
+    });
+    if (!aiWorkflowTasks.length) {
+      return;
+    }
+    for (const aiWorkflowTask of aiWorkflowTasks) {
+      await plugin.db.getRepository('aiWorkflowTasks').update({
+        values: { status: 'aborted' },
+        filter: {
+          id: aiWorkflowTask.id,
+        },
+        transaction,
+      });
+    }
+  });
+};
 
 export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
   plugin.db.on('aiWorkflowTasks.beforeSave', async (model: Model, options: Transactionable) => {

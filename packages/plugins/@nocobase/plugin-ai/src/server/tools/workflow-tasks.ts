@@ -72,6 +72,11 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
           message: 'job not existed',
         };
       }
+      if (job.status === JOB_STATUS.ABORTED) {
+        return {
+          status: 'success',
+        };
+      }
 
       await plugin.db.getRepository('aiWorkflowTasks').update({
         values: {
@@ -79,6 +84,9 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
         },
         filter: {
           id: task.id,
+          status: {
+            $ne: 'aborted',
+          },
         },
       });
 
