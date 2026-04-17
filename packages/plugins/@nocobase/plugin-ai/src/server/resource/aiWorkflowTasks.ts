@@ -201,6 +201,7 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       ctx.body = {
         toolCallId,
+        executionId: task.executionId,
         workflowTitle: task.workflowTitle,
         nodeTitle: task.nodeTitle,
         structuredOutputSchema: node.config.structuredOutput.schema,

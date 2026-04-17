@@ -21,6 +21,7 @@ type WorkflowTaskOutputSchema = {
 };
 
 type WorkflowTaskOutputData = {
+  executionId: string;
   workflowTitle?: string;
   nodeTitle?: string;
   structuredOutputSchema?: WorkflowTaskOutputSchema | string | null;
@@ -141,7 +142,10 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
           onClick={async () => {
             setAction('reject');
             try {
-              await decisions.reject();
+              await api.resource('executions').cancel({ filterByTk: cardData?.executionId });
+              await decisions.reject(
+                'The user has decided to terminate the workflow task. You do not need to call the current tool to output the task result. The task is finished.',
+              );
             } finally {
               setAction(null);
             }
