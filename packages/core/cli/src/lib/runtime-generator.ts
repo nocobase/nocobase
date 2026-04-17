@@ -260,7 +260,7 @@ export function buildExamples(commandId: string, operation: { parameters: Genera
   const requiredParameters = operation.parameters.filter((parameter) => parameter.required);
   const requiredFlags = requiredParameters.map(formatFlagExample);
   const requiredNonBodyFlags = requiredParameters.filter((parameter) => parameter.in !== 'body').map(formatFlagExample);
-  const examples = [`nocobase-ctl ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}`];
+  const examples = [`nb api ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}`];
   const firstOptional = operation.parameters.find((parameter) => !parameter.required);
 
   if (firstOptional) {
@@ -268,7 +268,7 @@ export function buildExamples(commandId: string, operation: { parameters: Genera
   }
 
   if (operation.hasBody) {
-    const prefix = `nocobase-ctl ${commandId}${requiredNonBodyFlags.length ? ` ${requiredNonBodyFlags.join(' ')}` : ''}`;
+    const prefix = `nb api ${commandId}${requiredNonBodyFlags.length ? ` ${requiredNonBodyFlags.join(' ')}` : ''}`;
     examples.push(`${prefix} --body '${buildSampleBody(operation.parameters)}'`);
   }
 

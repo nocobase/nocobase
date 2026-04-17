@@ -35,52 +35,52 @@ npm install -g @nocobase/ctl@latest
 Add an environment:
 
 ```bash
-nocobase-ctl env add --name local --base-url http://localhost:13000/api
+nb env add --name local --base-url http://localhost:13000/api
 ```
 
 Add an environment with an API key:
 
 ```bash
-nocobase-ctl env add --name local --base-url http://localhost:13000/api --token <api-key>
+nb env add --name local --base-url http://localhost:13000/api --token <api-key>
 ```
 
 Authenticate an environment with OAuth:
 
 ```bash
-nocobase-ctl env auth -e local
+nb env auth -e local
 ```
 
 Show the current environment:
 
 ```bash
-nocobase-ctl env
+nb env
 ```
 
 List configured environments:
 
 ```bash
-nocobase-ctl env list
+nb env list
 ```
 
 Switch the current environment:
 
 ```bash
-nocobase-ctl env use local
+nb env use local
 ```
 
 Update the runtime command cache from `swagger:get`:
 
 ```bash
-nocobase-ctl env update
-nocobase-ctl env update -e local
+nb env update
+nb env update -e local
 ```
 
 Use the generic resource commands:
 
 ```bash
-nocobase-ctl resource list --resource users
-nocobase-ctl resource get --resource users --filter-by-tk 1
-nocobase-ctl resource create --resource users --values '{"nickname":"Ada"}'
+nb api resource list --resource users
+nb api resource get --resource users --filter-by-tk 1
+nb api resource create --resource users --values '{"nickname":"Ada"}'
 ```
 
 ## Runtime Commands
@@ -99,14 +99,14 @@ If the `API documentation plugin` is disabled, the CLI will prompt to enable it.
 Use `-e, --env` to temporarily select an environment:
 
 ```bash
-nocobase-ctl env update -e prod
-nocobase-ctl resource list --resource users -e prod
+nb env update -e prod
+nb api resource list --resource users -e prod
 ```
 
 This does not change the current environment unless you explicitly run:
 
 ```bash
-nocobase-ctl env use <name>
+nb env use <name>
 ```
 
 ## Config Scope
@@ -119,10 +119,10 @@ The `env` command supports two config scopes:
 Use `-s, --scope` to select one explicitly:
 
 ```bash
-nocobase-ctl env list -s project
-nocobase-ctl env add -s global --name prod --base-url http://example.com/api --token <api-key>
-nocobase-ctl env auth -e prod -s global
-nocobase-ctl env use local -s project
+nb env list -s project
+nb env add -s global --name prod --base-url http://example.com/api --token <api-key>
+nb env auth -e prod -s global
+nb env use local -s project
 ```
 
 If you do not pass `--scope`, the CLI uses automatic resolution:
@@ -136,14 +136,14 @@ If you do not pass `--scope`, the CLI uses automatic resolution:
 Current built-in topics:
 
 - `env`
-- `resource`
+- `api`
 
 Check available commands at any time:
 
 ```bash
-nocobase-ctl --help
-nocobase-ctl env --help
-nocobase-ctl resource --help
+nb --help
+nb env --help
+nb api resource --help
 ```
 
 ## Common Flags
@@ -157,9 +157,9 @@ nocobase-ctl resource --help
 Example:
 
 ```bash
-nocobase-ctl env update -e prod -s global
-nocobase-ctl resource list --resource users -e prod -j
-nocobase-ctl resource list --resource users -e prod --role admin
+nb env update -e prod -s global
+nb api resource list --resource users -e prod -j
+nb api resource list --resource users -e prod --role admin
 ```
 
 ## Local Data

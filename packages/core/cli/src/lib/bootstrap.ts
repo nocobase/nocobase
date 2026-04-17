@@ -295,14 +295,14 @@ export function formatSwaggerSchemaError(
       .join('\n');
     const envLabel = context.envName ? ` for env "${context.envName}"` : '';
     const commandHint = context.commandToken
-      ? `If \`${context.commandToken}\` is a runtime command, refresh the runtime after updating the token with \`nocobase-ctl env update\`. If it is a typo, run \`nocobase-ctl --help\` to inspect available commands.`
-      : 'Run `nocobase-ctl --help` to inspect built-in commands, then refresh runtime commands with `nocobase-ctl env update` after updating the token.';
+      ? `If \`${context.commandToken}\` is a runtime command, refresh the runtime after updating the token with \`nb env update\`. If it is a typo, run \`nb --help\` to inspect available commands.`
+      : 'Run `nb --help` to inspect built-in commands, then refresh runtime commands with `nb env update` after updating the token.';
 
     return [
       `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
       `Base URL: ${context.baseUrl}`,
       details,
-      'Update the API key with `nocobase-ctl env add --name <name> --base-url <url> --token <api-key>`, log in with `nocobase-ctl env auth -e <name>`, or rerun the command with `--token <api-key>`.',
+      'Update the API key with `nb env add --name <name> --base-url <url> --token <api-key>`, log in with `nb env auth -e <name>`, or rerun the command with `--token <api-key>`.',
       commandHint,
     ].join('\n');
   }
@@ -314,16 +314,16 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
   if (!commandToken) {
     return [
       'No env is configured for runtime commands.',
-      'Run `nocobase-ctl env add --name <name> --base-url <url>` first.',
-      'If you configure multiple environments later, switch with `nocobase-ctl env use <name>`.',
+      'Run `nb env add --name <name> --base-url <url>` first.',
+      'If you configure multiple environments later, switch with `nb env use <name>`.',
     ].join('\n');
   }
 
   return [
     `Unable to resolve runtime command \`${commandToken}\`.`,
     'No env is configured, so the CLI cannot load runtime commands from `swagger:get`.',
-    'If this is a built-in command or a typo, run `nocobase-ctl --help` to inspect available commands.',
-    'If this should be an application runtime command, run `nocobase-ctl env add --name <name> --base-url <url>` and then `nocobase-ctl env update`.',
+    'If this is a built-in command or a typo, run `nb --help` to inspect available commands.',
+    'If this should be an application runtime command, run `nb env add --name <name> --base-url <url>` and then `nb env update`.',
   ].join('\n');
 }
 
@@ -416,7 +416,7 @@ export async function updateEnvRuntime(options: {
     throw new Error(
       [
         `Env "${envName}" is missing a base URL.`,
-        'Update it with `nocobase-ctl env add --name <name> --base-url <url>` first.',
+        'Update it with `nb env add --name <name> --base-url <url>` first.',
       ].join('\n'),
     );
   }

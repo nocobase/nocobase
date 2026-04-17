@@ -332,7 +332,7 @@ async function refreshOauthAccessToken(options: {
   scope?: AuthStoreOptions['scope'];
 }) {
   if (!options.auth.refreshToken || !options.auth.clientId) {
-    throw new Error(`OAuth session for env "${options.envName}" cannot be refreshed. Run \`nocobase-ctl env auth -e ${options.envName}\`.`);
+    throw new Error(`OAuth session for env "${options.envName}" cannot be refreshed. Run \`nb env auth -e ${options.envName}\`.`);
   }
 
   const metadata = await fetchOauthServerMetadata(options.baseUrl);
@@ -357,7 +357,7 @@ async function refreshOauthAccessToken(options: {
   if (!response.ok) {
     throw new Error(
       formatOauthError(
-        `Failed to refresh OAuth session for env "${options.envName}". Run \`nocobase-ctl env auth -e ${options.envName}\` again`,
+        `Failed to refresh OAuth session for env "${options.envName}". Run \`nb env auth -e ${options.envName}\` again`,
         data,
         response.status,
       ),
@@ -413,7 +413,7 @@ export async function resolveAccessToken(options: {
 
   const baseUrl = options.baseUrl ?? env.baseUrl;
   if (!baseUrl) {
-    throw new Error(`Env "${envName}" is missing a base URL. Run \`nocobase-ctl env add --name ${envName} --base-url <url>\`.`);
+    throw new Error(`Env "${envName}" is missing a base URL. Run \`nb env add --name ${envName} --base-url <url>\`.`);
   }
 
   printVerbose(`Refreshing OAuth session for env "${envName}"`);
@@ -442,7 +442,7 @@ export async function resolveServerRequestTarget(options: {
   });
 
   if (!baseUrl) {
-    throw new Error('Missing base URL. Use --base-url or configure one with `nocobase-ctl env add`.');
+    throw new Error('Missing base URL. Use --base-url or configure one with `nb env add`.');
   }
 
   return { baseUrl, token };
@@ -460,7 +460,7 @@ export async function authenticateEnvWithOauth(options: {
     throw new Error(
       [
         `Env "${envName}" is missing a base URL.`,
-        'Run `nocobase-ctl env add --name <name> --base-url <url>` first.',
+        'Run `nb env add --name <name> --base-url <url>` first.',
       ].join('\n'),
     );
   }

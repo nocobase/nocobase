@@ -38,8 +38,8 @@ test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', 
   assert.match(message, /env "local"/);
   assert.match(message, /INVALID_TOKEN/);
   assert.match(message, /env add --name <name> --base-url <url> --token <api-key>/);
-  assert.match(message, /nocobase-ctl env update/);
-  assert.match(message, /nocobase-ctl --help/);
+  assert.match(message, /nb env update/);
+  assert.match(message, /nb --help/);
 });
 
 test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth failures', () => {
@@ -66,6 +66,6 @@ test('formatMissingRuntimeEnvError explains unknown runtime commands without an 
 
   assert.match(message, /Unable to resolve runtime command `not-a-real-command`/);
   assert.match(message, /No env is configured/);
-  assert.match(message, /nocobase-ctl --help/);
-  assert.match(message, /nocobase-ctl env update/);
+  assert.match(message, /nb --help/);
+  assert.match(message, /nb env update/);
 });

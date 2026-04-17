@@ -105,8 +105,8 @@ test('buildExamples should not mix required body flags with --body examples', ()
   });
 
   assert.deepEqual(examples, [
-    'nocobase-ctl test api --primary-value <value> --items value1 --items value2',
-    `nocobase-ctl test api --body '{"primaryValue":"value","items":[]}'`,
+    'nb test api --primary-value <value> --items value1 --items value2',
+    `nb test api --body '{"primaryValue":"value","items":[]}'`,
   ]);
 });
 

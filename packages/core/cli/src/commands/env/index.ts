@@ -23,7 +23,7 @@ export default class Env extends Command {
 
     if (!env?.baseUrl) {
       this.log(`No current env is configured${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
-      this.log('Run `nocobase-ctl env add --name <name> --base-url <url>` to add one.');
+      this.log('Run `nb env add --name <name> --base-url <url>` to add one.');
       return;
     }
 

@@ -5,6 +5,6 @@ export default class Api extends Command {
   static id = 'api';
 
   async run(): Promise<void> {
-    this.log('Use `nocobase-ctl api --help` to view available subcommands.');
+    this.log('Use `nb api --help` to view available subcommands.');
   }
 }
