@@ -98,6 +98,19 @@ Do not end your task without calling **${toolName}**.
           log: this.workflow.app.log,
           logger: this.workflow.app.log,
           state: { currentRoles },
+          auth: {
+            user: {
+              id: input?.result?.user?.id ?? userId,
+            },
+          },
+          action: {
+            params: {
+              values: {
+                sessionId: conversation.sessionId,
+                model,
+              },
+            },
+          },
         } as any,
         employee,
         sessionId: conversation.sessionId,
