@@ -11,8 +11,6 @@ import type { BaseApplication } from './BaseApplication';
 import type { Plugin, PluginOptions } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
-export type PluginClassLike = new (options: any, app: any) => any;
-export type PluginTypeLike = PluginClassLike | [PluginClassLike, PluginOptions<any>];
 export type PluginClass<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> = new (
   options: PluginOptions<Opts>,
   app: TApp,
@@ -20,6 +18,8 @@ export type PluginClass<Opts = any, TApp extends BaseApplication<any> = BaseAppl
 export type PluginType<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> =
   | PluginClass<Opts, TApp>
   | [PluginClass<Opts, TApp>, PluginOptions<Opts>];
+export type PluginClassLike<TApp extends BaseApplication<any> = BaseApplication<any>> = PluginClass<any, TApp>;
+export type PluginTypeLike<TApp extends BaseApplication<any> = BaseApplication<any>> = PluginType<any, TApp>;
 export type PluginData = {
   name: string;
   packageName: string;
@@ -27,12 +27,6 @@ export type PluginData = {
   url: string;
   type: 'local' | 'upload' | 'npm';
 };
-
-export interface PluginManagerBaseLike {
-  add<T = any>(plugin: PluginClassLike, opts?: PluginOptions<T>): Promise<void>;
-  get(nameOrPluginClass: any): any;
-  load(): Promise<void>;
-}
 
 export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();
@@ -81,7 +75,7 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
     });
     for await (const [name, pluginClass] of plugins) {
       const info = pluginList.find((item) => item.name === name);
-      await this.add(pluginClass as PluginClass<any, TApp>, info);
+      await this.add(pluginClass as any, info);
     }
   }
 

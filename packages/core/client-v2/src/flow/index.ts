@@ -9,7 +9,8 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import { IconPicker } from '../flow-compat';
-import { Plugin } from '..';
+import { Plugin, type PluginOptions } from '..';
+import type { BaseApplication } from '../BaseApplication';
 import * as actions from './actions';
 import { DefaultValue } from './components/DefaultValue';
 import FlowRoute from './components/FlowRoute';
@@ -22,7 +23,10 @@ import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 
-export class PluginFlowEngine extends Plugin {
+export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
+  PluginOptions<any>,
+  TApp
+> {
   async load() {
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));

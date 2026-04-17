@@ -8,12 +8,14 @@
  */
 
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
+import { MemoryRouter } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../../../flow-compat';
 import {
+  AdminLayoutMenuItemRenderer,
   AdminLayoutMenuItemModel,
   AdminLayoutModel,
   getAdminLayoutMenuMovePositionOptions,
@@ -39,9 +41,11 @@ vi.mock('../../../../application/CustomRouterContextProvider', async (importOrig
 
 describe('AdminLayoutModel menu items', () => {
   let engine: FlowEngine;
+  let modalConfirmMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     engine = new FlowEngine();
+    modalConfirmMock = vi.fn().mockResolvedValue(true);
     engine.registerModels({
       AdminLayoutModel,
       AdminLayoutMenuItemModel,
@@ -79,8 +83,17 @@ describe('AdminLayoutModel menu items', () => {
     });
     engine.context.defineProperty('app', {
       value: {
+        getPublicPath: () => '/apps/demo/v2/',
+        router: {
+          getBasename: () => '/apps/demo/v2',
+        },
         components: {},
         scopes: {},
+      },
+    });
+    engine.context.defineProperty('modal', {
+      value: {
+        confirm: modalConfirmMock,
       },
     });
     engine.context.defineProperty('t', {
@@ -264,12 +277,17 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children).toHaveLength(2);
     expect(route.children[0].path).toBe('/admin/1');
     expect(route.children[0].redirect).toBe('/admin/page-1');
+    expect(route.children[0]._runtimePath).toBe('/apps/demo/admin/page-1');
+    expect(route.children[0]._navigationMode).toBe('document');
+    expect(route.children[0]._isLegacy).toBe(true);
     expect(route.children[0]._depth).toBe(0);
     expect(route.children[0]._route).toMatchObject({ id: 1, type: NocoBaseDesktopRouteType.group });
     expect(route.children[0]._model).toBe(adminLayoutModel.subModels.menuItems?.[0]);
     expect(route.children[0].routes).toHaveLength(1);
     expect(route.children[0].routes?.[0].path).toBe('/admin/page-1');
     expect(route.children[0].routes?.[0].redirect).toBe('/admin/page-1');
+    expect(route.children[0].routes?.[0]._runtimePath).toBe('/apps/demo/admin/page-1');
+    expect(route.children[0].routes?.[0]._navigationMode).toBe('document');
     expect(route.children[0].routes?.[0]._depth).toBe(1);
     expect(route.children[0].routes?.[0]._route).toMatchObject({
       schemaUid: 'page-1',
@@ -282,6 +300,383 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children[1]._depth).toBe(0);
     expect(route.children[1]._route).toMatchObject({ id: 2, type: NocoBaseDesktopRouteType.link });
     expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
+  });
+
+  it('should resolve modern flowPage menu runtime target to v2 path', () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-flow-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Flow page',
+          schemaUid: 'flow-page-1',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+      },
+    });
+
+    expect(
+      model.toProLayoutRoute({
+        designable: false,
+        isMobile: false,
+        t: (title) => title,
+      }),
+    ).toMatchObject({
+      _runtimePath: '/apps/demo/v2/admin/flow-page-1',
+      _navigationMode: 'spa',
+      _isLegacy: false,
+    });
+  });
+
+  it('should not guess runtime path when page schemaUid is missing', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-missing-schema',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Broken page',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    expect(
+      model.toProLayoutRoute({
+        designable: false,
+        isMobile: false,
+        t: (title) => title,
+      }),
+    ).toMatchObject({
+      _runtimePath: null,
+      disabled: true,
+    });
+    expect(warn).toHaveBeenCalledWith(
+      '[NocoBase] Admin route runtime target:',
+      'Missing schemaUid.',
+      expect.objectContaining({ type: NocoBaseDesktopRouteType.page }),
+    );
+  });
+
+  it('should render legacy menu item as native anchor and use assign on left click', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign,
+      },
+    });
+
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'item',
+            item: {
+              name: 'Legacy page',
+              path: '/admin/legacy-page',
+              _runtimePath: '/apps/demo/admin/legacy-page',
+              _navigationMode: 'document',
+              _isLegacy: true,
+              _route: {
+                type: NocoBaseDesktopRouteType.page,
+                title: 'Legacy page',
+                schemaUid: 'legacy-page',
+                options: {},
+              },
+              _model: { context: engine.context } as any,
+            },
+            dom: React.createElement('span', null, 'Legacy page'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    const link = screen.getByRole('link', { name: 'Legacy page' });
+    expect(link).toHaveAttribute('href', '/apps/demo/admin/legacy-page');
+
+    fireEvent.click(link, { button: 0 });
+
+    return waitFor(() => {
+      expect(modalConfirmMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Open classic page access',
+          content: 'This page requires the classic version to open properly. Do you want to go there now?',
+          okText: 'Yes',
+          cancelText: 'Cancel',
+        }),
+      );
+      expect(assign).toHaveBeenCalledWith('/apps/demo/admin/legacy-page');
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should keep native anchor behavior for modifier click on legacy menu item', () => {
+    vi.useFakeTimers();
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign,
+      },
+    });
+
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'item',
+            item: {
+              name: 'Legacy page',
+              path: '/admin/legacy-page',
+              _runtimePath: '/apps/demo/admin/legacy-page',
+              _navigationMode: 'document',
+              _isLegacy: true,
+              _route: {
+                type: NocoBaseDesktopRouteType.page,
+                title: 'Legacy page',
+                schemaUid: 'legacy-page',
+                options: {},
+              },
+              _model: { context: engine.context } as any,
+            },
+            dom: React.createElement('span', null, 'Legacy page'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    try {
+      fireEvent.click(screen.getByRole('link', { name: 'Legacy page' }), { metaKey: true, button: 0 });
+
+      expect(assign).not.toHaveBeenCalled();
+      expect(navigateMock).not.toHaveBeenCalled();
+      expect(modalConfirmMock).not.toHaveBeenCalled();
+      vi.clearAllTimers();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should not navigate to legacy page when user cancels confirm dialog', async () => {
+    modalConfirmMock.mockResolvedValue(false);
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign,
+      },
+    });
+
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'item',
+            item: {
+              name: 'Legacy page',
+              path: '/admin/legacy-page',
+              _runtimePath: '/apps/demo/admin/legacy-page',
+              _navigationMode: 'document',
+              _isLegacy: true,
+              _route: {
+                type: NocoBaseDesktopRouteType.page,
+                title: 'Legacy page',
+                schemaUid: 'legacy-page',
+                options: {},
+              },
+              _model: { context: engine.context } as any,
+            },
+            dom: React.createElement('span', null, 'Legacy page'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Legacy page' }), { button: 0 });
+
+    await waitFor(() => {
+      expect(modalConfirmMock).toHaveBeenCalledTimes(1);
+    });
+    expect(assign).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('should render modern menu item with router internal href under basename', () => {
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'item',
+            item: {
+              name: 'Flow page',
+              path: '/admin/flow-page-1',
+              _runtimePath: '/apps/demo/v2/admin/flow-page-1',
+              _navigationMode: 'spa',
+              _isLegacy: false,
+              _route: {
+                type: NocoBaseDesktopRouteType.flowPage,
+                title: 'Flow page',
+                schemaUid: 'flow-page-1',
+                options: {},
+              },
+            },
+            dom: React.createElement('span', null, 'Flow page'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    expect(screen.getByRole('link', { name: 'Flow page' })).toHaveAttribute('href', '/apps/demo/v2/admin/flow-page-1');
+  });
+
+  it('should render legacy group target as native anchor', () => {
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'group',
+            item: {
+              name: 'Legacy group',
+              path: '/admin/group-1',
+              _runtimePath: '/apps/demo/admin/legacy-page',
+              _navigationMode: 'document',
+              _isLegacy: true,
+              _route: {
+                type: NocoBaseDesktopRouteType.group,
+                title: 'Legacy group',
+                schemaUid: 'group-1',
+                options: {},
+              },
+              _model: { context: engine.context } as any,
+            },
+            dom: React.createElement('span', null, 'Legacy group'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    expect(screen.queryByRole('link', { name: 'Legacy group' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Legacy group-landing-entry' })).toHaveAttribute(
+      'href',
+      '/apps/demo/admin/legacy-page',
+    );
+  });
+
+  it('should navigate legacy group only through explicit landing entry', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign,
+      },
+    });
+
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'group',
+            item: {
+              name: 'Legacy group',
+              path: '/admin/group-1',
+              _runtimePath: '/apps/demo/admin/legacy-page',
+              _navigationMode: 'document',
+              _isLegacy: true,
+              _route: {
+                type: NocoBaseDesktopRouteType.group,
+                title: 'Legacy group',
+                schemaUid: 'group-1',
+                options: {},
+              },
+              _model: { context: engine.context } as any,
+            },
+            dom: React.createElement('span', null, 'Legacy group'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    fireEvent.click(screen.getByText('Legacy group'));
+    expect(assign).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Legacy group-landing-entry' }), { button: 0 });
+    return waitFor(() => {
+      expect(modalConfirmMock).toHaveBeenCalledTimes(1);
+      expect(assign).toHaveBeenCalledWith('/apps/demo/admin/legacy-page');
+    });
+  });
+
+  it('should render modern group landing entry with v2 href', () => {
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/admin/current-page'] },
+          React.createElement(AdminLayoutMenuItemRenderer, {
+            renderType: 'group',
+            item: {
+              name: 'Flow group',
+              path: '/admin/group-2',
+              _runtimePath: '/apps/demo/v2/admin/flow-page-1',
+              _navigationMode: 'spa',
+              _isLegacy: false,
+              _route: {
+                type: NocoBaseDesktopRouteType.group,
+                title: 'Flow group',
+                schemaUid: 'group-2',
+                options: {},
+              },
+            },
+            dom: React.createElement('span', null, 'Flow group'),
+            options: { isMobile: false, collapsed: false },
+          }),
+        ),
+      ),
+    );
+
+    expect(screen.getByRole('link', { name: 'Flow group-landing-entry' })).toHaveAttribute(
+      'href',
+      '/apps/demo/v2/admin/flow-page-1',
+    );
   });
 
   it('should insert designer buttons in expected positions', () => {
@@ -828,7 +1223,15 @@ describe('AdminLayoutModel menu items', () => {
     const deleteRoute = vi.fn().mockResolvedValue(undefined);
     const removeSchema = vi.fn().mockResolvedValue(undefined);
     const navigate = vi.fn();
+    const assign = vi.fn();
 
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign,
+      },
+    });
     engine.context.routeRepository.deleteRoute = deleteRoute;
     engine.context.routeRepository.listAccessible = () => [
       {
@@ -866,14 +1269,23 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith('/admin/next-page');
+    expect(assign).toHaveBeenCalledWith('/apps/demo/admin/next-page');
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('should match current route with router basename before navigating away after delete', async () => {
     const deleteRoute = vi.fn().mockResolvedValue(undefined);
     const removeSchema = vi.fn().mockResolvedValue(undefined);
     const navigate = vi.fn();
+    const assign = vi.fn();
 
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign,
+      },
+    });
     engine.context.routeRepository.deleteRoute = deleteRoute;
     engine.context.routeRepository.listAccessible = () => [
       {
@@ -917,7 +1329,8 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith('/admin/next-page');
+    expect(assign).toHaveBeenCalledWith('/apps/demo/admin/next-page');
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('should reject inner move when target is not a group', async () => {

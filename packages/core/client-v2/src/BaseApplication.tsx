@@ -31,12 +31,13 @@ import { AIManager } from './ai';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
-import type { PluginClassLike, PluginManagerBaseLike, PluginTypeLike } from './PluginManager';
+import type { PluginClass, PluginManager, PluginType } from './PluginManager';
 import { RouteRepository } from './RouteRepository';
 import type {
   ComponentTypeAndString,
   RenderableComponentType,
-  RouterManagerBaseLike,
+  RouterComponentType,
+  RouterManager,
   RouterOptions,
 } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
@@ -73,17 +74,17 @@ const trimTrailingSlashes = (value: string) => {
 
 const isRenderableComponentType = (value: unknown): value is AnyComponent => isValidElementType(value);
 
-export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClassLike }>;
+export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClass }>;
 export type ComponentAndProps<T = any> = [AnyComponent, T];
 
-export interface BaseApplicationOptions {
+export interface BaseApplicationOptions<TPluginType> {
   name?: string;
   publicPath?: string;
   apiClient?: any;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (AnyComponent | ComponentAndProps)[];
-  plugins?: PluginTypeLike[];
+  plugins?: TPluginType[];
   components?: Record<string, AnyComponent>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
@@ -99,17 +100,23 @@ export interface BaseApplicationOptions {
  * 该类只负责承接 client 与 client-v2 共用的 Application 骨架，
  * 具体产品行为通过子类钩子补齐。
  */
-export abstract class BaseApplication<TOptions extends BaseApplicationOptions = BaseApplicationOptions> {
+export abstract class BaseApplication<
+  TOptions extends BaseApplicationOptions<any> = BaseApplicationOptions<PluginType>,
+  TPluginManager extends PluginManager<any> = PluginManager<any>,
+  TRouterManager extends RouterManager<any> = RouterManager<any>,
+  TApiClient extends APIClient = APIClient,
+  TPluginSettingsManager = any,
+> {
   public eventBus = new EventTarget();
   public providers: ComponentAndProps[] = [];
-  public router: RouterManagerBaseLike;
+  public router: TRouterManager;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
   public ws: WebSocketClient;
-  public apiClient: APIClient;
+  public apiClient: TApiClient;
   public components: Record<string, AnyComponent> = {};
-  public pluginManager: PluginManagerBaseLike;
-  public pluginSettingsManager: any;
+  public pluginManager: TPluginManager;
+  public pluginSettingsManager: TPluginSettingsManager;
   public aiManager!: AIManager;
   public headerActionsManager!: HeaderActionsManager;
   public devDynamicImport?: DevDynamicImport;
@@ -129,7 +136,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       setData: (data: Record<string, any>) => void;
       setMeta: (meta: Record<string, any>) => void;
     };
-    pluginManager: PluginManagerBaseLike;
+    pluginManager: TPluginManager;
   };
   public systemSettings!: SystemSettingsSource;
   maintained = false;
@@ -145,7 +152,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     Component: null,
   };
 
-  get pm() {
+  get pm(): TPluginManager {
     return this.pluginManager;
   }
 
@@ -533,11 +540,11 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     }
   }
 
-  protected abstract createApiClient(options: TOptions): APIClient;
+  protected abstract createApiClient(options: TOptions): TApiClient;
   protected abstract createI18n(options: TOptions): i18next;
-  protected abstract createRouterManager(options: TOptions): RouterManagerBaseLike;
-  protected abstract createPluginManager(options: TOptions): PluginManagerBaseLike;
-  protected abstract createPluginSettingsManager(options: TOptions): any;
+  protected abstract createRouterManager(options: TOptions): TRouterManager;
+  protected abstract createPluginManager(options: TOptions): TPluginManager;
+  protected abstract createPluginSettingsManager(options: TOptions): TPluginSettingsManager;
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws ?? false);
   }
@@ -561,7 +568,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
  */
 export class ApplicationModel extends FlowModel {
   #providers?: AnyComponent;
-  #router?: ReturnType<RouterManagerBaseLike['getRouterComponent']>;
+  #router?: RouterComponentType;
 
   get app() {
     return this.context.app as BaseApplication;

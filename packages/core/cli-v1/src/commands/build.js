@@ -76,6 +76,8 @@ module.exports = (cli) => {
         options.retry ? '--retry' : '',
       ]);
       buildIndexHtml(true);
-      await buildClientV2();
+      if (options.packages && !options.packages.includes('@nocobase/app')) {
+        await buildClientV2();
+      }
     });
 };

@@ -24,18 +24,23 @@ import CSSVariableProvider from './css-variable/CSSVariableProvider';
 export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
 export { ApplicationModel } from './BaseApplication';
 
-export interface ApplicationOptions extends BaseApplicationOptions {
+export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   apiClient?: APIClientOptions;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   plugins?: PluginType[];
-  components?: BaseApplicationOptions['components'];
+  components?: BaseApplicationOptions<PluginType>['components'];
   router?: RouterOptions;
 }
 
-export class Application extends BaseApplication<ApplicationOptions> {
+export class Application extends BaseApplication<
+  ApplicationOptions,
+  PluginManager,
+  RouterManager,
+  APIClient,
+  PluginSettingsManager
+> {
   public declare dataSourceManager: any;
-  public declare pluginSettingsManager: PluginSettingsManager;
 
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient(options.apiClient);
@@ -81,7 +86,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return router;
   }
 
-  protected createPluginManager(options: ApplicationOptions) {
+  protected createPluginManager(options: ApplicationOptions): PluginManager {
     return new PluginManager(options.plugins || [], Boolean(options.loadRemotePlugins), this);
   }
 

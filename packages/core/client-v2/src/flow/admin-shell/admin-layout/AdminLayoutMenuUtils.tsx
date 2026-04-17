@@ -16,7 +16,8 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
-import { Badge, Tooltip } from 'antd';
+import { App, Badge, Tooltip } from 'antd';
+import type { HookAPI } from 'antd/es/modal/useModal';
 import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
@@ -37,6 +38,7 @@ import {
   VariableScope,
   withTooltipComponent,
 } from './AdminLayoutCompat';
+import { toRouterNavigationPath } from './resolveAdminRouteRuntimeTarget';
 
 export type AdminLayoutMenuRenderType = 'item' | 'group';
 
@@ -54,6 +56,9 @@ export type AdminLayoutMenuNode = {
   redirect?: string;
   hideInMenu?: boolean;
   disabled?: boolean;
+  _runtimePath?: string | null;
+  _navigationMode?: 'spa' | 'document';
+  _isLegacy?: boolean;
   _route: any;
   _parentRoute?: NocoBaseDesktopRoute;
   _depth?: number;
@@ -122,6 +127,13 @@ export const getAdminLayoutMenuVirtualPath = (type: 'link' | 'designer', identit
 };
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+const groupLandingEntryStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginLeft: 8,
+  color: 'inherit',
+};
 
 const LEGACY_FLOW_MENU_VARIABLE_MAPPINGS: Array<{
   pattern: RegExp;
@@ -270,6 +282,33 @@ const isAdminLayoutMenuModel = (model: FlowModel | undefined): model is MenuMode
 
 const translateByModel = (model: FlowModel, value: any) => {
   return typeof model.context.t === 'function' ? model.context.t(value) : value;
+};
+
+const translateMenuNode = (item: AdminLayoutMenuNode, value: any) => {
+  return item._model ? translateByModel(item._model, value) : value;
+};
+
+/**
+ * 经典页面需要整页跳回 v1，先给用户一个明确确认，避免误离开当前 v2 上下文。
+ */
+const confirmLegacyPageNavigation = async (options: { item: AdminLayoutMenuNode; confirm?: HookAPI['confirm'] }) => {
+  const { item, confirm } = options;
+
+  if (!item._isLegacy || typeof confirm !== 'function') {
+    return true;
+  }
+
+  const confirmed = await confirm({
+    title: translateMenuNode(item, 'Open classic page access'),
+    content: translateMenuNode(
+      item,
+      'This page requires the classic version to open properly. Do you want to go there now?',
+    ),
+    okText: translateMenuNode(item, 'Yes'),
+    cancelText: translateMenuNode(item, 'Cancel'),
+  });
+
+  return !!confirmed;
 };
 
 const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> = [
@@ -489,21 +528,111 @@ export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
   );
 }
 
-const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
+const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
+  const { modal } = App.useApp();
+  const navigate = useNavigateNoUpdate();
+  const routerBasename = useRouterBasename();
+  const { closeMobileMenu } = useContext(MobileMenuControlContext);
   const ariaLabel =
     typeof item.name === 'string' || typeof item.name === 'number'
       ? String(item.name)
       : typeof item._route?.title === 'string' || typeof item._route?.title === 'number'
         ? String(item._route.title)
         : undefined;
+  const runtimePath = item._runtimePath;
+  const spaRuntimePath = runtimePath ? toRouterNavigationPath(runtimePath, routerBasename) : runtimePath;
+
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (!runtimePath) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      const isModifierClick =
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.defaultPrevented;
+
+      if (item._navigationMode === 'document') {
+        if (isModifierClick) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        void (async () => {
+          const confirmed = await confirmLegacyPageNavigation({
+            item,
+            confirm: item._model?.context?.modal?.confirm || modal?.confirm,
+          });
+          if (!confirmed) {
+            return;
+          }
+
+          runAfterMobileMenuClosed({
+            isMobile: !!props.options?.isMobile,
+            closeMobileMenu,
+            callback: () => {
+              window.location.assign(runtimePath);
+            },
+          });
+        })();
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      runAfterMobileMenuClosed({
+        isMobile: !!props.options?.isMobile,
+        closeMobileMenu,
+        callback: () => {
+          if (spaRuntimePath) {
+            navigate(spaRuntimePath);
+          }
+        },
+      });
+    },
+    [
+      closeMobileMenu,
+      item,
+      item._navigationMode,
+      modal,
+      navigate,
+      props.options?.isMobile,
+      runtimePath,
+      spaRuntimePath,
+    ],
+  );
+
+  const landingEntryAriaLabel = ariaLabel ? `${ariaLabel}-landing-entry` : 'group-landing-entry';
+  const content = props.children;
+  const landingEntry = runtimePath ? (
+    item._navigationMode === 'document' ? (
+      <a href={runtimePath} aria-label={landingEntryAriaLabel} onClick={handleClick} style={groupLandingEntryStyle}></a>
+    ) : (
+      <Link
+        to={spaRuntimePath || runtimePath}
+        aria-label={landingEntryAriaLabel}
+        onClick={handleClick}
+        style={groupLandingEntryStyle}
+      ></Link>
+    )
+  ) : null;
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
         <div aria-label={ariaLabel} role="none" style={menuItemStyle}>
-          {props.children}
+          {content}
+          {landingEntry}
           {badgeCount != null && (
             <Badge
               {...item._route.options?.badge}
@@ -538,11 +667,28 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   const { item } = props;
   const location = useLocation();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
+  const { modal } = App.useApp();
   const navigate = useNavigateNoUpdate();
   const basenameOfCurrentRouter = useRouterBasename();
   const { closeMobileMenu } = useContext(MobileMenuControlContext);
   const path = item.redirect || item.path;
+  const runtimePath = item._runtimePath || path;
+  const spaRuntimePath = runtimePath ? toRouterNavigationPath(runtimePath, basenameOfCurrentRouter) : runtimePath;
+  const isDocumentNavigation = item._navigationMode === 'document';
   const badgeProps = { ...item._route.options?.badge, count: badgeCount };
+
+  const canUseNativeAnchor = !!runtimePath && isDocumentNavigation;
+
+  const shouldHandleDocumentClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    return (
+      !event.defaultPrevented &&
+      event.button === 0 &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey
+    );
+  };
 
   const handleClickLink = useCallback(
     async (event: React.MouseEvent) => {
@@ -569,11 +715,46 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
 
   const handleClickMenuItem = useCallback(
     (event: React.MouseEvent) => {
+      if (!runtimePath) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      if (isDocumentNavigation) {
+        if (!shouldHandleDocumentClick(event as React.MouseEvent<HTMLAnchorElement>)) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        void (async () => {
+          const confirmed = await confirmLegacyPageNavigation({
+            item,
+            confirm: item._model?.context?.modal?.confirm || modal?.confirm,
+          });
+          if (!confirmed) {
+            return;
+          }
+
+          runAfterMobileMenuClosed({
+            isMobile: !!props.options?.isMobile,
+            closeMobileMenu,
+            callback: () => {
+              window.location.assign(runtimePath);
+            },
+          });
+        })();
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
 
       if (!props.options?.isMobile) {
-        navigate(path);
+        if (spaRuntimePath) {
+          navigate(spaRuntimePath);
+        }
         return;
       }
 
@@ -581,11 +762,22 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
         isMobile: !!props.options?.isMobile,
         closeMobileMenu,
         callback: () => {
-          navigate(path);
+          if (spaRuntimePath) {
+            navigate(spaRuntimePath);
+          }
         },
       });
     },
-    [props.options?.isMobile, closeMobileMenu, navigate, path],
+    [
+      props.options?.isMobile,
+      closeMobileMenu,
+      isDocumentNavigation,
+      item,
+      modal,
+      navigate,
+      runtimePath,
+      spaRuntimePath,
+    ],
   );
 
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
@@ -612,25 +804,41 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
     );
   }
 
+  const itemContent = (
+    <WithTooltip
+      title={item.name}
+      hidden={
+        item._route.type === NocoBaseDesktopRouteType.group || (item._depth || 0) > 0 || !props.options?.collapsed
+      }
+      badgeProps={badgeProps}
+    >
+      {canUseNativeAnchor ? (
+        <a
+          href={runtimePath}
+          aria-label={typeof item.name === 'string' ? item.name : undefined}
+          onClick={handleClickMenuItem as any}
+        >
+          {props.children}
+        </a>
+      ) : runtimePath ? (
+        <Link
+          to={spaRuntimePath}
+          aria-label={typeof item.name === 'string' ? item.name : undefined}
+          onClick={handleClickMenuItem}
+        >
+          {props.children}
+        </Link>
+      ) : (
+        <span aria-label={typeof item.name === 'string' ? item.name : undefined}>{props.children}</span>
+      )}
+    </WithTooltip>
+  );
+
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
         <div role="none" style={menuItemStyle}>
-          <WithTooltip
-            title={item.name}
-            hidden={
-              item._route.type === NocoBaseDesktopRouteType.group || (item._depth || 0) > 0 || !props.options?.collapsed
-            }
-            badgeProps={badgeProps}
-          >
-            <Link
-              to={path}
-              aria-label={typeof item.name === 'string' ? item.name : undefined}
-              onClick={handleClickMenuItem}
-            >
-              {props.children}
-            </Link>
-          </WithTooltip>
+          {itemContent}
           {badgeCount != null && (
             <Badge
               {...badgeProps}
@@ -672,7 +880,9 @@ export const AdminLayoutMenuItemRenderer: FC<{
   if (renderType === 'group') {
     return (
       <VariableScope scopeId={item._route.schemaUid} type="groupItem">
-        <GroupItem item={item}>{tooltipDom}</GroupItem>
+        <GroupItem item={item} options={options}>
+          {tooltipDom}
+        </GroupItem>
       </VariableScope>
     );
   }

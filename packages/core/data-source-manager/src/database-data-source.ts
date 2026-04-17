@@ -51,13 +51,26 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       if (!loadedCollection) return collection;
 
       const collectionFields = collection.fields || [];
-      const loadedFieldsObj = Object.fromEntries(
-        (loadedCollection.fields || []).map((f) => [f.columnName || f.field || f.name, f]),
+      const loadedFieldsByName = Object.fromEntries((loadedCollection.fields || []).map((f) => [f.name, f]));
+      const loadedFieldsByColumn = (loadedCollection.fields || []).reduce<Record<string, FieldOptions[]>>(
+        (result, field) => {
+          const key = field.columnName || field.field || field.name;
+          result[key] = result[key] || [];
+          result[key].push(field);
+          return result;
+        },
+        {},
       );
+      const isAliasField = (field?: FieldOptions) => Boolean(field?.field && field.name !== field.field);
 
       // Merge existing fields
       const newFields = collectionFields.map((field) => {
-        const loadedField = loadedFieldsObj[field.name];
+        const loadedField =
+          loadedFieldsByName[field.name] ||
+          loadedFieldsByColumn[field.columnName || field.field || field.name]?.find(
+            (candidate) => !isAliasField(candidate),
+          ) ||
+          loadedFieldsByColumn[field.columnName || field.field || field.name]?.[0];
         if (!loadedField) return field;
         if (loadedField.possibleTypes) {
           loadedField.possibleTypes = field.possibleTypes;
@@ -65,9 +78,20 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
         return this.mergeFieldOptions(field, loadedField);
       });
 
+      // Preserve logical fields that reuse another physical column, such as
+      // file collection `preview` -> `url`, because introspection cannot
+      // reconstruct them from the physical table definition alone.
+      const loadedMappedFields = (loadedCollection.fields || []).filter(
+        (field) => isAliasField(field) && !newFields.find((newField) => newField.name === field.name),
+      );
+
+      newFields.push(...loadedMappedFields);
+
       // Add association fields from loaded data
-      const loadedAssociationFields = (loadedCollection.fields || []).filter((field) =>
-        ['belongsTo', 'belongsToMany', 'hasMany', 'hasOne', 'belongsToArray'].includes(field.type),
+      const loadedAssociationFields = (loadedCollection.fields || []).filter(
+        (field) =>
+          ['belongsTo', 'belongsToMany', 'hasMany', 'hasOne', 'belongsToArray'].includes(field.type) &&
+          !newFields.find((newField) => newField.name === field.name),
       );
 
       newFields.push(...loadedAssociationFields);

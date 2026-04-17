@@ -8,17 +8,17 @@
     "node": ">=18"
   },
   "scripts": {
-    "nocobase": "nocobase",
-    "pm": "nocobase pm",
-    "pm2": "nocobase pm2",
-    "dev": "nocobase dev",
-    "start": "nocobase start",
-    "clean": "nocobase clean",
-    "build": "nocobase build",
-    "test": "nocobase test",
-    "e2e": "nocobase e2e",
-    "tar": "nocobase tar",
-    "postinstall": "nocobase postinstall",
+    "nocobase": "nocobase-v1",
+    "pm": "nocobase-v1 pm",
+    "pm2": "nocobase-v1 pm2",
+    "dev": "nocobase-v1 dev",
+    "start": "nocobase-v1 start",
+    "clean": "nocobase-v1 clean",
+    "build": "nocobase-v1 build",
+    "test": "nocobase-v1 test",
+    "e2e": "nocobase-v1 e2e",
+    "tar": "nocobase-v1 tar",
+    "postinstall": "nocobase-v1 postinstall",
     "lint": "eslint ."
   },
   "resolutions": {

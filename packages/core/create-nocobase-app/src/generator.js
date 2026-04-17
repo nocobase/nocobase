@@ -144,7 +144,7 @@ class AppGenerator extends Generator {
       ...(await fs.readJSON(join(this.cwd, 'package.json'), 'utf8')),
     };
 
-    json['dependencies']['@nocobase/cli'] = context.version;
+    json['dependencies']['@nocobase/app'] = context.version;
 
     if (!this.args.skipDevDependencies) {
       json['devDependencies'] = json['devDependencies'] || {};

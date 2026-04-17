@@ -9,6 +9,7 @@
 
 import {
   buildLegacySigninHref,
+  convertV2AdminPathToLegacy,
   getCurrentV2RedirectPath,
   redirectToLegacySignin,
   resolveLegacySigninRedirect,
@@ -70,6 +71,63 @@ describe('auth redirect helpers', () => {
     expect(buildLegacySigninHref(app, '/nocobase/v2/admin/7vu4c2sdk6h')).toBe(
       '/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h',
     );
+  });
+
+  it('should convert v2 admin path to legacy root-relative path', () => {
+    const app = {
+      getPublicPath: () => '/v2/',
+      router: {
+        getBasename: () => '/v2',
+      },
+    } as any;
+
+    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1')).toBe('/admin/page-1');
+    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1/tab/tab-1')).toBe('/admin/page-1/tabs/tab-1');
+    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1/view/detail')).toBe('/admin/page-1/popups/detail');
+    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1/tab/tab-1/view/detail')).toBe(
+      '/admin/page-1/tabs/tab-1/popups/detail',
+    );
+  });
+
+  it('should preserve basename search and hash when converting current legacy path', () => {
+    const app = {
+      getPublicPath: () => '/nocobase/v2/',
+      router: {
+        getBasename: () => '/nocobase/v2',
+      },
+    } as any;
+
+    expect(
+      convertV2AdminPathToLegacy(app, {
+        pathname: '/nocobase/v2/admin/page-1/tab/tab-1/view/detail',
+        search: '?from=menu',
+        hash: '#dialog',
+      }),
+    ).toBe('/nocobase/admin/page-1/tabs/tab-1/popups/detail?from=menu#dialog');
+  });
+
+  it('should normalize duplicated slashes during legacy path conversion', () => {
+    const app = {
+      getPublicPath: () => '/nocobase/v2/',
+      router: {
+        getBasename: () => '/nocobase/v2/',
+      },
+    } as any;
+
+    expect(convertV2AdminPathToLegacy(app, '/nocobase//v2//admin//page-1//tab//tab-1')).toBe(
+      '/nocobase/admin/page-1/tabs/tab-1',
+    );
+  });
+
+  it('should return null for non-admin runtime paths', () => {
+    const app = {
+      getPublicPath: () => '/v2/',
+      router: {
+        getBasename: () => '/v2',
+      },
+    } as any;
+
+    expect(convertV2AdminPathToLegacy(app, '/v2/settings')).toBeNull();
   });
 
   it('should redirect with window.location.replace by default', () => {

@@ -57,6 +57,15 @@ export class RouteRepository {
   }
 
   /**
+   * 判断当前可访问桌面路由是否已完成至少一次初始化加载。
+   *
+   * @returns {boolean} 是否已初始化完成
+   */
+  isAccessibleLoaded() {
+    return this.accessibleLoaded;
+  }
+
+  /**
    * 重新拉取当前用户可访问的桌面路由，并覆盖本地缓存。
    *
    * @returns 最新的路由数组

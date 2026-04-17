@@ -1,5 +1,5 @@
 const packageJson = require('./package.json');
-const { resolvePublicPath, resolveV2PublicPath } = require('../cli/src/util');
+const { resolvePublicPath, resolveV2PublicPath } = require('../cli-v1/src/util');
 const { getPackagePaths, IndexGenerator, generatePlugins, generateAllPlugins } = require('./common.js');
 
 console.log('VERSION: ', packageJson.version);

@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TARGET_TAG: ${{ inputs.tag }}
+      NPM_DIST_TAG: republish
     steps:
       - name: Set Node.js 20
         uses: actions/setup-node@v3
@@ -37,6 +38,7 @@ jobs:
         run: |
           echo "Mode: publish"
           echo "Target tag: $TARGET_TAG"
+          echo "Publish dist-tag: $NPM_DIST_TAG"
 
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -211,7 +213,7 @@ jobs:
             local log_file
             log_file=$(mktemp)
 
-            if npm publish "$package_dir" --registry "$registry" >"$log_file" 2>&1; then
+            if npm publish "$package_dir" --registry "$registry" --tag "$NPM_DIST_TAG" >"$log_file" 2>&1; then
               cat "$log_file"
               rm -f "$log_file"
               return 0
@@ -254,7 +256,7 @@ jobs:
             local log_file
             log_file=$(mktemp)
 
-            if npm publish "$package_dir" --registry "$registry" >"$log_file" 2>&1; then
+            if npm publish "$package_dir" --registry "$registry" --tag "$NPM_DIST_TAG" >"$log_file" 2>&1; then
               cat "$log_file"
               rm -f "$log_file"
               return 0
