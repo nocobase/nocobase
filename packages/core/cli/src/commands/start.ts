@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command, Flags } from '@oclif/core'
-import { runNpm } from '../lib/run-npm.ts';
+import { Command, Flags } from '@oclif/core'
+import { runNocoBaseCommand } from '../lib/run-npm.ts';
 
 export default class Start extends Command {
   static override description = 'Run the legacy NocoBase start (forwards to `npm run start` in the repo root)';
@@ -30,35 +30,29 @@ export default class Start extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Start);
-    const forwarded: string[] = [];
+
+    const npmArgs = ['start'];
+
+    if (flags.quickstart) {
+      npmArgs.push('--quickstart');
+    }
     if (flags.port) {
-      forwarded.push('--port', flags.port);
+      npmArgs.push('--port', flags.port);
     }
     if (flags.daemon) {
-      forwarded.push('--daemon');
+      npmArgs.push('--daemon');
     }
     if (flags.instances) {
-      forwarded.push('--instances', flags.instances.toString());
+      npmArgs.push('--instances', flags.instances.toString());
     }
     if (flags['launch-mode']) {
-      forwarded.push('--launch-mode', flags['launch-mode']);
-    }
-    const npmArgs = ['nocobase', 'start'];
-    if (forwarded.length > 0) {
-      npmArgs.push('--', ...forwarded);
+      npmArgs.push('--launch-mode', flags['launch-mode']);
     }
     try {
-      await runNpm(process.cwd(), npmArgs);
+      await runNocoBaseCommand(npmArgs, process.cwd());
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.error(
-        [
-          'Failed to run `npm run start`.',
-          'Run from the NocoBase repo root (where the `start` script runs `nocobase-v1 start`), or invoke the legacy CLI directly.',
-          message,
-        ].join('\n'),
-        { exit: 1 },
-      );
+      this.error(message);
     }
   }
 }

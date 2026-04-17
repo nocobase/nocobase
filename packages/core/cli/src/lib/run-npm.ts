@@ -10,9 +10,9 @@
 import { spawn } from 'node:child_process';
 
 /** Run `npm` with the given argument list in `cwd`, inheriting stdio. */
-export function runNpm(cwd: string, args: string[]): Promise<void> {
+export function runNpm(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn('npm', ['run', ...args], {
+    const child = spawn('yarn', [...args], {
       stdio: 'inherit',
       shell: true,
       cwd,
@@ -25,6 +25,28 @@ export function runNpm(cwd: string, args: string[]): Promise<void> {
         return;
       }
       reject(new Error(`npm exited with code ${code}`));
+    });
+  });
+}
+
+export async function runNocoBaseCommand(args: string[], cwd: string, options?: { env?: Record<string, string> }): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', ['./node_modules/.bin/nocobase-v1', ...args], {
+      stdio: 'inherit',
+      shell: true,
+      cwd,
+      env: {
+        ...options?.env,
+        ...process.env,
+      },
+    });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`nocobase command exited with code ${code}`));
     });
   });
 }

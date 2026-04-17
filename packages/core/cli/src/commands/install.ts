@@ -8,7 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { runNpm } from '../lib/run-npm.ts';
+import { runNocoBaseCommand, runNpm } from '../lib/run-npm.ts';
 
 export default class Install extends Command {
   static override description = 'Run the legacy NocoBase install (forwards to `npm run install` in the repo root)';
@@ -31,43 +31,30 @@ export default class Install extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Install);
-    const forwarded: string[] = [];
-    if (flags.env !== undefined) {
-      forwarded.push('-e', flags.env);
-    }
+
+    const npmArgs = ['install'];
+
     if (flags.force) {
-      forwarded.push('-f');
+      npmArgs.push('--force');
     }
     if (flags.lang !== undefined) {
-      forwarded.push('-l', flags.lang);
+      npmArgs.push('--lang', flags.lang);
     }
     if (flags.rootEmail !== undefined) {
-      forwarded.push('-m', flags.rootEmail);
+      npmArgs.push('--root-email', flags.rootEmail);
     }
     if (flags.rootPassword !== undefined) {
-      forwarded.push('-p', flags.rootPassword);
+      npmArgs.push('--root-password', flags.rootPassword);
     }
     if (flags.rootNickname !== undefined) {
-      forwarded.push('-n', flags.rootNickname);
-    }
-
-    const npmArgs = ['nocobase', 'install'];
-    if (forwarded.length > 0) {
-      npmArgs.push('--', ...forwarded);
+      npmArgs.push('--root-nickname', flags.rootNickname);
     }
 
     try {
-      await runNpm(process.cwd(), npmArgs);
+      await runNocoBaseCommand(npmArgs, process.cwd());
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.error(
-        [
-          'Failed to run `npm run install`.',
-          'Run from the NocoBase repo root and ensure a package script named `install` is defined (e.g. `nocobase-v1 install`), or invoke the legacy CLI directly.',
-          message,
-        ].join('\n'),
-        { exit: 1 },
-      );
+      this.error(message);
     }
   }
 }

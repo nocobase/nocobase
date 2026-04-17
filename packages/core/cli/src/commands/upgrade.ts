@@ -7,30 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {Args, Command, Flags} from '@oclif/core'
+import { Command, Flags } from '@oclif/core'
+import { runNocoBaseCommand } from '../lib/run-npm.ts'
 
 export default class Upgrade extends Command {
-  static override args = {
-    file: Args.string({description: 'file to read'}),
-  }
-  static override description = 'describe the command here'
+  static override description = 'Run the legacy NocoBase upgrade (forwards to `npm run upgrade` in the repo root)';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> --skip-code-update',
   ]
   static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
+    'skip-code-update': Flags.boolean({ description: 'Skip code update', char: 'S', required: false }),
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(Upgrade)
-
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from packages/core/cli/src/commands/upgrade.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
+    const {flags} = await this.parse(Upgrade)
+    const npmArgs = ['upgrade'];
+    if (flags['skip-code-update']) {
+      npmArgs.push('--skip-code-update');
+    }
+    try {
+      await runNocoBaseCommand(npmArgs, process.cwd());
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.error(message);
     }
   }
 }

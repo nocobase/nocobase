@@ -8,29 +8,33 @@
  */
 
 import {Args, Command, Flags} from '@oclif/core'
+import { runNocoBaseCommand } from '../../lib/run-npm.ts';
 
 export default class ScaffoldMigration extends Command {
   static override args = {
-    file: Args.string({description: 'file to read'}),
+    name: Args.string({description: 'migration name', required: true}),
   }
-  static override description = 'describe the command here'
+  static override description = 'Run the legacy NocoBase scaffold migration (forwards to `npm run scaffold:migration` in the repo root)';
   static override examples = [
-    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> migration-name --pkg @nocobase/plugin-acl',
+    '<%= config.bin %> <%= command.id %> migration-name --pkg @nocobase/plugin-acl --on afterLoad',
   ]
   static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
+    pkg: Flags.string({description: 'plugin package name', required: true}),
+    on: Flags.string({description: 'on', required: false, options: ['beforeLoad', 'afterSync', 'afterLoad']}),
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(ScaffoldMigration)
-
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from packages/core/cli/src/commands/scaffold/migration.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
+    const { args, flags } = await this.parse(ScaffoldMigration)
+    const npmArgs = ['create-migration', args.name, '--pkg', flags.pkg];
+    if (flags.on) {
+      npmArgs.push('--on', flags.on);
+    }
+    try {
+      await runNocoBaseCommand(npmArgs, process.cwd(), { env: { LOGGER_SILENT: 'true' } });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.error(message);
     }
   }
 }

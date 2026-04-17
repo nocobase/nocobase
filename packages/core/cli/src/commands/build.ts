@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { runNpm } from '../lib/run-npm.ts';
+import { runNocoBaseCommand, runNpm } from '../lib/run-npm.ts';
 
 export default class Build extends Command {
   static override args = {
@@ -36,31 +36,18 @@ export default class Build extends Command {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(Build);
     const packages = args.packages ?? [];
-    const forwarded: string[] = [...packages];
+    const npmArgs = ['build', ...packages];
     if (flags['no-dts']) {
-      forwarded.push('--no-dts');
+      npmArgs.push('--no-dts');
     }
     if (flags.sourcemap) {
-      forwarded.push('--sourcemap');
+      npmArgs.push('--sourcemap');
     }
-
-    const npmArgs = ['nocobase', 'build'];
-    if (forwarded.length > 0) {
-      npmArgs.push('--', ...forwarded);
-    }
-
     try {
-      await runNpm(process.cwd(), npmArgs);
+      await runNocoBaseCommand(npmArgs, process.cwd());
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.error(
-        [
-          'Failed to run `npm run build`.',
-          'Run from the NocoBase repo root (where the `build` script runs `nocobase-v1 build`), or invoke the legacy CLI directly.',
-          message,
-        ].join('\n'),
-        { exit: 1 },
-      );
+      this.error(message);
     }
   }
 }
