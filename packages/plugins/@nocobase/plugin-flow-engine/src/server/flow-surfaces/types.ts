@@ -246,6 +246,7 @@ export type FlowSurfaceNodeSpec = {
   uid?: string;
   clientKey?: string;
   sortIndex?: number;
+  async?: boolean;
   use: string;
   popup?: Record<string, any>;
   props?: Record<string, any>;
@@ -258,7 +259,7 @@ export type FlowSurfaceNodeSpec = {
 export type FlowSurfaceNodeSubModel = FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[];
 
 export type FlowSurfaceNodeDefaults = Partial<
-  Pick<FlowSurfaceNodeSpec, 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry' | 'subModels'>
+  Pick<FlowSurfaceNodeSpec, 'async' | 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry' | 'subModels'>
 >;
 
 export type FlowSurfaceApplyMode = 'replace';

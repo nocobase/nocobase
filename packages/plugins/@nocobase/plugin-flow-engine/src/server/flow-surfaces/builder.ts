@@ -232,7 +232,13 @@ export function buildBlockTree(options: {
     },
   ).use;
   const defaults = buildBlockDefaults(use);
-  const baseStepParams = _.merge({}, _.cloneDeep(defaults.stepParams || {}), _.cloneDeep(options.stepParams || {}));
+  const approvalBlockDefaults = buildApprovalBlockDefaults(use);
+  const baseStepParams = _.merge(
+    {},
+    _.cloneDeep(defaults.stepParams || {}),
+    _.cloneDeep(approvalBlockDefaults?.stepParams || {}),
+    _.cloneDeep(options.stepParams || {}),
+  );
   const normalizedResourceInit = _.pickBy(_.cloneDeep(options.resourceInit || {}), (value) => !_.isUndefined(value));
   if (use === 'ChartBlockModel') {
     _.unset(baseStepParams, 'resourceSettings');
@@ -266,11 +272,30 @@ export function buildBlockTree(options: {
 
   const model: FlowSurfaceNodeSpec = {
     use,
-    props: _.merge({}, _.cloneDeep(defaults.props || {}), _.cloneDeep(options.props || {})),
-    decoratorProps: _.merge({}, _.cloneDeep(defaults.decoratorProps || {}), _.cloneDeep(options.decoratorProps || {})),
+    ...(typeof approvalBlockDefaults?.async === 'boolean' ? { async: approvalBlockDefaults.async } : {}),
+    props: _.merge(
+      {},
+      _.cloneDeep(defaults.props || {}),
+      _.cloneDeep(approvalBlockDefaults?.props || {}),
+      _.cloneDeep(options.props || {}),
+    ),
+    decoratorProps: _.merge(
+      {},
+      _.cloneDeep(defaults.decoratorProps || {}),
+      _.cloneDeep(approvalBlockDefaults?.decoratorProps || {}),
+      _.cloneDeep(options.decoratorProps || {}),
+    ),
     stepParams: baseStepParams,
   };
-  const approvalBlockDefaults = buildApprovalBlockDefaults(use);
+  const flowRegistry = _.merge(
+    {},
+    _.cloneDeep(defaults.flowRegistry || {}),
+    _.cloneDeep(approvalBlockDefaults?.flowRegistry || {}),
+    _.cloneDeep(options.flowRegistry || {}),
+  );
+  if (Object.keys(flowRegistry).length) {
+    model.flowRegistry = flowRegistry;
+  }
 
   if (approvalBlockDefaults?.subModels) {
     model.subModels = {};

@@ -166,6 +166,74 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should auto-complete bare relation fields in applyBlueprint with non-empty view popups', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees relation popup',
+          },
+        },
+        page: {
+          title: 'Employees relation popup',
+          documentTitle: 'Employees relation popup',
+          enableHeader: true,
+          displayTitle: true,
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: ['department'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(executeRes.status).toBe(200);
+    const executeData = getData(executeRes);
+    const pageSchemaUid = executeData.target.pageSchemaUid;
+    const readback = await getSurface(rootAgent, {
+      pageSchemaUid,
+    });
+    const detailsBlock = readback.tree.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items?.[0];
+    const departmentField = collectDescendantNodes(
+      detailsBlock,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    )[0];
+    expect(departmentField?.props?.clickToOpen).toBe(true);
+
+    if (departmentField?.popup?.template?.uid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: departmentField.popup.template.uid,
+          },
+        }),
+      );
+      const popupTemplateSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      const popupTemplateBlock = _.castArray(
+        popupTemplateSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(popupTemplateBlock?.use).toBe('DetailsBlockModel');
+    } else {
+      expect(departmentField?.subModels?.page?.use).toBe('ChildPageModel');
+      const popupBlock = _.castArray(
+        departmentField?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(popupBlock?.use).toBe('DetailsBlockModel');
+    }
+  });
+
   it('should ignore local popup blocks/layout/mode when applyBlueprint binds popup.template', async () => {
     const sourcePage = await createPage(rootAgent, {
       title: `Popup template source page ${Date.now()}`,

@@ -1885,6 +1885,63 @@ describe('flowSurfaces resource', () => {
     expect(composedPopupBlock?.use).toBe('DetailsBlockModel');
   });
 
+  it('should auto-complete bare relation fields in compose with non-empty view popups', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose relation popup page',
+      tabTitle: 'Compose relation popup tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        blocks: [
+          {
+            key: 'employeesDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['department'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+    const composeResult = getData(composeRes);
+    const composedField = composeResult.blocks[0].fields[0];
+    const composedFieldReadback = await getSurface(rootAgent, {
+      uid: composedField.fieldUid,
+    });
+    expect(composedFieldReadback.tree.props?.clickToOpen).toBe(true);
+
+    if (composedFieldReadback.tree.popup?.template?.uid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: composedFieldReadback.tree.popup.template.uid,
+          },
+        }),
+      );
+      const popupTemplateSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      const popupTemplateBlock = _.castArray(
+        popupTemplateSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(popupTemplateBlock?.use).toBe('DetailsBlockModel');
+    } else {
+      expect(composedFieldReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
+      const composedPopupBlock = _.castArray(
+        composedFieldReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(composedPopupBlock?.use).toBe('DetailsBlockModel');
+    }
+  });
+
   it('should preserve details item fieldSettings when addFields applies inline label settings', async () => {
     const page = await createPage(rootAgent, {
       title: 'Details addFields page',

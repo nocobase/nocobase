@@ -22,7 +22,7 @@ import {
 } from './flow-surfaces.contract.helpers';
 import {
   FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
-  FLOW_SURFACES_APPROVAL_TEST_PLUGIN_INSTALLS,
+  FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
 } from './flow-surfaces.test-plugins';
 
 async function createApprovalSurface(
@@ -77,7 +77,7 @@ describe('flowSurfaces approval API contract', () => {
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
       enabledPluginAliases: FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
-      plugins: FLOW_SURFACES_APPROVAL_TEST_PLUGIN_INSTALLS,
+      plugins: FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
     });
     ({ flowRepo, rootAgent } = context);
   }, 120000);

@@ -6000,7 +6000,7 @@ export class FlowSurfacesService {
       'flowRegistry',
     ]);
     const inlineSettings = this.normalizeInlineSettings('addField', values.settings);
-    const inlinePopup = this.normalizeInlinePopup('addField', values.popup);
+    let inlinePopup = this.normalizeInlinePopup('addField', values.popup);
     this.assertInlinePopupTemplateAliasesSupported('addField', inlinePopup, options.popupTemplateAliasSession);
     const resolvedTarget = await this.locator.resolve(target, options);
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
@@ -6200,6 +6200,18 @@ export class FlowSurfacesService {
     }
     if (inlinePopup && !this.isPopupFieldHostUse(boundFieldCapability.fieldUse)) {
       throwBadRequest(`flowSurfaces addField field '${boundFieldCapability.fieldUse}' does not support popup`);
+    }
+    if (
+      values.__autoPopupForRelationField === true &&
+      !inlinePopup &&
+      this.isPopupFieldHostUse(boundFieldCapability.fieldUse) &&
+      (isAssociationField(resolvedField.field) || !!normalizedFieldBinding.associationPathName) &&
+      !this.peekInlineFieldSettingsOpenView(inlineSettings, boundFieldCapability.wrapperUse)
+    ) {
+      inlinePopup = this.normalizeInlinePopup('addField', {
+        tryTemplate: true,
+        defaultType: 'view',
+      });
     }
     if (
       inlinePopup &&

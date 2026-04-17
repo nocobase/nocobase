@@ -693,6 +693,7 @@ function compileField(
     return {
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, fieldPath), `${context}[${index}]`),
       fieldPath,
+      __autoPopupForRelationField: true,
     };
   }
   if (!_.isPlainObject(input)) {

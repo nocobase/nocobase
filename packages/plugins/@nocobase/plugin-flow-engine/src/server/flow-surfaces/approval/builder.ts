@@ -9,6 +9,7 @@
 
 import { uid } from '@nocobase/utils';
 import _ from 'lodash';
+import type { FlowSurfaceNodeDefaults } from '../types';
 
 type ApprovalFieldTreeParams = {
   wrapperUse: string;
@@ -32,6 +33,14 @@ type ApprovalActionDefaults = {
   props?: Record<string, any>;
   stepParams?: Record<string, any>;
   subModels?: Record<string, any>;
+};
+
+const APPROVAL_CREATE_NEW_PATTERN_STEP_PARAMS = {
+  patternSettings: {
+    pattern: {
+      pattern: 'createNew',
+    },
+  },
 };
 
 function buildFieldInitPayload(params: {
@@ -96,10 +105,11 @@ export function buildApprovalFieldTree(params: ApprovalFieldTreeParams) {
   };
 }
 
-export function buildApprovalBlockDefaults(use: string) {
+export function buildApprovalBlockDefaults(use: string): FlowSurfaceNodeDefaults | null {
   switch (String(use || '').trim()) {
     case 'ApplyFormModel':
       return {
+        stepParams: _.cloneDeep(APPROVAL_CREATE_NEW_PATTERN_STEP_PARAMS),
         subModels: {
           grid: {
             use: 'PatternFormGridModel',
@@ -113,6 +123,7 @@ export function buildApprovalBlockDefaults(use: string) {
       };
     case 'ProcessFormModel':
       return {
+        stepParams: _.cloneDeep(APPROVAL_CREATE_NEW_PATTERN_STEP_PARAMS),
         subModels: {
           grid: {
             use: 'PatternFormGridModel',
@@ -212,7 +223,11 @@ export function buildApprovalInitiatorSurfaceTree(options: {
 
   return {
     uid: pageUid,
+    async: true,
+    subType: 'object',
     use: 'TriggerChildPageModel',
+    sortIndex: 0,
+    flowRegistry: {},
     stepParams: {
       pageSettings: {
         general: {
@@ -232,7 +247,12 @@ export function buildApprovalInitiatorSurfaceTree(options: {
       tabs: [
         {
           uid: tabUid,
+          parentId: pageUid,
           use: 'TriggerChildPageTabModel',
+          subKey: 'tabs',
+          subType: 'array',
+          sortIndex: 0,
+          flowRegistry: {},
           stepParams: {
             pageTabSettings: {
               tab: {
@@ -243,7 +263,14 @@ export function buildApprovalInitiatorSurfaceTree(options: {
           subModels: {
             grid: {
               uid: gridUid,
+              parentId: tabUid,
+              async: true,
               use: 'TriggerBlockGridModel',
+              subKey: 'grid',
+              subType: 'object',
+              sortIndex: 0,
+              flowRegistry: {},
+              filterManager: [],
             },
           },
         },
@@ -265,7 +292,11 @@ export function buildApprovalApproverSurfaceTree(options: {
 
   return {
     uid: pageUid,
+    async: true,
+    subType: 'object',
     use: 'ApprovalChildPageModel',
+    sortIndex: 0,
+    flowRegistry: {},
     stepParams: {
       pageSettings: {
         general: {
@@ -291,7 +322,12 @@ export function buildApprovalApproverSurfaceTree(options: {
       tabs: [
         {
           uid: tabUid,
+          parentId: pageUid,
           use: 'ApprovalChildPageTabModel',
+          subKey: 'tabs',
+          subType: 'array',
+          sortIndex: 0,
+          flowRegistry: {},
           stepParams: {
             pageTabSettings: {
               tab: {
@@ -302,7 +338,14 @@ export function buildApprovalApproverSurfaceTree(options: {
           subModels: {
             grid: {
               uid: gridUid,
+              parentId: tabUid,
+              async: true,
               use: 'ApprovalBlockGridModel',
+              subKey: 'grid',
+              subType: 'object',
+              sortIndex: 0,
+              flowRegistry: {},
+              filterManager: [],
             },
           },
         },
@@ -324,7 +367,11 @@ export function buildApprovalTaskCardSurfaceTree(options: {
 
   return {
     uid: detailsUid,
+    async: true,
+    subType: 'object',
     use: options.detailsUse,
+    sortIndex: 0,
+    flowRegistry: {},
     stepParams: {
       resourceSettings: {
         init: {
@@ -341,7 +388,12 @@ export function buildApprovalTaskCardSurfaceTree(options: {
     subModels: {
       grid: {
         uid: gridUid,
+        parentId: detailsUid,
         use: options.gridUse,
+        subKey: 'grid',
+        subType: 'object',
+        sortIndex: 0,
+        flowRegistry: {},
       },
     },
   };

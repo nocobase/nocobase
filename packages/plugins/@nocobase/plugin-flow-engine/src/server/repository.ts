@@ -1039,7 +1039,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       {
         options: {
           ...(nodeModel.get('options') as any),
-          ...lodash.omit(schema, ['x-async', 'name', 'uid', 'properties']),
+          ...lodash.omit(schema, ['async', 'x-async', 'name', 'uid', 'properties']),
         },
       },
       {
@@ -1047,6 +1047,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         transaction,
       },
     );
+
+    const nextAsync = this.resolveNodeAsyncFlag(schema);
+    if (!lodash.isUndefined(nextAsync)) {
+      await this.updateNodeAsyncFlag(uid, nextAsync, transaction);
+    }
 
     await this.emitAfterSaveEvent(nodeModel, { transaction });
 
@@ -1362,6 +1367,31 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return node;
   }
 
+  private resolveNodeAsyncFlag(schema: any) {
+    if (lodash.has(schema, 'x-async')) {
+      return !!schema['x-async'];
+    }
+    if (lodash.has(schema, 'async')) {
+      return !!schema['async'];
+    }
+    return undefined;
+  }
+
+  private async updateNodeAsyncFlag(uid: string, asyncFlag: boolean, transaction?: Transaction) {
+    await this.database.sequelize.query(
+      this.sqlAdapter(
+        `UPDATE ${this.flowModelTreePathTableName} SET "async" = :async WHERE ancestor = :uid AND descendant = :uid AND depth = 0`,
+      ),
+      {
+        replacements: {
+          uid,
+          async: asyncFlag,
+        },
+        transaction,
+      },
+    );
+  }
+
   private prepareSingleNodeForInsert(schema: SchemaNode) {
     const uid = schema['uid'];
     const name = schema['name'];
@@ -1495,12 +1525,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       transaction: options?.transaction,
     });
     if (instance) {
+      const nextAsync = this.resolveNodeAsyncFlag(node);
       // @ts-ignore
       await instance.update(
         {
           options: {
             ...(instance.get('options') as any),
-            ...lodash.omit(node, ['x-async', 'name', 'uid', 'childOptions']),
+            ...lodash.omit(node, ['async', 'x-async', 'name', 'uid', 'childOptions']),
           },
         },
         {
@@ -1508,6 +1539,9 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
           transaction: options?.transaction,
         },
       );
+      if (!lodash.isUndefined(nextAsync)) {
+        await this.updateNodeAsyncFlag(node['uid'], nextAsync, options?.transaction);
+      }
       return true;
     }
     return false;

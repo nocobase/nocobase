@@ -17,33 +17,10 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
-import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
-
-const APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIASES = [
-  'notification-manager',
-  'notification-in-app-message',
-  'workflow',
-  'workflow-approval',
-] as const;
-const APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIAS_SET = new Set<string>(APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIASES);
-
-const APPROVAL_BLUEPRINT_TEST_ENABLED_PLUGIN_ALIASES = Array.from(
-  new Set([...FLOW_SURFACES_TEST_PLUGINS, 'notification-manager', 'notification-in-app-message', 'workflow-approval']),
-);
-
-const APPROVAL_BLUEPRINT_TEST_PLUGIN_INSTALLS = [
-  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS.filter((pluginInstall) => {
-    if (!Array.isArray(pluginInstall)) {
-      return true;
-    }
-    const pluginName = typeof pluginInstall[1]?.name === 'string' ? pluginInstall[1].name : '';
-    return !APPROVAL_BLUEPRINT_REAL_PLUGIN_ALIAS_SET.has(pluginName);
-  }),
-  'notification-manager',
-  'notification-in-app-message',
-  'workflow',
-  'workflow-approval',
-] as const;
+import {
+  FLOW_SURFACES_APPROVAL_BLUEPRINT_TEST_PLUGIN_INSTALLS,
+  FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
+} from './flow-surfaces.test-plugins';
 
 async function createApprovalWorkflow(context: FlowSurfacesContractContext) {
   return context.db.getCollection('workflows').repository.create({
@@ -78,8 +55,8 @@ describe('flowSurfaces approval blueprint API contract', () => {
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
-      enabledPluginAliases: APPROVAL_BLUEPRINT_TEST_ENABLED_PLUGIN_ALIASES,
-      plugins: APPROVAL_BLUEPRINT_TEST_PLUGIN_INSTALLS,
+      enabledPluginAliases: FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
+      plugins: FLOW_SURFACES_APPROVAL_BLUEPRINT_TEST_PLUGIN_INSTALLS,
     });
     ({ rootAgent } = context);
   }, 120000);
@@ -136,6 +113,16 @@ describe('flowSurfaces approval blueprint API contract', () => {
       uid: result.target.uid,
     });
     expect(readback.tree.use).toBe('TriggerChildPageModel');
+    const defaultRootReadback = await context.flowRepo.findModelById(result.target.uid);
+    expect(defaultRootReadback.subModels?.tabs?.[0]?.subModels?.grid).toBeUndefined();
+    expect(defaultRootReadback.subModels?.tabs?.[0]?.parentId).toBe(result.target.uid);
+    const defaultGridReadback = await context.flowRepo.findModelByParentId(defaultRootReadback.subModels.tabs[0].uid, {
+      subKey: 'grid',
+    });
+    expect(defaultGridReadback?.parentId).toBe(defaultRootReadback.subModels.tabs[0].uid);
+    expect(defaultGridReadback?.subModels?.items?.[0]?.parentId).toBe(defaultGridReadback?.uid);
+    const storedNodes = await context.flowRepo.findNodesById(result.target.uid, { includeAsyncNode: true });
+    expect(Boolean(findStoredNode(storedNodes, result.target.uid)?.async)).toBe(true);
     expect(readback.tree.stepParams.TriggerChildPageSettings.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
@@ -144,6 +131,8 @@ describe('flowSurfaces approval blueprint API contract', () => {
     expect(tab.use).toBe('TriggerChildPageTabModel');
     expect(tab.subModels.grid.use).toBe('TriggerBlockGridModel');
     expect(tab.subModels.grid.subModels.items[0].use).toBe('ApplyFormModel');
+    expect(Boolean(findStoredNode(storedNodes, tab.subModels.grid.uid)?.async)).toBe(true);
+    expect(tab.subModels.grid.subModels.items[0].stepParams.patternSettings.pattern.pattern).toBe('createNew');
     expect(tab.subModels.grid.subModels.items[0].subModels.actions.map((item: any) => item.use)).toEqual(
       expect.arrayContaining(['ApplyFormSubmitModel', 'ApplyFormSaveDraftModel', 'ApplyFormWithdrawModel']),
     );
@@ -260,6 +249,8 @@ describe('flowSurfaces approval blueprint API contract', () => {
       uid: result.target.uid,
     });
     expect(readback.tree.use).toBe('ApplyTaskCardDetailsModel');
+    const storedNodes = await context.flowRepo.findNodesById(result.target.uid, { includeAsyncNode: true });
+    expect(Boolean(findStoredNode(storedNodes, result.target.uid)?.async)).toBe(true);
     expect(readback.tree.subModels.grid.use).toBe('ApplyTaskCardGridModel');
     expect(readback.tree.subModels.grid.subModels.items.map((item: any) => item.use)).toEqual(
       expect.arrayContaining(['ApplyTaskCardDetailsItemModel']),
@@ -427,8 +418,26 @@ describe('flowSurfaces approval blueprint API contract', () => {
       uid: approverResult.target.uid,
     });
     expect(approverReadback.tree.use).toBe('ApprovalChildPageModel');
+    const defaultApproverReadback = await context.flowRepo.findModelById(approverResult.target.uid);
+    expect(defaultApproverReadback.subModels?.tabs?.[0]?.subModels?.grid).toBeUndefined();
+    expect(defaultApproverReadback.subModels?.tabs?.[0]?.parentId).toBe(approverResult.target.uid);
+    const defaultApproverGridReadback = await context.flowRepo.findModelByParentId(
+      defaultApproverReadback.subModels.tabs[0].uid,
+      {
+        subKey: 'grid',
+      },
+    );
+    expect(defaultApproverGridReadback?.parentId).toBe(defaultApproverReadback.subModels.tabs[0].uid);
+    expect(defaultApproverGridReadback?.subModels?.items?.[0]?.parentId).toBe(defaultApproverGridReadback?.uid);
+    const approverStoredNodes = await context.flowRepo.findNodesById(approverResult.target.uid, {
+      includeAsyncNode: true,
+    });
+    expect(Boolean(findStoredNode(approverStoredNodes, approverResult.target.uid)?.async)).toBe(true);
     expect(approverReadback.tree.subModels.tabs[0].use).toBe('ApprovalChildPageTabModel');
     expect(approverReadback.tree.subModels.tabs[0].subModels.grid.use).toBe('ApprovalBlockGridModel');
+    expect(
+      Boolean(findStoredNode(approverStoredNodes, approverReadback.tree.subModels.tabs[0].subModels.grid.uid)?.async),
+    ).toBe(true);
     expect(approverReadback.tree.subModels.tabs[0].subModels.grid.subModels.items.map((item: any) => item.use)).toEqual(
       expect.arrayContaining(['ProcessFormModel', 'ApprovalDetailsModel']),
     );
@@ -445,6 +454,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
     const processBlock = approverReadback.tree.subModels.tabs[0].subModels.grid.subModels.items.find(
       (item: any) => item.use === 'ProcessFormModel',
     );
+    expect(processBlock.stepParams.patternSettings.pattern.pattern).toBe('createNew');
     const duplicateSubmitRes = await rootAgent.resource('flowSurfaces').addAction({
       values: {
         target: {
@@ -455,9 +465,100 @@ describe('flowSurfaces approval blueprint API contract', () => {
     });
     expect(duplicateSubmitRes.status).toBe(400);
   });
+
+  it('should normalize legacy initiator roots to the same async persistence shape as the UI path', async () => {
+    const workflow = await createApprovalWorkflow(context);
+    const legacyRootUid = uid();
+    const legacyTabUid = uid();
+    const legacyGridUid = uid();
+
+    await context.flowRepo.insertModel({
+      uid: legacyRootUid,
+      use: 'TriggerChildPageModel',
+      stepParams: {
+        pageSettings: {
+          general: {
+            displayTitle: false,
+            enableTabs: false,
+            title: `{{t("Initiator's interface", { ns: "workflow" })}}`,
+          },
+        },
+        TriggerChildPageSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      },
+      subModels: {
+        tabs: [
+          {
+            uid: legacyTabUid,
+            use: 'TriggerChildPageTabModel',
+            stepParams: {
+              pageTabSettings: {
+                tab: {
+                  title: `{{t("Details")}}`,
+                },
+              },
+            },
+            subModels: {
+              grid: {
+                uid: legacyGridUid,
+                use: 'TriggerBlockGridModel',
+              },
+            },
+          },
+        ],
+      },
+    } as any);
+
+    await context.db.getCollection('workflows').repository.update({
+      filterByTk: workflow.id,
+      values: {
+        config: {
+          ...(workflow.config || {}),
+          approvalUid: legacyRootUid,
+        },
+      },
+    });
+
+    const result = getData(
+      await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
+        values: {
+          surface: 'initiator',
+          workflowId: workflow.id,
+          blocks: [
+            {
+              key: 'applyForm',
+              type: 'approvalInitiator',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(result.target.uid).toBe(legacyRootUid);
+
+    const normalizedNodes = await context.flowRepo.findNodesById(legacyRootUid, { includeAsyncNode: true });
+    expect(Boolean(findStoredNode(normalizedNodes, legacyRootUid)?.async)).toBe(true);
+    expect(Boolean(findStoredNode(normalizedNodes, legacyGridUid)?.async)).toBe(true);
+
+    const normalizedRootReadback = await context.flowRepo.findModelById(legacyRootUid);
+    expect(normalizedRootReadback.subModels?.tabs?.[0]?.subModels?.grid).toBeUndefined();
+  });
 });
 
 function readbackActionOwnerUid(tree: any, use: string) {
   const items = tree?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [];
   return items.find((item: any) => item.use === use)?.uid;
+}
+
+function findStoredNode(nodes: any[], uid: string) {
+  return nodes.find((node: any) => node?.uid === uid);
 }

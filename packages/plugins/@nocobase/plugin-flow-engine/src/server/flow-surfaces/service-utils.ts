@@ -295,6 +295,7 @@ export type NormalizedComposeFieldSpec = {
   target?: string;
   settings: Record<string, any>;
   popup?: Record<string, any>;
+  __autoPopupForRelationField?: boolean;
 };
 
 export function normalizeComposeFieldSpec(input: any, index: number): NormalizedComposeFieldSpec {
@@ -309,6 +310,7 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
       fieldPath,
       settings: {},
       popup: undefined,
+      __autoPopupForRelationField: true,
     };
   }
   if (!_.isPlainObject(input)) {
@@ -346,6 +348,7 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
     target: typeof input.target === 'string' ? String(input.target || '').trim() || undefined : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
+    __autoPopupForRelationField: input.__autoPopupForRelationField === true,
   };
 }
 

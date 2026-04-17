@@ -356,6 +356,7 @@ export class FlowSurfaceApprovalBlueprintService {
           parentId: tab.uid,
           subKey: 'grid',
           subType: 'object',
+          async: true,
           use: expectedGridUse,
         },
         { transaction },
@@ -416,6 +417,34 @@ export class FlowSurfaceApprovalBlueprintService {
     }
 
     return grid.uid;
+  }
+
+  private async syncApprovalBlueprintSurfaceAsyncShape(
+    surfaceRoot: FlowSurfaceApprovalBlueprintSurfaceRoot,
+    context: FlowSurfaceApprovalBlueprintBindingContext,
+    transaction?: any,
+  ) {
+    await this.deps.repository.upsertModel(
+      {
+        uid: surfaceRoot.rootUid,
+        use: context.rootUse,
+        async: true,
+      },
+      { transaction },
+    );
+
+    if (context.surface === 'taskCard') {
+      return;
+    }
+
+    await this.deps.repository.upsertModel(
+      {
+        uid: surfaceRoot.gridUid,
+        use: this.getApprovalBlueprintExpectedGridUse(context),
+        async: true,
+      },
+      { transaction },
+    );
   }
 
   private async syncApprovalBlueprintSurfaceRoot(
@@ -504,6 +533,15 @@ export class FlowSurfaceApprovalBlueprintService {
         ? await this.ensureApprovalBlueprintTaskCardSurfaceStructure(existingRoot, context, transaction)
         : await this.ensureApprovalBlueprintPageSurfaceStructure(existingRoot, context, transaction);
 
+    await this.syncApprovalBlueprintSurfaceAsyncShape(
+      {
+        root: existingRoot,
+        rootUid: existingRoot.uid,
+        gridUid,
+      },
+      context,
+      transaction,
+    );
     await this.syncApprovalBlueprintSurfaceRoot(existingRoot.uid, context, transaction);
     const root = await this.deps.repository.findModelById(existingRoot.uid, {
       transaction,
