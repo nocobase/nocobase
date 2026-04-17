@@ -748,6 +748,7 @@ export class FlowSurfacesService {
       db: this.db,
       hasDataSource: (dataSourceKey) => !!this.plugin.app.dataSourceManager?.get?.(dataSourceKey),
       repository: this.repository,
+      setNodeAsyncFlag: (uid, asyncFlag, transaction) => this.setFlowModelNodeAsyncFlag(uid, asyncFlag, transaction),
       removeNodeTreeWithBindings: (uid, transaction) => this.removeNodeTreeWithBindings(uid, transaction),
       surfaceContext: this.surfaceContext,
       compose: (values, options) => this.compose(values as FlowSurfaceComposeValues, options),
@@ -758,6 +759,34 @@ export class FlowSurfacesService {
       syncApprovalRuntimeConfigForSurfaceRoot: (root, transaction) =>
         this.approvalRuntimeConfigService.syncApprovalRuntimeConfigForSurfaceRoot(root, transaction),
     });
+  }
+
+  private async setFlowModelNodeAsyncFlag(uid: string, asyncFlag: boolean, transaction?: any) {
+    const sequelize = this.db?.sequelize;
+    const queryGenerator = sequelize?.getQueryInterface?.()?.queryGenerator;
+    const quoteIdentifier =
+      typeof queryGenerator?.quoteIdentifier === 'function'
+        ? (value: string) => queryGenerator.quoteIdentifier(value)
+        : (value: string) => `"${value}"`;
+
+    if (!sequelize?.query) {
+      throwInternalError('flowSurfaces cannot update flow model async flag because sequelize is unavailable');
+    }
+
+    await sequelize.query(
+      `UPDATE ${this.repository.flowModelTreePathTableName}
+       SET ${quoteIdentifier('async')} = :async
+       WHERE ${quoteIdentifier('ancestor')} = :uid
+         AND ${quoteIdentifier('descendant')} = :uid
+         AND ${quoteIdentifier('depth')} = 0`,
+      {
+        replacements: {
+          uid,
+          async: asyncFlag,
+        },
+        transaction,
+      },
+    );
   }
 
   private async loadEnabledPluginPackages(transaction?: any): Promise<ReadonlySet<string>> {
