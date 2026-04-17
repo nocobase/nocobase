@@ -1,14 +1,14 @@
 ---
 title: "插件管理"
-description: "插件管理 Skill 用于查看、安装、启用和停用 NocoBase 插件。"
-keywords: "AI 搭建,插件管理,插件安装,插件启用,pm list"
+description: "插件管理 Skill 用于查看、启用和停用 NocoBase 插件。"
+keywords: "AI 搭建,插件管理,插件启用,插件停用"
 ---
 
 # 插件管理
 
 ## 简介
 
-插件管理 Skill 用于查看、安装、启用和停用 NocoBase 插件——它会自动识别本地或远程环境，选择合适的执行后端，并通过读回校验确保操作成功。
+插件管理 Skill 用于查看、启用和停用 NocoBase 插件——它会自动识别本地或远程环境，选择合适的执行后端，并通过读回校验确保操作成功。
 
 ## 安装
 
@@ -19,11 +19,8 @@ npx skills add nocobase/skills --skill nocobase-plugin-manage -y
 ## 能力范围
 
 - 查看插件目录和启用状态（`inspect`）
-- 安装插件包，支持自定义 registry 和版本（`install`）
 - 启用插件（`enable`）
 - 停用插件（`disable`）
-- 自动识别本地 Docker 环境或远程 API 环境
-- 每次写操作后自动读回校验，确认状态一致
 
 ## 提示词示例
 
@@ -47,13 +44,13 @@ Skill 会按顺序启用，每次启用后读回校验确认 `enabled=true`。
 
 ![启用插件](https://static-docs.nocobase.com/20260417153023.png)
 
-### 场景 C：安装第三方插件
+### 场景 C：禁用插件
 
 ```
-帮我安装 @nocobase/plugin-sample-hello 插件
+禁用 plugin-localization 插件
 ```
 
-![安装第三方插件](https://static-docs.nocobase.com/20260417155520.png)
+![禁用插件](https://static-docs.nocobase.com/20260417173442.png)
 
 ## 常见问题
 
