@@ -9,6 +9,28 @@
 
 import { spawn } from 'node:child_process';
 
+export function run(name: string, args: string[], cwd: string, options?: { env?: Record<string, string> }): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(name, [...args], {
+      stdio: 'inherit',
+      shell: true,
+      cwd,
+      env: {
+        ...options?.env,
+        ...process.env,
+      },
+    });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`${name} exited with code ${code}`));
+    });
+  });
+}
+
 /** Run `npm` with the given argument list in `cwd`, inheriting stdio. */
 export function runNpm(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
