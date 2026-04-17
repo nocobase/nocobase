@@ -47,6 +47,11 @@
             "type": "custom-link",
             "label": "图表",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "日历",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
           }
         ]
       },

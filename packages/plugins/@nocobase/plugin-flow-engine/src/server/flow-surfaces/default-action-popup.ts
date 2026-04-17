@@ -44,6 +44,7 @@ export type FlowSurfaceDefaultActionPopupFieldCandidate = {
 
 type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
   excludeAuditTimestampFields?: boolean;
+  excludeAssociationFields?: boolean;
 };
 
 const DEFAULT_ACTION_POPUP_SYSTEM_FIELD_NAMES = new Set(['id', 'createdBy', 'createdById', 'updatedBy', 'updatedById']);
@@ -219,6 +220,13 @@ function isFlowSurfaceDefaultActionPopupMultiValueAssociationField(field: any) {
   return MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface);
 }
 
+function isFlowSurfaceDefaultActionPopupAssociationField(field: any) {
+  const fieldType = String(getFieldType(field) || '').trim();
+  return (
+    fieldType === 'belongsTo' || fieldType === 'hasOne' || fieldType === 'hasMany' || fieldType === 'belongsToMany'
+  );
+}
+
 function collectFlowSurfaceDefaultActionPopupAssociationForeignKeys(
   candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
 ) {
@@ -248,6 +256,7 @@ export function pickFlowSurfaceDefaultActionPopupFieldPaths(
     (candidate) =>
       !isFlowSurfaceDefaultActionPopupSystemField(candidate.field) &&
       (!options.excludeAuditTimestampFields || !isFlowSurfaceDefaultActionPopupAuditTimestampField(candidate.field)) &&
+      (!options.excludeAssociationFields || !isFlowSurfaceDefaultActionPopupAssociationField(candidate.field)) &&
       !isFlowSurfaceDefaultActionPopupMultiValueAssociationField(candidate.field) &&
       !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys),
   );
@@ -255,6 +264,7 @@ export function pickFlowSurfaceDefaultActionPopupFieldPaths(
     (candidate) =>
       !isFlowSurfaceDefaultActionPopupTechnicalIdField(candidate.field) &&
       (!options.excludeAuditTimestampFields || !isFlowSurfaceDefaultActionPopupAuditTimestampField(candidate.field)) &&
+      (!options.excludeAssociationFields || !isFlowSurfaceDefaultActionPopupAssociationField(candidate.field)) &&
       !isFlowSurfaceDefaultActionPopupMultiValueAssociationField(candidate.field) &&
       !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys),
   );

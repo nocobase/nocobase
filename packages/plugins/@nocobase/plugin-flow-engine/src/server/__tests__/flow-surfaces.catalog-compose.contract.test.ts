@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { uid } from '@nocobase/utils';
 import {
   addBlockData,
   getComposeBlock,
@@ -22,13 +23,48 @@ import {
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
 import { loginFlowSurfacesRootAgent, syncFlowSurfacesEnabledPlugins } from './flow-surfaces.mock-server';
-import { FLOW_SURFACES_MINIMAL_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
+import {
+  FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
+  FLOW_SURFACES_MINIMAL_TEST_PLUGINS,
+  FLOW_SURFACES_TEST_PLUGINS,
+} from './flow-surfaces.test-plugins';
 
 describe('flowSurfaces catalog + compose contract', () => {
   let context: FlowSurfacesContractContext;
   let app: FlowSurfacesContractContext['app'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
+
+  async function createSyntheticApprovalSurface(targetFlowRepo = flowRepo) {
+    const pageUid = uid();
+    const tabUid = uid();
+    const gridUid = uid();
+
+    await targetFlowRepo.insertModel({
+      uid: pageUid,
+      use: 'TriggerChildPageModel',
+      subModels: {
+        tabs: [
+          {
+            uid: tabUid,
+            use: 'TriggerChildPageTabModel',
+            subModels: {
+              grid: {
+                uid: gridUid,
+                use: 'TriggerBlockGridModel',
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return {
+      pageUid,
+      tabUid,
+      gridUid,
+    };
+  }
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
@@ -86,6 +122,50 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(emptyCatalog.actions).toBeUndefined();
     expect(emptyCatalog.recordActions).toBeUndefined();
     expect(emptyCatalog.node).toBeUndefined();
+  });
+
+  it('should compose approval blocks when workflow-approval is explicitly enabled for the test app', async () => {
+    await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES);
+    try {
+      const approvalRootAgent: any = await loginFlowSurfacesRootAgent(app);
+      const approvalSurface = await createSyntheticApprovalSurface();
+      const approvalCatalog = getData(
+        await approvalRootAgent.resource('flowSurfaces').catalog({
+          values: {
+            target: {
+              uid: approvalSurface.gridUid,
+            },
+            sections: ['blocks'],
+          },
+        }),
+      );
+      expect(approvalCatalog.blocks.map((item: any) => item.key)).toContain('approvalInitiator');
+
+      const composeResult = getData(
+        await approvalRootAgent.resource('flowSurfaces').compose({
+          values: {
+            target: {
+              uid: approvalSurface.gridUid,
+            },
+            blocks: [
+              {
+                key: 'initiator',
+                type: 'approvalInitiator',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        }),
+      );
+
+      expect(getComposeBlock(composeResult, 'initiator').uid).toBeTruthy();
+    } finally {
+      await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_TEST_PLUGINS);
+    }
   });
 
   it('should only expose catalog blocks and actions backed by plugins enabled in the current app instance', async () => {

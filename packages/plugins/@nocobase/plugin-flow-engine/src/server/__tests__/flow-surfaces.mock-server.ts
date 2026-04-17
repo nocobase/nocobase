@@ -18,8 +18,24 @@ type FlowSurfacesMockServerOptions = MockServerOptions & {
 };
 
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
+const FLOW_SURFACES_TEST_APP_KEY = 'flow-surfaces-test-app-key-0123456789abcdef';
+const FLOW_SURFACES_TEST_AES_SECRET_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+function ensureFlowSurfacesBootstrapSecrets() {
+  // Flow-surfaces server tests bootstrap many mock apps in parallel. If they all
+  // fall back to storage/apps/main/*.dat, CI workers can race on partially
+  // written secret files and fail during app initialization.
+  process.env.UNSAFE_USE_DEFAULT_JWT_SECRET = 'true';
+  if (!process.env.APP_KEY || process.env.APP_KEY === 'test-key' || process.env.APP_KEY === 'your-secret-key') {
+    process.env.APP_KEY = FLOW_SURFACES_TEST_APP_KEY;
+  }
+  if (!process.env.APP_AES_SECRET_KEY) {
+    process.env.APP_AES_SECRET_KEY = FLOW_SURFACES_TEST_AES_SECRET_KEY;
+  }
+}
 
 export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServerOptions = {}) {
+  ensureFlowSurfacesBootstrapSecrets();
   const pluginAliasesFromOptions =
     Array.isArray(options.plugins) && options.plugins.every((plugin) => typeof plugin === 'string')
       ? (options.plugins as string[])
