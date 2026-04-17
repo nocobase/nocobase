@@ -7,52 +7,172 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command, Flags } from '@oclif/core'
+import fsp from 'node:fs/promises';
+import { Command, Flags } from '@oclif/core';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { run } from '../lib/run-npm.ts';
 
+type DownloadFlags = Record<string, unknown> & {
+  source: string;
+  version?: string;
+  'force-overwrite': boolean;
+  'dev': boolean;
+  'env-file'?: string;
+  'app-root-path'?: string;
+  'git-url'?: string;
+  'docker-registry'?: string;
+};
+
+async function parseEnvFile(filePath: string): Promise<Record<string, string>> {
+  const absolute = path.resolve(process.cwd(), filePath);
+  const content = await readFile(absolute, 'utf-8');
+  const out: Record<string, string> = {};
+  for (const line of content.split(/\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) {
+      continue;
+    }
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
+function mergeEnvForScaffold(flags: DownloadFlags, fromFile: Record<string, string>): Record<string, string> {
+  const env: Record<string, string> = { ...fromFile };
+  if (flags['db-host'] !== undefined) {
+    env.DB_HOST = flags['db-host'];
+  }
+  if (flags['db-port'] !== undefined) {
+    env.DB_PORT = flags['db-port'];
+  }
+  if (flags['db-database'] !== undefined) {
+    env.DB_DATABASE = flags['db-database'];
+  }
+  if (flags['db-user'] !== undefined) {
+    env.DB_USER = flags['db-user'];
+  }
+  if (flags['db-password'] !== undefined) {
+    env.DB_PASSWORD = flags['db-password'];
+  }
+  return env;
+}
+
 export default class Download extends Command {
-  static override args = {
-    file: Args.string({ description: 'file to read' }),
-  }
-  static override description = 'describe the command here'
+  static override description =
+    'Download a NocoBase app from npm (create-nocobase-app), Docker Hub, or git.';
+
   static override examples = [
-    '<%= config.bin %> <%= command.id %> --source=docker --version=latest --app-root-path=./app --env-file=.env',
-    '<%= config.bin %> <%= command.id %> --source=npm --version=latest --app-root-path=./app --env-file=.env',
-    '<%= config.bin %> <%= command.id %> --source=git --version=latest --app-root-path=./app --env-file=.env',
-  ]
+    '<%= config.bin %> <%= command.id %> -s npm -v latest --app-root-path=./app --env-file=.env',
+    '<%= config.bin %> <%= command.id %> -s docker -v latest --docker-registry=nocobase/nocobase',
+    '<%= config.bin %> <%= command.id %> -s git -v main --git-url=https://github.com/nocobase/nocobase.git --app-root-path=./my-nocobase-app',
+  ];
+
   static override flags = {
-    source: Flags.string({ char: 's', description: 'source to download', options: ['docker', 'npm', 'git'] }),
-    version: Flags.string({ char: 'v', description: 'version to download' }),
-    // 'app-root-path': Flags.string({ description: 'app root path', required: true }),
+    source: Flags.string({
+      char: 's',
+      description: 'Where to download from',
+      options: ['docker', 'npm', 'git'],
+      required: true,
+    }),
+    version: Flags.string({
+      char: 'v',
+      default: 'latest',
+      description: 'Version or tag: npm package dist-tag/version, Docker image tag, or git branch/tag',
+    }),
+    'force-overwrite': Flags.boolean({
+      char: 'f',
+      description: 'Pass --force to create-nocobase-app (npm) or overwrite when supported',
+      default: false,
+    }),
+    'dev': Flags.boolean({
+      description: 'Include dev dependencies in the app directory',
+      default: false,
+    }),
+    'env-file': Flags.string({
+      description: 'Dotenv file whose variables are passed to create-nocobase-app as -e KEY=value (npm only)',
+    }),
+    'app-root-path': Flags.string({
+      description: 'Project directory name or path for the new app (default: my-nocobase-app)',
+      default: 'my-nocobase-app',
+    }),
+    'db-password': Flags.string({ description: 'DB password (npm: DB_PASSWORD)' }),
+    'git-url': Flags.string({
+      description: 'Git remote URL to clone (git source)',
+    }),
+    'docker-registry': Flags.string({
+      description:
+        'Docker image repository without tag (default: nocobase/nocobase). Example: ghcr.io/nocobase/nocobase',
+    }),
+  };
+
+  async downloadFromDocker(flags: DownloadFlags): Promise<void> {
+    const image = flags['docker-registry'] ?? 'nocobase/nocobase';
+    const tag = flags.version ?? 'latest';
+    await run('docker', ['pull', `${image}:${tag}`], process.cwd());
   }
 
-  async downloadFromNpm() {
-    const npxArgs = ['-y', 'create-nocobase-app@beta', 'my-nocobase-app', '-d', 'postgres'];
+  async downloadFromNpm(flags: DownloadFlags, env: Record<string, string>): Promise<void> {
+    const appRoot = flags['app-root-path'] ?? 'my-nocobase-app';
+    const versionSpec = flags.version || 'latest';
+    const npxArgs = ['-y', `create-nocobase-app@${versionSpec}`, appRoot];
+    if (!flags['--dev']) {
+      npxArgs.push('--skip-dev-dependencies');
+    }
+    if (flags['force-overwrite']) {
+      await fsp.rm(path.resolve(process.cwd(), appRoot), { recursive: true, force: true });
+    }
     await run('npx', npxArgs, process.cwd());
+    const installArgs = ['install'];
+    if (!flags['--dev']) {
+      installArgs.push('--production');
+    }
+    await run('yarn', installArgs, path.resolve(process.cwd(), appRoot));
   }
 
-  async downloadFromDocker() {
-    const dockerArgs = ['pull', 'nocobase/nocobase:latest'];
-    await run('docker', dockerArgs, process.cwd());
-  }
-
-  async downloadFromGit() {
-    const gitArgs = ['clone', 'https://github.com/nocobase/nocobase.git', '--branch', 'main', '--depth', '1', 'my-nocobase-app'];
+  async downloadFromGit(flags: DownloadFlags): Promise<void> {
+    const repoUrl = flags['git-url'] ?? 'https://github.com/nocobase/nocobase.git';
+    const appRoot = flags['app-root-path'] ?? 'my-nocobase-app';
+    const versionToRef = {
+      'latest': 'main',
+      'beta': 'next',
+      'alpha': 'develop',
+    };
+    if (flags['force-overwrite']) {
+      await fsp.rm(path.resolve(process.cwd(), appRoot), { recursive: true, force: true });
+    }
+    const branch = versionToRef[flags.version || 'latest'] || flags.version || 'latest';
+    const gitArgs = ['clone'];
+    gitArgs.push('--branch', branch);
+    gitArgs.push('--depth', '1', repoUrl, appRoot);
     await run('git', gitArgs, process.cwd());
+    await run('yarn', ['install'], path.resolve(process.cwd(), appRoot));
   }
 
+  async download(): Promise<void> {
+    const { flags } = await this.parse(Download);
 
-  async download() {
-    const { flags } = await this.parse(Download)
     switch (flags.source) {
       case 'npm':
-        await this.downloadFromNpm();
+        await this.downloadFromNpm(flags);
         break;
       case 'docker':
-        await this.downloadFromDocker();
+        await this.downloadFromDocker(flags);
         break;
       case 'git':
-        await this.downloadFromGit();
+        await this.downloadFromGit(flags);
         break;
       default:
         this.error(`Invalid source: ${flags.source}`);
@@ -68,23 +188,3 @@ export default class Download extends Command {
     }
   }
 }
-
-/*
---source
---version
---force-overwrite
---skip-dev-dependencies
---env-file
---app-root-path
---db-dialect
---db-host
---db-port
---db-database
---db-user
---db-password
---timezone
-
---git-url
-
---docker-registry
-*/
