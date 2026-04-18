@@ -60,7 +60,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       this.props.route as NocoBaseDesktopRoute,
       this.props.parentRoute as NocoBaseDesktopRoute | undefined,
     );
-    if (this.context.flowSettingsEnabled) {
+    if (this.shouldHydratePersistedState()) {
       void this.hydratePersistedState();
     }
   }
@@ -98,8 +98,76 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return !!this.getCreationMeta()?.menuType;
   }
 
+  shouldHydratePersistedState() {
+    if (this.isCreationSession()) {
+      return false;
+    }
+
+    if (this.context.flowSettingsEnabled) {
+      return true;
+    }
+
+    return this.hasPersistedMenuInstanceFlowFlag();
+  }
+
   getRouteRepository() {
     return this.context.routeRepository;
+  }
+
+  hasPersistedMenuInstanceFlowFlag(route = this.getRoute()) {
+    return route?.options?.hasPersistedMenuInstanceFlow === true;
+  }
+
+  getCurrentPersistedInstanceFlowCount() {
+    return this.flowRegistry.getFlows().size;
+  }
+
+  buildRouteOptionsWithPersistedFlowFlag(hasPersistedMenuInstanceFlow: boolean) {
+    const route = this.getRoute();
+    const nextOptions = {
+      ...(route?.options || {}),
+    };
+
+    if (hasPersistedMenuInstanceFlow) {
+      nextOptions.hasPersistedMenuInstanceFlow = true;
+    } else {
+      delete nextOptions.hasPersistedMenuInstanceFlow;
+    }
+
+    return Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
+  }
+
+  async syncPersistedFlowRouteFlag() {
+    if (this.isCreationSession()) {
+      return;
+    }
+
+    const route = this.getRoute();
+    if (route?.id == null) {
+      return;
+    }
+
+    const hasPersistedMenuInstanceFlow = this.getCurrentPersistedInstanceFlowCount() > 0;
+    if (this.hasPersistedMenuInstanceFlowFlag(route) === hasPersistedMenuInstanceFlow) {
+      return;
+    }
+
+    const options = this.buildRouteOptionsWithPersistedFlowFlag(hasPersistedMenuInstanceFlow);
+    await this.getRouteRepository().updateRoute(route.id, { options });
+    this.setProps({
+      route: {
+        ...route,
+        options,
+      },
+    });
+  }
+
+  async destroyPersistedState() {
+    if (this.isCreationSession()) {
+      return;
+    }
+
+    await this.flowEngine.modelRepository?.destroy?.(this.uid);
   }
 
   /**
@@ -303,7 +371,24 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return;
     }
 
-    await this.getRouteRepository().updateRoute(route.id, values);
+    const nextValues = {
+      ...values,
+    };
+
+    if (values.options && this.hasPersistedMenuInstanceFlowFlag(route)) {
+      nextValues.options = {
+        ...values.options,
+        hasPersistedMenuInstanceFlow: true,
+      };
+    }
+
+    await this.getRouteRepository().updateRoute(route.id, nextValues);
+    this.setProps({
+      route: {
+        ...route,
+        ...nextValues,
+      },
+    });
   }
 
   async moveMenuRoute(target: string, position: 'beforeBegin' | 'afterEnd' | 'beforeEnd') {
@@ -351,12 +436,19 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return true;
     }
 
+    const currentPersistedInstanceFlowCount = this.getCurrentPersistedInstanceFlowCount();
+
     // 菜单基础设置继续直接保存到 route repository；
     // 只有实例事件流需要回退到 FlowModel 默认持久化链路。
-    if (this.hasPersistableInstanceFlows()) {
-      return await super.saveStepParams();
+    if (currentPersistedInstanceFlowCount > 0) {
+      await super.saveStepParams();
+    } else if (this.hasPersistedMenuInstanceFlowFlag()) {
+      await this.destroyPersistedState();
+    } else if (this.hasPersistableInstanceFlows()) {
+      await super.saveStepParams();
     }
 
+    await this.syncPersistedFlowRouteFlag();
     return true;
   }
 
@@ -371,7 +463,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return true;
     }
 
-    return super.save();
+    await super.save();
+    await this.syncPersistedFlowRouteFlag();
+    return true;
   }
 
   async destroy(): Promise<boolean> {

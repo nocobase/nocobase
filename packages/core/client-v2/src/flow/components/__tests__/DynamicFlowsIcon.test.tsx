@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, userEvent, waitFor } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { FlowEngine, FlowModel, GLOBAL_EMBED_CONTAINER_ID } from '@nocobase/flow-engine';
 import { DynamicFlowsIcon } from '../DynamicFlowsIcon';
 
@@ -169,6 +169,25 @@ describe('DynamicFlowsIcon', () => {
     await waitFor(() => {
       const eventValues = getTriggerEventOptionValues();
       expect(eventValues).toEqual(expect.arrayContaining(['close', 'click']));
+    });
+  });
+
+  it('updates editor content after flows are added asynchronously', async () => {
+    const model = createModel();
+    model.flowRegistry.removeFlow('flow1');
+
+    await openDynamicFlowsEditor(model);
+
+    expect(screen.getByText('No event flows')).toBeInTheDocument();
+
+    model.flowRegistry.addFlow('hydrated-flow', {
+      title: 'Hydrated flow',
+      steps: {},
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('No event flows')).not.toBeInTheDocument();
+      expect(screen.getByTestId('collapse')).toBeInTheDocument();
     });
   });
 });
