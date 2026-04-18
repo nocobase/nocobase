@@ -12,31 +12,13 @@ import { lazy, ToolsUIProperties, useAPIClient, useCompile, useRequest } from '@
 import { Button, ButtonProps, Card, Descriptions, Skeleton, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../locale';
 import { useChatBoxStore } from '../../chatbox/stores/chat-box';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
+import { WorkflowTaskDetail, WorkflowTaskOutputSchema } from '../../chatbox/conversations/common';
+import { useWorkflowTasks } from '../../chatbox/hooks/useWorkflowTasks';
+import { useWorkflowTasksStore } from '../../chatbox/stores/workflow-tasks';
 const { Markdown } = lazy(() => import('../../chatbox/markdown/Markdown'), 'Markdown');
 
-type WorkflowTaskOutputSchema = {
-  title?: string;
-  type?: string;
-  properties?: Record<string, WorkflowTaskOutputSchema>;
-};
-
-type WorkflowTaskOutputData = {
-  executionId: string;
-  workflowTitle?: string;
-  nodeTitle?: string;
-  structuredOutputSchema?: WorkflowTaskOutputSchema | string | null;
-  args?: {
-    alert?: {
-      title: string;
-      description: string;
-      type: 'info' | 'warning';
-    };
-    result?: Record<string, any>;
-    [key: string]: any;
-  } | null;
-};
-
-const parseSchema = (schema: WorkflowTaskOutputData['structuredOutputSchema']): WorkflowTaskOutputSchema | null => {
+const parseSchema = (schema: WorkflowTaskDetail['structuredOutputSchema']): WorkflowTaskOutputSchema | null => {
   if (!schema) {
     return null;
   }
@@ -69,41 +51,41 @@ const formatValue = (value: unknown): React.ReactNode => {
   );
 };
 
-export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, any>>> = ({
-  messageId,
-  toolCall,
-  decisions,
-}) => {
+export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, any>>> = ({ toolCall, decisions }) => {
   const t = useT();
   const compile = useCompile();
   const api = useAPIClient();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentWorkflowTask = useWorkflowTasksStore.use.currentWorkflowTask();
+  const { getWorkflowTaskBySession } = useWorkflowTasks();
   const [action, setAction] = useState<'approve' | 'reject' | 'revise' | null>(null);
   const readonly = useChatBoxStore.use.readonly();
   const disabled = toolCall.invokeStatus !== 'interrupted' || !!action || readonly;
   const senderRef = useChatBoxStore.use.senderRef();
   const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
 
-  const { data, loading } = useRequest<{ data: WorkflowTaskOutputData }>(
+  const cachedWorkflowTask =
+    currentWorkflowTask && currentWorkflowTask.sessionId === currentConversation ? currentWorkflowTask : undefined;
+
+  const { data, loading } = useRequest<WorkflowTaskDetail | null>(
     async () => {
-      if (!messageId) {
+      if (cachedWorkflowTask || !currentConversation) {
         return null;
       }
-      const res = await api.resource('aiWorkflowTasks').getByToolCall({
-        values: {
-          messageId,
-          toolCallId: toolCall.id,
-        },
-      });
-      return res?.data;
+      try {
+        return await getWorkflowTaskBySession(currentConversation);
+      } catch {
+        return null;
+      }
     },
     {
-      refreshDeps: [toolCall.id],
+      refreshDeps: [cachedWorkflowTask?.sessionId, currentConversation],
     },
   );
 
-  const cardData = data?.data;
+  const cardData = cachedWorkflowTask ?? data ?? undefined;
   const schema = parseSchema(cardData?.structuredOutputSchema);
-  const result = cardData?.args?.result;
+  const result = toolCall.args?.result;
   const descriptionItems = useMemo(() => {
     if (schema?.properties && result && typeof result === 'object') {
       return Object.entries(schema.properties).map(([key, item]) => ({
@@ -124,7 +106,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
 
   return (
     <Card
-      loading={loading}
+      loading={!cachedWorkflowTask && loading}
       style={{ margin: '12px 0' }}
       title={
         <Space split="-" wrap>
@@ -141,7 +123,9 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
           onClick={async () => {
             setAction('reject');
             try {
-              await api.resource('executions').cancel({ filterByTk: cardData?.executionId });
+              if (cardData?.executionId) {
+                await api.resource('executions').cancel({ filterByTk: cardData.executionId });
+              }
               await decisions.reject(
                 'The user has decided to terminate the workflow task. You do not need to call the current tool to output the task result. The task is finished.',
               );

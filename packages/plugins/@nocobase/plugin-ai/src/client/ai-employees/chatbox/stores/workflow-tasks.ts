@@ -8,11 +8,12 @@
  */
 
 import { create } from 'zustand';
-import { WorkflowTask } from '../conversations/common';
+import { WorkflowTask, WorkflowTaskDetail } from '../conversations/common';
 import { createSelectors } from './create-selectors';
 
 type WorkflowTasksState = {
   workflowTasks: WorkflowTask[];
+  currentWorkflowTask?: WorkflowTaskDetail;
   unreadCount: number;
   loading: boolean;
   keyword: string;
@@ -20,6 +21,9 @@ type WorkflowTasksState = {
 
 type WorkflowTasksActions = {
   setWorkflowTasks: (workflowTasks: WorkflowTask[] | ((prev: WorkflowTask[]) => WorkflowTask[])) => void;
+  setCurrentWorkflowTask: (
+    workflowTask: WorkflowTaskDetail | undefined | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
+  ) => void;
   setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
   setLoading: (loading: boolean) => void;
   setKeyword: (keyword: string) => void;
@@ -27,6 +31,7 @@ type WorkflowTasksActions = {
 
 const store = create<WorkflowTasksState & WorkflowTasksActions>((set) => ({
   workflowTasks: [],
+  currentWorkflowTask: undefined,
   unreadCount: 0,
   loading: false,
   keyword: '',
@@ -34,6 +39,14 @@ const store = create<WorkflowTasksState & WorkflowTasksActions>((set) => ({
   setWorkflowTasks: (workflowTasks) =>
     set((state) => ({
       workflowTasks: typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks,
+    })),
+
+  setCurrentWorkflowTask: (currentWorkflowTask) =>
+    set((state) => ({
+      currentWorkflowTask:
+        typeof currentWorkflowTask === 'function'
+          ? currentWorkflowTask(state.currentWorkflowTask)
+          : currentWorkflowTask,
     })),
 
   setUnreadCount: (unreadCount) =>

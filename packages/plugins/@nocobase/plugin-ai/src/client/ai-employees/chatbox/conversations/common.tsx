@@ -27,4 +27,23 @@ export type WorkflowTask = {
   updatedAt?: string;
 };
 
+export type WorkflowTaskOutputSchema = {
+  title?: string;
+  type?: string;
+  properties?: Record<string, WorkflowTaskOutputSchema>;
+};
+
+export type WorkflowTaskDetail = WorkflowTask & {
+  readonly?: boolean;
+  structuredOutputSchema?: WorkflowTaskOutputSchema | string | null;
+  config?: {
+    username?: string;
+    model?: {
+      llmService: string;
+      model: string;
+    } | null;
+    [key: string]: any;
+  } | null;
+};
+
 export const ListEmpty: React.FC = () => <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;

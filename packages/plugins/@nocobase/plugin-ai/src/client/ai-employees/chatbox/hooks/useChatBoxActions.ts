@@ -19,6 +19,7 @@ import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
+import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAPIClient } from '@nocobase/client';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
@@ -54,6 +55,7 @@ export const useChatBoxActions = () => {
   const setOpenToolModal = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { conversationsService } = useChatConversationActions();
   const { sendMessages } = useChatMessageActions();
@@ -163,15 +165,17 @@ export const useChatBoxActions = () => {
       },
     };
     setCurrentConversation(undefined);
+    setCurrentWorkflowTask(undefined);
     clear();
     setMessages([greetingMsg]);
     senderRef.current?.focus();
-  }, [currentEmployee]);
+  }, [currentEmployee, setCurrentWorkflowTask]);
 
   const switchAIEmployee = useCallback(
     (aiEmployee: AIEmployee, options?: { clear?: ClearOptions }) => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
+      setCurrentWorkflowTask(undefined);
       clear(options?.clear);
       setModel(null);
       if (aiEmployee) {
@@ -189,7 +193,7 @@ export const useChatBoxActions = () => {
         setMessages([]);
       }
     },
-    [currentConversation],
+    [currentConversation, setCurrentWorkflowTask],
   );
 
   const triggerTask = useCallback(
@@ -204,6 +208,7 @@ export const useChatBoxActions = () => {
       }
       if (currentConversation) {
         setCurrentConversation(undefined);
+        setCurrentWorkflowTask(undefined);
         setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
@@ -282,7 +287,15 @@ export const useChatBoxActions = () => {
       });
       setMessages(msgs);
     },
-    [open, currentConversation, ensureModel, aiConfigRepository, resolveTaskModel, setWebSearch],
+    [
+      open,
+      currentConversation,
+      ensureModel,
+      aiConfigRepository,
+      resolveTaskModel,
+      setCurrentWorkflowTask,
+      setWebSearch,
+    ],
   );
 
   return {

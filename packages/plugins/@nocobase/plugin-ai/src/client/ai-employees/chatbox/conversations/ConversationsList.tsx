@@ -20,6 +20,7 @@ import { useChatConversationActions } from '../hooks/useChatConversationActions'
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { ListEmpty } from './common';
 
 type UseConversationsListOptions = {
@@ -149,6 +150,7 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
   const conversations = useChatConversationsStore.use.conversations();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setReadonly = useChatBoxStore.use.setReadonly();
+  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { startNewConversation } = useChatBoxActions();
   const { conversationsService, lastConversationRef } = useChatConversationActions();
@@ -183,9 +185,10 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
   const onSelectConversation = useCallback(
     (sessionId: string) => {
       setReadonly(false);
+      setCurrentWorkflowTask(undefined);
       onOpenConversation(sessionId, conversations.find((item) => item.sessionId === sessionId)?.aiEmployee?.username);
     },
-    [onOpenConversation, conversations, setReadonly],
+    [onOpenConversation, conversations, setCurrentWorkflowTask, setReadonly],
   );
 
   const attachLastConversationObserver = useCallback(

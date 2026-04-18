@@ -10,7 +10,7 @@
 import { useCallback, useRef } from 'react';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
-import { WorkflowTask } from '../conversations/common';
+import { WorkflowTask, WorkflowTaskDetail } from '../conversations/common';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useChatBoxStore } from '../stores/chat-box';
 
@@ -19,11 +19,13 @@ export const useWorkflowTasks = () => {
   const workflowTasksResource = api.resource('aiWorkflowTasks');
 
   const workflowTasks = useWorkflowTasksStore.use.workflowTasks();
+  const currentWorkflowTask = useWorkflowTasksStore.use.currentWorkflowTask();
   const unreadCount = useWorkflowTasksStore.use.unreadCount();
   const loading = useWorkflowTasksStore.use.loading();
   const keyword = useWorkflowTasksStore.use.keyword();
 
   const setWorkflowTasks = useWorkflowTasksStore.use.setWorkflowTasks();
+  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
   const setUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
   const setLoading = useWorkflowTasksStore.use.setLoading();
   const setKeyword = useWorkflowTasksStore.use.setKeyword();
@@ -137,10 +139,11 @@ export const useWorkflowTasks = () => {
           sessionId,
         },
       });
-
-      return res?.data?.data ?? res?.data;
+      const task = (res?.data?.data ?? res?.data) as WorkflowTaskDetail | undefined;
+      setCurrentWorkflowTask(task);
+      return task;
     },
-    [workflowTasksResource],
+    [setCurrentWorkflowTask, workflowTasksResource],
   );
 
   const setReadonly = useChatBoxStore.use.setReadonly();
@@ -165,5 +168,7 @@ export const useWorkflowTasks = () => {
     acceptWorkflowTask,
     getWorkflowTaskBySession,
     updateReadonly,
+    currentWorkflowTask,
+    setCurrentWorkflowTask,
   };
 };
