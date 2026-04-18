@@ -32,7 +32,7 @@ const useDataSource = (options?: any) => {
     action: 'list',
     params: {
       appends: ['parent(recursively=true)'],
-      sort: ['createdAt'],
+      sort: ['sort'],
     },
   };
   const service = useRequest(defaultRequest, options);
