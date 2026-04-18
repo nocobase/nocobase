@@ -41,9 +41,13 @@ export function runNpm(args: string[], cwd: string): Promise<void> {
       env: process.env,
     });
     child.once('error', reject);
-    child.once('close', (code) => {
+    child.once('close', (code, signal) => {
       if (code === 0) {
         resolve();
+        return;
+      }
+      if (signal) {
+        reject(new Error(`npm exited due to signal ${signal}`));
         return;
       }
       reject(new Error(`npm exited with code ${code}`));
