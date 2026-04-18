@@ -12,11 +12,11 @@ import { Spin, Select } from 'antd';
 import { observer, tExpr } from '@nocobase/flow-engine';
 import { Schema, useField } from '@formily/react';
 import { ObjectField } from '@formily/core';
-import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
-import { useLLMProviders } from '../../llm-services/llm-providers';
-import { namespace, useT } from '../../locale';
-import { buildProviderGroupedModelOptions } from '../../llm-services/utils';
 import { SchemaComponent } from '@nocobase/client';
+import { buildProviderGroupedModelOptions } from '../../../../llm-services/utils';
+import { useLLMServiceCatalog } from '../../../../llm-services/hooks/useLLMServiceCatalog';
+import { useLLMProviders } from '../../../../llm-services/llm-providers';
+import { namespace, useT } from '../../../../locale';
 
 const ModelSelect: React.FC = observer(() => {
   const t = useT();

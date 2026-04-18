@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tabs } from 'antd';
 import { Schema } from '@formily/react';
 import { useT } from '../../../locale';
-import { BaseAIEmployeeProperties, Feedback, Task } from '../../../ai-tasks';
+import { AIEmployeeTaskModel } from './flow-models/task';
+import { useApp } from '@nocobase/client';
+import { FlowModelRenderer } from '@nocobase/flow-engine';
+import { AIEmployeeTaskFeedbackModel } from './flow-models/feedback';
+import { BaseAIEmployeeProperties } from './types';
 
 export const Configuration: React.FC<BaseAIEmployeeProperties> = ({ children, ...properties }) => {
   const t = useT();
@@ -29,3 +33,30 @@ export const Configuration: React.FC<BaseAIEmployeeProperties> = ({ children, ..
   ];
   return <Tabs items={items} />;
 };
+
+export const Task: React.FC<BaseAIEmployeeProperties> = ({ aiEmployee }) => {
+  const app = useApp();
+  const model = useMemo(() => {
+    return app.flowEngine.createModel({
+      use: AIEmployeeTaskModel,
+      props: {
+        aiEmployee,
+      },
+    });
+  }, [app, aiEmployee]);
+
+  return <FlowModelRenderer model={model} />;
+};
+
+export const Feedback: React.FC = () => {
+  const app = useApp();
+  const model = useMemo(() => {
+    return app.flowEngine.createModel({
+      use: AIEmployeeTaskFeedbackModel,
+    });
+  }, [app]);
+
+  return <FlowModelRenderer model={model} />;
+};
+
+export * from './types';

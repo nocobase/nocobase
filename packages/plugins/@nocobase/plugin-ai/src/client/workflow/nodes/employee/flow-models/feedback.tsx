@@ -11,8 +11,8 @@ import React from 'react';
 import { css, SchemaComponent } from '@nocobase/client';
 import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import { StructuredOutput } from '../components/structured-output';
-import { namespace } from '../../locale';
 import { AssigneesSelect, AssigneesAddition } from '../components/assigness';
+import { namespace } from '../../../../locale';
 
 export class AIEmployeeTaskFeedbackModel extends FlowModel {
   public render() {

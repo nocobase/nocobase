@@ -14,10 +14,10 @@ import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { useToken } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
-import { AIEmployeeListItem } from '../../ai-employees/AIEmployeeListItem';
-import { avatars } from '../../ai-employees/avatars';
-import { useT } from '../../locale';
-import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { useAIConfigRepository } from '../../../../repositories/hooks/useAIConfigRepository';
+import { useT } from '../../../../locale';
+import { AIEmployeeListItem } from '../../../../ai-employees/AIEmployeeListItem';
+import { avatars } from '../../../../ai-employees/avatars';
 
 export const AIEmployeeSelect: React.FC = observer(() => {
   const t = useT();
@@ -92,7 +92,7 @@ export const AIEmployeeSelect: React.FC = observer(() => {
         opacity: disabled ? 0.45 : 1,
       }}
     >
-      {currentEmployee ? <Avatar shape="circle" size={20} src={avatars(currentEmployee.avatar)} /> : null}
+      {currentEmployee?.avatar ? <Avatar shape="circle" size={20} src={avatars(currentEmployee.avatar)} /> : null}
       <span
         style={{
           color: hasEmployees ? token.colorText : token.colorError,

@@ -12,10 +12,10 @@ import { Switch, Alert } from 'antd';
 import { observer, tExpr } from '@nocobase/flow-engine';
 import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
-import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
-import { namespace, useT } from '../../locale';
-import { getServiceByOverride } from '../../llm-services/utils';
 import { SchemaComponent } from '@nocobase/client';
+import { namespace, useT } from '../../../../locale';
+import { useLLMServiceCatalog } from '../../../../llm-services/hooks/useLLMServiceCatalog';
+import { getServiceByOverride } from '../../../../llm-services/utils';
 
 const WebSearchSwitch: React.FC = observer(() => {
   const t = useT();

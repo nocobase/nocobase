@@ -12,9 +12,8 @@ import { tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { RemoteSelect, SchemaComponent } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { namespace, useT } from '../../locale';
-import { AIEmployee } from '../../ai-employees/types';
 import { Typography } from 'antd';
+import { namespace, useT } from '../../../../locale';
 
 const Skills: React.FC = () => {
   const t = useT();

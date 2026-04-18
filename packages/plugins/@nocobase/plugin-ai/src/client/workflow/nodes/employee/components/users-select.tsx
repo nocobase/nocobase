@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { RemoteSelect, Variable } from '@nocobase/client';
 import { useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
 

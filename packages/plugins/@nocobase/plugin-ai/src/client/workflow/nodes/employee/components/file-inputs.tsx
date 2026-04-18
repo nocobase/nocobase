@@ -12,8 +12,8 @@ import { observer, useField, useForm } from '@formily/react';
 import { DataSourceCollectionCascader } from '@nocobase/client';
 import { Form, Select } from 'antd';
 import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client';
-import { useT } from '../../locale';
-import { ListCollapse } from '../../components/ListCollapse';
+import ListCollapse from '../../../../components/ListCollapse';
+import { useT } from '../../../../locale';
 
 type FileInputItem = {
   type?: 'file_id' | 'file_url';

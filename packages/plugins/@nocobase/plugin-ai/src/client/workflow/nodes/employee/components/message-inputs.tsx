@@ -10,8 +10,8 @@
 import React from 'react';
 import { tExpr } from '@nocobase/flow-engine';
 import { SchemaComponent } from '@nocobase/client';
-import { namespace } from '../../locale';
 import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
+import { namespace } from '../../../../locale';
 
 export const MessageInputs: React.FC<{ aiEmployeesMap: any }> = ({ aiEmployeesMap }) => {
   return (

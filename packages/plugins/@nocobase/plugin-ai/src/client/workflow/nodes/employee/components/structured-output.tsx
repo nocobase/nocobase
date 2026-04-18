@@ -10,8 +10,8 @@
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
-import { namespace, useT } from '../../locale';
 import { tExpr } from '@nocobase/flow-engine';
+import { namespace, useT } from '../../../../locale';
 
 export const StructuredOutput: React.FC = () => {
   const t = useT();

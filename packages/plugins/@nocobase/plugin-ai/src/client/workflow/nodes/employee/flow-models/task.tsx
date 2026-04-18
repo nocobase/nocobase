@@ -16,8 +16,8 @@ import { WebSearchOptions } from '../components/web-search-options';
 import { MessageInputs } from '../components/message-inputs';
 import { AIEmployeeSelect } from '../components/AIEmployeeSelect';
 import { FileInputs } from '../components/file-inputs';
-import { namespace } from '../../locale';
 import { UsersSelect } from '../components/users-select';
+import { namespace } from '../../../../locale';
 
 export class AIEmployeeTaskModel extends FlowModel {
   public render() {
