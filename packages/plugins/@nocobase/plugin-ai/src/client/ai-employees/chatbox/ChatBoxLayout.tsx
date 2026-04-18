@@ -35,6 +35,9 @@ export const ChatBoxLayout: React.FC<{
   const app = useApp();
   const { refresh: onAIEmployeeTaskStatusUpdate } = useWorkflowTasks();
   useEffect(() => {
+    onAIEmployeeTaskStatusUpdate();
+  }, []);
+  useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
     return () => {
       app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
