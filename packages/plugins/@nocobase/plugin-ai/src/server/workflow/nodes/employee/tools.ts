@@ -47,41 +47,14 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
           ...parsedOutputSchema,
           description:
             parsedOutputSchema.description ||
-            `Use this field to submit the final workflow result
-            when the task is completed successfully.`,
+            `Return the final structured output for this workflow task in this field.
+            The value must match the required schema exactly so the workflow can continue.
+            Do not include free-form text, extra fields, or any structure outside the defined schema.`,
         }
       : parsedOutputSchema;
   const schema = {
     type: 'object',
     properties: {
-      alert: {
-        type: 'object',
-        description: `Use this field instead of \`result\` when there is no data to return to the workflow
-          and the message is intended for a person instead, such as a status notice,
-          a request for missing information, or a review prompt.
-          Do not provide this field together with \`result\`.`,
-        properties: {
-          title: {
-            type: 'string',
-            description: `A short human-readable title summarizing the outcome or the action a person needs to take.`,
-          },
-          description: {
-            type: 'string',
-            description: `A human-readable message for the person reviewing this status, explaining what happened and whether any action is needed.`,
-          },
-          type: {
-            type: 'string',
-            enum: ['info', 'warning'],
-            description: `The alert type.
-              Use \`info\` for a person-facing notice when no workflow data needs to be returned
-              and execution may continue.
-              Use \`warning\` when a person needs to pay attention or take action,
-              such as providing missing information or reviewing the outcome before execution can continue.`,
-          },
-        },
-        required: ['title', 'description', 'type'],
-        additionalProperties: false,
-      },
       result: resultSchema,
     },
     additionalProperties: false,
@@ -90,18 +63,14 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
   if (config.requiresApproval === 'ai_decision') {
     (schema.properties as any).requiresApproval = {
       type: 'boolean',
-      description: `This field is mandatory when present.
-        Decide this based on whether the workflow still requires human intervention
-        after this submission.
-        Set it to \`true\` only when a person must still provide missing information,
-        review the outcome, or make a decision before the workflow can proceed.
-        Set it to \`false\` when the workflow can proceed or end without
-        any further human intervention.
-        Judge this independently from whether you used \`result\` or \`alert\`.
-        A person-facing \`alert.type = info\` that only confirms execution may continue
-        normally uses \`false\`.
-        An \`alert.type = warning\` requesting missing information or review
-        should use \`true\`.`,
+      description: `This field is mandatory.
+      Set it to true whenever the human user still needs to review the result, confirm it, make a decision,
+      provide missing information, answer your follow-up questions, or correct the result.
+      Set it to false only when you have determined that the task is fully complete, the result you are returning fully satisfies the required schema and the task requirements,
+      and no human user needs to review the result or provide any additional information before the workflow continues.
+      Warning: if requiresApproval=false, this AI workflow node ends immediately, the workflow moves to the next node,
+      and the human will no longer be able to continue this conversation with the AI.
+      If a human may still need to say anything else, do not set it to false.`,
     };
   }
 
@@ -111,19 +80,9 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
     from: 'workflow',
     definition: {
       name: 'aiEmployeeWorkflowTaskOutput',
-      description: `Use this tool to report the outcome of the current workflow step.
-        Provide exactly one of \`result\` or \`alert\`.
-        Use \`result\` when there is workflow data that must be passed back to the workflow
-        for subsequent execution.
-        Use \`alert\` when there is no workflow data to return and the message
-        is intended for a person instead, such as a status notice, a request for missing information,
-        or a review prompt.
-        \`alert\` must be an object with \`title\`, \`description\`, and \`type\`.
-        If \`requiresApproval\` is present, decide whether human intervention is still needed:
-        set it to \`true\` when required information is missing and must be supplied by a person,
-        or when the outcome must be reviewed before the workflow may continue.
-        Set it to \`false\` when the available information is sufficient for you to complete the task independently
-        and the workflow can continue without human intervention.`,
+      description: `Use this tool to return the structured output required by the workflow so execution can continue.
+      Every time you call it, you must provide the final data strictly under result and match the result schema exactly.
+      Do not return free-form text, extra fields, or any structure outside the defined result.`,
       schema,
     },
     invoke: async (_ctx: Context, args: Record<string, any>) => {

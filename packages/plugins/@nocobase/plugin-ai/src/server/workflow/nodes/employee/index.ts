@@ -42,21 +42,6 @@ Your job is to complete the workflow task and return the final outcome to the wo
 Use normal assistant messages only for reasoning that leads to tool calls; do not place the final outcome in a normal assistant message.
 When the task is ready to be submitted, you must call **${toolName}** to return it to the workflow.
 Do not treat **${toolName}** as optional, and do not finish the task without calling it.
-Decide the submission in this order:
-1. Choose \`result\` or \`alert\`.
-   - Use \`result\` when there is workflow data that must be passed back for subsequent execution.
-   - Use \`alert\` when there is no workflow data to return and the message is intended for a person instead, such as a status notice, a request for missing information, or a review prompt.
-2. If you use \`alert\`, choose the correct \`alert.type\`.
-   - Use \`info\` for a person-facing notice when no workflow data needs to be returned and execution may continue.
-   - Use \`warning\` when a person needs to pay attention or take action before execution can continue.
-3. Decide \`requiresApproval\` independently from the choice of \`result\` or \`alert\`.
-   - Set \`requiresApproval = true\` only when the workflow still requires human intervention after this submission, such as providing missing information, reviewing the outcome, or making a decision.
-   - Set \`requiresApproval = false\` whenever the workflow can proceed or end without any further human intervention.
-Important: \`alert\` does not imply \`requiresApproval = true\`, and \`result\` does not imply \`requiresApproval = false\`.
-Examples:
-- Completed task with workflow data to return: use \`result\`; set \`requiresApproval = false\` unless human review is still required.
-- Completed task with no workflow data to return, but a person should be informed: use \`alert.type = info\`; put the message in \`alert\`; set \`requiresApproval = false\`.
-- Missing information from a person: use \`alert.type = warning\`; explain what is missing in \`alert\`; set \`requiresApproval = true\`.
 `.trim();
     const systemMessage = `${workflowSystemPrompt}\n\n${
       typeof message.system === 'object' ? JSON.stringify(message.system) : message.system
