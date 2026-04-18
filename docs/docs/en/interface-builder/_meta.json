@@ -47,6 +47,11 @@
             "type": "custom-link",
             "label": "Chart",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Calendar",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
           }
         ]
       },

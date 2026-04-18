@@ -137,7 +137,7 @@ export const userCollection = {
       },
     },
     {
-      interface: 'inputNumber',
+      interface: 'integer',
       type: 'bigInt',
       name: 'mainDepartmentId',
       uiSchema: {

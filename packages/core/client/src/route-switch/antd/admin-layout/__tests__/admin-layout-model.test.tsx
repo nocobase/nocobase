@@ -39,10 +39,12 @@ import { AdminLayout, AdminLayoutPlugin } from '..';
 import { AdminLayoutModel as FlowAdminLayoutModel } from '@nocobase/client-v2';
 import { AdminLayoutModelV1 } from '../AdminLayoutModel';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
+import { FLOW_SETTINGS_PREFERENCE_STORAGE_KEY } from '../flowSettingsPreference';
 
 describe('AdminLayout legacy wrapper', () => {
   beforeEach(() => {
     flowModelRendererSpy.mockClear();
+    window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
 
   it('should create AdminLayoutModelV1 and pass it to FlowModelRenderer', async () => {
@@ -137,4 +139,5 @@ describe('AdminLayout legacy wrapper', () => {
       }),
     );
   });
+
 });

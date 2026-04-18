@@ -40,6 +40,11 @@ import {
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 import { PinnedPluginList } from '../../../plugin-manager';
+import {
+  FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
+  FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
+  readFlowSettingsPreference,
+} from './flowSettingsPreference';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -376,13 +381,14 @@ export const AdminLayoutComponent = observer((props: any) => {
     path: '/',
     children: [],
   });
+  const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() => readFlowSettingsPreference());
   const doNotChangeCollapsedRef = useRef(false);
   const t = useCallback(
     (value: any) =>
       typeof flowEngine.context.t === 'function' ? flowEngine.context.t(value, { ns: 'lm-desktop-routes' }) : value,
     [flowEngine],
   );
-  const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
+  const designable = !isMobileSider && preferredFlowSettingsEnabled;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
   const flowSettingsSyncRef = useRef(0);
@@ -442,6 +448,32 @@ export const AdminLayoutComponent = observer((props: any) => {
     };
     setRoute(nextRoute);
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncPreferredFlowSettings = () => {
+      setPreferredFlowSettingsEnabled(readFlowSettingsPreference());
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== FLOW_SETTINGS_PREFERENCE_STORAGE_KEY) {
+        return;
+      }
+
+      syncPreferredFlowSettings();
+    };
+
+    window.addEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     const syncId = ++flowSettingsSyncRef.current;

@@ -103,6 +103,14 @@ describe('AdminLayoutModel menu items', () => {
     vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
+  const createRoute = (options?: Partial<import('../../../../flow-compat').NocoBaseDesktopRoute>) => ({
+    id: 1,
+    title: 'Page 1',
+    schemaUid: 'page-1',
+    type: NocoBaseDesktopRouteType.page,
+    ...options,
+  });
+
   it('should normalize legacy variables only inside template expressions', () => {
     expect(normalizeAdminLayoutMenuLegacyVariables('https://a.com?id={{ $user.id }}')).toBe(
       'https://a.com?id={{ ctx.user.id }}',
@@ -1077,12 +1085,7 @@ describe('AdminLayoutModel menu items', () => {
       uid: 'menu-item-save-step-params-existing',
       use: AdminLayoutMenuItemModel,
       props: {
-        route: {
-          id: 1,
-          title: 'Page 1',
-          schemaUid: 'page-1',
-          type: NocoBaseDesktopRouteType.page,
-        },
+        route: createRoute(),
       },
     });
 
@@ -1097,12 +1100,7 @@ describe('AdminLayoutModel menu items', () => {
       uid: 'menu-item-save-step-params-with-instance-flow',
       use: AdminLayoutMenuItemModel,
       props: {
-        route: {
-          id: 1,
-          title: 'Page 1',
-          schemaUid: 'page-1',
-          type: NocoBaseDesktopRouteType.page,
-        },
+        route: createRoute(),
       },
       flowRegistry: {
         beforeRender: {
@@ -1121,6 +1119,9 @@ describe('AdminLayoutModel menu items', () => {
   });
 
   it('should hydrate persisted instance flows for admin layout menu models', async () => {
+    engine.context.defineProperty('flowSettingsEnabled', {
+      value: true,
+    });
     engine.setModelRepository({
       findOne: vi.fn().mockResolvedValue({
         uid: 'menu-item-page-1',
@@ -1147,12 +1148,7 @@ describe('AdminLayoutModel menu items', () => {
       uid: 'menu-item-page-1',
       use: AdminLayoutMenuItemModel,
       props: {
-        route: {
-          id: 1,
-          title: 'Page 1',
-          schemaUid: 'page-1',
-          type: NocoBaseDesktopRouteType.page,
-        },
+        route: createRoute(),
       },
     });
 
@@ -1164,6 +1160,358 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     expect(rerenderSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not hydrate persisted instance flows for admin layout menu models in runtime mode when route is not marked', async () => {
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'menu-item-page-1',
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    engine.setModelRepository({ findOne } as any);
+
+    engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-page-1',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should hydrate persisted instance flows in runtime mode when route is marked and rerender beforeRender flow', async () => {
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'menu-item-page-1',
+      stepParams: {
+        beforeRender: {
+          edit: {
+            title: 'Persisted flow',
+          },
+        },
+      },
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+    const rerenderSpy = vi.spyOn(AdminLayoutMenuItemModel.prototype, 'rerender').mockResolvedValue(undefined as any);
+
+    engine.setModelRepository({ findOne } as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-page-1',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+    });
+
+    await waitFor(() => {
+      expect(findOne).toHaveBeenCalledWith({ uid: 'menu-item-page-1' });
+      expect(model.getFlow('beforeRender')).toBeDefined();
+      expect(model.getStepParams('beforeRender', 'edit')).toMatchObject({
+        title: 'Persisted flow',
+      });
+    });
+
+    expect(rerenderSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should write route persisted flag when first instance flow is added', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-first-instance-flow',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.flowRegistry.addFlow('beforeRender', {
+      title: 'Before render',
+      steps: {},
+    });
+
+    await model.saveStepParams();
+
+    expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).toHaveBeenCalledTimes(1);
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should keep route persisted flag unchanged when only step params change', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-step-params-only',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    model.setStepParams('beforeRender', 'edit', {
+      title: 'Updated params',
+    });
+
+    await model.saveStepParams();
+
+    expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).not.toHaveBeenCalled();
+  });
+
+  it('should preserve persisted flow flag when updating normal menu options', async () => {
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-link-edit',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          type: NocoBaseDesktopRouteType.link,
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+            href: 'https://old.example.com',
+          },
+        }),
+      },
+    });
+
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    await menuSettingsFlow?.steps?.edit?.beforeParamsSave?.(
+      { model } as any,
+      {
+        title: 'Docs',
+        href: 'https://www.nocobase.com',
+        params: [{ name: 'from', value: 'admin' }],
+        openInNewWindow: true,
+      },
+      {},
+    );
+
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      title: 'Docs',
+      icon: undefined,
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+        href: 'https://www.nocobase.com',
+        params: [{ name: 'from', value: 'admin' }],
+        openInNewWindow: true,
+      },
+    });
+  });
+
+  it('should clear route persisted flag after deleting the last instance flow and stop runtime hydrate afterwards', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    const destroy = vi.fn().mockResolvedValue(true);
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'menu-item-runtime-after-clear',
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    engine.context.routeRepository.updateRoute = updateRoute;
+    engine.setModelRepository({ destroy } as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-last-instance-flow',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    model.flowRegistry.removeFlow('beforeRender');
+    await model.saveStepParams();
+
+    expect(saveModel).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledWith('menu-item-last-instance-flow');
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: undefined,
+    });
+
+    engine.setModelRepository({ findOne } as any);
+
+    const runtimeModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-runtime-after-clear',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(runtimeModel.getFlow('beforeRender')).toBeUndefined();
+      expect(findOne).not.toHaveBeenCalledWith({ uid: 'menu-item-runtime-after-clear' });
+    });
+  });
+
+  it('should not hydrate deleted persisted menu flows when reopening in config mode', async () => {
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    const save = vi.fn().mockResolvedValue(undefined);
+    const destroy = vi.fn().mockImplementation(async (uid: string) => {
+      persistedModels.delete(uid);
+      return true;
+    });
+    const findOne = vi.fn().mockImplementation(async ({ uid }) => persistedModels.get(uid) || null);
+    const persistedModels = new Map<string, any>([
+      [
+        'menu-item-config-reopen',
+        {
+          uid: 'menu-item-config-reopen',
+          flowRegistry: {
+            beforeRender: {
+              title: 'Before render',
+              steps: {},
+            },
+          },
+        },
+      ],
+    ]);
+
+    engine.context.defineProperty('flowSettingsEnabled', {
+      value: true,
+    });
+    engine.context.routeRepository.updateRoute = updateRoute;
+    engine.setModelRepository({ findOne, save, destroy } as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-config-reopen',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(model.getFlow('beforeRender')).toBeDefined();
+    });
+
+    model.flowRegistry.removeFlow('beforeRender');
+    await model.saveStepParams();
+
+    expect(save).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledWith('menu-item-config-reopen');
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: undefined,
+    });
+
+    findOne.mockClear();
+    engine.removeModelWithSubModels('menu-item-config-reopen');
+
+    const reopenedModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-config-reopen',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(findOne).toHaveBeenCalledWith({ uid: 'menu-item-config-reopen' });
+      expect(reopenedModel.getFlow('beforeRender')).toBeUndefined();
+    });
+  });
+
+  it('should hydrate only marked menus in mixed runtime menu scenarios', async () => {
+    const findOne = vi.fn().mockImplementation(async ({ uid }) => ({
+      uid,
+      flowRegistry: {
+        beforeRender: {
+          title: `Flow for ${uid}`,
+          steps: {},
+        },
+      },
+    }));
+
+    engine.setModelRepository({ findOne } as any);
+
+    engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-unmarked',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({ id: 11, schemaUid: 'page-11' }),
+      },
+    });
+    const markedModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-marked',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          id: 12,
+          schemaUid: 'page-12',
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+    });
+
+    await waitFor(() => {
+      expect(findOne).toHaveBeenCalledTimes(1);
+      expect(findOne).toHaveBeenCalledWith({ uid: 'menu-item-marked' });
+      expect(markedModel.getFlow('beforeRender')).toBeDefined();
+    });
   });
 
   it('should expose insert steps and only show insert inner for groups', async () => {

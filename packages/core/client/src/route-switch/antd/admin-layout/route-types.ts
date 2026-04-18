@@ -16,6 +16,11 @@ export enum NocoBaseDesktopRouteType {
   flowPage = 'flowPage',
 }
 
+export interface NocoBaseDesktopRouteOptions {
+  hasPersistedMenuInstanceFlow?: boolean;
+  [key: string]: any;
+}
+
 /**
  * 尽量与移动端的结构保持一致
  */
@@ -37,7 +42,7 @@ export interface NocoBaseDesktopRoute {
    */
   pageSchemaUid?: string;
   type?: NocoBaseDesktopRouteType;
-  options?: any;
+  options?: NocoBaseDesktopRouteOptions;
   sort?: number;
   hideInMenu?: boolean;
   enableTabs?: boolean;

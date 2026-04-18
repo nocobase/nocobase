@@ -18,7 +18,7 @@
     "@emotion/css": "^11.11.2",
     "antd": "5.x",
     "classnames": "^2.3.1",
-    "lodash": "4.17.21",
+    "lodash": "4.x",
     "rc-util": "^5.32.0",
     "react": "^18.2.0",
     "react-colorful": "^5.5.1",

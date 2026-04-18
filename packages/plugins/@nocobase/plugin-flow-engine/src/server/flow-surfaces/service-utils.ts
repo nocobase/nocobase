@@ -285,7 +285,20 @@ export function ensureNoDirectActionScopeKey(actionName: 'addAction' | 'addRecor
   );
 }
 
-export function normalizeComposeFieldSpec(input: any, index: number) {
+export type NormalizedComposeFieldSpec = {
+  index: number;
+  key: string;
+  fieldPath?: string;
+  associationPathName?: string;
+  renderer?: string;
+  type?: string;
+  target?: string;
+  settings: Record<string, any>;
+  popup?: Record<string, any>;
+  __autoPopupForRelationField?: boolean;
+};
+
+export function normalizeComposeFieldSpec(input: any, index: number): NormalizedComposeFieldSpec {
   if (typeof input === 'string') {
     const fieldPath = String(input || '').trim();
     if (!fieldPath) {
@@ -297,6 +310,7 @@ export function normalizeComposeFieldSpec(input: any, index: number) {
       fieldPath,
       settings: {},
       popup: undefined,
+      __autoPopupForRelationField: true,
     };
   }
   if (!_.isPlainObject(input)) {
@@ -334,6 +348,7 @@ export function normalizeComposeFieldSpec(input: any, index: number) {
     target: typeof input.target === 'string' ? String(input.target || '').trim() || undefined : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
+    __autoPopupForRelationField: input.__autoPopupForRelationField === true,
   };
 }
 

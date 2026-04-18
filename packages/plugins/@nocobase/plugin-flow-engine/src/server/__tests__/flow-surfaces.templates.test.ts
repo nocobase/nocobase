@@ -9,6 +9,7 @@
 
 import { MockServer } from '@nocobase/test';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import {
   addBlockData,
   addFieldData,
@@ -1156,6 +1157,2010 @@ describe('flowSurfaces templates', () => {
       }),
     );
     await expectTemplateUsage(rootAgent, template.uid, 0);
+  });
+
+  it('should auto-select popup templates via popup.tryTemplate with relation priority explicit override and first-match fallback', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup tryTemplate relation priority page',
+      tabTitle: 'Popup tryTemplate relation priority tab',
+    });
+
+    const genericDepartmentDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'departments',
+      },
+    });
+    const genericDepartmentField = await addFieldData(rootAgent, {
+      target: { uid: genericDepartmentDetails.uid },
+      fieldPath: 'title',
+      popup: {
+        blocks: [
+          {
+            key: 'department-popup-title-v1',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+    const genericDepartmentTemplateV1 = await saveTemplate(rootAgent, {
+      target: { uid: genericDepartmentField.fieldUid || genericDepartmentField.uid },
+      name: 'Department popup generic template v1',
+      description: 'Generic departments popup template for popup.tryTemplate fallback coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const latestDepartmentDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'departments',
+      },
+    });
+    const latestDepartmentField = await addFieldData(rootAgent, {
+      target: { uid: latestDepartmentDetails.uid },
+      fieldPath: 'title',
+      popup: {
+        blocks: [
+          {
+            key: 'department-popup-title-v2',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+    const genericDepartmentTemplateV2 = await saveTemplate(rootAgent, {
+      target: { uid: latestDepartmentField.fieldUid || latestDepartmentField.uid },
+      name: 'Department popup generic template v2',
+      description: 'Newer generic departments popup template for popup.tryTemplate latest-match coverage.',
+      saveMode: 'duplicate',
+    });
+    getData(
+      await rootAgent.resource('flowSurfaces').updateTemplate({
+        values: {
+          uid: genericDepartmentTemplateV2.uid,
+          name: 'Department popup generic template v2',
+          description: 'Updated generic departments popup template for popup.tryTemplate latest-match coverage.',
+        },
+      }),
+    );
+    const listedGenericDepartmentTemplates = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          filter: {
+            $and: [
+              { collectionName: 'departments' },
+              {
+                $or: [{ associationName: null }, { associationName: '' }],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const expectedGenericDepartmentFallback = listedGenericDepartmentTemplates.rows[0];
+    expect([genericDepartmentTemplateV1.uid, genericDepartmentTemplateV2.uid]).toContain(
+      expectedGenericDepartmentFallback?.uid,
+    );
+
+    const employeesDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const secondaryDepartmentSourceField = await addFieldData(rootAgent, {
+      target: { uid: employeesDetails.uid },
+      fieldPath: 'secondaryDepartment',
+      popup: {
+        blocks: [
+          {
+            key: 'secondary-department-popup-details',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+    const secondaryDepartmentTemplate = await saveTemplate(rootAgent, {
+      target: { uid: secondaryDepartmentSourceField.fieldUid || secondaryDepartmentSourceField.uid },
+      name: 'Secondary department popup template',
+      description: 'Relation popup template bound to employees.secondaryDepartment for popup.tryTemplate coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const relationFallbackField = await addFieldData(rootAgent, {
+      target: { uid: employeesDetails.uid },
+      fieldPath: 'department',
+      popup: {
+        tryTemplate: true,
+      },
+    });
+    const relationFallbackSurface = await getSurface(rootAgent, {
+      uid: relationFallbackField.fieldUid || relationFallbackField.uid,
+    });
+    expect(relationFallbackSurface.tree.popup.template).toMatchObject({
+      uid: expectedGenericDepartmentFallback.uid,
+      mode: 'reference',
+    });
+
+    const departmentSourceField = await addFieldData(rootAgent, {
+      target: { uid: employeesDetails.uid },
+      fieldPath: 'department',
+      popup: {
+        blocks: [
+          {
+            key: 'department-popup-details',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+    const departmentTemplate = await saveTemplate(rootAgent, {
+      target: { uid: departmentSourceField.fieldUid || departmentSourceField.uid },
+      name: 'Department relation popup template',
+      description: 'Relation popup template bound to employees.department for popup.tryTemplate coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const relationPreferredField = await addFieldData(rootAgent, {
+      target: { uid: employeesDetails.uid },
+      fieldPath: 'department',
+      popup: {
+        tryTemplate: true,
+      },
+    });
+    const relationPreferredSurface = await getSurface(rootAgent, {
+      uid: relationPreferredField.fieldUid || relationPreferredField.uid,
+    });
+    expect(relationPreferredSurface.tree.popup.template).toMatchObject({
+      uid: departmentTemplate.uid,
+      mode: 'reference',
+    });
+
+    const explicitOverrideField = await addFieldData(rootAgent, {
+      target: { uid: employeesDetails.uid },
+      fieldPath: 'secondaryDepartment',
+      popup: {
+        tryTemplate: true,
+        template: {
+          uid: genericDepartmentTemplateV1.uid,
+          mode: 'reference',
+        },
+      },
+    });
+    const explicitOverrideSurface = await getSurface(rootAgent, {
+      uid: explicitOverrideField.fieldUid || explicitOverrideField.uid,
+    });
+    expect(explicitOverrideSurface.tree.popup.template).toMatchObject({
+      uid: genericDepartmentTemplateV1.uid,
+      mode: 'reference',
+    });
+
+    await expectTemplateUsage(
+      rootAgent,
+      genericDepartmentTemplateV1.uid,
+      expectedGenericDepartmentFallback.uid === genericDepartmentTemplateV1.uid ? 2 : 1,
+    );
+    await expectTemplateUsage(
+      rootAgent,
+      genericDepartmentTemplateV2.uid,
+      expectedGenericDepartmentFallback.uid === genericDepartmentTemplateV2.uid ? 1 : 0,
+    );
+    await expectTemplateUsage(rootAgent, secondaryDepartmentTemplate.uid, 0);
+    await expectTemplateUsage(rootAgent, departmentTemplate.uid, 1);
+  });
+
+  it('should support popup.tryTemplate through batch APIs and compose popup specs', async () => {
+    await rootAgent.resource('collections').create({
+      values: {
+        name: 'popup_try_template_batch_targets',
+        title: 'Popup Try Template Batch Targets',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      popup_try_template_batch_targets: ['name', 'code'],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Popup tryTemplate batch page',
+      tabTitle: 'Popup tryTemplate batch tab',
+    });
+
+    const sourceTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_batch_targets',
+      },
+    });
+    const sourceAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: sourceTable.uid },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'batch-template-table',
+                type: 'table',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['name', 'code'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const popupTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceAction.uid },
+      name: 'Batch popup tryTemplate template',
+      description: 'Reusable popup template used to verify batch and compose popup.tryTemplate coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const batchDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_batch_targets',
+      },
+    });
+    const addFieldsResult = getData(
+      await rootAgent.resource('flowSurfaces').addFields({
+        values: {
+          target: { uid: batchDetails.uid },
+          fields: [
+            {
+              key: 'batch-name',
+              fieldPath: 'name',
+              popup: {
+                tryTemplate: true,
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addFieldsResult.successCount).toBe(1);
+    const batchFieldUid = addFieldsResult.fields[0].result.fieldUid || addFieldsResult.fields[0].result.uid;
+    const batchFieldSurface = await getSurface(rootAgent, { uid: batchFieldUid });
+    expect(batchFieldSurface.tree.popup.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+
+    const batchActionTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_batch_targets',
+      },
+    });
+    const addActionsResult = getData(
+      await rootAgent.resource('flowSurfaces').addActions({
+        values: {
+          target: { uid: batchActionTable.uid },
+          actions: [
+            {
+              key: 'batch-popup-action',
+              type: 'popup',
+              popup: {
+                tryTemplate: true,
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addActionsResult.successCount).toBe(1);
+    const batchActionSurface = await getSurface(rootAgent, {
+      uid: addActionsResult.actions[0].result.uid,
+    });
+    expect(batchActionSurface.tree.popup.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+
+    const addRecordActionsResult = getData(
+      await rootAgent.resource('flowSurfaces').addRecordActions({
+        values: {
+          target: { uid: batchActionTable.uid },
+          recordActions: [
+            {
+              key: 'batch-view-action',
+              type: 'view',
+              popup: {
+                tryTemplate: true,
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addRecordActionsResult.successCount).toBe(1);
+    const batchRecordActionSurface = await getSurface(rootAgent, {
+      uid: addRecordActionsResult.recordActions[0].result.uid,
+    });
+    expect(batchRecordActionSurface.tree.popup.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+
+    const composeResult = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'composeTryTable',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'popup_try_template_batch_targets',
+              },
+              fields: ['name', 'code'],
+              actions: [
+                {
+                  key: 'composePopupAction',
+                  type: 'popup',
+                  popup: {
+                    tryTemplate: true,
+                  },
+                },
+              ],
+              recordActions: [
+                {
+                  key: 'composeViewAction',
+                  type: 'view',
+                  popup: {
+                    tryTemplate: true,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    const composedTable = composeResult.blocks.find((item: any) => item.key === 'composeTryTable');
+    const composedPopupAction = composedTable.actions.find((item: any) => item.key === 'composePopupAction');
+    const composedViewAction = composedTable.recordActions.find((item: any) => item.key === 'composeViewAction');
+    const composedPopupActionSurface = await getSurface(rootAgent, { uid: composedPopupAction.uid });
+    expect(composedPopupActionSurface.tree.popup.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+    const composedViewActionSurface = await getSurface(rootAgent, { uid: composedViewAction.uid });
+    expect(composedViewActionSurface.tree.popup.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+  });
+
+  it('should save local popup content as templates through add batch and compose APIs via popup.saveAsTemplate', async () => {
+    const unique = Date.now();
+    const page = await createPage(rootAgent, {
+      title: `Popup saveAsTemplate page ${unique}`,
+      tabTitle: 'Popup saveAsTemplate tab',
+    });
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const tableBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    async function expectSavedPopupTemplateReference(templateName: string, targetUid: string) {
+      const listed = getListData(
+        await rootAgent.resource('flowSurfaces').listTemplates({
+          values: {
+            type: 'popup',
+            search: templateName,
+          },
+        }),
+      );
+      const template = listed.rows.find((row: any) => row.name === templateName);
+      expect(template?.uid).toBeTruthy();
+
+      const surface = await getSurface(rootAgent, { uid: targetUid });
+      expect(surface.tree.popup?.template).toMatchObject({
+        uid: template.uid,
+        mode: 'reference',
+      });
+      expect(surface.tree.popup?.pageUid).toBeUndefined();
+      expect(surface.tree.popup?.tabUid).toBeUndefined();
+      expect(surface.tree.popup?.gridUid).toBeUndefined();
+      await expectTemplateUsage(rootAgent, template.uid, 1);
+      return template;
+    }
+
+    const addFieldTemplateName = `Popup saveAsTemplate addField ${unique}`;
+    const addFieldRes = await addFieldData(rootAgent, {
+      target: { uid: detailsBlock.uid },
+      fieldPath: 'nickname',
+      popup: {
+        blocks: [
+          {
+            key: 'addFieldPopupDetails',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['nickname'],
+          },
+        ],
+        saveAsTemplate: {
+          name: addFieldTemplateName,
+          description: 'Popup template saved from addField.',
+        },
+      },
+    });
+    expect(addFieldRes.popupPageUid).toBeUndefined();
+    await expectSavedPopupTemplateReference(addFieldTemplateName, addFieldRes.fieldUid || addFieldRes.uid);
+
+    const addFieldsTemplateName = `Popup saveAsTemplate addFields ${unique}`;
+    const addFieldsRes = getData(
+      await rootAgent.resource('flowSurfaces').addFields({
+        values: {
+          target: { uid: detailsBlock.uid },
+          fields: [
+            {
+              key: 'addFieldsStatus',
+              fieldPath: 'status',
+              popup: {
+                blocks: [
+                  {
+                    key: 'addFieldsPopupDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: ['status'],
+                  },
+                ],
+                saveAsTemplate: {
+                  name: addFieldsTemplateName,
+                  description: 'Popup template saved from addFields.',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addFieldsRes.successCount).toBe(1);
+    expect(addFieldsRes.fields[0].result.popupPageUid).toBeUndefined();
+    await expectSavedPopupTemplateReference(
+      addFieldsTemplateName,
+      addFieldsRes.fields[0].result.fieldUid || addFieldsRes.fields[0].result.uid,
+    );
+
+    const addActionTemplateName = `Popup saveAsTemplate addAction ${unique}`;
+    const addActionRes = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: tableBlock.uid },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'addActionPopupTable',
+                type: 'table',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['nickname', 'status'],
+              },
+            ],
+            saveAsTemplate: {
+              name: addActionTemplateName,
+              description: 'Popup template saved from addAction.',
+            },
+          },
+        },
+      }),
+    );
+    expect(addActionRes.popupPageUid).toBeUndefined();
+    await expectSavedPopupTemplateReference(addActionTemplateName, addActionRes.uid);
+
+    const addActionsTemplateName = `Popup saveAsTemplate addActions ${unique}`;
+    const addActionsRes = getData(
+      await rootAgent.resource('flowSurfaces').addActions({
+        values: {
+          target: { uid: tableBlock.uid },
+          actions: [
+            {
+              key: 'addActionsPopup',
+              type: 'popup',
+              popup: {
+                blocks: [
+                  {
+                    key: 'addActionsPopupTable',
+                    type: 'table',
+                    resource: {
+                      binding: 'currentCollection',
+                    },
+                    fields: ['nickname'],
+                  },
+                ],
+                saveAsTemplate: {
+                  name: addActionsTemplateName,
+                  description: 'Popup template saved from addActions.',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addActionsRes.successCount).toBe(1);
+    expect(addActionsRes.actions[0].result.popupPageUid).toBeUndefined();
+    await expectSavedPopupTemplateReference(addActionsTemplateName, addActionsRes.actions[0].result.uid);
+
+    const addRecordActionTemplateName = `Popup saveAsTemplate addRecordAction ${unique}`;
+    const addRecordActionRes = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: tableBlock.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'addRecordActionPopupDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['nickname', 'status'],
+              },
+            ],
+            saveAsTemplate: {
+              name: addRecordActionTemplateName,
+              description: 'Popup template saved from addRecordAction.',
+            },
+          },
+        },
+      }),
+    );
+    expect(addRecordActionRes.popupPageUid).toBeUndefined();
+    await expectSavedPopupTemplateReference(addRecordActionTemplateName, addRecordActionRes.uid);
+
+    const addRecordActionsTemplateName = `Popup saveAsTemplate addRecordActions ${unique}`;
+    const addRecordActionsRes = getData(
+      await rootAgent.resource('flowSurfaces').addRecordActions({
+        values: {
+          target: { uid: tableBlock.uid },
+          recordActions: [
+            {
+              key: 'addRecordActionsView',
+              type: 'view',
+              popup: {
+                blocks: [
+                  {
+                    key: 'addRecordActionsPopupDetails',
+                    type: 'details',
+                    resource: {
+                      binding: 'currentRecord',
+                    },
+                    fields: ['nickname'],
+                  },
+                ],
+                saveAsTemplate: {
+                  name: addRecordActionsTemplateName,
+                  description: 'Popup template saved from addRecordActions.',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addRecordActionsRes.successCount).toBe(1);
+    expect(addRecordActionsRes.recordActions[0].result.popupPageUid).toBeUndefined();
+    await expectSavedPopupTemplateReference(
+      addRecordActionsTemplateName,
+      addRecordActionsRes.recordActions[0].result.uid,
+    );
+
+    const composeFieldTemplateName = `Popup saveAsTemplate composeField ${unique}`;
+    const composeActionTemplateName = `Popup saveAsTemplate composeAction ${unique}`;
+    const composeRecordActionTemplateName = `Popup saveAsTemplate composeRecordAction ${unique}`;
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'composeDetails',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: [
+                {
+                  key: 'composeNicknameField',
+                  fieldPath: 'nickname',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'composeFieldPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['nickname'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: composeFieldTemplateName,
+                      description: 'Popup template saved from compose field popup.',
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              key: 'composeTable',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname', 'status'],
+              actions: [
+                {
+                  key: 'composePopupAction',
+                  type: 'popup',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'composeActionPopupTable',
+                        type: 'table',
+                        resource: {
+                          binding: 'currentCollection',
+                        },
+                        fields: ['nickname'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: composeActionTemplateName,
+                      description: 'Popup template saved from compose action popup.',
+                    },
+                  },
+                },
+              ],
+              recordActions: [
+                {
+                  key: 'composeViewAction',
+                  type: 'view',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'composeRecordActionPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['status'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: composeRecordActionTemplateName,
+                      description: 'Popup template saved from compose record action popup.',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    const composedDetails = composeRes.blocks.find((item: any) => item.key === 'composeDetails');
+    const composedField = composedDetails.fields.find((item: any) => item.key === 'composeNicknameField');
+    await expectSavedPopupTemplateReference(composeFieldTemplateName, composedField.fieldUid || composedField.uid);
+
+    const composedTable = composeRes.blocks.find((item: any) => item.key === 'composeTable');
+    const composedPopupAction = composedTable.actions.find((item: any) => item.key === 'composePopupAction');
+    await expectSavedPopupTemplateReference(composeActionTemplateName, composedPopupAction.uid);
+    const composedViewAction = composedTable.recordActions.find((item: any) => item.key === 'composeViewAction');
+    await expectSavedPopupTemplateReference(composeRecordActionTemplateName, composedViewAction.uid);
+  });
+
+  it('should reuse popup templates created earlier in the same compose call via popup.template.local', async () => {
+    const unique = Date.now();
+    const fieldTemplateName = `Compose popup local field ${unique}`;
+    const nestedTemplateName = `Compose popup local nested ${unique}`;
+    const page = await createPage(rootAgent, {
+      title: `Compose popup local page ${unique}`,
+      tabTitle: 'Compose popup local tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'sourceDetails',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: [
+                {
+                  key: 'producerField',
+                  fieldPath: 'nickname',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'producerPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: [
+                          {
+                            key: 'nestedProducerField',
+                            fieldPath: 'status',
+                            popup: {
+                              blocks: [
+                                {
+                                  key: 'nestedPopupDetails',
+                                  type: 'details',
+                                  resource: {
+                                    binding: 'currentRecord',
+                                  },
+                                  fields: ['status'],
+                                },
+                              ],
+                              saveAsTemplate: {
+                                name: nestedTemplateName,
+                                description: 'Nested popup template created earlier in the same compose call.',
+                                local: 'nestedPopupAlias',
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: fieldTemplateName,
+                      description: 'Popup template created earlier in the same compose call.',
+                      local: 'fieldPopupAlias',
+                    },
+                  },
+                },
+                {
+                  key: 'fieldConsumer',
+                  fieldPath: 'status',
+                  popup: {
+                    template: {
+                      local: 'fieldPopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              key: 'employeeTable',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+              recordActions: [
+                {
+                  key: 'fieldPopupRecordConsumer',
+                  type: 'view',
+                  popup: {
+                    template: {
+                      local: 'fieldPopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+                {
+                  key: 'recordActionConsumer',
+                  type: 'view',
+                  popup: {
+                    template: {
+                      local: 'nestedPopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const listedTemplates = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: unique,
+        },
+      }),
+    );
+    const fieldTemplate = listedTemplates.rows.find((row: any) => row.name === fieldTemplateName);
+    const nestedTemplate = listedTemplates.rows.find((row: any) => row.name === nestedTemplateName);
+    expect(fieldTemplate?.uid).toBeTruthy();
+    expect(nestedTemplate?.uid).toBeTruthy();
+
+    const composedDetails = composeRes.blocks.find((item: any) => item.key === 'sourceDetails');
+    const fieldConsumer = composedDetails.fields.find((item: any) => item.key === 'fieldConsumer');
+    const composedTable = composeRes.blocks.find((item: any) => item.key === 'employeeTable');
+    const fieldPopupRecordConsumer = composedTable.recordActions.find(
+      (item: any) => item.key === 'fieldPopupRecordConsumer',
+    );
+    const recordActionConsumer = composedTable.recordActions.find((item: any) => item.key === 'recordActionConsumer');
+
+    const fieldConsumerSurface = await getSurface(rootAgent, {
+      uid: fieldConsumer.fieldUid || fieldConsumer.uid,
+    });
+    expect(fieldConsumerSurface.tree.popup?.template).toMatchObject({
+      uid: fieldTemplate.uid,
+      mode: 'reference',
+    });
+
+    const fieldPopupRecordConsumerSurface = await getSurface(rootAgent, {
+      uid: fieldPopupRecordConsumer.uid,
+    });
+    expect(fieldPopupRecordConsumerSurface.tree.popup?.template).toMatchObject({
+      uid: fieldTemplate.uid,
+      mode: 'reference',
+    });
+
+    const recordActionConsumerSurface = await getSurface(rootAgent, {
+      uid: recordActionConsumer.uid,
+    });
+    expect(recordActionConsumerSurface.tree.popup?.template).toMatchObject({
+      uid: nestedTemplate.uid,
+      mode: 'reference',
+    });
+
+    await expectTemplateUsage(rootAgent, fieldTemplate.uid, 3);
+    await expectTemplateUsage(rootAgent, nestedTemplate.uid, 2);
+  });
+
+  it('should reject invalid compose popup local template alias usage and direct add local aliases', async () => {
+    const unique = Date.now();
+    const page = await createPage(rootAgent, {
+      title: `Compose popup local validation page ${unique}`,
+      tabTitle: 'Compose popup local validation tab',
+    });
+
+    const forwardReferenceRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'forwardRefTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'fieldBeforeActionProducer',
+                fieldPath: 'nickname',
+                popup: {
+                  template: {
+                    local: 'futureActionPopup',
+                    mode: 'reference',
+                  },
+                },
+              },
+            ],
+            actions: [
+              {
+                key: 'laterPopupProducer',
+                type: 'popup',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'futureActionPopupBlock',
+                      type: 'table',
+                      resource: {
+                        binding: 'currentCollection',
+                      },
+                      fields: ['nickname'],
+                    },
+                  ],
+                  saveAsTemplate: {
+                    name: `Future action popup ${unique}`,
+                    description: 'Created too late for field phase consumers.',
+                    local: 'futureActionPopup',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(forwardReferenceRes.status).toBe(400);
+    expect(readErrorMessage(forwardReferenceRes)).toContain(
+      "flowSurfaces compose.blocks[0].fields[0].popup.template.local 'futureActionPopup' must reference an earlier popup.saveAsTemplate.local in the same request",
+    );
+
+    const duplicateAliasRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'duplicateAliasDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'duplicateAliasFieldA',
+                fieldPath: 'nickname',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'duplicateAliasPopupA',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['nickname'],
+                    },
+                  ],
+                  saveAsTemplate: {
+                    name: `Duplicate popup alias A ${unique}`,
+                    description: 'First duplicate alias producer.',
+                    local: 'duplicateAlias',
+                  },
+                },
+              },
+              {
+                key: 'duplicateAliasFieldB',
+                fieldPath: 'status',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'duplicateAliasPopupB',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['status'],
+                    },
+                  ],
+                  saveAsTemplate: {
+                    name: `Duplicate popup alias B ${unique}`,
+                    description: 'Second duplicate alias producer.',
+                    local: 'duplicateAlias',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(duplicateAliasRes.status).toBe(400);
+    expect(readErrorMessage(duplicateAliasRes)).toContain(
+      "flowSurfaces compose.blocks[0].fields[1].popup.saveAsTemplate.local 'duplicateAlias' is duplicated in the same request",
+    );
+
+    const uidAndLocalConflictRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'uidAndLocalConflictDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'uidAndLocalConflictField',
+                fieldPath: 'nickname',
+                popup: {
+                  template: {
+                    uid: 'existing-popup-template',
+                    local: 'unsupportedComposeAlias',
+                    mode: 'reference',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(uidAndLocalConflictRes.status).toBe(400);
+    expect(readErrorMessage(uidAndLocalConflictRes)).toContain(
+      'flowSurfaces compose.blocks[0].fields[0].popup.template cannot combine uid and local',
+    );
+
+    const localTryTemplateConflictRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'localTryTemplateConflictDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'localTryTemplateConflictField',
+                fieldPath: 'status',
+                popup: {
+                  template: {
+                    local: 'composeAliasConflict',
+                    mode: 'reference',
+                  },
+                  tryTemplate: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(localTryTemplateConflictRes.status).toBe(400);
+    expect(readErrorMessage(localTryTemplateConflictRes)).toContain(
+      'flowSurfaces compose.blocks[0].fields[0].popup.template.local cannot be combined with flowSurfaces compose.blocks[0].fields[0].popup.tryTemplate',
+    );
+
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const tableBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const directAddFieldLocalTemplateRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          template: {
+            local: 'unsupportedDirectAddAlias',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    expect(directAddFieldLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddFieldLocalTemplateRes)).toContain(
+      'flowSurfaces addField popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddFieldLocalSaveRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'status',
+        popup: {
+          blocks: [
+            {
+              key: 'unsupportedDirectAddSavePopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['status'],
+            },
+          ],
+          saveAsTemplate: {
+            name: `Unsupported direct add save ${unique}`,
+            description: 'Direct add should reject local popup aliases.',
+            local: 'unsupportedDirectAddAlias',
+          },
+        },
+      },
+    });
+    expect(directAddFieldLocalSaveRes.status).toBe(400);
+    expect(readErrorMessage(directAddFieldLocalSaveRes)).toContain(
+      'flowSurfaces addField popup.saveAsTemplate.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddFieldNestedLocalTemplateRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          blocks: [
+            {
+              key: 'unsupportedDirectAddNestedPopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: [
+                {
+                  key: 'unsupportedDirectAddNestedField',
+                  fieldPath: 'status',
+                  popup: {
+                    template: {
+                      local: 'unsupportedNestedDirectAddAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    expect(directAddFieldNestedLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddFieldNestedLocalTemplateRes)).toContain(
+      'flowSurfaces addField popup.blocks[0].fields[0].popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddActionLocalTemplateRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'popup',
+        popup: {
+          template: {
+            local: 'unsupportedDirectActionAlias',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    expect(directAddActionLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddActionLocalTemplateRes)).toContain(
+      'flowSurfaces addAction popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddRecordActionLocalTemplateRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'view',
+        popup: {
+          template: {
+            local: 'unsupportedDirectRecordActionAlias',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    expect(directAddRecordActionLocalTemplateRes.status).toBe(400);
+    expect(readErrorMessage(directAddRecordActionLocalTemplateRes)).toContain(
+      'flowSurfaces addRecordAction popup.template.local is only supported in compose and applyBlueprint',
+    );
+
+    const directAddRecordActionNestedLocalSaveRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'view',
+        popup: {
+          blocks: [
+            {
+              key: 'unsupportedDirectRecordActionNestedPopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: [
+                {
+                  key: 'unsupportedDirectRecordActionNestedField',
+                  fieldPath: 'nickname',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'unsupportedDirectRecordActionNestedSavePopup',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['nickname'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: `Unsupported direct record action nested save ${unique}`,
+                      description: 'Direct add should reject nested local popup aliases too.',
+                      local: 'unsupportedNestedDirectRecordActionAlias',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    expect(directAddRecordActionNestedLocalSaveRes.status).toBe(400);
+    expect(readErrorMessage(directAddRecordActionNestedLocalSaveRes)).toContain(
+      'flowSurfaces addRecordAction popup.blocks[0].fields[0].popup.saveAsTemplate.local is only supported in compose and applyBlueprint',
+    );
+  });
+
+  it('should reject invalid popup.saveAsTemplate inputs and unsupported save scenarios', async () => {
+    const unique = Date.now();
+    const page = await createPage(rootAgent, {
+      title: `Popup saveAsTemplate validation page ${unique}`,
+      tabTitle: 'Popup saveAsTemplate validation tab',
+    });
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const tableBlock = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const invalidShapeRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          blocks: [
+            {
+              key: 'invalidShapePopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['nickname'],
+            },
+          ],
+          saveAsTemplate: 'bad',
+        },
+      },
+    });
+    expect(invalidShapeRes.status).toBe(400);
+    expect(readErrorMessage(invalidShapeRes)).toContain('popup.saveAsTemplate must be an object');
+
+    const missingNameRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          blocks: [
+            {
+              key: 'missingNamePopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['nickname'],
+            },
+          ],
+          saveAsTemplate: {
+            description: 'Missing name should fail.',
+          },
+        },
+      },
+    });
+    expect(missingNameRes.status).toBe(400);
+    expect(readErrorMessage(missingNameRes)).toContain('popup.saveAsTemplate.name');
+
+    const missingDescriptionRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          blocks: [
+            {
+              key: 'missingDescriptionPopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['nickname'],
+            },
+          ],
+          saveAsTemplate: {
+            name: `Popup saveAsTemplate missing description ${unique}`,
+          },
+        },
+      },
+    });
+    expect(missingDescriptionRes.status).toBe(400);
+    expect(readErrorMessage(missingDescriptionRes)).toContain('popup.saveAsTemplate.description');
+
+    const templateConflictRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          template: {
+            uid: 'existing-popup-template',
+            mode: 'reference',
+          },
+          saveAsTemplate: {
+            name: `Popup saveAsTemplate template conflict ${unique}`,
+            description: 'Should reject template conflict.',
+          },
+        },
+      },
+    });
+    expect(templateConflictRes.status).toBe(400);
+    expect(readErrorMessage(templateConflictRes)).toContain(
+      'popup.saveAsTemplate cannot be combined with popup.template',
+    );
+
+    const tryTemplateConflictRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: detailsBlock.uid },
+        fieldPath: 'nickname',
+        popup: {
+          tryTemplate: true,
+          blocks: [
+            {
+              key: 'tryTemplateConflictPopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['nickname'],
+            },
+          ],
+          saveAsTemplate: {
+            name: `Popup saveAsTemplate tryTemplate conflict ${unique}`,
+            description: 'Should reject tryTemplate conflict.',
+          },
+        },
+      },
+    });
+    expect(tryTemplateConflictRes.status).toBe(400);
+    expect(readErrorMessage(tryTemplateConflictRes)).toContain(
+      'popup.saveAsTemplate cannot be combined with popup.tryTemplate',
+    );
+
+    const missingLocalPopupRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'view',
+        popup: {
+          saveAsTemplate: {
+            name: `Popup saveAsTemplate no blocks ${unique}`,
+            description: 'Default popup auto-completion must not be saved as a template.',
+          },
+        },
+      },
+    });
+    expect(missingLocalPopupRes.status).toBe(400);
+    expect(readErrorMessage(missingLocalPopupRes)).toContain(
+      'popup.saveAsTemplate requires explicit local popup.blocks',
+    );
+
+    const sourcePopupAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: tableBlock.uid },
+          type: 'popup',
+        },
+      }),
+    );
+    const externalOpenViewRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: { uid: tableBlock.uid },
+        type: 'popup',
+        settings: {
+          openView: {
+            uid: sourcePopupAction.uid,
+          },
+        },
+        popup: {
+          blocks: [
+            {
+              key: 'externalOpenViewPopup',
+              type: 'table',
+              resource: {
+                binding: 'currentCollection',
+              },
+              fields: ['nickname'],
+            },
+          ],
+          saveAsTemplate: {
+            name: `Popup saveAsTemplate external openView ${unique}`,
+            description: 'External popup targets cannot be auto-saved as templates here.',
+          },
+        },
+      },
+    });
+    expect(externalOpenViewRes.status).toBe(400);
+    expect(readErrorMessage(externalOpenViewRes)).toContain(
+      'popup.saveAsTemplate cannot be combined with external openView.uid',
+    );
+  });
+
+  it('should keep current-record popup templates scoped to current-record openers during popup.tryTemplate', async () => {
+    await rootAgent.resource('collections').create({
+      values: {
+        name: 'popup_try_template_record_context_targets',
+        title: 'Popup Try Template Record Context Targets',
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      popup_try_template_record_context_targets: ['name'],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Popup tryTemplate record context page',
+      tabTitle: 'Popup tryTemplate record context tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_record_context_targets',
+      },
+    });
+    const sourceRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'record-context-template-details',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const recordTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceRecordAction.uid },
+      name: 'Record-context popup tryTemplate template',
+      description: 'Popup template requiring a current record for popup.tryTemplate context coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const blockAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'popup',
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      }),
+    );
+    const blockActionSurface = await getSurface(rootAgent, { uid: blockAction.uid });
+    expect(blockActionSurface.tree.popup?.template).toBeUndefined();
+    expect(blockActionSurface.tree.subModels?.page).toBeUndefined();
+
+    const targetRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      }),
+    );
+    const targetRecordActionSurface = await getSurface(rootAgent, { uid: targetRecordAction.uid });
+    expect(targetRecordActionSurface.tree.popup.template).toMatchObject({
+      uid: recordTemplate.uid,
+      mode: 'reference',
+    });
+  });
+
+  it('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while preserving default popup completion', async () => {
+    await rootAgent.resource('collections').create({
+      values: {
+        name: 'popup_try_template_miss_targets',
+        title: 'Popup Try Template Miss Targets',
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      popup_try_template_miss_targets: ['name'],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Popup tryTemplate miss semantics page',
+      tabTitle: 'Popup tryTemplate miss semantics tab',
+    });
+
+    const departmentsDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'departments',
+      },
+    });
+    const departmentTemplateField = await addFieldData(rootAgent, {
+      target: { uid: departmentsDetails.uid },
+      fieldPath: 'title',
+      popup: {
+        blocks: [
+          {
+            key: 'department-template-details',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+    await saveTemplate(rootAgent, {
+      target: { uid: departmentTemplateField.fieldUid || departmentTemplateField.uid },
+      name: 'Department popup template miss guard',
+      description: 'Departments popup template used to verify popup.tryTemplate miss fallback semantics.',
+      saveMode: 'duplicate',
+    });
+
+    const employeeDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const relationFallbackField = await addFieldData(rootAgent, {
+      target: { uid: employeeDetails.uid },
+      fieldPath: 'department',
+      popup: {
+        tryTemplate: true,
+      },
+    });
+    expect(relationFallbackField.popupPageUid).toBeUndefined();
+    expect(relationFallbackField.popupTabUid).toBeUndefined();
+    expect(relationFallbackField.popupGridUid).toBeUndefined();
+    const relationFallbackSurface = await getSurface(rootAgent, {
+      uid: relationFallbackField.fieldUid || relationFallbackField.uid,
+    });
+    expect(relationFallbackSurface.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(relationFallbackSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(relationFallbackSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(relationFallbackSurface.tree.popup?.gridUid).toBeUndefined();
+
+    const relationTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: relationFallbackSurface.tree.popup?.template?.uid,
+        },
+      }),
+    );
+    expect(relationTemplate.collectionName).toBe('departments');
+    expect(relationTemplate.associationName).toBe('employees.department');
+
+    const scalarDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_miss_targets',
+      },
+    });
+    const unmatchedField = await addFieldData(rootAgent, {
+      target: { uid: scalarDetails.uid },
+      fieldPath: 'name',
+      popup: {
+        tryTemplate: true,
+      },
+    });
+    expect(unmatchedField.popupPageUid).toBeUndefined();
+    expect(unmatchedField.popupTabUid).toBeUndefined();
+    expect(unmatchedField.popupGridUid).toBeUndefined();
+    const unmatchedFieldSurface = await getSurface(rootAgent, {
+      uid: unmatchedField.fieldUid || unmatchedField.uid,
+    });
+    expect(unmatchedFieldSurface.tree.popup?.template).toBeUndefined();
+    expect(unmatchedFieldSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(unmatchedFieldSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(unmatchedFieldSurface.tree.popup?.gridUid).toBeUndefined();
+    expect(unmatchedFieldSurface.tree.subModels?.page).toBeUndefined();
+
+    const employeeTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_miss_targets',
+      },
+    });
+    const unmatchedPopupAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: employeeTable.uid },
+          type: 'popup',
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      }),
+    );
+    expect(unmatchedPopupAction.popupPageUid).toBeUndefined();
+    expect(unmatchedPopupAction.popupTabUid).toBeUndefined();
+    expect(unmatchedPopupAction.popupGridUid).toBeUndefined();
+    const unmatchedPopupActionSurface = await getSurface(rootAgent, {
+      uid: unmatchedPopupAction.uid,
+    });
+    expect(unmatchedPopupActionSurface.tree.popup?.template).toBeUndefined();
+    expect(unmatchedPopupActionSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(unmatchedPopupActionSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(unmatchedPopupActionSurface.tree.popup?.gridUid).toBeUndefined();
+    expect(unmatchedPopupActionSurface.tree.subModels?.page).toBeUndefined();
+
+    const defaultViewAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: employeeTable.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      }),
+    );
+    expect(defaultViewAction.popupPageUid).toBeTruthy();
+    expect(defaultViewAction.popupTabUid).toBeTruthy();
+    expect(defaultViewAction.popupGridUid).toBeTruthy();
+    const defaultViewActionSurface = await getSurface(rootAgent, {
+      uid: defaultViewAction.uid,
+    });
+    expect(defaultViewActionSurface.tree.popup?.template).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup?.pageUid).toBe(defaultViewAction.popupPageUid);
+    expect(defaultViewActionSurface.tree.popup?.tabUid).toBe(defaultViewAction.popupTabUid);
+    expect(defaultViewActionSurface.tree.popup?.gridUid).toBe(defaultViewAction.popupGridUid);
+
+    const configurablePopupAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: employeeTable.uid },
+          type: 'popup',
+        },
+      }),
+    );
+    const configureActionRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: configurablePopupAction.uid,
+        },
+        changes: {
+          openView: {
+            tryTemplate: true,
+          },
+        },
+      },
+    });
+    expect(configureActionRes.status).toBe(200);
+    let configurablePopupActionSurface = await getSurface(rootAgent, {
+      uid: configurablePopupAction.uid,
+    });
+    expect(getPopupOpenView(configurablePopupActionSurface.tree)?.popupTemplateUid).toBeUndefined();
+    expect(getPopupOpenView(configurablePopupActionSurface.tree)?.popupTemplateContext).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.template).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.gridUid).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.subModels?.page).toBeUndefined();
+
+    const applyMissRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: configurablePopupAction.uid,
+        },
+        spec: {
+          uid: configurablePopupAction.uid,
+          use: configurablePopupActionSurface.tree.use,
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      },
+    });
+    expect(applyMissRes.status).toBe(200);
+    configurablePopupActionSurface = await getSurface(rootAgent, {
+      uid: configurablePopupAction.uid,
+    });
+    expect(getPopupOpenView(configurablePopupActionSurface.tree)?.popupTemplateUid).toBeUndefined();
+    expect(getPopupOpenView(configurablePopupActionSurface.tree)?.popupTemplateContext).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.template).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.popup?.gridUid).toBeUndefined();
+    expect(configurablePopupActionSurface.tree.subModels?.page).toBeUndefined();
+  });
+
+  it('should support popup.tryTemplate through flowSurfaces apply on existing popup-capable child nodes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup tryTemplate apply page',
+      tabTitle: 'Popup tryTemplate apply tab',
+    });
+
+    const sourceTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const sourceAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: sourceTable.uid },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'apply-popup-template-table',
+                type: 'table',
+                resource: {
+                  binding: 'currentCollection',
+                  collectionName: 'employees',
+                },
+                fields: ['nickname', 'status'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const popupTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceAction.uid },
+      name: 'Apply popup tryTemplate template',
+      description: 'Reusable popup template used to verify flowSurfaces apply popup.tryTemplate coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const targetTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const targetAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: targetTable.uid },
+          type: 'popup',
+        },
+      }),
+    );
+    const targetActionBeforeApply = await getSurface(rootAgent, {
+      uid: targetAction.uid,
+    });
+
+    const applyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: targetTable.uid,
+        },
+        spec: {
+          subModels: {
+            actions: [
+              {
+                uid: targetAction.uid,
+                use: targetActionBeforeApply.tree.use,
+                popup: {
+                  tryTemplate: true,
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyRes.status).toBe(200);
+    const targetActionAfterApply = await getSurface(rootAgent, {
+      uid: targetAction.uid,
+    });
+    expect(targetActionAfterApply.tree.popup.template).toMatchObject({
+      uid: popupTemplate.uid,
+      mode: 'reference',
+    });
+  });
+
+  it('should preserve current-record opener context when flowSurfaces apply uses popup.tryTemplate on existing child nodes', async () => {
+    await rootAgent.resource('collections').create({
+      values: {
+        name: 'popup_try_template_apply_record_context_targets',
+        title: 'Popup Try Template Apply Record Context Targets',
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      popup_try_template_apply_record_context_targets: ['name'],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Popup tryTemplate apply record context page',
+      tabTitle: 'Popup tryTemplate apply record context tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'popup_try_template_apply_record_context_targets',
+      },
+    });
+    const sourceRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'apply-record-context-template-details',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const recordTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceRecordAction.uid },
+      name: 'Apply record-context popup tryTemplate template',
+      description: 'Popup template requiring a current record for flowSurfaces apply popup.tryTemplate coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const blockAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'popup',
+        },
+      }),
+    );
+    const recordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+        },
+      }),
+    );
+    const blockActionBeforeApply = await getSurface(rootAgent, {
+      uid: blockAction.uid,
+    });
+    const recordActionBeforeApply = await getSurface(rootAgent, {
+      uid: recordAction.uid,
+    });
+
+    const blockApplyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: blockAction.uid,
+        },
+        spec: {
+          uid: blockAction.uid,
+          use: blockActionBeforeApply.tree.use,
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      },
+    });
+    expect(blockApplyRes.status).toBe(200);
+
+    const recordApplyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: recordAction.uid,
+        },
+        spec: {
+          uid: recordAction.uid,
+          use: recordActionBeforeApply.tree.use,
+          popup: {
+            tryTemplate: true,
+          },
+        },
+      },
+    });
+    expect(recordApplyRes.status).toBe(200);
+
+    const blockActionSurface = await getSurface(rootAgent, {
+      uid: blockAction.uid,
+    });
+    expect(getPopupOpenView(blockActionSurface.tree)?.popupTemplateUid).toBeUndefined();
+    expect(getPopupOpenView(blockActionSurface.tree)?.popupTemplateContext).toBeUndefined();
+    expect(blockActionSurface.tree.popup?.template).toBeUndefined();
+    expect(blockActionSurface.tree.subModels?.page).toBeUndefined();
+
+    const recordActionSurface = await getSurface(rootAgent, {
+      uid: recordAction.uid,
+    });
+    expect(recordActionSurface.tree.popup.template).toMatchObject({
+      uid: recordTemplate.uid,
+      mode: 'reference',
+    });
   });
 
   it('should clear template usages through removePopupTab removeTab and destroyPage', async () => {

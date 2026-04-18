@@ -58,6 +58,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const hasBootstrappedRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -72,12 +73,15 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
       return;
     }
 
-    setLoading(true);
+    if (!hasBootstrappedRef.current) {
+      setLoading(true);
+    }
     setError(null);
 
     const run = async () => {
       try {
         await app.dataSourceManager.ensureLoaded();
+        hasBootstrappedRef.current = true;
         if (mounted) {
           setLoading(false);
         }
@@ -114,6 +118,8 @@ const CurrentUserProvider: FC = ({ children }) => {
   const [state, setState] = useState<CurrentUserState>({ loading: true });
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
+  const locationRef = useRef(location);
+  locationRef.current = location;
 
   useEffect(() => {
     let mounted = true;
@@ -138,7 +144,7 @@ const CurrentUserProvider: FC = ({ children }) => {
 
         const user = res?.data?.data;
         if (user?.id == null) {
-          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, location), { replace: true });
+          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
           return;
         }
 
@@ -163,7 +169,7 @@ const CurrentUserProvider: FC = ({ children }) => {
       } catch (error: any) {
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
-          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, location), { replace: true });
+          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
           return;
         }
         if (mounted) {
@@ -178,7 +184,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [app, location]);
+  }, [app]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
