@@ -699,6 +699,8 @@ export const AdminLayoutMenuModelRenderer: FC<{
   renderType: AdminLayoutMenuRenderType;
   options?: AdminLayoutMenuRenderOptions;
 }> = ({ model, item, dom, renderType, options }) => {
+  const token = model.context.themeToken;
+
   useEffect(() => {
     model.setProps({
       item,
@@ -717,8 +719,8 @@ export const AdminLayoutMenuModelRenderer: FC<{
             showBackground: false,
             showBorder: false,
             style: {
-              left: -16,
-              right: -16,
+              left: -token.padding,
+              right: -token.padding,
             },
           }}
           extraToolbarItems={[
