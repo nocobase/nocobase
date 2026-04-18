@@ -2073,6 +2073,31 @@ describe('flowSurfaces resource', () => {
         },
         changes: {
           openView: {
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureFieldRes.status).toBe(200);
+
+    const configuredFieldReadback = await getSurface(rootAgent, {
+      uid: field.fieldUid,
+    });
+    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+      associationName: 'employees.department',
+    });
+
+    const configureFieldExplicitRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
             dataSourceKey: 'main',
             collectionName: 'departments',
             associationName: 'employees.department',
@@ -2081,17 +2106,17 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(configureFieldRes.status).toBe(200);
-    const configuredField = getData(configureFieldRes);
+    expect(configureFieldExplicitRes.status).toBe(200);
+    const configuredField = getData(configureFieldExplicitRes);
     expect(configuredField.popupPageUid).toBeTruthy();
     expect(configuredField.popupTabUid).toBeTruthy();
     expect(configuredField.popupGridUid).toBeTruthy();
 
-    const configuredFieldReadback = await getSurface(rootAgent, {
+    const explicitlyConfiguredFieldReadback = await getSurface(rootAgent, {
       uid: field.fieldUid,
     });
-    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
-    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+    expect(explicitlyConfiguredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(explicitlyConfiguredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
       mode: 'dialog',
       dataSourceKey: 'main',
       collectionName: 'departments',

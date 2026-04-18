@@ -7600,28 +7600,42 @@ export class FlowSurfacesService {
   }
 
   private resolveFieldOpenViewContext(fieldNode: any, wrapperNode: any) {
-    const bindingContext = this.resolveFieldBindingContext(fieldNode, wrapperNode);
+    const fieldInit = fieldNode?.stepParams?.fieldSettings?.init || wrapperNode?.stepParams?.fieldSettings?.init || {};
+    const dataSourceKey = String(fieldInit.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(fieldInit.collectionName || '').trim() || undefined;
+    const fieldPath = String(fieldInit.fieldPath || '').trim();
+    const associationPathName = String(fieldInit.associationPathName || '').trim() || undefined;
 
-    if (!bindingContext.collectionName) {
+    if (!collectionName) {
       return {};
     }
-    if (!bindingContext.fieldPath) {
+    if (!fieldPath) {
       return {
-        dataSourceKey: bindingContext.dataSourceKey,
-        collectionName: bindingContext.collectionName,
-      };
-    }
-    if (!bindingContext.sourceCollection) {
-      return {
-        dataSourceKey: bindingContext.dataSourceKey,
-        collectionName: bindingContext.collectionName,
+        dataSourceKey,
+        collectionName,
       };
     }
 
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    if (!collection) {
+      return {
+        dataSourceKey,
+        collectionName,
+      };
+    }
+
+    const associationContext = this.resolveFieldAssociationContextFromBinding({
+      collection,
+      fieldPath,
+      associationPathName,
+      dataSourceKey,
+      collectionName,
+    });
+
     return buildDefinedPayload({
-      dataSourceKey: bindingContext.dataSourceKey,
-      collectionName: bindingContext.targetCollectionName || bindingContext.collectionName,
-      associationName: bindingContext.associationName,
+      dataSourceKey: associationContext.dataSourceKey,
+      collectionName: associationContext.collectionName,
+      associationName: associationContext.associationName,
     });
   }
 
