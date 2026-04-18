@@ -9,7 +9,6 @@
 
 import fsp from 'node:fs/promises';
 import { Command, Flags } from '@oclif/core';
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { run } from '../lib/run-npm.ts';
 
@@ -23,52 +22,6 @@ type DownloadFlags = Record<string, unknown> & {
   'git-url'?: string;
   'docker-registry'?: string;
 };
-
-async function parseEnvFile(filePath: string): Promise<Record<string, string>> {
-  const absolute = path.resolve(process.cwd(), filePath);
-  const content = await readFile(absolute, 'utf-8');
-  const out: Record<string, string> = {};
-  for (const line of content.split(/\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-    const eq = trimmed.indexOf('=');
-    if (eq === -1) {
-      continue;
-    }
-    const key = trimmed.slice(0, eq).trim();
-    let value = trimmed.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    out[key] = value;
-  }
-  return out;
-}
-
-function mergeEnvForScaffold(flags: DownloadFlags, fromFile: Record<string, string>): Record<string, string> {
-  const env: Record<string, string> = { ...fromFile };
-  if (flags['db-host'] !== undefined) {
-    env.DB_HOST = flags['db-host'];
-  }
-  if (flags['db-port'] !== undefined) {
-    env.DB_PORT = flags['db-port'];
-  }
-  if (flags['db-database'] !== undefined) {
-    env.DB_DATABASE = flags['db-database'];
-  }
-  if (flags['db-user'] !== undefined) {
-    env.DB_USER = flags['db-user'];
-  }
-  if (flags['db-password'] !== undefined) {
-    env.DB_PASSWORD = flags['db-password'];
-  }
-  return env;
-}
 
 export default class Download extends Command {
   static override description =
@@ -124,7 +77,7 @@ export default class Download extends Command {
     await run('docker', ['pull', `${image}:${tag}`], process.cwd());
   }
 
-  async downloadFromNpm(flags: DownloadFlags, env: Record<string, string>): Promise<void> {
+  async downloadFromNpm(flags: DownloadFlags): Promise<void> {
     const appRoot = flags['app-root-path'] ?? 'my-nocobase-app';
     const versionSpec = flags.version || 'latest';
     const npxArgs = ['-y', `create-nocobase-app@${versionSpec}`, appRoot];
