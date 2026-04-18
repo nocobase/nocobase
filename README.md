@@ -89,6 +89,31 @@ NocoBase supports three installation methods:
 - <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
 
   Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
+  Quick start:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+   Then access:
+   http://localhost:13000
+
+   📘 Full guide:
+    https://docs.nocobase.com/v1/welcome/getting-started/installation/docker-compose
+
+    Notes:
+    - Default port is `13000`
+    - Make sure Docker is running before starting
+
+    Troubleshooting:
+    - If containers fail to start:
+      ```bash
+      docker-compose logs
+      ```
+    - To stop:
+      ```bash
+      docker-compose down
+      ```	
 
 - <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
 
