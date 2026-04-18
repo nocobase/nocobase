@@ -21,15 +21,7 @@ import os from 'os';
 import path from 'path';
 import semver from 'semver';
 import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
-import {
-  APP_NAME,
-  DEFAULT_PLUGIN_PATH,
-  DEFAULT_PLUGIN_STORAGE_PATH,
-  EXTERNAL,
-  importRegex,
-  pluginPrefix,
-  requireRegex,
-} from './constants';
+import { APP_NAME, DEFAULT_PLUGIN_PATH, EXTERNAL, importRegex, pluginPrefix, requireRegex } from './constants';
 import deps from './deps';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
@@ -48,9 +40,13 @@ export async function getTempDir() {
   return path.join(temporaryDirectory, APP_NAME);
 }
 
+/** Storage plugins directory: always prefer `PLUGIN_STORAGE_PATH` (absolute or relative to cwd). */
 export function getPluginStoragePath() {
-  const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH || DEFAULT_PLUGIN_STORAGE_PATH;
-  return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
+  if (process.env.PLUGIN_STORAGE_PATH) {
+    const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH;
+    return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
+  }
+  return path.join(process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage'), 'plugins');
 }
 
 export function getLocalPluginPackagesPathArr(): string[] {

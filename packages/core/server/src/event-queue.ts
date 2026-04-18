@@ -87,7 +87,8 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   }
 
   private get storagePath() {
-    return path.resolve(process.cwd(), 'storage', 'apps', this.options.appName, 'event-queue.json');
+    const root = process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage');
+    return path.join(root, 'apps', this.options.appName, 'event-queue.json');
   }
 
   listen = (channel: string) => {
