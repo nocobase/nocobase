@@ -1767,6 +1767,10 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(templatedPopup.type).toBe('popup');
+    expect(templatedPopup.name).toBe('Employees -> department edit popup (Auto generated)');
+    expect(templatedPopup.description).toBe(
+      "Automatically generated edit popup template for relation field 'department' in collection 'Employees', targeting 'Departments'.",
+    );
     expect(templatedPopup.collectionName).toBe('departments');
     expect(templatedPopup.associationName).toBe('employees.department');
 

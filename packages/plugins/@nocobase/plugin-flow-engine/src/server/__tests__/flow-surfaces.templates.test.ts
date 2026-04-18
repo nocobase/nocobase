@@ -898,6 +898,8 @@ describe('flowSurfaces templates', () => {
       saveMode: 'convert',
     });
     expect(template.type).toBe('popup');
+    expect(template.name).toBe('Employee field popup template');
+    expect(template.description).toBe('Reusable popup template for employee display fields.');
     const sourceFieldSurface = await getSurface(rootAgent, { uid: sourceField.fieldUid || sourceField.uid });
     expect(sourceFieldSurface.tree.popup.template).toMatchObject({
       uid: template.uid,
