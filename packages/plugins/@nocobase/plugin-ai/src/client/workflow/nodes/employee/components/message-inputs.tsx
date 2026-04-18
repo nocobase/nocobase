@@ -34,6 +34,9 @@ export const MessageInputs: React.FC<{ aiEmployeesMap: any }> = ({ aiEmployeesMa
                   ),
                 },
                 'x-component': WorkflowVariableRawTextArea,
+                'x-component-props': {
+                  rows: '10',
+                },
               },
               user: {
                 title: tExpr('Default user message', { ns: namespace }),
@@ -43,6 +46,9 @@ export const MessageInputs: React.FC<{ aiEmployeesMap: any }> = ({ aiEmployeesMa
                   tooltip: tExpr('Enter the specific task description', { ns: namespace }),
                 },
                 'x-component': WorkflowVariableRawTextArea,
+                'x-component-props': {
+                  rows: '10',
+                },
               },
             },
           },
