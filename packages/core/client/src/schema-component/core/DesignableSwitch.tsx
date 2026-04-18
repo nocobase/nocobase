@@ -16,6 +16,7 @@ import { useDesignable } from '..';
 import { useToken } from '../../style';
 import { useMobileLayout } from '../../route-switch/antd/admin-layout';
 import { useFlowEngine } from '@nocobase/flow-engine';
+import { writeFlowSettingsPreference } from '../../route-switch/antd/admin-layout/flowSettingsPreference';
 
 const designableStyle = {
   backgroundColor: 'var(--colorSettings) !important',
@@ -54,8 +55,10 @@ export const DesignableSwitch: FC<{ style?: React.CSSProperties }> = (props) => 
           setDesignable(newDesignable);
           // 移动端中不允许配置 UI；非设计态也无需启用 flow settings
           if (isMobileLayout || !newDesignable) {
+            writeFlowSettingsPreference(false);
             await flowEngine.flowSettings.disable();
           } else {
+            writeFlowSettingsPreference(true);
             await flowEngine.flowSettings.enable();
           }
         }}
