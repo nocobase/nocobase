@@ -8,10 +8,9 @@
  */
 
 const { resolve, posix, join } = require('path');
-const { generateStoragePath } = require('../util');
+const { generateStoragePath, resolvePublicPath, resolveV2PublicPath } = require('../util');
 const { Command } = require('commander');
 const { readFileSync, writeFileSync } = require('fs');
-const { resolvePublicPath, resolveV2PublicPath } = require('../util');
 
 /**
  *
