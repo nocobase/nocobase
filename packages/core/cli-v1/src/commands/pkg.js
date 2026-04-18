@@ -13,7 +13,7 @@ const fs = require('fs-extra');
 const zlib = require('zlib');
 const tar = require('tar');
 const path = require('path');
-const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+const { createStoragePluginsSymlink, resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 const { getAccessKeyPair, showLicenseInfo, LicenseKeyError } = require('../license');
 const { logger } = require('../logger');
 
@@ -98,7 +98,7 @@ class Package {
 
   async isDepPackage() {
     const pkg1 = path.resolve(process.cwd(), 'node_modules', this.packageName, 'package.json');
-    const pkg2 = path.resolve(process.cwd(), process.env.PLUGIN_STORAGE_PATH, this.packageName, 'package.json');
+    const pkg2 = path.resolve(resolvePluginStoragePath(), this.packageName, 'package.json');
     if ((await fs.exists(pkg1)) && (await fs.exists(pkg2))) {
       const readPath1 = fs.realpathSync(pkg1);
       const readPath2 = fs.realpathSync(pkg2);
@@ -110,7 +110,7 @@ class Package {
   }
 
   async isDownloaded(version) {
-    const packageFile = path.resolve(process.env.PLUGIN_STORAGE_PATH, this.packageName, 'package.json');
+    const packageFile = path.resolve(resolvePluginStoragePath(), this.packageName, 'package.json');
     if (await fs.exists(packageFile)) {
       const json = await fs.readJson(packageFile);
       if (json.version === version) {
@@ -242,7 +242,7 @@ class PackageManager {
   }
 
   async removePackage(packageName) {
-    const dir = path.resolve(process.env.PLUGIN_STORAGE_PATH, packageName);
+    const dir = path.resolve(resolvePluginStoragePath(), packageName);
     const r = await fs.exists(dir);
     if (r) {
       logger.info(`Removed: ${packageName}`);

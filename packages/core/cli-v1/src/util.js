@@ -18,6 +18,7 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
+const { resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -422,15 +423,6 @@ exports.resolveStorageRoot = resolveStorageRoot;
 exports.storagePathJoin = storagePathJoin;
 /** @deprecated Use resolveStorageRoot — kept for backward compatibility */
 exports.generateStoragePath = resolveStorageRoot;
-
-/** Align with server `getPluginStoragePath()`: `PLUGIN_STORAGE_PATH` first, else `<STORAGE_PATH>/plugins`. */
-function resolvePluginStoragePath() {
-  if (process.env.PLUGIN_STORAGE_PATH) {
-    const p = process.env.PLUGIN_STORAGE_PATH;
-    return isAbsolute(p) ? p : resolve(process.cwd(), p);
-  }
-  return storagePathJoin('plugins');
-}
 
 function generateGatewayPath() {
   if (process.env.SOCKET_PATH) {

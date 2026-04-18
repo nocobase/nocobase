@@ -8,7 +8,6 @@
  */
 
 export const APP_NAME = 'nocobase';
-/** Relative default under cwd when STORAGE_PATH / PLUGIN_STORAGE_PATH are unset; prefer `getPluginStoragePath()`. */
 export const DEFAULT_PLUGIN_STORAGE_PATH = 'storage/plugins';
 export const DEFAULT_PLUGIN_PATH = 'packages/plugins/';
 export const pluginPrefix = (

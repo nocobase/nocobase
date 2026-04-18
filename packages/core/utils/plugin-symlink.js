@@ -2,7 +2,6 @@ const path = require('path');
 const { resolve } = path;
 const fs = require('fs-extra');
 
-/** Align with server `getPluginStoragePath()`: `PLUGIN_STORAGE_PATH` first, else `<STORAGE_PATH>/plugins`. */
 function resolvePluginStoragePath() {
   if (process.env.PLUGIN_STORAGE_PATH) {
     const p = process.env.PLUGIN_STORAGE_PATH;
@@ -188,6 +187,7 @@ async function createDevPluginsSymlink() {
   await Promise.all(pluginNames.map((pluginName) => createDevPluginSymLink(pluginName)));
 }
 
+exports.resolvePluginStoragePath = resolvePluginStoragePath;
 exports.createStoragePluginSymLink = createStoragePluginSymLink;
 exports.createStoragePluginsSymlink = createStoragePluginsSymlink;
 exports.createDevPluginSymLink = createDevPluginSymLink;

@@ -31,3 +31,14 @@ export function resolveStorageRoot(): string {
 export function storagePathJoin(...segments: string[]): string {
   return path.join(resolveStorageRoot(), ...segments);
 }
+
+/**
+ * Resolve plugin storage path: `PLUGIN_STORAGE_PATH` first, else `<STORAGE_PATH>/plugins`.
+ */
+export function resolvePluginStoragePath() {
+  if (process.env.PLUGIN_STORAGE_PATH) {
+    const p = process.env.PLUGIN_STORAGE_PATH;
+    return path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+  }
+  return storagePathJoin('plugins');
+}

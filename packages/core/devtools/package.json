@@ -8,6 +8,7 @@
     "@nocobase/build": "2.1.0-alpha.18",
     "@nocobase/client": "2.1.0-alpha.18",
     "@nocobase/test": "2.1.0-alpha.18",
+    "@nocobase/utils": "2.1.0-alpha.18",
     "@rsbuild/core": "1.7.3",
     "@rsbuild/plugin-less": "^1.6.2",
     "@rsbuild/plugin-node-polyfill": "1.4.4",

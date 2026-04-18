@@ -9,7 +9,7 @@
 
 /* istanbul ignore next -- @preserve */
 
-import { importModule, isURL, requireResolve, storagePathJoin } from '@nocobase/utils';
+import { importModule, isURL, requireResolve, resolvePluginStoragePath } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -40,15 +40,6 @@ export async function getTempDir() {
   return path.join(temporaryDirectory, APP_NAME);
 }
 
-/** Storage plugins directory: always prefer `PLUGIN_STORAGE_PATH` (absolute or relative to cwd). */
-export function getPluginStoragePath() {
-  if (process.env.PLUGIN_STORAGE_PATH) {
-    const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH;
-    return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
-  }
-  return storagePathJoin('plugins');
-}
-
 export function getLocalPluginPackagesPathArr(): string[] {
   const pluginPackagesPathArr = process.env.PLUGIN_PATH || DEFAULT_PLUGIN_PATH;
   return pluginPackagesPathArr.split(',').map((pluginPackagesPath) => {
@@ -58,7 +49,7 @@ export function getLocalPluginPackagesPathArr(): string[] {
 }
 
 export function getStoragePluginDir(packageName: string) {
-  const pluginStoragePath = getPluginStoragePath();
+  const pluginStoragePath = resolvePluginStoragePath();
   return path.join(pluginStoragePath, packageName);
 }
 

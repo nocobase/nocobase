@@ -1,6 +1,7 @@
 const { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } = require('node:fs');
 const { dirname, join, relative, resolve, sep } = require('node:path');
 const glob = require('fast-glob');
+const { resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 
 function getTsconfigPaths() {
   const content = readFileSync(resolve(process.cwd(), 'tsconfig.paths.json'), 'utf-8');
@@ -131,7 +132,7 @@ export default function devDynamicImport(packageName: string): Promise<any> {
     });
 
     const storagePluginFolders = glob.sync(['*/package.json', '*/*/package.json'], {
-      cwd: process.env.PLUGIN_STORAGE_PATH,
+      cwd: resolvePluginStoragePath(),
       onlyFiles: true,
       absolute: true,
     });
