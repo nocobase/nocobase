@@ -442,6 +442,18 @@ const POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES = new Set([
 ]);
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
 const CONFIRMABLE_SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel']);
+const APPROVAL_CONFIRM_ACTION_USES = new Set([
+  'ApplyFormSubmitModel',
+  'ApplyFormSaveDraftModel',
+  'ApplyFormWithdrawModel',
+]);
+const APPROVAL_ASSIGN_ACTION_USES = new Set(['ApplyFormSubmitModel', 'ApplyFormSaveDraftModel']);
+const APPROVAL_COMMENT_ACTION_USES = new Set([
+  'ProcessFormApproveModel',
+  'ProcessFormRejectModel',
+  'ProcessFormReturnModel',
+]);
+const APPROVAL_REASSIGN_ACTION_USES = new Set(['ProcessFormDelegateModel', 'ProcessFormAddAssigneeModel']);
 const ITEM_CONTEXT_OWNER_USES = new Set([
   'SubFormFieldModel',
   'SubFormListFieldModel',
@@ -11589,10 +11601,16 @@ export class FlowSurfacesService {
       );
     }
     if (hasOwnDefined(changes, 'assigneesScope')) {
-      if (!['ProcessFormDelegateModel', 'ProcessFormAddAssigneeModel'].includes(use)) {
+      if (!APPROVAL_REASSIGN_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support assigneesScope`);
       }
       _.set(stepParams, ['clickSettings', 'saveResource', 'assigneesScope'], _.cloneDeep(changes.assigneesScope || {}));
+    }
+    if (hasOwnDefined(changes, 'commentFormUid')) {
+      if (!APPROVAL_COMMENT_ACTION_USES.has(use)) {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support commentFormUid`);
+      }
+      _.set(stepParams, ['clickSettings', 'saveResource', 'commentModelUid'], _.cloneDeep(changes.commentFormUid));
     }
     if (!_.isUndefined(changes.openView)) {
       if (use === 'UploadActionModel') {
@@ -11612,6 +11630,11 @@ export class FlowSurfacesService {
         stepParams.deleteSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
+      } else if (APPROVAL_CONFIRM_ACTION_USES.has(use)) {
+        stepParams.clickSettings = {
+          ...(stepParams.clickSettings || {}),
+          confirm: normalizeSimpleConfirm(changes.confirm),
+        };
       } else if (CONFIRMABLE_SUBMIT_ACTION_USES.has(use)) {
         stepParams.submitSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
@@ -11625,20 +11648,28 @@ export class FlowSurfacesService {
       }
     }
     if (hasOwnDefined(changes, 'assignValues')) {
-      if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
+      if (APPROVAL_ASSIGN_ACTION_USES.has(use)) {
+        stepParams.clickSettings = {
+          ...(stepParams.clickSettings || {}),
+          assignFieldValues: {
+            assignedValues: changes.assignValues,
+          },
+        };
+      } else if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support assignValues`);
+      } else {
+        stepParams.assignSettings = {
+          ...(stepParams.assignSettings || {}),
+          assignFieldValues: {
+            assignedValues: changes.assignValues,
+          },
+        };
+        stepParams.apply = {
+          apply: {
+            assignedValues: changes.assignValues,
+          },
+        };
       }
-      stepParams.assignSettings = {
-        ...(stepParams.assignSettings || {}),
-        assignFieldValues: {
-          assignedValues: changes.assignValues,
-        },
-      };
-      stepParams.apply = {
-        apply: {
-          assignedValues: changes.assignValues,
-        },
-      };
     }
     if (hasOwnDefined(changes, 'editMode')) {
       if (use !== 'BulkEditActionModel') {

@@ -55,6 +55,7 @@
   - 同时允许当前前端审批 UI 已公开支持、且普通 block catalog 也能落地的固定 generic blocks:
     - `markdown`
     - `jsBlock`
+  - `applyApprovalBlueprint` 的 page-like `blocks[]` 允许沿用普通 `compose/addBlock` 的 `template: { uid, mode }` 语义
   - block 合法性以下游 `catalog` / `addBlock` / `compose` 判定为准，而不是再维护一份 approval blueprint 静态白名单
 - task-card surface 仍然不公开 block authoring，继续保持 `fields + layout`
 
@@ -68,6 +69,12 @@
 - `approvalReturn`
 - `approvalDelegate`
 - `approvalAddAssignee`
+- 高层 `configure` 语义:
+  - `approvalSubmit` / `approvalSaveDraft`: `confirm`、`assignValues`
+  - `approvalWithdraw`: `confirm`
+  - `approvalApprove` / `approvalReject`: `commentFormUid`
+  - `approvalReturn`: `commentFormUid`、`approvalReturn`
+  - `approvalDelegate` / `approvalAddAssignee`: `assigneesScope`
 
 ### Approval field wrappers
 

@@ -509,7 +509,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply an approval blueprint to initiator, approver, or task-card surfaces',
     description: valuesCompatibilityNote(
-      "Builds workflow-approval configuration surfaces through the existing flowSurfaces orchestration layer instead of a separate approval resource. This is the preferred whole-surface bootstrap / replace entry for approval initiator, approver, and task-card UIs. Unlike route-backed `applyBlueprint`, this action targets approval-bound FlowModel roots stored on approval workflow trigger config (`workflow.config.approvalUid` / `workflow.config.taskCardUid`) or approval node config (`node.config.approvalUid` / `node.config.taskCardUid`). The backend creates or reuses the correct approval root automatically, rewrites the binding uid, applies a `replace` blueprint to that root, and reconciles approval runtime config derived from approval actions such as withdraw / approve / reject / return / delegate / add-assignee. `surface='initiator'` requires `workflowId` and writes page-like `blocks + layout` into `TriggerChildPageModel -> TriggerChildPageTabModel -> TriggerBlockGridModel`. `surface='approver'` requires `nodeId` and writes page-like `blocks + layout` into `ApprovalChildPageModel -> ApprovalChildPageTabModel -> ApprovalBlockGridModel`. `surface='taskCard'` requires exactly one of `workflowId` or `nodeId` and writes `fields + layout` into `ApplyTaskCardDetailsModel` or `ApprovalTaskCardDetailsModel`. This v1 action does not cover legacy schema-config wiring; it focuses on approval FlowModel construction, binding persistence, and approval runtime-config synchronization. When `layout` is omitted, the backend generates a simple top-to-bottom layout for the resulting blocks or fields.",
+      "Builds workflow-approval configuration surfaces through the existing flowSurfaces orchestration layer instead of a separate approval resource. This is the preferred whole-surface bootstrap / replace entry for approval initiator, approver, and task-card UIs. Unlike route-backed `applyBlueprint`, this action targets approval-bound FlowModel roots stored on approval workflow trigger config (`workflow.config.approvalUid` / `workflow.config.taskCardUid`) or approval node config (`node.config.approvalUid` / `node.config.taskCardUid`). The backend creates or reuses the correct approval root automatically, rewrites the binding uid, applies a `replace` blueprint to that root, and reconciles approval runtime config derived from approval actions such as withdraw / approve / reject / return / delegate / add-assignee. `surface='initiator'` requires `workflowId` and writes page-like `blocks + layout` into `TriggerChildPageModel -> TriggerChildPageTabModel -> TriggerBlockGridModel`. `surface='approver'` requires `nodeId` and writes page-like `blocks + layout` into `ApprovalChildPageModel -> ApprovalChildPageTabModel -> ApprovalBlockGridModel`. Page-like `blocks[]` may either declare a concrete `type` or reuse a saved block template through `template: { uid, mode }`. `surface='taskCard'` requires exactly one of `workflowId` or `nodeId` and writes `fields + layout` into `ApplyTaskCardDetailsModel` or `ApprovalTaskCardDetailsModel`. This v1 action does not cover legacy schema-config wiring; it focuses on approval FlowModel construction, binding persistence, and approval runtime-config synchronization. When `layout` is omitted, the backend generates a simple top-to-bottom layout for the resulting blocks or fields.",
     ),
     requestBody: {
       required: true,
@@ -586,7 +586,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `approvalReturn` and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `confirm`, `assignValues`, `commentFormUid`, `approvalReturn`, and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
     ),
     requestBody: {
       required: true,
@@ -2445,7 +2445,8 @@ const schemas = {
   },
   FlowSurfaceApprovalBlueprintBlockSpec: {
     type: 'object',
-    required: ['key', 'type'],
+    required: ['key'],
+    anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
       key: {
         type: 'string',
@@ -2454,6 +2455,7 @@ const schemas = {
         type: 'string',
         enum: APPROVAL_BLUEPRINT_BLOCK_TYPE_ENUM,
       },
+      template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       settings: ANY_OBJECT_SCHEMA,
       fields: {
@@ -3699,7 +3701,7 @@ const schemas = {
     type: 'object',
     required: ['surface'],
     description:
-      "Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to '1'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions.",
+      "Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to '1'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; each block may declare `type` directly or reuse `template: { uid, mode }`. `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions.",
     properties: {
       version: {
         type: 'string',

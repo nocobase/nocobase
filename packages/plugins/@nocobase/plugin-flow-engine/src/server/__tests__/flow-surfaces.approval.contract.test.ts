@@ -587,6 +587,338 @@ describe('flowSurfaces approval API contract', () => {
     });
   });
 
+  it('should configure approval action semantic keys through approval-specific clickSettings mappings', async () => {
+    const triggerSurface = await createApprovalSurface(flowRepo, {
+      pageUse: 'TriggerChildPageModel',
+      tabUse: 'TriggerChildPageTabModel',
+      gridUse: 'TriggerBlockGridModel',
+    });
+    const approvalSurface = await createApprovalSurface(flowRepo, {
+      pageUse: 'ApprovalChildPageModel',
+      tabUse: 'ApprovalChildPageTabModel',
+      gridUse: 'ApprovalBlockGridModel',
+    });
+
+    const applyForm = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: triggerSurface.gridUid,
+          },
+          type: 'approvalInitiator',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const processForm = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: approvalSurface.gridUid,
+          },
+          type: 'approvalApprover',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+
+    const applyFormSurface = await getSurface(rootAgent, { uid: applyForm.uid });
+    const submitAction = applyFormSurface.tree.subModels.actions.find(
+      (action: any) => action.use === 'ApplyFormSubmitModel',
+    );
+    expect(submitAction).toBeTruthy();
+    const submitActionUid = submitAction.uid;
+
+    const saveDraftAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: applyForm.uid,
+          },
+          type: 'approvalSaveDraft',
+        },
+      }),
+    );
+    const withdrawAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: applyForm.uid,
+          },
+          type: 'approvalWithdraw',
+        },
+      }),
+    );
+    const approveAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: processForm.uid,
+          },
+          type: 'approvalApprove',
+        },
+      }),
+    );
+    const rejectAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: processForm.uid,
+          },
+          type: 'approvalReject',
+        },
+      }),
+    );
+    const returnAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: processForm.uid,
+          },
+          type: 'approvalReturn',
+        },
+      }),
+    );
+    const delegateAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: processForm.uid,
+          },
+          type: 'approvalDelegate',
+        },
+      }),
+    );
+    const addAssigneeAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: processForm.uid,
+          },
+          type: 'approvalAddAssignee',
+        },
+      }),
+    );
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: submitActionUid,
+            },
+            changes: {
+              confirm: {
+                enable: true,
+                title: 'Submit approval',
+                content: 'Send for approval now?',
+              },
+              assignValues: {
+                status: 'submitted',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: saveDraftAction.uid,
+            },
+            changes: {
+              confirm: {
+                enable: true,
+                title: 'Save draft',
+                content: 'Persist draft changes?',
+              },
+              assignValues: {
+                status: 'draft',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: withdrawAction.uid,
+            },
+            changes: {
+              confirm: {
+                enable: true,
+                title: 'Withdraw approval',
+                content: 'Withdraw this approval?',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: approveAction.uid,
+            },
+            changes: {
+              commentFormUid: 'approve-comment-form',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: rejectAction.uid,
+            },
+            changes: {
+              commentFormUid: 'reject-comment-form',
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: returnAction.uid,
+            },
+            changes: {
+              commentFormUid: 'return-comment-form',
+              approvalReturn: {
+                type: 'count',
+                count: 2,
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: delegateAction.uid,
+            },
+            changes: {
+              assigneesScope: {
+                assignees: [1],
+                extraFieldKey: 'departmentId',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: addAssigneeAction.uid,
+            },
+            changes: {
+              assigneesScope: {
+                assignees: [2],
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const submitActionReadback = await getSurface(rootAgent, { uid: submitActionUid });
+    const saveDraftActionReadback = await getSurface(rootAgent, { uid: saveDraftAction.uid });
+    const withdrawActionReadback = await getSurface(rootAgent, { uid: withdrawAction.uid });
+    const approveActionReadback = await getSurface(rootAgent, { uid: approveAction.uid });
+    const rejectActionReadback = await getSurface(rootAgent, { uid: rejectAction.uid });
+    const returnActionReadback = await getSurface(rootAgent, { uid: returnAction.uid });
+    const delegateActionReadback = await getSurface(rootAgent, { uid: delegateAction.uid });
+    const addAssigneeActionReadback = await getSurface(rootAgent, { uid: addAssigneeAction.uid });
+
+    expect(submitActionReadback.tree.stepParams?.clickSettings).toMatchObject({
+      confirm: {
+        enable: true,
+        title: 'Submit approval',
+        content: 'Send for approval now?',
+      },
+      assignFieldValues: {
+        assignedValues: {
+          status: 'submitted',
+        },
+      },
+    });
+    expect(saveDraftActionReadback.tree.stepParams?.clickSettings).toMatchObject({
+      confirm: {
+        enable: true,
+        title: 'Save draft',
+        content: 'Persist draft changes?',
+      },
+      assignFieldValues: {
+        assignedValues: {
+          status: 'draft',
+        },
+      },
+    });
+    expect(withdrawActionReadback.tree.stepParams?.clickSettings).toMatchObject({
+      confirm: {
+        enable: true,
+        title: 'Withdraw approval',
+        content: 'Withdraw this approval?',
+      },
+    });
+    expect(approveActionReadback.tree.stepParams?.clickSettings?.saveResource).toMatchObject({
+      commentModelUid: 'approve-comment-form',
+    });
+    expect(rejectActionReadback.tree.stepParams?.clickSettings?.saveResource).toMatchObject({
+      commentModelUid: 'reject-comment-form',
+    });
+    expect(returnActionReadback.tree.stepParams?.clickSettings?.saveResource).toMatchObject({
+      commentModelUid: 'return-comment-form',
+      approvalReturnNodeSettings: {
+        type: 'count',
+        count: 2,
+      },
+    });
+    expect(delegateActionReadback.tree.stepParams?.clickSettings?.saveResource).toMatchObject({
+      assigneesScope: {
+        assignees: [1],
+        extraFieldKey: 'departmentId',
+      },
+    });
+    expect(addAssigneeActionReadback.tree.stepParams?.clickSettings?.saveResource).toMatchObject({
+      assigneesScope: {
+        assignees: [2],
+      },
+    });
+  });
+
   it('should switch approval relation field components and expose dynamic fieldComponent enums through catalog', async () => {
     const triggerSurface = await createApprovalSurface(flowRepo, {
       pageUse: 'TriggerChildPageModel',
