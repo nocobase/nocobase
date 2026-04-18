@@ -14,18 +14,29 @@ const Path = require('node:path');
 let timer = null;
 
 /**
- * Sever the prototype chain of a host-realm function so that
- * Object.getPrototypeOf(fn).constructor cannot reach the host Function constructor.
+ * Sever the prototype chain of a host-realm value (function or object) so that
+ * Object.getPrototypeOf(v).constructor cannot reach the host Function constructor.
+ * Works on functions, plain objects, and Error instances alike; setPrototypeOf(null)
+ * is a no-op when the prototype is already null.
  */
-function hardenFunction(fn) {
-  Object.setPrototypeOf(fn, null);
-  Object.defineProperty(fn, 'constructor', {
+function harden(v) {
+  Object.setPrototypeOf(v, null);
+  Object.defineProperty(v, 'constructor', {
     value: null,
     writable: false,
     enumerable: false,
     configurable: false,
   });
-  return fn;
+  return v;
+}
+
+/**
+ * Build a sandbox-safe Error. Used whenever an error originating in the host realm
+ * needs to cross back into the sandbox — throwing a raw host Error would expose
+ * e.constructor.constructor === host Function, enabling RCE.
+ */
+function createSandboxError(msg) {
+  return harden(new Error(msg));
 }
 
 /**
@@ -58,15 +69,7 @@ function sanitizeError(e) {
   } catch (_) {
     msg = 'unknown error';
   }
-  const clean = new Error(msg);
-  Object.setPrototypeOf(clean, null);
-  Object.defineProperty(clean, 'constructor', {
-    value: null,
-    writable: false,
-    enumerable: false,
-    configurable: false,
-  });
-  return clean;
+  return createSandboxError(msg);
 }
 
 /**
@@ -91,7 +94,7 @@ function sanitizeReturnValue(result) {
     const cleanThenable = Object.create(null);
     const originalThen = result.then.bind(result);
     Object.defineProperty(cleanThenable, 'then', {
-      value: hardenFunction(function (onFulfilled, onRejected) {
+      value: harden(function (onFulfilled, onRejected) {
         const next = originalThen(
           typeof onFulfilled === 'function'
             ? (v) => onFulfilled(sanitizeForSandbox(v, null, new WeakMap()))
@@ -116,7 +119,7 @@ function sanitizeReturnValue(result) {
  * sandbox context.
  *
  * Security guarantee: every function in the returned structure has its prototype
- * chain severed and its `constructor` property set to null via hardenFunction(),
+ * chain severed and its `constructor` property set to null via harden(),
  * so that sandbox code cannot traverse `fn.constructor` (or
  * `fn.constructor.constructor`) to reach the host Function constructor.
  *
@@ -160,7 +163,7 @@ function sanitizeForSandbox(val, parent, cache) {
       return sanitizeReturnValue(ret);
     };
     cache.set(val, wrapper);
-    hardenFunction(wrapper);
+    harden(wrapper);
 
     // Expose static properties that may be present on function-typed exports
     // (e.g. dayjs.extend, lodash.chain, axios.create).
@@ -212,10 +215,10 @@ function sanitizeForSandbox(val, parent, cache) {
 
     // Attach Symbol.iterator so for...of / spread / destructuring work.
     Object.defineProperty(cleanArr, Symbol.iterator, {
-      value: hardenFunction(function () {
+      value: harden(function () {
         let idx = 0;
         const iterator = Object.create(null);
-        iterator.next = hardenFunction(function () {
+        iterator.next = harden(function () {
           const result = Object.create(null);
           if (idx < len) {
             result.value = cleanArr[idx++];
@@ -227,7 +230,7 @@ function sanitizeForSandbox(val, parent, cache) {
           return result;
         });
         // The iterator is self-iterable (iterable iterator protocol).
-        iterator[Symbol.iterator] = hardenFunction(function () {
+        iterator[Symbol.iterator] = harden(function () {
           return iterator;
         });
         return iterator;
@@ -241,17 +244,21 @@ function sanitizeForSandbox(val, parent, cache) {
   }
 
   // Object: re-create as a null-prototype plain object and walk the prototype
-  // chain up to MAX_PROTO_DEPTH levels (stopping before Object.prototype) so
-  // that methods defined on the object's own prototype are also included
-  // (e.g. Hash.prototype.update / .digest, Stats.prototype.isFile).
-  // Own properties always take precedence over inherited ones (first-write wins).
+  // chain up to (but excluding) Object.prototype so that inherited methods
+  // are included (e.g. Hash.prototype.update, EventEmitter.prototype.on,
+  // Readable.prototype.pipe).  Own properties always take precedence over
+  // inherited ones (first-write wins).
+  //
+  // Security note: there is no depth cap.  Every copied value is re-sanitized
+  // recursively, so any function on a deep prototype still gets harden()'d and
+  // every object still becomes null-prototype.  The depth cap that previously
+  // lived here did not add security; it only silently dropped methods on
+  // deeper ancestors (e.g. hash.on via EventEmitter, stream.pipe via Readable).
   const clean = Object.create(null);
   cache.set(val, clean);
 
-  const MAX_PROTO_DEPTH = 3;
   let proto = val;
-  let depth = 0;
-  while (proto !== null && proto !== Object.prototype && depth < MAX_PROTO_DEPTH) {
+  while (proto !== null && proto !== Object.prototype) {
     for (const key of Object.getOwnPropertyNames(proto)) {
       if (key === 'constructor' || key in clean) continue;
       try {
@@ -265,49 +272,47 @@ function sanitizeForSandbox(val, parent, cache) {
       }
     }
     proto = Object.getPrototypeOf(proto);
-    depth++;
   }
   return clean;
 }
 
 function customRequire(m) {
-  const configuredModules = (process.env.WORKFLOW_SCRIPT_MODULES?.split(',') ?? []).filter(Boolean);
-  let mainName;
-  if (Path.isAbsolute(m)) {
-    // absolute path
-    mainName = m;
-  } else if (m.startsWith('.')) {
-    // relative path
-    mainName = m;
-    m = Path.resolve(process.cwd(), m);
-  } else {
-    mainName = m
-      .split('/')
-      .slice(0, m.startsWith('@') ? 2 : 1)
-      .join('/');
+  // Any exception that escapes this function re-enters the sandbox.  Raw host
+  // errors have e.constructor.constructor === host Function, enabling RCE, so
+  // wrap the whole body and funnel every throw path through sanitizeError:
+  //   - explicit "not supported" / type errors below
+  //   - TypeErrors from Path.isAbsolute / m.split when m is not a string
+  //   - MODULE_NOT_FOUND from require() itself (e.g. require('fs/bogus') when
+  //     'fs' is whitelisted but the subpath does not exist)
+  try {
+    if (typeof m !== 'string') {
+      throw new Error('module name must be a string');
+    }
+    const configuredModules = (process.env.WORKFLOW_SCRIPT_MODULES?.split(',') ?? []).filter(Boolean);
+    let mainName;
+    if (Path.isAbsolute(m)) {
+      mainName = m;
+    } else if (m.startsWith('.')) {
+      mainName = m;
+      m = Path.resolve(process.cwd(), m);
+    } else {
+      mainName = m
+        .split('/')
+        .slice(0, m.startsWith('@') ? 2 : 1)
+        .join('/');
+    }
+    if (configuredModules.includes(mainName)) {
+      // Sanitize the module before handing it to the sandbox so that function
+      // properties have fn.constructor === null.
+      return sanitizeForSandbox(require(m));
+    }
+    throw new Error(`module "${m}" not supported`);
+  } catch (e) {
+    throw sanitizeError(e);
   }
-  if (configuredModules.includes(mainName)) {
-    // FIX (Vector 2): sanitize the module before handing it to the sandbox.
-    // Without this, any function property on the returned module has
-    // fn.constructor === host Function, enabling sandbox escape and RCE.
-    return sanitizeForSandbox(require(m));
-  }
-  // FIX (Vector 1): do NOT throw a raw host-realm Error object.
-  // A host Error's prototype chain (e.constructor → host Error → e.constructor.constructor
-  // → host Function) allows the sandbox to obtain the host Function constructor and
-  // achieve RCE. Instead, sever the prototype chain before throwing.
-  const err = new Error(`module "${m}" not supported`);
-  Object.setPrototypeOf(err, null);
-  Object.defineProperty(err, 'constructor', {
-    value: null,
-    writable: false,
-    enumerable: false,
-    configurable: false,
-  });
-  throw err;
 }
 
-hardenFunction(customRequire);
+harden(customRequire);
 
 /**
  * Create a safe console proxy that only exposes whitelisted logging methods.
@@ -342,8 +347,7 @@ function createSafeConsole(originalConsole) {
 
   for (const key of allowedMethods) {
     if (typeof originalConsole[key] === 'function') {
-      const bound = originalConsole[key].bind(originalConsole);
-      hardenFunction(bound);
+      const bound = harden(originalConsole[key].bind(originalConsole));
       Object.defineProperty(safe, key, {
         value: bound,
         writable: false,
@@ -353,14 +357,7 @@ function createSafeConsole(originalConsole) {
     }
   }
 
-  Object.defineProperty(safe, 'constructor', {
-    value: null,
-    writable: false,
-    enumerable: false,
-    configurable: false,
-  });
-
-  return Object.freeze(safe);
+  return Object.freeze(harden(safe));
 }
 
 async function main() {

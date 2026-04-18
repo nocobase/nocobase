@@ -616,4 +616,117 @@ describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODUL
     expect(result.result.length).toBeGreaterThan(0);
     expect(typeof result.result[0]).toBe('string');
   });
+
+  it('should not allow escape via object returned from a module function (V2c: crypto.createHash)', async () => {
+    // Reporter's exact bypass: sanitizeForSandbox wraps module functions but
+    // the object they *return* must also be sanitized, otherwise
+    //   hash.update.constructor === host Function → RCE.
+    const script = `
+      const crypto = require('crypto');
+      const h = crypto.createHash('sha256');
+      let escaped = false;
+      try {
+        const F = h.update.constructor;
+        if (F) {
+          const proc = F('return process')();
+          escaped = Boolean(proc && proc.pid);
+        }
+      } catch (_) {}
+      return {
+        escaped,
+        updateCtorIsNull: h.update.constructor === null,
+        hashProtoIsNull: Object.getPrototypeOf(h) === null,
+      };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.escaped).toBe(false);
+    expect(result.result.updateCtorIsNull).toBe(true);
+    expect(result.result.hashProtoIsNull).toBe(true);
+  });
+
+  it('crypto.createHash should remain functional end-to-end after sanitization', async () => {
+    const script = `
+      const crypto = require('crypto');
+      const h = crypto.createHash('sha256');
+      h.update('hello');
+      return { digest: h.digest('hex') };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    // sha256('hello')
+    expect(result.result.digest).toBe('2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824');
+  });
+
+  it('deep-prototype methods on module objects remain callable (EventEmitter.on on a Hash)', async () => {
+    // Regression for the previous MAX_PROTO_DEPTH cap: EventEmitter.on lives
+    // several prototypes up from a Hash instance.  With the cap removed, the
+    // sandbox must still see it as a hardened function.
+    const script = `
+      const crypto = require('crypto');
+      const h = crypto.createHash('sha256');
+      return {
+        hasOn: typeof h.on === 'function',
+        onCtorIsNull: typeof h.on === 'function' ? h.on.constructor === null : null,
+      };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.hasOn).toBe(true);
+    expect(result.result.onCtorIsNull).toBe(true);
+  });
+
+  it('should not allow escape via require() called with non-string argument (V3: arg-validation error)', async () => {
+    // Path.isAbsolute / m.split would previously throw a raw host TypeError
+    // when m is not a string, exposing e.constructor.constructor === host Function.
+    const script = `
+      const cases = [null, undefined, 42, {}, []];
+      const results = [];
+      for (const c of cases) {
+        try { require(c); results.push({ threw: false }); }
+        catch (e) { results.push({ threw: true, ctorIsNull: e.constructor === null }); }
+      }
+      return results;
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    for (const r of result.result) {
+      expect(r.threw).toBe(true);
+      expect(r.ctorIsNull).toBe(true);
+    }
+  });
+
+  it('should not allow escape via require() of missing submodule under a whitelisted package (V3: MODULE_NOT_FOUND)', async () => {
+    // WORKFLOW_SCRIPT_MODULES=fs — mainName='fs' is whitelisted, but the
+    // subpath does not exist.  Node's MODULE_NOT_FOUND must not reach the
+    // sandbox as a raw host Error.
+    const script = `
+      try {
+        require('fs/__definitely_not_a_real_subpath__');
+        return { escaped: false, reason: 'no error thrown' };
+      } catch (e) {
+        try {
+          const F = e.constructor.constructor;
+          const proc = F('return process')();
+          return { escaped: true, pid: proc?.pid };
+        } catch (_) {
+          return { escaped: false, ctorIsNull: e.constructor === null };
+        }
+      }
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.escaped).toBe(false);
+    expect(result.result.ctorIsNull).toBe(true);
+  });
 });
