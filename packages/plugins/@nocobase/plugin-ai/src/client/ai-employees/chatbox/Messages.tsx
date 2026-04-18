@@ -263,8 +263,6 @@ const BackgroundWorkingHint: React.FC = () => {
         setShow(true);
       } else {
         setShow(false);
-        setResponseLoading(false);
-        await updateReadonly(currentConversation);
       }
     }
   }, [api, currentConversation, updateReadonly, setResponseLoading]);

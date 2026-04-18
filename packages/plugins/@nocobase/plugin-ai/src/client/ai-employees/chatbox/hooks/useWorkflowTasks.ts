@@ -55,7 +55,7 @@ export const useWorkflowTasks = () => {
       }
     },
     {
-      manual: false,
+      manual: true,
       onSuccess: (data, params) => {
         const page = params[0] || 1;
         const nextData = data?.data || [];
@@ -80,7 +80,7 @@ export const useWorkflowTasks = () => {
       setUnreadCount(res?.data?.data?.count || 0);
     },
     {
-      manual: false,
+      manual: true,
     },
   );
 

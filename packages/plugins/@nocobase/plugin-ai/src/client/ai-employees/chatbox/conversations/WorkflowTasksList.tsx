@@ -66,8 +66,6 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
           username = undefined;
           model = undefined;
         }
-
-        refresh();
         setReadonly(readonly);
         setResponseLoading(responseLoading);
         onOpenConversation(sessionId, username, model);
@@ -76,7 +74,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
         throw error;
       }
     },
-    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, refresh, setReadonly, setResponseLoading],
+    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, setReadonly, setResponseLoading],
   );
 
   return {
