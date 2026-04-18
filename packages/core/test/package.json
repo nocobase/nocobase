@@ -50,6 +50,7 @@
     "./vitest.mjs": "./vitest.mjs"
   },
   "dependencies": {
+    "@nocobase/utils": "2.1.0-alpha.18",
     "@faker-js/faker": "8.1.0",
     "@nocobase/server": "2.1.0-alpha.18",
     "@playwright/test": "^1.45.3",

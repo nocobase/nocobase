@@ -14,7 +14,7 @@ import fs from 'fs/promises';
 
 import Application from './application';
 import { SystemLogger } from '@nocobase/logger';
-import { sleep } from '@nocobase/utils';
+import { sleep, storagePathJoin } from '@nocobase/utils';
 
 export const QUEUE_DEFAULT_INTERVAL = 250;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
@@ -87,8 +87,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   }
 
   private get storagePath() {
-    const root = process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage');
-    return path.join(root, 'apps', this.options.appName, 'event-queue.json');
+    return storagePathJoin('apps', this.options.appName, 'event-queue.json');
   }
 
   listen = (channel: string) => {

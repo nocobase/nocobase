@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isURL } from '@nocobase/utils';
+import { isURL, resolveStorageRoot } from '@nocobase/utils';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import multer from 'multer';
@@ -21,7 +21,7 @@ import { diskFilenameGetter } from '../utils';
 const DEFAULT_BASE_URL = '/storage/uploads';
 
 export function getDocumentRoot(storage): string {
-  const root = process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage');
+  const root = resolveStorageRoot();
   const { documentRoot = process.env.LOCAL_STORAGE_DEST || path.join(root, 'uploads') } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));

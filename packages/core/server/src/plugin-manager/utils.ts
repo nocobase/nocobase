@@ -9,7 +9,7 @@
 
 /* istanbul ignore next -- @preserve */
 
-import { importModule, isURL, requireResolve } from '@nocobase/utils';
+import { importModule, isURL, requireResolve, storagePathJoin } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -46,7 +46,7 @@ export function getPluginStoragePath() {
     const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH;
     return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
   }
-  return path.join(process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage'), 'plugins');
+  return storagePathJoin('plugins');
 }
 
 export function getLocalPluginPackagesPathArr(): string[] {

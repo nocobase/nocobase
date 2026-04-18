@@ -77,4 +77,13 @@ export const getCjsPackages = (packages: Package[]) =>
 
 // tar
 export const tarIncludesFiles = ['package.json', 'README.md', 'LICENSE', 'dist', '!node_modules'];
-export const TAR_OUTPUT_DIR = process.env.TAR_PATH ? process.env.TAR_PATH : path.join(ROOT_PATH, 'storage', 'tar');
+
+function resolveStorageRoot(): string {
+  const raw = process.env.STORAGE_PATH;
+  if (raw) {
+    return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
+  }
+  return path.join(ROOT_PATH, 'storage');
+}
+
+export const TAR_OUTPUT_DIR = process.env.TAR_PATH || path.join(resolveStorageRoot(), 'tar');

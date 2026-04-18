@@ -11,6 +11,7 @@
     "directory": "packages/logger"
   },
   "dependencies": {
+    "@nocobase/utils": "2.1.0-alpha.18",
     "chalk": "^4",
     "lodash": "^4.17.21",
     "triple-beam": "^1.4.1",
