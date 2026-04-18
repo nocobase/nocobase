@@ -297,7 +297,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
 
 function generatePlaywrightPath(clean = false) {
   try {
-    const playwright = join(generateStoragePath(), 'playwright', 'tests');
+    const playwright = storagePathJoin('playwright', 'tests');
     if (clean && fs.existsSync(playwright)) {
       fs.rmSync(dirname(playwright), { force: true, recursive: true });
     }
@@ -399,8 +399,11 @@ function areTimeZonesEqual(timeZone1, timeZone2) {
   return moment.tz(timeZone1).format('Z') === moment.tz(timeZone2).format('Z');
 }
 
-/** Resolves STORAGE_PATH for initEnv; after initEnv, prefer process.env.STORAGE_PATH elsewhere. */
-function generateStoragePath() {
+/**
+ * Absolute application storage root (same rules as `@nocobase/utils` `resolveStorageRoot`).
+ * Resolves STORAGE_PATH for initEnv; after initEnv, `process.env.STORAGE_PATH` is set to this absolute path.
+ */
+function resolveStorageRoot() {
   if (process.env.STORAGE_PATH) {
     if (isAbsolute(process.env.STORAGE_PATH)) {
       return process.env.STORAGE_PATH;
@@ -410,7 +413,15 @@ function generateStoragePath() {
   return resolve(process.cwd(), 'storage');
 }
 
-exports.generateStoragePath = generateStoragePath;
+/** Join segments under the storage root (same semantics as `@nocobase/utils` `storagePathJoin`). */
+function storagePathJoin(...segments) {
+  return join(resolveStorageRoot(), ...segments);
+}
+
+exports.resolveStorageRoot = resolveStorageRoot;
+exports.storagePathJoin = storagePathJoin;
+/** @deprecated Use resolveStorageRoot — kept for backward compatibility */
+exports.generateStoragePath = resolveStorageRoot;
 
 /** Align with server `getPluginStoragePath()`: `PLUGIN_STORAGE_PATH` first, else `<STORAGE_PATH>/plugins`. */
 function resolvePluginStoragePath() {
@@ -418,7 +429,7 @@ function resolvePluginStoragePath() {
     const p = process.env.PLUGIN_STORAGE_PATH;
     return isAbsolute(p) ? p : resolve(process.cwd(), p);
   }
-  return join(generateStoragePath(), 'plugins');
+  return storagePathJoin('plugins');
 }
 
 function generateGatewayPath() {
@@ -431,7 +442,7 @@ function generateGatewayPath() {
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
     return resolve(os.homedir(), '.nocobase', 'gateway.sock');
   }
-  return join(generateStoragePath(), 'gateway.sock');
+  return storagePathJoin('gateway.sock');
 }
 
 function generatePm2Home() {
@@ -444,7 +455,7 @@ function generatePm2Home() {
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
     return resolve(os.homedir(), '.nocobase', 'pm2');
   }
-  return join(generateStoragePath(), '.pm2');
+  return storagePathJoin('.pm2');
 }
 
 exports.initEnv = function initEnv() {
@@ -508,15 +519,15 @@ exports.initEnv = function initEnv() {
     path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
   });
 
-  const storagePath = generateStoragePath();
+  const storagePath = resolveStorageRoot();
   process.env.STORAGE_PATH = storagePath; // absolute; other modules may use process.env.STORAGE_PATH after this
   Object.assign(env, {
-    DB_STORAGE: join(storagePath, 'db', 'nocobase.sqlite'),
-    LOCAL_STORAGE_DEST: join(storagePath, 'uploads'),
-    PLUGIN_STORAGE_PATH: join(storagePath, 'plugins'),
-    PLAYWRIGHT_AUTH_FILE: join(storagePath, 'playwright', '.auth', 'admin.json'),
-    LOGGER_BASE_PATH: join(storagePath, 'logs'),
-    WATCH_FILE: join(storagePath, 'app.watch.ts'),
+    DB_STORAGE: storagePathJoin('db', 'nocobase.sqlite'),
+    LOCAL_STORAGE_DEST: storagePathJoin('uploads'),
+    PLUGIN_STORAGE_PATH: storagePathJoin('plugins'),
+    PLAYWRIGHT_AUTH_FILE: storagePathJoin('playwright', '.auth', 'admin.json'),
+    LOGGER_BASE_PATH: storagePathJoin('logs'),
+    WATCH_FILE: storagePathJoin('app.watch.ts'),
   });
 
   if (process.argv[2] === 'e2e' && !process.env.APP_BASE_URL) {

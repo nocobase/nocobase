@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { generateStoragePath } = require('./util');
+const { storagePathJoin } = require('./util');
 const winston = require('winston');
 require('winston-daily-rotate-file');
 
@@ -63,7 +63,7 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
 }
 
 const getLoggerFilePath = (...paths) => {
-  return path.resolve(process.env.LOGGER_BASE_PATH || path.join(generateStoragePath(), 'logs'), ...paths);
+  return path.resolve(process.env.LOGGER_BASE_PATH || storagePathJoin('logs'), ...paths);
 };
 
 const logger = createSystemLogger({

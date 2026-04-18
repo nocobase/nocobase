@@ -10,7 +10,7 @@
 import path from 'path';
 
 /**
- * Absolute path to the application storage root (same rules as CLI `generateStoragePath()`).
+ * Absolute path to the application storage root (same rules as CLI `resolveStorageRoot` in `cli-v1/src/util.js`).
  */
 export function resolveStorageRoot(): string {
   const raw = process.env.STORAGE_PATH;
@@ -22,7 +22,7 @@ export function resolveStorageRoot(): string {
 
 /**
  * Join path segments under the application storage root.
- * Resolution matches CLI `generateStoragePath()` / `initEnv`: use `STORAGE_PATH` when set
+ * Resolution matches CLI `resolveStorageRoot()` / `initEnv`: use `STORAGE_PATH` when set
  * (absolute or relative to cwd), otherwise `<cwd>/storage`.
  *
  * @example storagePathJoin('tmp')
