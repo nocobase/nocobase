@@ -15,15 +15,14 @@ import { AIEmployeeTaskModel } from './flow-models/task';
 import { useApp } from '@nocobase/client';
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 import { AIEmployeeTaskFeedbackModel } from './flow-models/feedback';
-import { BaseAIEmployeeProperties } from './types';
 
-export const Configuration: React.FC<BaseAIEmployeeProperties> = ({ children, ...properties }) => {
+export const Configuration: React.FC = () => {
   const t = useT();
   const items = [
     {
       key: 'task',
       label: Schema.compile('{{t("Task")}}', { t }),
-      children: <Task {...properties} />,
+      children: <Task />,
     },
     {
       key: 'feedback',
@@ -34,16 +33,18 @@ export const Configuration: React.FC<BaseAIEmployeeProperties> = ({ children, ..
   return <Tabs items={items} />;
 };
 
-export const Task: React.FC<BaseAIEmployeeProperties> = ({ aiEmployee }) => {
+export const Task: React.FC = () => {
   const app = useApp();
   const model = useMemo(() => {
     return app.flowEngine.createModel({
       use: AIEmployeeTaskModel,
       props: {
-        aiEmployee,
+        aiEmployee: {
+          username: 'atlas',
+        },
       },
     });
-  }, [app, aiEmployee]);
+  }, [app]);
 
   return <FlowModelRenderer model={model} />;
 };
@@ -58,5 +59,3 @@ export const Feedback: React.FC = () => {
 
   return <FlowModelRenderer model={model} />;
 };
-
-export * from './types';

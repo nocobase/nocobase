@@ -37,7 +37,7 @@ export class AIEmployeeTaskModel extends FlowModel {
                 labelAlign: 'left',
               },
               'x-component': AIEmployeeSelect,
-              default: 'atlas',
+              default: this.props.aiEmployee.username,
             },
             model: {
               type: 'void',
@@ -73,7 +73,7 @@ export class AIEmployeeTaskModel extends FlowModel {
             },
             skillSettings: {
               type: 'object',
-              'x-component': () => <SkillSettings />,
+              'x-component': SkillSettings,
             },
             webSearch: {
               type: 'void',

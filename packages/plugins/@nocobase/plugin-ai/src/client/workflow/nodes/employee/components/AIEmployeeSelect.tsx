@@ -13,7 +13,7 @@ import { CheckOutlined, DownOutlined } from '@ant-design/icons';
 import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { useToken } from '@nocobase/client';
-import { observer } from '@nocobase/flow-engine';
+import { observer, useFlowContext } from '@nocobase/flow-engine';
 import { useAIConfigRepository } from '../../../../repositories/hooks/useAIConfigRepository';
 import { useT } from '../../../../locale';
 import { AIEmployeeListItem } from '../../../../ai-employees/AIEmployeeListItem';
@@ -28,6 +28,7 @@ export const AIEmployeeSelect: React.FC = observer(() => {
   const aiEmployees = aiConfigRepository.aiEmployees;
   const { token } = useToken();
   const disabled = form.disabled || field.disabled || field.pattern === 'disabled' || field.pattern === 'readPretty';
+  const ctx = useFlowContext();
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees();
@@ -66,6 +67,8 @@ export const AIEmployeeSelect: React.FC = observer(() => {
             if (disabled) {
               return;
             }
+            ctx.model.props.aiEmployee.username = employee.username;
+
             field.value = employee.username;
             setIsOpen(false);
           },

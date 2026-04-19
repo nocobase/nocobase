@@ -26,11 +26,6 @@ export class AIEmployeeInstruction extends Instruction {
     configuration: {
       type: 'void',
       'x-component': 'Configuration',
-      'x-component-props': {
-        aiEmployee: {
-          username: 'atlas',
-        },
-      },
     },
   };
   components = {

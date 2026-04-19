@@ -8,18 +8,18 @@
  */
 
 import React, { useEffect } from 'react';
-import { tExpr, useFlowContext } from '@nocobase/flow-engine';
+import { observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { RemoteSelect, SchemaComponent } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { ArrayField } from '@formily/core';
 import { Typography } from 'antd';
 import { namespace, useT } from '../../../../locale';
 
-const Skills: React.FC = () => {
+const Skills: React.FC = observer(() => {
   const t = useT();
   const field = useField<ArrayField>();
   const ctx = useFlowContext();
-  const username = ctx.model.props.aiEmployee?.username;
+  const username = ctx.model.props.aiEmployee.username;
   const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
   useEffect(() => {
     const aiEmployee = aiEmployeesMap[username];
@@ -55,13 +55,13 @@ const Skills: React.FC = () => {
       }}
     />
   );
-};
+});
 
-const Tools: React.FC = () => {
+const Tools: React.FC = observer(() => {
   const t = useT();
   const field = useField<ArrayField>();
   const ctx = useFlowContext();
-  const username = ctx.model.props.aiEmployee?.username;
+  const username = ctx.model.props.aiEmployee.username;
   const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
   useEffect(() => {
     const aiEmployee = aiEmployeesMap[username];
@@ -97,7 +97,7 @@ const Tools: React.FC = () => {
       }}
     />
   );
-};
+});
 
 const renderTitleWithDescription = (t: any) => (option: { data?: { title?: string; description?: string } }) => (
   <OptionContent t={t} title={option.data?.title} description={option.data?.description} />
@@ -140,7 +140,7 @@ const OptionContent: React.FC<{
   );
 };
 
-export const SkillSettings: React.FC = () => {
+export const SkillSettings: React.FC = observer(() => {
   return (
     <SchemaComponent
       components={{ Skills, Tools }}
@@ -151,7 +151,7 @@ export const SkillSettings: React.FC = () => {
             title: tExpr('Skills', { ns: namespace }),
             type: 'array',
             'x-decorator': 'FormItem',
-            'x-component': () => <Skills />,
+            'x-component': Skills,
             'x-decorator-props': {
               tooltip: tExpr('Restrict task skills', {
                 ns: namespace,
@@ -162,7 +162,7 @@ export const SkillSettings: React.FC = () => {
             title: tExpr('Tools', { ns: namespace }),
             type: 'array',
             'x-decorator': 'FormItem',
-            'x-component': () => <Tools />,
+            'x-component': Tools,
             'x-decorator-props': {
               tooltip: tExpr('Restrict task tools', {
                 ns: namespace,
@@ -173,4 +173,4 @@ export const SkillSettings: React.FC = () => {
       }}
     />
   );
-};
+});
