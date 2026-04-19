@@ -65,7 +65,26 @@ export const flowSurfaceExamples = {
             key: 'employeeForm',
             type: 'createForm',
             collection: 'employees',
-            fields: ['nickname', 'status', 'amount', 'taxRate', 'subtotal', 'total'],
+            fields: [
+              { key: 'nicknameField', field: 'nickname' },
+              { key: 'statusField', field: 'status' },
+              'amount',
+              'taxRate',
+              'subtotal',
+              'total',
+            ],
+            fieldsLayout: {
+              rows: [
+                ['nicknameField'],
+                [
+                  { key: 'statusField', span: 12 },
+                  { key: 'amount', span: 12 },
+                ],
+                ['taxRate'],
+                ['subtotal'],
+                ['total'],
+              ],
+            },
             actions: ['submit'],
           },
           {
@@ -415,6 +434,14 @@ export const flowSurfaceExamples = {
             target: 'table',
           },
         ],
+        fieldsLayout: {
+          rows: [
+            [
+              { key: 'nickname', span: 12 },
+              { key: 'username', span: 12 },
+            ],
+          ],
+        },
         actions: ['submit', 'reset', 'collapse'],
       },
       {

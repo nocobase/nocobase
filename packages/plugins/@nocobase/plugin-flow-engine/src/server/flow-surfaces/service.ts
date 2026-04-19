@@ -349,6 +349,7 @@ const SIMPLE_FORM_BLOCK_USES = new Set([
   'EditFormModel',
   ...APPROVAL_FORM_BLOCK_USES,
 ]);
+const COMPOSE_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
@@ -4859,10 +4860,7 @@ export class FlowSurfacesService {
         }),
       collectActionKeys: async (actionUid) => this.collectComposeActionKeys(actionUid, options.transaction),
       buildExplicitLayoutPayload: async (input) => {
-        const finalGrid = await this.repository.findModelById(input.gridUid, {
-          transaction: options.transaction,
-          includeAsyncNode: true,
-        });
+        const finalGrid = await this.surfaceContext.resolveGridNode(input.targetUid, options.transaction);
         const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
         return this.buildComposeLayoutPayload({
           layout: input.layout,
@@ -10242,6 +10240,104 @@ export class FlowSurfacesService {
     };
   }
 
+  private normalizeComposeFieldsLayout(
+    input: any,
+    options: {
+      blockContext: string;
+      blockDescriptor: string;
+      blockType?: string;
+      fields: Array<{ key: string }>;
+    },
+  ) {
+    if (_.isUndefined(input)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`${options.blockContext} fieldsLayout must be an object`);
+    }
+    if (!COMPOSE_FIELD_GRID_BLOCK_TYPES.has(options.blockType || '')) {
+      throwBadRequest(`flowSurfaces compose ${options.blockDescriptor} does not support fieldsLayout`);
+    }
+    if (!options.fields.length) {
+      throwBadRequest(`${options.blockContext} fieldsLayout requires fields[] on the same block`);
+    }
+
+    const rows = _.castArray(input.rows || []);
+    if (!rows.length) {
+      throwBadRequest(`${options.blockContext} fieldsLayout.rows must be a non-empty array`);
+    }
+
+    const fieldKeys = new Set(options.fields.map((field) => field.key).filter(Boolean));
+    const mentioned = new Set<string>();
+    const normalizedRows = rows.map((row: any, rowIndex: number) => {
+      if (!Array.isArray(row) || !row.length) {
+        throwBadRequest(`${options.blockContext} fieldsLayout row #${rowIndex + 1} must be a non-empty array`);
+      }
+      return row.map((cell: any, cellIndex: number) => {
+        const cellContext = `${options.blockContext} fieldsLayout row #${rowIndex + 1} cell #${cellIndex + 1}`;
+        const normalizedCell = this.normalizeComposeFieldsLayoutCell(cell, cellContext);
+        if (!fieldKeys.has(normalizedCell.key)) {
+          throwBadRequest(`${cellContext} references unknown field '${normalizedCell.key}'`);
+        }
+        if (mentioned.has(normalizedCell.key)) {
+          throwBadRequest(`${cellContext} duplicates field '${normalizedCell.key}'`);
+        }
+        mentioned.add(normalizedCell.key);
+        return normalizedCell.raw;
+      });
+    });
+
+    const missingFieldKeys = options.fields.map((field) => field.key).filter((key) => !mentioned.has(key));
+    if (missingFieldKeys.length) {
+      throwBadRequest(
+        `${options.blockContext} fieldsLayout must place every field exactly once; missing: ${missingFieldKeys.join(
+          ', ',
+        )}`,
+      );
+    }
+
+    return {
+      rows: normalizedRows,
+    };
+  }
+
+  private normalizeComposeFieldsLayoutCell(
+    cell: any,
+    context: string,
+  ): {
+    key: string;
+    raw: string | Record<string, any>;
+  } {
+    if (typeof cell === 'string') {
+      const key = String(cell || '').trim();
+      if (!key) {
+        throwBadRequest(`${context} cannot be empty`);
+      }
+      return {
+        key,
+        raw: key,
+      };
+    }
+    if (!_.isPlainObject(cell)) {
+      throwBadRequest(`${context} must be a string or object`);
+    }
+    const key = String(cell.key || '').trim();
+    if (!key) {
+      throwBadRequest(`${context}.key cannot be empty`);
+    }
+    return {
+      key,
+      raw: buildDefinedPayload({
+        key,
+        span: _.isUndefined(cell.span)
+          ? undefined
+          : _.isNumber(cell.span)
+            ? cell.span
+            : throwBadRequest(`${context}.span must be a number`),
+      }),
+    };
+  }
+
   private async applyDefaultActionsForCreatedBlock(
     input: {
       blockUid: string;
@@ -10341,6 +10437,17 @@ export class FlowSurfacesService {
     }
     const actionKeys = new Set(actions.map((item) => item.key).filter(Boolean));
     const recordActionKeys = new Set(recordActions.map((item) => item.key).filter(Boolean));
+    const blockDescriptor = this.describeComposeBlock({
+      index: index + 1,
+      key,
+      type,
+    });
+    const fieldsLayout = this.normalizeComposeFieldsLayout(input.fieldsLayout, {
+      blockContext: `flowSurfaces compose block #${index + 1}`,
+      blockDescriptor,
+      blockType: type,
+      fields,
+    });
     const mergedActions = mergeFlowSurfaceDefaultBlockActions({
       blockType: type,
       template,
@@ -10361,6 +10468,7 @@ export class FlowSurfacesService {
       resource: this.normalizeResourceInput(input.resource),
       settings: _.isPlainObject(input.settings) ? input.settings : {},
       fields,
+      ...(fieldsLayout ? { fieldsLayout } : {}),
       actions: mergedActions.actions,
       recordActions: mergedActions.recordActions,
       template,

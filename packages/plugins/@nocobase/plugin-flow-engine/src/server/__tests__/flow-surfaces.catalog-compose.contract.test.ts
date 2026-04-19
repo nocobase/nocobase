@@ -880,6 +880,14 @@ describe('flowSurfaces catalog + compose contract', () => {
                 target: 'table',
               },
             ],
+            fieldsLayout: {
+              rows: [
+                [
+                  { key: 'nickname', span: 12 },
+                  { key: 'username', span: 12 },
+                ],
+              ],
+            },
             actions: ['submit', 'reset'],
           },
           {
@@ -1005,15 +1013,117 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(_.castArray(filterReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
       expect.arrayContaining(['FilterFormSubmitActionModel', 'FilterFormResetActionModel']),
     );
+    expect(filterReadback.tree.subModels?.grid?.props?.rowOrder).toEqual(['row1']);
 
     const usernameFilter = composed.blocks
       .find((item: any) => item.key === 'filter')
       ?.fields?.find((item: any) => item.fieldPath === 'username');
+    const nicknameFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'nickname');
+    expect(nicknameFilter?.wrapperUid).toBeTruthy();
     expect(usernameFilter?.wrapperUid).toBeTruthy();
+    expect(filterReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[nicknameFilter.wrapperUid], [usernameFilter.wrapperUid]],
+    });
+    expect(filterReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [12, 12],
+    });
     const usernameFilterReadback = await getSurface(rootAgent, {
       uid: usernameFilter.wrapperUid,
     });
     expect(usernameFilterReadback.tree.stepParams?.filterFormItemSettings?.init?.defaultTargetUid).toBe(tableBlock.uid);
+  });
+
+  it('should reject fieldsLayout on compose blocks that do not own a field grid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Invalid compose fieldsLayout page',
+      tabTitle: 'Invalid compose fieldsLayout tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['username', 'nickname'],
+            fieldsLayout: {
+              rows: [['username']],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expect(readErrorMessage(composeRes)).toContain(
+      `flowSurfaces compose block #1 ("employeesTable", type="table") does not support fieldsLayout`,
+    );
+  });
+
+  it('should reject invalid compose fieldsLayout cell placement and span values', async () => {
+    const cases = [
+      {
+        title: 'Duplicate compose fieldsLayout field page',
+        fieldsLayout: {
+          rows: [['username', 'username']],
+        },
+        expectedMessage: "flowSurfaces compose block #1 fieldsLayout row #1 cell #2 duplicates field 'username'",
+      },
+      {
+        title: 'Missing compose fieldsLayout field page',
+        fieldsLayout: {
+          rows: [['username']],
+        },
+        expectedMessage:
+          'flowSurfaces compose block #1 fieldsLayout must place every field exactly once; missing: nickname',
+      },
+      {
+        title: 'Invalid compose fieldsLayout span page',
+        fieldsLayout: {
+          rows: [[{ key: 'username', span: '12' }, 'nickname']],
+        },
+        expectedMessage: 'flowSurfaces compose block #1 fieldsLayout row #1 cell #1.span must be a number',
+      },
+    ];
+
+    for (const item of cases) {
+      const page = await createPage(rootAgent, {
+        title: item.title,
+        tabTitle: 'Invalid compose fieldsLayout tab',
+      });
+
+      const composeRes = await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'employeeForm',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username', 'nickname'],
+              fieldsLayout: item.fieldsLayout,
+            },
+          ],
+        },
+      });
+
+      expect(composeRes.status).toBe(400);
+      expect(readErrorMessage(composeRes)).toContain(item.expectedMessage);
+    }
   });
 
   it('should compose a list block with item fields block actions and record actions', async () => {

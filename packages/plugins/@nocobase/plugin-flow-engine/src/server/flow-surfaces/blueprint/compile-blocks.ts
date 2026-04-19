@@ -76,6 +76,7 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'template',
   'settings',
   'fields',
+  'fieldsLayout',
   'actions',
   'recordActions',
   'script',
@@ -134,6 +135,7 @@ const APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS = [
   'associationField',
 ];
 const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
+const APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
 const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'view',
   'edit',
@@ -149,6 +151,16 @@ function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
     throwBadRequest(`${context}.layout is not supported; layout is only allowed on tabs[] and popup`);
   }
+}
+
+function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, context: string) {
+  if (!Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')) {
+    return;
+  }
+  if (APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES.has(readOptionalString(block.type) || '')) {
+    return;
+  }
+  throwBadRequest(`${context}.fieldsLayout is only supported on createForm, editForm, details or filterForm`);
 }
 
 function assertApplyBlueprintBlockType(type: string | undefined, context: string) {
@@ -539,6 +551,28 @@ function compileLayout(
   blockKeysByLocalKey: Map<string, string>,
   context: string,
 ): Record<string, any> | undefined {
+  return compileScopedLayout(layout, blockKeysByLocalKey, context, 'block');
+}
+
+function resolveScopedLayoutKey(
+  rawKey: string,
+  keysByLocalKey: Map<string, string>,
+  context: string,
+  kind: 'block' | 'field',
+) {
+  const resolved = keysByLocalKey.get(rawKey) || [...keysByLocalKey.values()].find((value) => value === rawKey);
+  if (!resolved) {
+    throwBadRequest(`${context} references unknown ${kind} '${rawKey}'`);
+  }
+  return resolved;
+}
+
+function compileScopedLayout(
+  layout: FlowSurfaceApplyBlueprintLayout | undefined,
+  keysByLocalKey: Map<string, string>,
+  context: string,
+  kind: 'block' | 'field',
+): Record<string, any> | undefined {
   const rows = ensureLayoutRows(layout, context);
   if (!rows) {
     return undefined;
@@ -546,31 +580,70 @@ function compileLayout(
   return {
     rows: rows.map((row, rowIndex) => {
       return row.map((item, itemIndex) => {
+        const cellContext = `${context}.rows[${rowIndex}][${itemIndex}]`;
         if (typeof item === 'string') {
           const itemKey = readString(item);
-          const resolved =
-            blockKeysByLocalKey.get(itemKey) || [...blockKeysByLocalKey.values()].find((value) => value === itemKey);
-          if (!resolved) {
-            throwBadRequest(`${context}.rows[${rowIndex}][${itemIndex}] references unknown block '${item}'`);
-          }
-          return resolved;
+          return resolveScopedLayoutKey(itemKey, keysByLocalKey, cellContext, kind);
         }
-        const rawKey = assertNonEmptyString(item.key, `${context}.rows[${rowIndex}][${itemIndex}].key`);
-        const resolved =
-          blockKeysByLocalKey.get(rawKey) ||
-          [...blockKeysByLocalKey.values()].find((value) => value === rawKey) ||
-          rawKey;
+        const rawKey = assertNonEmptyString(item.key, `${cellContext}.key`);
+        const resolved = resolveScopedLayoutKey(rawKey, keysByLocalKey, cellContext, kind);
         return buildDefinedPayload({
           key: resolved,
           span: _.isUndefined(item.span)
             ? undefined
             : _.isNumber(item.span)
               ? item.span
-              : throwBadRequest(`${context}.rows[${rowIndex}][${itemIndex}].span must be a number`),
+              : throwBadRequest(`${cellContext}.span must be a number`),
         });
       });
     }),
   };
+}
+
+function resolveApplyBlueprintFieldLocalKey(
+  input: string | FlowSurfaceApplyBlueprintFieldObjectSpec,
+  index: number,
+  context: string,
+) {
+  if (typeof input === 'string') {
+    return assertNonEmptyString(input, `${context}[${index}]`);
+  }
+  if (!_.isPlainObject(input)) {
+    throwBadRequest(`${context}[${index}] must be a string or object`);
+  }
+  const fieldPath = readOptionalString(input.field);
+  const syntheticType = readOptionalString(input.type);
+  if (!fieldPath && !syntheticType) {
+    throwBadRequest(`${context}[${index}] requires field or type`);
+  }
+  if (fieldPath && syntheticType) {
+    throwBadRequest(`${context}[${index}] cannot mix field with synthetic type`);
+  }
+  return normalizeBlueprintLocalKey(
+    input.key,
+    fieldPath || (syntheticType ? `${syntheticType}_${index + 1}` : `field_${index + 1}`),
+    `${context}[${index}].key`,
+  );
+}
+
+function buildCompiledFieldKeyMap(
+  inputs: Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec>,
+  compiledFields: Array<Record<string, any>>,
+  context: string,
+) {
+  const fieldKeysByLocalKey = new Map<string, string>();
+  inputs.forEach((input, index) => {
+    const localKey = resolveApplyBlueprintFieldLocalKey(input, index, context);
+    const compiledKey = readOptionalString(compiledFields[index]?.key);
+    if (!compiledKey) {
+      throwBadRequest(`${context}[${index}] key '${localKey}' is missing after field key compilation`);
+    }
+    if (fieldKeysByLocalKey.has(localKey)) {
+      throwBadRequest(`${context}[${index}] key '${localKey}' is duplicated`);
+    }
+    fieldKeysByLocalKey.set(localKey, compiledKey);
+  });
+  return fieldKeysByLocalKey;
 }
 
 function compilePopup(
@@ -820,6 +893,7 @@ function compileBlocks(
       throwBadRequest(`${context}[${index}] must be an object`);
     }
     assertNoBlockLevelLayout(block, `${context}[${index}]`);
+    assertApplyBlueprintFieldsLayoutHost(block, `${context}[${index}]`);
     assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
     assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
     const explicitKey = readString(block.key);
@@ -853,7 +927,22 @@ function compileBlocks(
       settings.title = readOptionalString(block.title);
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
-    const fields = readOptionalItems(block.fields, `${blockContext}.fields`);
+    const fieldInputs = readOptionalItems(block.fields, `${blockContext}.fields`);
+    const fields = fieldInputs.map((field, fieldIndex) =>
+      compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
+    );
+    const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
+      ? compileScopedLayout(
+          _.isUndefined(block.fieldsLayout)
+            ? undefined
+            : _.isPlainObject(block.fieldsLayout)
+              ? (block.fieldsLayout as FlowSurfaceApplyBlueprintLayout)
+              : throwBadRequest(`${blockContext}.fieldsLayout must be an object`),
+          buildCompiledFieldKeyMap(fieldInputs, fields, `${blockContext}.fields`),
+          `${blockContext}.fieldsLayout`,
+          'field',
+        )
+      : undefined;
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
     const explicitActions = actions.map((action, actionIndex) =>
       compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),
@@ -884,9 +973,8 @@ function compileBlocks(
       resource: buildBlockResource(block, blockContext),
       template,
       settings: Object.keys(settings).length ? settings : undefined,
-      fields: fields.map((field, fieldIndex) =>
-        compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
-      ),
+      fields,
+      fieldsLayout,
       actions: mergedActions.actions,
       recordActions: mergedActions.recordActions,
     });

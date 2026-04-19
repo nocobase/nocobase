@@ -2429,6 +2429,11 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfaceComposeFieldSpec'),
       },
+      fieldsLayout: {
+        allOf: [ref('FlowSurfaceComposeLayout')],
+        description:
+          'Optional inner field-grid layout for `createForm`, `editForm`, `details`, or `filterForm`. Uses the same public `{ rows: [[...]] }` shape as top-level layout, but references field keys inside the current block and must place every created field exactly once.',
+      },
       actions: {
         type: 'array',
         description: 'Block-level actions. For table/list/gridCard, prefer block-wide collection actions here.',
@@ -3330,7 +3335,8 @@ const schemas = {
   },
   FlowSurfaceApplyBlueprintLayout: {
     type: 'object',
-    description: 'Layout object allowed only on tabs and inline popup documents, never on individual blocks.',
+    description:
+      'Layout object used by tab/popup `layout` and field-grid-block `fieldsLayout`. Block-level `layout` is still not allowed; use `fieldsLayout` only on `createForm`, `editForm`, `details`, or `filterForm`.',
     properties: {
       rows: {
         type: 'array',
@@ -3466,7 +3472,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintBlockSpec: {
     type: 'object',
     description:
-      'Public applyBlueprint block spec. Blocks do not accept a `layout` property; use tab.layout or popup.layout instead. Generic `form` is not supported here; use `editForm` or `createForm`.',
+      'Public applyBlueprint block spec. Blocks do not accept a `layout` property; use tab.layout or popup.layout instead. `fieldsLayout` is available only on `createForm`, `editForm`, `details`, and `filterForm`. Generic `form` is not supported here; use `editForm` or `createForm`.',
     anyOf: [{ required: ['type'] }, { required: ['template'] }],
     properties: {
       key: { type: 'string' },
@@ -3503,6 +3509,11 @@ const schemas = {
       fields: {
         type: 'array',
         items: ref('FlowSurfaceApplyBlueprintFieldSpec'),
+      },
+      fieldsLayout: {
+        allOf: [ref('FlowSurfaceApplyBlueprintLayout')],
+        description:
+          'Optional inner field-grid layout for `createForm`, `editForm`, `details`, or `filterForm`. Uses the same public `{ rows: [[...]] }` shape as tab/popup layout, but references field keys inside the current block and must place every created field exactly once.',
       },
       actions: {
         type: 'array',
