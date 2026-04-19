@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core';
-import { buildQueryArgs, queryFlags, runResourceCommand } from '../../lib/resource-command.js';
+import { buildQueryArgs, queryFlags, runResourceCommand } from '../../../lib/resource-command.js';
 
 export default class ResourceQuery extends Command {
   static summary = 'Run an aggregate query on a resource';

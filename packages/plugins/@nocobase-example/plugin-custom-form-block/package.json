@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-custom-form-block",
   "displayName": "Plugin example: Custom form block",
   "description": "This plugin demonstrates how to use the custom form block feature to create a custom form block.",
-  "version": "2.1.0-alpha.18",
+  "version": "2.1.0-alpha.19",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

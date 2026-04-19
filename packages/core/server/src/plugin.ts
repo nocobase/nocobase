@@ -11,7 +11,7 @@
 
 import { Model, Transactionable } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
-import { fsExists } from '@nocobase/utils';
+import { fsExists, resolvePluginStoragePath } from '@nocobase/utils';
 import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
 import { resolve } from 'path';
@@ -316,7 +316,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
         ...(await checkAndGetCompatible(packageName)),
         lastUpdated: (await fs.promises.stat(file)).ctime,
         file,
-        updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
+        updatable: file.startsWith(resolvePluginStoragePath()),
       };
     }
 

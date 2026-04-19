@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-nested-block",
   "displayName": "Plugin example: Nested block",
   "description": "This plugin demonstrates how to use the nested block feature to create a nested block.",
-  "version": "2.1.0-alpha.18",
+  "version": "2.1.0-alpha.19",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

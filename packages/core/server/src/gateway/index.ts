@@ -8,7 +8,7 @@
  */
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
-import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { Registry, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -19,6 +19,7 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
+import { homedir } from 'node:os';
 import { extname, isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
@@ -74,14 +75,16 @@ function normalizeBasePath(path = '') {
   return normalized || '/';
 }
 
+/** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
 function getSocketPath() {
-  const { SOCKET_PATH } = process.env;
-
-  if (isAbsolute(SOCKET_PATH)) {
-    return SOCKET_PATH;
+  const socketPath = process.env.SOCKET_PATH;
+  if (socketPath) {
+    return isAbsolute(socketPath) ? socketPath : resolve(process.cwd(), socketPath);
   }
-
-  return resolve(process.cwd(), SOCKET_PATH);
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return resolve(homedir(), '.nocobase', 'gateway.sock');
+  }
+  return storagePathJoin('gateway.sock');
 }
 
 export class Gateway extends EventEmitter {
@@ -98,7 +101,7 @@ export class Gateway extends EventEmitter {
   loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
-  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
+  private socketPath = getSocketPath();
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
 
@@ -136,7 +139,6 @@ export class Gateway extends EventEmitter {
   private constructor() {
     super();
     this.reset();
-    this.socketPath = getSocketPath();
     process.once('SIGTERM', this.onTerminate);
     process.once('SIGINT', this.onTerminate);
   }

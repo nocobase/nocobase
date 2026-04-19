@@ -64,10 +64,7 @@ test('parseBody should still enforce required body fields when flag mode is used
     bodyRequired: true,
   };
 
-  await assert.rejects(
-    () => parseBody({ 'primary-value': 'ok' }, operation),
-    /Missing required body field --items/,
-  );
+  await assert.rejects(() => parseBody({ 'primary-value': 'ok' }, operation), /Missing required body field --items/);
 });
 
 test('parseBody should accept raw body JSON without checking sibling flags', async () => {
@@ -94,7 +91,7 @@ test('parseBody should describe conflicting raw body and body flags clearly', as
 
   await assert.rejects(
     () => parseBody({ body: '{"primaryValue":"ok","items":[]}', 'primary-value': 'ok' }, operation),
-    /Conflicting request body inputs: received --body together with body field flags \(\-\-primary-value\)/,
+    /Conflicting request body inputs: received --body together with body field flags \(--primary-value\)/,
   );
 });
 
@@ -105,8 +102,8 @@ test('buildExamples should not mix required body flags with --body examples', ()
   });
 
   assert.deepEqual(examples, [
-    'nb test api --primary-value <value> --items value1 --items value2',
-    `nb test api --body '{"primaryValue":"value","items":[]}'`,
+    'nb api test api --primary-value <value> --items value1 --items value2',
+    `nb api test api --body '{"primaryValue":"value","items":[]}'`,
   ]);
 });
 

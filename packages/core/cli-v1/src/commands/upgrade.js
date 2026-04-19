@@ -40,8 +40,8 @@ module.exports = (cli) => {
       if (options.skipCodeUpdate) {
         await runAppCommand('upgrade');
       } else {
-        await run('nocobase', ['update-deps']);
-        await run('nocobase', ['upgrade', '--skip-code-update']);
+        await run('nocobase-v1', ['update-deps']);
+        await run('nocobase-v1', ['upgrade', '--skip-code-update']);
       }
     });
 };
