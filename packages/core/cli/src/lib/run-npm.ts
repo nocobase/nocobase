@@ -63,6 +63,7 @@ export async function runNocoBaseCommand(args: string[], cwd?: string, options?:
   if (!path.isAbsolute(cwd)) {
     cwd = path.resolve(process.cwd(), cwd);
   }
+  const localBin = path.join(cwd, 'node_modules', '.bin');
   return new Promise((resolve, reject) => {
     const child = spawn('node', ['./node_modules/.bin/nocobase-v1', ...args], {
       stdio: 'inherit',
@@ -71,6 +72,7 @@ export async function runNocoBaseCommand(args: string[], cwd?: string, options?:
       env: {
         ...process.env,
         ...options?.env,
+        PATH: `${localBin}${path.delimiter}${process.env.PATH}`,
       },
     });
     child.once('error', reject);
