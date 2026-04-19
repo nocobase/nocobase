@@ -119,7 +119,9 @@ export class MainDataSource extends SequelizeDataSource {
     const loadedData = {};
     for (const collection of collections) {
       const c = db.getCollection(collection.name);
-      loadedData[c.tableName()] = {
+      // Use the physical table/view name so view collections whose logical name
+      // differs from `viewName` can still be matched during introspection sync.
+      loadedData[c.model.tableName] = {
         ...collection.toJSON(),
         fields: collection.fields.map((field: Model) => {
           const f = c.getField(field.name);
