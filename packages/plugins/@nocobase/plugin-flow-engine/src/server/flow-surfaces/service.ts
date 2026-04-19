@@ -9340,7 +9340,15 @@ export class FlowSurfacesService {
       await transaction.commit();
       return result;
     } catch (error) {
-      await transaction.rollback();
+      if (!transaction.finished) {
+        try {
+          await transaction.rollback();
+        } catch (rollbackError: any) {
+          if (!String(rollbackError?.message || '').includes('Transaction cannot be rolled back')) {
+            throw rollbackError;
+          }
+        }
+      }
       throw error;
     }
   }
