@@ -12729,7 +12729,9 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceContextSemantic> {
     const collection = await this.resolveContextOwnerCollection(uid, transaction).catch(() => null);
     const ancestors = await this.loadContextAncestorChain(uid, resolved, transaction);
-    const recordContextOwner = ancestors.find((node) => RECORD_CONTEXT_OWNER_USES.has(node?.use));
+    const recordContextOwner =
+      ancestors.find((node) => RECORD_CONTEXT_OWNER_USES.has(node?.use)) ||
+      this.resolveRecordActionContextOwner(ancestors);
     const recordCollection = recordContextOwner
       ? await this.resolveContextOwnerCollection(recordContextOwner.uid, transaction)
       : null;
@@ -12774,6 +12776,14 @@ export class FlowSurfacesService {
       popupLevels,
       chart: await this.buildChartContextSemantic(chartNode, transaction),
     };
+  }
+
+  private resolveRecordActionContextOwner(ancestors: any[]) {
+    const currentNode = ancestors[0];
+    if (!String(currentNode?.use || '').endsWith('ActionModel')) {
+      return null;
+    }
+    return ancestors.slice(1).find((node) => getActionContainerScope(node?.use) === 'record') || null;
   }
 
   private async loadContextAncestorChain(uid: string, resolved: FlowSurfaceResolvedTarget, transaction?: any) {

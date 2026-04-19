@@ -138,6 +138,62 @@ describe('flowSurfaces context', () => {
     expect(tableContext.vars.record).toBeUndefined();
   });
 
+  it('should expose record on table row actions but not on the table actions column container', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Context table row action page',
+      tabTitle: 'Context table row action tab',
+    });
+    const tableBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const deleteAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: tableBlock.uid },
+          type: 'delete',
+        },
+      }),
+    );
+    const tableReadback = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: tableBlock.uid,
+      }),
+    );
+    const actionsColumnUid = (tableReadback.tree?.subModels?.columns || []).find(
+      (node: any) => node?.use === 'TableActionsColumnModel',
+    )?.uid;
+    expect(actionsColumnUid).toBeTruthy();
+
+    const actionsColumnContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: actionsColumnUid },
+        maxDepth: 3,
+      },
+    });
+    expect(actionsColumnContextRes.status).toBe(200);
+    expect(getData(actionsColumnContextRes).vars.record).toBeUndefined();
+
+    const deleteActionContextRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: deleteAction.uid },
+        maxDepth: 3,
+      },
+    });
+    expect(deleteActionContextRes.status).toBe(200);
+    const deleteActionContext = getData(deleteActionContextRes);
+    expect(deleteActionContext.vars.record.properties.nickname).toBeTruthy();
+    expect(deleteActionContext.vars.collection.properties.nickname).toBeTruthy();
+  });
+
   it('should expose builder chart collection context but hide it for sql charts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Context chart page',
