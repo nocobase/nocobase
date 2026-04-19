@@ -8,6 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
+import path from 'node:path';
 import { runNocoBaseCommand, runNpm } from '../lib/run-npm.ts';
 import { getEnv } from '../lib/auth-store.ts';
 
