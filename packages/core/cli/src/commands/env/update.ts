@@ -1,6 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Command, Flags } from '@oclif/core';
+import { Args, Command, Flags } from '@oclif/core';
+import { getCurrentEnvName } from '../../lib/auth-store.js';
 import { updateEnvRuntime } from '../../lib/bootstrap.js';
 import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
@@ -11,14 +21,17 @@ export default class EnvUpdate extends Command {
   static summary = 'Refresh an environment runtime from swagger:get and persist connection overrides';
   static id = 'env update';
 
+  static args = {
+    name: Args.string({
+      description: 'Environment name (omit to use the current env)',
+      required: false,
+    }),
+  };
+
   static flags = {
     verbose: Flags.boolean({
       description: 'Show detailed progress output',
       default: false,
-    }),
-    env: Flags.string({
-      char: 'e',
-      description: 'Environment name',
     }),
     scope: Flags.string({
       char: 's',
@@ -38,15 +51,16 @@ export default class EnvUpdate extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(EnvUpdate);
+    const { args, flags } = await this.parse(EnvUpdate);
     const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
-    const envLabel = flags.env ?? 'current';
+    const envName = args.name;
+    const envLabel = envName ?? (await getCurrentEnvName({ scope }));
 
     startTask(`Updating env runtime: ${envLabel}${scope ? ` (${formatCliHomeScope(scope)})` : ''}`);
 
     try {
       const runtime = await updateEnvRuntime({
-        envName: flags.env,
+        envName,
         scope,
         baseUrl: flags['base-url'],
         role: flags.role,

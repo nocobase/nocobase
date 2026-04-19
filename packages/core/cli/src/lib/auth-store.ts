@@ -34,6 +34,17 @@ export interface EnvConfigEntry {
   auth?: TokenAuthConfig | OauthAuthConfig;
   appRootPath?: string;
   storagePath?: string;
+  /** Optional DB hints for this env (aligns with NocoBase DB_* / .env usage). */
+  dbHost?: string;
+  dbDatabase?: string;
+  dbUser?: string;
+  dbDialect?: string;
+  dbPassword?: string;
+  dbPort?: number | string;
+  dbSchema?: string;
+  dbTablePrefix?: string;
+  dbUnderscored?: boolean;
+  dbLogging?: boolean;
   runtime?: {
     version?: string;
     schemaHash?: string;

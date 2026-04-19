@@ -43,7 +43,7 @@ test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', 
   assert.match(message, /Authentication failed while loading the command runtime/);
   assert.match(message, /env "local"/);
   assert.match(message, /INVALID_TOKEN/);
-  assert.match(message, /env add --name <name> --base-url <url> --token <api-key>/);
+  assert.match(message, /env add <name> --base-url <url> --auth-type token --token <api-key>/);
   assert.match(message, /nb env update/);
   assert.match(message, /nb --help/);
 });
@@ -86,7 +86,7 @@ test('formatSwaggerSchemaError explains network fetch failures clearly', () => {
   assert.match(message, /Failed to reach the NocoBase server while loading the command runtime/);
   assert.match(message, /Base URL: http:\/\/localhost:13000\/api/);
   assert.match(message, /Network error: fetch failed/);
-  assert.match(message, /nb env add --name <name> --base-url <url>/);
+  assert.match(message, /nb env add <name> --base-url <url>/);
   assert.match(message, /nb env list/);
 });
 
