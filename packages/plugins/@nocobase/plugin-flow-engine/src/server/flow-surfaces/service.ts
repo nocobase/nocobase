@@ -712,6 +712,14 @@ export class FlowSurfacesService {
     }
   }
 
+  private getFlowTemplateRepositorySafe() {
+    try {
+      return this.db.getRepository('flowModelTemplates');
+    } catch (error) {
+      return null;
+    }
+  }
+
   private getFlowTemplateUsageRepository(actionName: string) {
     try {
       return this.db.getRepository('flowModelTemplateUsages');
@@ -7393,7 +7401,10 @@ export class FlowSurfacesService {
       return null;
     }
 
-    const repo = this.getFlowTemplateRepository(actionName);
+    const repo = this.getFlowTemplateRepositorySafe();
+    if (!repo) {
+      return null;
+    }
     const targetContext = await this.loadTemplateListTargetContext({ uid: normalizedHostUid }, options.transaction);
     const templates = await repo.find({
       filter: buildTemplateListFilter(undefined, undefined, 'popup'),
@@ -8167,6 +8178,9 @@ export class FlowSurfacesService {
     popup: Record<string, any> | undefined,
     options: { transaction?: any; popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession },
   ) {
+    if (!this.getFlowTemplateRepositorySafe()) {
+      return;
+    }
     const fieldHostUid = result.fieldUid || result.uid;
     if (!fieldHostUid) {
       return;
@@ -8216,6 +8230,9 @@ export class FlowSurfacesService {
     _popup: Record<string, any> | undefined,
     options: { transaction?: any },
   ) {
+    if (!this.getFlowTemplateRepositorySafe()) {
+      return;
+    }
     const actionNode = await this.repository.findModelById(actionUid, {
       transaction: options.transaction,
       includeAsyncNode: true,
