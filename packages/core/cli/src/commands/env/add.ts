@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import { upsertEnv } from '../../lib/auth-store.js';
 import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
@@ -28,6 +37,13 @@ export default class EnvAdd extends Command {
       char: 't',
       description: 'API key',
     }),
+    'app-root-path': Flags.string({
+      description: 'App root path',
+      required: false,
+    }),
+    'storage-path': Flags.string({
+      description: 'storage path',
+    }),
   };
 
   async run(): Promise<void> {
@@ -55,7 +71,13 @@ export default class EnvAdd extends Command {
     }
 
     printVerbose(`Saving env "${name}" with base URL ${baseUrl}`);
-    await upsertEnv(name, baseUrl, token, { scope });
+    const config = {
+      baseUrl,
+      accessToken: token,
+      appRootPath: flags['app-root-path'],
+      storagePath: flags['storage-path'],
+    };
+    await upsertEnv(name, config, { scope });
     this.log(`Saved env "${name}" and set it as current${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
   }
 }

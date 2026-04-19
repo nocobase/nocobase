@@ -187,13 +187,13 @@ async function writeEnv(
 
 export async function upsertEnv(
   envName: string,
-  baseUrl: string,
-  accessToken?: string,
+  config: Record<string, any>,
   options: AuthStoreOptions = {},
 ) {
   await writeEnv(
     envName,
     (previous) => {
+      const { baseUrl, accessToken, ...rest } = config;
       const baseUrlChanged = previous?.baseUrl !== baseUrl;
       const nextAuth = accessToken
         ? ({
@@ -209,6 +209,7 @@ export async function upsertEnv(
         ...previous,
         baseUrl,
         auth: nextAuth,
+        ...rest,
         runtime: baseUrlChanged || authChanged ? undefined : previous?.runtime,
       };
     },
