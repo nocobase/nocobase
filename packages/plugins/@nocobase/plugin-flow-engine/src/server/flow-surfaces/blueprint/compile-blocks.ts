@@ -10,6 +10,10 @@
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
+import {
+  mergeFlowSurfaceDefaultBlockActions,
+  type FlowSurfaceDefaultBlockActionDescriptor,
+} from '../default-block-actions';
 import type { FlowSurfaceResourceBindingKey } from '../types';
 import type {
   FlowSurfaceApplyBlueprintActionSpec,
@@ -769,6 +773,22 @@ function compileAction(
   });
 }
 
+function compileInjectedDefaultAction(
+  descriptor: FlowSurfaceDefaultBlockActionDescriptor,
+  scopePrefix: string,
+  context: string,
+  index: number,
+) {
+  return buildDefinedPayload({
+    key: normalizeFlowSurfaceComposeKey(
+      buildScopedKey(scopePrefix, `${descriptor.type}_default_${index + 1}`),
+      `${context}[${index}]`,
+    ),
+    type: descriptor.type,
+    popup: descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined,
+  });
+}
+
 function compileBlocks(
   input: FlowSurfaceApplyBlueprintBlockSpec[],
   scopePrefix: string,
@@ -835,6 +855,29 @@ function compileBlocks(
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const fields = readOptionalItems(block.fields, `${blockContext}.fields`);
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
+    const explicitActions = actions.map((action, actionIndex) =>
+      compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),
+    );
+    const explicitRecordActions = recordActions.map((action, actionIndex) =>
+      compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`),
+    );
+    const injectedActionIndexes = {
+      actions: explicitActions.length,
+      recordActions: explicitRecordActions.length,
+    };
+    const mergedActions = mergeFlowSurfaceDefaultBlockActions({
+      blockType: readOptionalString(block.type),
+      template,
+      actions: explicitActions,
+      recordActions: explicitRecordActions,
+      createAction: (descriptor) =>
+        compileInjectedDefaultAction(
+          descriptor,
+          key,
+          `${blockContext}.${descriptor.scope}`,
+          injectedActionIndexes[descriptor.scope]++,
+        ),
+    });
     return buildDefinedPayload({
       key,
       type: readOptionalString(block.type),
@@ -844,12 +887,8 @@ function compileBlocks(
       fields: fields.map((field, fieldIndex) =>
         compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
       ),
-      actions: actions.map((action, actionIndex) =>
-        compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),
-      ),
-      recordActions: recordActions.map((action, actionIndex) =>
-        compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`),
-      ),
+      actions: mergedActions.actions,
+      recordActions: mergedActions.recordActions,
     });
   });
 

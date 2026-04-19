@@ -1717,21 +1717,33 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const listReadback = await getSurface(rootAgent, { uid: listBlock?.uid });
     const gridCardReadback = await getSurface(rootAgent, { uid: gridCardBlock?.uid });
 
-    expect(readNodeActionUses(tableReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readNodeActionUses(tableReadback.tree)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
       'DeleteActionModel',
       'ViewActionModel',
       'EditActionModel',
     ]);
 
-    expect(readNodeActionUses(listReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readNodeActionUses(listReadback.tree)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
     expect(readCardItemRecordActionUses(listReadback.tree)).toEqual([
       'DeleteActionModel',
       'ViewActionModel',
       'EditActionModel',
     ]);
 
-    expect(readNodeActionUses(gridCardReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readNodeActionUses(gridCardReadback.tree)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
     expect(readCardItemRecordActionUses(gridCardReadback.tree)).toEqual([
       'DeleteActionModel',
       'ViewActionModel',

@@ -2739,7 +2739,9 @@ describe('flowSurfaces resource', () => {
     expect(viewPopupTab?.props?.title).toBe('Details');
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(viewPopupBlock?.subModels?.actions).toBeUndefined();
+    expect(_.castArray(viewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['EditActionModel']),
+    );
     expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
     expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
 
@@ -3068,7 +3070,12 @@ describe('flowSurfaces resource', () => {
       uid: updateRecordAction.uid,
     });
     expect(detailsReadback.tree.use).toBe('DetailsBlockModel');
-    expect(_.castArray(detailsReadback.tree.subModels?.actions || [])[0]?.uid).toBe(updateRecordAction.uid);
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['EditActionModel', 'UpdateRecordActionModel']),
+    );
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || []).map((item: any) => item?.uid)).toContain(
+      updateRecordAction.uid,
+    );
     expect(updateRecordAction.assignFormUid).toBeTruthy();
     expect(updateActionReadback.tree.flowRegistry?.beforeAssignConfirm?.on).toMatchObject({
       eventName: 'click',
