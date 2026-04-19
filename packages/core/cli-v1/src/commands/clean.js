@@ -19,12 +19,18 @@ module.exports = (cli) => {
   cli
     .command('clean')
     .allowUnknownOption()
-    .action(() => {
+    .option('--dist', 'only clean build output (lib,esm,es,dist), keep node_modules')
+    .action((options) => {
       if (!isDev()) {
         return;
       }
-      run('rimraf', ['-rf', './storage/app-dev']);
-      run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
-      run('rimraf', ['-rf', 'packages/*/@*/*/{lib,esm,es,dist,node_modules}']);
+      if (options.dist) {
+        run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist}']);
+        run('rimraf', ['-rf', 'packages/*/@*/*/{lib,esm,es,dist}']);
+      } else {
+        run('rimraf', ['-rf', './storage/app-dev']);
+        run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
+        run('rimraf', ['-rf', 'packages/*/@*/*/{lib,esm,es,dist,node_modules}']);
+      }
     });
 };
