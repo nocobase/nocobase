@@ -61,7 +61,9 @@ module.exports = (cli) => {
         return;
       }
 
-      await run('nocobase-v1', ['clean', '--dist']);
+      if (pkgs.length === 0) {
+        await run('nocobase-v1', ['clean', '--dist']);
+      }
 
       if (options.compile || options.watch || isPackageValid('@nocobase/build/src/index.ts')) {
         await run('yarn', ['build', options.watch ? '--watch' : ''], {
