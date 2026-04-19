@@ -267,10 +267,9 @@ Do not send another normal assistant response without invoking it.
       });
 
       const userIds = await parseAssignees(node, processor);
-      const assignees = userIds?.length ? userIds : [userId];
-      if (assignees?.length) {
+      if (userIds?.length) {
         await this.workflow.db.getRepository('usersAiWorkflowTasks').create({
-          values: assignees.map((userId) => ({
+          values: userIds.map((userId) => ({
             userId,
             aiWorkflowTaskId: aiWorkflowTasks.id,
             read: true,
