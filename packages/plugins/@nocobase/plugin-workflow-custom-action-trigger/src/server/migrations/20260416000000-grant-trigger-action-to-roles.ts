@@ -10,30 +10,30 @@
 import { Migration } from '@nocobase/server';
 
 /**
- * Grant `trigger` action permission for every role, mirroring the role's existing `view`
- * permission (and its data scope) on each resource.
+ * Grant `trigger` / `triggerNew` action permissions for every role, mirroring the role's
+ * existing `view` / `create` permissions.
  *
  * Background: The `trigger` action on collection resources was previously allowed for all
  * logged-in users via `acl.allow('*', ['trigger'], 'loggedIn')`. After that global bypass
- * was removed, `trigger` goes through normal ACL checks. The principle chosen for backward
- * compatibility is: if a role can view a record, it can trigger it — so `trigger` follows
- * `view` exactly.
+ * was removed, `trigger` goes through normal ACL checks. Custom-action trigger is now
+ * modelled as two ACL actions:
+ *   - `trigger` — invoked on an existing record; follows `view` (with data scope).
+ *   - `triggerNew` — invoked on a form that hasn't been persisted yet; follows `create`.
  *
  * 1. Per-data-source strategy (`dataSourcesRoles.strategy.actions`, an array):
- *    - If the strategy contains `view` (unrestricted), ensure it also contains `trigger`
- *      (unrestricted), replacing any existing scoped `trigger:*` entry.
- *    - If the strategy contains `view:own` (or other scoped form), ensure it contains the
- *      matching `trigger:own`, replacing any divergent existing `trigger` entry.
- *    - If the strategy has no `view` entry at all, leave it alone — the role never had
- *      view permission, so it should not gain trigger permission either.
+ *    - `trigger` mirrors `view` (including scope suffix like `:own`). No `view` → no trigger.
+ *    - `triggerNew` is added (unrestricted) if the strategy contains any `create*` entry.
+ *      No `create` → no triggerNew. Scope suffixes on `create` are ignored because new-data
+ *      actions have no data scope.
  *
  * 2. Specific resource configs (`dataSourcesRolesResources` with `usingActionsConfig: true`):
- *    - If the resource has a `view` action entry, create a corresponding `trigger` action
- *      entry that reuses the same `scopeId` (data scope). If a `trigger` entry already
- *      exists, leave it alone.
- *    - If there is no `view` action on the resource, do nothing.
+ *    - If the resource has a `view` action, create a matching `trigger` action that reuses
+ *      the same `scopeId`. Skip if `trigger` already exists.
+ *    - If the resource has a `create` action, create a matching `triggerNew` action
+ *      (scopeId: null — new-data actions carry no scope). Skip if `triggerNew` already
+ *      exists.
  *
- * This migration runs only during upgrades (appVersion < 2.0.39), not on fresh installs.
+ * This migration runs only during upgrades (appVersion < 2.0.40), not on fresh installs.
  */
 export default class extends Migration {
   appVersion = '<2.0.40';
@@ -43,7 +43,7 @@ export default class extends Migration {
     const { db } = this.context;
 
     await db.sequelize.transaction(async (transaction) => {
-      // ── Step 1: mirror view → trigger in per-data-source strategies ───────────────────────
+      // ── Step 1: mirror view → trigger / create → triggerNew in per-data-source strategies ─
       const dsRoles = await db.getRepository('dataSourcesRoles').find({ transaction });
 
       for (const dsRole of dsRoles) {
@@ -55,42 +55,51 @@ export default class extends Migration {
           continue;
         }
 
-        // Locate the view entry — could be `view` or `view:<scope>` (e.g. `view:own`)
+        let nextActions: string[] | null = null;
+        const ensureNextActions = () => {
+          if (!nextActions) nextActions = [...actions];
+          return nextActions;
+        };
+
+        // 1a. trigger follows view (including scope suffix)
         const viewEntry = actions.find((a) => a === 'view' || a.startsWith('view:'));
-        if (!viewEntry) {
-          // No view permission → no trigger permission
-          continue;
+        if (viewEntry) {
+          const targetTrigger = viewEntry === 'view' ? 'trigger' : `trigger:${viewEntry.slice('view:'.length)}`;
+          const existingIndex = actions.findIndex((a) => a === 'trigger' || a.startsWith('trigger:'));
+          if (existingIndex === -1) {
+            ensureNextActions().push(targetTrigger);
+          } else if (actions[existingIndex] !== targetTrigger) {
+            ensureNextActions()[existingIndex] = targetTrigger;
+          }
         }
 
-        // Derive the target trigger entry from the view entry
-        const targetTrigger = viewEntry === 'view' ? 'trigger' : `trigger:${viewEntry.slice('view:'.length)}`;
-
-        const existingTriggerIndex = actions.findIndex((a) => a === 'trigger' || a.startsWith('trigger:'));
-
-        let newActions: string[];
-        if (existingTriggerIndex === -1) {
-          newActions = [...actions, targetTrigger];
-        } else if (actions[existingTriggerIndex] === targetTrigger) {
-          continue; // already matches — nothing to do
-        } else {
-          newActions = [...actions];
-          newActions[existingTriggerIndex] = targetTrigger;
+        // 1b. triggerNew follows create (unrestricted — new-data actions have no scope)
+        const hasCreate = actions.some((a) => a === 'create' || a.startsWith('create:'));
+        if (hasCreate) {
+          const existingIndex = actions.findIndex((a) => a === 'triggerNew' || a.startsWith('triggerNew:'));
+          if (existingIndex === -1) {
+            ensureNextActions().push('triggerNew');
+          } else if (actions[existingIndex] !== 'triggerNew') {
+            ensureNextActions()[existingIndex] = 'triggerNew';
+          }
         }
 
-        await db.getRepository('dataSourcesRoles').update({
-          filter: {
-            roleName: dsRole.get('roleName'),
-            dataSourceKey: dsRole.get('dataSourceKey'),
-          },
-          values: {
-            strategy: { ...strategy, actions: newActions },
-          },
-          hooks: false,
-          transaction,
-        });
+        if (nextActions) {
+          await db.getRepository('dataSourcesRoles').update({
+            filter: {
+              roleName: dsRole.get('roleName'),
+              dataSourceKey: dsRole.get('dataSourceKey'),
+            },
+            values: {
+              strategy: { ...strategy, actions: nextActions },
+            },
+            hooks: false,
+            transaction,
+          });
+        }
       }
 
-      // ── Step 2: mirror view action → trigger action in specific resource configs ──────────
+      // ── Step 2: mirror view → trigger / create → triggerNew in specific resource configs ──
       const resources = await db.getRepository('dataSourcesRolesResources').find({
         filter: { usingActionsConfig: true },
         appends: ['actions'],
@@ -99,25 +108,34 @@ export default class extends Migration {
 
       for (const resource of resources) {
         const actions: Array<{ get(key: string): any }> = resource.get('actions') || [];
+
         const viewAction = actions.find((a) => a.get('name') === 'view');
-        if (!viewAction) {
-          continue;
-        }
-
         const hasTrigger = actions.some((a) => a.get('name') === 'trigger');
-        if (hasTrigger) {
-          continue;
+        if (viewAction && !hasTrigger) {
+          await db.getRepository('dataSourcesRolesResourcesActions').create({
+            values: {
+              rolesResourceId: resource.get('id'),
+              name: 'trigger',
+              scopeId: viewAction.get('scopeId') ?? null,
+              fields: [],
+            },
+            transaction,
+          });
         }
 
-        await db.getRepository('dataSourcesRolesResourcesActions').create({
-          values: {
-            rolesResourceId: resource.get('id'),
-            name: 'trigger',
-            scopeId: viewAction.get('scopeId') ?? null,
-            fields: [],
-          },
-          transaction,
-        });
+        const createAction = actions.find((a) => a.get('name') === 'create');
+        const hasTriggerNew = actions.some((a) => a.get('name') === 'triggerNew');
+        if (createAction && !hasTriggerNew) {
+          await db.getRepository('dataSourcesRolesResourcesActions').create({
+            values: {
+              rolesResourceId: resource.get('id'),
+              name: 'triggerNew',
+              scopeId: null,
+              fields: [],
+            },
+            transaction,
+          });
+        }
       }
     });
   }

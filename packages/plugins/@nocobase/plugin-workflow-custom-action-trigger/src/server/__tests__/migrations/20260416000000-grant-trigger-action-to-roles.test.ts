@@ -157,8 +157,8 @@ describe('migration: 20260416000000-grant-trigger-action-to-roles', () => {
       expect(dsRole.get('strategy').actions).toBe('*');
     });
 
-    it('should skip a role whose strategy has no view entry at all', async () => {
-      await createDsRole('roleE', ['create', 'list']);
+    it('should not derive trigger when strategy has no view entry', async () => {
+      await createDsRole('roleE', ['list']);
 
       await new Migration({ db, app } as any).up();
 
@@ -168,8 +168,56 @@ describe('migration: 20260416000000-grant-trigger-action-to-roles', () => {
       const actions: string[] = dsRole.get('strategy').actions;
       expect(actions).not.toContain('trigger');
       expect(actions).not.toContain('trigger:own');
-      // strategy untouched
-      expect(actions).toEqual(['create', 'list']);
+    });
+
+    it('should add triggerNew when strategy has create', async () => {
+      await createDsRole('roleF', ['create', 'list']);
+
+      await new Migration({ db, app } as any).up();
+
+      const dsRole = await db.getRepository('dataSourcesRoles').findOne({
+        filter: { roleName: 'roleF', dataSourceKey: 'main' },
+      });
+      const actions: string[] = dsRole.get('strategy').actions;
+      expect(actions).toContain('triggerNew');
+      expect(actions).toContain('create');
+    });
+
+    it('should not add triggerNew when strategy has no create', async () => {
+      await createDsRole('roleG', ['view']);
+
+      await new Migration({ db, app } as any).up();
+
+      const dsRole = await db.getRepository('dataSourcesRoles').findOne({
+        filter: { roleName: 'roleG', dataSourceKey: 'main' },
+      });
+      const actions: string[] = dsRole.get('strategy').actions;
+      expect(actions).not.toContain('triggerNew');
+    });
+
+    it('should not duplicate triggerNew when strategy already has it', async () => {
+      await createDsRole('roleH', ['create', 'triggerNew']);
+
+      await new Migration({ db, app } as any).up();
+
+      const dsRole = await db.getRepository('dataSourcesRoles').findOne({
+        filter: { roleName: 'roleH', dataSourceKey: 'main' },
+      });
+      const actions: string[] = dsRole.get('strategy').actions;
+      expect(actions.filter((a) => a === 'triggerNew').length).toBe(1);
+    });
+
+    it('should derive both trigger and triggerNew when strategy has view and create', async () => {
+      await createDsRole('roleI', ['view', 'create']);
+
+      await new Migration({ db, app } as any).up();
+
+      const dsRole = await db.getRepository('dataSourcesRoles').findOne({
+        filter: { roleName: 'roleI', dataSourceKey: 'main' },
+      });
+      const actions: string[] = dsRole.get('strategy').actions;
+      expect(actions).toContain('trigger');
+      expect(actions).toContain('triggerNew');
     });
   });
 
@@ -239,7 +287,7 @@ describe('migration: 20260416000000-grant-trigger-action-to-roles', () => {
     it('should add trigger to every view-bearing resource across multiple resources', async () => {
       const r1 = await createResource('tableA', true, [{ name: 'view' }]);
       const r2 = await createResource('tableB', true, [{ name: 'view' }, { name: 'update' }]);
-      const r3 = await createResource('tableC', true, [{ name: 'create' }]); // no view → skip
+      const r3 = await createResource('tableC', true, [{ name: 'update' }]); // no view → no trigger
 
       await new Migration({ db, app } as any).up();
 
@@ -254,6 +302,54 @@ describe('migration: 20260416000000-grant-trigger-action-to-roles', () => {
         filter: { rolesResourceId: r3.get('id') },
       });
       expect(r3Actions.map((a) => a.get('name'))).not.toContain('trigger');
+    });
+
+    it('should add triggerNew when resource has create action, without scope', async () => {
+      const resource = await createResource('formA', true, [{ name: 'create' }]);
+
+      await new Migration({ db, app } as any).up();
+
+      const actions = await db.getRepository('dataSourcesRolesResourcesActions').find({
+        filter: { rolesResourceId: resource.get('id') },
+      });
+      const triggerNewAction = actions.find((a) => a.get('name') === 'triggerNew');
+      expect(triggerNewAction).toBeTruthy();
+      expect(triggerNewAction.get('scopeId')).toBeFalsy();
+    });
+
+    it('should not add triggerNew when resource has no create action', async () => {
+      const resource = await createResource('formB', true, [{ name: 'view' }]);
+
+      await new Migration({ db, app } as any).up();
+
+      const actions = await db.getRepository('dataSourcesRolesResourcesActions').find({
+        filter: { rolesResourceId: resource.get('id') },
+      });
+      expect(actions.find((a) => a.get('name') === 'triggerNew')).toBeUndefined();
+    });
+
+    it('should not duplicate triggerNew if it already exists', async () => {
+      const resource = await createResource('formC', true, [{ name: 'create' }, { name: 'triggerNew' }]);
+
+      await new Migration({ db, app } as any).up();
+
+      const actions = await db.getRepository('dataSourcesRolesResourcesActions').find({
+        filter: { rolesResourceId: resource.get('id') },
+      });
+      expect(actions.filter((a) => a.get('name') === 'triggerNew').length).toBe(1);
+    });
+
+    it('should add both trigger and triggerNew when resource has view and create', async () => {
+      const resource = await createResource('formD', true, [{ name: 'view' }, { name: 'create' }]);
+
+      await new Migration({ db, app } as any).up();
+
+      const actions = await db.getRepository('dataSourcesRolesResourcesActions').find({
+        filter: { rolesResourceId: resource.get('id') },
+      });
+      const names = actions.map((a) => a.get('name'));
+      expect(names).toContain('trigger');
+      expect(names).toContain('triggerNew');
     });
   });
 });
