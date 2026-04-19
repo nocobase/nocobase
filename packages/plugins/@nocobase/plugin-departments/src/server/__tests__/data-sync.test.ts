@@ -166,7 +166,7 @@ describe('department data sync', async () => {
     });
     expect(departmentUser).toBeTruthy();
     expect(departmentUser.isOwner).toBe(false);
-    expect(user.mainDepartmentId).toBeNull();
+    expect(user.mainDepartmentId).toBe(department.id);
 
     await resourceManager.updateOrCreate({
       sourceName: 'test',
@@ -236,7 +236,7 @@ describe('department data sync', async () => {
     });
     expect(departmentUser3).toBeTruthy();
     expect(departmentUser3.isOwner).toBe(true);
-    expect(user2.mainDepartmentId).toBeNull();
+    expect(user2.mainDepartmentId).toBe(department.id);
   });
 
   it('should update department custom field', async () => {
