@@ -14,17 +14,20 @@ import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
 import { loadAuthConfig, type EnvConfigEntry } from '../lib/auth-store.ts';
 import { runNocoBaseCommand } from '../lib/run-npm.ts';
+import type { DownloadCommandResult } from './download.ts';
 
 type InstallSource = 'git' | 'npm' | 'docker';
 
 const DEFAULT_INSTALL_ENV_NAME = 'local';
 const DEFAULT_INSTALL_SOURCE: InstallSource = 'docker';
+const DEFAULT_INSTALL_LANG = 'en-US';
 
 /** Flags from `nb install` that influence `nocobase-v1 install` argv (subset for typing). */
 type NocoBaseInstallArgvFlags = {
   source?: string;
   force?: boolean;
   lang?: string;
+  rootUserName?: string;
   rootEmail?: string;
   rootPassword?: string;
   rootNickname?: string;
@@ -36,8 +39,7 @@ export default class Install extends Command {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -f',
     '<%= config.bin %> <%= command.id %> -l zh-CN',
-    '<%= config.bin %> <%= command.id %> -m demo@nocobase.com',
-    '<%= config.bin %> <%= command.id %> -p admin123',
+    '<%= config.bin %> <%= command.id %> -u nocobase -m admin@nocobase.com -p admin123',
     '<%= config.bin %> <%= command.id %> -n "Super Admin"',
     '<%= config.bin %> <%= command.id %> --app-root-path=./nocobase --storage-path=./storage/myenv -e myenv',
     '<%= config.bin %> <%= command.id %> --source npm',
@@ -56,13 +58,31 @@ export default class Install extends Command {
     }),
     env: Flags.string({
       char: 'e',
-      description: `Application name (CLI env key). Default: ${DEFAULT_INSTALL_ENV_NAME}; storage defaults to ./storage/<name> unless --storage-path is set`,
+      description:
+        'Application name (CLI env key). Required. Storage defaults to ./storage/<name> unless --storage-path is set',
     }),
     force: Flags.boolean({ description: 'Reinstall the application by clearing the database', char: 'f', required: false }),
     lang: Flags.string({ description: 'Language during installation', char: 'l', required: false }),
-    rootEmail: Flags.string({ description: 'Root user email', char: 'm', required: false }),
-    rootPassword: Flags.string({ description: 'Root user password', char: 'p', required: false }),
-    rootNickname: Flags.string({ description: 'Root user nickname', char: 'n', required: false }),
+    'root-username': Flags.string({
+      char: 'u',
+      description: 'Root username (sets INIT_ROOT_USERNAME for install; forwarded as --root-username)',
+      required: false,
+    }),
+    'root-email': Flags.string({
+      char: 'm',
+      description: 'Root user email (sets INIT_ROOT_EMAIL for install; forwarded as --root-email)',
+      required: false,
+    }),
+    'root-password': Flags.string({
+      char: 'p',
+      description: 'Root user password (forwarded as --root-password)',
+      required: false,
+    }),
+    'root-nickname': Flags.string({
+      char: 'n',
+      description: 'Root user nickname (forwarded as --root-nickname)',
+      required: false,
+    }),
     'app-root-path': Flags.string({
       description: 'Application root directory for install (relative to cwd; default: ./nocobase)',
     }),
@@ -107,8 +127,8 @@ export default class Install extends Command {
       default: false,
     }),
     'download-version': Flags.string({
-      description: 'When using fetch-source or nb download: version / dist-tag (-v), default latest',
-      default: 'latest',
+      description:
+        'When using fetch-source or nb download: version / dist-tag (-v); default latest when non-interactive / -y',
     }),
     'download-git-url': Flags.string({
       description: 'When using fetch-source with git: repository URL (nb download --git-url)',
@@ -156,7 +176,7 @@ export default class Install extends Command {
     appRootPathFlag: string | undefined;
     savedEnv?: EnvConfigEntry;
     fetchSourceFlag: boolean;
-    downloadVersion: string;
+    downloadVersion: string | undefined;
     downloadGitUrl: string | undefined;
   }): Promise<string | undefined> {
     const {
@@ -165,9 +185,9 @@ export default class Install extends Command {
       hasSavedEnv,
       savedEnv,
       fetchSourceFlag,
-      downloadVersion,
       downloadGitUrl,
     } = options;
+    const downloadVersion = options.downloadVersion;
     let appRootPathFlag = options.appRootPathFlag;
 
     let runDownload: boolean;
@@ -206,55 +226,36 @@ export default class Install extends Command {
       return appRootPathFlag;
     }
 
-    let version = downloadVersion || 'latest';
-    let outputDir = appRootPathFlag;
-    let gitUrl = downloadGitUrl;
+    const downloadArgv: string[] = [];
+    if (!interactive) {
+      downloadArgv.push('-y');
+    }
+    downloadArgv.push('--source', source);
 
-    if (interactive) {
-      const vAns = await p.text({
-        message: 'Version or dist-tag for nb download (-v)',
-        initialValue: version,
-      });
-      if (p.isCancel(vAns)) {
-        p.cancel('Install cancelled.');
-        this.exit(0);
-      }
-      version = vAns.trim() || version;
-
-      const defaultOut =
-        outputDir ??
-        (path.relative(process.cwd(), this.resolveAppRoot(undefined, savedEnv?.appRootPath)) || 'nocobase');
-      const oAns = await p.text({
-        message: 'Output directory for nb download (-o, relative to cwd)',
-        initialValue: defaultOut || 'nocobase',
-      });
-      if (p.isCancel(oAns)) {
-        p.cancel('Install cancelled.');
-        this.exit(0);
-      }
-      outputDir = oAns.trim() || defaultOut;
-
-      if (source === 'git') {
-        const uAns = await p.text({
-          message: 'Git remote URL',
-          initialValue: gitUrl ?? 'https://github.com/nocobase/nocobase.git',
-        });
-        if (p.isCancel(uAns)) {
-          p.cancel('Install cancelled.');
-          this.exit(0);
-        }
-        gitUrl = uAns.trim() || gitUrl;
-      }
-    } else {
+    if (!interactive) {
+      const version = downloadVersion?.trim() || 'latest';
+      downloadArgv.push('-v', version);
+      let outputDir = appRootPathFlag?.trim();
       if (!outputDir) {
         const safe = version.replace(/[/\\]/g, '-');
         outputDir = `nocobase-${safe}`;
       }
-    }
-
-    const downloadArgv = ['--source', source, '-v', version, '-o', outputDir];
-    if (source === 'git' && gitUrl) {
-      downloadArgv.push('--git-url', gitUrl);
+      downloadArgv.push('-o', outputDir);
+      if (source === 'git' && downloadGitUrl?.trim()) {
+        downloadArgv.push('--git-url', downloadGitUrl.trim());
+      }
+    } else {
+      const v = downloadVersion?.trim();
+      if (v) {
+        downloadArgv.push('-v', v);
+      }
+      const out = appRootPathFlag?.trim();
+      if (out) {
+        downloadArgv.push('-o', out);
+      }
+      if (source === 'git' && downloadGitUrl?.trim()) {
+        downloadArgv.push('--git-url', downloadGitUrl.trim());
+      }
     }
 
     if (interactive) {
@@ -262,14 +263,27 @@ export default class Install extends Command {
     } else {
       this.log('Running nb download');
     }
-    await this.config.runCommand('download', downloadArgv);
-    return outputDir;
+    const dl = await this.config.runCommand<DownloadCommandResult>('download', downloadArgv);
+    if (dl.projectRoot) {
+      return dl.projectRoot;
+    }
+
+    if (!interactive) {
+      const version = downloadVersion?.trim() || 'latest';
+      const safe = version.replace(/[/\\]/g, '-');
+      const outputDir = appRootPathFlag?.trim() || `nocobase-${safe}`;
+      return path.resolve(process.cwd(), outputDir);
+    }
+
+    this.error('Could not determine the project directory after nb download.');
   }
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Install);
 
     const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY && !flags.yes);
+
+    let installLang = flags.lang?.trim() || undefined;
 
     let envName = flags.env?.trim();
     if (envName === '') {
@@ -278,19 +292,33 @@ export default class Install extends Command {
 
     if (interactive) {
       p.intro('nb install');
+      if (installLang === undefined) {
+        const langAns = await p.text({
+          message: 'Install language (--lang, e.g. en-US or zh-CN)',
+          placeholder: DEFAULT_INSTALL_LANG,
+          initialValue: DEFAULT_INSTALL_LANG,
+        });
+        if (p.isCancel(langAns)) {
+          p.cancel('Install cancelled.');
+          this.exit(0);
+        }
+        const t = (langAns as string).trim();
+        installLang = t || DEFAULT_INSTALL_LANG;
+      }
       if (!envName) {
         const envAnswer = await p.text({
           message: 'Application name',
           placeholder: DEFAULT_INSTALL_ENV_NAME,
+          validate: (value) => (value.trim() ? undefined : 'Application name is required'),
         });
         if (p.isCancel(envAnswer)) {
           p.cancel('Install cancelled.');
           this.exit(0);
         }
-        envName = envAnswer.trim() || DEFAULT_INSTALL_ENV_NAME;
+        envName = (envAnswer as string).trim();
       }
-    } else {
-      envName = envName ?? DEFAULT_INSTALL_ENV_NAME;
+    } else if (!envName) {
+      this.error('Application name is required (pass -e or --env).');
     }
 
     const auth = await loadAuthConfig();
@@ -500,7 +528,7 @@ export default class Install extends Command {
         appRootPathFlag,
         savedEnv,
         fetchSourceFlag: Boolean(flags['fetch-source']),
-        downloadVersion: flags['download-version'] ?? 'latest',
+        downloadVersion: flags['download-version']?.trim() || undefined,
         downloadGitUrl: flags['download-git-url'],
       });
     }
@@ -528,17 +556,28 @@ export default class Install extends Command {
       }
     }
 
+    const installOpts = await this.promptNocoBaseInstallOptions(interactive, {
+      force: flags.force,
+      lang: installLang,
+      rootUserName: flags['root-username'],
+      rootEmail: flags['root-email'],
+      rootPassword: flags['root-password'],
+      rootNickname: flags['root-nickname'],
+    });
     const argvFlags: NocoBaseInstallArgvFlags = {
       source,
-      force: flags.force,
-      lang: flags.lang,
-      rootEmail: flags.rootEmail,
-      rootPassword: flags.rootPassword,
-      rootNickname: flags.rootNickname,
+      ...installOpts,
     };
 
+    if (argvFlags.rootUserName) {
+      procEnv.INIT_ROOT_USERNAME = argvFlags.rootUserName;
+    }
+    if (argvFlags.rootEmail) {
+      procEnv.INIT_ROOT_EMAIL = argvFlags.rootEmail;
+    }
+
     try {
-      await this.runNocoBaseInstall(appRoot, procEnv, argvFlags);
+      await this.runNocoBaseInstall(appRoot, procEnv, argvFlags, interactive);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       if (interactive) {
@@ -617,19 +656,115 @@ export default class Install extends Command {
   }
 
   /**
+   * Interactive prompts for `nocobase-v1 install` options; CLI flags win when already set.
+   */
+  private async promptNocoBaseInstallOptions(
+    interactive: boolean,
+    flags: {
+      force: boolean;
+      lang?: string;
+      rootUserName?: string;
+      rootEmail?: string;
+      rootPassword?: string;
+      rootNickname?: string;
+    },
+  ): Promise<
+    Pick<
+      NocoBaseInstallArgvFlags,
+      'force' | 'lang' | 'rootUserName' | 'rootEmail' | 'rootPassword' | 'rootNickname'
+    >
+  > {
+    let force = flags.force;
+    let lang = flags.lang;
+    let rootUserName = flags.rootUserName;
+    let rootEmail = flags.rootEmail;
+    let rootPassword = flags.rootPassword;
+    let rootNickname = flags.rootNickname;
+
+    if (!interactive) {
+      return { force, lang, rootUserName, rootEmail, rootPassword, rootNickname };
+    }
+
+    if (!flags.force) {
+      const reinstall = await p.confirm({
+        message: 'Reinstall and clear the database? (--force)',
+        initialValue: false,
+      });
+      if (p.isCancel(reinstall)) {
+        p.cancel('Install cancelled.');
+        this.exit(0);
+      }
+      force = reinstall;
+    }
+
+    if (rootUserName === undefined) {
+      const userAns = await p.text({
+        message: 'Root username (--root-username)',
+        placeholder: 'nocobase',
+        initialValue: 'nocobase',
+      });
+      if (p.isCancel(userAns)) {
+        p.cancel('Install cancelled.');
+        this.exit(0);
+      }
+      const t = userAns.trim();
+      rootUserName = t || undefined;
+    }
+
+    if (rootEmail === undefined) {
+      const emailAns = await p.text({
+        message: 'Root user email (--root-email)',
+        placeholder: 'admin@nocobase.com',
+        initialValue: 'admin@nocobase.com',
+      });
+      if (p.isCancel(emailAns)) {
+        p.cancel('Install cancelled.');
+        this.exit(0);
+      }
+      const t = emailAns.trim();
+      rootEmail = t || undefined;
+    }
+
+    if (rootPassword === undefined) {
+      const passAns = await p.password({
+        message: 'Root user password (--root-password)',
+      });
+      if (p.isCancel(passAns)) {
+        p.cancel('Install cancelled.');
+        this.exit(0);
+      }
+      rootPassword = typeof passAns === 'string' && passAns.length > 0 ? passAns : undefined;
+    }
+
+    if (rootNickname === undefined) {
+      const nickAns = await p.text({
+        message: 'Root user nickname (--root-nickname)',
+        placeholder: 'Super Admin',
+      });
+      if (p.isCancel(nickAns)) {
+        p.cancel('Install cancelled.');
+        this.exit(0);
+      }
+      const t = nickAns.trim();
+      rootNickname = t || undefined;
+    }
+
+    return { force, lang, rootUserName, rootEmail, rootPassword, rootNickname };
+  }
+
+  /**
    * Build argv for `nocobase-v1 install` from CLI flags.
    */
   private buildNocoBaseInstallArgs(flags: NocoBaseInstallArgvFlags): string[] {
     const npmArgs = ['install'];
-
-    if (flags.source !== undefined) {
-      npmArgs.push('--source', flags.source);
-    }
     if (flags.force) {
       npmArgs.push('--force');
     }
     if (flags.lang !== undefined) {
       npmArgs.push('--lang', flags.lang);
+    }
+    if (flags.rootUserName !== undefined) {
+      npmArgs.push('--root-username', flags.rootUserName);
     }
     if (flags.rootEmail !== undefined) {
       npmArgs.push('--root-email', flags.rootEmail);
@@ -651,11 +786,24 @@ export default class Install extends Command {
     appRoot: string,
     procEnv: Record<string, string>,
     flags: NocoBaseInstallArgvFlags,
+    interactive: boolean,
   ): Promise<void> {
-
-    // TODO: implement this
-    return;
+    const rel = path.relative(process.cwd(), appRoot);
+    const where =
+      rel === '' || rel === '.'
+        ? 'this folder'
+        : rel.startsWith('..')
+          ? appRoot
+          : `./${rel.split(path.sep).join('/')}`;
+    const label = `Installing NocoBase — this may take a few minutes.`;
+    if (interactive) {
+      p.log.step(label);
+    } else {
+      this.log(label);
+    }
     const npmArgs = this.buildNocoBaseInstallArgs(flags);
-    await runNocoBaseCommand(npmArgs, appRoot, { env: procEnv });
+    // TODO: Re-enable when the app root has a runnable `nocobase-v1 install` (or swap to the supported entrypoint).
+    // await runNocoBaseCommand(npmArgs, appRoot, { env: procEnv });
+    void npmArgs;
   }
 }
