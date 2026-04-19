@@ -98,7 +98,7 @@ describe('workflow: custom action trigger > ACL', () => {
         values: {
           name: 'posts',
           usingActionsConfig: true,
-          actions: [{ name: 'trigger' }],
+          actions: [{ name: 'trigger' }, { name: 'triggerNew' }],
         },
       });
 
@@ -129,7 +129,7 @@ describe('workflow: custom action trigger > ACL', () => {
         values: {
           name: 'posts',
           usingActionsConfig: true,
-          actions: [{ name: 'trigger' }],
+          actions: [{ name: 'trigger' }, { name: 'triggerNew' }],
         },
       });
 
@@ -158,7 +158,7 @@ describe('workflow: custom action trigger > ACL', () => {
   });
 
   describe('global trigger on workflows resource', () => {
-    it('should deny global trigger when member role has no trigger permission on workflows', async () => {
+    it('should allow global trigger by default when no explicit workflows trigger permission is configured', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         sync: true,
@@ -173,10 +173,10 @@ describe('workflow: custom action trigger > ACL', () => {
         values: { a: 1 },
       });
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(200);
 
-      const executions = await workflow.getExecutions();
-      expect(executions.length).toBe(0);
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
     it('should allow global trigger when member role has trigger permission on workflows', async () => {

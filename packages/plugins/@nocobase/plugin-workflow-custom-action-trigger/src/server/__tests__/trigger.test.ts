@@ -61,7 +61,7 @@ describe('workflow: custom action trigger', () => {
     // Allow trigger on another data source for workflow behavior tests
     const anotherDs = app.dataSourceManager.dataSources.get('another');
     if (anotherDs) {
-      anotherDs.acl.allow('*', ['trigger'], 'loggedIn');
+      anotherDs.acl.allow('*', ['trigger', 'triggerNew'], 'loggedIn');
     }
   });
 
