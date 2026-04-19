@@ -29,13 +29,17 @@ export default class Build extends Command {
     '<%= config.bin %> <%= command.id %> @nocobase/acl @nocobase/actions',
   ];
   static override flags = {
-    env: Flags.string({ description: 'Environment', char: 'e', required: false }),
+    'cwd': Flags.string({ description: 'Current working directory', char: 'c', required: false }),
     'no-dts': Flags.boolean({ description: 'not generate dts' }),
     sourcemap: Flags.boolean({ description: 'generate sourcemap' }),
   };
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(Build);
+    let cwd = flags['cwd'] || process.cwd();
+    if (!path.isAbsolute(cwd)) {
+      cwd = path.resolve(process.cwd(), cwd);
+    }
     const packages = args.packages ?? [];
     const npmArgs = ['build', ...packages];
     if (flags['no-dts']) {
@@ -44,9 +48,8 @@ export default class Build extends Command {
     if (flags.sourcemap) {
       npmArgs.push('--sourcemap');
     }
-    const env = await getEnv(flags.env);
     try {
-      await runNocoBaseCommand(npmArgs, env.appRootPath);
+      await runNocoBaseCommand(npmArgs, cwd);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);
