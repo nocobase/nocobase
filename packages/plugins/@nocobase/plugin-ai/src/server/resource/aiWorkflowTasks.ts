@@ -10,6 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginWorkflowServer, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { ResourceOptions } from '@nocobase/resourcer';
+import { preserveHistory } from '../workflow/nodes/employee/utils';
 
 export const parseAiWorkflowTaskListRecord = (
   record: any,
@@ -273,7 +274,7 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       await job.update({
         status: JOB_STATUS.REJECTED,
-        result,
+        result: preserveHistory(job.get?.('result') ?? job.result, result),
       });
 
       const workflowPlugin = ctx.app.pm.get('workflow') as PluginWorkflowServer;

@@ -26,6 +26,7 @@ import {
   skillToolBindingMiddleware,
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
+  workflowHistoryMiddleware,
 } from './middleware';
 import { SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
@@ -38,6 +39,7 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
+import { withHistory } from '../workflow/nodes/employee/utils';
 
 export interface ModelRef {
   llmService: string;
@@ -90,6 +92,7 @@ export class AIEmployee {
   private model?: ModelRef;
   private legacy?: boolean;
   private tools: { name: string }[];
+  private inWorkflow?: boolean;
 
   constructor({
     ctx,
@@ -133,6 +136,82 @@ export class AIEmployee {
     return messages;
   }
 
+  async isInWorkflow() {
+    if (this.inWorkflow !== undefined) {
+      return this.inWorkflow;
+    }
+    const conversation = await this.aiConversationsRepo.findByTargetKey(this.sessionId);
+    this.inWorkflow = conversation?.category === 'task';
+    return this.inWorkflow;
+  }
+
+  async syncWorkflowJobHistoryMessages() {
+    if (!(await this.isInWorkflow())) {
+      return;
+    }
+
+    const task = await this.db.getRepository('aiWorkflowTasks').findOne({
+      filter: {
+        sessionId: this.sessionId,
+      },
+    });
+    if (!task?.jobId) {
+      return;
+    }
+
+    const historyMessages = await this.db.getRepository('aiConversations.messages', this.sessionId).find({
+      sort: ['messageId'],
+    });
+    const serializedHistoryMessages = historyMessages.map((message) => {
+      const values = typeof message?.toJSON === 'function' ? message.toJSON() : message;
+      const picked = _.pick(values, ['messageId', 'role', 'content', 'toolCalls']);
+      if (picked.content && 'content' in picked.content) {
+        let rawContent = '';
+        if (typeof picked.content.content === 'string') {
+          rawContent = picked.content.content;
+        } else {
+          try {
+            rawContent = JSON.stringify(picked.content.content);
+          } catch (error) {
+            rawContent = String(picked.content.content ?? '');
+          }
+        }
+        picked.content = {
+          ...picked.content,
+          content: rawContent.length > 200 ? `${rawContent.slice(0, 200)}...` : rawContent,
+        };
+      }
+      if (Array.isArray(picked.toolCalls)) {
+        picked.toolCalls = picked.toolCalls.map((toolCall) => {
+          let serializedArgs = '';
+          try {
+            serializedArgs = JSON.stringify(toolCall?.args);
+          } catch (error) {
+            serializedArgs = String(toolCall?.args ?? '');
+          }
+          return {
+            ...toolCall,
+            args: serializedArgs.length > 200 ? `${serializedArgs.slice(0, 200)}...` : serializedArgs,
+          };
+        });
+      }
+      return picked;
+    });
+
+    const job = await this.db.getModel('jobs').findByPk(task.jobId);
+    if (!job) {
+      return;
+    }
+
+    const currentResult = typeof job.get === 'function' ? job.get('result') : job.result;
+    const nextResult = withHistory(currentResult, serializedHistoryMessages);
+
+    job.set({
+      result: nextResult,
+    });
+    await job.save();
+  }
+
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
     return {
@@ -153,7 +232,7 @@ export class AIEmployee {
         historyMessages: [],
         tools,
         resolvedTools,
-        middleware: this.getMiddleware({ tools, baseToolNames, model, providerName }),
+        middleware: await this.getMiddleware({ tools, baseToolNames, model, providerName }),
         config: undefined,
         state: undefined,
       };
@@ -169,7 +248,7 @@ export class AIEmployee {
       historyMessages,
       tools,
       resolvedTools,
-      middleware: this.getMiddleware({
+      middleware: await this.getMiddleware({
         tools,
         baseToolNames,
         model,
@@ -1436,7 +1515,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     return availableAIEmployees;
   }
 
-  private getMiddleware(options: {
+  private async getMiddleware(options: {
     providerName: string;
     model: string;
     tools: any[];
@@ -1445,7 +1524,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     agentThread?: AgentThread;
   }) {
     const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
+    const inWorkflow = await this.isInWorkflow();
     return [
+      ...(inWorkflow ? [workflowHistoryMiddleware(this)] : []),
       skillToolBindingMiddleware(this, {
         baseToolNames: Array.from(baseToolNames.values()),
       }),

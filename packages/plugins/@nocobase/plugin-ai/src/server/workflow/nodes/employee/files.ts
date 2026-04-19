@@ -17,6 +17,7 @@ import axios from 'axios';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { Plugin } from '@nocobase/server';
 import { resolveContentType, resolveFileIdentity } from '../../utils';
+import { preserveHistory } from './utils';
 
 export abstract class Files {
   static resolvers(plugin: Plugin, job: JobModel, attachmentPart: Record<string, any>) {
@@ -29,7 +30,10 @@ export abstract class Files {
           if (!repository) {
             job.set({
               status: JOB_STATUS.ERROR,
-              result: `Attachment collection [${collection}] not existed`,
+              result: preserveHistory(
+                job.get?.('result') ?? job.result,
+                `Attachment collection [${collection}] not existed`,
+              ),
             });
             return;
           }
@@ -44,7 +48,10 @@ export abstract class Files {
           if (!attachmentModels.length) {
             job.set({
               status: JOB_STATUS.ERROR,
-              result: `Attachment [${collection}] record not existed. Keys: [${attachmentKeys.join(',')}]`,
+              result: preserveHistory(
+                job.get?.('result') ?? job.result,
+                `Attachment [${collection}] record not existed. Keys: [${attachmentKeys.join(',')}]`,
+              ),
             });
             return;
           }
