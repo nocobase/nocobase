@@ -109,6 +109,18 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return this.hasPersistedMenuInstanceFlowFlag();
   }
 
+  async hydrateLegacyPersistedStateIfCurrentPath(pathname: string, basename?: string) {
+    if (!matchesRoutePath(this.getRoute(), pathname, basename)) {
+      return false;
+    }
+
+    if (!this.hasPersistedMenuInstanceFlowFlag()) {
+      await this.hydratePersistedState();
+    }
+
+    return true;
+  }
+
   async openFlowSettings(options?: Parameters<FlowModel['openFlowSettings']>[0]) {
     await this.hydratePersistedState();
     return await super.openFlowSettings(options);
@@ -225,6 +237,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
         if (hasBeforeRenderFlow) {
           void this.rerender();
+        }
+
+        if (!this.hasPersistedMenuInstanceFlowFlag() && this.getCurrentPersistedInstanceFlowCount() > 0) {
+          await this.syncPersistedFlowRouteFlag();
         }
       }
     })().finally(() => {

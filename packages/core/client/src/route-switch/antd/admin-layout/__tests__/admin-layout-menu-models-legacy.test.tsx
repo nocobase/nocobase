@@ -12,14 +12,13 @@ import { FlowEngine } from '@nocobase/flow-engine';
 import { waitFor } from '@testing-library/react';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
 import { AdminLayoutModelV1 } from '../AdminLayoutModel';
+import { hydrateLegacyActiveMenuPersistedStateForTest } from '../AdminLayoutComponentV1';
 import { NocoBaseDesktopRouteType } from '../route-types';
-import { FLOW_SETTINGS_PREFERENCE_STORAGE_KEY } from '../flowSettingsPreference';
 
 describe('AdminLayoutMenuItemModel legacy behavior', () => {
   let engine: FlowEngine;
 
   beforeEach(() => {
-    window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
     engine = new FlowEngine();
     engine.registerModels({
       AdminLayoutModel: AdminLayoutModelV1,
@@ -253,7 +252,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     expect(rerenderSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('should not hydrate unmarked menu flows when only menu preference is enabled in client v1', async () => {
+  it('should not hydrate unmarked menu flows in runtime mode in client v1', async () => {
     const findOne = vi.fn().mockResolvedValue({
       uid: 'legacy-menu-item-runtime-unmarked',
       flowRegistry: {
@@ -264,7 +263,6 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
       },
     });
 
-    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
     engine.setModelRepository({ findOne } as any);
 
     const model = engine.createModel<AdminLayoutMenuItemModel>({
@@ -278,6 +276,109 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     await waitFor(() => {
       expect(findOne).not.toHaveBeenCalled();
       expect(model.getFlow('beforeRender')).toBeUndefined();
+    });
+  });
+
+  it('should backfill route persisted flag after hydrating legacy persisted menu flow in client v1', async () => {
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'legacy-menu-item-backfill',
+      stepParams: {
+        beforeRender: {
+          edit: {
+            title: 'Persisted flow',
+          },
+        },
+      },
+      flowRegistry: {
+        beforeRender: {
+          title: 'Before render',
+          steps: {},
+        },
+      },
+    });
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+
+    engine.context.routeRepository.updateRoute = updateRoute;
+    engine.setModelRepository({ findOne } as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-backfill',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    await model.hydrateLegacyPersistedStateIfCurrentPath('/admin/page-1');
+
+    expect(findOne).toHaveBeenCalledWith({ uid: 'legacy-menu-item-backfill' });
+    expect(model.getFlow('beforeRender')).toBeDefined();
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+    expect(model.getRoute()?.options).toEqual({
+      hasPersistedMenuInstanceFlow: true,
+    });
+  });
+
+  it('should only hydrate legacy persisted state for current matched route in client v1', async () => {
+    const findOne = vi.fn().mockImplementation(async ({ uid }) => {
+      if (uid !== 'legacy-menu-item-current') {
+        return null;
+      }
+
+      return {
+        uid,
+        flowRegistry: {
+          beforeRender: {
+            title: 'Before render',
+            steps: {},
+          },
+        },
+      };
+    });
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+
+    engine.context.routeRepository.updateRoute = updateRoute;
+    engine.setModelRepository({ findOne } as any);
+
+    const currentModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-current',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          id: 1,
+          schemaUid: 'page-1',
+        }),
+      },
+    });
+    const otherModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-other',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          id: 2,
+          schemaUid: 'page-2',
+        }),
+      },
+    });
+
+    expect(findOne).not.toHaveBeenCalled();
+
+    expect(await currentModel.hydrateLegacyPersistedStateIfCurrentPath('/admin/page-1')).toBe(true);
+    expect(await otherModel.hydrateLegacyPersistedStateIfCurrentPath('/admin/page-1')).toBe(false);
+
+    expect(findOne).toHaveBeenCalledTimes(1);
+    expect(findOne).toHaveBeenCalledWith({ uid: 'legacy-menu-item-current' });
+    expect(currentModel.getFlow('beforeRender')).toBeDefined();
+    expect(otherModel.getFlow('beforeRender')).toBeUndefined();
+    expect(updateRoute).toHaveBeenCalledTimes(1);
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
     });
   });
 
@@ -409,5 +510,33 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
       title: 'Persisted flow',
     });
     expect(rerenderSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should hydrate both matched group and child on current legacy branch in client v1', async () => {
+    const child = {
+      subModels: {},
+      hydrateLegacyPersistedStateIfCurrentPath: vi.fn().mockResolvedValue(true),
+    };
+    const group = {
+      subModels: {
+        menuItems: [child],
+      },
+      hydrateLegacyPersistedStateIfCurrentPath: vi.fn().mockResolvedValue(true),
+    };
+    const sibling = {
+      subModels: {},
+      hydrateLegacyPersistedStateIfCurrentPath: vi.fn().mockResolvedValue(false),
+    };
+
+    await expect(
+      hydrateLegacyActiveMenuPersistedStateForTest(
+        [group, sibling] as unknown as AdminLayoutMenuItemModel[],
+        '/admin/page-1',
+      ),
+    ).resolves.toBe(true);
+
+    expect(child.hydrateLegacyPersistedStateIfCurrentPath).toHaveBeenCalledWith('/admin/page-1', undefined);
+    expect(group.hydrateLegacyPersistedStateIfCurrentPath).toHaveBeenCalledWith('/admin/page-1', undefined);
+    expect(sibling.hydrateLegacyPersistedStateIfCurrentPath).not.toHaveBeenCalled();
   });
 });

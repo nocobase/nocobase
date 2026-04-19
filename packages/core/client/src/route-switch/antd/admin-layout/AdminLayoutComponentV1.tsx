@@ -30,6 +30,7 @@ import {
 } from '@nocobase/client-v2';
 import { AdminLayoutModelV1 } from './AdminLayoutModel';
 import {
+  AdminLayoutMenuItemModel,
   AdminLayoutMenuModelRenderer,
   type AdminLayoutMenuNode,
   type AdminLayoutMenuRenderOptions,
@@ -40,11 +41,6 @@ import {
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 import { PinnedPluginList } from '../../../plugin-manager';
-import {
-  FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
-  FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
-  readFlowSettingsPreference,
-} from './flowSettingsPreference';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -331,6 +327,28 @@ const findSelectedTopGroupRoute = (routes: NocoBaseDesktopRoute[], pathname: str
   return routes.find((route) => route.type === NocoBaseDesktopRouteType.group && matchesRoutePath(route, pathname));
 };
 
+const hydrateLegacyActiveMenuPersistedState = async (
+  items: AdminLayoutMenuItemModel[] | undefined,
+  pathname: string,
+  basename?: string,
+): Promise<boolean> => {
+  for (const item of items || []) {
+    const matchedChild = await hydrateLegacyActiveMenuPersistedState(item.subModels.menuItems, pathname, basename);
+    const matchedCurrent = await item.hydrateLegacyPersistedStateIfCurrentPath(pathname, basename);
+
+    if (matchedChild || matchedCurrent) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * @internal 供单测覆盖当前激活分支的 legacy 恢复递归逻辑。
+ */
+export const hydrateLegacyActiveMenuPersistedStateForTest = hydrateLegacyActiveMenuPersistedState;
+
 const renderMenuNodeWithModel = (
   item: AdminLayoutMenuNode,
   dom: React.ReactNode,
@@ -381,14 +399,13 @@ export const AdminLayoutComponent = observer((props: any) => {
     path: '/',
     children: [],
   });
-  const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() => readFlowSettingsPreference());
   const doNotChangeCollapsedRef = useRef(false);
   const t = useCallback(
     (value: any) =>
       typeof flowEngine.context.t === 'function' ? flowEngine.context.t(value, { ns: 'lm-desktop-routes' }) : value,
     [flowEngine],
   );
-  const designable = !isMobileSider && preferredFlowSettingsEnabled;
+  const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
   const flowSettingsSyncRef = useRef(0);
@@ -450,32 +467,6 @@ export const AdminLayoutComponent = observer((props: any) => {
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const syncPreferredFlowSettings = () => {
-      setPreferredFlowSettingsEnabled(readFlowSettingsPreference());
-    };
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key && event.key !== FLOW_SETTINGS_PREFERENCE_STORAGE_KEY) {
-        return;
-      }
-
-      syncPreferredFlowSettings();
-    };
-
-    window.addEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
-    window.addEventListener('storage', handleStorage);
-
-    return () => {
-      window.removeEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, []);
-
-  useEffect(() => {
     const syncId = ++flowSettingsSyncRef.current;
     const shouldEnable = designable && !isMobileSider;
     desiredFlowSettingsEnabledRef.current = shouldEnable;
@@ -507,6 +498,14 @@ export const AdminLayoutComponent = observer((props: any) => {
       }
     };
   }, [designable, flowEngine, isMobileSider]);
+
+  useEffect(() => {
+    void hydrateLegacyActiveMenuPersistedState(
+      (adminLayoutModel?.subModels.menuItems || []) as unknown as AdminLayoutMenuItemModel[],
+      location.pathname,
+      flowEngine.context.router?.basename,
+    );
+  }, [adminLayoutModel, allAccessRoutes, flowEngine, location.pathname]);
 
   const layoutToken = useMemo(() => {
     return {
