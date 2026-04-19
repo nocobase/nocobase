@@ -412,6 +412,7 @@
   "Approve": "批准",
   "Revise": "修改",
   "Reject": "拒绝",
+  "The user rejected the execution of this workflow node.": "用户拒绝了该工作流节点的执行。",
   "Task executing": "任务执行中",
   "Response result": "结果",
   "Please enter and send the modification request": "请输入并发送修改要求",

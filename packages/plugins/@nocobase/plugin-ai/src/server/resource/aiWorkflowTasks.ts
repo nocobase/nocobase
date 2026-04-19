@@ -8,8 +8,8 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
+import PluginWorkflowServer, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { ResourceOptions } from '@nocobase/resourcer';
-import { JOB_STATUS } from '@nocobase/plugin-workflow';
 
 export const parseAiWorkflowTaskListRecord = (
   record: any,
@@ -216,6 +216,71 @@ export const aiWorkflowTasks: ResourceOptions = {
         accepted: acceptedCount > 0,
         readUpdated: readCount > 0,
         acceptedUserId: latestTask?.acceptedUserId ?? null,
+      };
+
+      await next();
+    },
+    reject: async (ctx: Context, next: Next) => {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const id = ctx.action.params.values?.id;
+      const result = ctx.action.params.values?.result;
+      if (!id) {
+        return ctx.throw(400, 'id is required');
+      }
+      if (!result) {
+        return ctx.throw(400, 'result is required');
+      }
+
+      const task = await ctx.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          id,
+          'users.id': userId,
+        },
+      });
+
+      if (!task) {
+        return ctx.throw(404, 'workflow task not found');
+      }
+
+      if (task.status !== 'pending_approval' || String(task.acceptedUserId) !== String(userId)) {
+        return ctx.throw(403);
+      }
+
+      const job = await ctx.db.getRepository('jobs').findOne({
+        filter: {
+          id: task.jobId,
+        },
+      });
+
+      if (!job) {
+        return ctx.throw(404, 'job not found');
+      }
+
+      await ctx.db.getRepository('aiWorkflowTasks').update({
+        values: {
+          status: 'rejected',
+        },
+        filter: {
+          id: task.id,
+          acceptedUserId: userId,
+          status: 'pending_approval',
+        },
+      });
+
+      await job.update({
+        status: JOB_STATUS.REJECTED,
+        result,
+      });
+
+      const workflowPlugin = ctx.app.pm.get('workflow') as PluginWorkflowServer;
+      await workflowPlugin.resume(job);
+
+      ctx.body = {
+        status: 'success',
       };
 
       await next();

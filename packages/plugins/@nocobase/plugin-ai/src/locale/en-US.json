@@ -405,6 +405,7 @@
   "Approve": "Approve",
   "Revise": "Revise",
   "Reject": "Reject",
+  "The user rejected the execution of this workflow node.": "The user rejected the execution of this workflow node.",
   "Task executing": "Task executing",
   "Response result": "Result",
   "Please enter and send the modification request": "Please enter and send the modification request",

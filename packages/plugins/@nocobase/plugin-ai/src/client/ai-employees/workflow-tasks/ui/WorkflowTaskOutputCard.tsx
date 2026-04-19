@@ -123,11 +123,16 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<Record<string, a
           onClick={async () => {
             setAction('reject');
             try {
-              if (cardData?.executionId) {
-                await api.resource('executions').cancel({ filterByTk: cardData.executionId });
+              if (cardData?.id) {
+                await api.resource('aiWorkflowTasks').reject({
+                  values: {
+                    id: cardData.id,
+                    result: t('The user rejected the execution of this workflow node.', { ns: namespace }),
+                  },
+                });
               }
               await decisions.reject(
-                'The user has decided to terminate the workflow task. You do not need to call the current tool to output the task result. The task is finished.',
+                `The user rejected this workflow node. Stop. Do not continue, do not reply about the task result, and do not call this tool again. Only state that you understand.`,
               );
             } finally {
               setAction(null);
