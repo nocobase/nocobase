@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import crypto from 'node:crypto';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -9,7 +18,7 @@ import {
   type AuthStoreOptions,
   type OauthAuthConfig,
 } from './auth-store.js';
-import { printInfo, printVerbose, printWarning, updateTask } from './ui.js';
+import { printInfo, printVerbose, printWarning, printWarningBlock, updateTask } from './ui.js';
 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const LOOPBACK_HOST = '127.0.0.1';
@@ -99,9 +108,38 @@ function formatOauthError(prefix: string, data: any, fallbackStatus?: number) {
   return prefix;
 }
 
-async function fetchOauthServerMetadata(baseUrl: string) {
+function formatOauthFetchFailure(prefix: string, options: { baseUrl?: string; url: string; rawMessage?: string; envName?: string }) {
+  return [
+    prefix,
+    options.envName ? `Env: ${options.envName}` : undefined,
+    options.baseUrl ? `Base URL: ${options.baseUrl}` : undefined,
+    `Request URL: ${options.url}`,
+    `Network error: ${options.rawMessage || 'fetch failed'}`,
+    'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
+    options.envName
+      ? `If the saved login is stale, run \`nb env auth -e ${options.envName}\` again after connectivity is restored.`
+      : 'If the saved login is stale, run `nb env auth -e <name>` again after connectivity is restored.',
+    'Use `nb env list` to inspect the current env configuration.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+async function fetchOauthServerMetadata(baseUrl: string, options: { envName?: string } = {}) {
   const metadataUrl = getOauthMetadataUrl(baseUrl);
-  const response = await fetch(metadataUrl);
+  let response: Response;
+  try {
+    response = await fetch(metadataUrl);
+  } catch (error: any) {
+    throw new Error(
+      formatOauthFetchFailure('Failed to load OAuth metadata.', {
+        envName: options.envName,
+        baseUrl,
+        url: metadataUrl,
+        rawMessage: error?.message,
+      }),
+    );
+  }
   const data = await parseJsonResponse(response);
 
   if (!response.ok) {
@@ -335,7 +373,7 @@ async function refreshOauthAccessToken(options: {
     throw new Error(`OAuth session for env "${options.envName}" cannot be refreshed. Run \`nb env auth -e ${options.envName}\`.`);
   }
 
-  const metadata = await fetchOauthServerMetadata(options.baseUrl);
+  const metadata = await fetchOauthServerMetadata(options.baseUrl, { envName: options.envName });
   const resource = options.auth.resource || getOauthResource(metadata.issuer);
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
@@ -351,6 +389,15 @@ async function refreshOauthAccessToken(options: {
       'content-type': 'application/x-www-form-urlencoded',
     },
     body,
+  }).catch((error: any) => {
+    throw new Error(
+      formatOauthFetchFailure(`Failed to refresh OAuth session for env "${options.envName}".`, {
+        envName: options.envName,
+        baseUrl: options.baseUrl,
+        url: metadata.token_endpoint,
+        rawMessage: error?.message,
+      }),
+    );
   });
   const data = await parseJsonResponse(response);
 
@@ -466,7 +513,7 @@ export async function authenticateEnvWithOauth(options: {
   }
 
   updateTask(`Loading OAuth metadata for env "${envName}"...`);
-  const metadata = await fetchOauthServerMetadata(baseUrl);
+  const metadata = await fetchOauthServerMetadata(baseUrl, { envName });
   const state = encodeBase64Url(crypto.randomBytes(16));
   const { codeVerifier, codeChallenge } = buildPkcePair();
   const callback = await createLoopbackServer(state);
@@ -490,7 +537,7 @@ export async function authenticateEnvWithOauth(options: {
     updateTask(`Waiting for OAuth login for env "${envName}"...`);
     const opened = maybeOpenBrowser(authorizationUrl.toString());
     if (!opened) {
-      printWarning('Unable to open the browser automatically. Open this URL manually:');
+      printWarningBlock('Unable to open the browser automatically. Open this URL manually:');
     } else {
       printInfo('Complete the OAuth login in your browser.');
     }
