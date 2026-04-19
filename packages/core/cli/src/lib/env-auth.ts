@@ -11,6 +11,9 @@ import crypto from 'node:crypto';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { URL } from 'node:url';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {
   getCurrentEnvName,
   getEnv,
@@ -213,13 +216,76 @@ function buildPkcePair() {
   };
 }
 
-function maybeOpenBrowser(url: string) {
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeScriptString(value: string) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+type BrowserOpenTarget = {
+  target: string;
+  cleanup?: () => Promise<void>;
+};
+
+export function buildOauthRedirectHtml(url: string) {
+  const escapedUrl = escapeHtmlAttribute(url);
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url=${escapedUrl}">
+  <title>NocoBase OAuth Login</title>
+</head>
+<body>
+  <script>window.location.replace(${escapeScriptString(url)});</script>
+  <p>Redirecting to the OAuth login page. If nothing happens, <a href="${escapedUrl}">continue manually</a>.</p>
+</body>
+</html>
+`;
+}
+
+async function createWindowsBrowserRedirectFile(url: string) {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-oauth-'));
+  const filePath = path.join(directory, 'authorize.html');
+  await writeFile(filePath, buildOauthRedirectHtml(url), 'utf8');
+
+  const cleanup = setTimeout(() => {
+    void rm(directory, { recursive: true, force: true });
+  }, OAUTH_LOGIN_TIMEOUT_MS);
+  cleanup.unref?.();
+
+  return {
+    target: filePath,
+    cleanup: async () => {
+      clearTimeout(cleanup);
+      await rm(directory, { recursive: true, force: true });
+    },
+  };
+}
+
+async function getBrowserOpenTarget(url: string): Promise<BrowserOpenTarget> {
+  if (process.platform !== 'win32') {
+    return { target: url };
+  }
+
+  return createWindowsBrowserRedirectFile(url);
+}
+
+async function maybeOpenBrowser(url: string): Promise<{ opened: boolean; cleanup?: () => Promise<void> }> {
+  const { target, cleanup } = await getBrowserOpenTarget(url);
   const candidates =
     process.platform === 'darwin'
-      ? [['open', url]]
+      ? [['open', target]]
       : process.platform === 'win32'
-        ? [['cmd', '/c', 'start', '', url]]
-        : [['xdg-open', url]];
+        ? [['cmd', '/c', 'start', '', target]]
+        : [['xdg-open', target]];
 
   for (const [command, ...args] of candidates) {
     try {
@@ -228,13 +294,19 @@ function maybeOpenBrowser(url: string) {
         stdio: 'ignore',
       });
       child.unref();
-      return true;
+      return {
+        opened: true,
+        cleanup,
+      };
     } catch (_error) {
       continue;
     }
   }
 
-  return false;
+  return {
+    opened: false,
+    cleanup,
+  };
 }
 
 async function createLoopbackServer(state: string) {
@@ -518,6 +590,7 @@ export async function authenticateEnvWithOauth(options: {
   const { codeVerifier, codeChallenge } = buildPkcePair();
   const callback = await createLoopbackServer(state);
   const resource = getOauthResource(metadata.issuer);
+  let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
 
   try {
     updateTask(`Registering OAuth client for env "${envName}"...`);
@@ -535,8 +608,9 @@ export async function authenticateEnvWithOauth(options: {
     authorizationUrl.searchParams.set('resource', resource);
 
     updateTask(`Waiting for OAuth login for env "${envName}"...`);
-    const opened = maybeOpenBrowser(authorizationUrl.toString());
-    if (!opened) {
+    const browser = await maybeOpenBrowser(authorizationUrl.toString());
+    cleanupBrowserOpenTarget = browser.cleanup;
+    if (!browser.opened) {
       printWarningBlock('Unable to open the browser automatically. Open this URL manually:');
     } else {
       printInfo('Complete the OAuth login in your browser.');
@@ -590,6 +664,7 @@ export async function authenticateEnvWithOauth(options: {
       { scope: options.scope },
     );
   } finally {
+    await cleanupBrowserOpenTarget?.().catch(() => undefined);
     await callback.close().catch(() => undefined);
   }
 }

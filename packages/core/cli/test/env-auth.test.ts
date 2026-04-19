@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { saveAuthConfig } from '../src/lib/auth-store.js';
 import {
+  buildOauthRedirectHtml,
   getOauthMetadataUrl,
   getOauthResource,
   isOauthAccessTokenExpired,
@@ -35,6 +36,18 @@ test('OAuth helpers derive metadata and resource URLs from base URL', () => {
   );
   assert.equal(getOauthResource('http://localhost:13000/api/'), 'http://localhost:13000/api/');
   assert.equal(getOauthResource('https://demo.example.com/custom/api'), 'https://demo.example.com/custom/api/');
+});
+
+test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', () => {
+  const url = 'https://example.com/oauth?scope=openid api&state="abc"&next=<script>alert(1)</script>';
+  const html = buildOauthRedirectHtml(url);
+
+  assert.match(html, /scope=openid api&amp;state=&quot;abc&quot;&amp;next=&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(
+    html,
+    /window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/,
+  );
+  assert.doesNotMatch(html, /href="[^"]*&state="/);
 });
 
 test('isOauthAccessTokenExpired uses a refresh window', () => {
