@@ -43,40 +43,37 @@ export class AIEmployeeInstruction extends Instruction {
     return {
       label: node.title,
       value: node.key,
-      children: traversal(schema),
+      children: buildResultVariables(schema),
     };
   }
 }
 
-const traversal = (schema: TSchema) => {
-  const transform = (t: TSchema, parent?: string) =>
-    Object.entries(t.properties ?? {}).map(([key, value]) => [key, value, parent] as const);
-  const queue = transform(schema);
-  const map = new Map();
-  const result: any[] = [];
-  while (queue.length > 0) {
-    const head = queue.shift();
-    if (!head) {
-      continue;
-    }
-    const [key, value, parent] = head;
-    const children: any[] = [];
-    map.set(key, children);
-    const target = map.get(parent) ?? result;
-    target.push({
+export const buildResultVariables = (schema?: TSchema) => {
+  const children = traversal(schema);
+  return [
+    {
+      label: 'data',
+      value: 'data',
+      children: children.length ? children : undefined,
+    },
+  ];
+};
+
+const traversal = (schema?: TSchema): any[] => {
+  return Object.entries(schema?.properties ?? {}).map(([key, value]) => {
+    const children = traversal(value);
+    return {
       label: value.title ?? key,
       value: key,
-      children,
-    });
-    queue.push(...transform(value, key));
-  }
-  return result;
+      children: children.length ? children : undefined,
+    };
+  });
 };
 
 type TSchema = {
   title?: string;
   type: string;
-  properties: {
+  properties?: {
     [key: string]: TSchema;
   };
 };
