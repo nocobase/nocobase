@@ -21,15 +21,28 @@ features:
       - title: NocoBase Getting Started
         details: Understand NocoBase's core concepts and basic operations.
         link: /get-started/how-nocobase-works
-      - title: Installation, Upgrade & Deployment
-        details: Install NocoBase from scratch, complete version upgrades and production environment deployment.
-        link: /get-started/quickstart
+      - title: NocoBase CLI
+        details: NocoBase's command-line tool for installation, upgrade and deployment, with AI Agent collaboration support.
+        link: /get-started/nocobase-cli
       - title: Install & Upgrade Plugins
         details: Learn how to add, manage and update plugins to extend system capabilities.
         link: /get-started/install-upgrade-plugins
       - title: Tutorials
         details: Step-by-step tutorials to build real projects with NocoBase from scratch.
         link: /tutorials/v2/
+
+  - title: AI
+    details: Integrate AI into the entire NocoBase workflow, from building and usage to development.
+    items:
+      - title: AI Builder
+        details: Build NocoBase applications from scratch with AI, covering the full process from data modeling, UI configuration, workflows to release management.
+        link: /ai-builder
+      - title: AI Employees
+        details: Collaborate with AI employees, involving them in system building, data analysis, translation, decision-making and other business scenarios.
+        link: /ai-employees
+      - title: AI Development
+        details: Use AI to assist NocoBase plugin development, covering the full process from scaffolding, component code to business logic.
+        link: /ai-dev
 
   - title: Advanced
     details: Deep dive into NocoBase core concepts and master configuration and development capabilities.

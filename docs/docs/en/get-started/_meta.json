@@ -11,7 +11,13 @@
   },
   {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "Installation Methods and Version Comparison"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase CLI",
+    "link": "/get-started/nocobase-cli"
   },
   {
     "type": "custom-link",
