@@ -362,7 +362,6 @@ export function normalizeComposeActionSpec(input: any, index: number) {
       key: type,
       type,
       settings: {},
-      popup: undefined,
     };
   }
   if (!_.isPlainObject(input)) {
@@ -382,11 +381,12 @@ export function normalizeComposeActionSpec(input: any, index: number) {
     String(input.key || type).trim(),
     `flowSurfaces compose action #${index + 1}`,
   );
+  const popup = _.isPlainObject(input.popup) ? input.popup : undefined;
   return {
     key,
     type,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
-    popup: _.isPlainObject(input.popup) ? input.popup : undefined,
+    ...(popup ? { popup } : {}),
   };
 }
 
