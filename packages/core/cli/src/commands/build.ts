@@ -9,6 +9,7 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import { runNocoBaseCommand, runNpm } from '../lib/run-npm.ts';
+import { getEnv } from '../lib/auth-store.ts';
 
 export default class Build extends Command {
   static override args = {
@@ -43,8 +44,9 @@ export default class Build extends Command {
     if (flags.sourcemap) {
       npmArgs.push('--sourcemap');
     }
+    const env = await getEnv(flags.env);
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd());
+      await runNocoBaseCommand(npmArgs, env.appRootPath);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);
