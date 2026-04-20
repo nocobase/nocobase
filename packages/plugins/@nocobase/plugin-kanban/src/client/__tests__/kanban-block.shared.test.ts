@@ -8,7 +8,12 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { getKanbanDesignSettingsHost, isKanbanDesignSettingsHost } from '../models/components/kanban-block/shared';
+import {
+  getKanbanDesignSettingsHost,
+  isKanbanDesignSettingsHost,
+  shouldHideUnknownColumn,
+  shouldMountUnknownColumn,
+} from '../models/components/kanban-block/shared';
 
 describe('kanban design settings host', () => {
   test('picks the first card from the first visible non-empty column in design mode', () => {
@@ -70,5 +75,45 @@ describe('kanban design settings host', () => {
         index: 0,
       }),
     ).toBe(false);
+  });
+
+  test('keeps unknown column mounted but hidden while an empty refresh is still in flight', () => {
+    const options = {
+      state: {
+        items: [],
+        page: 1,
+        hasNext: false,
+        loading: false,
+        loadedRefreshToken: 1,
+      },
+      refreshMeta: {
+        token: 2,
+        reason: 'global' as const,
+      },
+      displayItems: [],
+    };
+
+    expect(shouldMountUnknownColumn(options)).toBe(true);
+    expect(shouldHideUnknownColumn(options)).toBe(true);
+  });
+
+  test('shows unknown column when it already has display items during refresh', () => {
+    const options = {
+      state: {
+        items: [{ __kanbanRecordKey: 'task-1' }],
+        page: 1,
+        hasNext: false,
+        loading: true,
+        loadedRefreshToken: 1,
+      },
+      refreshMeta: {
+        token: 2,
+        reason: 'drag' as const,
+      },
+      displayItems: [{ __kanbanRecordKey: 'task-1' }],
+    };
+
+    expect(shouldMountUnknownColumn(options)).toBe(true);
+    expect(shouldHideUnknownColumn(options)).toBe(false);
   });
 });

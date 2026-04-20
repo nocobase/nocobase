@@ -21,7 +21,7 @@ import {
 } from '@nocobase/client';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, Space } from 'antd';
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../../locale';
 import { getKanbanDefaultSortFieldName, getKanbanPreferredSortScopeKey } from '../utils';
@@ -50,6 +50,28 @@ type GroupFieldOption = {
   value: string;
 };
 
+export const upsertKanbanCollectionFieldOptions = (
+  fields: Record<string, any>[] = [],
+  fieldData?: Record<string, any>,
+) => {
+  if (!fieldData?.name) {
+    return fields;
+  }
+
+  const nextFields = [...fields];
+  const existingIndex = nextFields.findIndex((field) => field?.name === fieldData.name);
+  if (existingIndex >= 0) {
+    nextFields[existingIndex] = {
+      ...nextFields[existingIndex],
+      ...fieldData,
+    };
+    return nextFields;
+  }
+
+  nextFields.push(fieldData);
+  return nextFields;
+};
+
 export const KanbanCreateSortFieldSelect = (props: {
   sortFields?: SortFieldOption[];
   collectionFields?: CollectionFieldMetadata[];
@@ -67,6 +89,7 @@ export const KanbanCreateSortFieldSelect = (props: {
   const schemaOptions = useContext(SchemaOptionsContext);
   const flowSettingsContext = useFlowSettingsContext<any>();
   const flowSettings = flowSettingsContext?.model?.context?.engine?.flowSettings;
+  const [sortFieldOptions, setSortFieldOptions] = useState<SortFieldOption[]>(sortFields);
   const resolvedGroupField = groupField?.value
     ? flowSettingsContext?.model?.collection?.getField?.(groupField.value)
     : undefined;
@@ -85,6 +108,10 @@ export const KanbanCreateSortFieldSelect = (props: {
   const integerFields = useMemo(() => {
     return collectionFields.filter((field) => field.interface === 'integer');
   }, [collectionFields]);
+
+  useEffect(() => {
+    setSortFieldOptions(sortFields);
+  }, [sortFields]);
 
   const dialogScope = useMemo(() => {
     return {
@@ -203,8 +230,26 @@ export const KanbanCreateSortFieldSelect = (props: {
       value: fieldData.name,
       label: compile(fieldData?.uiSchema?.title || fieldData.name),
     };
-    formField.dataSource = [...(formField.dataSource || sortFields), nextOption];
+    setSortFieldOptions((previousOptions) => {
+      const currentOptions = previousOptions.length ? previousOptions : sortFields;
+      return upsertKanbanCollectionFieldOptions(
+        currentOptions as Record<string, any>[],
+        nextOption,
+      ) as SortFieldOption[];
+    });
+    formField.dataSource = upsertKanbanCollectionFieldOptions(
+      (formField.dataSource || sortFields) as Record<string, any>[],
+      nextOption,
+    );
     formField.value = fieldData.name;
+
+    const collection = flowSettingsContext?.model?.collection as
+      | { getFields?: () => Record<string, any>[]; setOption?: (key: string, value: any) => void }
+      | undefined;
+    if (collection?.setOption && collection?.getFields) {
+      collection.setOption('fields', upsertKanbanCollectionFieldOptions(collection.getFields(), fieldData));
+      (collection as any).fieldsMap = undefined;
+    }
   };
 
   const handleCreateSortField = async () => {
@@ -238,7 +283,7 @@ export const KanbanCreateSortFieldSelect = (props: {
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
-        options={sortFields}
+        options={sortFieldOptions}
         {...others}
         disabled={!groupField}
         optionRender={({ label, data }) => {

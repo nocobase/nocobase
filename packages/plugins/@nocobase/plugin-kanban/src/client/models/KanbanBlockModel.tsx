@@ -524,6 +524,7 @@ KanbanBlockModel.registerFlow({
           sortField,
         });
         model.resource.setSort(sortField ? [sortField] : []);
+        void model.resource.refresh();
       },
     },
     pageSize: {

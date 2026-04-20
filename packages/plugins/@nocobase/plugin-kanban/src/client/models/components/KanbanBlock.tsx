@@ -36,6 +36,8 @@ import {
   getKanbanDesignSettingsHost,
   getRuntimeRecordKey,
   moveKanbanRecordByCoordinates,
+  shouldHideUnknownColumn,
+  shouldMountUnknownColumn,
   type ColumnState,
   type DropResult,
   type KanbanRuntimeRecord,
@@ -322,29 +324,33 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     return stabilizedBoardDisplayItemsByColumn;
   }, [columnStates, columns, groupField, groupOptions, model.collection]);
 
-  const visibleColumns = useMemo(() => {
+  const mountedColumns = useMemo(() => {
     return columns.filter((column) => {
       if (!column.isUnknown) {
         return true;
       }
 
-      const state = columnStates[column.key];
-      const refreshToken = columnRefreshMetaByColumn[column.key]?.token || 0;
-      if (!state) {
-        return true;
-      }
-
-      if (refreshToken > state.loadedRefreshToken) {
-        return true;
-      }
-
-      if (state.loading || state.error) {
-        return true;
-      }
-
-      return (boardDisplayItemsByColumn[column.key] || []).length > 0;
+      return shouldMountUnknownColumn({
+        state: columnStates[column.key],
+        refreshMeta: columnRefreshMetaByColumn[column.key],
+        displayItems: boardDisplayItemsByColumn[column.key] || [],
+      });
     });
   }, [boardDisplayItemsByColumn, columnRefreshMetaByColumn, columnStates, columns]);
+
+  const visibleColumns = useMemo(() => {
+    return mountedColumns.filter((column) => {
+      if (!column.isUnknown) {
+        return true;
+      }
+
+      return !shouldHideUnknownColumn({
+        state: columnStates[column.key],
+        refreshMeta: columnRefreshMetaByColumn[column.key],
+        displayItems: boardDisplayItemsByColumn[column.key] || [],
+      });
+    });
+  }, [boardDisplayItemsByColumn, columnRefreshMetaByColumn, columnStates, mountedColumns]);
 
   const designSettingsHost = useMemo(() => {
     return getKanbanDesignSettingsHost({
@@ -575,7 +581,15 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
       style={{ height: contentHeight }}
     >
       {groupOptionsLoading && !groupOptions.length ? <CardPlaceholder /> : null}
-      {visibleColumns.map((column) => {
+      {mountedColumns.map((column) => {
+        const hidden =
+          column.isUnknown &&
+          shouldHideUnknownColumn({
+            state: columnStates[column.key],
+            refreshMeta: columnRefreshMetaByColumn[column.key],
+            displayItems: boardDisplayItemsByColumn[column.key] || [],
+          });
+
         return (
           <ColumnPanel
             key={column.key}
@@ -589,6 +603,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
             fixedHeight={Boolean(contentHeight)}
             dragEnabled={dragEnabled}
             dragInteractionEnabled={dragInteractionEnabled}
+            hidden={hidden}
           />
         );
       })}

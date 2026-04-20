@@ -333,6 +333,39 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
   });
 
+  test('dragging handler refreshes columns immediately after settings change', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.dragging;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const refresh = vi.fn().mockResolvedValue(undefined);
+
+    step.handler(
+      {
+        model: {
+          setProps,
+          getGroupField: () => ({ name: 'status', interface: 'select' }),
+          getCompatibleSortFieldName: () => 'status_sort',
+          resource: {
+            setSort,
+            refresh,
+          },
+        },
+      } as any,
+      {
+        dragEnabled: true,
+        sortField: 'status_sort',
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      dragEnabled: true,
+      sortField: 'status_sort',
+    });
+    expect(setSort).toHaveBeenCalledWith(['status_sort']);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
   test('grouping changes disable dragging when the grouping sort field is missing', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;

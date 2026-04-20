@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { Alert, Button, Empty, Tag } from 'antd';
+import { Alert, Empty, Tag } from 'antd';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Droppable } from 'react-beautiful-dnd';
 import type { KanbanBlockModel } from '../../KanbanBlockModel';
@@ -42,6 +42,7 @@ type ColumnPanelProps = {
   fixedHeight: boolean;
   dragEnabled: boolean;
   dragInteractionEnabled: boolean;
+  hidden?: boolean;
 };
 
 const ColumnPanelComponent = ({
@@ -55,6 +56,7 @@ const ColumnPanelComponent = ({
   fixedHeight,
   dragEnabled,
   dragInteractionEnabled,
+  hidden,
 }: ColumnPanelProps) => {
   const loadingRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -346,8 +348,8 @@ const ColumnPanelComponent = ({
   return (
     <div
       className={css`
+        display: ${hidden ? 'none' : 'flex'};
         width: ${model.getColumnWidth()}px;
-        display: flex;
         flex-direction: column;
         min-height: ${fixedHeight ? '0' : DEFAULT_KANBAN_BLOCK_MIN_HEIGHT};
         height: ${fixedHeight ? '100%' : 'auto'};
@@ -363,12 +365,26 @@ const ColumnPanelComponent = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 8,
           padding: '12px 14px',
           background: panelHeaderBackgroundColor,
           borderBottom: `1px solid ${panelBorderColor}`,
         }}
       >
-        <Tag color={column.color}>{column.label}</Tag>
+        <Tag
+          color={column.color}
+          style={{
+            flex: '1 1 auto',
+            minWidth: 0,
+            maxWidth: '100%',
+            marginInlineEnd: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {column.label}
+        </Tag>
         <span style={{ color: 'var(--ant-colorTextDescription)', fontSize: 12 }}>{displayCount}</span>
       </div>
       {runtimeState.error ? <Alert type="error" message={runtimeState.error} showIcon /> : null}
@@ -397,6 +413,7 @@ function areColumnPanelPropsEqual(prev: ColumnPanelProps, next: ColumnPanelProps
     prev.fixedHeight === next.fixedHeight &&
     prev.dragEnabled === next.dragEnabled &&
     prev.dragInteractionEnabled === next.dragInteractionEnabled &&
+    prev.hidden === next.hidden &&
     !isDesignSettingsHostChangeRelevant(prev.designSettingsHost, next.designSettingsHost, prev.column.key)
   );
 }

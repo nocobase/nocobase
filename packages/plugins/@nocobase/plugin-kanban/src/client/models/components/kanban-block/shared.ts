@@ -155,6 +155,52 @@ export const getKanbanDesignSettingsHost = (options: {
   return null;
 };
 
+export const shouldMountUnknownColumn = (options: {
+  state?: ColumnState;
+  refreshMeta?: ColumnRefreshMeta;
+  displayItems?: KanbanRuntimeRecord[];
+}) => {
+  const { state, refreshMeta, displayItems = [] } = options;
+
+  if (!state) {
+    return true;
+  }
+
+  const refreshToken = refreshMeta?.token || 0;
+  if (refreshToken > state.loadedRefreshToken) {
+    return true;
+  }
+
+  if (state.loading || state.error) {
+    return true;
+  }
+
+  return displayItems.length > 0;
+};
+
+export const shouldHideUnknownColumn = (options: {
+  state?: ColumnState;
+  refreshMeta?: ColumnRefreshMeta;
+  displayItems?: KanbanRuntimeRecord[];
+}) => {
+  const { state, refreshMeta, displayItems = [] } = options;
+
+  if (!shouldMountUnknownColumn(options)) {
+    return false;
+  }
+
+  if (displayItems.length > 0 || state?.error) {
+    return false;
+  }
+
+  if (!state) {
+    return true;
+  }
+
+  const refreshToken = refreshMeta?.token || 0;
+  return refreshToken > state.loadedRefreshToken || state.loading;
+};
+
 export const isKanbanDesignSettingsHost = (options: {
   host: KanbanDesignSettingsHost | null | undefined;
   columnKey: string;
