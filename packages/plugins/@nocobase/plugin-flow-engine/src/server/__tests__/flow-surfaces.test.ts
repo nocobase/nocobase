@@ -505,7 +505,11 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
 
-    const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
     const recordPopupCompose = await rootAgent.resource('flowSurfaces').compose({
       values: {
         target: {
@@ -716,7 +720,11 @@ describe('flowSurfaces resource', () => {
       sourceId: '{{ctx.popup.record.employeeId}}',
     });
 
-    const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
     const invalidRaw = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
@@ -1350,7 +1358,11 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
 
     const invalidLegacyButtonStep = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2171,7 +2183,11 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
     const configureActionRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
@@ -2342,7 +2358,11 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
     const field = await addField(rootAgent, tableUid, 'department.title');
-    const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
     const viewPopupBlock = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -2473,7 +2493,11 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
     const field = await addField(rootAgent, tableUid, 'department.title');
-    const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
     const viewPopupBlock = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -2785,7 +2809,7 @@ describe('flowSurfaces resource', () => {
     );
   });
 
-  it('should auto-complete omitted popup payloads for direct action APIs', async () => {
+  it('should auto-complete omitted popup payloads for direct action APIs and save them as templates', async () => {
     const page = await createPage(rootAgent, {
       title: 'Implicit popup action page',
       tabTitle: 'Implicit popup action tab',
@@ -2806,6 +2830,115 @@ describe('flowSurfaces resource', () => {
         title: 'Inspect Employee',
       },
     });
+    const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
+      settings: {
+        title: 'Modify Employee',
+      },
+    });
+
+    const readActionPopup = async (actionUid: string) => {
+      const actionReadback = await getSurface(rootAgent, {
+        uid: actionUid,
+      });
+      const popupTemplateUid = actionReadback.tree.popup?.template?.uid;
+      const popupSurface = popupTemplateUid
+        ? await getSurface(rootAgent, {
+            uid: getData(
+              await rootAgent.resource('flowSurfaces').getTemplate({
+                values: {
+                  uid: popupTemplateUid,
+                },
+              }),
+            ).targetUid,
+          })
+        : actionReadback;
+      const popupTab = _.castArray(popupSurface.tree.subModels?.page?.subModels?.tabs || [])[0];
+      const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+      return {
+        actionReadback,
+        popupTab,
+        popupBlock,
+      };
+    };
+
+    expect(addNewAction.popupPageUid).toBeUndefined();
+    expect(addNewAction.popupTabUid).toBeUndefined();
+    expect(addNewAction.popupGridUid).toBeUndefined();
+    const addNewPopup = await readActionPopup(addNewAction.uid);
+    expect(addNewPopup.actionReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(addNewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
+    expect(addNewPopup.popupTab?.props?.title).toBe('Create Employee');
+    expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
+    expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(addNewPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+
+    expect(viewAction.popupPageUid).toBeUndefined();
+    expect(viewAction.popupTabUid).toBeUndefined();
+    expect(viewAction.popupGridUid).toBeUndefined();
+    const viewPopup = await readActionPopup(viewAction.uid);
+    expect(viewPopup.actionReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(viewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
+    expect(viewPopup.popupTab?.props?.title).toBe('Inspect Employee');
+    expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+
+    expect(editAction.popupPageUid).toBeUndefined();
+    expect(editAction.popupTabUid).toBeUndefined();
+    expect(editAction.popupGridUid).toBeUndefined();
+    const editPopup = await readActionPopup(editAction.uid);
+    expect(editPopup.actionReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(editPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
+    expect(editPopup.popupTab?.props?.title).toBe('Modify Employee');
+    expect(editPopup.popupBlock?.use).toBe('EditFormModel');
+    expect(editPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+    expect(_.castArray(editPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
+      'FormSubmitActionModel',
+    );
+  });
+
+  it('should keep direct action APIs local when popup.tryTemplate is false', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Local popup action page',
+      tabTitle: 'Local popup action tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const addNewAction = await addAction(rootAgent, tableBlockUid, 'addNew', {
+      settings: {
+        title: 'Create Employee',
+      },
+      popup: {
+        tryTemplate: false,
+      },
+    });
+    const viewAction = await addRecordAction(rootAgent, tableBlockUid, 'view', {
+      settings: {
+        title: 'Inspect Employee',
+      },
+      popup: {
+        tryTemplate: false,
+      },
+    });
+    const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
+      settings: {
+        title: 'Modify Employee',
+      },
+      popup: {
+        tryTemplate: false,
+      },
+    });
 
     const readActionPopup = async (actionUid: string) => {
       const actionReadback = await getSurface(rootAgent, {
@@ -2814,6 +2947,7 @@ describe('flowSurfaces resource', () => {
       const popupTab = _.castArray(actionReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
       const popupBlock = _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
       return {
+        actionReadback,
         popupTab,
         popupBlock,
       };
@@ -2823,20 +2957,25 @@ describe('flowSurfaces resource', () => {
     expect(addNewAction.popupTabUid).toBeTruthy();
     expect(addNewAction.popupGridUid).toBeTruthy();
     const addNewPopup = await readActionPopup(addNewAction.uid);
+    expect(addNewPopup.actionReadback.tree.popup?.template).toBeUndefined();
     expect(addNewPopup.popupTab?.props?.title).toBe('Create Employee');
     expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
-    expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(_.castArray(addNewPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
-      'FormSubmitActionModel',
-    );
 
     expect(viewAction.popupPageUid).toBeTruthy();
     expect(viewAction.popupTabUid).toBeTruthy();
     expect(viewAction.popupGridUid).toBeTruthy();
     const viewPopup = await readActionPopup(viewAction.uid);
+    expect(viewPopup.actionReadback.tree.popup?.template).toBeUndefined();
     expect(viewPopup.popupTab?.props?.title).toBe('Inspect Employee');
     expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
-    expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+
+    expect(editAction.popupPageUid).toBeTruthy();
+    expect(editAction.popupTabUid).toBeTruthy();
+    expect(editAction.popupGridUid).toBeTruthy();
+    const editPopup = await readActionPopup(editAction.uid);
+    expect(editPopup.actionReadback.tree.popup?.template).toBeUndefined();
+    expect(editPopup.popupTab?.props?.title).toBe('Modify Employee');
+    expect(editPopup.popupBlock?.use).toBe('EditFormModel');
   });
 
   it('should keep plain popup action empty payloads composable', async () => {
@@ -2888,7 +3027,11 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
 
     await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -5199,7 +5342,11 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
 
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -5357,7 +5504,11 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
 
     const popupApply = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -5508,7 +5659,11 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
 
     const popupApply = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -5981,7 +6136,11 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {

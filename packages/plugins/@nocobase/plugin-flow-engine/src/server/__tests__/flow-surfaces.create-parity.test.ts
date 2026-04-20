@@ -142,7 +142,11 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       collectionName: 'pets',
     },
   });
-  const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew');
+  const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, hostPopup.uid, `Nested ${key}`, {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
@@ -162,7 +166,11 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       });
       await configureTableBlock(rootAgent, nestedTable.uid);
 
-      const addNew = await ensureBlockAction(rootAgent, nestedTable.uid, 'addNew');
+      const addNew = await ensureBlockAction(rootAgent, nestedTable.uid, 'addNew', {
+        popup: {
+          tryTemplate: false,
+        },
+      });
       await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
@@ -193,14 +201,22 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
 
       await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
-      const view = await addAction(rootAgent, nestedTable.uid, 'view');
+      const view = await addAction(rootAgent, nestedTable.uid, 'view', {
+        popup: {
+          tryTemplate: false,
+        },
+      });
       await configurePopupAction(rootAgent, view.uid, 'View', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
-      const edit = await addAction(rootAgent, nestedTable.uid, 'edit');
+      const edit = await addAction(rootAgent, nestedTable.uid, 'edit', {
+        popup: {
+          tryTemplate: false,
+        },
+      });
       await configurePopupAction(rootAgent, edit.uid, 'Edit', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
@@ -278,7 +294,11 @@ async function createTableParityReadback(rootAgent: any) {
 
   await configureTableBlock(rootAgent, table.uid);
 
-  const addNew = await ensureBlockAction(rootAgent, table.uid, 'addNew');
+  const addNew = await ensureBlockAction(rootAgent, table.uid, 'addNew', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
@@ -309,14 +329,22 @@ async function createTableParityReadback(rootAgent: any) {
 
   await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
-  const view = await addAction(rootAgent, table.uid, 'view');
+  const view = await addAction(rootAgent, table.uid, 'view', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, view.uid, 'View', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
-  const edit = await addAction(rootAgent, table.uid, 'edit');
+  const edit = await addAction(rootAgent, table.uid, 'edit', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, edit.uid, 'Edit', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
