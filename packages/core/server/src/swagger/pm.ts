@@ -17,17 +17,41 @@ const pluginNameParameter = {
   },
 };
 
-const pluginListResponse = {
-  description: 'OK',
-  content: {
-    'application/json': {
-      schema: {
-        type: 'array',
-        items: {
-          $ref: '#/components/schemas/PMPlugin',
-        },
-      },
-    },
+/** `filterByTk` for enable/disable: comma-separated package names are supported. */
+const pluginPmEnableDisableFilterParameter = {
+  name: 'filterByTk',
+  in: 'query',
+  required: true,
+  description:
+    'Plugin package name(s). Pass multiple plugins as a comma-separated list (e.g. `@nocobase/plugin-a,@nocobase/plugin-b`).',
+  schema: {
+    type: 'string',
+  },
+};
+
+/** Whether to wait for the `pm enable` / `pm disable` CLI invocation to finish before responding. */
+const pluginPmAwaitResponseParameter = {
+  name: 'awaitResponse',
+  in: 'query',
+  required: false,
+  description:
+    'When `true`, await the CLI operation and return its result in the response body. When `false` or omitted, start the operation and return promptly (body is usually the plugin name or the `filterByTk` value for enable).',
+  schema: {
+    type: 'boolean',
+    default: false,
+  },
+};
+
+/** Query flag for `GET /pm:list`: compact list from package discovery vs full locale-aware records. */
+const pluginListModeParameter = {
+  name: 'mode',
+  in: 'query',
+  required: false,
+  description:
+    'Use `summary` for a compact list (`displayName`, `packageName`, `enabled`, `description`). Omit for full plugin objects (`PMPlugin`), including locale-specific fields from the nocobase plugin.',
+  schema: {
+    type: 'string',
+    enum: ['summary'],
   },
 };
 
@@ -40,6 +64,31 @@ const enabledPluginListResponse = {
         items: {
           $ref: '#/components/schemas/PMEnabledPlugin',
         },
+      },
+    },
+  },
+};
+
+const pluginListResponseOneOf = {
+  description:
+    'OK. Shape depends on `mode`: full `PMPlugin` list by default, or `PMPluginListSummaryItem` when `mode=summary`.',
+  content: {
+    'application/json': {
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/PMPlugin',
+            },
+          },
+          {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/PMPluginListSummaryItem',
+            },
+          },
+        ],
       },
     },
   },
@@ -66,6 +115,25 @@ const pluginOperationResponse = {
 
 export const pmComponents = {
   schemas: {
+    PMPluginListSummaryItem: {
+      type: 'object',
+      description: 'Compact plugin row returned when listing with `mode=summary`.',
+      properties: {
+        displayName: {
+          type: 'string',
+        },
+        packageName: {
+          type: 'string',
+        },
+        enabled: {
+          type: 'boolean',
+        },
+        description: {
+          type: 'string',
+        },
+      },
+      additionalProperties: true,
+    },
     PMPlugin: {
       type: 'object',
       properties: {
@@ -184,10 +252,11 @@ export default {
     get: {
       tags: ['pm'],
       summary: 'List available plugins',
-      description: 'Return plugin metadata from the plugin manager.',
-      parameters: [],
+      description:
+        'Return plugin metadata from the plugin manager. Pass `mode=summary` for a lightweight list built from discovered packages; omit `mode` for full records (locale-aware via the nocobase plugin).',
+      parameters: [pluginListModeParameter],
       responses: {
-        200: pluginListResponse,
+        200: pluginListResponseOneOf,
       },
     },
   },
@@ -311,8 +380,9 @@ export default {
     post: {
       tags: ['pm'],
       summary: 'Enable a plugin',
-      description: 'Queue an enable operation for a plugin.',
-      parameters: [pluginNameParameter],
+      description:
+        'Run plugin enable via the plugin manager. Use `awaitResponse=true` to wait for completion. Multiple plugins can be passed in `filterByTk` as a comma-separated list.',
+      parameters: [pluginPmEnableDisableFilterParameter, pluginPmAwaitResponseParameter],
       responses: {
         200: pluginOperationResponse,
       },
@@ -322,8 +392,9 @@ export default {
     post: {
       tags: ['pm'],
       summary: 'Disable a plugin',
-      description: 'Queue a disable operation for a plugin.',
-      parameters: [pluginNameParameter],
+      description:
+        'Run plugin disable via the plugin manager. Use `awaitResponse=true` to wait for completion. Multiple plugins can be passed in `filterByTk` as a comma-separated list.',
+      parameters: [pluginPmEnableDisableFilterParameter, pluginPmAwaitResponseParameter],
       responses: {
         200: pluginOperationResponse,
       },

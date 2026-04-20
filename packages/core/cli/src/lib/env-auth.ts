@@ -120,8 +120,8 @@ function formatOauthFetchFailure(prefix: string, options: { baseUrl?: string; ur
     `Network error: ${options.rawMessage || 'fetch failed'}`,
     'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
     options.envName
-      ? `If the saved login is stale, run \`nb env auth -e ${options.envName}\` again after connectivity is restored.`
-      : 'If the saved login is stale, run `nb env auth -e <name>` again after connectivity is restored.',
+      ? `If the saved login is stale, run \`nb env auth ${options.envName}\` again after connectivity is restored.`
+      : 'If the saved login is stale, run `nb env auth <name>` again after connectivity is restored.',
     'Use `nb env list` to inspect the current env configuration.',
   ]
     .filter(Boolean)
@@ -346,7 +346,26 @@ async function createLoopbackServer(state: string) {
         }
 
         res.statusCode = 200;
-        res.end('<html><body><h1>Authentication complete</h1><p>You can return to the terminal.</p></body></html>');
+        res.end(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Authentication complete</title></head>
+<body>
+<h1>Authentication complete</h1>
+<p>You can return to the terminal.</p>
+<p id="manual"></p>
+<script>
+setTimeout(function () {
+  window.close();
+  setTimeout(function () {
+    var el = document.getElementById('manual');
+    if (document.visibilityState === 'visible' && el) {
+      el.textContent = 'Please close this tab manually if it is still open.';
+    }
+  }, 400);
+}, 1000);
+</script>
+</body>
+</html>`);
         resolveWaiter(code);
       } catch (error) {
         reject(error as Error);
@@ -442,7 +461,7 @@ async function refreshOauthAccessToken(options: {
   scope?: AuthStoreOptions['scope'];
 }) {
   if (!options.auth.refreshToken || !options.auth.clientId) {
-    throw new Error(`OAuth session for env "${options.envName}" cannot be refreshed. Run \`nb env auth -e ${options.envName}\`.`);
+    throw new Error(`OAuth session for env "${options.envName}" cannot be refreshed. Run \`nb env auth ${options.envName}\`.`);
   }
 
   const metadata = await fetchOauthServerMetadata(options.baseUrl, { envName: options.envName });
@@ -476,7 +495,7 @@ async function refreshOauthAccessToken(options: {
   if (!response.ok) {
     throw new Error(
       formatOauthError(
-        `Failed to refresh OAuth session for env "${options.envName}". Run \`nb env auth -e ${options.envName}\` again`,
+        `Failed to refresh OAuth session for env "${options.envName}". Run \`nb env auth ${options.envName}\` again`,
         data,
         response.status,
       ),
@@ -532,7 +551,7 @@ export async function resolveAccessToken(options: {
 
   const baseUrl = options.baseUrl ?? env.baseUrl;
   if (!baseUrl) {
-    throw new Error(`Env "${envName}" is missing a base URL. Run \`nb env add --name ${envName} --base-url <url>\`.`);
+    throw new Error(`Env "${envName}" is missing a base URL. Run \`nb env add ${envName} --base-url <url>\`.`);
   }
 
   printVerbose(`Refreshing OAuth session for env "${envName}"`);
@@ -579,7 +598,7 @@ export async function authenticateEnvWithOauth(options: {
     throw new Error(
       [
         `Env "${envName}" is missing a base URL.`,
-        'Run `nb env add --name <name> --base-url <url>` first.',
+        'Run `nb env add <name> --base-url <url>` first.',
       ].join('\n'),
     );
   }

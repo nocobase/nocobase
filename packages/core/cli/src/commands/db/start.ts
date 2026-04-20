@@ -9,16 +9,18 @@
 
 import {Args, Command, Flags} from '@oclif/core'
 
-export default class PmList extends Command {
-  static override args = {}
-  static override summary = 'List all plugins';
+export default class DbStart extends Command {
+  static override args = {
+    file: Args.string({description: 'file to read'}),
+  }
+  static override description = 'describe the command here'
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
   ]
-  static override flags = {}
+  static override flags = {
+  }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(PmList);
-    await this.config.runCommand('api:pm:list', ['--mode=summary']);
+    const { args, flags } = await this.parse(DbStart);
   }
 }
