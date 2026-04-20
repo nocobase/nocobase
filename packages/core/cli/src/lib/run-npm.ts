@@ -19,7 +19,6 @@ export function run(
   if (!path.isAbsolute(cwd)) {
     cwd = path.resolve(process.cwd(), cwd);
   }
-  const localBin = path.join(cwd, 'node_modules', '.bin');
   const label = options?.errorName ?? name;
   return new Promise((resolve, reject) => {
     const child = spawn(name, [...args], {
@@ -29,7 +28,6 @@ export function run(
       env: {
         ...process.env,
         ...options?.env,
-        PATH: `${localBin}${path.delimiter}${process.env.PATH}`,
       },
     });
     child.once('error', reject);
@@ -59,8 +57,17 @@ export function runNocoBaseCommand(
   args: string[],
   options?: { cwd?: string; env?: Record<string, string> },
 ): Promise<void> {
+  let cwd = options?.cwd ?? process.cwd();
+  if (!path.isAbsolute(cwd)) {
+    cwd = path.resolve(process.cwd(), cwd);
+  }
+  const localBin = path.join(cwd, 'node_modules', '.bin');
   return run('node', ['./node_modules/.bin/nocobase-v1', ...args], {
     ...options,
     errorName: 'nocobase command',
+    env: {
+      PATH: `${localBin}${path.delimiter}${process.env.PATH}`,
+      ...options?.env,
+    },
   });
 }
