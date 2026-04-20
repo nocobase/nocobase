@@ -10,7 +10,7 @@
 /* istanbul ignore file -- @preserve */
 
 import fs from 'fs-extra';
-import { resolve } from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import Application from '../application';
 import { createDocsIndex } from '../ai/create-docs-index';
 import { ApplicationNotInstall } from '../errors/application-not-install';
@@ -23,7 +23,7 @@ export default (app: Application) => {
     .option('--quickstart')
     .action(async (...cliArgs) => {
       const [options] = cliArgs;
-      const file = resolve(process.cwd(), 'storage/.upgrading');
+      const file = storagePathJoin('.upgrading');
       const upgrading = await fs.exists(file);
       if (upgrading) {
         if (!process.env.VITEST) {

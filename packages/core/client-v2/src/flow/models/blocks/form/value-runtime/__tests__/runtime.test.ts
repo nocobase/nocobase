@@ -205,6 +205,30 @@ describe('FormValueRuntime (default rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
   });
 
+  it('patched form.setFieldsValue replaces top-level array fields instead of merging stale rows', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ users: [{ id: 1 }, { id: 2 }, { id: 3 }] });
+
+    const blockModel: any = {
+      uid: 'form-set-fields-value-array-replace',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    formStub.setFieldsValue({ users: [] });
+    formStub.setFieldsValue({ users: [{ id: 'A' }, { id: 'B' }] });
+
+    await waitFor(() => {
+      expect(formStub.getFieldValue(['users'])).toEqual([{ id: 'A' }, { id: 'B' }]);
+    });
+  });
+
   it('tracks dynamic deps (formValues[selector]) and updates subscriptions', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

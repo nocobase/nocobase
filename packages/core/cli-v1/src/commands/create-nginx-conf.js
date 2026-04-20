@@ -8,9 +8,9 @@
  */
 
 const { resolve, posix } = require('path');
+const { storagePathJoin, resolvePublicPath, resolveV2PublicPath } = require('../util');
 const { Command } = require('commander');
 const { readFileSync, writeFileSync } = require('fs');
-const { resolvePublicPath, resolveV2PublicPath } = require('../util');
 
 /**
  *
@@ -47,7 +47,7 @@ module.exports = (cli) => {
       .replace(/\{\{v2PublicPathNoTrailingSlash\}\}/g, v2PublicPathWithoutTrailingSlash)
       .replace(/\{\{apiPort\}\}/g, process.env.APP_PORT)
       .replace(/\{\{otherLocation\}\}/g, otherLocation);
-    const targetFile = resolve(process.cwd(), 'storage', 'nocobase.conf');
+    const targetFile = storagePathJoin('nocobase.conf');
     writeFileSync(targetFile, replaced);
   });
 };

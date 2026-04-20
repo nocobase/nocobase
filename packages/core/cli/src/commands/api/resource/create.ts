@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core';
-import { buildCreateArgs, createFlags, runResourceCommand } from '../../lib/resource-command.js';
+import { buildCreateArgs, createFlags, runResourceCommand } from '../../../lib/resource-command.js';
 
 export default class ResourceCreate extends Command {
   static summary = 'Create a record in a resource';

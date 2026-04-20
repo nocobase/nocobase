@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-simple-block",
   "displayName": "Plugin example: Simple block",
   "description": "This plugin demonstrates how to use the simple block feature to create a simple block.",
-  "version": "2.1.0-alpha.18",
+  "version": "2.1.0-alpha.19",
   "main": "dist/server/index.js",
   "devDependencies": {
     "big.js": "7.0.1"

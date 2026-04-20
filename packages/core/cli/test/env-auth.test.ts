@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { saveAuthConfig } from '../src/lib/auth-store.js';
 import {
+  buildOauthRedirectHtml,
   getOauthMetadataUrl,
   getOauthResource,
   isOauthAccessTokenExpired,
@@ -35,6 +36,18 @@ test('OAuth helpers derive metadata and resource URLs from base URL', () => {
   );
   assert.equal(getOauthResource('http://localhost:13000/api/'), 'http://localhost:13000/api/');
   assert.equal(getOauthResource('https://demo.example.com/custom/api'), 'https://demo.example.com/custom/api/');
+});
+
+test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', () => {
+  const url = 'https://example.com/oauth?scope=openid api&state="abc"&next=<script>alert(1)</script>';
+  const html = buildOauthRedirectHtml(url);
+
+  assert.match(html, /scope=openid api&amp;state=&quot;abc&quot;&amp;next=&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(
+    html,
+    /window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/,
+  );
+  assert.doesNotMatch(html, /href="[^"]*&state="/);
 });
 
 test('isOauthAccessTokenExpired uses a refresh window', () => {
@@ -125,6 +138,62 @@ test('resolveAccessToken refreshes expired OAuth sessions', async () => {
         scope: 'global',
       });
       assert.equal(token, 'fresh-token');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test('resolveAccessToken explains OAuth metadata network failures clearly', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        currentEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+            auth: {
+              type: 'oauth',
+              accessToken: 'expired-token',
+              refreshToken: 'refresh-token',
+              expiresAt: '2026-04-14T00:00:00.000Z',
+              issuer: 'http://localhost:13000/api',
+              clientId: 'client-1',
+              resource: 'http://localhost:13000/api/',
+              scope: 'openid api offline_access',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      throw new TypeError('fetch failed');
+    }) as typeof fetch;
+
+    try {
+      await assert.rejects(
+        () =>
+          resolveAccessToken({
+            envName: 'test',
+            scope: 'global',
+          }),
+        (error: any) => {
+          assert.match(error.message, /Failed to load OAuth metadata\./);
+          assert.match(error.message, /Env: test/);
+          assert.match(error.message, /Base URL: http:\/\/localhost:13000\/api/);
+          assert.match(
+            error.message,
+            /Request URL: http:\/\/localhost:13000\/api\/\.well-known\/oauth-authorization-server/,
+          );
+          assert.match(error.message, /Network error: fetch failed/);
+          assert.match(error.message, /nb env auth -e test/);
+          assert.match(error.message, /nb env list/);
+          return true;
+        },
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }

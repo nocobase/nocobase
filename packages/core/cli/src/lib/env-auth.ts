@@ -1,7 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import crypto from 'node:crypto';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { URL } from 'node:url';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {
   getCurrentEnvName,
   getEnv,
@@ -9,7 +21,7 @@ import {
   type AuthStoreOptions,
   type OauthAuthConfig,
 } from './auth-store.js';
-import { printInfo, printVerbose, printWarning, updateTask } from './ui.js';
+import { printInfo, printVerbose, printWarning, printWarningBlock, updateTask } from './ui.js';
 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const LOOPBACK_HOST = '127.0.0.1';
@@ -99,9 +111,38 @@ function formatOauthError(prefix: string, data: any, fallbackStatus?: number) {
   return prefix;
 }
 
-async function fetchOauthServerMetadata(baseUrl: string) {
+function formatOauthFetchFailure(prefix: string, options: { baseUrl?: string; url: string; rawMessage?: string; envName?: string }) {
+  return [
+    prefix,
+    options.envName ? `Env: ${options.envName}` : undefined,
+    options.baseUrl ? `Base URL: ${options.baseUrl}` : undefined,
+    `Request URL: ${options.url}`,
+    `Network error: ${options.rawMessage || 'fetch failed'}`,
+    'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
+    options.envName
+      ? `If the saved login is stale, run \`nb env auth -e ${options.envName}\` again after connectivity is restored.`
+      : 'If the saved login is stale, run `nb env auth -e <name>` again after connectivity is restored.',
+    'Use `nb env list` to inspect the current env configuration.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+async function fetchOauthServerMetadata(baseUrl: string, options: { envName?: string } = {}) {
   const metadataUrl = getOauthMetadataUrl(baseUrl);
-  const response = await fetch(metadataUrl);
+  let response: Response;
+  try {
+    response = await fetch(metadataUrl);
+  } catch (error: any) {
+    throw new Error(
+      formatOauthFetchFailure('Failed to load OAuth metadata.', {
+        envName: options.envName,
+        baseUrl,
+        url: metadataUrl,
+        rawMessage: error?.message,
+      }),
+    );
+  }
   const data = await parseJsonResponse(response);
 
   if (!response.ok) {
@@ -175,13 +216,76 @@ function buildPkcePair() {
   };
 }
 
-function maybeOpenBrowser(url: string) {
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeScriptString(value: string) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+type BrowserOpenTarget = {
+  target: string;
+  cleanup?: () => Promise<void>;
+};
+
+export function buildOauthRedirectHtml(url: string) {
+  const escapedUrl = escapeHtmlAttribute(url);
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url=${escapedUrl}">
+  <title>NocoBase OAuth Login</title>
+</head>
+<body>
+  <script>window.location.replace(${escapeScriptString(url)});</script>
+  <p>Redirecting to the OAuth login page. If nothing happens, <a href="${escapedUrl}">continue manually</a>.</p>
+</body>
+</html>
+`;
+}
+
+async function createWindowsBrowserRedirectFile(url: string) {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-oauth-'));
+  const filePath = path.join(directory, 'authorize.html');
+  await writeFile(filePath, buildOauthRedirectHtml(url), 'utf8');
+
+  const cleanup = setTimeout(() => {
+    void rm(directory, { recursive: true, force: true });
+  }, OAUTH_LOGIN_TIMEOUT_MS);
+  cleanup.unref?.();
+
+  return {
+    target: filePath,
+    cleanup: async () => {
+      clearTimeout(cleanup);
+      await rm(directory, { recursive: true, force: true });
+    },
+  };
+}
+
+async function getBrowserOpenTarget(url: string): Promise<BrowserOpenTarget> {
+  if (process.platform !== 'win32') {
+    return { target: url };
+  }
+
+  return createWindowsBrowserRedirectFile(url);
+}
+
+async function maybeOpenBrowser(url: string): Promise<{ opened: boolean; cleanup?: () => Promise<void> }> {
+  const { target, cleanup } = await getBrowserOpenTarget(url);
   const candidates =
     process.platform === 'darwin'
-      ? [['open', url]]
+      ? [['open', target]]
       : process.platform === 'win32'
-        ? [['cmd', '/c', 'start', '', url]]
-        : [['xdg-open', url]];
+        ? [['cmd', '/c', 'start', '', target]]
+        : [['xdg-open', target]];
 
   for (const [command, ...args] of candidates) {
     try {
@@ -190,13 +294,19 @@ function maybeOpenBrowser(url: string) {
         stdio: 'ignore',
       });
       child.unref();
-      return true;
+      return {
+        opened: true,
+        cleanup,
+      };
     } catch (_error) {
       continue;
     }
   }
 
-  return false;
+  return {
+    opened: false,
+    cleanup,
+  };
 }
 
 async function createLoopbackServer(state: string) {
@@ -335,7 +445,7 @@ async function refreshOauthAccessToken(options: {
     throw new Error(`OAuth session for env "${options.envName}" cannot be refreshed. Run \`nb env auth -e ${options.envName}\`.`);
   }
 
-  const metadata = await fetchOauthServerMetadata(options.baseUrl);
+  const metadata = await fetchOauthServerMetadata(options.baseUrl, { envName: options.envName });
   const resource = options.auth.resource || getOauthResource(metadata.issuer);
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
@@ -351,6 +461,15 @@ async function refreshOauthAccessToken(options: {
       'content-type': 'application/x-www-form-urlencoded',
     },
     body,
+  }).catch((error: any) => {
+    throw new Error(
+      formatOauthFetchFailure(`Failed to refresh OAuth session for env "${options.envName}".`, {
+        envName: options.envName,
+        baseUrl: options.baseUrl,
+        url: metadata.token_endpoint,
+        rawMessage: error?.message,
+      }),
+    );
   });
   const data = await parseJsonResponse(response);
 
@@ -466,11 +585,12 @@ export async function authenticateEnvWithOauth(options: {
   }
 
   updateTask(`Loading OAuth metadata for env "${envName}"...`);
-  const metadata = await fetchOauthServerMetadata(baseUrl);
+  const metadata = await fetchOauthServerMetadata(baseUrl, { envName });
   const state = encodeBase64Url(crypto.randomBytes(16));
   const { codeVerifier, codeChallenge } = buildPkcePair();
   const callback = await createLoopbackServer(state);
   const resource = getOauthResource(metadata.issuer);
+  let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
 
   try {
     updateTask(`Registering OAuth client for env "${envName}"...`);
@@ -488,9 +608,10 @@ export async function authenticateEnvWithOauth(options: {
     authorizationUrl.searchParams.set('resource', resource);
 
     updateTask(`Waiting for OAuth login for env "${envName}"...`);
-    const opened = maybeOpenBrowser(authorizationUrl.toString());
-    if (!opened) {
-      printWarning('Unable to open the browser automatically. Open this URL manually:');
+    const browser = await maybeOpenBrowser(authorizationUrl.toString());
+    cleanupBrowserOpenTarget = browser.cleanup;
+    if (!browser.opened) {
+      printWarningBlock('Unable to open the browser automatically. Open this URL manually:');
     } else {
       printInfo('Complete the OAuth login in your browser.');
     }
@@ -543,6 +664,7 @@ export async function authenticateEnvWithOauth(options: {
       { scope: options.scope },
     );
   } finally {
+    await cleanupBrowserOpenTarget?.().catch(() => undefined);
     await callback.close().catch(() => undefined);
   }
 }

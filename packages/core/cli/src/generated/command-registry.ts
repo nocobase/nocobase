@@ -8,28 +8,38 @@
  */
 
 import { Command } from '@oclif/core';
-import EnvAdd from '../commands/env/add.ts';
-import EnvAuth from '../commands/env/auth.ts';
-import Env from '../commands/env/index.ts';
-import EnvList from '../commands/env/list.ts';
-import EnvRemove from '../commands/env/remove.ts';
-import EnvUpdate from '../commands/env/update.ts';
-import EnvUse from '../commands/env/use.ts';
-import ResourceCreate from '../commands/resource/create.ts';
-import ResourceDestroy from '../commands/resource/destroy.ts';
-import ResourceGet from '../commands/resource/get.ts';
-import Resource from '../commands/resource/index.ts';
-import ResourceList from '../commands/resource/list.ts';
-import ResourceQuery from '../commands/resource/query.ts';
-import ResourceUpdate from '../commands/resource/update.ts';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  collectCommandModulePaths,
+  commandRelativePathToRegistryKey,
+  type CommandModuleExtension,
+} from '../lib/command-discovery.ts';
 import { getCurrentEnvName, getEnv } from '../lib/auth-store.ts';
 import { createGeneratedFlags, GeneratedApiCommand } from '../lib/generated-command.ts';
-import { toKebabCase } from '../lib/naming.ts';
 import { loadRuntimeSync } from '../lib/runtime-store.ts';
+
+const registryFilePath = fileURLToPath(import.meta.url);
+const commandsRoot = join(dirname(registryFilePath), '../commands');
+const commandModuleExtension: CommandModuleExtension = registryFilePath.endsWith('.ts') ? '.ts' : '.js';
+
+async function loadCommandsFromDirectory() {
+  const absolutePaths = await collectCommandModulePaths(commandsRoot, commandModuleExtension);
+  const entries = await Promise.all(
+    absolutePaths.map(async (absolutePath) => {
+      const rel = relative(commandsRoot, absolutePath).replace(/\\/g, '/');
+      const key = commandRelativePathToRegistryKey(rel);
+      const mod = await import(pathToFileURL(absolutePath).href);
+      return [key, mod.default] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}
 
 function readEnvName(argv: string[]) {
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
+
     if (token === '--env') {
       return argv[index + 1];
     }
@@ -66,20 +76,7 @@ function createRuntimeIndexCommand(commandId: string, operation: any) {
 }
 
 const registry: Record<string, any> = {
-  // env: Env,
-  'env:add': EnvAdd,
-  'env:auth': EnvAuth,
-  'env:list': EnvList,
-  'env:remove': EnvRemove,
-  'env:update': EnvUpdate,
-  'env:use': EnvUse,
-  // 'api:resource': Resource,
-  'api:resource:create': ResourceCreate,
-  'api:resource:destroy': ResourceDestroy,
-  'api:resource:get': ResourceGet,
-  'api:resource:list': ResourceList,
-  'api:resource:query': ResourceQuery,
-  'api:resource:update': ResourceUpdate,
+  ...(await loadCommandsFromDirectory()),
 };
 
 const envName = readEnvName(process.argv.slice(2)) ?? (await getCurrentEnvName());

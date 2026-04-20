@@ -18,6 +18,7 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
+const { resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -298,7 +299,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
 
 function generatePlaywrightPath(clean = false) {
   try {
-    const playwright = resolve(process.cwd(), 'storage/playwright/tests');
+    const playwright = storagePathJoin('playwright', 'tests');
     if (clean && fs.existsSync(playwright)) {
       fs.rmSync(dirname(playwright), { force: true, recursive: true });
     }
@@ -400,6 +401,30 @@ function areTimeZonesEqual(timeZone1, timeZone2) {
   return moment.tz(timeZone1).format('Z') === moment.tz(timeZone2).format('Z');
 }
 
+/**
+ * Absolute application storage root (same rules as `@nocobase/utils` `resolveStorageRoot`).
+ * Resolves STORAGE_PATH for initEnv; after initEnv, `process.env.STORAGE_PATH` is set to this absolute path.
+ */
+function resolveStorageRoot() {
+  if (process.env.STORAGE_PATH) {
+    if (isAbsolute(process.env.STORAGE_PATH)) {
+      return process.env.STORAGE_PATH;
+    }
+    return resolve(process.cwd(), process.env.STORAGE_PATH);
+  }
+  return resolve(process.cwd(), 'storage');
+}
+
+/** Join segments under the storage root (same semantics as `@nocobase/utils` `storagePathJoin`). */
+function storagePathJoin(...segments) {
+  return join(resolveStorageRoot(), ...segments);
+}
+
+exports.resolveStorageRoot = resolveStorageRoot;
+exports.storagePathJoin = storagePathJoin;
+/** @deprecated Use resolveStorageRoot — kept for backward compatibility */
+exports.generateStoragePath = resolveStorageRoot;
+
 function generateGatewayPath() {
   if (process.env.SOCKET_PATH) {
     if (isAbsolute(process.env.SOCKET_PATH)) {
@@ -410,7 +435,7 @@ function generateGatewayPath() {
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
     return resolve(os.homedir(), '.nocobase', 'gateway.sock');
   }
-  return resolve(process.cwd(), 'storage/gateway.sock');
+  return storagePathJoin('gateway.sock');
 }
 
 function generatePm2Home() {
@@ -423,7 +448,7 @@ function generatePm2Home() {
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
     return resolve(os.homedir(), '.nocobase', 'pm2');
   }
-  return resolve(process.cwd(), './storage/.pm2');
+  return storagePathJoin('.pm2');
 }
 
 exports.initEnv = function initEnv() {
@@ -436,12 +461,10 @@ exports.initEnv = function initEnv() {
     API_CLIENT_SHARE_TOKEN: 'false',
     API_CLIENT_STORAGE_TYPE: 'localStorage',
     // DB_DIALECT: 'sqlite',
-    DB_STORAGE: 'storage/db/nocobase.sqlite',
+    // DB_STORAGE, LOCAL_STORAGE_DEST, PLUGIN_STORAGE_PATH, etc. are set after dotenv from STORAGE_PATH
     // DB_TIMEZONE: '+00:00',
     DB_UNDERSCORED: parseEnv('DB_UNDERSCORED'),
     DEFAULT_STORAGE_TYPE: 'local',
-    LOCAL_STORAGE_DEST: 'storage/uploads',
-    PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
     MFSU_AD: 'none',
     MAKO_AD: 'none',
     WS_PATH: '/ws',
@@ -450,17 +473,14 @@ exports.initEnv = function initEnv() {
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
     SERVER_TSCONFIG_PATH: './tsconfig.server.json',
-    PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
     BROWSERSLIST_IGNORE_OLD_DATA: true,
     PLUGIN_STATICS_PATH: '/static/plugins/',
-    LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
     APP_BASE_URL: '',
     CDN_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
-    WATCH_FILE: resolve(process.cwd(), 'storage/app.watch.ts'),
     ESM_CDN_BASE_URL: 'https://esm.sh',
     ESM_CDN_SUFFIX: '',
   };
@@ -490,6 +510,17 @@ exports.initEnv = function initEnv() {
 
   dotenv.config({
     path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
+  });
+
+  const storagePath = resolveStorageRoot();
+  process.env.STORAGE_PATH = storagePath; // absolute; other modules may use process.env.STORAGE_PATH after this
+  Object.assign(env, {
+    DB_STORAGE: storagePathJoin('db', 'nocobase.sqlite'),
+    LOCAL_STORAGE_DEST: storagePathJoin('uploads'),
+    PLUGIN_STORAGE_PATH: storagePathJoin('plugins'),
+    PLAYWRIGHT_AUTH_FILE: storagePathJoin('playwright', '.auth', 'admin.json'),
+    LOGGER_BASE_PATH: storagePathJoin('logs'),
+    WATCH_FILE: storagePathJoin('app.watch.ts'),
   });
 
   if (process.argv[2] === 'e2e' && !process.env.APP_BASE_URL) {
@@ -556,7 +587,7 @@ exports.initEnv = function initEnv() {
     '@nocobase/plugin-workflow-response-message',
   ];
   for (const pkg of pkgs) {
-    const pkgDir = resolve(process.cwd(), 'storage/plugins', pkg);
+    const pkgDir = join(resolvePluginStoragePath(), pkg);
     fs.existsSync(pkgDir) && fs.rmdirSync(pkgDir, { recursive: true, force: true });
   }
 };

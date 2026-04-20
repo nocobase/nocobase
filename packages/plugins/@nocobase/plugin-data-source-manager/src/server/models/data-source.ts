@@ -12,7 +12,7 @@ import { Model, Transaction } from '@nocobase/database';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { Application } from '@nocobase/server';
-import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import PluginDataSourceManagerServer from '../plugin';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
 
@@ -110,7 +110,7 @@ export class DataSourceModel extends Model {
         logger: app.logger.child({ dataSourceKey }),
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
         cache: app.cache,
-        storagePath: path.join(process.cwd(), 'storage', 'cache', 'apps', app.name),
+        storagePath: storagePathJoin('cache', 'apps', app.name),
         databaseInstance,
       });
 

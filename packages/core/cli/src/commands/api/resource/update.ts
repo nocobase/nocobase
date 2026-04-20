@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core';
-import { buildUpdateArgs, runResourceCommand, updateFlags } from '../../lib/resource-command.js';
+import { buildUpdateArgs, runResourceCommand, updateFlags } from '../../../lib/resource-command.js';
 
 export default class ResourceUpdate extends Command {
   static summary = 'Update records in a resource';

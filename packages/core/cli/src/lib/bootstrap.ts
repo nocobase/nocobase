@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { getCurrentEnvName, getEnv, setEnvRuntime, updateEnvConnection } from './auth-store.js';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveAccessToken } from './env-auth.js';
 import { generateRuntime } from './runtime-generator.js';
 import { hasRuntimeSync, saveRuntime } from './runtime-store.js';
-import { confirmAction, printInfo, printVerbose, printWarning, setVerboseMode, stopTask, updateTask } from './ui.js';
+import { confirmAction, printInfo, printVerbose, printWarningBlock, setVerboseMode, stopTask, updateTask } from './ui.js';
 
 const APP_RETRY_INTERVAL = 2000;
 const APP_RETRY_TIMEOUT = 120000;
@@ -82,6 +91,10 @@ function isBuiltinCommand(argv: string[]) {
 
 export function shouldSkipRuntimeBootstrap(argv: string[]) {
   return hasVersionFlag(argv) || isBuiltinCommand(argv);
+}
+
+function shouldIgnoreBootstrapFailure(argv: string[], commandToken?: string) {
+  return !commandToken || hasHelpFlag(argv) || (commandToken === 'api' && argv.length === 1);
 }
 
 async function requestJson(url: string, options: { method?: string; token?: string; role?: string }) {
@@ -281,6 +294,10 @@ function hasInvalidTokenError(data: any) {
   return collectErrorEntries(data).some((entry) => entry?.code === 'INVALID_TOKEN');
 }
 
+function isNetworkFetchFailure(response: { status: number; data: any }) {
+  return response.status === 0;
+}
+
 export function formatSwaggerSchemaError(
   response: { status: number; data: any },
   context: { baseUrl: string; token?: string; role?: string; envName?: string; commandToken?: string },
@@ -307,6 +324,18 @@ export function formatSwaggerSchemaError(
     ].join('\n');
   }
 
+  if (isNetworkFetchFailure(response)) {
+    const rawMessage = response.data?.error?.message || 'fetch failed';
+    return [
+      'Failed to reach the NocoBase server while loading the command runtime from `swagger:get`.',
+      `Base URL: ${context.baseUrl}`,
+      `Network error: ${rawMessage}`,
+      'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
+      'If you recently changed the server address, update it with `nb env add --name <name> --base-url <url>` and retry `nb env update`.',
+      'Use `nb env list` to inspect the current env configuration.',
+    ].join('\n');
+  }
+
   return `Failed to load swagger schema from \`swagger:get\`.\n${JSON.stringify(response.data, null, 2)}`;
 }
 
@@ -330,65 +359,69 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
 export async function ensureRuntimeFromArgv(argv: string[], options: { configFile: string }) {
   const commandToken = getCommandToken(argv);
   const isRootInvocation = !commandToken;
+  const canContinueWithoutRuntime = shouldIgnoreBootstrapFailure(argv, commandToken);
   setVerboseMode(hasBooleanFlag(argv, 'verbose'));
 
   if (shouldSkipRuntimeBootstrap(argv)) {
     return;
   }
 
-  const envName = readFlag(argv, 'env') ?? (await getCurrentEnvName());
-  const env = await getEnv(envName);
-  const baseUrl = readFlag(argv, 'base-url') ?? env?.baseUrl;
-  const role = readFlag(argv, 'role');
-  const token = await resolveAccessToken({
-    envName,
-    baseUrl,
-    token: readFlag(argv, 'token'),
-  });
-  const runtimeVersion = env?.runtime?.version;
+  try {
+    const envName = readFlag(argv, 'env') ?? (await getCurrentEnvName());
+    const env = await getEnv(envName);
+    const baseUrl = readFlag(argv, 'base-url') ?? env?.baseUrl;
+    const role = readFlag(argv, 'role');
+    const token = await resolveAccessToken({
+      envName,
+      baseUrl,
+      token: readFlag(argv, 'token'),
+    });
+    const runtimeVersion = env?.runtime?.version;
 
-  if (runtimeVersion && hasRuntimeSync(runtimeVersion)) {
-    return;
-  }
-
-  if (!baseUrl) {
-    if (isRootInvocation) {
+    if (runtimeVersion && hasRuntimeSync(runtimeVersion)) {
       return;
     }
-    throw new Error(formatMissingRuntimeEnvError(commandToken));
-  }
 
-  updateTask('Loading command runtime...');
-  try {
-    printVerbose(`Runtime source: ${baseUrl}`);
-    const document = await fetchSwaggerSchema(
-      baseUrl,
-      token,
-      role,
-      { envName, commandToken },
-      isRootInvocation
-        ? {
-            allowEnableApiDoc: false,
-            retryAppAvailability: false,
-          }
-        : undefined,
-    );
-    const runtime = await generateRuntime(document, options.configFile, baseUrl);
-    await saveRuntime(runtime);
-    await setEnvRuntime(envName, {
-      version: runtime.version,
-      schemaHash: runtime.schemaHash,
-      generatedAt: runtime.generatedAt,
-    });
+    if (!baseUrl) {
+      if (isRootInvocation) {
+        return;
+      }
+      throw new Error(formatMissingRuntimeEnvError(commandToken));
+    }
+
+    updateTask('Loading command runtime...');
+    try {
+      printVerbose(`Runtime source: ${baseUrl}`);
+      const document = await fetchSwaggerSchema(
+        baseUrl,
+        token,
+        role,
+        { envName, commandToken },
+        isRootInvocation
+          ? {
+              allowEnableApiDoc: false,
+              retryAppAvailability: false,
+            }
+          : undefined,
+      );
+      const runtime = await generateRuntime(document, options.configFile, baseUrl);
+      await saveRuntime(runtime);
+      await setEnvRuntime(envName, {
+        version: runtime.version,
+        schemaHash: runtime.schemaHash,
+        generatedAt: runtime.generatedAt,
+      });
+    } finally {
+      stopTask();
+    }
   } catch (error) {
-    if (!isRootInvocation) {
+    if (!canContinueWithoutRuntime) {
       throw error;
     }
 
-    const message = error instanceof Error ? error.message : String(error);
-    printWarning(`${message}\nContinuing with built-in help because runtime commands could not be loaded.`);
-  } finally {
     stopTask();
+    const message = error instanceof Error ? error.message : String(error);
+    printWarningBlock(`Unable to load runtime commands. Showing built-in help instead.\n\n${message}`);
   }
 }
 

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import ora, { type Ora } from 'ora';
@@ -122,20 +131,21 @@ export function printSuccess(message: string) {
   console.log(pc.green(message));
 }
 
-export function printWarning(message: string) {
+function clearActiveSpinner() {
   if (activeSpinner) {
-    if (!isInteractiveTerminal()) {
-      activeSpinner = undefined;
-      console.log(pc.yellow(message));
-      return;
-    }
-
-    activeSpinner.warn(pc.yellow(message));
+    activeSpinner.stop();
     activeSpinner = undefined;
-    return;
   }
+}
 
-  console.log(pc.yellow(message));
+export function printWarning(message: string) {
+  clearActiveSpinner();
+  console.log(pc.yellow(`⚠ Warning: ${message}`));
+}
+
+export function printWarningBlock(message: string) {
+  clearActiveSpinner();
+  console.log(pc.yellow(`⚠ Warning\n${message}\n`));
 }
 
 export function printVerboseWarning(message: string) {
@@ -191,10 +201,7 @@ export function failTask(message: string) {
 }
 
 export function stopTask() {
-  if (activeSpinner) {
-    activeSpinner.stop();
-    activeSpinner = undefined;
-  }
+  clearActiveSpinner();
 }
 
 export function renderTable(headers: string[], rows: string[][]) {

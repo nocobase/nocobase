@@ -14,6 +14,7 @@ import { MariaDBIntrospector } from './database-introspector/mariadb-introspecto
 import { DataSource } from './data-source';
 import { Context } from '@nocobase/actions';
 import { CollectionOptions, FieldOptions } from './types';
+import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
 export abstract class DatabaseDataSource<T extends DatabaseIntrospector = DatabaseIntrospector> extends DataSource {
   declare introspector: T;
@@ -115,12 +116,13 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       : fieldOptions.type
         ? [fieldOptions.type]
         : [];
+    const hasCompatibleStorageType = this.hasCompatibleStorageType(fieldOptions.type, modelOptions.type);
 
     const shouldUseIncomingType =
       Boolean(fieldOptions.rawType) &&
       (modelOptions.rawType
-        ? fieldOptions.rawType !== modelOptions.rawType
-        : !incomingPossibleTypes.includes(modelOptions.type));
+        ? fieldOptions.rawType !== modelOptions.rawType && !hasCompatibleStorageType
+        : !incomingPossibleTypes.includes(modelOptions.type) && !hasCompatibleStorageType);
 
     if (shouldUseIncomingType) {
       newOptions.type = fieldOptions.type;
@@ -135,5 +137,66 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
     }
 
     return newOptions;
+  }
+
+  private hasCompatibleStorageType(incomingType?: string, loadedType?: string) {
+    if (!incomingType || !loadedType || incomingType === loadedType) {
+      return false;
+    }
+
+    const incomingStorageType = this.getFieldStorageType(incomingType);
+    const loadedStorageType = this.getFieldStorageType(loadedType);
+
+    if (!incomingStorageType || !loadedStorageType) {
+      return false;
+    }
+
+    return incomingStorageType === loadedStorageType;
+  }
+
+  private getFieldStorageType(type?: string) {
+    if (!type) {
+      return;
+    }
+
+    const db = (this.collectionManager as SequelizeCollectionManager)?.db;
+    if (!db) {
+      return;
+    }
+
+    try {
+      const fieldClass = db.fieldTypes.get(type);
+      if (!fieldClass) {
+        return;
+      }
+
+      const descriptor = Object.getOwnPropertyDescriptor(fieldClass.prototype, 'dataType');
+      const collection = {
+        name: '__sync_probe__',
+        options: {
+          underscored: false,
+        },
+        isView() {
+          return false;
+        },
+      };
+      const dataType = descriptor?.get?.call({
+        options: {
+          type,
+        },
+        database: db,
+        collection,
+        context: {
+          database: db,
+          collection,
+        },
+      });
+      if (typeof dataType === 'string') {
+        return dataType;
+      }
+      return dataType?.key || dataType?.constructor?.key || dataType?.constructor?.name;
+    } catch {
+      return;
+    }
   }
 }
