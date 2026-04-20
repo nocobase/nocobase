@@ -119,7 +119,7 @@ export class DataSourceManager {
     return Array.from(this.dataSources.values());
   }
 
-  getDataSource(key = 'main'): DataSource | undefined {
+  getDataSource(key: string): DataSource | undefined {
     return this.dataSources.get(key);
   }
 
