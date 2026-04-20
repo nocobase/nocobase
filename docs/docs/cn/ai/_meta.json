@@ -13,5 +13,8 @@
     "type": "custom-link",
     "label": "AI 开发",
     "link": "/ai-dev"
-  }
+  },
+  "openclaw",
+  "hermes-agent",
+  "workbuddy"
 ]
