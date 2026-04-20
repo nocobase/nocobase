@@ -45,6 +45,9 @@ features:
       - title: AI 开发
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
+      - title: 更多...
+        details: 查看更多 AI 能力。
+        link: /ai
 
   - title: 进阶
     details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
