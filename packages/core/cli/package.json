@@ -4,6 +4,10 @@
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "yarn clean && tsc -p tsconfig.json"
+  },
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
