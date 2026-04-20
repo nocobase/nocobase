@@ -13,10 +13,10 @@ import { DocxLoader } from '@langchain/community/document_loaders/fs/docx';
 import type { Document } from '@langchain/core/documents';
 import { parentPort } from 'node:worker_threads';
 import { TextLoader } from './vendor/langchain/document_loaders/fs/text';
-import { SupportedDocumentExtname } from './types';
+import { CSVLoader } from '@langchain/community/document_loaders/fs/csv';
 
 type ParsePayload = {
-  extname: SupportedDocumentExtname;
+  extname: string;
   mimeType?: string;
   buffer: Uint8Array;
 };
@@ -46,6 +46,11 @@ const loadTxt = async (blob: Blob): Promise<Document[]> => {
   return loader.load();
 };
 
+const loadCsv = async (blob: Blob): Promise<Document[]> => {
+  const loader = new CSVLoader(blob);
+  return loader.load();
+};
+
 const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
   // @ts-ignore
   const blob = new Blob([Buffer.from(payload.buffer)], { type: payload.mimeType ?? 'application/octet-stream' });
@@ -60,6 +65,10 @@ const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
       return loadDoc(blob, 'doc');
     case '.docx':
       return loadDoc(blob, 'docx');
+    case '.csv':
+      return loadCsv(blob);
+    case '.json':
+    case '.md':
     case '.txt':
       return loadTxt(blob);
     default:

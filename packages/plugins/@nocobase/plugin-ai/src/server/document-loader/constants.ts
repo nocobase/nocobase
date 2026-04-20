@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SupportedDocumentExtname } from './types';
-
 export const DOCUMENT_PARSE_META_KEY = 'documentParse';
 
-export const SUPPORTED_DOCUMENT_EXTNAMES: SupportedDocumentExtname[] = [
+export const SUPPORTED_DOCUMENT_EXTNAMES: string[] = [
   '.pdf',
   '.ppt',
   '.pptx',
   '.doc',
   '.docx',
   '.txt',
+  '.md',
+  '.json',
+  '.csv',
 ];

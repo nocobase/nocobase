@@ -19,6 +19,7 @@
     "@nocobase/logger": "2.0.40",
     "@nocobase/resourcer": "2.0.40",
     "@nocobase/utils": "2.0.40",
+    "d3-dsv": "2",
     "fast-glob": "^3.3.2",
     "flexsearch": "^0.8.2",
     "langchain": "^1.2.24",

@@ -12,7 +12,7 @@ import { Document } from '@langchain/core/documents';
 import { Readable } from 'node:stream';
 import { Worker } from 'node:worker_threads';
 import { SUPPORTED_DOCUMENT_EXTNAMES } from './constants';
-import { ParseableFile, SupportedDocumentExtname } from './types';
+import { ParseableFile } from './types';
 import path from 'node:path';
 import { resolveExtname } from './utils';
 
@@ -20,7 +20,7 @@ export class DocumentLoader {
   constructor(private readonly fileManager: PluginFileManagerServer) {}
 
   async load(file: ParseableFile): Promise<Document[]> {
-    const extname = resolveExtname(file) as SupportedDocumentExtname;
+    const extname = resolveExtname(file);
     if (!SUPPORTED_DOCUMENT_EXTNAMES.includes(extname)) {
       return [];
     }
@@ -41,7 +41,7 @@ export class DocumentLoader {
     return new Blob(chunks, { type: mimeType });
   }
 
-  private async loadByWorker(extname: SupportedDocumentExtname, blob: Blob): Promise<Document[]> {
+  private async loadByWorker(extname: string, blob: Blob): Promise<Document[]> {
     const buffer = Buffer.from(await blob.arrayBuffer());
     const isTsRuntime = __filename.endsWith('.ts');
     const workerPath = path.join(__dirname, `loader.worker.${isTsRuntime ? 'ts' : 'js'}`);
