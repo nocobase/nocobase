@@ -38,7 +38,10 @@ export class AIEmployeeInstruction extends Instruction {
   }
 
   useVariables(node) {
-    const outputSchema = node.config.structuredOutput.schema;
+    const outputSchema = node.config?.structuredOutput?.schema;
+    if (!outputSchema) {
+      return null;
+    }
     const schema = typeof outputSchema === 'string' ? JSON.parse(outputSchema) : outputSchema;
     return {
       label: node.title,
