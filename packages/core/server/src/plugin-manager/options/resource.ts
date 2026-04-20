@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
@@ -145,13 +145,13 @@ export default {
         }
         app.runAsCLI(['pm', 'add', values.packageName, ...args], { from: 'user' });
       } else if (ctx.file) {
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         app.runAsCLI(['pm', 'add', tempFile], { from: 'user' });
       } else if (values.compressedFileUrl) {
@@ -181,13 +181,13 @@ export default {
       // }
       if (ctx.file) {
         values.packageName = ctx.request.body.packageName;
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         // args.push(`--url=${tempFile}`);
         values.compressedFileUrl = tempFile;

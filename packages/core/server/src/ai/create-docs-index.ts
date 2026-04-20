@@ -10,6 +10,7 @@
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import { FlexSearchIndex } from '@nocobase/ai';
 import type Application from '../application';
 import { findAllPlugins } from '../plugin-manager/findPackageNames';
@@ -33,7 +34,7 @@ type DirectoryChildren = Map<
   }
 >;
 
-const DOCS_STORAGE_DIR = path.resolve(process.cwd(), 'storage/ai/docs');
+const DOCS_STORAGE_DIR = storagePathJoin('ai', 'docs');
 const REFERENCE_START = '<!-- docs:references:start -->';
 const REFERENCE_END = '<!-- docs:references:end -->';
 const SPLIT_REFERENCE_START = '<!-- docs:splits:start -->';

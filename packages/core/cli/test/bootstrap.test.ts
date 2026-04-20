@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { formatMissingRuntimeEnvError, formatSwaggerSchemaError, shouldSkipRuntimeBootstrap } from '../src/lib/bootstrap.js';
+import {
+  formatMissingRuntimeEnvError,
+  formatSwaggerSchemaError,
+  shouldSkipRuntimeBootstrap,
+} from '../src/lib/bootstrap.js';
 
 test('shouldSkipRuntimeBootstrap skips root help and no-arg invocations', () => {
   assert.equal(shouldSkipRuntimeBootstrap([]), false);
   assert.equal(shouldSkipRuntimeBootstrap(['--help']), false);
+  assert.equal(shouldSkipRuntimeBootstrap(['-h']), false);
+  assert.equal(shouldSkipRuntimeBootstrap(['api']), false);
   assert.equal(shouldSkipRuntimeBootstrap(['env', '--help']), true);
   assert.equal(shouldSkipRuntimeBootstrap(['resource', 'list']), true);
 });
@@ -59,6 +65,29 @@ test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth 
 
   assert.match(message, /^Failed to load swagger schema from `swagger:get`\./);
   assert.match(message, /Internal Server Error/);
+});
+
+test('formatSwaggerSchemaError explains network fetch failures clearly', () => {
+  const message = formatSwaggerSchemaError(
+    {
+      status: 0,
+      data: {
+        error: {
+          message: 'fetch failed',
+        },
+      },
+    },
+    {
+      baseUrl: 'http://localhost:13000/api',
+      commandToken: 'api',
+    },
+  );
+
+  assert.match(message, /Failed to reach the NocoBase server while loading the command runtime/);
+  assert.match(message, /Base URL: http:\/\/localhost:13000\/api/);
+  assert.match(message, /Network error: fetch failed/);
+  assert.match(message, /nb env add --name <name> --base-url <url>/);
+  assert.match(message, /nb env list/);
 });
 
 test('formatMissingRuntimeEnvError explains unknown runtime commands without an env', () => {

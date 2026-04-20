@@ -116,4 +116,30 @@ describe('actions', () => {
     });
     expect(membershipCount).toBe(1);
   });
+
+  it('should auto fill mainDepartmentId when creating a user with departments only', async () => {
+    const userRepo = db.getRepository('users');
+    const dept = await repo.create({
+      values: { title: 'Dept auto main' },
+    });
+
+    const user = await userRepo.create({
+      values: {
+        username: 'user-with-department',
+        password: '123456',
+        departments: [dept.id],
+      },
+    });
+
+    const userReload = await userRepo.findOne({
+      filterByTk: user.id,
+      fields: ['id', 'mainDepartmentId'],
+    });
+    expect(userReload.mainDepartmentId).toBe(dept.id);
+
+    const membershipCount = await db.getRepository('departmentsUsers').count({
+      filter: { userId: user.id, departmentId: dept.id },
+    });
+    expect(membershipCount).toBe(1);
+  });
 });

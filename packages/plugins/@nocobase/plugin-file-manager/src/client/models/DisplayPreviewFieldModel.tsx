@@ -36,7 +36,7 @@ const FilePreview = ({
   const previewFile = normalizePreviewFile(file);
   const src = getPreviewFileUrl(previewFile);
   if (!src) {
-    return;
+    return null;
   }
   const fileName = getFileName(previewFile, src);
   const fallback = getFallbackIcon(previewFile, src);

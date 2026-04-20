@@ -216,4 +216,18 @@ describe('set main department', () => {
     const user = await db.getRepository('users').findOne({ filterByTk: 1, fields: ['id', 'mainDepartmentId'] });
     expect(user.mainDepartmentId).toBe(depts[1].id);
   });
+
+  it('should clear main department when departments.members.set removes the last department', async () => {
+    const dept = await repo.create({ values: { title: 'OnlyDept' } });
+    await agent.resource('departments.members', dept.id).add({
+      values: [1],
+    });
+
+    await agent.resource('departments.members', dept.id).set({
+      values: [],
+    });
+
+    const user = await db.getRepository('users').findOne({ filterByTk: 1, fields: ['id', 'mainDepartmentId'] });
+    expect(user.mainDepartmentId).toBeNull();
+  });
 });

@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { storagePathJoin } from '@nocobase/utils';
 import { createDbAdapter } from './db-adapter';
 import { normalizeBasePath } from './utils';
 
@@ -325,7 +326,7 @@ export class IdpOauthService {
   }
 
   private getDefaultJwksPath(appName: string) {
-    return path.resolve(process.cwd(), 'storage', 'apps', appName, 'idp_oauth_jwks.json');
+    return storagePathJoin('apps', appName, 'idp_oauth_jwks.json');
   }
 
   private async getProviderSigningJwks(appName: string) {
