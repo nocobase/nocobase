@@ -66,14 +66,21 @@ function hasBooleanFlag(argv: string[], name: string) {
 }
 
 function getCommandToken(argv: string[]) {
+  const tokens: string[] = [];
+
   for (const token of argv) {
     if (!token || token.startsWith('-')) {
       continue;
     }
-    return token;
+
+    tokens.push(token);
   }
 
-  return undefined;
+  if (tokens[0] === 'api') {
+    return tokens[1] ?? tokens[0];
+  }
+
+  return tokens[0];
 }
 
 function hasHelpFlag(argv: string[]) {
@@ -85,8 +92,10 @@ function hasVersionFlag(argv: string[]) {
 }
 
 function isBuiltinCommand(argv: string[]) {
-  const commandToken = getCommandToken(argv);
-  return commandToken === 'env' || commandToken === 'resource';
+  const commandTokens = argv.filter((token) => token && !token.startsWith('-'));
+  const [topic, subtopic] = commandTokens;
+
+  return topic === 'env' || topic === 'resource' || (topic === 'api' && subtopic === 'resource');
 }
 
 export function shouldSkipRuntimeBootstrap(argv: string[]) {

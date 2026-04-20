@@ -47,15 +47,21 @@ if (isDev) {
 }
 
 function getCommandToken(argv) {
+  const tokens = [];
+
   for (const token of argv) {
     if (!token || token.startsWith('-')) {
       continue;
     }
 
-    return token;
+    tokens.push(token);
   }
 
-  return undefined;
+  if (tokens[0] === 'api') {
+    return tokens[1] ?? tokens[0];
+  }
+
+  return tokens[0];
 }
 
 function formatCliEntryError(error, argv) {

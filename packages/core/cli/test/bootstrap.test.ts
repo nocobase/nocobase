@@ -13,11 +13,14 @@ test('shouldSkipRuntimeBootstrap skips root help and no-arg invocations', () => 
   assert.equal(shouldSkipRuntimeBootstrap(['api']), false);
   assert.equal(shouldSkipRuntimeBootstrap(['env', '--help']), true);
   assert.equal(shouldSkipRuntimeBootstrap(['resource', 'list']), true);
+  assert.equal(shouldSkipRuntimeBootstrap(['api', 'resource', 'list']), true);
+  assert.equal(shouldSkipRuntimeBootstrap(['api', 'resource', 'list', '--help']), true);
 });
 
 test('shouldSkipRuntimeBootstrap still loads runtime for non-builtin commands', () => {
   assert.equal(shouldSkipRuntimeBootstrap(['users', 'list']), false);
   assert.equal(shouldSkipRuntimeBootstrap(['users', 'list', '--json-output']), false);
+  assert.equal(shouldSkipRuntimeBootstrap(['api', 'users', 'list']), false);
 });
 
 test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', () => {

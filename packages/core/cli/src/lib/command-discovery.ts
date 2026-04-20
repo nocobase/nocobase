@@ -36,15 +36,15 @@ export async function collectCommandModulePaths(
 
 /**
  * Map a path relative to `commands/` with `.js` / `.ts` to an oclif explicit-registry key.
- * `resource/foo.js` → `api:resource:foo` (topic `api resource …`); other paths use `:` between segments.
+ * `api/resource/foo.js` → `api:resource:foo`; trailing `index` maps to the parent command.
  */
 export function commandRelativePathToRegistryKey(relativePath: string): string {
   const normalized = relativePath.replace(/\\/g, '/').replace(/\.(js|ts)$/i, '');
   const segments = normalized.split('/').filter(Boolean);
 
-  // if (segments[0] === 'resource' && segments.length >= 2) {
-  //   return ['api', 'resource', ...segments.slice(1)].join(':');
-  // }
+  if (segments.at(-1) === 'index') {
+    segments.pop();
+  }
 
   return segments.join(':');
 }

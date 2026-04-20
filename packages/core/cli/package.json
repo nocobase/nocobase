@@ -28,6 +28,7 @@
     "additionalHelpFlags": [
       "-h"
     ],
+    "helpClass": "./src/help/runtime-help.ts",
     "commands": {
       "strategy": "explicit",
       "target": "./dist/generated/command-registry.js"
