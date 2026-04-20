@@ -44,6 +44,40 @@ import {
 
 const DEFAULT_KANBAN_BLOCK_MIN_HEIGHT = '60vh';
 
+type DeferredRefreshHandle = { type: 'idle'; id: number } | { type: 'timeout'; id: number } | null;
+
+const scheduleDeferredRefresh = (callback: () => void): DeferredRefreshHandle => {
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    return {
+      type: 'idle',
+      id: window.requestIdleCallback(callback, { timeout: 300 }),
+    };
+  }
+
+  if (typeof window === 'undefined') {
+    callback();
+    return null;
+  }
+
+  return {
+    type: 'timeout',
+    id: window.setTimeout(callback, 32),
+  };
+};
+
+const cancelDeferredRefresh = (handle: DeferredRefreshHandle) => {
+  if (!handle || typeof window === 'undefined') {
+    return;
+  }
+
+  if (handle.type === 'idle' && typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(handle.id);
+    return;
+  }
+
+  window.clearTimeout(handle.id);
+};
+
 const loadRelationGroupOptions = async (model: KanbanBlockModel, field: any): Promise<KanbanGroupOption[]> => {
   const targetCollection = field?.targetCollection;
   if (!targetCollection) {
@@ -83,6 +117,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   const boardDisplayItemsRef = useRef<Record<string, KanbanRuntimeRecord[]>>({});
   const suppressGlobalRefreshUntilRef = useRef(0);
   const dragPersistingRef = useRef(false);
+  const pendingDragRefreshRef = useRef<DeferredRefreshHandle>(null);
   const [containerHeight, setContainerHeight] = useState(0);
   const [actionsHeight, setActionsHeight] = useState(0);
   const [errorHeight, setErrorHeight] = useState(0);
@@ -99,6 +134,13 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   useEffect(() => {
     columnStatesRef.current = columnStates;
   }, [columnStates]);
+
+  useEffect(() => {
+    return () => {
+      cancelDeferredRefresh(pendingDragRefreshRef.current);
+      pendingDragRefreshRef.current = null;
+    };
+  }, []);
 
   const columns = useMemo<RuntimeColumn[]>(() => {
     const enabledOptions = getEnabledKanbanGroupOptions(groupOptions);
@@ -384,6 +426,23 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     });
   }, []);
 
+  const scheduleDragColumnRefresh = useCallback(
+    (
+      columnKeys: string[],
+      options: {
+        reason: 'drag';
+        activeRecordKey?: string;
+      },
+    ) => {
+      cancelDeferredRefresh(pendingDragRefreshRef.current);
+      pendingDragRefreshRef.current = scheduleDeferredRefresh(() => {
+        pendingDragRefreshRef.current = null;
+        triggerColumnRefresh(columnKeys, options);
+      });
+    },
+    [triggerColumnRefresh],
+  );
+
   const handleDragEnd = useCallback(
     async (result: DropResult) => {
       const { source, destination } = result;
@@ -472,7 +531,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         suppressGlobalRefreshUntilRef.current = Date.now() + 1500;
 
         if (shouldRefreshColumnsAfterMove(affectedColumnKeys)) {
-          triggerColumnRefresh(affectedColumnKeys, {
+          scheduleDragColumnRefresh(affectedColumnKeys, {
             reason: 'drag',
             activeRecordKey,
           });
@@ -491,8 +550,8 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
       groupFieldScopeKey,
       model,
       setMoveError,
+      scheduleDragColumnRefresh,
       shouldRefreshColumnsAfterMove,
-      triggerColumnRefresh,
       crossColumnDragEnabled,
     ],
   );

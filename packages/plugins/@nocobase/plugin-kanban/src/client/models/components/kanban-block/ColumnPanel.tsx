@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { Alert, Button, Empty, Tag } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Droppable } from 'react-beautiful-dnd';
 import type { KanbanBlockModel } from '../../KanbanBlockModel';
 import { toKanbanAlphaColor } from '../../utils';
@@ -31,18 +31,7 @@ import {
 
 const DEFAULT_KANBAN_BLOCK_MIN_HEIGHT = '60vh';
 
-export const ColumnPanel = ({
-  model,
-  column,
-  state,
-  displayItems,
-  setState,
-  refreshMeta,
-  designSettingsHost,
-  fixedHeight,
-  dragEnabled,
-  dragInteractionEnabled,
-}: {
+type ColumnPanelProps = {
   model: KanbanBlockModel;
   column: RuntimeColumn;
   state: ColumnState | undefined;
@@ -53,7 +42,20 @@ export const ColumnPanel = ({
   fixedHeight: boolean;
   dragEnabled: boolean;
   dragInteractionEnabled: boolean;
-}) => {
+};
+
+const ColumnPanelComponent = ({
+  model,
+  column,
+  state,
+  displayItems,
+  setState,
+  refreshMeta,
+  designSettingsHost,
+  fixedHeight,
+  dragEnabled,
+  dragInteractionEnabled,
+}: ColumnPanelProps) => {
   const loadingRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -331,13 +333,13 @@ export const ColumnPanel = ({
         {options?.provided?.placeholder}
         {runtimeState.hasNext ? <div ref={loadMoreSentinelRef} style={{ height: 1 }} /> : null}
       </div>
-      {runtimeState.hasNext ? (
+      {/* {runtimeState.hasNext ? (
         <div style={{ paddingTop: 8 }}>
           <Button block loading={runtimeState.loading} onClick={() => void loadPage(runtimeState.page + 1, true)}>
             {model.translate('Load more')}
           </Button>
         </div>
-      ) : null}
+      ) : null} */}
     </div>
   );
 
@@ -380,3 +382,36 @@ export const ColumnPanel = ({
     </div>
   );
 };
+
+export const ColumnPanel = memo(ColumnPanelComponent, areColumnPanelPropsEqual);
+ColumnPanel.displayName = 'ColumnPanel';
+
+function areColumnPanelPropsEqual(prev: ColumnPanelProps, next: ColumnPanelProps) {
+  return (
+    prev.model === next.model &&
+    prev.column === next.column &&
+    prev.state === next.state &&
+    prev.displayItems === next.displayItems &&
+    prev.setState === next.setState &&
+    prev.refreshMeta === next.refreshMeta &&
+    prev.fixedHeight === next.fixedHeight &&
+    prev.dragEnabled === next.dragEnabled &&
+    prev.dragInteractionEnabled === next.dragInteractionEnabled &&
+    !isDesignSettingsHostChangeRelevant(prev.designSettingsHost, next.designSettingsHost, prev.column.key)
+  );
+}
+
+function isDesignSettingsHostChangeRelevant(
+  prevHost: KanbanDesignSettingsHost | null | undefined,
+  nextHost: KanbanDesignSettingsHost | null | undefined,
+  columnKey: string,
+) {
+  const prevRelevant = prevHost?.columnKey === columnKey ? prevHost : undefined;
+  const nextRelevant = nextHost?.columnKey === columnKey ? nextHost : undefined;
+
+  return (
+    prevRelevant?.columnKey !== nextRelevant?.columnKey ||
+    prevRelevant?.recordKey !== nextRelevant?.recordKey ||
+    prevRelevant?.index !== nextRelevant?.index
+  );
+}

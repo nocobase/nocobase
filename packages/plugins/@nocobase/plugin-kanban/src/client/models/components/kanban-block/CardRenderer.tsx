@@ -9,7 +9,6 @@
 
 import { css } from '@emotion/css';
 import { FlowModelRenderer } from '@nocobase/flow-engine';
-import { Skeleton } from 'antd';
 import React, { memo, useMemo, useRef } from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 import { useInView } from 'react-intersection-observer';
@@ -21,10 +20,12 @@ export const CardPlaceholder = () => {
     <div
       className={css`
         margin-bottom: 12px;
+        min-height: 132px;
+        border-radius: 12px;
+        background: var(--ant-colorFillQuaternary);
+        opacity: 0.55;
       `}
-    >
-      <Skeleton active paragraph={{ rows: 3 }} />
-    </div>
+    />
   );
 };
 
@@ -38,7 +39,12 @@ type LazyCardRendererProps = {
 
 export const LazyCardRenderer = memo(
   ({ model, record, index, columnKey, enableDesignSettings }: LazyCardRendererProps) => {
-    const { ref, inView } = useInView({ threshold: 0, triggerOnce: true });
+    const { ref, inView } = useInView({
+      threshold: 0,
+      triggerOnce: true,
+      rootMargin: '240px 0px 240px 0px',
+      fallbackInView: true,
+    });
     const recordRef = useRef(record);
     const indexRef = useRef(index);
     const hasRenderedContentRef = useRef(false);
@@ -147,9 +153,12 @@ export const DraggableKanbanCard = memo(
               opacity: snapshot.isDragging ? 0.4 : 1,
               cursor: dragEnabled && recordKey ? 'grab' : undefined,
               zIndex: snapshot.isDragging ? 999 : undefined,
+              willChange: snapshot.isDragging ? 'transform' : undefined,
             }}
             className={css`
               margin-bottom: 12px;
+              backface-visibility: hidden;
+              contain: layout paint;
             `}
           >
             <LazyCardRenderer
