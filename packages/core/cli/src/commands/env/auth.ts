@@ -17,14 +17,13 @@ export default class EnvAuth extends Command {
   static override summary = 'Authenticate an environment with OAuth';
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> prod',
   ];
 
   static override args = {
     name: Args.string({
       description: 'Environment name (omit to use the current env)',
-      required: false,
+      required: true,
     }),
   };
 
