@@ -7214,9 +7214,28 @@ export class FlowSurfacesService {
     );
   }
 
-  private buildInlinePopupTemplateOpenView(popup: Record<string, any>) {
+  private normalizeOptionalPopupTitle(value: any) {
+    if (_.isUndefined(value) || _.isNull(value)) {
+      return undefined;
+    }
+    const normalizedTitle = String(value).trim();
+    return normalizedTitle || undefined;
+  }
+
+  private resolveDefaultActionPopupTemplateOpenViewTitle(actionNode: any, popup: Record<string, any> | undefined) {
+    const explicitTitle = this.normalizeOptionalPopupTitle(popup?.title);
+    if (explicitTitle) {
+      return explicitTitle;
+    }
+    if (!isFlowSurfaceDefaultActionPopupUse(actionNode?.use)) {
+      return undefined;
+    }
+    return resolveFlowSurfaceDefaultActionPopupTabTitle(actionNode?.use, this.getActionButtonTitle(actionNode));
+  }
+
+  private buildInlinePopupTemplateOpenView(popup: Record<string, any>, fallbackTitle?: string) {
     const normalizedTitle =
-      _.isUndefined(popup?.title) || _.isNull(popup?.title) ? undefined : String(popup.title).trim() || undefined;
+      this.normalizeOptionalPopupTitle(popup?.title) || this.normalizeOptionalPopupTitle(fallbackTitle);
     return buildDefinedPayload({
       template: popup?.template,
       title: normalizedTitle,
@@ -8644,6 +8663,7 @@ export class FlowSurfacesService {
 
     popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
     popup = this.buildImplicitTemplateDefaultActionPopup(actionNode, popup);
+    const templateOpenViewTitle = this.resolveDefaultActionPopupTemplateOpenViewTitle(actionNode, popup);
     if (popup && hasFlowSurfaceInlinePopupTemplate(popup)) {
       await this.configureActionNode(
         {
@@ -8651,7 +8671,7 @@ export class FlowSurfacesService {
         },
         actionNode.use,
         {
-          openView: this.buildInlinePopupTemplateOpenView(popup),
+          openView: this.buildInlinePopupTemplateOpenView(popup, templateOpenViewTitle),
         },
         {
           ...options,
@@ -8668,13 +8688,16 @@ export class FlowSurfacesService {
         },
         actionNode.use,
         {
-          openView: this.buildInlinePopupTemplateOpenView({
-            ...popup,
-            template: {
-              uid: matchedTemplate.uid,
-              mode: 'reference',
+          openView: this.buildInlinePopupTemplateOpenView(
+            {
+              ...popup,
+              template: {
+                uid: matchedTemplate.uid,
+                mode: 'reference',
+              },
             },
-          }),
+            templateOpenViewTitle,
+          ),
         },
         {
           ...options,

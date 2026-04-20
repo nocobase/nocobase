@@ -2830,6 +2830,11 @@ describe('flowSurfaces resource', () => {
         title: 'Inspect Employee',
       },
     });
+    const reusedViewAction = await addRecordAction(rootAgent, tableBlockUid, 'view', {
+      settings: {
+        title: 'Preview Employee',
+      },
+    });
     const editAction = await addRecordAction(rootAgent, tableBlockUid, 'edit', {
       settings: {
         title: 'Modify Employee',
@@ -2869,6 +2874,7 @@ describe('flowSurfaces resource', () => {
       mode: 'reference',
     });
     expect(addNewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
+    expect(addNewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Create Employee');
     expect(addNewPopup.popupTab?.props?.title).toBe('Create Employee');
     expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
     expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
@@ -2884,9 +2890,20 @@ describe('flowSurfaces resource', () => {
       mode: 'reference',
     });
     expect(viewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
+    expect(viewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect Employee');
     expect(viewPopup.popupTab?.props?.title).toBe('Inspect Employee');
     expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
+
+    expect(reusedViewAction.popupPageUid).toBeUndefined();
+    expect(reusedViewAction.popupTabUid).toBeUndefined();
+    expect(reusedViewAction.popupGridUid).toBeUndefined();
+    const reusedViewPopup = await readActionPopup(reusedViewAction.uid);
+    expect(reusedViewPopup.actionReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+      uid: viewPopup.actionReadback.tree.popup?.template?.uid,
+    });
+    expect(reusedViewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Preview Employee');
 
     expect(editAction.popupPageUid).toBeUndefined();
     expect(editAction.popupTabUid).toBeUndefined();
@@ -2896,6 +2913,7 @@ describe('flowSurfaces resource', () => {
       mode: 'reference',
     });
     expect(editPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
+    expect(editPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify Employee');
     expect(editPopup.popupTab?.props?.title).toBe('Modify Employee');
     expect(editPopup.popupBlock?.use).toBe('EditFormModel');
     expect(editPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
