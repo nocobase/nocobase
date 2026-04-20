@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { isTopicIndexCommand } from '../src/help/runtime-help.js';
+import { test } from 'vitest';
+import { isTopicIndexCommand } from '../help/runtime-help.js';
 
 test('isTopicIndexCommand detects commands that are also topic namespaces', () => {
   const topics = [

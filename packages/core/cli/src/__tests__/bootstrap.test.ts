@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { test } from 'vitest';
 import {
   formatMissingRuntimeEnvError,
   formatSwaggerSchemaError,
   shouldSkipRuntimeBootstrap,
-} from '../src/lib/bootstrap.js';
+} from '../lib/bootstrap.js';
 
 test('shouldSkipRuntimeBootstrap skips root help and no-arg invocations', () => {
   assert.equal(shouldSkipRuntimeBootstrap([]), false);

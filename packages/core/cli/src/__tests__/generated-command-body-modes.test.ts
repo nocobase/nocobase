@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { test } from 'vitest';
 import { Command } from '@oclif/core';
-import { parseBody, type RequestOperation } from '../src/lib/api-client.js';
-import { createGeneratedFlags, type GeneratedOperation } from '../src/lib/generated-command.js';
-import { buildExamples } from '../src/lib/runtime-generator.js';
+import { parseBody, type RequestOperation } from '../lib/api-client.js';
+import { createGeneratedFlags, type GeneratedOperation } from '../lib/generated-command.js';
+import { buildExamples } from '../lib/runtime-generator.js';
 
 const testApiOperation: GeneratedOperation = {
   commandId: 'test api',
