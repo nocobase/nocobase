@@ -11,7 +11,6 @@ import { Context } from '@nocobase/actions';
 import { DynamicToolsProvider } from '@nocobase/ai';
 import PluginWorkflowServer, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { Plugin } from '@nocobase/server';
-import { withData } from './utils';
 
 export type WorkflowTaskToolProvider = (plugin: Plugin) => DynamicToolsProvider;
 
@@ -114,7 +113,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
 
       job.set({
         status: JOB_STATUS.RESOLVED,
-        result: withData(job.get?.('result') ?? job.result, args.result),
+        result: args.result,
       });
       await workflowPlugin.resume(job);
 

@@ -18,7 +18,7 @@ export const StructuredOutput: React.FC = () => {
   const DEFAULT_SCHEMA = {
     type: 'object',
     properties: {
-      response: {
+      result: {
         title: t('Response result', { ns: namespace }),
         type: 'string',
         description: 'The text message sent to the user',

@@ -46,21 +46,10 @@ export class AIEmployeeInstruction extends Instruction {
     return {
       label: node.title,
       value: node.key,
-      children: buildResultVariables(schema),
+      children: traversal(schema),
     };
   }
 }
-
-export const buildResultVariables = (schema?: TSchema) => {
-  const children = traversal(schema);
-  return [
-    {
-      label: 'data',
-      value: 'data',
-      children: children.length ? children : undefined,
-    },
-  ];
-};
 
 const traversal = (schema?: TSchema): any[] => {
   return Object.entries(schema?.properties ?? {}).map(([key, value]) => {

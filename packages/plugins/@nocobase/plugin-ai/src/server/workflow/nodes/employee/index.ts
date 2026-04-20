@@ -21,7 +21,6 @@ import { AIEmployee } from '../../../ai-employees/ai-employee';
 import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
-import { withError } from './utils';
 
 export class AIEmployeeInstruction extends Instruction {
   run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
@@ -183,7 +182,7 @@ Do not send another normal assistant response without invoking it.
       } else {
         job.set({
           status: JOB_STATUS.ERROR,
-          result: withError(job.get?.('result') ?? job.result, 'AI employee not do job correctly'),
+          result: 'AI employee not do job correctly',
         });
         await this.workflow.resume(job);
       }
@@ -197,7 +196,7 @@ Do not send another normal assistant response without invoking it.
       });
       job.set({
         status: JOB_STATUS.ERROR,
-        result: withError(job.get?.('result') ?? job.result, e.message),
+        result: e.message,
       });
       this.workflow.resume(job);
     });
