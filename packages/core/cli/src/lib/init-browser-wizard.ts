@@ -8,7 +8,7 @@
  */
 
 /**
- * Local HTTP wizard for `nb init --ui`: serves a page on 127.0.0.1 and returns user choices.
+ * Local HTTP wizard for `nb init --ui`: binds a TCP server (default 0.0.0.0, ephemeral port) and returns user choices.
  */
 import http from 'node:http';
 import { execFile } from 'node:child_process';
@@ -22,6 +22,27 @@ const WIZARD_TIMEOUT_MS = 600_000;
 function closeWizardServer(server: http.Server, onClosed: () => void): void {
   server.close(onClosed);
   server.closeAllConnections?.();
+}
+
+/**
+ * Host fragment for `http://…` (not `0.0.0.0` / `::`).
+ */
+function wizardUrlHost(bindHost: string): string {
+  if (bindHost === '0.0.0.0' || bindHost === '::') {
+    return '127.0.0.1';
+  }
+  return formatHostForHttpUrl(bindHost);
+}
+
+function formatHostForHttpUrl(host: string): string {
+  if (host.includes(':') && !(host.startsWith('[') && host.endsWith(']'))) {
+    return `[${host}]`;
+  }
+  return host;
+}
+
+function wizardOpenUrl(bindHost: string, port: number): string {
+  return `http://${wizardUrlHost(bindHost)}:${port}/`;
 }
 
 function initWizardHtml(): string {
@@ -330,11 +351,42 @@ function buildEnvAddArgv(fields: InitBrowserEnvAddFields): string[] {
 
 export { buildEnvAddArgv };
 
+export type RunInitBrowserWizardOptions = {
+  /** Address passed to `server.listen` (e.g. `0.0.0.0`, `127.0.0.1`). */
+  bindHost?: string;
+  /** TCP port; `0` lets the OS assign a free port. */
+  port?: number;
+};
+
+function resolveWizardListenOptions(options?: RunInitBrowserWizardOptions): {
+  bindHost: string;
+  port: number;
+} {
+  const bindHost = options?.bindHost?.trim() || '0.0.0.0';
+  let port: number;
+  if (options?.port !== undefined) {
+    port = options.port;
+  } else if (process.env.NOCOBASE_INIT_UI_PORT !== undefined) {
+    const n = Number(process.env.NOCOBASE_INIT_UI_PORT);
+    port = Number.isFinite(n) ? n : 0;
+  } else {
+    port = 0;
+  }
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error('Wizard port must be an integer from 0 to 65535 (0 = random).');
+  }
+  return { bindHost, port };
+}
+
 /**
- * Binds an ephemeral server on 127.0.0.1, opens the wizard URL, resolves when the form is submitted
+ * Binds a local HTTP server, opens the wizard URL, resolves when the form is submitted
  * (then closes the server). The CLI continues in the terminal.
  */
-export function runInitBrowserWizard(log: (line: string) => void): Promise<InitBrowserChoice> {
+export function runInitBrowserWizard(
+  log: (line: string) => void,
+  options?: RunInitBrowserWizardOptions,
+): Promise<InitBrowserChoice> {
+  const { bindHost, port: listenPort } = resolveWizardListenOptions(options);
   const html = initWizardHtml();
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -418,13 +470,13 @@ export function runInitBrowserWizard(log: (line: string) => void): Promise<InitB
       fail(err instanceof Error ? err : new Error(String(err)));
     });
 
-    server.listen(0, '127.0.0.1', async () => {
+    server.listen(listenPort, bindHost, async () => {
       const addr = server.address();
       if (!addr || typeof addr === 'string') {
         fail(new Error('Failed to bind local wizard server.'));
         return;
       }
-      const openUrl = `http://127.0.0.1:${addr.port}/`;
+      const openUrl = wizardOpenUrl(bindHost, addr.port);
       log(`Local wizard: ${openUrl}`);
       const opened = await openBrowser(openUrl);
       if (!opened) {

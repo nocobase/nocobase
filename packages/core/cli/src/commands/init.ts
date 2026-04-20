@@ -31,11 +31,12 @@ Internal ordering: (skills?) → (already have an app? → env add | install onl
 
 Use \`-y\` / \`--yes\` to skip init prompts (defaults: install skills, then \`nb install\` only—same as choosing the first option, no existing app). When you choose an existing app in a TTY, \`nb env add\` may still prompt for URL and auth.
 
-Use \`--ui\` to open a **browser** wizard on \`127.0.0.1\` (local HTTP server). It can collect \`nb env add\` fields when you link an existing app, so the terminal env wizard is skipped. Cannot be combined with \`--yes\`.`;
+Use \`--ui\` to open a **browser** wizard (local HTTP server; default bind \`0.0.0.0\`, random port). Use \`--ui-host\` / \`--ui-port\` to override. The opened URL uses \`127.0.0.1\` when the bind address is all-interfaces. It can collect \`nb env add\` fields when you link an existing app, so the terminal env wizard is skipped. Cannot be combined with \`--yes\`.`;
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --ui',
+    '<%= config.bin %> <%= command.id %> --ui --ui-host 127.0.0.1 --ui-port 3000',
     '<%= config.bin %> <%= command.id %> -y',
   ];
 
@@ -47,8 +48,18 @@ Use \`--ui\` to open a **browser** wizard on \`127.0.0.1\` (local HTTP server). 
     }),
     ui: Flags.boolean({
       description:
-        'Open a browser-based setup wizard (local server on 127.0.0.1; not valid with --yes)',
+        'Open a browser-based setup wizard (local HTTP server; not valid with --yes)',
       default: false,
+    }),
+    'ui-host': Flags.string({
+      description:
+        'Bind address for the --ui wizard HTTP server (default 0.0.0.0; only with --ui)',
+    }),
+    'ui-port': Flags.integer({
+      description:
+        'TCP port for the --ui wizard; 0 = OS-assigned ephemeral port (default 0; only with --ui)',
+      min: 0,
+      max: 65535,
     }),
   };
 
@@ -57,6 +68,13 @@ Use \`--ui\` to open a **browser** wizard on \`127.0.0.1\` (local HTTP server). 
 
     if (flags.ui && flags.yes) {
       this.error('--ui cannot be used with --yes.');
+    }
+
+    if (
+      !flags.ui &&
+      (flags['ui-host'] !== undefined || flags['ui-port'] !== undefined)
+    ) {
+      this.error('--ui-host and --ui-port require --ui.');
     }
 
     const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY);
@@ -90,7 +108,10 @@ Use \`--ui\` to open a **browser** wizard on \`127.0.0.1\` (local HTTP server). 
       );
     } else if (useBrowserUi) {
       try {
-        const choice = await runInitBrowserWizard((line) => this.log(line));
+        const choice = await runInitBrowserWizard((line) => this.log(line), {
+          bindHost: flags['ui-host']?.trim() || '0.0.0.0',
+          port: flags['ui-port'] ?? 0,
+        });
         installSkills = choice.installSkills;
         hasNocobase = choice.hasNocobase;
         if (choice.envAdd) {
