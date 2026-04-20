@@ -68,7 +68,7 @@ export default class CustomActionTrigger extends Trigger {
     return null;
   }
 
-  async globalTriggerAction(context: Context, next: Next) {
+  async globalTriggerAction(context: ResourcerContext, next: Next) {
     const { triggerWorkflows, values = {} } = context.action!.params;
 
     const { currentUser, currentRole } = context.state;
