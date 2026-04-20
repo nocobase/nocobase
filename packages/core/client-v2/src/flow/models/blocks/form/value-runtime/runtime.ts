@@ -505,8 +505,17 @@ export class FormValueRuntime {
         }
         this.suppressFormCallbackDepth++;
         try {
-          form.setFieldsValue?.(patchToApply);
-          _.merge(this.valuesMirror, patchToApply);
+          for (const [pathKey, rawValue] of patchEntries) {
+            const value = isObservable(rawValue) ? toJS(rawValue) : rawValue;
+            if (typeof form.setFieldValue === 'function') {
+              form.setFieldValue(pathKey, value);
+            } else if (typeof (form as any).setFields === 'function') {
+              (form as any).setFields([{ name: pathKey, value }]);
+            } else {
+              form.setFieldsValue?.({ [pathKey]: value });
+            }
+            _.set(this.valuesMirror, [pathKey], value);
+          }
           this.bumpChangeTick();
         } finally {
           this.suppressFormCallbackDepth--;
