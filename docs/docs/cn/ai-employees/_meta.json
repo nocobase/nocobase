@@ -135,6 +135,22 @@
             "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI 员工节点",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "节点配置",
+            "link": "/ai-employees/workflow/nodes/employee/configuration"
+          },
+          {
+            "type": "custom-link",
+            "label": "节点审批",
+            "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
       }
     ]
   },
