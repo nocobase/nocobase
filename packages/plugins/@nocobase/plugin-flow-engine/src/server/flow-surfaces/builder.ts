@@ -500,7 +500,7 @@ export function buildFieldTree(params: BuildFieldParams) {
 }
 
 export function buildStandaloneFieldNode(options: {
-  use: 'JSColumnModel' | 'JSItemModel';
+  use: 'JSColumnModel' | 'JSItemModel' | 'DividerItemModel';
   uid?: string;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
@@ -995,6 +995,13 @@ function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
       return {
         stepParams: {
           jsSettings: buildRunJsStepParams(JS_ITEM_DEFAULT_CODE),
+        },
+      };
+    case 'DividerItemModel':
+      return {
+        props: {
+          label: 'Divider',
+          orientation: 'left',
         },
       };
     default:

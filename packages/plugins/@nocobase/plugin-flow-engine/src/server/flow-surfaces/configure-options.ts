@@ -458,6 +458,14 @@ const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
   version: JS_VERSION,
 };
 
+const DIVIDER_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Divider label', { example: 'Basic information' }),
+  orientation: stringOption('Label position', { example: 'left' }),
+  dashed: booleanOption('Whether the divider is dashed', { example: false }),
+  color: stringOption('Label color'),
+  borderColor: stringOption('Divider line color'),
+};
+
 const ACTION_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Button title', { example: 'Run' }),
   tooltip: stringOption('Tooltip'),
@@ -767,6 +775,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
     case 'JSItemModel':
     case 'FormJSFieldItemModel':
       options = cloneOptions(JS_ITEM_OPTIONS);
+      break;
+    case 'DividerItemModel':
+      options = cloneOptions(DIVIDER_ITEM_OPTIONS);
       break;
     default:
       if (isGenericFieldNodeUse(normalized) || isGenericFieldNodeUse(semanticUse)) {

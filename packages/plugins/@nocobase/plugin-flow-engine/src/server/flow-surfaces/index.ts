@@ -18,6 +18,26 @@ import {
 import { FlowSurfaceForbiddenError, normalizeFlowSurfaceError, throwBadRequest } from './errors';
 import { FlowSurfacesService } from './service';
 
+const FLOW_ENGINE_LOCALE_NAMESPACE = 'flow-engine';
+const FLOW_SURFACE_LOCALE_FALLBACK_NAMESPACES = [
+  FLOW_ENGINE_LOCALE_NAMESPACE,
+  '@nocobase/flow-engine',
+  '@nocobase/plugin-flow-engine',
+  'client',
+];
+const FLOW_SURFACE_LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
+  'zh-CN': {
+    'Popup for Add New': '新增弹窗',
+    'Popup for Edit': '编辑弹窗',
+    'Popup for Details': '详情弹窗',
+    'Auto generated': '自动生成',
+    'Automatically generated popup template for collection "{{collectionLabel}}" ({{popupLabel}}).':
+      '为数据表“{{collectionLabel}}”自动生成的弹窗模板（{{popupLabel}}）。',
+    'Automatically generated popup template for relation field "{{associationFieldLabel}}" in collection "{{sourceCollectionLabel}}", targeting "{{targetCollectionLabel}}" ({{popupLabel}}).':
+      '为数据表“{{sourceCollectionLabel}}”中的关系字段“{{associationFieldLabel}}”自动生成的弹窗模板，目标数据表为“{{targetCollectionLabel}}”（{{popupLabel}}）。',
+  },
+};
+
 function getValues(ctx: any) {
   return ctx.action?.params?.values ?? ctx.action?.params ?? {};
 }
@@ -134,13 +154,64 @@ function invokeFlowSurfaceServiceAction(
   service: FlowSurfacesService,
   actionName: FlowSurfacesActionName,
   values: Record<string, any>,
-  options: { transaction?: any } = {},
+  options: { transaction?: any; t?: (key: string, options?: Record<string, any>) => string } = {},
 ) {
   const handler = service[actionName] as unknown as (
     values: Record<string, any>,
-    options?: { transaction?: any },
+    options?: { transaction?: any; t?: (key: string, options?: Record<string, any>) => string },
   ) => Promise<any>;
   return handler.call(service, values, options);
+}
+
+function interpolateTranslation(value: string, options?: Record<string, any>) {
+  return value.replace(/\{\{\s*([^}\s]+)\s*\}\}/g, (_match, name) => {
+    const replacement = options?.[name];
+    return replacement === null || typeof replacement === 'undefined' ? '' : String(replacement);
+  });
+}
+
+function getResourceTranslation(ctx: any, key: string, options?: Record<string, any>) {
+  const locale = ctx.getCurrentLocale?.() || ctx.i18n?.language;
+  const i18n = ctx.app?.i18n;
+  if (!locale || !i18n) {
+    return undefined;
+  }
+  for (const ns of FLOW_SURFACE_LOCALE_FALLBACK_NAMESPACES) {
+    const value = i18n.getResource?.(locale, ns, key);
+    if (typeof value === 'string') {
+      return interpolateTranslation(value, options);
+    }
+  }
+  return undefined;
+}
+
+function getLocalTranslation(ctx: any, key: string, options?: Record<string, any>) {
+  const locale = String(ctx.getCurrentLocale?.() || ctx.i18n?.language || '').trim();
+  const resources = FLOW_SURFACE_LOCAL_TRANSLATIONS[locale];
+  const value = resources?.[key];
+  return typeof value === 'string' ? interpolateTranslation(value, options) : undefined;
+}
+
+function getFlowSurfaceTranslate(ctx: any) {
+  const translate = ctx.i18n?.t?.bind(ctx.i18n) || ctx.t?.bind(ctx);
+  if (typeof translate !== 'function') {
+    return undefined;
+  }
+  return (key: string, options?: Record<string, any>) => {
+    const resourceValue = getResourceTranslation(ctx, key, options);
+    if (typeof resourceValue === 'string') {
+      return resourceValue;
+    }
+    const localValue = getLocalTranslation(ctx, key, options);
+    if (typeof localValue === 'string') {
+      return localValue;
+    }
+    return translate(key, {
+      ns: [FLOW_ENGINE_LOCALE_NAMESPACE, 'client'],
+      nsMode: 'fallback',
+      ...(options || {}),
+    });
+  };
 }
 
 export function registerFlowSurfacesResource(plugin: Plugin) {
@@ -152,14 +223,15 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
         await runFlowSurfaceAction(ctx, next, async () => {
           const definition = FLOW_SURFACE_ACTION_DEFINITIONS[actionName];
           const values = definition.valueSource === 'read' ? getReadValues(ctx) : getValues(ctx);
+          const t = getFlowSurfaceTranslate(ctx);
 
           if (definition.transaction) {
             return service.transaction((transaction) =>
-              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction }),
+              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction, t }),
             );
           }
 
-          return invokeFlowSurfaceServiceAction(service, actionName, values);
+          return invokeFlowSurfaceServiceAction(service, actionName, values, { t });
         });
       },
     ]),

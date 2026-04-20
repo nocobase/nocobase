@@ -1126,6 +1126,141 @@ describe('flowSurfaces catalog + compose contract', () => {
     }
   });
 
+  it('should auto-apply compact filterForm layout in compose when fieldsLayout is omitted', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose compact filter page',
+      tabTitle: 'Compose compact filter tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'filter',
+            type: 'filterForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: [
+              { fieldPath: 'username', target: 'table' },
+              { fieldPath: 'nickname', target: 'table' },
+              { fieldPath: 'email', target: 'table' },
+            ],
+            actions: ['submit', 'reset'],
+          },
+          {
+            key: 'table',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['username'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const filterBlock = getComposeBlock(composed, 'filter');
+    const filterReadback = await getSurface(rootAgent, {
+      uid: filterBlock.uid,
+    });
+
+    const usernameFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'username');
+    const nicknameFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'nickname');
+    const emailFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'email');
+
+    expect(filterReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[usernameFilter.wrapperUid], [nicknameFilter.wrapperUid], [emailFilter.wrapperUid]],
+    });
+    expect(filterReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [8, 8, 8],
+    });
+  });
+
+  it('should compile compose fieldGroups into divider items and compact rows', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose field groups page',
+      tabTitle: 'Compose field groups tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeeForm',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fieldGroups: [
+              {
+                title: 'Basic information',
+                fields: ['username', 'nickname'],
+              },
+              {
+                title: 'Contact',
+                fields: ['email'],
+              },
+            ],
+            actions: ['submit'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const formBlock = getComposeBlock(composed, 'employeeForm');
+    const formReadback = await getSurface(rootAgent, {
+      uid: formBlock.uid,
+    });
+    const formItems = _.castArray(formReadback.tree.subModels?.grid?.subModels?.items || []);
+    const basicDivider = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Basic information',
+    )?.uid;
+    const contactDivider = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Contact',
+    )?.uid;
+    const usernameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'username',
+    )?.uid;
+    const nicknameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+    )?.uid;
+    const emailWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'email')
+      ?.uid;
+
+    expect(formReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[basicDivider]],
+      row2: [[usernameWrapper], [nicknameWrapper]],
+      row3: [[contactDivider]],
+      row4: [[emailWrapper]],
+    });
+    expect(formReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [12, 12],
+      row3: [24],
+      row4: [24],
+    });
+  });
+
   it('should compose a list block with item fields block actions and record actions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose list page',
