@@ -83,11 +83,11 @@ The `Web search` toggle controls whether the AI for the current node uses Web Se
 
 You can define the final output data structure of the AI Employee node according to the [JSON Schema](https://json-schema.org/) specification.
 
-When other nodes in the Workflow reference data from the AI Employee node, their selectable options are also generated according to this `JSON Schema`.
-
 ![20260420162603](https://static-docs.nocobase.com/20260420162603.png)
 
-![20260420162002](https://static-docs.nocobase.com/20260420162002.png)
+When other nodes in the Workflow reference data from the AI Employee node, their selectable options are also generated according to this `JSON Schema`.
+
+![20260420201141](https://static-docs.nocobase.com/20260420201141.png)
 
 ##### Default Value
 
