@@ -8,12 +8,12 @@
  */
 
 import { storagePathJoin, uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
-import crypto from 'crypto';
 import { pmListSummary } from '../utils';
 
 import packageJson from '../../../package.json';
@@ -239,7 +239,7 @@ export default {
       if (awaitResponse) {
         await app.runAsCLI(argv, { from: 'user', throwError: true });
       } else {
-        void app.runAsCLI(argv, { from: 'user' }).catch((err: unknown) => {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
           app.log.error(err);
         });
       }
@@ -261,7 +261,7 @@ export default {
       if (awaitResponse) {
         await app.runAsCLI(argv, { from: 'user', throwError: true });
       } else {
-        void app.runAsCLI(argv, { from: 'user' }).catch((err: unknown) => {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
           app.log.error(err);
         });
       }
