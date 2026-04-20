@@ -402,7 +402,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintLayout' },
     ]);
-    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('only on tabs and inline popup documents');
+    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('field-grid-block `fieldsLayout`');
+    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('Block-level `layout` is still not allowed');
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.description).toContain('not on individual blocks');
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.description).toContain('not on individual blocks');
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.blocks.description).toContain(

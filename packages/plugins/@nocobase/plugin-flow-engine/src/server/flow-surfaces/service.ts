@@ -9335,12 +9335,15 @@ export class FlowSurfacesService {
 
   async transaction<T>(callback: (transaction: any) => Promise<T>) {
     const transaction = await this.db.sequelize.transaction();
+    const transactionState = transaction as typeof transaction & {
+      finished?: string | null;
+    };
     try {
       const result = await callback(transaction);
       await transaction.commit();
       return result;
     } catch (error) {
-      if (!transaction.finished) {
+      if (!transactionState.finished) {
         try {
           await transaction.rollback();
         } catch (rollbackError: any) {
