@@ -41,7 +41,6 @@ export class DepartmentDataSyncResource extends UserDataResource {
       'uid',
       'createdAt',
       'updatedAt',
-      'sort',
       'createdById',
       'updatedById',
       'isDeleted',

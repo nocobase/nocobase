@@ -120,6 +120,50 @@ describe('department data sync', async () => {
     expect(department3.parent).toBeNull();
   });
 
+  it('should sync department sort on create and update', async () => {
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '1',
+          title: 'test',
+          sort: 10,
+        },
+      ],
+    });
+
+    const department = await db.getRepository('departments').findOne({
+      filter: {
+        title: 'test',
+      },
+      fields: ['id', 'title', 'sort'],
+    });
+
+    expect(department).toBeTruthy();
+    expect(department.sort).toBe(10);
+
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '1',
+          title: 'test',
+          sort: 20,
+        },
+      ],
+    });
+
+    const updatedDepartment = await db.getRepository('departments').findOne({
+      filterByTk: department.id,
+      fields: ['id', 'title', 'sort'],
+    });
+
+    expect(updatedDepartment).toBeTruthy();
+    expect(updatedDepartment.sort).toBe(20);
+  });
+
   it('should update user department', async () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',
