@@ -46,6 +46,10 @@ export type FlowSurfaceComposeActionResult = {
 export type FlowSurfaceComposeRuntimeBlockState = {
   spec: FlowSurfaceComposeNormalizedBlockSpec;
   result: FlowSurfaceComposeBlockResult;
+  createdFields: Array<{
+    spec: FlowSurfaceComposeNormalizedFieldSpec;
+    result: FlowSurfaceComposeFieldResult;
+  }>;
   fieldResults: Array<Record<string, unknown>>;
   actionResults: Array<Record<string, unknown>>;
   recordActionResults: Array<Record<string, unknown>>;
@@ -118,7 +122,7 @@ export type FlowSurfaceComposeRuntimeDeps = {
   buildExplicitLayoutPayload?: (input: {
     layout?: FlowSurfaceComposeObject;
     createdByKey: Record<string, FlowSurfaceComposeTargetKey & Partial<FlowSurfaceComposeBlockResult>>;
-    gridUid: string;
+    targetUid: string;
   }) => Promise<Record<string, unknown>> | Record<string, unknown>;
   buildAppendLayoutPayload?: (input: {
     gridUid: string;
@@ -139,6 +143,7 @@ export async function executeComposeRuntime(
   await createBlocks(plan, deps, state);
   await applyBlockSettings(deps, state);
   await createFields(plan, deps, state);
+  await applyBlockFieldLayouts(deps, state);
   await createActions(plan, deps, state);
   await createRecordActions(plan, deps, state);
 
@@ -234,6 +239,7 @@ async function createBlocks(
     state.blocks.push({
       spec: blockTask.spec,
       result,
+      createdFields: [],
       fieldResults: [],
       actionResults: [],
       recordActionResults: [],
@@ -309,11 +315,48 @@ async function createFields(
       continue;
     }
 
+    block.createdFields.push({
+      spec: fieldTask.spec,
+      result: createdField,
+    });
+
     if (deps.applyFieldSettings && hasInlineSettings(fieldTask.spec.settings)) {
       await deps.applyFieldSettings('compose field', createdField, fieldTask.spec.settings);
     }
 
     block.fieldResults.push(buildFieldResultSummary(fieldTask.spec, createdField));
+  }
+}
+
+async function applyBlockFieldLayouts(deps: FlowSurfaceComposeRuntimeDeps, state: FlowSurfaceComposeRuntimeState) {
+  const buildExplicitLayoutPayload = deps.buildExplicitLayoutPayload;
+  const setLayout = deps.setLayout;
+
+  for (const block of state.blocks) {
+    if (!hasInlineSettings(block.spec.fieldsLayout)) {
+      continue;
+    }
+    requireComposeRuntimeDep('buildExplicitLayoutPayload', buildExplicitLayoutPayload, 'field layout');
+    requireComposeRuntimeDep('setLayout', setLayout, 'field layout');
+
+    const createdByKey = Object.fromEntries(
+      block.createdFields.flatMap(({ spec, result }) => {
+        const uid = resolveComposeFieldLayoutUid(result);
+        return uid ? [[spec.key, { uid }]] : [];
+      }),
+    ) as Record<string, FlowSurfaceComposeTargetKey>;
+
+    const layoutPayload = await buildExplicitLayoutPayload({
+      layout: block.spec.fieldsLayout,
+      createdByKey,
+      targetUid: block.result.uid,
+    });
+    await setLayout({
+      target: {
+        uid: block.result.uid,
+      },
+      ...layoutPayload,
+    });
   }
 }
 
@@ -402,7 +445,7 @@ async function applyComposeLayout(
     const layoutPayload = await buildExplicitLayoutPayload({
       layout: plan.layoutPlan.layout,
       createdByKey: state.keyMap,
-      gridUid: plan.gridUid,
+      targetUid: plan.gridUid,
     });
     return setLayout({
       target: {
@@ -478,6 +521,10 @@ function buildActionResultSummary(
 
 function hasInlineSettings(value: FlowSurfaceComposeObject | undefined) {
   return !!value && Object.keys(value).length > 0;
+}
+
+function resolveComposeFieldLayoutUid(result: FlowSurfaceComposeFieldResult) {
+  return result.wrapperUid || result.uid;
 }
 
 function hasPopupAfterEffect(value: FlowSurfaceComposeObject | undefined) {

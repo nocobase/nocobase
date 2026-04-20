@@ -15,6 +15,13 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
+
+const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-templates'] as const;
+const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+  'ui-templates',
+] as const;
 
 describe('flowSurfaces resource', () => {
   let app: MockServer;
@@ -24,7 +31,10 @@ describe('flowSurfaces resource', () => {
   let rootAgent: any;
 
   beforeAll(async () => {
-    app = await createFlowSurfacesMockServer();
+    app = await createFlowSurfacesMockServer({
+      plugins: FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS as any,
+      enabledPluginAliases: FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGINS,
+    });
     db = app.db;
     flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
     routesRepo = db.getRepository('desktopRoutes');
@@ -1710,6 +1720,132 @@ describe('flowSurfaces resource', () => {
     });
   });
 
+  it('should auto-complete association field popups with defaultType edit and save them as reusable templates', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Association field default popup page',
+      tabTitle: 'Association field default popup tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const defaultEditPopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        fieldPath: 'department.title',
+        popup: {
+          defaultType: 'edit',
+        },
+      },
+    });
+    expect(defaultEditPopupRes.status).toBe(200);
+    const defaultEditPopupField = getData(defaultEditPopupRes);
+    expect(defaultEditPopupField.popupPageUid).toBeUndefined();
+    expect(defaultEditPopupField.popupTabUid).toBeUndefined();
+    expect(defaultEditPopupField.popupGridUid).toBeUndefined();
+
+    const defaultEditPopupReadback = await getSurface(rootAgent, {
+      uid: defaultEditPopupField.fieldUid,
+    });
+    expect(defaultEditPopupReadback.tree.props?.clickToOpen).toBe(true);
+    expect(defaultEditPopupReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+
+    const templatedPopupUid = defaultEditPopupReadback.tree.popup?.template?.uid;
+    expect(typeof templatedPopupUid).toBe('string');
+
+    const templatedPopup = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: templatedPopupUid,
+        },
+      }),
+    );
+    expect(templatedPopup.type).toBe('popup');
+    expect(templatedPopup.name).toBe('Employees -> department edit popup (Auto generated)');
+    expect(templatedPopup.description).toBe(
+      "Automatically generated edit popup template for relation field 'department' in collection 'Employees', targeting 'Departments'.",
+    );
+    expect(templatedPopup.collectionName).toBe('departments');
+    expect(templatedPopup.associationName).toBe('employees.department');
+
+    const templatedPopupSurface = await getSurface(rootAgent, {
+      uid: templatedPopup.targetUid,
+    });
+    const popupBlock = _.castArray(
+      templatedPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(popupBlock?.use).toBe('EditFormModel');
+    const popupFieldPaths = _.castArray(popupBlock?.subModels?.grid?.subModels?.items || [])
+      .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+      .filter(Boolean);
+    expect(popupFieldPaths).not.toContain('employees');
+    expect(popupFieldPaths).not.toContain('manager');
+    const popupActionUses = _.castArray(popupBlock?.subModels?.actions || []).map((item: any) => item?.use);
+    expect(popupActionUses).toContain('FormSubmitActionModel');
+  });
+
+  it('should auto-complete association field popups with defaultType view and save them as reusable templates', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Association field details popup page',
+      tabTitle: 'Association field details popup tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const defaultViewPopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        fieldPath: 'department.title',
+        popup: {
+          defaultType: 'view',
+        },
+      },
+    });
+    expect(defaultViewPopupRes.status).toBe(200);
+    const defaultViewPopupField = getData(defaultViewPopupRes);
+
+    const defaultViewPopupReadback = await getSurface(rootAgent, {
+      uid: defaultViewPopupField.fieldUid,
+    });
+    expect(defaultViewPopupReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+
+    const templatedPopup = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: defaultViewPopupReadback.tree.popup?.template?.uid,
+        },
+      }),
+    );
+    expect(templatedPopup.type).toBe('popup');
+    expect(templatedPopup.name).toBe('Employees -> department details popup (Auto generated)');
+    expect(templatedPopup.description).toBe(
+      "Automatically generated details popup template for relation field 'department' in collection 'Employees', targeting 'Departments'.",
+    );
+    expect(templatedPopup.collectionName).toBe('departments');
+    expect(templatedPopup.associationName).toBe('employees.department');
+
+    const templatedPopupSurface = await getSurface(rootAgent, {
+      uid: templatedPopup.targetUid,
+    });
+    const popupBlock = _.castArray(
+      templatedPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(popupBlock?.use).toBe('DetailsBlockModel');
+  });
+
   it('should support field popup content in addFields and compose field specs', async () => {
     const page = await createPage(rootAgent, {
       title: 'Batch field popup page',
@@ -1809,6 +1945,63 @@ describe('flowSurfaces resource', () => {
     expect(composedPopupBlock?.use).toBe('DetailsBlockModel');
   });
 
+  it('should auto-complete bare relation fields in compose with non-empty view popups', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose relation popup page',
+      tabTitle: 'Compose relation popup tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        blocks: [
+          {
+            key: 'employeesDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['department'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+    const composeResult = getData(composeRes);
+    const composedField = composeResult.blocks[0].fields[0];
+    const composedFieldReadback = await getSurface(rootAgent, {
+      uid: composedField.fieldUid,
+    });
+    expect(composedFieldReadback.tree.props?.clickToOpen).toBe(true);
+
+    if (composedFieldReadback.tree.popup?.template?.uid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: composedFieldReadback.tree.popup.template.uid,
+          },
+        }),
+      );
+      const popupTemplateSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      const popupTemplateBlock = _.castArray(
+        popupTemplateSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(popupTemplateBlock?.use).toBe('DetailsBlockModel');
+    } else {
+      expect(composedFieldReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
+      const composedPopupBlock = _.castArray(
+        composedFieldReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+      expect(composedPopupBlock?.use).toBe('DetailsBlockModel');
+    }
+  });
+
   it('should preserve details item fieldSettings when addFields applies inline label settings', async () => {
     const page = await createPage(rootAgent, {
       title: 'Details addFields page',
@@ -1880,6 +2073,31 @@ describe('flowSurfaces resource', () => {
         },
         changes: {
           openView: {
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureFieldRes.status).toBe(200);
+
+    const configuredFieldReadback = await getSurface(rootAgent, {
+      uid: field.fieldUid,
+    });
+    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+      associationName: 'employees.department',
+    });
+
+    const configureFieldExplicitRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
             dataSourceKey: 'main',
             collectionName: 'departments',
             associationName: 'employees.department',
@@ -1888,17 +2106,17 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(configureFieldRes.status).toBe(200);
-    const configuredField = getData(configureFieldRes);
+    expect(configureFieldExplicitRes.status).toBe(200);
+    const configuredField = getData(configureFieldExplicitRes);
     expect(configuredField.popupPageUid).toBeTruthy();
     expect(configuredField.popupTabUid).toBeTruthy();
     expect(configuredField.popupGridUid).toBeTruthy();
 
-    const configuredFieldReadback = await getSurface(rootAgent, {
+    const explicitlyConfiguredFieldReadback = await getSurface(rootAgent, {
       uid: field.fieldUid,
     });
-    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
-    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+    expect(explicitlyConfiguredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(explicitlyConfiguredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
       mode: 'dialog',
       dataSourceKey: 'main',
       collectionName: 'departments',
@@ -2521,7 +2739,9 @@ describe('flowSurfaces resource', () => {
     expect(viewPopupTab?.props?.title).toBe('Details');
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(viewPopupBlock?.subModels?.actions).toBeUndefined();
+    expect(_.castArray(viewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['EditActionModel']),
+    );
     expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
     expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
 
@@ -2850,7 +3070,12 @@ describe('flowSurfaces resource', () => {
       uid: updateRecordAction.uid,
     });
     expect(detailsReadback.tree.use).toBe('DetailsBlockModel');
-    expect(_.castArray(detailsReadback.tree.subModels?.actions || [])[0]?.uid).toBe(updateRecordAction.uid);
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['EditActionModel', 'UpdateRecordActionModel']),
+    );
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || []).map((item: any) => item?.uid)).toContain(
+      updateRecordAction.uid,
+    );
     expect(updateRecordAction.assignFormUid).toBeTruthy();
     expect(updateActionReadback.tree.flowRegistry?.beforeAssignConfirm?.on).toMatchObject({
       eventName: 'click',
@@ -3546,6 +3771,24 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
+    const treeTableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+    });
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: treeTableUid,
+            },
+            changes: {
+              treeTable: true,
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
 
     const tableCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -3583,10 +3826,23 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
+    const treeTableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: treeTableUid,
+          },
+        },
+      }),
+    );
     expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['expandCollapse', 'bulkEdit', 'bulkUpdate', 'upload', 'composeEmail']),
     );
     expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['duplicate', 'composeEmail']),
+    );
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
+    expect(treeTableCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['duplicate', 'addChild', 'composeEmail']),
     );
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
@@ -3610,7 +3866,7 @@ describe('flowSurfaces resource', () => {
     );
 
     const tableBulkEdit = await addAction(rootAgent, tableUid, 'bulkEdit');
-    const rowAddChild = await addRecordAction(rootAgent, tableUid, 'addChild');
+    const rowAddChild = await addRecordAction(rootAgent, treeTableUid, 'addChild');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
     const filterCollapse = await addAction(rootAgent, filterFormUid, 'collapse');
     const detailsTemplatePrint = await addRecordAction(rootAgent, detailsUid, 'templatePrint');
@@ -3628,6 +3884,67 @@ describe('flowSurfaces resource', () => {
       mode: 'drawer',
       size: 'medium',
     });
+  });
+
+  it('should reject addChild on non-tree tables without creating a table actions column', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Add child validation page',
+      tabTitle: 'Add child validation tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const beforeReadback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    const beforeActionColumns = _.castArray(beforeReadback.tree.subModels?.columns || []).filter(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const beforeActionColumnUids = beforeActionColumns.map((item: any) => item?.uid).filter(Boolean);
+    const beforeActionUids = beforeActionColumns.flatMap((item: any) =>
+      _.castArray(item?.subModels?.actions || [])
+        .map((action: any) => action?.uid)
+        .filter(Boolean),
+    );
+    expect(
+      beforeActionColumns.flatMap((item: any) =>
+        _.castArray(item?.subModels?.actions || []).map((action: any) => action?.use),
+      ),
+    ).not.toContain('AddChildActionModel');
+
+    const addChildRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'addChild',
+      },
+    });
+    expect(addChildRes.status).toBe(400);
+    expect(readErrorMessage(addChildRes)).toContain('tree table');
+
+    const afterReadback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    const afterActionColumns = _.castArray(afterReadback.tree.subModels?.columns || []).filter(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const afterActionColumnUids = afterActionColumns.map((item: any) => item?.uid).filter(Boolean);
+    const afterActionUids = afterActionColumns.flatMap((item: any) =>
+      _.castArray(item?.subModels?.actions || [])
+        .map((action: any) => action?.uid)
+        .filter(Boolean),
+    );
+    expect(
+      afterActionColumns.flatMap((item: any) =>
+        _.castArray(item?.subModels?.actions || []).map((action: any) => action?.use),
+      ),
+    ).not.toContain('AddChildActionModel');
+    expect(afterActionColumnUids).toEqual(beforeActionColumnUids);
+    expect(afterActionUids).toEqual(beforeActionUids);
   });
 
   it('should expose js public capabilities consistently across catalog, direct APIs and configure', async () => {
@@ -6367,6 +6684,50 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
   });
 
+  it('should use technical names or legacy fallback when auto-generated popup template metadata cannot use titles', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any);
+    const originalLoadFieldHostNodes = (service as any).loadFieldHostNodes;
+    const originalResolveFieldBindingContext = (service as any).resolveFieldBindingContext;
+
+    try {
+      (service as any).loadFieldHostNodes = async () => ({
+        fieldNode: {},
+        wrapperNode: {},
+      });
+      (service as any).resolveFieldBindingContext = () => ({
+        collectionName: 'employees',
+        fieldPath: 'department.title',
+        sourceCollection: { name: 'employees' },
+        associationField: { name: 'department' },
+        targetCollection: { name: 'departments' },
+      });
+
+      await expect(
+        (service as any).resolveAutoGeneratedFieldPopupTemplateMetadata('field-host', 'view', 'techname123456'),
+      ).resolves.toEqual({
+        name: 'employees -> department details popup (Auto generated)',
+        description:
+          "Automatically generated details popup template for relation field 'department' in collection 'employees', targeting 'departments'.",
+      });
+
+      (service as any).resolveFieldBindingContext = () => ({
+        collectionName: undefined,
+        fieldPath: undefined,
+        sourceCollection: undefined,
+      });
+
+      await expect(
+        (service as any).resolveAutoGeneratedFieldPopupTemplateMetadata('field-host', 'edit', 'legacy123456'),
+      ).resolves.toEqual({
+        name: 'Auto popup legacy123456',
+        description: 'Auto-generated popup template legacy123456',
+      });
+    } finally {
+      (service as any).loadFieldHostNodes = originalLoadFieldHostNodes;
+      (service as any).resolveFieldBindingContext = originalResolveFieldBindingContext;
+    }
+  });
+
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {
     const page = await createPage(rootAgent, {
       title: 'Filter group contract page',
@@ -6800,6 +7161,15 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
     },
   });
 
+  await rootAgent.resource('collections').apply({
+    values: {
+      name: 'categories',
+      title: 'Categories',
+      template: 'tree',
+      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+    },
+  });
+
   await rootAgent.resource('collections').create({
     values: {
       name: 'tasks',
@@ -6898,6 +7268,7 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
 
   if (db) {
     await waitForFixtureCollectionsReady(db, {
+      categories: ['title', 'parentId'],
       departments: ['title', 'location'],
       employees: ['nickname', 'status', 'age', 'bio', 'isManager', 'departmentId'],
       tasks: ['title', 'status', 'employeeId'],

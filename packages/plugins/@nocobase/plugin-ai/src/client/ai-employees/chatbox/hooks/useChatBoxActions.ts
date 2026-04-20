@@ -58,7 +58,7 @@ export const useChatBoxActions = () => {
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { conversationsService } = useChatConversationActions();
-  const { sendMessages } = useChatMessageActions();
+  const { sendMessages, syncContextAttachments } = useChatMessageActions();
 
   const clear = (options?: ClearOptions) => {
     const {
@@ -257,6 +257,7 @@ export const useChatBoxActions = () => {
         }
         if (workContext) {
           setContextItems(workContext);
+          syncContextAttachments(workContext);
         }
         if (systemMessage) {
           setSystemMessage(systemMessage);

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "2.1.0-alpha.16",
+  "version": "2.1.0-alpha.20",
   "license": "Apache-2.0",
   "displayName": "Collection field: Sort",
   "displayName.ru-RU": "Поле коллекции: Сортировка",
@@ -16,7 +16,7 @@
     "@nocobase/lock-manager": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
-    "lodash": "4.17.21",
+    "lodash": "4.x",
     "sequelize": "^6.26.0"
   },
   "keywords": [

@@ -9,7 +9,7 @@
 
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { importModule, isURL } from '@nocobase/utils';
+import { importModule, isURL, storagePathJoin } from '@nocobase/utils';
 import execa from 'execa';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -832,7 +832,7 @@ export class PluginManager {
       if (process.env.VITEST) {
         return;
       }
-      const file = resolve(process.cwd(), 'storage/.upgrading');
+      const file = storagePathJoin('.upgrading');
       this.app.log.debug('pending upgrade');
       await fs.writeFile(file, 'upgrading');
     };
@@ -940,7 +940,7 @@ export class PluginManager {
         });
         return;
       }
-      const file = resolve(process.cwd(), 'storage/app-upgrading');
+      const file = storagePathJoin('app-upgrading');
       await fs.writeFile(file, '', 'utf-8');
       // await this.app.upgrade();
       await tsxRerunning();

@@ -8,6 +8,7 @@
  */
 
 import { AppSupervisor } from '@nocobase/server';
+import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { IdpOauthService } from '../service';
 
 describe('plugin-idp-oauth > IdpOauthService', () => {
@@ -104,5 +105,134 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     service.unregisterResourceServer('mcp');
 
     expect(service.getSupportedScopes()).toEqual(['openid', 'offline_access', 'profile', 'email']);
+  });
+
+  test('should prefer the most specific resource config for nested paths', () => {
+    const service = new IdpOauthService({} as any, {} as any);
+
+    service.registerResourceServer('api', {
+      path: '/',
+      scope: 'api',
+    });
+    service.registerResourceServer('mcp', {
+      path: '/mcp',
+      scope: 'mcp offline_access',
+    });
+
+    expect((service as any).getRequestResourceConfig({ path: '/api/mcp' })).toMatchObject({
+      path: '/mcp',
+      scope: 'mcp offline_access',
+    });
+  });
+
+  test('should rewrite downstream auth token after authenticating a protected resource request', async () => {
+    const service = new IdpOauthService(
+      {
+        name: 'main',
+        authManager: {
+          tokenController: {
+            add: vi.fn().mockResolvedValue({
+              jti: 'internal-jti',
+              signInTime: Date.now(),
+            }),
+            getConfig: vi.fn().mockResolvedValue({
+              tokenExpirationTime: 60 * 60 * 1000,
+            }),
+          },
+          jwt: {
+            sign: vi.fn().mockReturnValue('internal-token'),
+          },
+        },
+        db: {
+          getRepository: vi.fn().mockReturnValue({
+            findOne: vi.fn().mockResolvedValue({ id: 1 }),
+          }),
+        },
+      } as any,
+      {
+        get: vi.fn().mockResolvedValue(undefined),
+        set: vi.fn().mockResolvedValue(undefined),
+      } as any,
+    );
+
+    service.registerResourceServer('api', {
+      path: '/',
+      scope: 'api',
+    });
+    service.registerResourceServer('mcp', {
+      path: '/mcp',
+      scope: 'mcp offline_access',
+      accessTokenFormat: 'jwt',
+      jwt: {
+        sign: { alg: 'RS256' },
+      },
+    });
+
+    const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true });
+    const signingJwk = await exportJWK(publicKey);
+    const keySet = createLocalJWKSet({
+      keys: [
+        {
+          ...signingJwk,
+          kid: 'test-kid',
+          alg: 'RS256',
+          use: 'sig',
+        },
+      ],
+    });
+
+    vi.spyOn(service as any, 'ensureProvider').mockResolvedValue({
+      issuer: 'http://127.0.0.1:13000/api',
+    });
+    vi.spyOn(service as any, 'getProviderJwks').mockResolvedValue(keySet);
+
+    const token = await new SignJWT({})
+      .setProtectedHeader({ alg: 'RS256', kid: 'test-kid' })
+      .setIssuer('http://127.0.0.1:13000/api')
+      .setAudience('http://127.0.0.1:13000/api/mcp')
+      .setSubject('1')
+      .setJti('oauth-jti')
+      .setExpirationTime('10m')
+      .sign(privateKey);
+
+    const ctx = {
+      app: { name: 'main' },
+      path: '/api/mcp',
+      protocol: 'http',
+      host: '127.0.0.1:13000',
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+      request: {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      },
+      req: {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      },
+      state: {},
+      getBearerToken: () => token,
+      logger: {
+        debug: vi.fn(),
+      },
+      auth: {},
+      throw: vi.fn((status, message) => {
+        throw new Error(`${status}:${message}`);
+      }),
+    } as any;
+
+    const user = await service.authenticateResourceRequest(ctx);
+
+    expect(user).toEqual({ id: 1 });
+    expect(ctx.getBearerToken()).toBe('internal-token');
+    expect(ctx.req.headers.authorization).toBe('Bearer internal-token');
+    expect(ctx.request.headers.authorization).toBe('Bearer internal-token');
+    expect(ctx.req.headers['x-authenticator']).toBe('basic');
+    expect(ctx.request.headers['x-authenticator']).toBe('basic');
+    expect(ctx.state.currentUser).toEqual({ id: 1 });
+    expect(ctx.auth.user).toEqual({ id: 1 });
   });
 });

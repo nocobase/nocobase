@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Cache } from '@nocobase/cache';
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
-import crypto from 'crypto';
+import { pmListSummary } from '../utils';
 
 import packageJson from '../../../package.json';
 
@@ -123,10 +123,32 @@ async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
   return arr;
 }
 
+function normalizePmPluginKeys(filterByTk: string): string[] {
+  return filterByTk
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+/** Query/body values often arrive as strings (`"true"`, `"1"`). */
+function coerceAwaitResponse(value: unknown): boolean {
+  if (value === true || value === 1) {
+    return true;
+  }
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+  }
+  return false;
+}
+
 export default {
   name: 'pm',
   actions: {
     async add(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const { values = {} } = ctx.action.params;
       if (values?.packageName) {
@@ -142,13 +164,13 @@ export default {
         }
         app.runAsCLI(['pm', 'add', values.packageName, ...args], { from: 'user' });
       } else if (ctx.file) {
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         app.runAsCLI(['pm', 'add', tempFile], { from: 'user' });
       } else if (values.compressedFileUrl) {
@@ -158,6 +180,9 @@ export default {
       await next();
     },
     async update(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const values = ctx.action.params.values || {};
       const args = [];
@@ -175,13 +200,13 @@ export default {
       // }
       if (ctx.file) {
         values.packageName = ctx.request.body.packageName;
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         // args.push(`--url=${tempFile}`);
         values.compressedFileUrl = tempFile;
@@ -200,23 +225,46 @@ export default {
       await next();
     },
     async enable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
       const app = ctx.app as Application;
-      if (!filterByTk) {
+      if (filterByTk == null || filterByTk === '' || typeof filterByTk !== 'string') {
         ctx.throw(400, 'plugin name invalid');
       }
-      const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
-      app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'enable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
     async disable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
-      if (!filterByTk) {
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
+      const app = ctx.app as Application;
+      if (filterByTk == null || filterByTk === '' || typeof filterByTk !== 'string') {
         ctx.throw(400, 'plugin name invalid');
       }
-      const app = ctx.app as Application;
-      app.runAsCLI(['pm', 'disable', filterByTk], { from: 'user' });
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'disable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
@@ -231,6 +279,11 @@ export default {
       await next();
     },
     async list(ctx, next) {
+      const { mode } = ctx.action.params;
+      if (mode === 'summary') {
+        ctx.body = await pmListSummary(ctx.app);
+        return next();
+      }
       const locale = ctx.getCurrentLocale();
       const pm = ctx.app.pm as PluginManager;
       // ctx.body = await pm.list({ locale, isPreset: false });

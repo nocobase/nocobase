@@ -17,6 +17,22 @@ import type {
   FlowSurfaceNodeDomain,
 } from './types';
 import {
+  APPROVAL_ACTION_CATALOG_SPECS,
+  APPROVAL_ACTION_OWNER_PLUGIN_BY_USE,
+  APPROVAL_BLOCK_CATALOG_SPECS,
+  APPROVAL_BLOCK_GRID_USES,
+  APPROVAL_BLOCK_OWNER_PLUGIN_BY_USE,
+  APPROVAL_DETAILS_BLOCK_USES,
+  APPROVAL_DETAILS_GRID_USES,
+  APPROVAL_FLOW_SURFACE_OWNER_PLUGIN,
+  APPROVAL_FORM_BLOCK_USES,
+  APPROVAL_FORM_GRID_USES,
+  APPROVAL_TASK_CARD_GRID_USES,
+  APPROVAL_TAB_MODEL_USES,
+  getApprovalFieldWrapperUse,
+  normalizeApprovalSemanticUse,
+} from './approval';
+import {
   ACTION_PANEL_ACTION_CONTAINER_USES,
   assertActionScopeMatchesContainer,
   assertKnownActionContainerUse,
@@ -32,8 +48,13 @@ import {
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
 import { FlowSurfaceBadRequestError, FlowSurfaceInternalError } from './errors';
-import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
+import {
+  MULTI_VALUE_ASSOCIATION_INTERFACES,
+  normalizeFieldContainerKind,
+  shouldUseAssociationTitleTextDisplay,
+} from './field-semantics';
 import { getRegisteredFieldUses, resolveRegisteredFieldBinding } from './field-binding-registry';
+import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
 const ANY_VALUE_SCHEMA = {};
@@ -98,6 +119,7 @@ const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.template',
   'openView.template.uid',
   'openView.template.mode',
+  'openView.tryTemplate',
 ];
 const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.mode': OPEN_VIEW_MODE_SCHEMA,
@@ -119,6 +141,7 @@ const OPEN_VIEW_PATH_SCHEMAS = {
     type: 'string',
     enum: ['reference', 'copy'],
   },
+  'openView.tryTemplate': BOOLEAN_SCHEMA,
 };
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
 const TABLE_COLUMN_ALLOWED_PATHS = ['title.title'];
@@ -370,6 +393,12 @@ const FILTER_FIELD_USE_SET = new Set([
   'PercentFieldModel',
   'InputFieldModel',
 ]);
+const APPROVAL_DETAILS_FIELD_COMPONENT_WRAPPER_USE_SET = new Set([
+  'ApprovalDetailsItemModel',
+  'ApplyTaskCardDetailsItemModel',
+  'ApprovalTaskCardDetailsItemModel',
+]);
+const SINGLE_VALUE_ASSOCIATION_INTERFACES = new Set(['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy']);
 const KNOWN_FIELD_NODE_USES = new Set<string>([
   ...EDITABLE_FIELD_USE_SET,
   ...DISPLAY_FIELD_USE_SET,
@@ -624,6 +653,83 @@ PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
       'general.enableHeader': BOOLEAN_SCHEMA,
     },
   },
+});
+
+const TRIGGER_CHILD_PAGE_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: ['title', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'],
+  stepParams: ['pageSettings', 'TriggerChildPageSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+  },
+  eventBindings: {
+    pageSettings: {
+      stepKeys: ['general'],
+    },
+  },
+});
+TRIGGER_CHILD_PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  pageSettings: {
+    allowedPaths: [
+      'general.title',
+      'general.documentTitle',
+      'general.displayTitle',
+      'general.enableTabs',
+      'general.icon',
+      'general.enableHeader',
+    ],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['general'],
+    pathSchemas: {
+      'general.title': STRING_SCHEMA,
+      'general.documentTitle': STRING_SCHEMA,
+      'general.displayTitle': BOOLEAN_SCHEMA,
+      'general.enableTabs': BOOLEAN_SCHEMA,
+      'general.icon': STRING_SCHEMA,
+      'general.enableHeader': BOOLEAN_SCHEMA,
+    },
+  },
+  TriggerChildPageSettings: RESOURCE_SETTINGS_GROUP,
+});
+
+const APPROVAL_CHILD_PAGE_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: ['title', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'],
+  stepParams: ['pageSettings', 'ApprovalChildPageSettings', 'resourceSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+  },
+  eventBindings: {
+    pageSettings: {
+      stepKeys: ['general'],
+    },
+  },
+});
+APPROVAL_CHILD_PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  pageSettings: {
+    allowedPaths: [
+      'general.title',
+      'general.documentTitle',
+      'general.displayTitle',
+      'general.enableTabs',
+      'general.icon',
+      'general.enableHeader',
+    ],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['general'],
+    pathSchemas: {
+      'general.title': STRING_SCHEMA,
+      'general.documentTitle': STRING_SCHEMA,
+      'general.displayTitle': BOOLEAN_SCHEMA,
+      'general.enableTabs': BOOLEAN_SCHEMA,
+      'general.icon': STRING_SCHEMA,
+      'general.enableHeader': BOOLEAN_SCHEMA,
+    },
+  },
+  ApprovalChildPageSettings: RESOURCE_SETTINGS_GROUP,
+  resourceSettings: RESOURCE_SETTINGS_GROUP,
 });
 
 const TAB_NODE_CONTRACT = createContract({
@@ -1882,6 +1988,132 @@ JS_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   clickSettings: RUN_JS_SETTINGS_GROUP,
 });
 
+const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'cardSettings', 'patternSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['submit'],
+  },
+});
+APPROVAL_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: RESOURCE_SETTINGS_GROUP,
+  formModelSettings: FORM_MODEL_SETTINGS_GROUP,
+  eventSettings: EVENT_SETTINGS_GROUP,
+  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  patternSettings: {
+    allowedPaths: ['pattern.pattern'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['pattern'],
+    pathSchemas: {
+      'pattern.pattern': STRING_SCHEMA,
+    },
+  },
+});
+
+const PATTERN_FORM_FIELD_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: [
+    'title',
+    'icon',
+    'titleField',
+    'clickToOpen',
+    'autoSize',
+    'allowMultiple',
+    'multiple',
+    'quickCreate',
+    'allowClear',
+    'displayStyle',
+    'options',
+  ],
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['fieldSettings', 'fieldBinding', 'displayFieldSettings', 'popupSettings', 'jsSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    displayFieldSettings: {
+      stepKeys: ['displayStyle', 'clickToOpen'],
+    },
+    popupSettings: {
+      stepKeys: ['openView'],
+    },
+    jsSettings: {
+      stepKeys: ['runJs'],
+    },
+    fieldBinding: {
+      stepKeys: ['use'],
+    },
+  },
+});
+PATTERN_FORM_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  fieldSettings: FIELD_SETTINGS_INIT_GROUP,
+  fieldBinding: {
+    allowedPaths: ['use'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['use'],
+    pathSchemas: {
+      use: STRING_SCHEMA,
+    },
+  },
+  displayFieldSettings: {
+    allowedPaths: ['displayStyle.displayStyle', 'clickToOpen.clickToOpen'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['displayStyle', 'clickToOpen'],
+    pathSchemas: {
+      'displayStyle.displayStyle': STRING_SCHEMA,
+      'clickToOpen.clickToOpen': BOOLEAN_SCHEMA,
+    },
+  },
+  popupSettings: {
+    allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['openView'],
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
+  },
+  jsSettings: RUN_JS_SETTINGS_GROUP,
+});
+
+const APPROVAL_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'clickSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    clickSettings: {
+      stepKeys: '*',
+    },
+  },
+});
+APPROVAL_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  clickSettings: {
+    allowedPaths: ['*'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: '*',
+    schema: {
+      type: 'object',
+      additionalProperties: true,
+    },
+  },
+});
+
 const nodeContracts = new Map<string, FlowSurfaceNodeContract>();
 
 function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
@@ -1891,13 +2123,20 @@ function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
 const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['RootPageModel', PAGE_NODE_CONTRACT],
   ['ChildPageModel', PAGE_NODE_CONTRACT],
+  ['TriggerChildPageModel', TRIGGER_CHILD_PAGE_NODE_CONTRACT],
+  ['ApprovalChildPageModel', APPROVAL_CHILD_PAGE_NODE_CONTRACT],
   ['RootPageTabModel', TAB_NODE_CONTRACT],
   ['ChildPageTabModel', TAB_NODE_CONTRACT],
+  ...APPROVAL_TAB_MODEL_USES.map((use) => [use, TAB_NODE_CONTRACT] as [string, FlowSurfaceNodeContract]),
   ['BlockGridModel', GRID_NODE_CONTRACT],
   ['FormGridModel', FORM_GRID_NODE_CONTRACT],
   ['DetailsGridModel', GRID_NODE_CONTRACT],
   ['FilterFormGridModel', GRID_NODE_CONTRACT],
   ['AssignFormGridModel', FORM_GRID_NODE_CONTRACT],
+  ...APPROVAL_FORM_GRID_USES.map((use) => [use, FORM_GRID_NODE_CONTRACT] as [string, FlowSurfaceNodeContract]),
+  ...APPROVAL_DETAILS_GRID_USES.map((use) => [use, GRID_NODE_CONTRACT] as [string, FlowSurfaceNodeContract]),
+  ['TriggerBlockGridModel', GRID_NODE_CONTRACT],
+  ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
   ['CreateFormModel', CREATE_FORM_BLOCK_CONTRACT],
   ['EditFormModel', EDIT_FORM_BLOCK_CONTRACT],
@@ -1907,6 +2146,8 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormBlockModel', FILTER_FORM_BLOCK_CONTRACT],
   ['ListBlockModel', LIST_BLOCK_CONTRACT],
   ['GridCardBlockModel', GRID_CARD_BLOCK_CONTRACT],
+  ...APPROVAL_FORM_BLOCK_USES.map((use) => [use, APPROVAL_FORM_BLOCK_CONTRACT] as [string, FlowSurfaceNodeContract]),
+  ...APPROVAL_DETAILS_BLOCK_USES.map((use) => [use, DETAILS_BLOCK_CONTRACT] as [string, FlowSurfaceNodeContract]),
   ['JSBlockModel', JS_BLOCK_CONTRACT],
   ['MarkdownBlockModel', MARKDOWN_BLOCK_CONTRACT],
   ['IframeBlockModel', IFRAME_BLOCK_CONTRACT],
@@ -1919,9 +2160,14 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FormAssociationItemModel', DETAILS_ITEM_CONTRACT],
   ['DetailsItemModel', DETAILS_ITEM_CONTRACT],
   ['FilterFormItemModel', FILTER_FORM_ITEM_CONTRACT],
+  ['PatternFormItemModel', FORM_ITEM_CONTRACT],
+  ['ApprovalDetailsItemModel', DETAILS_ITEM_CONTRACT],
+  ['ApplyTaskCardDetailsItemModel', DETAILS_ITEM_CONTRACT],
+  ['ApprovalTaskCardDetailsItemModel', DETAILS_ITEM_CONTRACT],
   ['SubFormFieldModel', SUB_FORM_FIELD_NODE_CONTRACT],
   ['SubFormListFieldModel', SUB_FORM_FIELD_NODE_CONTRACT],
   ['TableColumnModel', TABLE_COLUMN_CONTRACT],
+  ['PatternFormFieldModel', PATTERN_FORM_FIELD_NODE_CONTRACT],
   ['JSColumnModel', JS_COLUMN_CONTRACT],
   ['JSItemModel', JS_ITEM_CONTRACT],
   ['FormJSFieldItemModel', JS_ITEM_CONTRACT],
@@ -1961,6 +2207,14 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
   ['JSItemActionModel', JS_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
+  ['ApplyFormSubmitModel', APPROVAL_ACTION_CONTRACT],
+  ['ApplyFormSaveDraftModel', APPROVAL_ACTION_CONTRACT],
+  ['ApplyFormWithdrawModel', APPROVAL_ACTION_CONTRACT],
+  ['ProcessFormApproveModel', APPROVAL_ACTION_CONTRACT],
+  ['ProcessFormRejectModel', APPROVAL_ACTION_CONTRACT],
+  ['ProcessFormReturnModel', APPROVAL_ACTION_CONTRACT],
+  ['ProcessFormDelegateModel', APPROVAL_ACTION_CONTRACT],
+  ['ProcessFormAddAssigneeModel', APPROVAL_ACTION_CONTRACT],
 ];
 
 NODE_CONTRACT_ENTRIES.forEach(([use, contract]) => registerNodeContract(use, contract));
@@ -1996,6 +2250,10 @@ function normalizeFieldContainerUse(containerUse?: string) {
 }
 
 function getFieldWrapperUseForContainer(containerUse?: string) {
+  const approvalWrapperUse = getApprovalFieldWrapperUse(containerUse);
+  if (approvalWrapperUse) {
+    return approvalWrapperUse;
+  }
   switch (normalizeFieldContainerUse(containerUse)) {
     case 'form':
       return 'FormItemModel';
@@ -2136,6 +2394,79 @@ function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: Readonly
     default:
       return null;
   }
+}
+
+function canUseNestedApprovalAssociationFieldComponent(input: {
+  field?: any;
+  dataSourceKey?: string;
+  getCollection?: (dataSourceKey: string, collectionName: string) => any;
+}) {
+  const getCollection = input.getCollection || (() => null);
+  const targetCollection = resolveFieldTargetCollection(input.field, input.dataSourceKey || 'main', getCollection);
+  if (!targetCollection) {
+    return true;
+  }
+  return (targetCollection?.template || targetCollection?.options?.template) !== 'file';
+}
+
+export function getSupportedFieldComponentUseSet(input: {
+  containerUse: string;
+  field?: any;
+  enabledPackages?: ReadonlySet<string>;
+  dataSourceKey?: string;
+  getCollection?: (dataSourceKey: string, collectionName: string) => any;
+}) {
+  const baseAllowedFieldUses = getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
+  const fieldInterface = String(getFieldInterface(input.field) || '').trim();
+  if (!baseAllowedFieldUses || !fieldInterface) {
+    return baseAllowedFieldUses;
+  }
+
+  const wrapperUse = getApprovalFieldWrapperUse(input.containerUse) || String(input.containerUse || '').trim();
+  const inferredFieldUse = inferFieldUseByContainer(input.containerUse, input.field, {
+    enabledPackages: input.enabledPackages,
+    dataSourceKey: input.dataSourceKey,
+    getCollection: input.getCollection,
+  });
+
+  if (wrapperUse === 'PatternFormItemModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
+          canUseNestedApprovalAssociationFieldComponent(input) ? 'PatternSubTableFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+  }
+
+  if (APPROVAL_DETAILS_FIELD_COMPONENT_WRAPPER_USE_SET.has(wrapperUse)) {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(['DisplayTextFieldModel', 'DisplaySubItemFieldModel', inferredFieldUse].filter(Boolean));
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        ['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel', inferredFieldUse].filter(
+          Boolean,
+        ),
+      );
+    }
+  }
+
+  return baseAllowedFieldUses;
 }
 
 function inferFieldUseByContainer(
@@ -2400,11 +2731,13 @@ const COLLECTION_RESOURCE_REQUIRED = new Set([
   'GridCardBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  ...APPROVAL_FORM_BLOCK_USES,
+  ...APPROVAL_DETAILS_BLOCK_USES,
 ]);
 
 const PUBLIC_BLOCK_SUPPORT_MATRIX = FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter((entry) => entry.topLevelAddable);
 
-export const blockCatalog: FlowSurfaceCatalogItem[] = PUBLIC_BLOCK_SUPPORT_MATRIX.map((entry) =>
+const baseBlockCatalog: FlowSurfaceCatalogItem[] = PUBLIC_BLOCK_SUPPORT_MATRIX.map((entry) =>
   makeCatalogItem({
     key: entry.key,
     label: entry.label,
@@ -2416,6 +2749,62 @@ export const blockCatalog: FlowSurfaceCatalogItem[] = PUBLIC_BLOCK_SUPPORT_MATRI
     createSupported: entry.createSupported,
   }),
 );
+
+const approvalBlockCatalog: FlowSurfaceCatalogItem[] = APPROVAL_BLOCK_CATALOG_SPECS.map((entry) =>
+  makeCatalogItem({
+    key: entry.key,
+    label: entry.label,
+    kind: 'block',
+    use: entry.use,
+    requiredInitParams: entry.requiredInitParams,
+    allowedContainerUses: entry.allowedContainerUses,
+    createSupported: entry.createSupported,
+  }),
+);
+
+export const blockCatalog: FlowSurfaceCatalogItem[] = [...baseBlockCatalog, ...approvalBlockCatalog];
+
+const APPROVAL_PAGE_LIKE_BLOCK_CONTAINER_USE_SET = new Set<string>([...APPROVAL_BLOCK_GRID_USES]);
+const APPROVAL_PAGE_LIKE_GENERIC_BLOCK_KEY_SET = new Set(['markdown', 'jsBlock']);
+const APPROVAL_EXCLUSIVE_BLOCK_CONTAINER_USE_SET = new Set<string>([...APPROVAL_TASK_CARD_GRID_USES]);
+
+function isApprovalPageLikeBlockContainerUse(containerUse?: string) {
+  return APPROVAL_PAGE_LIKE_BLOCK_CONTAINER_USE_SET.has(String(containerUse || '').trim());
+}
+
+function isApprovalExclusiveBlockContainerUse(containerUse?: string) {
+  return APPROVAL_EXCLUSIVE_BLOCK_CONTAINER_USE_SET.has(String(containerUse || '').trim());
+}
+
+function isBlockAllowedInContainer(item: FlowSurfaceCatalogItem, containerUse?: string) {
+  const normalizedContainerUse = String(containerUse || '').trim();
+
+  if (isApprovalExclusiveBlockContainerUse(normalizedContainerUse) && !item.allowedContainerUses?.length) {
+    return false;
+  }
+  if (isApprovalPageLikeBlockContainerUse(normalizedContainerUse)) {
+    if (!item.allowedContainerUses?.length) {
+      return APPROVAL_PAGE_LIKE_GENERIC_BLOCK_KEY_SET.has(item.key);
+    }
+    return item.allowedContainerUses.includes(normalizedContainerUse);
+  }
+  if (!item.allowedContainerUses?.length) {
+    return true;
+  }
+  if (!normalizedContainerUse) {
+    return false;
+  }
+  return item.allowedContainerUses.includes(normalizedContainerUse);
+}
+
+export function getAvailableBlockCatalogItems(
+  containerUse?: string,
+  enabledPackages?: ReadonlySet<string>,
+): FlowSurfaceCatalogItem[] {
+  return filterAvailableCatalogItems(blockCatalog, enabledPackages).filter((item) =>
+    isBlockAllowedInContainer(item, containerUse),
+  );
+}
 
 const actionRegistry: FlowSurfaceActionRegistryItem[] = [
   {
@@ -2798,6 +3187,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     allowedContainerUses: ACTION_PANEL_ACTION_CONTAINER_USES,
     createSupported: true,
   },
+  ...APPROVAL_ACTION_CATALOG_SPECS.map((item) => ({
+    publicKey: item.publicKey,
+    label: item.label,
+    scope: item.scope,
+    scene: item.scene,
+    use: item.use,
+    ownerPlugin: APPROVAL_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: item.allowedContainerUses,
+    createSupported: item.createSupported,
+  })),
 ];
 const FLOW_SURFACE_ACTION_OWNER_PLUGIN_BY_USE = actionRegistry.reduce((map, item) => {
   if (!map.has(item.use)) {
@@ -2869,10 +3268,10 @@ export const ACTION_KEY_BY_USE = new Map(actionCatalog.map((item) => [item.use, 
 
 function getCatalogItemOwnerPlugin(item: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'>) {
   if (item.kind === 'block') {
-    return FLOW_SURFACE_BLOCK_OWNER_PLUGIN_BY_USE.get(item.use);
+    return APPROVAL_BLOCK_OWNER_PLUGIN_BY_USE.get(item.use) || FLOW_SURFACE_BLOCK_OWNER_PLUGIN_BY_USE.get(item.use);
   }
   if (item.kind === 'action') {
-    return FLOW_SURFACE_ACTION_OWNER_PLUGIN_BY_USE.get(item.use);
+    return APPROVAL_ACTION_OWNER_PLUGIN_BY_USE.get(item.use) || FLOW_SURFACE_ACTION_OWNER_PLUGIN_BY_USE.get(item.use);
   }
   return undefined;
 }
@@ -2933,11 +3332,13 @@ export function resolveSupportedBlockCatalogItem(
   input: {
     type?: string;
     use?: string;
+    containerUse?: string;
   },
   options: {
     context?: string;
     enabledPackages?: ReadonlySet<string>;
     requireCreateSupported?: boolean;
+    skipContainerValidation?: boolean;
   } = {},
 ) {
   const item =
@@ -2953,6 +3354,13 @@ export function resolveSupportedBlockCatalogItem(
       requestedType: input.type,
       requestedUse: input.use,
     });
+  }
+  if (!options.skipContainerValidation && !isBlockAllowedInContainer(item, input.containerUse)) {
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces addBlock '${input.type || input.use || item.key}' is not allowed under '${
+        input.containerUse || 'unknown'
+      }'`,
+    );
   }
   if (options.requireCreateSupported && item.createSupported === false) {
     throw new FlowSurfaceBadRequestError(`flowSurfaces addBlock does not support creating '${item.key}' yet`);
@@ -3076,7 +3484,7 @@ export function resolveSupportedActionCatalogItem(
 
 export function getNodeContract(use?: string): FlowSurfaceNodeContract {
   if (use) {
-    const contract = nodeContracts.get(use);
+    const contract = nodeContracts.get(use) || nodeContracts.get(normalizeApprovalSemanticUse(use));
     if (contract) {
       return contract;
     }

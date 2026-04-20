@@ -20,10 +20,13 @@ export class SQLiteQueryFormatter extends QueryFormatter {
       .replace(/ss/g, '%S');
   }
 
-  formatDate(field: Col, format: string, timezone?: string) {
+  formatDate(field: Col, format: string, timezone?: string, preserveLocalTime?: boolean) {
     const fmt = this.convertFormat(format);
     if (timezone && /^[+-]\d{1,2}:\d{2}$/.test(timezone)) {
       return this.sequelize.fn('strftime', fmt, field, this.getOffsetExpression(timezone));
+    }
+    if (preserveLocalTime && this.rawTimezone && /^[+-]\d{1,2}:\d{2}$/.test(this.rawTimezone)) {
+      return this.sequelize.fn('strftime', fmt, field, this.getOffsetExpression(this.rawTimezone));
     }
     return this.sequelize.fn('strftime', fmt, field);
   }

@@ -87,6 +87,7 @@ const RECORD_ACTION_INTERNAL_CONTAINER_USES = new Set([
   'ListItemModel',
   'GridCardItemModel',
 ]);
+const APPLY_POPUP_ALLOWED_KEYS = new Set(['template', 'tryTemplate', 'defaultType']);
 
 export function compileApplySpec(
   target: FlowSurfaceWriteTarget,
@@ -159,6 +160,7 @@ export function compileApplySpec(
   const rootSpec: FlowSurfaceNodeSpec = {
     uid: currentTree.uid,
     use: currentTree.use,
+    popup: spec.popup,
     props: spec.props,
     decoratorProps: spec.decoratorProps,
     stepParams: spec.stepParams,
@@ -191,9 +193,13 @@ function syncExistingNode(
   desiredNode: FlowSurfaceNodeSpec,
   explicitTarget?: FlowSurfaceWriteTarget,
 ) {
-  emitDomainSettingOps(ops, nodeRef, currentNode, desiredNode, explicitTarget);
-  const childSync = syncChildren(ops, state, nodeRef, currentNode, desiredNode);
-  emitLayoutOp(ops, explicitTarget || { uid: nodeRef.uidRef }, currentNode, desiredNode, childSync);
+  const popupAwareDesiredNode = withApplyPopupOpenViewForExistingNode(
+    desiredNode,
+    `flowSurfaces apply node '${desiredNode.use}'`,
+  );
+  emitDomainSettingOps(ops, nodeRef, currentNode, popupAwareDesiredNode, explicitTarget);
+  const childSync = syncChildren(ops, state, nodeRef, currentNode, popupAwareDesiredNode);
+  emitLayoutOp(ops, explicitTarget || { uid: nodeRef.uidRef }, currentNode, popupAwareDesiredNode, childSync);
 }
 
 function syncCreatedNode(
@@ -616,6 +622,76 @@ function createBlockNode(
   return ref;
 }
 
+function normalizeApplyPopup(desiredNode: FlowSurfaceNodeSpec, context: string): Record<string, any> | undefined {
+  if (_.isUndefined(desiredNode.popup)) {
+    return undefined;
+  }
+  if (!_.isPlainObject(desiredNode.popup)) {
+    throw new FlowSurfaceBadRequestError(`${context} popup must be an object`);
+  }
+
+  const invalidKeys = Object.keys(desiredNode.popup).filter((key) => !APPLY_POPUP_ALLOWED_KEYS.has(key));
+  if (invalidKeys.length) {
+    throw new FlowSurfaceBadRequestError(
+      `${context} popup only supports ${Array.from(APPLY_POPUP_ALLOWED_KEYS).join(', ')} in flowSurfaces apply`,
+    );
+  }
+
+  const hasPopupPageSpec = !!normalizeChildren(desiredNode.subModels?.page)[0];
+  if (hasPopupPageSpec) {
+    throw new FlowSurfaceBadRequestError(
+      `${context} cannot mix popup template semantics with explicit popup subtree content in flowSurfaces apply`,
+    );
+  }
+
+  const nextPopup = _.cloneDeep(desiredNode.popup);
+  if (!_.isUndefined(nextPopup.tryTemplate) && typeof nextPopup.tryTemplate !== 'boolean') {
+    throw new FlowSurfaceBadRequestError(`${context} popup.tryTemplate must be a boolean`);
+  }
+  if (!_.isUndefined(nextPopup.defaultType) && nextPopup.defaultType !== 'view' && nextPopup.defaultType !== 'edit') {
+    throw new FlowSurfaceBadRequestError(`${context} popup.defaultType must be 'view' or 'edit'`);
+  }
+
+  if (_.isUndefined(nextPopup.template) && nextPopup.tryTemplate !== true && _.isUndefined(nextPopup.defaultType)) {
+    return undefined;
+  }
+  if (!isPopupHostUse(desiredNode.use)) {
+    throw new FlowSurfaceBadRequestError(
+      `${context} popup is only supported on popup-capable action or field nodes in flowSurfaces apply`,
+    );
+  }
+  return nextPopup;
+}
+
+function buildApplyPopupStepParams(use: string, popup: Record<string, any> | undefined) {
+  if (!popup) {
+    return undefined;
+  }
+  if (use === 'UploadActionModel') {
+    return {
+      selectExitRecordSettings: {
+        openView: popup,
+      },
+    };
+  }
+  return {
+    popupSettings: {
+      openView: popup,
+    },
+  };
+}
+
+function withApplyPopupOpenViewForExistingNode(desiredNode: FlowSurfaceNodeSpec, context: string): FlowSurfaceNodeSpec {
+  const popup = normalizeApplyPopup(desiredNode, context);
+  if (!popup) {
+    return desiredNode;
+  }
+  return {
+    ...desiredNode,
+    stepParams: _.merge({}, desiredNode.stepParams || {}, buildApplyPopupStepParams(desiredNode.use, popup)),
+  };
+}
+
 function createActionNode(
   ops: FlowSurfaceMutateOp[],
   state: CompilerState,
@@ -623,6 +699,7 @@ function createActionNode(
   desiredNode: FlowSurfaceNodeSpec,
   currentParent?: any,
 ) {
+  const popup = normalizeApplyPopup(desiredNode, `flowSurfaces apply action '${desiredNode.use}'`);
   const actionCatalogItem = resolveSupportedActionCatalogItem(
     {
       use: desiredNode.use,
@@ -648,6 +725,7 @@ function createActionNode(
       ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
       type: actionCatalogItem.key,
       resourceInit: extractResourceInit(desiredNode),
+      ...(popup ? { popup } : {}),
     },
   });
 
@@ -666,9 +744,15 @@ function createFieldNode(
   parentRef: CompiledNodeRef,
   desiredNode: FlowSurfaceNodeSpec,
 ) {
+  const popup = normalizeApplyPopup(desiredNode, `flowSurfaces apply field '${desiredNode.use}'`);
   const standaloneType =
     desiredNode.use === 'JSColumnModel' ? 'jsColumn' : desiredNode.use === 'JSItemModel' ? 'jsItem' : undefined;
   if (standaloneType) {
+    if (popup) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces apply field '${desiredNode.use}' popup is not supported for standalone field types`,
+      );
+    }
     const opId = nextOpId(state, 'addField');
     ops.push({
       opId,
@@ -727,6 +811,7 @@ function createFieldNode(
       ...(requestedRenderer ? { renderer: requestedRenderer } : {}),
       ...(fieldCapability.fieldUse ? { fieldUse: fieldCapability.fieldUse } : {}),
       ...(defaultTargetUid ? { defaultTargetUid } : {}),
+      ...(popup ? { popup } : {}),
     },
   });
 

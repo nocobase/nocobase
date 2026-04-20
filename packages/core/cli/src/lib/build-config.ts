@@ -1,0 +1,50 @@
+import {promises as fs} from 'node:fs';
+
+export interface ResourceBuildConfig {
+  name?: string;
+  description?: string;
+  topLevel?: boolean;
+  operations?: OperationBuildConfigSet;
+}
+
+export interface ModuleResourcesConfig {
+  includes?: string[];
+  excludes?: string[];
+  overrides?: Record<string, ResourceBuildConfig>;
+}
+
+export interface OperationBuildConfig {
+  description?: string;
+}
+
+export interface OperationBuildConfigSet {
+  includes?: string[];
+  excludes?: string[];
+  overrides?: Record<string, OperationBuildConfig>;
+}
+
+export interface ModuleBuildConfig {
+  name?: string;
+  description?: string;
+  include?: boolean;
+  resources?: ModuleResourcesConfig;
+}
+
+export interface ModuleGroupConfig {
+  match: string[];
+  module: string;
+}
+
+export interface BuildConfig {
+  moduleGroups?: ModuleGroupConfig[];
+  modules?: Record<string, ModuleBuildConfig>;
+}
+
+export async function loadBuildConfig(filePath: string): Promise<BuildConfig> {
+  try {
+    const content = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(content) as BuildConfig;
+  } catch (error) {
+    return {};
+  }
+}

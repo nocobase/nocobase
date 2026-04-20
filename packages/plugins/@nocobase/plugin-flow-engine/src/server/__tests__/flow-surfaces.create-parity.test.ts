@@ -142,7 +142,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       collectionName: 'pets',
     },
   });
-  const hostPopup = await addAction(rootAgent, hostTable.uid, 'addNew');
+  const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew');
   await configurePopupAction(rootAgent, hostPopup.uid, `Nested ${key}`, {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
@@ -162,17 +162,17 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       });
       await configureTableBlock(rootAgent, nestedTable.uid);
 
-      const addNew = await addAction(rootAgent, nestedTable.uid, 'addNew');
+      const addNew = await ensureBlockAction(rootAgent, nestedTable.uid, 'addNew');
       await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
-      const refresh = await addAction(rootAgent, nestedTable.uid, 'refresh');
+      const refresh = await ensureBlockAction(rootAgent, nestedTable.uid, 'refresh');
       await configureSimpleAction(rootAgent, refresh.uid, 'Refresh');
 
-      const bulkDelete = await addAction(rootAgent, nestedTable.uid, 'bulkDelete');
+      const bulkDelete = await ensureBlockAction(rootAgent, nestedTable.uid, 'bulkDelete');
       await configureSimpleAction(rootAgent, bulkDelete.uid, 'Bulk Delete');
 
       let lastFieldColumnUid = '';
@@ -278,17 +278,17 @@ async function createTableParityReadback(rootAgent: any) {
 
   await configureTableBlock(rootAgent, table.uid);
 
-  const addNew = await addAction(rootAgent, table.uid, 'addNew');
+  const addNew = await ensureBlockAction(rootAgent, table.uid, 'addNew');
   await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
-  const refresh = await addAction(rootAgent, table.uid, 'refresh');
+  const refresh = await ensureBlockAction(rootAgent, table.uid, 'refresh');
   await configureSimpleAction(rootAgent, refresh.uid, 'Refresh');
 
-  const bulkDelete = await addAction(rootAgent, table.uid, 'bulkDelete');
+  const bulkDelete = await ensureBlockAction(rootAgent, table.uid, 'bulkDelete');
   await configureSimpleAction(rootAgent, bulkDelete.uid, 'Bulk Delete');
 
   let lastFieldColumnUid = '';
@@ -359,7 +359,7 @@ async function createCreateFormParityReadback(rootAgent: any) {
       collectionName: 'pets',
     },
   });
-  await configurePetsCreateFormBlock(rootAgent, form.uid, 'Save');
+  await configurePetsCreateFormBlock(rootAgent, form.uid, 'Submit');
   return getSurface(rootAgent, {
     uid: form.uid,
   });
@@ -380,7 +380,7 @@ async function createEditFormParityReadback(rootAgent: any) {
       collectionName: 'pets',
     },
   });
-  await configurePetsEditFormBlock(rootAgent, form.uid, 'Save Changes');
+  await configurePetsEditFormBlock(rootAgent, form.uid, 'Submit');
   return getSurface(rootAgent, {
     uid: form.uid,
   });
@@ -753,7 +753,7 @@ async function configureSubmitAction(rootAgent: any, uid: string, title: string)
       buttonSettings: {
         general: {
           title,
-          type: '',
+          type: 'primary',
         },
       },
       submitSettings: {
@@ -860,6 +860,33 @@ async function addAction(rootAgent: any, targetUid: string, type: string, extraV
     );
   }
   return getData(response);
+}
+
+const BLOCK_ACTION_MODEL_USE_BY_TYPE: Record<string, string> = {
+  addNew: 'AddNewActionModel',
+  refresh: 'RefreshActionModel',
+  bulkDelete: 'BulkDeleteActionModel',
+};
+
+async function ensureBlockAction(
+  rootAgent: any,
+  targetUid: string,
+  type: string,
+  extraValues: Record<string, any> = {},
+) {
+  const expectedUse = BLOCK_ACTION_MODEL_USE_BY_TYPE[type];
+  if (expectedUse && !Object.keys(extraValues).length) {
+    const surface = await getSurface(rootAgent, {
+      uid: targetUid,
+    });
+    const existingAction = _.castArray(surface.tree?.subModels?.actions || []).find(
+      (item: any) => item?.use === expectedUse,
+    );
+    if (existingAction?.uid) {
+      return existingAction;
+    }
+  }
+  return addAction(rootAgent, targetUid, type, extraValues);
 }
 
 async function setupCreateParityCollections(rootAgent: any) {

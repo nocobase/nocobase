@@ -28,4 +28,29 @@ describe('query result', () => {
       }),
     ).toEqual([{ total: 0, count: 0, name: 'u1' }]);
   });
+
+  it('should normalize unformatted date result to Date', () => {
+    const result = normalizeQueryResult([{ createdAt: '2023-01-01 00:00:00.000 +00:00' }], {
+      createdAt: { type: 'date' },
+    });
+
+    expect(result[0].createdAt).toBeInstanceOf(Date);
+    expect(result[0].createdAt.toISOString()).toBe('2023-01-01T00:00:00.000Z');
+  });
+
+  it('should keep formatted date result as string', () => {
+    expect(
+      normalizeQueryResult([{ createdAt: '2023-01' }], {
+        createdAt: { type: 'date', format: 'YYYY-MM' },
+      }),
+    ).toEqual([{ createdAt: '2023-01' }]);
+  });
+
+  it('should keep dateOnly result as string', () => {
+    expect(
+      normalizeQueryResult([{ dateOnly: '2024-05-14' }], {
+        dateOnly: { type: 'dateOnly' },
+      }),
+    ).toEqual([{ dateOnly: '2024-05-14' }]);
+  });
 });

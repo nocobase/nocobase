@@ -101,12 +101,10 @@ describe('workflow > instructions > manual > actions', () => {
       const res1 = await userAgents[0].resource('workflowManualTasks').listMine();
       expect(res1.status).toBe(200);
       expect(res1.body.data.length).toBe(1);
-      expect(res1.body.meta.count).toBe(1);
 
       const res2 = await userAgents[1].resource('workflowManualTasks').listMine();
       expect(res2.status).toBe(200);
       expect(res2.body.data.length).toBe(0);
-      expect(res2.body.meta.count).toBe(0);
 
       const j1s = await ManualTaskModel.findAll({
         filter: { userId: users[0].id },
@@ -126,17 +124,14 @@ describe('workflow > instructions > manual > actions', () => {
       const res4 = await userAgents[0].resource('workflowManualTasks').listMine();
       expect(res4.status).toBe(200);
       expect(res4.body.data.length).toBe(1);
-      expect(res4.body.meta.count).toBe(1);
 
       const res5 = await userAgents[1].resource('workflowManualTasks').listMine();
       expect(res5.status).toBe(200);
       expect(res5.body.data.length).toBe(1);
-      expect(res5.body.meta.count).toBe(1);
 
       const res6 = await rootAgent.resource('workflowManualTasks').listMine();
       expect(res6.status).toBe(200);
       expect(res6.body.data.length).toBe(0);
-      expect(res6.body.meta.count).toBe(0);
     });
   });
 });

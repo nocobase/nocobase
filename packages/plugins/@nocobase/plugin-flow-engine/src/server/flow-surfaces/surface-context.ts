@@ -9,10 +9,16 @@
 
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
-import { blockCatalog } from './catalog';
+import { getAvailableBlockCatalogItems } from './catalog';
 import { getChartBuilderResourceInit } from './chart-config';
 import { throwBadRequest } from './errors';
 import { SurfaceLocator } from './locator';
+import {
+  getApprovalDefaultGridUse,
+  getApprovalFieldWrapperUse,
+  isApprovalTaskCardGridUse,
+  normalizeApprovalSemanticUse,
+} from './approval';
 import {
   canCatalogAddBlock,
   isFormBlockUse,
@@ -35,6 +41,14 @@ const FILTER_TARGET_BLOCK_USES = new Set([
 const LIST_LIKE_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel']);
 const LIST_LIKE_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel']);
 
+function getDefaultGridUse(ownerUse: string | undefined, fallbackUse: string) {
+  return getApprovalDefaultGridUse(ownerUse) || fallbackUse;
+}
+
+function getFieldWrapperUse(containerUse: string | undefined, fallbackUse: string) {
+  return getApprovalFieldWrapperUse(containerUse) || fallbackUse;
+}
+
 export class FlowSurfaceContextResolver {
   constructor(
     private readonly repository: FlowModelRepository,
@@ -47,12 +61,45 @@ export class FlowSurfaceContextResolver {
     },
   ) {}
 
-  filterBlocksByTarget(targetNode?: any, resolved?: any) {
+  private resolveBlockCatalogContainerUse(targetNode?: any, resolved?: any) {
     if (!targetNode && !resolved) {
-      return blockCatalog;
+      return undefined;
+    }
+
+    if (targetNode?.use?.endsWith?.('GridModel')) {
+      return targetNode.use;
+    }
+
+    if (targetNode?.subModels?.grid?.use) {
+      return targetNode.subModels.grid.use;
+    }
+
+    const firstTab = _.castArray(targetNode?.subModels?.tabs || [])[0];
+    if (firstTab?.subModels?.grid?.use) {
+      return firstTab.subModels.grid.use;
+    }
+
+    const directDefaultGridUse = getApprovalDefaultGridUse(targetNode?.use);
+    if (directDefaultGridUse) {
+      return directDefaultGridUse;
+    }
+
+    const firstTabDefaultGridUse = getApprovalDefaultGridUse(firstTab?.use);
+    if (firstTabDefaultGridUse) {
+      return firstTabDefaultGridUse;
+    }
+
+    return undefined;
+  }
+
+  filterBlocksByTarget(targetNode?: any, resolved?: any) {
+    const containerUse = this.resolveBlockCatalogContainerUse(targetNode, resolved);
+    const blocks = getAvailableBlockCatalogItems(containerUse);
+    if (!targetNode && !resolved) {
+      return blocks;
     }
     if (canCatalogAddBlock({ node: targetNode, resolved })) {
-      return blockCatalog;
+      return blocks;
     }
     return [];
   }
@@ -119,22 +166,27 @@ export class FlowSurfaceContextResolver {
     const resolved = await this.locator.resolve(target, { transaction });
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
+    const normalizedUse = normalizeApprovalSemanticUse(node?.use);
     if (node?.use?.endsWith('GridModel')) {
+      if (isApprovalTaskCardGridUse(node.use)) {
+        throwBadRequest(`flowSurfaces addBlock target '${node.use}' does not support blocks`);
+      }
       return {
         parentUid: node.uid,
         subKey: 'items',
         subType: 'array',
       };
     }
-    if (node?.use === 'ChildPageTabModel') {
+    if (normalizedUse === 'ChildPageTabModel') {
       return {
         parentUid:
-          node?.subModels?.grid?.uid || (await this.options.ensureGridChild(node.uid, 'BlockGridModel', transaction)),
+          node?.subModels?.grid?.uid ||
+          (await this.options.ensureGridChild(node.uid, getDefaultGridUse(node.use, 'BlockGridModel'), transaction)),
         subKey: 'items',
         subType: 'array',
       };
     }
-    if (node?.use === 'ChildPageModel') {
+    if (normalizedUse === 'ChildPageModel') {
       const firstTab = _.castArray(node?.subModels?.tabs || [])[0];
       if (!firstTab?.uid) {
         throwBadRequest(`flowSurfaces addBlock target '${node.use}' is missing its popup tab subtree`);
@@ -142,12 +194,16 @@ export class FlowSurfaceContextResolver {
       return {
         parentUid:
           firstTab?.subModels?.grid?.uid ||
-          (await this.options.ensureGridChild(firstTab.uid, 'BlockGridModel', transaction)),
+          (await this.options.ensureGridChild(
+            firstTab.uid,
+            getDefaultGridUse(firstTab.use, 'BlockGridModel'),
+            transaction,
+          )),
         subKey: 'items',
         subType: 'array',
       };
     }
-    if (isPopupHostUse(node?.use) || node?.subModels?.page?.use === 'ChildPageModel') {
+    if (isPopupHostUse(node?.use) || normalizeApprovalSemanticUse(node?.subModels?.page?.use) === 'ChildPageModel') {
       const popupSurface = await this.options.ensurePopupSurface(node.uid, transaction);
       return {
         parentUid: popupSurface.gridUid,
@@ -162,7 +218,7 @@ export class FlowSurfaceContextResolver {
           node?.subModels?.grid?.uid ||
           (await this.options.ensureGridChild(
             resolved.tabRoute?.get?.('schemaUid') || node.uid,
-            'BlockGridModel',
+            getDefaultGridUse(node?.use, 'BlockGridModel'),
             transaction,
           )),
         subKey: 'items',
@@ -187,18 +243,20 @@ export class FlowSurfaceContextResolver {
     const target = await this.locator.resolve({ uid }, { transaction });
     const node = target.node || (await this.repository.findModelById(uid, { transaction, includeAsyncNode: true }));
     const use = node?.use;
+    const normalizedUse = normalizeApprovalSemanticUse(use);
     if (isFormBlockUse(use)) {
       return {
         ownerUid: node.uid,
         ownerUse: use,
         parentUid:
-          node.subModels?.grid?.uid || (await this.options.ensureGridChild(node.uid, 'FormGridModel', transaction)),
+          node.subModels?.grid?.uid ||
+          (await this.options.ensureGridChild(node.uid, getDefaultGridUse(use, 'FormGridModel'), transaction)),
         subKey: 'items',
         subType: 'array',
-        wrapperUse: 'FormItemModel',
+        wrapperUse: getFieldWrapperUse(use, 'FormItemModel'),
       };
     }
-    if (use === 'FormGridModel') {
+    if (normalizedUse === 'FormGridModel') {
       const parentUid = await this.locator.findParentUid(node.uid, transaction);
       const parent = parentUid ? await this.repository.findModelById(parentUid, { transaction }) : null;
       return {
@@ -207,7 +265,7 @@ export class FlowSurfaceContextResolver {
         parentUid: node.uid,
         subKey: 'items',
         subType: 'array',
-        wrapperUse: 'FormItemModel',
+        wrapperUse: getFieldWrapperUse(parent?.use || use, 'FormItemModel'),
       };
     }
     if (isDetailsBlockUse(use)) {
@@ -215,10 +273,11 @@ export class FlowSurfaceContextResolver {
         ownerUid: node.uid,
         ownerUse: use,
         parentUid:
-          node.subModels?.grid?.uid || (await this.options.ensureGridChild(node.uid, 'DetailsGridModel', transaction)),
+          node.subModels?.grid?.uid ||
+          (await this.options.ensureGridChild(node.uid, getDefaultGridUse(use, 'DetailsGridModel'), transaction)),
         subKey: 'items',
         subType: 'array',
-        wrapperUse: 'DetailsItemModel',
+        wrapperUse: getFieldWrapperUse(use, 'DetailsItemModel'),
       };
     }
     if (LIST_LIKE_BLOCK_USES.has(use)) {
@@ -248,7 +307,7 @@ export class FlowSurfaceContextResolver {
         wrapperUse: 'DetailsItemModel',
       };
     }
-    if (use === 'DetailsGridModel') {
+    if (normalizedUse === 'DetailsGridModel') {
       const parentUid = await this.locator.findParentUid(node.uid, transaction);
       const parent = parentUid ? await this.repository.findModelById(parentUid, { transaction }) : null;
       return {
@@ -257,7 +316,7 @@ export class FlowSurfaceContextResolver {
         parentUid: node.uid,
         subKey: 'items',
         subType: 'array',
-        wrapperUse: 'DetailsItemModel',
+        wrapperUse: getFieldWrapperUse(parent?.use || use, 'DetailsItemModel'),
       };
     }
     if (isFilterFormBlockUse(use)) {
@@ -339,6 +398,7 @@ export class FlowSurfaceContextResolver {
   async resolveGridNode(uid: string, transaction?: any) {
     const resolved = await this.locator.resolve({ uid }, { transaction });
     const node = resolved.node || (await this.repository.findModelById(uid, { transaction, includeAsyncNode: true }));
+    const normalizedUse = normalizeApprovalSemanticUse(node?.use);
     if (node?.use?.endsWith('GridModel')) {
       return node;
     }
@@ -350,7 +410,7 @@ export class FlowSurfaceContextResolver {
         node?.subModels?.grid?.uid ||
           (await this.options.ensureGridChild(
             resolved.tabRoute?.get?.('schemaUid') || node.uid,
-            'BlockGridModel',
+            getDefaultGridUse(node?.use, 'BlockGridModel'),
             transaction,
           )),
         { transaction, includeAsyncNode: true },
@@ -359,6 +419,44 @@ export class FlowSurfaceContextResolver {
     if (node?.subModels?.grid?.uid) {
       return this.repository.findModelById(node.subModels.grid.uid, { transaction, includeAsyncNode: true });
     }
+    if (normalizedUse === 'ChildPageTabModel') {
+      return this.repository.findModelById(
+        await this.options.ensureGridChild(node.uid, getDefaultGridUse(node?.use, 'BlockGridModel'), transaction),
+        { transaction, includeAsyncNode: true },
+      );
+    }
+    if (normalizedUse === 'ChildPageModel') {
+      const firstTab = _.castArray(node?.subModels?.tabs || [])[0];
+      if (!firstTab?.uid) {
+        throwBadRequest(`flowSurfaces setLayout target '${uid}' is missing its popup tab subtree`);
+      }
+      const gridUid =
+        firstTab?.subModels?.grid?.uid ||
+        (await this.options.ensureGridChild(
+          firstTab.uid,
+          getDefaultGridUse(firstTab.use, 'BlockGridModel'),
+          transaction,
+        ));
+      return this.repository.findModelById(gridUid, { transaction, includeAsyncNode: true });
+    }
+    if (isFormBlockUse(node?.use)) {
+      return this.repository.findModelById(
+        await this.options.ensureGridChild(node.uid, getDefaultGridUse(node?.use, 'FormGridModel'), transaction),
+        { transaction, includeAsyncNode: true },
+      );
+    }
+    if (isDetailsBlockUse(node?.use)) {
+      return this.repository.findModelById(
+        await this.options.ensureGridChild(node.uid, getDefaultGridUse(node?.use, 'DetailsGridModel'), transaction),
+        { transaction, includeAsyncNode: true },
+      );
+    }
+    if (isFilterFormBlockUse(node?.use)) {
+      return this.repository.findModelById(
+        await this.options.ensureGridChild(node.uid, 'FilterFormGridModel', transaction),
+        { transaction, includeAsyncNode: true },
+      );
+    }
     throwBadRequest(`flowSurfaces setLayout target '${uid}' is not a grid node`);
   }
 
@@ -366,7 +464,7 @@ export class FlowSurfaceContextResolver {
     let cursor = uid;
     while (cursor) {
       const node = await this.repository.findModelById(cursor, { transaction, includeAsyncNode: true });
-      if (node?.use === 'BlockGridModel') {
+      if (normalizeApprovalSemanticUse(node?.use) === 'BlockGridModel') {
         return node;
       }
       cursor = await this.locator.findParentUid(cursor, transaction);

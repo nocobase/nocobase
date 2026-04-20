@@ -9,7 +9,12 @@
 
 import { parseQuery } from '@nocobase/resourcer';
 import type { Plugin } from '@nocobase/server';
-import { FLOW_SURFACES_READ_ACTION_NAMES, type FlowSurfacesActionName } from './constants';
+import {
+  FLOW_SURFACE_ACTION_DEFINITIONS,
+  FLOW_SURFACES_ACTION_NAMES,
+  FLOW_SURFACES_READ_ACTION_NAMES,
+  type FlowSurfacesActionName,
+} from './constants';
 import { FlowSurfaceForbiddenError, normalizeFlowSurfaceError, throwBadRequest } from './errors';
 import { FlowSurfacesService } from './service';
 
@@ -125,213 +130,40 @@ async function runFlowSurfaceAction(ctx: any, next: () => Promise<any>, handler:
   }
 }
 
+function invokeFlowSurfaceServiceAction(
+  service: FlowSurfacesService,
+  actionName: FlowSurfacesActionName,
+  values: Record<string, any>,
+  options: { transaction?: any } = {},
+) {
+  const handler = service[actionName] as unknown as (
+    values: Record<string, any>,
+    options?: { transaction?: any },
+  ) => Promise<any>;
+  return handler.call(service, values, options);
+}
+
 export function registerFlowSurfacesResource(plugin: Plugin) {
   const service = new FlowSurfacesService(plugin);
-  const actions: Record<FlowSurfacesActionName, any> = {
-    catalog: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.catalog(getValues(ctx)));
-    },
-    context: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.context(getValues(ctx)));
-    },
-    get: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.get(getReadValues(ctx)));
-    },
-    describeSurface: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.describeSurface(getValues(ctx)));
-    },
-    getReactionMeta: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.getReactionMeta(getValues(ctx)));
-    },
-    setFieldValueRules: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.setFieldValueRules(getValues(ctx), { transaction })),
-      );
-    },
-    setBlockLinkageRules: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.setBlockLinkageRules(getValues(ctx), { transaction })),
-      );
-    },
-    setFieldLinkageRules: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.setFieldLinkageRules(getValues(ctx), { transaction })),
-      );
-    },
-    setActionLinkageRules: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.setActionLinkageRules(getValues(ctx), { transaction })),
-      );
-    },
-    applyBlueprint: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.applyBlueprint(getValues(ctx), { transaction })),
-      );
-    },
-    listTemplates: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.listTemplates(getValues(ctx)));
-    },
-    getTemplate: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.getTemplate(getValues(ctx)));
-    },
-    saveTemplate: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.saveTemplate(getValues(ctx), { transaction })),
-      );
-    },
-    updateTemplate: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.updateTemplate(getValues(ctx), { transaction })),
-      );
-    },
-    destroyTemplate: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.destroyTemplate(getValues(ctx), { transaction })),
-      );
-    },
-    convertTemplateToCopy: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.convertTemplateToCopy(getValues(ctx), { transaction })),
-      );
-    },
-    compose: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.compose(getValues(ctx), { transaction })),
-      );
-    },
-    configure: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.configure(getValues(ctx), { transaction })),
-      );
-    },
-    createMenu: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.createMenu(getValues(ctx), { transaction })),
-      );
-    },
-    updateMenu: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.updateMenu(getValues(ctx), { transaction })),
-      );
-    },
-    createPage: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.createPage(getValues(ctx), { transaction })),
-      );
-    },
-    destroyPage: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.destroyPage(getValues(ctx), { transaction })),
-      );
-    },
-    addTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.addTab(getValues(ctx), { transaction })),
-      );
-    },
-    updateTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.updateTab(getValues(ctx), { transaction })),
-      );
-    },
-    moveTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.moveTab(getValues(ctx), { transaction })),
-      );
-    },
-    removeTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.removeTab(getValues(ctx), { transaction })),
-      );
-    },
-    addPopupTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.addPopupTab(getValues(ctx), { transaction })),
-      );
-    },
-    updatePopupTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.updatePopupTab(getValues(ctx), { transaction })),
-      );
-    },
-    movePopupTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.movePopupTab(getValues(ctx), { transaction })),
-      );
-    },
-    removePopupTab: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.removePopupTab(getValues(ctx), { transaction })),
-      );
-    },
-    addBlock: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.addBlock(getValues(ctx), { transaction })),
-      );
-    },
-    addBlocks: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.addBlocks(getValues(ctx)));
-    },
-    addField: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.addField(getValues(ctx), { transaction })),
-      );
-    },
-    addFields: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.addFields(getValues(ctx)));
-    },
-    addAction: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.addAction(getValues(ctx), { transaction })),
-      );
-    },
-    addActions: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.addActions(getValues(ctx)));
-    },
-    addRecordAction: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.addRecordAction(getValues(ctx), { transaction })),
-      );
-    },
-    addRecordActions: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () => service.addRecordActions(getValues(ctx)));
-    },
-    updateSettings: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.updateSettings(getValues(ctx), { transaction })),
-      );
-    },
-    setEventFlows: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.setEventFlows(getValues(ctx), { transaction })),
-      );
-    },
-    setLayout: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.setLayout(getValues(ctx), { transaction })),
-      );
-    },
-    moveNode: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.moveNode(getValues(ctx), { transaction })),
-      );
-    },
-    removeNode: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.removeNode(getValues(ctx), { transaction })),
-      );
-    },
-    mutate: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.mutate(getValues(ctx), { transaction })),
-      );
-    },
-    apply: async (ctx, next) => {
-      await runFlowSurfaceAction(ctx, next, () =>
-        service.transaction((transaction) => service.apply(getValues(ctx), { transaction })),
-      );
-    },
-  };
+  const actions = Object.fromEntries(
+    FLOW_SURFACES_ACTION_NAMES.map((actionName) => [
+      actionName,
+      async (ctx, next) => {
+        await runFlowSurfaceAction(ctx, next, async () => {
+          const definition = FLOW_SURFACE_ACTION_DEFINITIONS[actionName];
+          const values = definition.valueSource === 'read' ? getReadValues(ctx) : getValues(ctx);
+
+          if (definition.transaction) {
+            return service.transaction((transaction) =>
+              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction }),
+            );
+          }
+
+          return invokeFlowSurfaceServiceAction(service, actionName, values);
+        });
+      },
+    ]),
+  ) as Record<FlowSurfacesActionName, any>;
 
   plugin.app.acl.registerSnippet({
     name: 'ui.flowSurfaces',

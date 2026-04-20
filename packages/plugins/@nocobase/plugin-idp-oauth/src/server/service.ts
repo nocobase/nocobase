@@ -13,7 +13,8 @@ import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { createCacheAdapter } from './cache-adapter';
+import { storagePathJoin } from '@nocobase/utils';
+import { createDbAdapter } from './db-adapter';
 import { normalizeBasePath } from './utils';
 
 type OidcModule = typeof import('oidc-provider');
@@ -58,6 +59,7 @@ type ProviderContext = {
 
 const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
 const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
+const MAX_CACHE_TTL_MS = 2_147_483_647;
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
@@ -254,13 +256,32 @@ export class IdpOauthService {
   }
 
   private getRequestResourceConfig(ctx: any) {
+    const requestPath = normalizeBasePath(ctx.path || this.getRequestPath(ctx) || '/');
+    let matchedConfig: ResourceServerConfig | undefined;
+    let matchedPathLength = -1;
+
     for (const config of this.resourceServers.values()) {
-      const requestPath = this.getResourcePath(config);
-      if (requestPath && ctx.path === requestPath) {
-        return config;
+      const resourcePath = this.getResourcePath(config);
+      if (!resourcePath) {
+        continue;
+      }
+
+      const normalizedResourcePath = normalizeBasePath(resourcePath);
+      const isRootResource = normalizedResourcePath === normalizeBasePath(`${this.getApiBasePath()}/`);
+      const matches =
+        requestPath === normalizedResourcePath ||
+        requestPath.startsWith(`${normalizedResourcePath}/`) ||
+        (isRootResource && requestPath.startsWith(`${this.getApiBasePath()}/`));
+
+      if (matches) {
+        if (normalizedResourcePath.length > matchedPathLength) {
+          matchedConfig = config;
+          matchedPathLength = normalizedResourcePath.length;
+        }
       }
     }
-    return undefined;
+
+    return matchedConfig;
   }
 
   private async getProviderJwks(provider: ProviderInstance) {
@@ -311,7 +332,7 @@ export class IdpOauthService {
   }
 
   private getDefaultJwksPath(appName: string) {
-    return path.resolve(process.cwd(), 'storage', 'apps', appName, 'idp_oauth_jwks.json');
+    return storagePathJoin('apps', appName, 'idp_oauth_jwks.json');
   }
 
   private async getProviderSigningJwks(appName: string) {
@@ -505,12 +526,15 @@ export class IdpOauthService {
     const cachedInternalToken = await this.bridgeTokenCache.get<string>(bridgeTokenCacheKey);
     const internalToken = cachedInternalToken || (await this.issueInternalToken(user.id, oauthExpiresInMs));
     if (!cachedInternalToken && typeof oauthExpiresInMs === 'number' && oauthExpiresInMs > 0) {
-      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, oauthExpiresInMs);
+      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, Math.min(oauthExpiresInMs, MAX_CACHE_TTL_MS));
     }
     const authorizationHeader = `Bearer ${internalToken}`;
 
     ctx.req.headers.authorization = authorizationHeader;
+    ctx.request.headers.authorization = authorizationHeader;
+    ctx.getBearerToken = () => internalToken;
     ctx.req.headers['x-authenticator'] = 'basic';
+    ctx.request.headers['x-authenticator'] = 'basic';
     ctx.state.currentUser = user;
     ctx.auth = ctx.auth || {};
     ctx.auth.user = user;
@@ -540,7 +564,7 @@ export class IdpOauthService {
     const jwks = await this.getProviderSigningJwks(appName);
 
     return {
-      adapter: createCacheAdapter(this.app.cache, 'idp-oauth'),
+      adapter: createDbAdapter(this.app, 'oidcStates'),
       clients: [],
       scopes: this.getSupportedScopes(),
       jwks,

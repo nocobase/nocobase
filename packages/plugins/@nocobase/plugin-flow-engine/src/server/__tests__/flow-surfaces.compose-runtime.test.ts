@@ -672,7 +672,7 @@ describe('flowSurfaces compose runtime helpers', () => {
 
     expect(explicitLayoutInputs[0]).toEqual(
       expect.objectContaining({
-        gridUid: 'grid-1',
+        targetUid: 'grid-1',
         createdByKey: expect.objectContaining({
           table: expect.objectContaining({
             uid: 'block-1',

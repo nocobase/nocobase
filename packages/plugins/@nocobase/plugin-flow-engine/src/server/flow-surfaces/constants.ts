@@ -9,134 +9,86 @@
 
 export { FLOW_SURFACE_PLAN_STEP_ACTIONS } from './planning/action-specs';
 
-export const FLOW_SURFACES_ACTION_NAMES = [
-  'catalog',
-  'context',
-  'get',
-  'describeSurface',
-  'getReactionMeta',
-  'setFieldValueRules',
-  'setBlockLinkageRules',
-  'setFieldLinkageRules',
-  'setActionLinkageRules',
-  'applyBlueprint',
-  'listTemplates',
-  'getTemplate',
-  'saveTemplate',
-  'updateTemplate',
-  'destroyTemplate',
-  'convertTemplateToCopy',
-  'compose',
-  'configure',
-  'createMenu',
-  'updateMenu',
-  'createPage',
-  'destroyPage',
-  'addTab',
-  'updateTab',
-  'moveTab',
-  'removeTab',
-  'addPopupTab',
-  'updatePopupTab',
-  'movePopupTab',
-  'removePopupTab',
-  'addBlock',
-  'addBlocks',
-  'addField',
-  'addFields',
-  'addAction',
-  'addActions',
-  'addRecordAction',
-  'addRecordActions',
-  'updateSettings',
-  'setEventFlows',
-  'setLayout',
-  'moveNode',
-  'removeNode',
-  'mutate',
-  'apply',
-] as const;
+type FlowSurfaceActionMethod = 'get' | 'post';
+type FlowSurfaceActionValueSource = 'default' | 'read';
 
-export type FlowSurfacesActionName = (typeof FLOW_SURFACES_ACTION_NAMES)[number];
-
-export const FLOW_SURFACES_READ_ACTION_NAMES = [
-  'catalog',
-  'context',
-  'get',
-  'describeSurface',
-  'getReactionMeta',
-  'listTemplates',
-  'getTemplate',
-] as const satisfies readonly FlowSurfacesActionName[];
-
-export const FLOW_SURFACE_MUTATE_OP_TYPES = [
-  'createMenu',
-  'updateMenu',
-  'createPage',
-  'destroyPage',
-  'addTab',
-  'updateTab',
-  'moveTab',
-  'removeTab',
-  'addPopupTab',
-  'updatePopupTab',
-  'movePopupTab',
-  'removePopupTab',
-  'addBlock',
-  'addField',
-  'addAction',
-  'addRecordAction',
-  'updateSettings',
-  'setEventFlows',
-  'setLayout',
-  'moveNode',
-  'removeNode',
-] as const;
-
-export const FLOW_SURFACES_ACTION_METHODS: Record<FlowSurfacesActionName, 'get' | 'post'> = {
-  catalog: 'post',
-  context: 'post',
-  get: 'get',
-  describeSurface: 'post',
-  getReactionMeta: 'post',
-  setFieldValueRules: 'post',
-  setBlockLinkageRules: 'post',
-  setFieldLinkageRules: 'post',
-  setActionLinkageRules: 'post',
-  applyBlueprint: 'post',
-  listTemplates: 'post',
-  getTemplate: 'post',
-  saveTemplate: 'post',
-  updateTemplate: 'post',
-  destroyTemplate: 'post',
-  convertTemplateToCopy: 'post',
-  compose: 'post',
-  configure: 'post',
-  createMenu: 'post',
-  updateMenu: 'post',
-  createPage: 'post',
-  destroyPage: 'post',
-  addTab: 'post',
-  updateTab: 'post',
-  moveTab: 'post',
-  removeTab: 'post',
-  addPopupTab: 'post',
-  updatePopupTab: 'post',
-  movePopupTab: 'post',
-  removePopupTab: 'post',
-  addBlock: 'post',
-  addBlocks: 'post',
-  addField: 'post',
-  addFields: 'post',
-  addAction: 'post',
-  addActions: 'post',
-  addRecordAction: 'post',
-  addRecordActions: 'post',
-  updateSettings: 'post',
-  setEventFlows: 'post',
-  setLayout: 'post',
-  moveNode: 'post',
-  removeNode: 'post',
-  mutate: 'post',
-  apply: 'post',
+export type FlowSurfaceActionDefinition = {
+  method: FlowSurfaceActionMethod;
+  read: boolean;
+  transaction: boolean;
+  mutate: boolean;
+  valueSource: FlowSurfaceActionValueSource;
 };
+
+export const FLOW_SURFACE_ACTION_DEFINITIONS = {
+  catalog: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  context: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  get: { method: 'get', read: true, transaction: false, mutate: false, valueSource: 'read' },
+  describeSurface: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  getReactionMeta: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  setFieldValueRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  setBlockLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  setFieldLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  setActionLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  applyBlueprint: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  applyApprovalBlueprint: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  listTemplates: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  getTemplate: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  saveTemplate: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  updateTemplate: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  destroyTemplate: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  convertTemplateToCopy: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  compose: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  configure: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  createMenu: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  updateMenu: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  createPage: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  destroyPage: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  updateTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  moveTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  removeTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addPopupTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  updatePopupTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  movePopupTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  removePopupTab: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addBlock: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addBlocks: { method: 'post', read: false, transaction: false, mutate: false, valueSource: 'default' },
+  addField: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addFields: { method: 'post', read: false, transaction: false, mutate: false, valueSource: 'default' },
+  addAction: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addActions: { method: 'post', read: false, transaction: false, mutate: false, valueSource: 'default' },
+  addRecordAction: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  addRecordActions: { method: 'post', read: false, transaction: false, mutate: false, valueSource: 'default' },
+  updateSettings: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  setEventFlows: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  setLayout: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  moveNode: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  removeNode: { method: 'post', read: false, transaction: true, mutate: true, valueSource: 'default' },
+  mutate: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  apply: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+} as const satisfies Record<string, FlowSurfaceActionDefinition>;
+
+export type FlowSurfacesActionName = keyof typeof FLOW_SURFACE_ACTION_DEFINITIONS;
+
+type SelectFlowSurfaceActionNames<TFlag extends keyof FlowSurfaceActionDefinition> = {
+  [K in FlowSurfacesActionName]: (typeof FLOW_SURFACE_ACTION_DEFINITIONS)[K][TFlag] extends true ? K : never;
+}[FlowSurfacesActionName];
+
+type FlowSurfaceMutateActionName = SelectFlowSurfaceActionNames<'mutate'>;
+
+export const FLOW_SURFACES_ACTION_NAMES = Object.keys(FLOW_SURFACE_ACTION_DEFINITIONS) as FlowSurfacesActionName[];
+
+export const FLOW_SURFACES_READ_ACTION_NAMES = FLOW_SURFACES_ACTION_NAMES.filter(
+  (actionName): actionName is SelectFlowSurfaceActionNames<'read'> =>
+    FLOW_SURFACE_ACTION_DEFINITIONS[actionName].read === true,
+);
+
+export const FLOW_SURFACE_MUTATE_OP_TYPES = FLOW_SURFACES_ACTION_NAMES.filter(
+  (actionName): actionName is FlowSurfaceMutateActionName =>
+    FLOW_SURFACE_ACTION_DEFINITIONS[actionName].mutate === true,
+);
+
+export const FLOW_SURFACES_ACTION_METHODS = Object.fromEntries(
+  FLOW_SURFACES_ACTION_NAMES.map((actionName) => [actionName, FLOW_SURFACE_ACTION_DEFINITIONS[actionName].method]),
+) as Record<FlowSurfacesActionName, FlowSurfaceActionMethod>;

@@ -10,6 +10,10 @@
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
+import {
+  mergeFlowSurfaceDefaultBlockActions,
+  type FlowSurfaceDefaultBlockActionDescriptor,
+} from '../default-block-actions';
 import type { FlowSurfaceResourceBindingKey } from '../types';
 import type {
   FlowSurfaceApplyBlueprintActionSpec,
@@ -72,6 +76,7 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'template',
   'settings',
   'fields',
+  'fieldsLayout',
   'actions',
   'recordActions',
   'script',
@@ -93,7 +98,17 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
 ];
 
 const APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
-const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = ['title', 'mode', 'template', 'blocks', 'layout'];
+const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
+  'title',
+  'mode',
+  'template',
+  'tryTemplate',
+  'defaultType',
+  'saveAsTemplate',
+  'blocks',
+  'layout',
+];
+const APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS = ['name', 'description', 'local'];
 const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
 const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
 const APPLY_BLUEPRINT_BLOCK_RESOURCE_ALLOWED_KEYS = [
@@ -120,20 +135,32 @@ const APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS = [
   'associationField',
 ];
 const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
-const APPLY_BLUEPRINT_RECORD_ACTION_TYPES = new Set([
+const APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
+const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'view',
   'edit',
   'delete',
   'updateRecord',
   'duplicate',
-  'addChild',
 ]);
 const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
+const APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR =
+  "type 'addChild' must be authored under recordActions and is only valid when the live target catalog.recordActions exposes it for a tree collection table with treeTable enabled";
 
 function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
     throwBadRequest(`${context}.layout is not supported; layout is only allowed on tabs[] and popup`);
   }
+}
+
+function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, context: string) {
+  if (!Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')) {
+    return;
+  }
+  if (APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES.has(readOptionalString(block.type) || '')) {
+    return;
+  }
+  throwBadRequest(`${context}.fieldsLayout is only supported on createForm, editForm, details or filterForm`);
 }
 
 function assertApplyBlueprintBlockType(type: string | undefined, context: string) {
@@ -304,9 +331,12 @@ function splitApplyBlueprintBlockActionsByScope(
   }
   const promotedRecordActions: any[] = [];
   const remainingActions: any[] = [];
-  rawActions.forEach((action) => {
+  rawActions.forEach((action, index) => {
     const actionType = readApplyBlueprintActionType(action);
-    if (actionType && APPLY_BLUEPRINT_RECORD_ACTION_TYPES.has(actionType)) {
+    if (actionType === 'addChild') {
+      throwBadRequest(`${context}.actions[${index}] ${APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR}`);
+    }
+    if (actionType && APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES.has(actionType)) {
       promotedRecordActions.push(action);
       return;
     }
@@ -521,6 +551,28 @@ function compileLayout(
   blockKeysByLocalKey: Map<string, string>,
   context: string,
 ): Record<string, any> | undefined {
+  return compileScopedLayout(layout, blockKeysByLocalKey, context, 'block');
+}
+
+function resolveScopedLayoutKey(
+  rawKey: string,
+  keysByLocalKey: Map<string, string>,
+  context: string,
+  kind: 'block' | 'field',
+) {
+  const resolved = keysByLocalKey.get(rawKey) || [...keysByLocalKey.values()].find((value) => value === rawKey);
+  if (!resolved) {
+    throwBadRequest(`${context} references unknown ${kind} '${rawKey}'`);
+  }
+  return resolved;
+}
+
+function compileScopedLayout(
+  layout: FlowSurfaceApplyBlueprintLayout | undefined,
+  keysByLocalKey: Map<string, string>,
+  context: string,
+  kind: 'block' | 'field',
+): Record<string, any> | undefined {
   const rows = ensureLayoutRows(layout, context);
   if (!rows) {
     return undefined;
@@ -528,31 +580,70 @@ function compileLayout(
   return {
     rows: rows.map((row, rowIndex) => {
       return row.map((item, itemIndex) => {
+        const cellContext = `${context}.rows[${rowIndex}][${itemIndex}]`;
         if (typeof item === 'string') {
           const itemKey = readString(item);
-          const resolved =
-            blockKeysByLocalKey.get(itemKey) || [...blockKeysByLocalKey.values()].find((value) => value === itemKey);
-          if (!resolved) {
-            throwBadRequest(`${context}.rows[${rowIndex}][${itemIndex}] references unknown block '${item}'`);
-          }
-          return resolved;
+          return resolveScopedLayoutKey(itemKey, keysByLocalKey, cellContext, kind);
         }
-        const rawKey = assertNonEmptyString(item.key, `${context}.rows[${rowIndex}][${itemIndex}].key`);
-        const resolved =
-          blockKeysByLocalKey.get(rawKey) ||
-          [...blockKeysByLocalKey.values()].find((value) => value === rawKey) ||
-          rawKey;
+        const rawKey = assertNonEmptyString(item.key, `${cellContext}.key`);
+        const resolved = resolveScopedLayoutKey(rawKey, keysByLocalKey, cellContext, kind);
         return buildDefinedPayload({
           key: resolved,
           span: _.isUndefined(item.span)
             ? undefined
             : _.isNumber(item.span)
               ? item.span
-              : throwBadRequest(`${context}.rows[${rowIndex}][${itemIndex}].span must be a number`),
+              : throwBadRequest(`${cellContext}.span must be a number`),
         });
       });
     }),
   };
+}
+
+function resolveApplyBlueprintFieldLocalKey(
+  input: string | FlowSurfaceApplyBlueprintFieldObjectSpec,
+  index: number,
+  context: string,
+) {
+  if (typeof input === 'string') {
+    return assertNonEmptyString(input, `${context}[${index}]`);
+  }
+  if (!_.isPlainObject(input)) {
+    throwBadRequest(`${context}[${index}] must be a string or object`);
+  }
+  const fieldPath = readOptionalString(input.field);
+  const syntheticType = readOptionalString(input.type);
+  if (!fieldPath && !syntheticType) {
+    throwBadRequest(`${context}[${index}] requires field or type`);
+  }
+  if (fieldPath && syntheticType) {
+    throwBadRequest(`${context}[${index}] cannot mix field with synthetic type`);
+  }
+  return normalizeBlueprintLocalKey(
+    input.key,
+    fieldPath || (syntheticType ? `${syntheticType}_${index + 1}` : `field_${index + 1}`),
+    `${context}[${index}].key`,
+  );
+}
+
+function buildCompiledFieldKeyMap(
+  inputs: Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec>,
+  compiledFields: Array<Record<string, any>>,
+  context: string,
+) {
+  const fieldKeysByLocalKey = new Map<string, string>();
+  inputs.forEach((input, index) => {
+    const localKey = resolveApplyBlueprintFieldLocalKey(input, index, context);
+    const compiledKey = readOptionalString(compiledFields[index]?.key);
+    if (!compiledKey) {
+      throwBadRequest(`${context}[${index}] key '${localKey}' is missing after field key compilation`);
+    }
+    if (fieldKeysByLocalKey.has(localKey)) {
+      throwBadRequest(`${context}[${index}] key '${localKey}' is duplicated`);
+    }
+    fieldKeysByLocalKey.set(localKey, compiledKey);
+  });
+  return fieldKeysByLocalKey;
 }
 
 function compilePopup(
@@ -573,11 +664,52 @@ function compilePopup(
   assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
+  const tryTemplate = _.isUndefined(popup.tryTemplate)
+    ? undefined
+    : _.isBoolean(popup.tryTemplate)
+      ? popup.tryTemplate
+      : throwBadRequest(`${context}.tryTemplate must be a boolean`);
+  const defaultType = _.isUndefined(popup.defaultType)
+    ? undefined
+    : popup.defaultType === 'view' || popup.defaultType === 'edit'
+      ? popup.defaultType
+      : throwBadRequest(`${context}.defaultType must be 'view' or 'edit'`);
+  const saveAsTemplate = _.isUndefined(popup.saveAsTemplate)
+    ? undefined
+    : _.isPlainObject(popup.saveAsTemplate)
+      ? (assertOnlyAllowedKeys(
+          popup.saveAsTemplate,
+          `${context}.saveAsTemplate`,
+          APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS,
+        ),
+        {
+          name: assertNonEmptyString(popup.saveAsTemplate.name, `${context}.saveAsTemplate.name`),
+          description: assertNonEmptyString(popup.saveAsTemplate.description, `${context}.saveAsTemplate.description`),
+          local: readOptionalString(popup.saveAsTemplate.local),
+        })
+      : throwBadRequest(`${context}.saveAsTemplate must be an object`);
+  if (saveAsTemplate && template) {
+    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
+  }
+  if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
+    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.tryTemplate`);
+  }
+  if (template) {
+    return {
+      popup: {
+        template,
+      },
+      popupTitle,
+    };
+  }
   const rawPopupBlocks = readOptionalItems<FlowSurfaceApplyBlueprintBlockSpec>(popup.blocks, `${context}.blocks`);
   const popupBlocks =
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
+  if (saveAsTemplate && !popupBlocks.length) {
+    throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
+  }
   const compiledBlocks = popupBlocks.length
     ? compileBlocks(
         popupBlocks,
@@ -602,6 +734,9 @@ function compilePopup(
   const compiledPopup = buildDefinedPayload({
     mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
     template,
+    ...(tryTemplate ? { tryTemplate: true } : {}),
+    ...(defaultType ? { defaultType } : {}),
+    ...(saveAsTemplate ? { saveAsTemplate } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
     layout,
   });
@@ -635,6 +770,7 @@ function compileField(
     return {
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, fieldPath), `${context}[${index}]`),
       fieldPath,
+      __autoPopupForRelationField: true,
     };
   }
   if (!_.isPlainObject(input)) {
@@ -710,6 +846,22 @@ function compileAction(
   });
 }
 
+function compileInjectedDefaultAction(
+  descriptor: FlowSurfaceDefaultBlockActionDescriptor,
+  scopePrefix: string,
+  context: string,
+  index: number,
+) {
+  return buildDefinedPayload({
+    key: normalizeFlowSurfaceComposeKey(
+      buildScopedKey(scopePrefix, `${descriptor.type}_default_${index + 1}`),
+      `${context}[${index}]`,
+    ),
+    type: descriptor.type,
+    popup: descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined,
+  });
+}
+
 function compileBlocks(
   input: FlowSurfaceApplyBlueprintBlockSpec[],
   scopePrefix: string,
@@ -741,6 +893,7 @@ function compileBlocks(
       throwBadRequest(`${context}[${index}] must be an object`);
     }
     assertNoBlockLevelLayout(block, `${context}[${index}]`);
+    assertApplyBlueprintFieldsLayoutHost(block, `${context}[${index}]`);
     assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
     assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
     const explicitKey = readString(block.key);
@@ -774,23 +927,56 @@ function compileBlocks(
       settings.title = readOptionalString(block.title);
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
-    const fields = readOptionalItems(block.fields, `${blockContext}.fields`);
+    const fieldInputs = readOptionalItems(block.fields, `${blockContext}.fields`);
+    const fields = fieldInputs.map((field, fieldIndex) =>
+      compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
+    );
+    const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
+      ? compileScopedLayout(
+          _.isUndefined(block.fieldsLayout)
+            ? undefined
+            : _.isPlainObject(block.fieldsLayout)
+              ? (block.fieldsLayout as FlowSurfaceApplyBlueprintLayout)
+              : throwBadRequest(`${blockContext}.fieldsLayout must be an object`),
+          buildCompiledFieldKeyMap(fieldInputs, fields, `${blockContext}.fields`),
+          `${blockContext}.fieldsLayout`,
+          'field',
+        )
+      : undefined;
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
+    const explicitActions = actions.map((action, actionIndex) =>
+      compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),
+    );
+    const explicitRecordActions = recordActions.map((action, actionIndex) =>
+      compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`),
+    );
+    const injectedActionIndexes = {
+      actions: explicitActions.length,
+      recordActions: explicitRecordActions.length,
+    };
+    const mergedActions = mergeFlowSurfaceDefaultBlockActions({
+      blockType: readOptionalString(block.type),
+      template,
+      actions: explicitActions,
+      recordActions: explicitRecordActions,
+      createAction: (descriptor) =>
+        compileInjectedDefaultAction(
+          descriptor,
+          key,
+          `${blockContext}.${descriptor.scope}`,
+          injectedActionIndexes[descriptor.scope]++,
+        ),
+    });
     return buildDefinedPayload({
       key,
       type: readOptionalString(block.type),
       resource: buildBlockResource(block, blockContext),
       template,
       settings: Object.keys(settings).length ? settings : undefined,
-      fields: fields.map((field, fieldIndex) =>
-        compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
-      ),
-      actions: actions.map((action, actionIndex) =>
-        compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),
-      ),
-      recordActions: recordActions.map((action, actionIndex) =>
-        compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`),
-      ),
+      fields,
+      fieldsLayout,
+      actions: mergedActions.actions,
+      recordActions: mergedActions.recordActions,
     });
   });
 

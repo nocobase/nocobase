@@ -8,12 +8,13 @@
  */
 
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 
 export const getLoggerLevel = () =>
   process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info');
 
 export const getLoggerFilePath = (...paths: string[]): string => {
-  return path.resolve(process.env.LOGGER_BASE_PATH || path.resolve(process.cwd(), 'storage', 'logs'), ...paths);
+  return path.resolve(process.env.LOGGER_BASE_PATH || storagePathJoin('logs'), ...paths);
 };
 
 export const getLoggerTransport = (): ('console' | 'file' | 'dailyRotateFile')[] =>

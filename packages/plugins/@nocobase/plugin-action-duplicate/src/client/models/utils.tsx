@@ -10,7 +10,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 import { ArrayBase } from '@formily/antd-v5';
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 
 const TreeNode = (props) => {
   const { tag, type, displayType = true } = props;

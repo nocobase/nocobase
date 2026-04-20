@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import type FlowModelRepository from '../repository';
+import { normalizeApprovalSemanticUse } from './approval';
 import { getChartBuilderResourceInit } from './chart-config';
 import { FlowSurfaceBadRequestError } from './errors';
 import type { FlowSurfaceReadLocator, FlowSurfaceResolveTarget, FlowSurfaceResolvedTarget } from './types';
@@ -78,6 +79,8 @@ export class SurfaceLocator {
       const model = await this.repository.findModelById(cursor, { transaction, includeAsyncNode: true });
       const resourceInit =
         _.get(model, ['stepParams', 'resourceSettings', 'init']) ||
+        _.get(model, ['stepParams', 'TriggerChildPageSettings', 'init']) ||
+        _.get(model, ['stepParams', 'ApprovalChildPageSettings', 'init']) ||
         (model?.use === 'ChartBlockModel'
           ? getChartBuilderResourceInit(_.get(model, ['stepParams', 'chartSettings', 'configure']))
           : null);
@@ -214,19 +217,20 @@ export class SurfaceLocator {
 }
 
 function inferKind(use?: string): FlowSurfaceResolvedTarget['kind'] {
-  if (use === 'RouteModel') {
+  const normalized = normalizeApprovalSemanticUse(use);
+  if (normalized === 'RouteModel') {
     return 'node';
   }
-  if (use === 'RootPageModel' || use === 'ChildPageModel') {
+  if (normalized === 'RootPageModel' || normalized === 'ChildPageModel') {
     return 'page';
   }
-  if (use === 'RootPageTabModel' || use === 'ChildPageTabModel') {
+  if (normalized === 'RootPageTabModel' || normalized === 'ChildPageTabModel') {
     return 'tab';
   }
-  if (/GridModel$/.test(use || '')) {
+  if (/GridModel$/.test(normalized || '')) {
     return 'grid';
   }
-  if (/BlockModel$/.test(use || '')) {
+  if (/BlockModel$/.test(normalized || '')) {
     return 'block';
   }
   return 'node';
