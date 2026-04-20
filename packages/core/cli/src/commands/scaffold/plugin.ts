@@ -31,7 +31,7 @@ export default class ScaffoldPlugin extends Command {
       npmArgs.push('--force-recreate');
     }
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd(), { env: { LOGGER_SILENT: 'true' } });
+      await runNocoBaseCommand(npmArgs, { env: { LOGGER_SILENT: 'true' } });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

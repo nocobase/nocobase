@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '..');
 const realRoot = fs.realpathSync(root);
 const isSourcePackage = realRoot.split(path.sep).join('/').endsWith('/packages/core/cli');
 let isDev = isSourcePackage;
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NB_CLI_USE_DIST === '1') {
   isDev = false;
 }
 

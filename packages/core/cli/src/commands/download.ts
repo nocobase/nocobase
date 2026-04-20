@@ -275,7 +275,7 @@ export default class Download extends Command {
   async downloadFromDocker(flags: DownloadResolvedFlags): Promise<void> {
     const image = flags['docker-registry'] ?? 'nocobase/nocobase';
     const tag = flags.version ?? 'latest';
-    await run('docker', ['pull', `${image}:${tag}`], process.cwd());
+    await run('docker', ['pull', `${image}:${tag}`]);
   }
 
   async downloadFromNpm(flags: DownloadResolvedFlags): Promise<string> {
@@ -289,12 +289,12 @@ export default class Download extends Command {
     if (flags.replace) {
       await fsp.rm(projectRoot, { recursive: true, force: true });
     }
-    await run('npx', npxArgs, process.cwd());
+    await run('npx', npxArgs);
     const installArgs = ['install'];
     if (!flags['dev']) {
       installArgs.push('--production');
     }
-    await run('yarn', installArgs, projectRoot);
+    await run('yarn', installArgs, { cwd: projectRoot });
     return projectRoot;
   }
 
@@ -314,9 +314,9 @@ export default class Download extends Command {
     const gitArgs = ['clone'];
     gitArgs.push('--branch', branch);
     gitArgs.push('--depth', '1', repoUrl, outputDir);
-    await run('git', gitArgs, process.cwd());
+    await run('git', gitArgs);
     const projectRoot = path.resolve(process.cwd(), outputDir);
-    await run('yarn', ['install'], projectRoot);
+    await run('yarn', ['install'], { cwd: projectRoot });
     return projectRoot;
   }
 

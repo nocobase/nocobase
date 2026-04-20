@@ -172,7 +172,7 @@ Use \`--ui\` to open a **browser** wizard (local HTTP server; default bind \`0.0
     if (installSkills) {
       try {
         p.log.step('Installing NocoBase agent skills (npx -y skills add nocobase/skills)');
-        await run('npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y'], process.cwd());
+        await run('npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y']);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         p.outro(pc.red(`Skills install failed: ${message}`));

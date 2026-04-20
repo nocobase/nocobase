@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core'
-import { runNocoBaseCommand, runNpm } from '../lib/run-npm.ts'
+import { runNocoBaseCommand } from '../lib/run-npm.ts'
 
 export default class Dev extends Command {
   static override args = {
@@ -51,7 +51,7 @@ export default class Dev extends Command {
       npmArgs.push('--inspect', flags.inspect);
     }
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd());
+      await runNocoBaseCommand(npmArgs);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

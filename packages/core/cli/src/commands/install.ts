@@ -803,7 +803,7 @@ export default class Install extends Command {
     }
     const npmArgs = this.buildNocoBaseInstallArgs(flags);
     // TODO: Re-enable when the app root has a runnable `nocobase-v1 install` (or swap to the supported entrypoint).
-    // await runNocoBaseCommand(npmArgs, appRoot, { env: procEnv });
+    // await runNocoBaseCommand(npmArgs, { cwd: appRoot, env: procEnv });
     void npmArgs;
   }
 }
