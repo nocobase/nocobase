@@ -514,6 +514,22 @@ describe('KanbanBlockModel.filterCollection', () => {
     ]);
   });
 
+  test('page size settings use the fixed dropdown options', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.pageSize;
+
+    expect(step.uiSchema.pageSize).toMatchObject({
+      enum: [
+        { label: '10', value: 10 },
+        { label: '20', value: 20 },
+        { label: '50', value: 50 },
+        { label: '100', value: 100 },
+      ],
+      'x-component': 'Select',
+      'x-decorator': 'FormItem',
+    });
+  });
+
   test('dragging uiSchema uses the quick-create sort selector with scoped sort options and plain field metadata', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.dragging;

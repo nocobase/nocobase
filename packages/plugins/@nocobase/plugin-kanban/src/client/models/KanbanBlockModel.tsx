@@ -20,7 +20,7 @@ import {
   observer,
   tExpr,
 } from '@nocobase/flow-engine';
-import { InputNumber, Select, Space, Switch } from 'antd';
+import { InputNumber, Space, Switch } from 'antd';
 import React from 'react';
 import { KanbanBlockView } from './components/KanbanBlock';
 import { KanbanCreateSortFieldSelect } from './components/KanbanCreateSortFieldSelect';
@@ -50,6 +50,11 @@ const DRAG_HANDLER_TOOLBAR_ITEMS = [
     sort: 1,
   },
 ];
+
+const KANBAN_PAGE_SIZE_OPTIONS = [10, 20, 50, 100].map((value) => ({
+  label: String(value),
+  value,
+}));
 
 class KanbanBlockResource extends MultiRecordResource {
   async refresh(): Promise<void> {
@@ -525,12 +530,10 @@ KanbanBlockModel.registerFlow({
       title: tExpr('Page size', { ns: 'kanban' }),
       uiSchema: {
         pageSize: {
-          'x-component': InputNumber,
+          enum: KANBAN_PAGE_SIZE_OPTIONS,
+          'x-component': 'Select',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            min: 1,
-            max: 200,
-            precision: 0,
             style: { width: '100%' },
           },
         },

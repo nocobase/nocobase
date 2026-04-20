@@ -16,9 +16,11 @@ import { toKanbanAlphaColor } from '../../utils';
 import { CardPlaceholder, DraggableKanbanCard, LazyCardRenderer } from './CardRenderer';
 import {
   type ColumnRefreshMeta,
+  type KanbanDesignSettingsHost,
   createColumnResource,
   createInitialColumnState,
   dedupeColumnItemsByRecordKey,
+  isKanbanDesignSettingsHost,
   getRuntimeRecordKey,
   normalizeKanbanRuntimeRecord,
   reuseKanbanRecordReferences,
@@ -36,6 +38,7 @@ export const ColumnPanel = ({
   displayItems,
   setState,
   refreshMeta,
+  designSettingsHost,
   fixedHeight,
   dragEnabled,
   dragInteractionEnabled,
@@ -46,6 +49,7 @@ export const ColumnPanel = ({
   displayItems: KanbanRuntimeRecord[];
   setState: React.Dispatch<React.SetStateAction<Record<string, ColumnState>>>;
   refreshMeta?: ColumnRefreshMeta;
+  designSettingsHost?: KanbanDesignSettingsHost | null;
   fixedHeight: boolean;
   dragEnabled: boolean;
   dragInteractionEnabled: boolean;
@@ -281,6 +285,13 @@ export const ColumnPanel = ({
           displayItems.map((record, index) => {
             const recordKey = getRuntimeRecordKey(record, model.collection);
             const cardRenderKey = recordKey || `${column.key}:${index}`;
+            const enableDesignSettings = isKanbanDesignSettingsHost({
+              host: designSettingsHost,
+              columnKey: column.key,
+              record,
+              index,
+              collection: model.collection,
+            });
 
             if (!dragEnabled || !recordKey) {
               return (
@@ -290,7 +301,13 @@ export const ColumnPanel = ({
                     margin-bottom: 12px;
                   `}
                 >
-                  <LazyCardRenderer model={model} record={record} index={index} columnKey={column.key} />
+                  <LazyCardRenderer
+                    model={model}
+                    record={record}
+                    index={index}
+                    columnKey={column.key}
+                    enableDesignSettings={enableDesignSettings}
+                  />
                 </div>
               );
             }
@@ -304,6 +321,7 @@ export const ColumnPanel = ({
                 columnKey={column.key}
                 dragEnabled={dragEnabled}
                 dragInteractionEnabled={dragInteractionEnabled}
+                enableDesignSettings={enableDesignSettings}
               />
             );
           })

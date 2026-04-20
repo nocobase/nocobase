@@ -41,6 +41,12 @@ export type RuntimeColumn = {
   isUnknown?: boolean;
 };
 
+export type KanbanDesignSettingsHost = {
+  columnKey: string;
+  recordKey?: string;
+  index: number;
+};
+
 export type ColumnRefreshMeta = {
   token: number;
   reason: 'global' | 'drag';
@@ -118,6 +124,56 @@ export const getKanbanCardRenderKey = (options: { columnKey: string; record: any
   const recordId = record?.__kanbanRecordKey ?? record?.id;
 
   return recordId === undefined || recordId === null ? `${columnKey}-${index}` : String(recordId);
+};
+
+export const getKanbanDesignSettingsHost = (options: {
+  enabled: boolean;
+  columns: RuntimeColumn[];
+  itemsByColumn: Record<string, KanbanRuntimeRecord[]>;
+  collection?: { filterTargetKey?: string | string[]; getFilterByTK?: (record: any) => any };
+}): KanbanDesignSettingsHost | null => {
+  const { enabled, columns, itemsByColumn, collection } = options;
+
+  if (!enabled) {
+    return null;
+  }
+
+  for (const column of columns) {
+    const items = itemsByColumn[column.key] || [];
+    if (!items.length) {
+      continue;
+    }
+
+    const recordKey = getRuntimeRecordKey(items[0], collection);
+    return {
+      columnKey: column.key,
+      recordKey: recordKey == null ? undefined : String(recordKey),
+      index: 0,
+    };
+  }
+
+  return null;
+};
+
+export const isKanbanDesignSettingsHost = (options: {
+  host: KanbanDesignSettingsHost | null | undefined;
+  columnKey: string;
+  record: KanbanRuntimeRecord;
+  index: number;
+  collection?: { filterTargetKey?: string | string[]; getFilterByTK?: (record: any) => any };
+}) => {
+  const { host, columnKey, record, index, collection } = options;
+
+  if (!host || host.columnKey !== columnKey) {
+    return false;
+  }
+
+  if (host.recordKey != null) {
+    const recordKey = getRuntimeRecordKey(record, collection);
+    return recordKey != null && String(recordKey) === host.recordKey;
+  }
+
+  return index === host.index;
 };
 
 export const removeKanbanColumnOverride = (record: KanbanRuntimeRecord): KanbanRuntimeRecord => {

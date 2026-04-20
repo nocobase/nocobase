@@ -181,7 +181,7 @@ export const KanbanCreateSortFieldSelect = (props: {
 
   const openSortFieldDialog = async (schema: any, initialValues: Record<string, any>) => {
     return FormDialog(
-      t('Create sort field'),
+      t('Create sort field', { ns: NAMESPACE }),
       () => {
         return (
           <APIClientProvider apiClient={api}>

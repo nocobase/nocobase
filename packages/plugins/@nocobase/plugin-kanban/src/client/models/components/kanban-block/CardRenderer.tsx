@@ -33,72 +33,83 @@ type LazyCardRendererProps = {
   record: any;
   index: number;
   columnKey: string;
+  enableDesignSettings?: boolean;
 };
 
-export const LazyCardRenderer = memo(({ model, record, index, columnKey }: LazyCardRendererProps) => {
-  const { ref, inView } = useInView({ threshold: 0, triggerOnce: true });
-  const recordRef = useRef(record);
-  const indexRef = useRef(index);
-  const hasRenderedContentRef = useRef(false);
-  const cardRenderKey = getKanbanCardRenderKey({ columnKey, record, index });
+export const LazyCardRenderer = memo(
+  ({ model, record, index, columnKey, enableDesignSettings }: LazyCardRendererProps) => {
+    const { ref, inView } = useInView({ threshold: 0, triggerOnce: true });
+    const recordRef = useRef(record);
+    const indexRef = useRef(index);
+    const hasRenderedContentRef = useRef(false);
+    const cardRenderKey = getKanbanCardRenderKey({ columnKey, record, index });
 
-  recordRef.current = record;
-  indexRef.current = index;
-  if (inView) {
-    hasRenderedContentRef.current = true;
-  }
+    recordRef.current = record;
+    indexRef.current = index;
+    if (inView) {
+      hasRenderedContentRef.current = true;
+    }
 
-  const shouldRenderContent = hasRenderedContentRef.current;
+    const shouldRenderContent = hasRenderedContentRef.current;
 
-  const itemModel = useMemo(() => {
+    const itemModel = useMemo(() => {
+      if (!shouldRenderContent) {
+        return null;
+      }
+
+      const nextItemModel = model.subModels.item.createFork({}, cardRenderKey);
+      nextItemModel.context.defineProperty('collection', {
+        get: () => model.collection,
+        cache: false,
+      });
+      nextItemModel.context.defineProperty('record', {
+        get: () => recordRef.current,
+        cache: false,
+      });
+      nextItemModel.context.defineProperty('index', {
+        get: () => indexRef.current,
+        cache: false,
+      });
+      nextItemModel.context.defineProperty('onCardClick', {
+        get: () => () => model.openCard(recordRef.current),
+        cache: false,
+      });
+      return nextItemModel;
+    }, [cardRenderKey, model, shouldRenderContent]);
+
     if (!shouldRenderContent) {
+      return (
+        <div ref={ref}>
+          <CardPlaceholder />
+        </div>
+      );
+    }
+
+    if (!itemModel) {
       return null;
     }
 
-    const nextItemModel = model.subModels.item.createFork({}, cardRenderKey);
-    nextItemModel.context.defineProperty('collection', {
-      get: () => model.collection,
-      cache: false,
-    });
-    nextItemModel.context.defineProperty('record', {
-      get: () => recordRef.current,
-      cache: false,
-    });
-    nextItemModel.context.defineProperty('index', {
-      get: () => indexRef.current,
-      cache: false,
-    });
-    nextItemModel.context.defineProperty('onCardClick', {
-      get: () => () => model.openCard(recordRef.current),
-      cache: false,
-    });
-    return nextItemModel;
-  }, [cardRenderKey, model, shouldRenderContent]);
-
-  if (!shouldRenderContent) {
     return (
-      <div ref={ref}>
-        <CardPlaceholder />
-      </div>
+      <FlowModelRenderer
+        model={itemModel}
+        inputArgs={{ record, index, columnKey }}
+        showFlowSettings={
+          enableDesignSettings ? { showBackground: false, showBorder: false, toolbarPosition: 'inside' } : false
+        }
+        useCache={false}
+      />
     );
-  }
-
-  if (!itemModel) {
-    return null;
-  }
-
-  return (
-    <FlowModelRenderer
-      model={itemModel}
-      inputArgs={{ record, index, columnKey }}
-      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'inside' }}
-      useCache={false}
-    />
-  );
-}, areLazyCardRendererPropsEqual);
+  },
+  areLazyCardRendererPropsEqual,
+);
 
 function areLazyCardRendererPropsEqual(prev: LazyCardRendererProps, next: LazyCardRendererProps) {
-  return prev.model === next.model && prev.record === next.record && prev.columnKey === next.columnKey;
+  return (
+    prev.model === next.model &&
+    prev.record === next.record &&
+    prev.columnKey === next.columnKey &&
+    prev.enableDesignSettings === next.enableDesignSettings
+  );
 }
 
 type DraggableKanbanCardProps = {
@@ -108,10 +119,19 @@ type DraggableKanbanCardProps = {
   columnKey: string;
   dragEnabled: boolean;
   dragInteractionEnabled: boolean;
+  enableDesignSettings?: boolean;
 };
 
 export const DraggableKanbanCard = memo(
-  ({ model, record, index, columnKey, dragEnabled, dragInteractionEnabled }: DraggableKanbanCardProps) => {
+  ({
+    model,
+    record,
+    index,
+    columnKey,
+    dragEnabled,
+    dragInteractionEnabled,
+    enableDesignSettings,
+  }: DraggableKanbanCardProps) => {
     const recordKey = getRuntimeRecordKey(record, model.collection);
     const draggableId = String(recordKey || `${columnKey}:${index}`);
 
@@ -132,7 +152,13 @@ export const DraggableKanbanCard = memo(
               margin-bottom: 12px;
             `}
           >
-            <LazyCardRenderer model={model} record={record} index={index} columnKey={columnKey} />
+            <LazyCardRenderer
+              model={model}
+              record={record}
+              index={index}
+              columnKey={columnKey}
+              enableDesignSettings={enableDesignSettings}
+            />
           </div>
         )}
       </Draggable>
@@ -148,6 +174,7 @@ function areDraggableKanbanCardPropsEqual(prev: DraggableKanbanCardProps, next: 
     prev.index === next.index &&
     prev.columnKey === next.columnKey &&
     prev.dragEnabled === next.dragEnabled &&
-    prev.dragInteractionEnabled === next.dragInteractionEnabled
+    prev.dragInteractionEnabled === next.dragInteractionEnabled &&
+    prev.enableDesignSettings === next.enableDesignSettings
   );
 }

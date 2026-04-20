@@ -33,6 +33,7 @@ import {
   areKanbanRecordListsEqual,
   type ColumnRefreshMeta,
   createInitialColumnState,
+  getKanbanDesignSettingsHost,
   getRuntimeRecordKey,
   moveKanbanRecordByCoordinates,
   type ColumnState,
@@ -303,6 +304,15 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     });
   }, [boardDisplayItemsByColumn, columnRefreshMetaByColumn, columnStates, columns]);
 
+  const designSettingsHost = useMemo(() => {
+    return getKanbanDesignSettingsHost({
+      enabled: !!model.context.flowSettingsEnabled,
+      columns: visibleColumns,
+      itemsByColumn: boardDisplayItemsByColumn,
+      collection: model.collection,
+    });
+  }, [boardDisplayItemsByColumn, model.collection, model.context.flowSettingsEnabled, visibleColumns]);
+
   const applyPreviewToColumnStates = useCallback(
     (options: {
       previewItemsByColumn: Record<string, KanbanRuntimeRecord[]>;
@@ -516,6 +526,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
             displayItems={boardDisplayItemsByColumn[column.key] || []}
             setState={setColumnStates}
             refreshMeta={columnRefreshMetaByColumn[column.key]}
+            designSettingsHost={designSettingsHost}
             fixedHeight={Boolean(contentHeight)}
             dragEnabled={dragEnabled}
             dragInteractionEnabled={dragInteractionEnabled}
