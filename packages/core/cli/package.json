@@ -6,7 +6,8 @@
   "main": "dist/generated/command-registry.js",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "yarn clean && tsc -p tsconfig.json"
+    "build": "yarn clean && tsc -p tsconfig.json",
+    "test": "TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli"
   },
   "keywords": [],
   "author": "",
