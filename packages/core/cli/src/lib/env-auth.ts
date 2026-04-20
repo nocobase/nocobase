@@ -274,7 +274,26 @@ async function createLoopbackServer(state: string) {
         }
 
         res.statusCode = 200;
-        res.end('<html><body><h1>Authentication complete</h1><p>You can return to the terminal.</p></body></html>');
+        res.end(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Authentication complete</title></head>
+<body>
+<h1>Authentication complete</h1>
+<p>You can return to the terminal.</p>
+<p id="manual"></p>
+<script>
+setTimeout(function () {
+  window.close();
+  setTimeout(function () {
+    var el = document.getElementById('manual');
+    if (document.visibilityState === 'visible' && el) {
+      el.textContent = 'Please close this tab manually if it is still open.';
+    }
+  }, 400);
+}, 1000);
+</script>
+</body>
+</html>`);
         resolveWaiter(code);
       } catch (error) {
         reject(error as Error);

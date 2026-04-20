@@ -18,13 +18,19 @@ const execFileAsync = promisify(execFile);
 
 const WIZARD_TIMEOUT_MS = 600_000;
 
+/** Avoid hanging on `server.close()`: browsers keep HTTP/1.1 connections alive after GET /, so close waits until idle timeout unless we close sockets. */
+function closeWizardServer(server: http.Server, onClosed: () => void): void {
+  server.close(onClosed);
+  server.closeAllConnections?.();
+}
+
 function initWizardHtml(): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NocoBase — nb init</title>
+  <title>Initialize the NocoBase AI setup environment</title>
   <style>
     :root { font-family: system-ui, sans-serif; color: #0f172a; background: #f8fafc; }
     body { max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
@@ -56,7 +62,7 @@ function initWizardHtml(): string {
   </style>
 </head>
 <body>
-  <h1>NocoBase init</h1>
+  <h1>Initialize the NocoBase AI setup environment</h1>
   <p class="sub">Pick your options and submit. This page only talks to the <code>nb init</code> process on your machine (<code>127.0.0.1</code>).</p>
   <form id="f">
     <fieldset>
@@ -337,8 +343,9 @@ export function runInitBrowserWizard(log: (line: string) => void): Promise<InitB
         return;
       }
       settled = true;
-      server.close();
-      reject(new Error('Browser wizard timed out after 10 minutes with no submission.'));
+      closeWizardServer(server, () => {
+        reject(new Error('Browser wizard timed out after 10 minutes with no submission.'));
+      });
     }, WIZARD_TIMEOUT_MS);
 
     function done(choice: InitBrowserChoice): void {
@@ -347,7 +354,7 @@ export function runInitBrowserWizard(log: (line: string) => void): Promise<InitB
       }
       settled = true;
       clearTimeout(timeout);
-      server.close(() => resolve(choice));
+      closeWizardServer(server, () => resolve(choice));
     }
 
     function fail(err: Error): void {
@@ -356,7 +363,7 @@ export function runInitBrowserWizard(log: (line: string) => void): Promise<InitB
       }
       settled = true;
       clearTimeout(timeout);
-      server.close(() => reject(err));
+      closeWizardServer(server, () => reject(err));
     }
 
     const server = http.createServer((req, res) => {
@@ -366,13 +373,14 @@ export function runInitBrowserWizard(log: (line: string) => void): Promise<InitB
         res.writeHead(200, {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'no-store',
+          Connection: 'close',
         });
         res.end(html);
         return;
       }
 
       if (req.method === 'POST' && u.pathname === '/cancel') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200, { 'Content-Type': 'application/json', Connection: 'close' });
         res.end(JSON.stringify({ ok: true }), () => {
           fail(new InitWizardCancelledError());
         });
@@ -387,20 +395,23 @@ export function runInitBrowserWizard(log: (line: string) => void): Promise<InitB
         req.on('end', () => {
           try {
             const choice = parseAndValidateSubmit(raw);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.writeHead(200, { 'Content-Type': 'application/json', Connection: 'close' });
             res.end(JSON.stringify({ ok: true }), () => {
               done(choice);
             });
           } catch (e) {
             const msg = e instanceof Error ? e.message : 'Invalid submission.';
-            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.writeHead(400, {
+              'Content-Type': 'application/json; charset=utf-8',
+              Connection: 'close',
+            });
             res.end(JSON.stringify({ ok: false, error: msg }));
           }
         });
         return;
       }
 
-      res.writeHead(404).end();
+      res.writeHead(404, { Connection: 'close' }).end();
     });
 
     server.on('error', (err) => {

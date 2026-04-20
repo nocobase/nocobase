@@ -20,7 +20,7 @@ import { run } from '../lib/run-npm.ts';
 
 export default class Init extends Command {
   static override summary =
-    'Initialize the workspace: skills install, then either nb env add or nb install—entire flow runs inside nb init';
+    'Initialize the NocoBase AI setup environment';
   static override description = `Initialize the current workspace for NocoBase CLI and agent workflows. You only run nb init; the following runs inside this command (not as separate manual steps):
 
 1. Optionally install NocoBase agent skills (\`npx -y skills add nocobase/skills\`)—you are prompted when using a TTY.
@@ -70,7 +70,7 @@ Use \`--ui\` to open a **browser** wizard on \`127.0.0.1\` (local HTTP server). 
       }
       this.log('Your browser should open; complete the form there to continue.');
     } else {
-      p.intro('nb init');
+      p.intro('Initialize the NocoBase AI setup environment');
     }
 
     /** Whether `nb install` / follow-up should avoid terminal prompts (`-y`). */
