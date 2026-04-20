@@ -24,6 +24,7 @@ import { Select, Space } from 'antd';
 import React from 'react';
 import { CalendarBlock } from './components';
 import {
+  buildCalendarSlotFormData,
   createCalendarEventViewActionOptions,
   createCalendarQuickCreateActionOptions,
 } from './actions/CalendarPopupModels';
@@ -322,10 +323,17 @@ export class CalendarBlockModel extends CollectionBlockModel {
       return;
     }
 
+    const formData = buildCalendarSlotFormData({
+      slotInfo,
+      collection: this.collection,
+      fieldNames: this.getFieldNames(),
+    });
+
     await action.dispatchEvent(
       'click',
       {
         mode: this.getEventOpenMode(),
+        ...(Object.keys(formData).length ? { formData } : {}),
         defineProperties: {
           calendarSelectedSlot: { value: slotInfo },
           calendarFieldNames: { value: this.getFieldNames() },
