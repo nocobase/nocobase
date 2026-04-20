@@ -2639,6 +2639,175 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   });
 
+  it('should auto-apply compact filterForm layout when fieldsLayout is omitted', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint filter compact layout',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fields: [
+                  { key: 'nicknameFilter', field: 'nickname', target: 'employeesTable' },
+                  { key: 'statusFilter', field: 'status', target: 'employeesTable' },
+                  { key: 'departmentFilter', field: 'department', target: 'employeesTable' },
+                ],
+                actions: ['submit', 'reset'],
+              },
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const overviewTab = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0];
+    const filterBlock = overviewTab?.subModels?.grid?.subModels?.items?.[0];
+    expect(filterBlock?.use).toBe('FilterFormBlockModel');
+
+    const filterGrid = filterBlock?.subModels?.grid;
+    const filterItems = _.castArray(filterGrid?.subModels?.items || []);
+    const nicknameWrapper = filterItems.find(
+      (item: any) => item?.stepParams?.filterFormItemSettings?.init?.filterField?.name === 'nickname',
+    )?.uid;
+    const statusWrapper = filterItems.find(
+      (item: any) => item?.stepParams?.filterFormItemSettings?.init?.filterField?.name === 'status',
+    )?.uid;
+    const departmentWrapper = filterItems.find(
+      (item: any) => item?.stepParams?.filterFormItemSettings?.init?.filterField?.name === 'department',
+    )?.uid;
+
+    expect(filterGrid?.props?.rowOrder).toEqual(['row1']);
+    expect(filterGrid?.props?.rows).toEqual({
+      row1: [[nicknameWrapper], [statusWrapper], [departmentWrapper]],
+    });
+    expect(filterGrid?.props?.sizes).toEqual({
+      row1: [8, 8, 8],
+    });
+  });
+
+  it('should compile fieldGroups into divider items and compact rows through applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint field groups',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fieldGroups: [
+                  {
+                    title: 'Basic information',
+                    fields: [
+                      { key: 'nicknameField', field: 'nickname' },
+                      { key: 'statusField', field: 'status' },
+                    ],
+                  },
+                  {
+                    title: 'Contact',
+                    fields: [{ key: 'emailField', field: 'email' }],
+                  },
+                ],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const formBlock = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items?.[0];
+    expect(formBlock?.use).toBe('CreateFormModel');
+
+    const formGrid = formBlock?.subModels?.grid;
+    const formItems = _.castArray(formGrid?.subModels?.items || []);
+    const basicDivider = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Basic information',
+    )?.uid;
+    const contactDivider = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Contact',
+    )?.uid;
+    const nicknameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+    )?.uid;
+    const statusWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
+      ?.uid;
+    const emailWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'email')
+      ?.uid;
+
+    expect(formGrid?.props?.rowOrder).toEqual(['row1', 'row2', 'row3', 'row4']);
+    expect(formGrid?.props?.rows).toEqual({
+      row1: [[basicDivider]],
+      row2: [[nicknameWrapper], [statusWrapper]],
+      row3: [[contactDivider]],
+      row4: [[emailWrapper]],
+    });
+    expect(formGrid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [12, 12],
+      row3: [24],
+      row4: [24],
+    });
+  });
+
+  it('should reject fieldGroups outside createForm editForm and details blocks', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fieldGroups: [
+                  {
+                    title: 'Invalid',
+                    fields: ['nickname'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldGroups is only supported on createForm, editForm or details',
+    );
+  });
+
   it('should keep page enableTabs unchanged in replace mode when page.enableTabs is omitted', async () => {
     const page = await createPage(rootAgent, {
       title: 'Preserve enableTabs',

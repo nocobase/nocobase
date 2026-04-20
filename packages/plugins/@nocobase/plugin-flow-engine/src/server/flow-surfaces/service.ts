@@ -156,6 +156,7 @@ import {
   FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT,
   FLOW_SURFACE_REACTION_UNKNOWN_TARGET_KEY,
 } from './reaction/errors';
+import { resolveFlowTemplateDisplayRows, type TemplateTranslate } from './template-display';
 import {
   APPROVAL_SINGLETON_ACTION_USES,
   APPROVAL_DETAILS_BLOCK_USES,
@@ -350,6 +351,7 @@ const SIMPLE_FORM_BLOCK_USES = new Set([
   ...APPROVAL_FORM_BLOCK_USES,
 ]);
 const COMPOSE_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
+const COMPOSE_FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
@@ -3762,12 +3764,12 @@ export class FlowSurfacesService {
   private async withFlowTemplateUsageCounts(
     rows: any[],
     actionName: string,
-    options: { transaction?: any } = {},
+    options: { transaction?: any; t?: TemplateTranslate } = {},
   ): Promise<FlowSurfaceTemplateRow[]> {
     const data = rows.map((row) => toTemplatePlainRow(row)).filter(Boolean);
     const templateUids = data.map((row) => String(row?.uid || '').trim()).filter(Boolean);
     if (!templateUids.length) {
-      return data;
+      return resolveFlowTemplateDisplayRows(this.db, data, options);
     }
     const UsageModel = this.getFlowTemplateUsageModel(actionName);
     const usageRows = await UsageModel.findAll({
@@ -3783,15 +3785,19 @@ export class FlowSurfacesService {
     for (const row of usageRows as any[]) {
       usageMap.set(String(row.templateUid), Number(row.count) || 0);
     }
-    return data.map((row) => ({
-      ...row,
-      usageCount: usageMap.get(String(row.uid || '')) || 0,
-    }));
+    return resolveFlowTemplateDisplayRows(
+      this.db,
+      data.map((row) => ({
+        ...row,
+        usageCount: usageMap.get(String(row.uid || '')) || 0,
+      })),
+      options,
+    );
   }
 
   async listTemplates(
     values: FlowSurfaceTemplateListValues = {},
-    options: { transaction?: any } = {},
+    options: { transaction?: any; t?: TemplateTranslate } = {},
   ): Promise<{
     rows: FlowSurfaceTemplateRow[];
     count: number;
@@ -3860,7 +3866,7 @@ export class FlowSurfacesService {
     };
   }
 
-  async getTemplate(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async getTemplate(values: Record<string, any>, options: { transaction?: any; t?: TemplateTranslate } = {}) {
     const templateUid = normalizeTemplateUidValue('getTemplate', values || {});
     const template = await this.getFlowTemplateOrThrow('getTemplate', templateUid, {
       transaction: options.transaction,
@@ -4943,9 +4949,13 @@ export class FlowSurfacesService {
       return this.configureFieldWrapper(target, current, values.changes, options);
     }
     if (STANDALONE_FIELD_NODE_USES.has(current?.use || '')) {
-      return current?.use === 'JSColumnModel'
-        ? this.configureJSColumn(target, values.changes, options)
-        : this.configureJSItem(target, values.changes, options);
+      if (current?.use === 'JSColumnModel') {
+        return this.configureJSColumn(target, values.changes, options);
+      }
+      if (current?.use === 'DividerItemModel') {
+        return this.configureDividerItem(target, values.changes, options);
+      }
+      return this.configureJSItem(target, values.changes, options);
     }
     if (isFieldNodeUse(current?.use)) {
       return this.configureFieldNode(target, values.changes, options);
@@ -6144,7 +6154,7 @@ export class FlowSurfacesService {
         throwBadRequest(`flowSurfaces addField type 'jsItem' is not allowed under approval form`);
       }
       const node = buildStandaloneFieldNode({
-        use: fieldCapability.standaloneUse as 'JSColumnModel' | 'JSItemModel',
+        use: fieldCapability.standaloneUse as 'JSColumnModel' | 'JSItemModel' | 'DividerItemModel',
         props: values.props || values.wrapperProps,
         decoratorProps: values.decoratorProps,
         stepParams: values.stepParams,
@@ -7015,10 +7025,10 @@ export class FlowSurfacesService {
     associationFieldLabel: string;
     targetCollectionLabel: string;
   }) {
-    const popupLabel = input.defaultType === 'edit' ? 'edit popup' : 'details popup';
+    const popupLabel = input.defaultType === 'edit' ? 'Popup for Edit' : 'Popup for Details';
     return {
       name: `${input.sourceCollectionLabel} -> ${input.associationFieldLabel} ${popupLabel} (Auto generated)`,
-      description: `Automatically generated ${popupLabel} template for relation field '${input.associationFieldLabel}' in collection '${input.sourceCollectionLabel}', targeting '${input.targetCollectionLabel}'.`,
+      description: `Automatically generated popup template for relation field "${input.associationFieldLabel}" in collection "${input.sourceCollectionLabel}", targeting "${input.targetCollectionLabel}" (${popupLabel}).`,
     };
   }
 
@@ -7027,10 +7037,14 @@ export class FlowSurfacesService {
     collectionLabel: string;
   }) {
     const popupLabel =
-      input.popupType === 'addNew' ? 'create popup' : input.popupType === 'edit' ? 'edit popup' : 'details popup';
+      input.popupType === 'addNew'
+        ? 'Popup for Add New'
+        : input.popupType === 'edit'
+          ? 'Popup for Edit'
+          : 'Popup for Details';
     return {
       name: `${input.collectionLabel} ${popupLabel} (Auto generated)`,
-      description: `Automatically generated ${popupLabel} template for collection '${input.collectionLabel}'.`,
+      description: `Automatically generated popup template for collection "${input.collectionLabel}" (${popupLabel}).`,
     };
   }
 
@@ -10349,6 +10363,101 @@ export class FlowSurfacesService {
     };
   }
 
+  private buildAutoComposeFieldsLayoutRow(fieldKeys: string[], blockType?: string) {
+    const normalizedKeys = fieldKeys.filter(Boolean);
+    if (!normalizedKeys.length) {
+      return [];
+    }
+    if (blockType === 'filterForm') {
+      const span = normalizedKeys.length === 1 ? 24 : normalizedKeys.length === 2 ? 12 : 8;
+      return normalizedKeys.map((key) => ({ key, span }));
+    }
+    if (normalizedKeys.length === 1) {
+      return [{ key: normalizedKeys[0], span: 24 }];
+    }
+    return normalizedKeys.map((key) => ({ key, span: 12 }));
+  }
+
+  private buildAutoComposeFieldsLayout(fields: Array<{ key: string; type?: string }>, blockType?: string) {
+    if (!COMPOSE_FIELD_GRID_BLOCK_TYPES.has(blockType || '') || !fields.length) {
+      return undefined;
+    }
+
+    const rows: Array<Array<{ key: string; span: number }>> = [];
+    const chunkSize = blockType === 'filterForm' ? 3 : 2;
+    let pendingKeys: string[] = [];
+
+    const flushPending = () => {
+      if (!pendingKeys.length) {
+        return;
+      }
+      rows.push(this.buildAutoComposeFieldsLayoutRow(pendingKeys, blockType));
+      pendingKeys = [];
+    };
+
+    fields.forEach((field) => {
+      const key = String(field?.key || '').trim();
+      if (!key) {
+        return;
+      }
+      if (String(field?.type || '').trim() === 'divider') {
+        flushPending();
+        rows.push([{ key, span: 24 }]);
+        return;
+      }
+      pendingKeys.push(key);
+      if (pendingKeys.length >= chunkSize) {
+        flushPending();
+      }
+    });
+
+    flushPending();
+    return rows.length ? { rows } : undefined;
+  }
+
+  private normalizeComposeFieldGroups(input: any, blockType: string, context: string) {
+    if (!COMPOSE_FIELD_GROUP_BLOCK_TYPES.has(blockType)) {
+      throwBadRequest(`${context} fieldGroups is only supported on createForm, editForm or details`);
+    }
+    const fieldGroups = _.castArray(input || []);
+    if (!fieldGroups.length) {
+      throwBadRequest(`${context} fieldGroups must be a non-empty array`);
+    }
+
+    return fieldGroups.flatMap((group, groupIndex) => {
+      const groupContext = `${context}.fieldGroups[${groupIndex + 1}]`;
+      if (!_.isPlainObject(group)) {
+        throwBadRequest(`${groupContext} must be an object`);
+      }
+      const title = String(group.title || '').trim();
+      if (!title) {
+        throwBadRequest(`${groupContext}.title is required`);
+      }
+      const rawFields = _.castArray(group.fields || []);
+      if (!rawFields.length) {
+        throwBadRequest(`${groupContext}.fields must be a non-empty array`);
+      }
+
+      const dividerKey = normalizeFlowSurfaceComposeKey(
+        String(group.key || title).trim() || `group_${groupIndex + 1}`,
+        `${groupContext}.key`,
+      );
+      return [
+        normalizeComposeFieldSpec(
+          {
+            key: `${dividerKey}_divider`,
+            type: 'divider',
+            settings: {
+              label: title,
+            },
+          },
+          groupIndex * 1000,
+        ),
+        ...rawFields.map((field, fieldIndex) => normalizeComposeFieldSpec(field, groupIndex * 1000 + fieldIndex + 1)),
+      ];
+    });
+  }
+
   private async applyDefaultActionsForCreatedBlock(
     input: {
       blockUid: string;
@@ -10432,9 +10541,17 @@ export class FlowSurfacesService {
     const recordActions = _.castArray(input.recordActions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
-    const fields = _.castArray(input.fields || []).map((field, fieldIndex) =>
-      normalizeComposeFieldSpec(field, fieldIndex),
-    );
+    const hasFields = Object.prototype.hasOwnProperty.call(input, 'fields');
+    const hasFieldGroups = Object.prototype.hasOwnProperty.call(input, 'fieldGroups');
+    if (hasFields && hasFieldGroups) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} cannot mix fields with fieldGroups`);
+    }
+    if (hasFieldGroups && Object.prototype.hasOwnProperty.call(input, 'fieldsLayout')) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} cannot mix fieldGroups with fieldsLayout`);
+    }
+    const fields = hasFieldGroups
+      ? this.normalizeComposeFieldGroups(input.fieldGroups, type, `flowSurfaces compose block #${index + 1}`)
+      : _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex));
     assertFlowSurfaceComposeUniqueKeys(fields, `flowSurfaces compose block #${index + 1} fields`);
     assertFlowSurfaceComposeUniqueKeys(actions, `flowSurfaces compose block #${index + 1} actions`);
     assertFlowSurfaceComposeUniqueKeys(recordActions, `flowSurfaces compose block #${index + 1} recordActions`);
@@ -10453,12 +10570,13 @@ export class FlowSurfacesService {
       key,
       type,
     });
-    const fieldsLayout = this.normalizeComposeFieldsLayout(input.fieldsLayout, {
-      blockContext: `flowSurfaces compose block #${index + 1}`,
-      blockDescriptor,
-      blockType: type,
-      fields,
-    });
+    const fieldsLayout =
+      this.normalizeComposeFieldsLayout(input.fieldsLayout, {
+        blockContext: `flowSurfaces compose block #${index + 1}`,
+        blockDescriptor,
+        blockType: type,
+        fields,
+      }) || this.buildAutoComposeFieldsLayout(fields, type);
     const mergedActions = mergeFlowSurfaceDefaultBlockActions({
       blockType: type,
       template,
@@ -11547,6 +11665,28 @@ export class FlowSurfacesService {
               },
             }
           : undefined,
+      },
+      options,
+    );
+  }
+
+  private async configureDividerItem(
+    target: FlowSurfaceWriteTarget,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
+    const allowedKeys = getConfigureOptionKeysForUse('DividerItemModel');
+    assertSupportedSimpleChanges('divider', changes, allowedKeys);
+    return this.updateSettings(
+      {
+        target,
+        props: buildDefinedPayload({
+          label: changes.label,
+          orientation: changes.orientation,
+          dashed: changes.dashed,
+          color: changes.color,
+          borderColor: changes.borderColor,
+        }),
       },
       options,
     );

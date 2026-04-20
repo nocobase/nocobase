@@ -1431,6 +1431,14 @@ const JS_ITEM_CONTRACT = createContract({
 JS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
   jsSettings: RUN_JS_SETTINGS_GROUP,
 });
+
+const DIVIDER_ITEM_CONTRACT = createContract({
+  editableDomains: ['props'],
+  props: ['label', 'orientation', 'dashed', 'color', 'borderColor'],
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+  },
+});
 FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
   displayFieldSettings: {
@@ -2170,6 +2178,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['PatternFormFieldModel', PATTERN_FORM_FIELD_NODE_CONTRACT],
   ['JSColumnModel', JS_COLUMN_CONTRACT],
   ['JSItemModel', JS_ITEM_CONTRACT],
+  ['DividerItemModel', DIVIDER_ITEM_CONTRACT],
   ['FormJSFieldItemModel', JS_ITEM_CONTRACT],
   ['AddNewActionModel', POPUP_ACTION_CONTRACT],
   ['ViewActionModel', POPUP_ACTION_CONTRACT],
@@ -2541,6 +2550,15 @@ function resolveStandaloneFieldUse(input: { requestedType?: string; containerUse
       throw new FlowSurfaceBadRequestError(`flowSurfaces field type 'jsItem' is only allowed under form containers`);
     }
     return 'JSItemModel';
+  }
+  if (requestedType === 'divider') {
+    const containerKind = normalizeFieldContainerUse(input.containerUse);
+    if (containerKind !== 'form' && containerKind !== 'details') {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces field type 'divider' is only allowed under form or details containers`,
+      );
+    }
+    return 'DividerItemModel';
   }
   throw new FlowSurfaceBadRequestError(
     `flowSurfaces field type '${requestedType}' is not a supported public capability`,

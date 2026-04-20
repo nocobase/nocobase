@@ -119,6 +119,12 @@ export type FlowSurfaceApplyBlueprintFieldObjectSpec = {
 
 export type FlowSurfaceApplyBlueprintFieldSpec = string | FlowSurfaceApplyBlueprintFieldObjectSpec;
 
+export type FlowSurfaceApplyBlueprintFieldGroupSpec = {
+  key?: string;
+  title: string;
+  fields: FlowSurfaceApplyBlueprintFieldSpec[];
+};
+
 export type FlowSurfaceApplyBlueprintActionObjectSpec = {
   key?: string;
   type: string;
@@ -158,6 +164,7 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   template?: Record<string, any>;
   settings?: Record<string, any>;
   fields?: FlowSurfaceApplyBlueprintFieldSpec[];
+  fieldGroups?: FlowSurfaceApplyBlueprintFieldGroupSpec[];
   fieldsLayout?: FlowSurfaceApplyBlueprintLayout;
   actions?: FlowSurfaceApplyBlueprintActionSpec[];
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
