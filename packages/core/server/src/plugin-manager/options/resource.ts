@@ -123,6 +123,25 @@ async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
   return arr;
 }
 
+function normalizePmPluginKeys(filterByTk: string): string[] {
+  return filterByTk
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+/** Query/body values often arrive as strings (`"true"`, `"1"`). */
+function coerceAwaitResponse(value: unknown): boolean {
+  if (value === true || value === 1) {
+    return true;
+  }
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+  }
+  return false;
+}
+
 export default {
   name: 'pm',
   actions: {
@@ -206,23 +225,46 @@ export default {
       await next();
     },
     async enable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
       const app = ctx.app as Application;
-      if (!filterByTk) {
+      if (filterByTk == null || filterByTk === '' || typeof filterByTk !== 'string') {
         ctx.throw(400, 'plugin name invalid');
       }
-      const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
-      app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'enable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err: unknown) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
     async disable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
-      if (!filterByTk) {
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
+      const app = ctx.app as Application;
+      if (filterByTk == null || filterByTk === '' || typeof filterByTk !== 'string') {
         ctx.throw(400, 'plugin name invalid');
       }
-      const app = ctx.app as Application;
-      app.runAsCLI(['pm', 'disable', filterByTk], { from: 'user' });
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'disable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err: unknown) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
