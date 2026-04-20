@@ -1,17 +1,11 @@
 {
   "moduleGroups": [
     {
-      "match": [
-        "workflow*",
-        "@nocobase/plugin-workflow*"
-      ],
+      "match": ["workflow*", "@nocobase/plugin-workflow*"],
       "module": "workflow"
     },
     {
-      "match": [
-        "@nocobase/plugin-data-source-main",
-        "@nocobase/plugin-data-source-manager"
-      ],
+      "match": ["@nocobase/plugin-data-source-main", "@nocobase/plugin-data-source-manager"],
       "module": "data-modeling"
     }
   ],
@@ -21,10 +15,7 @@
       "description": "NocoBase core resource APIs.",
       "include": true,
       "resources": {
-        "includes": [
-          "app",
-          "pm"
-        ],
+        "includes": ["app", "pm"],
         "excludes": [],
         "overrides": {
           "app": {
@@ -45,12 +36,7 @@
       "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
       "include": true,
       "resources": {
-        "includes": [
-          "availableActions",
-          "dataSources",
-          "roles",
-          "rolesResourcesScopes"
-        ],
+        "includes": ["availableActions", "dataSources", "roles", "rolesResourcesScopes", "desktopRoutes"],
         "excludes": [],
         "overrides": {
           "availableActions": {
@@ -72,6 +58,14 @@
             "name": "roles-resources-scopes",
             "description": "Manage role resource scopes and permissions.",
             "topLevel": false
+          },
+          "desktopRoutes": {
+            "name": "desktop-routes",
+            "description": "Manage desktop route permissions and visibility.",
+            "topLevel": false,
+            "operations": {
+              "includes": ["desktopRoutes:listAccessible"]
+            }
           }
         }
       }
@@ -81,9 +75,7 @@
       "description": "Allow users to access the HTTP API with API keys.",
       "include": true,
       "resources": {
-        "includes": [
-          "apiKeys"
-        ],
+        "includes": ["apiKeys"],
         "excludes": [],
         "overrides": {
           "apiKeys": {
@@ -99,9 +91,7 @@
       "description": "User authentication management, including password auth, SMS auth, SSO protocols, and extensible providers.",
       "include": true,
       "resources": {
-        "includes": [
-          "authenticators"
-        ],
+        "includes": ["authenticators"],
         "excludes": [],
         "overrides": {
           "auth": {
@@ -122,21 +112,16 @@
       "description": "Provide the web client interface for the NocoBase server.",
       "include": true,
       "resources": {
-        "includes": [
-          "desktopRoutes",
-          "roles"
-        ],
+        "includes": ["desktopRoutes"],
         "excludes": [],
         "overrides": {
           "desktopRoutes": {
             "name": "desktop-routes",
             "description": "Manage desktop route permissions and visibility.",
-            "topLevel": true
-          },
-          "roles": {
-            "name": "roles",
-            "description": "Manage client permissions scoped by role.",
-            "topLevel": false
+            "topLevel": true,
+            "operations": {
+              "excludes": ["desktopRoutes:listAccessible"]
+            }
           }
         }
       }
@@ -146,11 +131,7 @@
       "description": "Manage data sources, collections, and database modeling resources.",
       "include": true,
       "resources": {
-        "includes": [
-          "collections",
-          "fields",
-          "dbViews"
-        ],
+        "includes": ["collections", "fields", "dbViews"],
         "excludes": [],
         "overrides": {
           "collections": {
@@ -172,9 +153,7 @@
             "description": "Manage fields with the compact high-level modeling interface.",
             "topLevel": false,
             "operations": {
-              "includes": [
-                "apply"
-              ]
+              "includes": ["apply"]
             }
           },
           "dbViews": {
@@ -182,10 +161,7 @@
             "description": "Inspect and query database views.",
             "topLevel": false,
             "operations": {
-              "includes": [
-                "dbViews:list",
-                "dbViews:get"
-              ]
+              "includes": ["dbViews:list", "dbViews:get"]
             }
           }
         }
@@ -196,9 +172,7 @@
       "description": "Provide file storage services, file collections, and attachment fields.",
       "include": true,
       "resources": {
-        "includes": [
-          "storages"
-        ],
+        "includes": ["storages"],
         "excludes": [],
         "overrides": {
           "storages": {
@@ -214,9 +188,7 @@
       "description": "Manage flow surface composition, configuration, layout, and mutation APIs.",
       "include": true,
       "resources": {
-        "includes": [
-          "flowSurfaces"
-        ],
+        "includes": ["flowSurfaces"],
         "excludes": [],
         "overrides": {
           "flowSurfaces": {
@@ -232,9 +204,7 @@
       "description": "Map blocks with support for AMap, Google Maps, and extensible providers.",
       "include": true,
       "resources": {
-        "includes": [
-          "map-configuration"
-        ],
+        "includes": ["map-configuration"],
         "excludes": [],
         "overrides": {
           "map-configuration": {
@@ -250,9 +220,7 @@
       "description": "Adjust system title, logo, language, and other global settings.",
       "include": true,
       "resources": {
-        "includes": [
-          "systemSettings"
-        ],
+        "includes": ["systemSettings"],
         "excludes": [],
         "overrides": {
           "systemSettings": {
@@ -268,9 +236,7 @@
       "description": "Customize UI colors and dimensions, save themes, and switch between them.",
       "include": true,
       "resources": {
-        "includes": [
-          "themeConfig"
-        ],
+        "includes": ["themeConfig"],
         "excludes": [],
         "overrides": {
           "themeConfig": {
@@ -286,13 +252,7 @@
       "description": "A powerful BPM tool that provides the foundation for business automation and extensible triggers and nodes.",
       "include": true,
       "resources": {
-        "includes": [
-          "executions",
-          "flow_nodes",
-          "jobs",
-          "userWorkflowTasks",
-          "workflows"
-        ],
+        "includes": ["executions", "flow_nodes", "jobs", "userWorkflowTasks", "workflows"],
         "excludes": [],
         "overrides": {
           "executions": {
