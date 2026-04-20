@@ -14,6 +14,7 @@ import type { Document } from '@langchain/core/documents';
 import { parentPort } from 'node:worker_threads';
 import { TextLoader } from './vendor/langchain/document_loaders/fs/text';
 import { CSVLoader } from '@langchain/community/document_loaders/fs/csv';
+import { loadXlsx } from './xlsx';
 
 type ParsePayload = {
   extname: string;
@@ -67,6 +68,9 @@ const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
       return loadDoc(blob, 'docx');
     case '.csv':
       return loadCsv(blob);
+    case '.xls':
+    case '.xlsx':
+      return loadXlsx(blob);
     case '.json':
     case '.md':
     case '.txt':
