@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "クラスターモード"
+description: "NocoBase クラスターモード：マルチインスタンス、負荷分散、共有ストレージ、Redis キャッシュとメッセージキュー、分散ロック、Kubernetes デプロイによる高同時処理。"
+keywords: "クラスターモード,マルチインスタンス,負荷分散,共有ストレージ,Redis,Kubernetes,分散ロック,メッセージキュー,NocoBase"
+---
+
 :::tip
 このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
 :::

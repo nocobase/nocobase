@@ -1,99 +1,170 @@
-# NocoBase
+# NocoBase CTL
 
-<video width="100%" controls>
-  <source src="https://github.com/user-attachments/assets/4d11a87b-00e2-48f3-9bf7-389d21072d13" type="video/mp4">
-</video>
+NocoBase CTL is a command-line tool for managing and controlling NocoBase applications. Its relationship with multiple NocoBase App instances is shown below:
 
-<p align="center">
-<a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-</p>
+```
+                        +----------------------+
+                        |     NocoBase CTL     |
+                        |      Controller     |
+                        +----------------------+
+                                   |
+                  +----------------+----------------+
+                  |                |                |
+                  v                v                v
+        +----------------+ +----------------+ +----------------+
+        |  NocoBase App  | |  NocoBase App  | |  NocoBase App  |
+        |      Dev       | |      Test      | |      Prod      |
+        +----------------+ +----------------+ +----------------+
+```
 
-## What is NocoBase
+NocoBase CTL combines:
 
-NocoBase is the most extensible AI-powered no-code platform.   
-Total control. Infinite extensibility. AI collaboration.  
-Enable your team to adapt quickly and cut costs dramatically.  
-No years of development. No millions wasted.  
-Deploy NocoBase in minutes — and take control of everything.
+- built-in commands for environment management and generic resource access
+- runtime-generated commands loaded from your NocoBase application's Swagger schema
 
-Homepage:  
-https://www.nocobase.com/  
+This allows the CLI to stay aligned with the target application instead of relying on a fixed command list.
 
-Online Demo:  
-https://demo.nocobase.com/new
+## Quick Start
 
-Documents:  
-https://docs.nocobase.com/
+Install NocoBase CTL globally:
 
-Forum:  
-https://forum.nocobase.com/
+```bash
+npm install -g @nocobase/ctl@latest
+```
 
-Use Cases:  
-https://www.nocobase.com/en/blog/tags/customer-stories
+Add an environment:
 
-## Release Notes
+```bash
+nb env add --name local --base-url http://localhost:13000/api
+```
 
-Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with release notes and provides a weekly summary.
+Add an environment with an API key:
 
-## Distinctive features
+```bash
+nb env add --name local --base-url http://localhost:13000/api --token <api-key>
+```
 
-### 1. Data model-driven, not form/table–driven
+Authenticate an environment with OAuth:
 
-Instead of being constrained by forms or tables, NocoBase adopts a data model–driven approach, separating data structure from user interface to unlock unlimited possibilities.
+```bash
+nb env auth -e local
+```
 
-- UI and data structure are fully decoupled
-- Multiple blocks and actions can be created for the same table or record in any quantity or form
-- Supports the main database, external databases, and third-party APIs as data sources
+Show the current environment:
 
-![model](https://static-docs.nocobase.com/model.png)
+```bash
+nb env
+```
 
-### 2. AI employees, integrated into your business systems
-Unlike standalone AI demos, NocoBase allows you to embed AI capabilities seamlessly into your interfaces, workflows, and data context, making AI truly useful in real business scenarios.
+List configured environments:
 
-- Define AI employees for roles such as translator, analyst, researcher, or assistant
-- Seamless AI–human collaboration in interfaces and workflows
-- Ensure AI usage is secure, transparent, and customizable for your business needs
+```bash
+nb env list
+```
 
-![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+Switch the current environment:
 
-### 3. What you see is what you get, incredibly easy to use
+```bash
+nb env use local
+```
 
-While enabling the development of complex business systems, NocoBase keeps the experience simple and intuitive.
+Update the runtime command cache from `swagger:get`:
 
-- One-click switch between usage mode and configuration mode
-- Pages serve as a canvas to arrange blocks and actions, similar to Notion
-- Configuration mode is designed for ordinary users, not just programmers
+```bash
+nb env update
+nb env update -e local
+```
 
-![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
+Use the generic resource commands:
 
-### 4. Everything is a plugin, designed for extension
-Adding more no-code features will never cover every business case. NocoBase is built for extension through its plugin-based microkernel architecture.
+```bash
+nb api resource list --resource users
+nb api resource get --resource users --filter-by-tk 1
+nb api resource create --resource users --values '{"nickname":"Ada"}'
+```
 
-- All functionalities are plugins, similar to WordPress
-- Plugins are ready to use upon installation
-- Pages, blocks, actions, APIs, and data sources can all be extended through custom plugins
+## Runtime Commands
 
-![plugins](https://static-docs.nocobase.com/plugins.png)
+When you execute a runtime command, the CLI will:
 
-## Installation
+1. resolve the target environment
+2. read the application's Swagger schema from `swagger:get`
+3. generate or reuse a cached runtime command set for that application version
+4. execute the requested command
 
-NocoBase supports three installation methods:
+If the `API documentation plugin` is disabled, the CLI will prompt to enable it.
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
+## Environment Selection
 
-  Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
+Use `-e, --env` to temporarily select an environment:
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
+```bash
+nb env update -e prod
+nb api resource list --resource users -e prod
+```
 
-  The business code of the project is completely independent and supports low-code development.
+This does not change the current environment unless you explicitly run:
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installing from Git source code</a>
+```bash
+nb env use <name>
+```
 
-  If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
+## Config Scope
 
-## How NocoBase works
+The `env` command supports two config scopes:
 
-<video width="100%" controls>
-  <source src="https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf" type="video/mp4">
-</video>
+- `project`: use `./.nocobase-ctl` in the current working directory
+- `global`: use the global `.nocobase-ctl` directory
+
+Use `-s, --scope` to select one explicitly:
+
+```bash
+nb env list -s project
+nb env add -s global --name prod --base-url http://example.com/api --token <api-key>
+nb env auth -e prod -s global
+nb env use local -s project
+```
+
+If you do not pass `--scope`, the CLI uses automatic resolution:
+
+1. current working directory if `./.nocobase-ctl` exists
+2. `NOCOBASE_HOME_CLI`
+3. your home directory
+
+## Built-in Commands
+
+Current built-in topics:
+
+- `env`
+- `api`
+
+Check available commands at any time:
+
+```bash
+nb --help
+nb env --help
+nb api resource --help
+```
+
+## Common Flags
+
+- `-e, --env`: temporary environment selection
+- `-s, --scope`: config scope for `env` commands
+- `--role`: role override, sent as `X-Role`
+- `-t, --token`: API key override
+- `-j, --json-output`: print raw JSON response
+
+Example:
+
+```bash
+nb env update -e prod -s global
+nb api resource list --resource users -e prod -j
+nb api resource list --resource users -e prod --role admin
+```
+
+## Local Data
+
+The CLI stores its local state in `.nocobase-ctl`, including:
+
+- `config.json`: environment definitions and current selection
+- `versions/<version>/commands.json`: cached runtime commands for a generated version

@@ -69,9 +69,10 @@ export const MultipleKeywordsInput: FC<{
     if (file) {
       try {
         setImportLoading(true);
+        const XLSX = await import('xlsx');
 
         // Read Excel file
-        const data = await readExcel(file);
+        const data = await readExcel(file, XLSX);
         if (data.length === 0) {
           message.error(t('excelFileEmpty'));
           setImportLoading(false);
@@ -103,7 +104,7 @@ export const MultipleKeywordsInput: FC<{
   };
 
   // Read Excel file content
-  const readExcel = (file: File): Promise<any[]> => {
+  const readExcel = (file: File, XLSX: typeof import('xlsx')): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {

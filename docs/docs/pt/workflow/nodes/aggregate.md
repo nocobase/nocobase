@@ -64,7 +64,7 @@ Em seguida, crie um fluxo de trabalho acionado por um evento de coleção. Selec
 
 Depois, adicione um nó de consulta de agregação e configure-o da seguinte forma:
 
-![Nó de Consulta de Agregação_Exemplo_Configuração do Nó](https://static-docs.nocobase.com/542272e6373d1b37ddda78.png)
+![Nó de Consulta de Agregação_Exemplo_Configuração do Nó](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
 
 Dessa forma, após o fluxo de trabalho ser acionado, o nó de consulta de agregação contará o número de todos os artigos na categoria do artigo recém-adicionado e o salvará como o resultado do nó.
 

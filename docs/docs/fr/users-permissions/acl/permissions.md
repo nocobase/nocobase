@@ -26,7 +26,7 @@ Les permissions d'action globales s'appliquent universellement à toutes les **c
 
 ## Permissions d'action des collections
 
-![](https://static-docs.nocobase.com/6a0281391cecdea6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

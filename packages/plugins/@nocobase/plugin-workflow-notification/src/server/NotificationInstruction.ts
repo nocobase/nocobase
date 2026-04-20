@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import NotificationsServerPlugin from '@nocobase/plugin-notification-manager';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    channelName: Joi.string(),
+    ignoreFail: Joi.boolean().default(false),
+  });
+
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { ignoreFail, ...config } = node.config;
     const options = processor.getParsedValue(config, node.id);

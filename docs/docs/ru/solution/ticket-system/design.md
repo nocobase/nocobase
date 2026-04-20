@@ -1,690 +1,687 @@
-# Ticketing Solution Detailed Design
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/solution/ticket-system/design).
+:::
 
-> **Version**: v2.0-beta
+# Подробное проектирование системы тикетов
 
-> **Updated**: 2026-01-05
+> **Версия**: v2.0-beta
 
-> **Status**: Preview
+> **Дата обновления**: 2026-01-05
 
+> **Статус**: Предварительная версия
 
-## 1. System Overview and Design Philosophy
+## 1. Обзор системы и концепция проектирования
 
-### 1.1 System Positioning
+### 1.1 Позиционирование системы
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+Данная система представляет собой **интеллектуальную платформу управления тикетами на базе ИИ**, построенную на low-code платформе NocoBase. Основная цель:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+Позволить службе поддержки сосредоточиться на решении проблем, а не на рутинных операциях процесса.
 ```
 
-### 1.2 Design Philosophy
+### 1.2 Концепция проектирования
 
-#### Philosophy One: T-Shaped Data Architecture
+#### Концепция 1: Т-образная архитектура данных
 
-**What is T-Shaped Architecture?**
+**Что такое Т-образная архитектура?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+Она заимствует концепцию «Т-образного специалиста» — широта по горизонтали + глубина по вертикали:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **Горизонталь (Основная таблица)**: Универсальные возможности, охватывающие все типы бизнеса — номер тикета, статус, исполнитель, SLA и другие ключевые поля.
+- **Вертикаль (Таблицы расширения)**: Специализированные поля для конкретных бизнес-задач — серийные номера для ремонта оборудования, планы компенсации для жалоб.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
-**Why This Design?**
+**Почему выбрана такая архитектура?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| Традиционное решение | Т-образная архитектура |
+|----------|---------|
+| Отдельная таблица для каждого вида бизнеса, дублирование полей | Единое управление общими полями, расширение бизнес-полей по запросу |
+| Для отчетов нужно объединять несколько таблиц | Одна основная таблица для статистики по всем тикетам |
+| Изменение процесса требует правок во многих местах | Основной процесс меняется только в одном месте |
+| Для нового типа бизнеса нужна новая таблица | Достаточно добавить таблицу расширения, основной процесс остается прежним |
 
-#### Philosophy Two: AI Employee Team
+#### Концепция 2: Команда ИИ-сотрудников
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+Это не просто «функции ИИ», а «ИИ-сотрудники». У каждого ИИ есть четкая роль, характер и обязанности:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| ИИ-сотрудник | Должность | Основные обязанности | Сценарий срабатывания |
+|--------|------|----------|----------|
+| **Sam** | Руководитель службы поддержки | Распределение тикетов, оценка приоритета, принятие решений об эскалации | Автоматически при создании тикета |
+| **Grace** | Эксперт по успеху клиентов | Генерация ответов, корректировка тона, обработка жалоб | При нажатии агентом «Ответ ИИ» |
+| **Max** | Ассистент по знаниям | Поиск похожих случаев, рекомендации базы знаний, синтез решений | Автоматически на странице деталей тикета |
+| **Lexi** | Переводчик | Многоязычный перевод, перевод комментариев | Автоматически при обнаружении иностранного языка |
 
-**Why the "AI Employee" Model?**
+**Почему используется модель «ИИ-сотрудника»?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **Четкое разделение обязанностей**: Sam отвечает за распределение, Grace — за ответы, никакой путаницы.
+- **Простота понимания**: Сказать пользователю «Пусть Sam проанализирует это» дружелюбнее, чем «Вызвать API классификации».
+- **Масштабируемость**: Добавление новых возможностей ИИ = найм нового сотрудника.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### Концепция 3: Самоциркуляция знаний
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+Это формирует замкнутый цикл: **накопление знаний — применение знаний**.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. Основные сущности и модель данных
 
-### 2.1 Entity Relationship Overview
+### 2.1 Обзор связей сущностей
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 Подробное описание основных таблиц
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 Основная таблица тикетов (nb_tts_tickets)
 
-**Basic Information**
+Это ядро системы, использующее дизайн «широкой таблицы», где все часто используемые поля собраны вместе.
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**Базовая информация**
 
-**Source Tracking**
+| Поле | Тип | Описание | Пример |
+|------|------|------|------|
+| id | BIGINT | Первичный ключ | 1001 |
+| ticket_no | VARCHAR | Номер тикета | TKT-20251229-0001 |
+| title | VARCHAR | Заголовок | Медленное интернет-соединение |
+| description | TEXT | Описание проблемы | С сегодняшнего утра в офисе сеть... |
+| biz_type | VARCHAR | Тип бизнеса | it_support |
+| priority | VARCHAR | Приоритет | P1 |
+| status | VARCHAR | Статус | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**Отслеживание источника**
 
-**Contact Information**
+| Поле | Тип | Описание | Пример |
+|------|------|------|------|
+| source_system | VARCHAR | Система-источник | crm / email / iot |
+| source_channel | VARCHAR | Канал-источник | web / phone / wechat |
+| external_ref_id | VARCHAR | Внешний ID ссылки | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**Информация о контакте**
 
-**Assignee Information**
+| Поле | Тип | Описание |
+|------|------|------|
+| customer_id | BIGINT | ID клиента |
+| contact_name | VARCHAR | Имя контактного лица |
+| contact_phone | VARCHAR | Контактный телефон |
+| contact_email | VARCHAR | Контактный email |
+| contact_company | VARCHAR | Название компании |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**Информация об исполнителе**
 
-**Time Nodes**
+| Поле | Тип | Описание |
+|------|------|------|
+| assignee_id | BIGINT | ID исполнителя |
+| assignee_department_id | BIGINT | ID отдела исполнителя |
+| transfer_count | INT | Количество передач |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**Временные метки**
 
-**SLA Related**
+| Поле | Тип | Описание | Момент срабатывания |
+|------|------|------|----------|
+| submitted_at | TIMESTAMP | Время подачи | При создании тикета |
+| assigned_at | TIMESTAMP | Время назначения | При назначении исполнителя |
+| first_response_at | TIMESTAMP | Время первого ответа | При первом ответе клиенту |
+| resolved_at | TIMESTAMP | Время решения | При переходе в статус resolved |
+| closed_at | TIMESTAMP | Время закрытия | При переходе в статус closed |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**Связанное с SLA**
 
-**AI Analysis Results**
+| Поле | Тип | Описание |
+|------|------|------|
+| sla_config_id | BIGINT | ID конфигурации SLA |
+| sla_response_due | TIMESTAMP | Срок ответа |
+| sla_resolve_due | TIMESTAMP | Срок решения |
+| sla_paused_at | TIMESTAMP | Время начала приостановки SLA |
+| sla_paused_duration | INT | Общая длительность приостановки (мин) |
+| is_sla_response_breached | BOOLEAN | Нарушен ли срок ответа |
+| is_sla_resolve_breached | BOOLEAN | Нарушен ли срок решения |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**Результаты анализа ИИ**
 
-**Multi-Language Support**
+| Поле | Тип | Описание | Кем заполняется |
+|------|------|------|----------|
+| ai_category_code | VARCHAR | Категория, определенная ИИ | Sam |
+| ai_sentiment | VARCHAR | Анализ настроения | Sam |
+| ai_urgency | VARCHAR | Срочность | Sam |
+| ai_keywords | JSONB | Ключевые слова | Sam |
+| ai_reasoning | TEXT | Процесс рассуждения | Sam |
+| ai_suggested_reply | TEXT | Предлагаемый ответ | Sam/Grace |
+| ai_confidence_score | NUMERIC | Уровень уверенности | Sam |
+| ai_analysis | JSONB | Полный результат анализа | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**Поддержка многоязычности**
 
-#### 2.2.2 Business Extension Tables
+| Поле | Тип | Описание | Кем заполняется |
+|------|------|------|----------|
+| source_language_code | VARCHAR | Исходный язык | Sam/Lexi |
+| target_language_code | VARCHAR | Целевой язык | По умолчанию EN |
+| is_translated | BOOLEAN | Переведено ли | Lexi |
+| description_translated | TEXT | Переведенное описание | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 Таблицы расширения бизнеса
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**Ремонт оборудования (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| Поле | Тип | Описание |
+|------|------|------|
+| ticket_id | BIGINT | ID связанного тикета |
+| equipment_model | VARCHAR | Модель оборудования |
+| serial_number | VARCHAR | Серийный номер |
+| fault_code | VARCHAR | Код неисправности |
+| spare_parts | JSONB | Список запчастей |
+| maintenance_type | VARCHAR | Тип обслуживания |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**IT-поддержка (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| Поле | Тип | Описание |
+|------|------|------|
+| ticket_id | BIGINT | ID связанного тикета |
+| asset_number | VARCHAR | Инвентарный номер |
+| os_version | VARCHAR | Версия ОС |
+| software_name | VARCHAR | Связанное ПО |
+| remote_address | VARCHAR | Удаленный адрес |
+| error_code | VARCHAR | Код ошибки |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**Жалобы клиентов (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| Поле | Тип | Описание |
+|------|------|------|
+| ticket_id | BIGINT | ID связанного тикета |
+| related_order_no | VARCHAR | Номер связанного заказа |
+| complaint_level | VARCHAR | Уровень жалобы |
+| compensation_amount | DECIMAL | Сумма компенсации |
+| compensation_type | VARCHAR | Тип компенсации |
+| root_cause | TEXT | Первопричина |
 
-**Core Fields**
+#### 2.2.3 Таблица комментариев (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**Основные поля**
 
-**AI Review Fields (for outbound)**
+| Поле | Тип | Описание |
+|------|------|------|
+| id | BIGINT | Первичный ключ |
+| ticket_id | BIGINT | ID тикета |
+| parent_id | BIGINT | ID родительского комментария (древовидная структура) |
+| content | TEXT | Содержание комментария |
+| direction | VARCHAR | Направление: inbound (клиент) / outbound (агент) |
+| is_internal | BOOLEAN | Внутренняя заметка |
+| is_first_response | BOOLEAN | Является ли первым ответом |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**Поля проверки ИИ (для исходящих)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| Поле | Тип | Описание |
+|------|------|------|
+| source_language_code | VARCHAR | Исходный язык |
+| content_translated | TEXT | Переведенное содержание |
+| is_translated | BOOLEAN | Переведено ли |
+| is_ai_blocked | BOOLEAN | Заблокировано ли ИИ |
+| ai_block_reason | VARCHAR | Причина блокировки |
+| ai_block_detail | TEXT | Подробное описание |
+| ai_quality_score | NUMERIC | Оценка качества |
+| ai_suggestions | TEXT | Рекомендации по улучшению |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 Таблица оценок (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| Поле | Тип | Описание |
+|------|------|------|
+| ticket_id | BIGINT | ID тикета (уникальный) |
+| overall_rating | INT | Общая удовлетворенность (1-5) |
+| response_rating | INT | Скорость ответа (1-5) |
+| professionalism_rating | INT | Профессионализм (1-5) |
+| resolution_rating | INT | Решение проблемы (1-5) |
+| nps_score | INT | Оценка NPS (0-10) |
+| tags | JSONB | Быстрые теги |
+| comment | TEXT | Текстовый отзыв |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 Таблица статей базы знаний (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| Поле | Тип | Описание |
+|------|------|------|
+| article_no | VARCHAR | Номер статьи KB-T0001 |
+| title | VARCHAR | Заголовок |
+| content | TEXT | Содержание (Markdown) |
+| summary | TEXT | Аннотация |
+| category_code | VARCHAR | Код категории |
+| keywords | JSONB | Ключевые слова |
+| source_type | VARCHAR | Источник: ticket/faq/manual |
+| source_ticket_id | BIGINT | ID исходного тикета |
+| ai_generated | BOOLEAN | Сгенерировано ИИ |
+| ai_quality_score | NUMERIC | Оценка качества |
+| status | VARCHAR | Статус: draft/published/archived |
+| view_count | INT | Количество просмотров |
+| helpful_count | INT | Количество отметок «полезно» |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 Список таблиц данных
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| № | Имя таблицы | Описание | Тип записи |
+|------|------|------|----------|
+| 1 | nb_tts_tickets | Основная таблица тикетов | Бизнес-данные |
+| 2 | nb_tts_biz_repair | Расширение: Ремонт оборудования | Бизнес-данные |
+| 3 | nb_tts_biz_it_support | Расширение: IT-поддержка | Бизнес-данные |
+| 4 | nb_tts_biz_complaint | Расширение: Жалобы клиентов | Бизнес-данные |
+| 5 | nb_tts_customers | Основная таблица клиентов | Бизнес-данные |
+| 6 | nb_tts_customer_contacts | Контакты клиентов | Бизнес-данные |
+| 7 | nb_tts_ticket_comments | Комментарии к тикетам | Бизнес-данные |
+| 8 | nb_tts_ratings | Оценки удовлетворенности | Бизнес-данные |
+| 9 | nb_tts_qa_articles | Статьи базы знаний | Данные знаний |
+| 10 | nb_tts_qa_article_relations | Связи статей | Данные знаний |
+| 11 | nb_tts_faqs | Часто задаваемые вопросы | Данные знаний |
+| 12 | nb_tts_tickets_categories | Категории тикетов | Данные конфигурации |
+| 13 | nb_tts_sla_configs | Конфигурация SLA | Данные конфигурации |
+| 14 | nb_tts_skill_configs | Конфигурация навыков | Данные конфигурации |
+| 15 | nb_tts_business_types | Типы бизнеса | Данные конфигурации |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. Жизненный цикл тикета
 
-### 4.1 Priority and SLA Configuration
+### 3.1 Определение статусов
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| Статус | Название | Описание | Отсчет SLA | Цвет |
+|------|------|------|---------|------|
+| new | Новый | Только что создан, ожидает назначения | Начало | 🔵 Синий |
+| assigned | Назначен | Исполнитель назначен, ожидает принятия | Продолжается | 🔷 Голубой |
+| processing | В работе | Обрабатывается | Продолжается | 🟠 Оранжевый |
+| pending | Ожидание | Ожидание обратной связи от клиента | **Пауза** | ⚫ Серый |
+| transferred | Передан | Передан другому сотруднику | Продолжается | 🟣 Фиолетовый |
+| resolved | Решен | Ожидает подтверждения клиента | Стоп | 🟢 Зеленый |
+| closed | Закрыт | Тикет завершен | Стоп | ⚫ Серый |
+| cancelled | Отменен | Тикет отменен | Стоп | ⚫ Серый |
 
-### 4.2 SLA Calculation Logic
+### 3.2 Схема переходов статусов
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**Основной процесс (слева направо)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**Вспомогательные процессы**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**Полная диаграмма состояний**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 Ключевые правила смены статусов
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| Из | В | Условие срабатывания | Системное действие |
+|----|----|---------|---------|
+| new | assigned | Назначение исполнителя | Запись assigned_at |
+| assigned | processing | Исполнитель нажимает «Принять» | Нет |
+| processing | pending | Нажатие «Приостановить» | Запись sla_paused_at |
+| pending | processing | Ответ клиента / Ручное возобновление | Расчет длительности паузы, очистка paused_at |
+| processing | resolved | Нажатие «Решить» | Запись resolved_at |
+| resolved | closed | Подтверждение клиента / 3 дня таймаута | Запись closed_at |
+| * | cancelled | Отмена тикета | Нет |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. Управление уровнем обслуживания (SLA)
 
-### 5.1 AI Employee Team
+### 4.1 Конфигурация приоритетов и SLA
 
-The system configures 8 AI employees in two categories:
+| Приоритет | Название | Время ответа | Время решения | Порог предупреждения | Типичный сценарий |
+|--------|------|----------|----------|----------|----------|
+| P0 | Критический | 15 минут | 2 часа | 80% | Сбой системы, остановка линии |
+| P1 | Высокий | 1 час | 8 часов | 80% | Сбой важной функции |
+| P2 | Средний | 4 часа | 24 часа | 80% | Общие вопросы |
+| P3 | Низкий | 8 часов | 72 часа | 80% | Консультации, предложения |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 Логика расчета SLA
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
-**Reused Employees (General Capabilities)**
+#### При создании тикета
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+Срок ответа = Время подачи + Лимит времени ответа (мин)
+Срок решения = Время подачи + Лимит времени решения (мин)
+```
 
-### 5.2 AI Task List
+#### При приостановке (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+Время начала паузы SLA = Текущее время
+```
 
-#### Sam's Tasks
+#### При возобновлении (из pending обратно в processing)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- Расчет длительности текущей паузы
+Длительность текущей паузы = Текущее время - Время начала паузы SLA
 
-#### Grace's Tasks
+-- Добавление к общей длительности паузы
+Общая длительность паузы = Общая длительность паузы + Длительность текущей паузы
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- Продление сроков (период паузы не учитывается в SLA)
+Срок ответа = Срок ответа + Длительность текущей паузы
+Срок решения = Срок решения + Длительность текущей паузы
 
-#### Max's Tasks
+-- Очистка времени начала паузы
+Время начала паузы SLA = Пусто
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### Определение нарушения SLA
 
-#### Lexi's Tasks
+```
+-- Нарушение срока ответа
+Нарушен ли ответ = (Время первого ответа пусто И Текущее время > Срок ответа)
+                 ИЛИ (Время первого ответа > Срок ответа)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- Нарушение срока решения
+Нарушено ли решение = (Время решения пусто И Текущее время > Срок решения)
+                    ИЛИ (Время решения > Срок решения)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 Механизм предупреждений SLA
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| Уровень предупреждения | Условие | Кого уведомить | Способ |
+|----------|------|----------|----------|
+| Желтое | Осталось < 20% времени | Исполнитель | Внутреннее сообщение |
+| Красное | Время истекло | Исполнитель + Руководитель | Внутреннее сообщение + Email |
+| Эскалация | Просрочка 1 час | Менеджер отдела | Email + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 Показатели SLA на дашборде
 
-#### SAM-01 Ticket Analysis Response
+| Показатель | Формула расчета | Порог здоровья |
+|------|----------|----------|
+| Доля соблюдения ответа | Тикеты без нарушений ответа / Всего тикетов | > 95% |
+| Доля соблюдения решения | Решенные без нарушений / Всего решенных | > 90% |
+| Среднее время ответа | СУММА(Время ответа) / Кол-во тикетов | < 50% от SLA |
+| Среднее время решения | СУММА(Время решения) / Кол-во тикетов | < 80% от SLA |
+
+---
+
+## 5. Возможности ИИ и система сотрудников
+
+### 5.1 Команда ИИ-сотрудников
+
+В системе настроено 8 ИИ-сотрудников, разделенных на две категории:
+
+**Новые сотрудники (специально для системы тикетов)**
+
+| ID | Имя | Должность | Основные навыки |
+|----|------|------|----------|
+| sam | Sam | Руководитель службы поддержки | Распределение тикетов, оценка приоритета, эскалация, выявление рисков SLA |
+| grace | Grace | Эксперт по успеху клиентов | Генерация проф. ответов, настройка тона, обработка жалоб, восстановление лояльности |
+| max | Max | Ассистент по знаниям | Поиск похожих случаев, рекомендации знаний, синтез решений |
+
+**Общие сотрудники (универсальные навыки)**
+
+| ID | Имя | Должность | Основные навыки |
+|----|------|------|----------|
+| dex | Dex | Специалист по данным | Извлечение тикетов из почты/звонков, пакетная очистка данных |
+| ellis | Ellis | Эксперт по почте | Анализ настроения писем, резюме переписки, черновики ответов |
+| lexi | Lexi | Переводчик | Перевод тикетов, ответов и диалогов в реальном времени |
+| cole | Cole | Эксперт NocoBase | Руководство по системе, помощь в настройке рабочих процессов |
+| vera | Vera | Аналитик-исследователь | Исследование технических решений, проверка информации о продуктах |
+
+### 5.2 Список задач ИИ
+
+Для каждого ИИ-сотрудника настроено 4 конкретные задачи:
+
+#### Задачи Sam
+
+| ID задачи | Название | Способ запуска | Описание |
+|--------|------|----------|------|
+| SAM-01 | Анализ и распределение | Рабочий процесс | Автоматически при создании тикета |
+| SAM-02 | Переоценка приоритета | Интерфейс | Корректировка приоритета на основе новых данных |
+| SAM-03 | Решение об эскалации | Интерфейс/Процесс | Определение необходимости эскалации |
+| SAM-04 | Оценка рисков SLA | Рабочий процесс | Выявление рисков просрочки |
+
+#### Задачи Grace
+
+| ID задачи | Название | Способ запуска | Описание |
+|--------|------|----------|------|
+| GRACE-01 | Генерация проф. ответа | Интерфейс | Создание ответа на основе контекста |
+| GRACE-02 | Корректировка тона | Интерфейс | Оптимизация тона существующего ответа |
+| GRACE-03 | Снижение остроты жалоб | Интерфейс/Процесс | Урегулирование претензий клиентов |
+| GRACE-04 | Восстановление лояльности | Интерфейс/Процесс | Работа после негативного опыта |
+
+#### Задачи Max
+
+| ID задачи | Название | Способ запуска | Описание |
+|--------|------|----------|------|
+| MAX-01 | Поиск похожих случаев | Интерфейс/Процесс | Поиск аналогичных тикетов в истории |
+| MAX-02 | Рекомендация статей | Интерфейс/Процесс | Предложение релевантных статей знаний |
+| MAX-03 | Синтез решения | Интерфейс | Объединение решений из разных источников |
+| MAX-04 | Гид по устранению проблем | Интерфейс | Создание системного процесса проверки |
+
+#### Задачи Lexi
+
+| ID задачи | Название | Способ запуска | Описание |
+|--------|------|----------|------|
+| LEXI-01 | Перевод тикета | Рабочий процесс | Перевод содержания тикета |
+| LEXI-02 | Перевод ответа | Интерфейс | Перевод ответа службы поддержки |
+| LEXI-03 | Пакетный перевод | Рабочий процесс | Обработка массовых переводов |
+| LEXI-04 | Перевод диалога | Интерфейс | Перевод чата в реальном времени |
+
+### 5.3 ИИ-сотрудники и жизненный цикл тикета
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+
+### 5.4 Примеры ответов ИИ
+
+#### SAM-01 Ответ анализа тикета
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "ошибка входа", "таймаут", "закрытие месяца"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "Тикет описывает проблему со входом в ERP, что мешает финансовому отделу закрыть месяц. Срочность высокая.",
+  "suggested_reply": "Уважаемый клиент, спасибо за ваше сообщение...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "Здравствуйте, не удается войти в систему ERP..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 Ответ генерации сообщения
 
 ```
-Dear Mr. Zhang,
+Уважаемый господин Чжан,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+Благодарим вас за обращение по поводу проблемы со входом в ERP. Я прекрасно понимаю, что это
+влияет на работу вашей компании по закрытию месяца, поэтому мы присвоили этому вопросу высокий приоритет.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+Текущая ситуация:
+- Техническая команда проверяет проблемы с подключением к серверу.
+- Ожидаем предоставить обновление в течение 30 минут.
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+Тем временем вы можете попробовать:
+1. Войти через резервный адрес: https://erp-backup.company.com
+2. Если вам срочно нужны отчеты, свяжитесь с нами для помощи в экспорте.
 
-Please feel free to contact me if you have any other questions.
+Если у вас возникнут вопросы, пожалуйста, обращайтесь.
 
-Best regards,
-Technical Support Team
+С уважением,
+Команда технической поддержки
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 ИИ-фильтр эмоционального интеллекта
 
-Grace's reply quality review blocks the following issues:
+Проверка качества ответов от Grace блокирует следующие проблемы:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| Тип проблемы | Пример оригинала | Рекомендация ИИ |
+|----------|----------|--------|
+| Негативный тон | «Нет, это не гарантийный случай» | «Данная неисправность не подпадает под бесплатную гарантию, мы можем предложить платный ремонт» |
+| Обвинение клиента | «Вы сами это сломали» | «В ходе проверки установлено, что неисправность вызвана случайным повреждением» |
+| Снятие ответственности | «Это не наша проблема» | «Позвольте мне помочь вам разобраться в причинах проблемы» |
+| Равнодушие | «Не знаю» | «Я уточню для вас необходимую информацию» |
+| Конфиденциальные данные | «Ваш пароль: abc123» | [Блокировка] Содержит конфиденциальную информацию, отправка запрещена |
 
 ---
 
-## 6. Knowledge Base System
+## 6. Система базы знаний
 
-### 6.1 Knowledge Sources
+### 6.1 Источники знаний
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 Процесс превращения тикета в знание
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**Критерии оценки**:
+- **Универсальность**: Является ли это частой проблемой?
+- **Полнота**: Является ли решение ясным и законченным?
+- **Повторяемость**: Можно ли использовать эти шаги повторно?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 Механизм рекомендаций знаний
+
+Когда агент открывает детали тикета, Max автоматически рекомендует подходящие знания:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 Рекомендованные знания                      [Развернуть] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 Диагностика сервосистемы ЧПУ   Совпадение: 94% │ │
+│ │ Содержит: коды ошибок, шаги проверки привода           │ │
+│ │ [Просмотр] [Применить к ответу] [Полезно]              │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 Руководство XYZ-CNC3000        Совпадение: 87% │ │
+│ │ Содержит: частые сбои, план обслуживания               │ │
+│ │ [Просмотр] [Применить к ответу] [Полезно]              │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. Движок рабочих процессов
+
+### 7.1 Классификация рабочих процессов
+
+| Код | Категория | Описание | Способ запуска |
+|------|------|------|----------|
+| WF-T | Процесс тикета | Управление жизненным циклом тикета | События формы |
+| WF-S | Процесс SLA | Расчет и предупреждения SLA | События формы / Расписание |
+| WF-C | Процесс комментариев | Обработка и перевод комментариев | События формы |
+| WF-R | Процесс оценок | Приглашения к оценке и статистика | События формы / Расписание |
+| WF-N | Процесс уведомлений | Отправка уведомлений | События |
+| WF-AI | Процесс ИИ | Анализ и генерация ИИ | События формы |
+
+### 7.2 Основные рабочие процессы
+
+#### WF-T01: Процесс создания тикета
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+
+#### WF-AI01: ИИ-анализ тикета
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+
+#### WF-AI04: Перевод и проверка комментариев
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+
+#### WF-AI03: Генерация знаний
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
+
+### 7.3 Запланированные задачи
+
+| Задача | Частота | Описание |
+|------|----------|------|
+| Проверка SLA | Каждые 5 минут | Поиск тикетов, срок которых скоро истечет |
+| Автозакрытие | Ежедневно | Закрытие тикетов в статусе resolved через 3 дня |
+| Опрос удовлетворенности | Ежедневно | Отправка приглашения через 24 часа после закрытия |
+| Обновление статистики | Ежечасно | Обновление данных по тикетам клиентов |
 
 ---
 
-## 7. Workflow Engine
+## 8. Дизайн меню и интерфейса
 
-### 7.1 Workflow Categories
+### 8.1 Панель администратора
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
-### 7.2 Core Workflows
+### 8.2 Портал клиента
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 Дизайн дашбордов
 
-#### WF-AI01: Ticket AI Analysis
+#### Вид для руководителей
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| Компонент | Тип | Описание данных |
+|------|------|----------|
+| Соблюдение SLA | Индикатор | Доля соблюдения ответа/решения за месяц |
+| Тренды удовлетворенности | График | Изменение оценки за последние 30 дней |
+| Объем тикетов | Гистограмма | Количество тикетов за последние 30 дней |
+| Распределение по бизнесу | Пиктограмма | Доля каждого типа бизнеса |
 
-#### WF-AI04: Comment Translation & Review
+#### Вид для супервайзеров
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| Компонент | Тип | Описание данных |
+|------|------|----------|
+| Предупреждения о просрочке | Список | Тикеты, срок которых истекает или истек |
+| Нагрузка сотрудников | Гистограмма | Кол-во тикетов у каждого члена команды |
+| Распределение очереди | Стек-диаграмма | Кол-во тикетов по статусам |
+| Скорость обработки | Тепловая карта | Распределение среднего времени обработки |
 
-#### WF-AI03: Knowledge Generation
+#### Вид для агентов
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| Компонент | Тип | Описание данных |
+|------|------|----------|
+| Мои задачи | Карточка | Кол-во тикетов в очереди |
+| Распределение приоритетов | Пиктограмма | Доля P0/P1/P2/P3 |
+| Статистика за сегодня | Индикатор | Кол-во обработанных/решенных сегодня |
+| Обратный отсчет SLA | Список | 5 самых срочных тикетов |
 
 ---
 
-## Appendix
+## Приложение
 
-### A. Business Type Configuration
+### A. Конфигурация типов бизнеса
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| Код типа | Название | Иконка | Таблица расширения |
+|----------|------|------|------------|
+| repair | Ремонт оборудования | 🔧 | nb_tts_biz_repair |
+| it_support | IT-поддержка | 💻 | nb_tts_biz_it_support |
+| complaint | Жалоба клиента | 📢 | nb_tts_biz_complaint |
+| consultation | Консультация | ❓ | Нет |
+| other | Другое | 📝 | Нет |
 
-### B. Category Codes
+### B. Коды категорий
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| Код | Название | Описание |
+|------|------|------|
+| CONVEYOR | Конвейерные системы | Проблемы с конвейерами |
+| PACKAGING | Упаковочные машины | Проблемы с упаковкой |
+| WELDING | Сварочное оборудование | Проблемы со сваркой |
+| COMPRESSOR | Компрессоры | Проблемы с компрессорами |
+| COLD_STORE | Хладокомбинаты | Проблемы с холодильными камерами |
+| CENTRAL_AC | Центр. кондиционирование | Проблемы с вентиляцией |
+| FORKLIFT | Погрузчики | Проблемы с погрузчиками |
+| COMPUTER | Компьютеры | Проблемы с «железом» |
+| PRINTER | Принтеры | Проблемы с принтерами |
+| PROJECTOR | Проекторы | Проблемы с проекторами |
+| INTERNET | Сеть | Проблемы с интернет-соединением |
+| EMAIL | Почта | Проблемы с почтовой системой |
+| ACCESS | Доступ | Проблемы с правами доступа |
+| PROD_INQ | Запрос о продукте | Консультация по продукту |
+| COMPLAINT | Общая жалоба | Общие претензии |
+| DELAY | Задержка логистики | Жалоба на сроки доставки |
+| DAMAGE | Повреждение упаковки | Жалоба на порчу упаковки |
+| QUANTITY | Недостача | Жалоба на некомплект |
+| SVC_ATTITUDE | Качество сервиса | Жалоба на отношение персонала |
+| PROD_QUALITY | Качество продукта | Жалоба на качество товара |
+| TRAINING | Обучение | Запрос на обучение |
+| RETURN | Возврат | Запрос на возврат товара |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*Версия документа: 2.0 | Последнее обновление: 2026-01-05*

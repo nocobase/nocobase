@@ -1,5 +1,5 @@
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/interface-builder/actions/types/js-action)을 참조하세요.
 :::
 
 # JS 액션
@@ -34,7 +34,7 @@ JS 액션은 버튼 클릭 시 JavaScript를 실행하여 원하는 비즈니스
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- AI 직원을 활용하여 스크립트를 생성/수정할 수 있습니다: [AI 직원 · Nathan: 프런트엔드 엔지니어](/ai-employees/built-in/ai-coding)
+- AI 직원을 활용하여 스크립트를 생성/수정할 수 있습니다: [AI 직원 · Nathan: 프런트엔드 엔지니어](/ai-employees/features/built-in-employee)
 
 ## 일반적인 사용법 (간단한 예시)
 

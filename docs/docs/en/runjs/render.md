@@ -1,16 +1,16 @@
-# Render in Container
+# In-container Rendering
 
-Use `ctx.render()` to render content into the current container (`ctx.element`) in three ways:
+Use `ctx.render()` to render content into the current container (`ctx.element`). It supports the following three forms:
 
-## ctx.render()
+## `ctx.render()`
 
-### Render JSX
+### Rendering JSX
 
 ```jsx
 ctx.render(<button>Button</button>);
 ```
 
-### Render DOM Node
+### Rendering DOM Nodes
 
 ```js
 const div = document.createElement('div');
@@ -18,17 +18,17 @@ div.innerHTML = 'Hello World';
 ctx.render(div);
 ```
 
-### Render HTML String
+### Rendering HTML Strings
 
 ```js
 ctx.render('<h1>Hello World</h1>');
 ```
 
-## JSX Notes
+## JSX Description
 
-RunJS can render JSX directly, using either the built-in React/component library or externally loaded dependencies.
+RunJS can render JSX directly. You can use the built-in React/component libraries or load external dependencies on demand.
 
-### Using Built-in React and Components
+### Using Built-in React and Component Libraries
 
 ```jsx
 const { Button } = ctx.libs.antd;
@@ -36,9 +36,9 @@ const { Button } = ctx.libs.antd;
 ctx.render(<Button>Click</Button>);
 ```
 
-### Using External React and Components
+### Using External React and Component Libraries
 
-Load a specific version via `ctx.importAsync()`:
+Load specific versions on demand via `ctx.importAsync()`:
 
 ```jsx
 const React = await ctx.importAsync('react@19.2.4');
@@ -47,17 +47,17 @@ const { Button } = await ctx.importAsync('antd@6.2.2?bundle');
 ctx.render(<Button>Click</Button>);
 ```
 
-Use this when you need a specific version or third-party components.
+Suitable for scenarios requiring specific versions or third-party components.
 
 ## ctx.element
 
-**Not recommended** (deprecated):
+Not recommended (deprecated):
 
 ```js
 ctx.element.innerHTML = '<h1>Hello World</h1>';
 ```
 
-**Recommended**:
+Recommended way:
 
 ```js
 ctx.render(<h1>Hello World</h1>);

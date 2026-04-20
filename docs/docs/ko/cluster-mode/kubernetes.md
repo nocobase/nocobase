@@ -1,3 +1,9 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Kubernetes 배포"
+description: "K8s/K3s에서 NocoBase 클러스터 배포: ConfigMap, Deployment, 공유 PVC, Redis·PostgreSQL 미들웨어, 로드 밸런싱·헬스 체크."
+keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,클러스터 배포,NocoBase"
+---
 
 :::tip
 이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요

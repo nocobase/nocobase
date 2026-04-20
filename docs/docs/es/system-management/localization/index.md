@@ -1,5 +1,5 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/system-management/localization/index).
 :::
 
 # Gestión de Localización
@@ -38,6 +38,18 @@ Una vez completada la sincronización, el sistema le mostrará todas las entrada
 
 :::info{title=Nota}
 Es posible que diferentes módulos contengan los mismos términos originales, los cuales deberán traducirse de forma individual.
+:::
+
+### Creación automática de entradas
+
+Al editar una página, el texto personalizado en cada bloque creará automáticamente la entrada correspondiente y generará de forma sincrónica el contenido traducido para el idioma actual.
+
+![](https://static-docs.nocobase.com/Localization-02-12-2026_08_39_AM.png)
+
+![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
+
+:::info{title=Nota}
+Al definir texto en el código, es necesario especificar manualmente el ns (namespace), por ejemplo: `${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
 :::
 
 ### Edición del contenido de la traducción

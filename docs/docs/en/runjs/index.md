@@ -1,17 +1,17 @@
 # RunJS Overview
 
-RunJS is the JavaScript execution environment in NocoBase used for **JS Block**, **JS Field**, **JS Action**, and similar scenarios. Code runs in a restricted sandbox with safe access to the `ctx` (context API) and supports:
+RunJS is the JavaScript execution environment used in NocoBase for scenarios such as **JS Blocks**, **JS Fields**, and **JS Actions**. Code runs in a restricted sandbox, providing safe access to the `ctx` (Context API) and includes the following capabilities:
 
 - Top-level `await`
 - Importing external modules
-- Render in container
+- Rendering within containers
 - Global variables
 
-## Top-level `await`
+## Top-level await
 
-RunJS supports top-level `await`; you do not need to wrap code in an IIFE.
+RunJS supports top-level `await`, eliminating the need to wrap code in an IIFE.
 
-**Not recommended**
+**Not Recommended**
 
 ```jsx
 async function test() {}
@@ -29,20 +29,20 @@ await test();
 
 ## Importing External Modules
 
-- ESM modules: use `ctx.importAsync()` (recommended)
-- UMD/AMD modules: use `ctx.requireAsync()`
+- Use `ctx.importAsync()` for ESM modules (Recommended)
+- Use `ctx.requireAsync()` for UMD/AMD modules
 
-## Render in Container
+## Rendering within Containers
 
-Use `ctx.render()` to render content into the current container (`ctx.element`) in three ways:
+Use `ctx.render()` to render content into the current container (`ctx.element`). It supports the following three formats:
 
-### Render JSX
+### Rendering JSX
 
 ```jsx
 ctx.render(<button>Button</button>);
 ```
 
-### Render DOM Node
+### Rendering DOM Nodes
 
 ```js
 const div = document.createElement('div');
@@ -51,7 +51,7 @@ div.innerHTML = 'Hello World';
 ctx.render(div);
 ```
 
-### Render HTML String
+### Rendering HTML Strings
 
 ```js
 ctx.render('<h1>Hello World</h1>');

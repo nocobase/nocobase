@@ -1,9 +1,7 @@
 ---
-pkg: "@nocobase/plugin-multi-app-manager"
+pkg: "@nocobase/plugin-multi-app"
 ---
 
 # Multi-app
-
-
 
 ## Introduction

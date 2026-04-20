@@ -1,11 +1,10 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/workflow/nodes/llm/chat).
 :::
-
-
 
 # Conversation textuelle
 
@@ -23,7 +22,7 @@ En utilisant le nœud LLM d'un flux de travail, vous pouvez initier une conversa
 
 ## Sélectionner un modèle
 
-Commencez par sélectionner un service LLM déjà connecté. Si aucun service LLM n'est encore connecté, vous devrez d'abord ajouter une configuration de service LLM. Consultez : [Gestion des services LLM](/ai-employees/quick-start/llm-service)
+Commencez par sélectionner un service LLM déjà connecté. Si aucun service LLM n'est encore connecté, vous devrez d'abord ajouter une configuration de service LLM. Consultez : [Gestion des services LLM](/ai-employees/features/llm-service)
 
 Après avoir sélectionné un service, l'application tentera de récupérer une liste des modèles disponibles auprès du service LLM pour que vous puissiez choisir. Certains services LLM en ligne peuvent avoir des API pour récupérer des modèles qui ne sont pas conformes aux protocoles API standard ; dans de tels cas, vous pouvez également saisir manuellement l'ID du modèle.
 

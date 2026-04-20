@@ -8,6 +8,7 @@
  */
 
 import type { ComponentType } from 'react';
+import type { ModalProps } from 'antd';
 import type { Application } from '../../application';
 import { Registry } from '@nocobase/utils/client';
 
@@ -20,12 +21,19 @@ export interface ToolsRegistration {
   registerTools(name: string, options: ToolsOptions): void;
 }
 
+export type ToolModalProps = Pick<ModalProps, 'width' | 'styles'>;
+
 export type ToolsOptions = {
   ui?: {
     card?: ComponentType<ToolsUIProperties>;
     modal?: {
       title?: string;
       okText?: string;
+      props?: ToolModalProps;
+      footer?: ComponentType<{
+        tool: ToolCall;
+      }>;
+      hideOkButton?: boolean;
       useOnOk?: (
         decisions: ToolsUIProperties['decisions'],
         adjustArgs: Record<string, any>,
@@ -57,6 +65,7 @@ export type FrontendTools = ToolsOptions;
 
 export type BackendTools = {
   scope: Scope;
+  from: From;
   defaultPermission?: Permission;
   silence?: boolean;
   introduction?: {
@@ -93,3 +102,4 @@ export type ToolsFilter = {
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
 export type Permission = 'ASK' | 'ALLOW';
+export type From = 'loader' | 'workflow' | 'mcp';

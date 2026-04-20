@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import coreActions from '@nocobase/actions';
 import { list } from './default-actions/list';
 import { proxyToRepository } from './default-actions/proxy-to-repository';
 
@@ -79,5 +80,6 @@ export function loadDefaultActions() {
       return carry;
     }, {}),
     list,
+    query: coreActions.query,
   };
 }

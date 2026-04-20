@@ -25,6 +25,7 @@ import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { mergeRole } from '@nocobase/acl';
 import { loadDataSourceTablesIntoCollections } from './middlewares/load-tables';
 import { Collection } from '@nocobase/database';
+import { registerDataSourceManagerMcpPostProcessors } from './mcp-post-processors';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -356,6 +357,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.resourceManager.use(loadDataSourceTablesIntoCollections);
+    registerDataSourceManagerMcpPostProcessors(this.ai.mcpToolsManager);
 
     this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();

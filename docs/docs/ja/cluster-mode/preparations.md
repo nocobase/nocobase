@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "クラスター展開の準備"
+description: "クラスター展開前の準備：商用プラグインライセンス（PubSub、Queue、Lock、Worker ID アダプター）、データベース、Redis／RabbitMQ ミドルウェア、共有ストレージ、負荷分散。"
+keywords: "クラスター準備,商用ライセンス,Redis,RabbitMQ,共有ストレージ,負荷分散,Nginx,NocoBase"
+---
+
 :::tip
 このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
 :::

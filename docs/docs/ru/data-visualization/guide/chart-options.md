@@ -62,7 +62,7 @@
 
 Этот режим позволяет вернуть полный объект `option` ECharts и подходит для расширенной настройки, такой как объединение нескольких серий, сложные всплывающие подсказки и динамические стили. Рекомендуемый подход: консолидируйте данные в `dataset.source`. Подробности см. в документации ECharts: [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
 
-![20251026191728](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
+![20251026191728](https://static-docs.nocobase.com/20251026191728.png)
 
 ### Контекст данных
 - `ctx.data.objects`: массив объектов (каждая строка как объект, рекомендуется)

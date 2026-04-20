@@ -1,15 +1,19 @@
 ---
-displayName: "HTTP request encryption"
+displayName: "Chiffrement des requêtes HTTP"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Encrypts request parameters (Query Parameters) before sending an HTTP request.
+  Permet de chiffrer les paramètres de requête (Query Parameters) avant l'envoi d'une requête HTTP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP request encryption
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-request-encryption/index).
+:::
+
+# Chiffrement des requêtes HTTP

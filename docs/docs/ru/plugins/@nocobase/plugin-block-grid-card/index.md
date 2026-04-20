@@ -1,12 +1,16 @@
 ---
-displayName: "Block: GridCard"
+displayName: "Блок: Grid Card"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Display data in a grid list with pagination support.
+  Отображает данные в виде сетки с поддержкой пагинации.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: GridCard
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-block-grid-card/index).
+:::
+
+# Блок: Grid Card

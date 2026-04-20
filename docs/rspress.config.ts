@@ -1,6 +1,7 @@
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig, type RspressPlugin } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
+import { pluginSchema } from './plugins/pluginSchema';
 import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 // import { pluginPreview } from '@rspress/plugin-preview';
@@ -190,6 +191,7 @@ export default defineConfig({
     //   },
     // }),
     pluginLlms(),
+    pluginSchema(),
     pluginOgDescription(),
     pluginRemoveGenerator(),
     sitemap(),

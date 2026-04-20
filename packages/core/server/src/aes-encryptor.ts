@@ -10,6 +10,7 @@
 import crypto from 'crypto';
 import fs from 'fs-extra';
 import path, { resolve } from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import Application from './application';
 
 export class AesEncryptor {
@@ -75,12 +76,12 @@ export class AesEncryptor {
   }
 
   static async getKeyPath(appName: string) {
-    const appKeyPath = path.resolve(process.cwd(), 'storage', 'apps', appName, 'aes_key.dat');
+    const appKeyPath = storagePathJoin('apps', appName, 'aes_key.dat');
     const appKeyExists = await fs.exists(appKeyPath);
     if (appKeyExists) {
       return appKeyPath;
     }
-    const envKeyPath = path.resolve(process.cwd(), 'storage', 'environment-variables', appName, 'aes_key.dat');
+    const envKeyPath = storagePathJoin('environment-variables', appName, 'aes_key.dat');
     const envKeyExists = await fs.exists(envKeyPath);
     if (envKeyExists) {
       return envKeyPath;

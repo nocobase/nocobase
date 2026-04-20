@@ -1,10 +1,10 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/workflow/nodes/approval).
+:::
 
 # Aprovação
 
@@ -48,9 +48,9 @@ O aprovador é o conjunto de usuários responsáveis pela ação de aprovação 
 
 ![审批节点_审批人](https://static-docs.nocobase.com/20251107001433.png)
 
-Ao selecionar uma variável, você só pode escolher a chave primária ou chave estrangeira dos dados do usuário a partir do contexto e dos resultados do nó. Se a variável selecionada for um array durante a execução (para relacionamentos de muitos para muitos), cada usuário no array será mesclado no conjunto completo de aprovadores.
+Ao selecionar uma variável, você só pode escolher a chave primária ou chave estrangeira dos dados do usuário a partir do contexto e dos resultados do nó. Se a variável selecionada for um array durante a execução (para relacionamentos para-muitos), cada usuário no array será mesclado no conjunto completo de aprovadores.
 
-Além de selecionar diretamente usuários ou variáveis, você também pode filtrar dinamicamente usuários que atendem a determinadas condições, com base em critérios de consulta da tabela de usuários, para serem os aprovadores:
+Além de selecionar diretamente usuários ou variáveis, você também pode filtrar dinamicamente usuários que atendem a determinadas condições, com base em critérios de consulta da coleção de usuários, para serem os aprovadores:
 
 ![20251107001703](https://static-docs.nocobase.com/20251107001703.png)
 
@@ -105,7 +105,7 @@ No bloco do formulário de ação, você pode adicionar botões de ação suport
 
 Além disso, campos que podem ser modificados pelo aprovador também podem ser adicionados ao formulário de ação. Esses campos serão exibidos no formulário de ação quando o aprovador estiver processando a aprovação. O aprovador pode modificar os valores desses campos e, após o envio, tanto os dados para aprovação quanto o instantâneo dos dados correspondentes no fluxo de trabalho de aprovação serão atualizados simultaneamente.
 
-![审批节点_界面配置_操作表表_修改审批内容字段](https://static-docs.nocobase.com/20251107003206.png)
+![审批节点_界面配置_操作表单_修改审批内容字段](https://static-docs.nocobase.com/20251107003206.png)
 
 #### "Aprovar" e "Rejeitar"
 
@@ -132,6 +132,18 @@ Assim como na configuração original de aprovadores do nó, o escopo de atribui
 :::warning{title=Importante}
 Se um botão de ação for habilitado ou desabilitado, ou se o escopo de atribuição de pessoal for modificado, você deve salvar a configuração do nó após fechar a janela pop-up de configuração da interface de ação. Caso contrário, as alterações no botão de ação não terão efeito.
 :::
+
+### Cartão "Minhas Aprovações" <Badge>2.0+</Badge>
+
+Pode ser usado para configurar os cartões de tarefa na lista "Minhas Aprovações" da Central de Tarefas.
+
+![20260214141554](https://static-docs.nocobase.com/20260214141554.png)
+
+No cartão, você pode configurar livremente os campos de negócio que deseja exibir (exceto campos de relacionamento) ou informações relacionadas à aprovação.
+
+Depois que a aprovação entra neste nó, o cartão de tarefa personalizado pode ser visto na lista da Central de Tarefas:
+
+![20260214141722](https://static-docs.nocobase.com/20260214141722.png)
 
 ## Resultado do Nó
 

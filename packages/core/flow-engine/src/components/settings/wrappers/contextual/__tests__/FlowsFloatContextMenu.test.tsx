@@ -192,7 +192,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('defaults to portal into app container and keeps toolbar visible while moving from host to toolbar', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const model = createModel(engine, 'portal-model');
     const appContainer = createAppContainer();
     appContainer.scrollTop = 8;
@@ -254,7 +254,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('renders through FlowModelRenderer with app-container portal and keeps toolbar pinned while dropdown is open', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const model = createModel(engine, 'renderer-model');
     const appContainer = createAppContainer();
     mockRect(appContainer, { top: 40, left: 60, width: 1200, height: 800 });
@@ -316,7 +316,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('portals field toolbar to the nearest popup root and treats inset values as rect adjustments', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const model = createModel(engine, 'field-model');
     model.render = vi.fn().mockReturnValue(<input data-testid="field-input" />);
     const insetModel = createModel(engine, 'field-inset-model');
@@ -400,7 +400,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('hides parent toolbar when hovering a nested child host', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const parentModel = createModel(engine, 'parent-model');
     const childModel = createModel(engine, 'child-model');
     const appContainer = createAppContainer();
@@ -470,7 +470,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('restores parent toolbar after leaving a child toolbar back into the parent block', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const parentModel = createModel(engine, 'parent-restore-model');
     const childModel = createModel(engine, 'child-restore-model');
     const appContainer = createAppContainer();

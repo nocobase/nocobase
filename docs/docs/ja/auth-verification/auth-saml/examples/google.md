@@ -8,7 +8,7 @@
 
 [Google 管理コンソール](https://admin.google.com/) - アプリ - ウェブアプリとモバイルアプリ
 
-![](https://static-docs.nocobase.com/0812780b990a97a63c14ea899195827.png)
+![](https://static-docs.nocobase.com/0812780b990a97a63c14ea8991959827.png)
 
 アプリの設定が完了したら、**SSO URL**、**エンティティID**、**証明書**をコピーしてください。
 
@@ -35,7 +35,7 @@ Google コンソールに戻り、「**サービスプロバイダの詳細**」
 
 ![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
-![](https://static-docs.nocobase.com/c7de1f8b84730e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 
 「**属性マッピング**」セクションで、対応する属性をマッピングするためにマッピングを追加します。
 

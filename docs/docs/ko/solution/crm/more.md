@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/solution/crm/more)을 참조하세요.
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# 추가 내용
 
-Content coming soon...
+> 현재 CRM 솔루션은 미리보기용으로만 제공됩니다. 향후 버전은 NocoBase 2.0을 기반으로 완전히 재구축될 예정입니다. 해당 시점에 더 상세한 문서가 제공될 예정입니다.
+
+내용 보충 중...

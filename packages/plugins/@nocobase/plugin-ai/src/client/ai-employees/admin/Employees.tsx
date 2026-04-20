@@ -30,6 +30,7 @@ import {
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
 import { CheckOutlined } from '@ant-design/icons';
 import { EnableSwitch } from './EnableSwitch';
+import { ToolSettings } from './ToolsSettings';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
@@ -63,15 +64,15 @@ const AIEmployeeForm: React.FC<{
           children: <SystemPrompt />,
           forceRender: true,
         },
-        // {
-        //   key: 'chat',
-        //   label: 'Chat settings',
-        //   children: <ChatSettings />,
-        // },
         {
           key: 'skills',
           label: t('Skills'),
           children: <SkillSettings />,
+        },
+        {
+          key: 'tools',
+          label: t('Tools'),
+          children: <ToolSettings />,
         },
         ...(knowledgeBaseEnabled
           ? [

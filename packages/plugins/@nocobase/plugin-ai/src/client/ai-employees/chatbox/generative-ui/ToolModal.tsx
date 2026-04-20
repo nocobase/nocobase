@@ -18,7 +18,6 @@ import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-
 const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   return {
     onOk: async () => {},
@@ -41,23 +40,29 @@ export const ToolModal: React.FC = observer(() => {
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const activeMessageId = useChatToolsStore.use.activeMessageId();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+  const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
   const toolsByName = useChatToolsStore.use.toolsByName();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
 
   const { updateToolArgs, messagesService } = useChatMessageActions();
 
-  const toolOption = toolsMap.get(activeTool?.name);
+  const resolvedActiveTool =
+    (activeMessageId && activeTool?.id ? toolsByMessageId[activeMessageId]?.[activeTool.id] : null) || activeTool;
+
+  const toolOption = toolsMap.get(resolvedActiveTool?.name);
   const modal = toolOption?.ui?.modal;
   const useOnOk = toolOption?.ui?.modal?.useOnOk || useDefaultOnOk;
   const C = modal?.Component;
+  const FooterComponent = modal?.footer;
+  const modalProps = modal?.props;
 
   const adjustArgs = useChatToolsStore.use.adjustArgs();
   const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
-  const decisions = getDecisionActions(activeTool);
+  const decisions = getDecisionActions(resolvedActiveTool);
   const { onOk } = useOnOk(decisions, adjustArgs);
 
-  const toolCalls = toolsByName[activeTool?.name] || [];
+  const toolCalls = toolsByName[resolvedActiveTool?.name] || [];
   const versions = toolCalls.map((tool, index) => {
     return {
       key: tool.id,
@@ -68,25 +73,25 @@ export const ToolModal: React.FC = observer(() => {
 
   const saveToolArgs = useCallback(
     async (args: Record<string, any>) => {
-      if (!activeTool || !currentConversation || !activeMessageId) {
+      if (!resolvedActiveTool || !currentConversation || !activeMessageId) {
         return;
       }
       await updateToolArgs({
         sessionId: currentConversation,
         messageId: activeMessageId,
         tool: {
-          id: activeTool.id,
+          id: resolvedActiveTool.id,
           args,
         },
       });
       message.success(t('Saved successfully'));
       setActiveTool({
-        ...activeTool,
+        ...resolvedActiveTool,
         args,
       });
       // messagesService.run(currentConversation);
     },
-    [messagesService, activeMessageId, activeTool, currentConversation, updateToolArgs],
+    [activeMessageId, currentConversation, resolvedActiveTool, setActiveTool, t, updateToolArgs],
   );
 
   return (
@@ -97,7 +102,7 @@ export const ToolModal: React.FC = observer(() => {
           {versions.length > 1 && (
             <Select
               options={versions}
-              value={activeTool?.id}
+              value={resolvedActiveTool?.id}
               style={{
                 marginLeft: '8px',
               }}
@@ -111,7 +116,8 @@ export const ToolModal: React.FC = observer(() => {
         </>
       }
       open={open}
-      width="90%"
+      width={modalProps?.width || '90%'}
+      styles={modalProps?.styles}
       onCancel={() => {
         setOpen(false);
         setActiveTool(null);
@@ -122,15 +128,21 @@ export const ToolModal: React.FC = observer(() => {
         setOpen(false);
       }}
       okButtonProps={{
-        disabled: !['init', 'interrupted', 'pending'].includes(activeTool.invokeStatus),
+        disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus),
       }}
-      footer={(_, { OkBtn }) => (
-        <>
-          <OkBtn />
-        </>
-      )}
+      footer={
+        FooterComponent && resolvedActiveTool ? (
+          <FooterComponent tool={resolvedActiveTool} />
+        ) : modal?.hideOkButton ? null : (
+          (_, { OkBtn }) => (
+            <>
+              <OkBtn />
+            </>
+          )
+        )
+      }
     >
-      {C ? <C tool={activeTool} saveToolArgs={saveToolArgs} /> : null}
+      {C && resolvedActiveTool ? <C tool={resolvedActiveTool} saveToolArgs={saveToolArgs} /> : null}
     </Modal>
   );
 });

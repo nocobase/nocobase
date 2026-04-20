@@ -40,6 +40,6 @@
 
 ![Create Record Node_Example_Workflow Configuration](https://static-docs.nocobase.com/dfd4820d49c145fa331883fc09c9161f.png)
 
-![Create Record Node_Example_Node Configuration](https://static-docs.nocobase.com/1a0992e6170be12a068da6503298868.png)
+![Create Record Node_Example_Node Configuration](https://static-docs.nocobase.com/1a0992e66170be12a068da6503298868.png)
 
 После включения **рабочего процесса** с этой конфигурацией, при изменении записи в **коллекции** «Статьи» автоматически будет создана запись «Версии статей» для регистрации истории изменений статьи.

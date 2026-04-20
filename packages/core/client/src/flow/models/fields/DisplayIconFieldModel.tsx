@@ -14,8 +14,8 @@ import { FieldModel } from '../base';
 
 export class DisplayIconFieldModel extends FieldModel {
   public render() {
-    const { value } = this.props;
-    return <Icon type={value} />;
+    const { value, style, className } = this.props;
+    return <Icon type={value} style={style} className={className} />;
   }
 }
 

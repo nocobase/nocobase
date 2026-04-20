@@ -47,6 +47,11 @@
             "type": "custom-link",
             "label": "图表",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "日历",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
           }
         ]
       },
@@ -59,6 +64,11 @@
             "type": "custom-link",
             "label": "表单",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "树",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -483,8 +493,18 @@
           },
           {
             "type": "custom-link",
+            "label": "自定义请求",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

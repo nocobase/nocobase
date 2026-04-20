@@ -70,7 +70,7 @@ export const mainDepartmentField = {
 
 export const mainDepartmentIdField = {
   collectionName: 'users',
-  interface: 'inputNumber',
+  interface: 'integer',
   type: 'bigInt',
   name: 'mainDepartmentId',
   uiSchema: {

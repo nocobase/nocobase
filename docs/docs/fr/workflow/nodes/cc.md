@@ -1,10 +1,10 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/workflow/nodes/cc).
+:::
 
 # Copie Carbone <Badge>v1.8.2+</Badge>
 
@@ -39,6 +39,18 @@ Les destinataires sont la collection d'utilisateurs cibles pour la copie carbone
 Les destinataires doivent consulter le contenu envoyé en copie carbone dans le menu « CC pour moi » du Centre des tâches. Vous pouvez configurer les résultats du déclencheur et de n'importe quel nœud dans le contexte du flux de travail comme blocs de contenu.
 
 ![Interface utilisateur](https://static-docs.nocobase.com/20250710225400.png)
+
+### Carte de tâche <Badge>2.0+</Badge>
+
+Peut être utilisé pour configurer les cartes de tâches dans la liste « CC pour moi » du Centre des tâches.
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+Vous pouvez configurer librement les champs métier que vous souhaitez afficher dans la carte (à l'exception des champs de relation).
+
+Une fois la tâche de copie carbone du flux de travail créée, la carte de tâche personnalisée est visible dans la liste du Centre des tâches :
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
 
 ### Titre de la tâche
 

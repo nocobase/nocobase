@@ -1,7 +1,6 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/get-started/installation/git).
 :::
-
 
 # Установка из исходного кода Git
 
@@ -9,12 +8,7 @@
 
 - Установлены Git, Node.js 20+ и Yarn 1.22.x.
 - Настроена и запущена одна из следующих баз данных: MySQL 8.0.17+, MariaDB 10.9+ или PostgreSQL 10+.
-- Из-за особенностей сетевой среды в некоторых регионах рекомендуется использовать локальные зеркала (необязательно):
 
-```bash
-$ yarn config set disable-self-update-check true
-$ yarn config set registry https://registry.npmmirror.com/
-```
 
 :::
 
@@ -65,7 +59,7 @@ yarn install --frozen-lockfile
 Переменные окружения, необходимые для NocoBase, хранятся в файле `.env` в корневом каталоге. Измените их в соответствии с вашей ситуацией.
 
 ```bash
-TZ=Asia/Shanghai
+TZ=UTC
 APP_KEY=your-secret-key
 DB_HOST=localhost
 DB_PORT=5432
@@ -85,7 +79,7 @@ DB_PASSWORD=nocobase
 ## 5. Установите NocoBase
 
 ```bash
-yarn nocobase install --lang=zh-CN
+yarn nocobase install --lang=en-US
 ```
 
 ## 6. Запустите NocoBase

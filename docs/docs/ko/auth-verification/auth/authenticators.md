@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-auth'
 
 ## 인증기 활성화
 
-![](https://static-docs.nocobase.com/7f1b8f8ca5de67ffc68eff0a366bd8a5d5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 활성화된 인증 유형만 로그인 페이지에 표시됩니다.
 

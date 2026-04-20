@@ -8,11 +8,11 @@ Nachdem ein konfigurierter Workflow mindestens einmal ausgelöst wurde, müssen 
 
 Auf der Konfigurationsseite des Workflows können Sie im Versionsmenü oben rechts die vorhandenen Workflow-Versionen einsehen:
 
-![Workflow-Versionen anzeigen](https://static-docs.nocobase.com/ad93d2c0166b0e3e643fb148713a63f.png)
+![Workflow-Versionen anzeigen](https://static-docs.nocobase.com/ad93d2c08166b0e3e643fb148713a63f.png)
 
 Im Menü "Weitere Aktionen" ("...") auf der rechten Seite können Sie die aktuell angezeigte Version in eine neue Version kopieren:
 
-![Workflow als neue Version kopieren](https://static-docs.nocobase.com/280798e6caca2af004839a744256.png)
+![Workflow als neue Version kopieren](https://static-docs.nocobase.com/2805798e6caca2af004893390a744256.png)
 
 Nachdem Sie eine neue Version kopiert haben, klicken Sie auf den Schalter "Aktivieren"/"Deaktivieren", um die entsprechende Version in den aktivierten Zustand zu versetzen. Danach wird die neue Workflow-Version wirksam.
 

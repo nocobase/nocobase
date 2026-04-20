@@ -66,6 +66,9 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`;
   icon = (<FileSearchOutlined style={{}} />);
+  presetFieldset = {
+    collection,
+  };
   fieldset = {
     collection: {
       ...collection,

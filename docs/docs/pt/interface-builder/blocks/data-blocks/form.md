@@ -1,66 +1,87 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/blocks/data-blocks/form).
 :::
 
-# Bloco de Formulário
+# Bloco de formulário
 
 ## Introdução
 
-O bloco de formulário é um bloco importante para construir interfaces de entrada e edição de dados. Ele é altamente personalizável, usando componentes correspondentes para exibir os campos necessários com base no modelo de dados. Através de fluxos de eventos, como regras de vinculação, o bloco de formulário pode exibir campos dinamicamente. Além disso, ele pode ser combinado com **fluxos de trabalho** para acionar processos automatizados e lidar com dados, melhorando ainda mais a eficiência do trabalho ou implementando orquestração lógica.
+O bloco de formulário é um bloco essencial para construir interfaces de entrada e edição de dados. Ele possui alta capacidade de personalização, utilizando os componentes correspondentes para exibir os campos necessários com base no modelo de dados. Através de fluxos de eventos, como regras de vinculação, o bloco de formulário pode exibir campos dinamicamente. Além disso, ele pode ser combinado com fluxos de trabalho para realizar o acionamento de processos automatizados e o processamento de dados, aumentando ainda mais a eficiência do trabalho ou realizando a orquestração lógica.
 
-## Adicionar Bloco de Formulário
+## Adicionar bloco de formulário
 
 - **Editar formulário**: Usado para modificar dados existentes.
-- **Adicionar formulário**: Usado para criar novas entradas de dados.
+- **Novo formulário**: Usado para criar novas entradas de dados.
 
 ![20251023191139](https://static-docs.nocobase.com/20251023191139.png)
 
-## Configurações do Bloco
+## Itens de configuração do bloco
 
 ![20251023191448](https://static-docs.nocobase.com/20251023191448.png)
 
-### Regra de Vinculação do Bloco
+### Regras de vinculação do bloco
 
-Controle o comportamento do bloco (como se ele deve ser exibido ou executar JavaScript) através de regras de vinculação.
+Controle o comportamento do bloco (como exibir ou executar JavaScript) por meio de regras de vinculação.
 
 ![20251023191703](https://static-docs.nocobase.com/20251023191703.png)
 
-Para mais detalhes, consulte [Regra de Vinculação do Bloco](/interface-builder/blocks/block-settings/block-linkage-rule)
+Para mais detalhes, consulte [Regras de vinculação do bloco](/interface-builder/blocks/block-settings/block-linkage-rule)
 
-### Regra de Vinculação de Campo
+### Regras de vinculação de campo
 
-Controle o comportamento dos campos do formulário através de regras de vinculação.
+Controle o comportamento dos campos do formulário por meio de regras de vinculação.
 
 ![20251023191849](https://static-docs.nocobase.com/20251023191849.png)
 
-Para mais detalhes, consulte [Regra de Vinculação de Campo](/interface-builder/blocks/block-settings/field-linkage-rule)
+Para mais detalhes, consulte [Regras de vinculação de campo](/interface-builder/blocks/block-settings/field-linkage-rule)
 
 ### Layout
 
-O bloco de formulário suporta dois modos de layout, que podem ser configurados através do atributo `layout`:
+O bloco de formulário suporta dois modos de layout, configurados através do atributo `layout`:
 
-- **horizontal** (layout horizontal): Este layout exibe o rótulo e o conteúdo em uma única linha, economizando espaço vertical, sendo adequado para formulários simples ou situações com poucas informações.
-- **vertical** (layout vertical) (padrão): O rótulo é posicionado acima do campo. Este layout torna o formulário mais fácil de ler e preencher, sendo especialmente útil para formulários com múltiplos campos ou itens de entrada complexos.
+- **horizontal** (layout horizontal): Este layout faz com que o rótulo e o conteúdo sejam exibidos em uma única linha, economizando espaço vertical, sendo adequado para formulários simples ou situações com pouca informação.
+- **vertical** (layout vertical) (padrão): O rótulo fica acima do campo; este layout torna o formulário mais fácil de ler e preencher, especialmente para formulários que contêm vários campos ou itens de entrada complexos.
 
 ![20251023193638](https://static-docs.nocobase.com/20251023193638.png)
 
-## Configurar Campos
+## Configurar campos
 
-### Campos desta Coleção
+### Campos desta coleção
 
-> **Observação**: Campos de coleções herdadas (ou seja, campos da coleção pai) são automaticamente mesclados e exibidos na lista de campos atual.
+> **Nota**: Campos em coleções herdadas (ou seja, campos da coleção pai) serão mesclados e exibidos automaticamente na lista de campos atual.
 
 ![20240416230739](https://static-docs.nocobase.com/20240416230739.png)
 
-### Outros Campos
+### Campos de coleção de relacionamento
+
+> Os campos de coleção de relacionamento são somente leitura no formulário e geralmente são usados em conjunto com campos de relacionamento para exibir vários valores de campo dos dados relacionados.
+
+![20260212161035](https://static-docs.nocobase.com/20260212161035.png)
+
+- Atualmente, suporta apenas relacionamentos para um (como belongsTo / hasOne, etc.).
+- Geralmente é usado em conjunto com campos de relacionamento (usados para selecionar registros associados): o componente de campo de relacionamento é responsável por selecionar/alterar o registro associado, e o campo da coleção associada é responsável por exibir mais informações sobre esse registro (somente leitura).
+
+**Exemplo**: Após selecionar o "Responsável", exiba o número de telefone, e-mail e outras informações do responsável no formulário.
+
+> Se o campo de relacionamento "Responsável" não estiver configurado no formulário de edição, as informações associadas correspondentes ainda poderão ser exibidas. Quando o campo de relacionamento "Responsável" for configurado, ao alterar o responsável, as informações associadas correspondentes serão atualizadas para o registro correspondente.
+
+![20260212160748](https://static-docs.nocobase.com/20260212160748.gif)
+
+### Outros campos
 
 ![20251023192559](https://static-docs.nocobase.com/20251023192559.png)
 
-- Escreva JavaScript para personalizar o conteúdo exibido e mostrar informações complexas.
+- Escrever JavaScript permite realizar a exibição de conteúdo personalizado e a apresentação de conteúdos complexos.
 
 ![20251023192935](https://static-docs.nocobase.com/20251023192935.png)
 
-## Configurar Ações
+### Template de campo
+
+Templates de campo são usados para reutilizar a configuração da área de campos no bloco de formulário. Veja detalhes em [Template de campo](/interface-builder/fields/field-template).
+
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
+## Configurar ações
 
 ![20251023193231](https://static-docs.nocobase.com/20251023193231.png)
 

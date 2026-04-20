@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { round } from 'mathjs';
 
 import { parseCollectionName } from '@nocobase/data-source-manager';
@@ -22,6 +23,17 @@ const aggregators = {
 };
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    aggregator: Joi.string()
+      .valid(...Object.keys(aggregators))
+      .required(),
+    collection: Joi.when('associated', {
+      is: Joi.exist().invalid(null, false, 0, ''),
+      then: Joi.string(),
+      otherwise: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+    }),
+  });
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { aggregator, associated, collection, association = {}, params = {}, precision = 2 } = node.config;
     const options = processor.getParsedValue(params, node.id);

@@ -25,12 +25,12 @@
       },
       {
         "type": "custom-link",
-        "label": "データテーブルイベント",
+        "label": "コレクションイベント",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "定期タスク",
+        "label": "スケジュール",
         "link": "/workflow/triggers/schedule"
       },
       {
@@ -76,7 +76,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "大規模言語モデル",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -112,7 +112,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ワークフロー呼び出し",
+            "label": "ワークフローの呼び出し",
             "link": "/workflow/nodes/subflow"
           },
           {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "データ追加",
+            "label": "データ作成",
             "link": "/workflow/nodes/create"
           },
           {
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "実行履歴",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -270,7 +270,7 @@
   },
   {
     "type": "custom-link",
-    "label": "拡張機能開発",
+    "label": "拡張開発",
     "items": [
       {
         "type": "custom-link",
@@ -279,12 +279,12 @@
       },
       {
         "type": "custom-link",
-        "label": "拡張トリガータイプ",
+        "label": "トリガータイプの拡張",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "拡張ノードタイプ",
+        "label": "ノードタイプの拡張",
         "link": "/workflow/development/node"
       },
       {

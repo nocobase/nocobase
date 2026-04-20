@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "클러스터 모드: 플러그인 개발"
+description: "클러스터 모드에서의 플러그인 개발: Cache, SyncMessageManager, PubSubManager, 큐, 분산 락. 상태 일관성, 작업 스케줄링, 경쟁 조건."
+keywords: "클러스터 플러그인 개발,Cache,SyncMessageManager,PubSubManager,큐,분산 락,WORKER_MODE,NocoBase"
+---
+
 :::tip
 이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
 :::

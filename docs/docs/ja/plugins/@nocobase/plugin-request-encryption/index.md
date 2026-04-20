@@ -1,15 +1,19 @@
 ---
-displayName: "HTTP request encryption"
+displayName: "HTTP リクエスト暗号化"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Encrypts request parameters (Query Parameters) before sending an HTTP request.
+  HTTP リクエストを送信する前に、リクエストパラメータ（クエリパラメータ）を暗号化するために使用します。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP request encryption
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-request-encryption/index)をご参照ください。
+:::
+
+# HTTP リクエスト暗号化

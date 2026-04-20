@@ -1,38 +1,38 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/fields/specific/js-item).
 :::
 
 # JS Item
 
 ## Introducción
 
-JS Item se utiliza para crear "elementos personalizados" (no vinculados a un campo) dentro de un formulario. Con JavaScript/JSX, puede renderizar cualquier tipo de contenido, como mensajes, estadísticas, previsualizaciones o botones, e interactuar con el formulario y el contexto del registro. Es ideal para escenarios que requieren previsualizaciones en tiempo real, consejos instructivos o pequeños componentes interactivos.
+JS Item se utiliza para "elementos personalizados" (no vinculados a campos) en formularios. Usted puede usar JavaScript/JSX para renderizar cualquier contenido (consejos, estadísticas, previsualizaciones, botones, etc.) e interactuar con el formulario y el contexto del registro; es adecuado para escenarios como previsualizaciones en tiempo real, consejos de instrucciones, pequeños componentes interactivos, etc.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
 ## API del Contexto en Tiempo de Ejecución (Uso Común)
 
-- `ctx.element`: El contenedor DOM (ElementProxy) del elemento actual, compatible con `innerHTML`, `querySelector`, `addEventListener`, entre otros.
-- `ctx.form`: La instancia del formulario de AntD, que permite operaciones como `getFieldValue`, `getFieldsValue`, `setFieldsValue`, `validateFields`, etc.
-- `ctx.blockModel`: El modelo del bloque de formulario al que pertenece, que puede escuchar `formValuesChange` para implementar la vinculación.
-- `ctx.record` / `ctx.collection`: La información meta del registro actual y la **colección** (disponible en algunos escenarios).
-- `ctx.requireAsync(url)`: Carga asincrónicamente una librería AMD/UMD mediante una URL.
-- `ctx.importAsync(url)`: Importa dinámicamente un módulo ESM mediante una URL.
-- `ctx.openView(viewUid, options)`: Abre una vista configurada (cajón lateral/diálogo/página).
-- `ctx.message` / `ctx.notification`: Mensajes y notificaciones globales.
-- `ctx.t()` / `ctx.i18n.t()`: Internacionalización.
-- `ctx.onRefReady(ctx.ref, cb)`: Renderiza después de que el contenedor esté listo.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Librerías comunes integradas como React, ReactDOM, Ant Design, iconos de Ant Design y dayjs, utilizadas para la renderización JSX y el manejo de fechas y horas. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` se mantienen por compatibilidad).
-- `ctx.render(vnode)`: Renderiza un elemento React/HTML/DOM en el contenedor predeterminado `ctx.element`. Múltiples renderizaciones reutilizarán el Root y sobrescribirán el contenido existente del contenedor.
+- `ctx.element`: El contenedor DOM (ElementProxy) del elemento actual, soporta `innerHTML`, `querySelector`, `addEventListener`, etc.;
+- `ctx.form`: Instancia de AntD Form, permite `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, etc.;
+- `ctx.blockModel`: El modelo del bloque de formulario donde se encuentra, puede escuchar `formValuesChange` para implementar vinculaciones;
+- `ctx.record` / `ctx.collection`: Información de metadatos del registro actual y de la **colección** (disponible en algunos escenarios);
+- `ctx.requireAsync(url)`: Carga asíncronamente una librería AMD/UMD por URL;
+- `ctx.importAsync(url)`: Importa dinámicamente un módulo ESM por URL;
+- `ctx.openView(viewUid, options)`: Abre una vista configurada (cajón/diálogo/página);
+- `ctx.message` / `ctx.notification`: Mensajes y notificaciones globales;
+- `ctx.t()` / `ctx.i18n.t()`: Internacionalización;
+- `ctx.onRefReady(ctx.ref, cb)`: Renderiza una vez que el contenedor esté listo;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Librerías integradas como React / ReactDOM / Ant Design / Iconos de Ant Design / dayjs / lodash / math.js / formula.js, etc., para renderizado JSX, procesamiento de tiempo, manipulación de datos y operaciones matemáticas. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` se mantienen por compatibilidad).
+- `ctx.render(vnode)`: Renderiza elementos React/HTML/DOM en el contenedor predeterminado `ctx.element`; múltiples renderizados reutilizarán el Root y sobrescribirán el contenido existente del contenedor.
 
 ## Editor y Fragmentos de Código
 
-- `Snippets`: Abre una lista de fragmentos de código predefinidos, permitiéndole buscar e insertarlos con un solo clic en la posición actual del cursor.
-- `Run`: Ejecuta el código actual directamente y muestra los registros de ejecución en el panel `Logs` inferior. Admite `console.log/info/warn/error` y el resaltado de errores para su localización.
+- `Snippets`: Abre la lista de fragmentos de código integrados, permite buscar e insertar con un clic en la posición actual del cursor.
+- `Run`: Ejecuta el código actual directamente y muestra los registros de ejecución en el panel `Logs` inferior; soporta `console.log/info/warn/error` y localización de errores con resaltado.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Puede combinarse con el empleado de IA para generar/modificar scripts: [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/built-in/ai-coding)
+- Puede combinarse con el empleado de IA para generar/modificar scripts: [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/features/built-in-employee)
 
 ## Usos Comunes (Ejemplos Simplificados)
 
@@ -53,7 +53,7 @@ render();
 ctx.blockModel?.on?.('formValuesChange', () => render());
 ```
 
-### 2) Abrir una Vista (Cajón Lateral)
+### 2) Abrir una Vista (Cajón)
 
 ```js
 ctx.render(
@@ -66,7 +66,7 @@ ctx.render(
 );
 ```
 
-### 3) Cargar y Renderizar Librerías Externas
+### 3) Cargar Librerías Externas y Renderizar
 
 ```js
 // AMD/UMD
@@ -78,11 +78,11 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</span>);
 ```
 
-## Consideraciones Importantes
+## Notas
 
-- Se recomienda utilizar una CDN de confianza para cargar librerías externas y prever un mecanismo de respaldo en caso de fallos (por ejemplo, `if (!lib) return;`).
-- Para los selectores, se aconseja priorizar el uso de `class` o `[name=...]` y evitar el uso de `id` fijos, para prevenir duplicidades en múltiples bloques o ventanas emergentes.
-- Limpieza de eventos: Los cambios frecuentes en los valores del formulario pueden desencadenar múltiples renderizaciones. Antes de vincular un evento, debe limpiarlo o eliminar duplicados (por ejemplo, `remove` antes de `add`, usar `{ once: true }`, o marcar con un atributo `dataset` para evitar repeticiones).
+- Se recomienda usar CDNs confiables para la carga de librerías externas; debe manejar casos de fallo (ej. `if (!lib) return;`).
+- Se recomienda priorizar el uso de `class` o `[name=...]` para los selectores, evitando el uso de `id` fijos para prevenir la duplicidad de `id` en múltiples bloques o ventanas emergentes.
+- Limpieza de eventos: Los cambios frecuentes en los valores del formulario activarán múltiples renderizados; antes de vincular eventos, se debe limpiar o eliminar duplicados (ej. `remove` antes de `add`, o `{ once: true }`, o usar `dataset` para marcar y evitar repeticiones).
 
 ## Documentación Relacionada
 

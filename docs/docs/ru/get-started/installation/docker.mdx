@@ -1,48 +1,47 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/get-started/installation/docker).
 :::
 
-
-# Установка NocoBase с помощью Docker
+# Установка Docker
 
 :::tip Предварительные требования
 
-* Установлены [Docker](https://docs.docker.com/get-docker/) и Docker Compose
-* Убедитесь, что служба Docker запущена
+- Установлены [Docker](https://docs.docker.com/get-docker/) и Docker Compose
+- Убедитесь, что служба Docker запущена
 
 :::
 
-## 1. Создайте файл `docker-compose.yml`
+## 1. Создание docker-compose.yml
 
 ```bash
-# Создайте папку `my-project` (или любое другое имя) для хранения системных файлов NocoBase
+# Создайте папку с именем my-project (можно другое имя) для хранения системных файлов, созданных NocoBase
 mkdir my-project && cd my-project
 
-# Создайте пустой файл `docker-compose.yml`
+# Создайте пустой файл docker-compose.yml
 vi docker-compose.yml
 ```
 
-## 2. Настройте `docker-compose.yml`
+## 2. Настройка docker-compose.yml
 
-Выберите версию NocoBase ([Сравнение версий](../quickstart.md)) и тип базы данных, затем скопируйте соответствующую конфигурацию в файл `docker-compose.yml`.
+Выберите версию NocoBase ([Сравнение версий](../quickstart.md)) и тип базы данных, скопируйте соответствующую конфигурацию в docker-compose.yml.
 
 :::tip Примечания к конфигурации
 
-* **Выбор образа**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  * Для производственных сред рекомендуется использовать конкретную версию, чтобы избежать непреднамеренных автоматических обновлений. [Посмотреть все версии](https://hub.docker.com/r/nocobase/nocobase/tags)
-  * Образ Alibaba Cloud: `nocobase/nocobase:latest-full`
-  * Образ Docker Hub: `nocobase/nocobase:latest-full`
-  * **Полный образ** включает клиенты PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, необходимые для плагинов управления резервным копированием и миграцией, а также LibreOffice для печати шаблонов (PDF).
-  * Если вам нужно собрать собственный образ, вы можете обратиться к официальным [Dockerfile (облегченная версия)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) и [Dockerfile-full (полная версия)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
-* **Измените `APP_KEY`**: Замените `your-secret-key` на случайную строку. Она используется для шифрования конфиденциальной информации, такой как токены пользователей.
-* **Использование существующей базы данных**: Если у вас уже есть служба базы данных, измените `DB_HOST` на адрес вашего сервера базы данных и удалите или закомментируйте конфигурацию службы базы данных (например, службы `postgres`, `mysql`, `mariadb`).
-* **Маппинг портов**: По умолчанию порт 80 контейнера сопоставляется с портом 13000 хоста. Вы можете изменить это по мере необходимости.
+- **Выбор образа**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Для производственных сред рекомендуется фиксировать конкретную версию, чтобы избежать непреднамеренных автоматических обновлений. [Посмотреть все версии](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Образ Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Образ Docker Hub: `nocobase/nocobase:latest-full`
+  - **full-образ** включает клиенты PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, необходимые для плагинов управления резервным копированием и миграцией, а также LibreOffice, необходимый для печати шаблонов (PDF)
+  - Если вам нужно собрать собственный образ, вы можете обратиться к официальным [Dockerfile (облегченная версия)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) и [Dockerfile-full (полная версия)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
+- **Измените `APP_KEY`**: Пожалуйста, замените `your-secret-key` на случайную строку, используемую для шифрования токенов пользователей и другой конфиденциальной информации
+- **Использование существующей базы данных**: Если у вас уже есть служба базы данных, измените `DB_HOST` на адрес сервера базы данных и удалите или закомментируйте конфигурацию службы базы данных (например, службы `postgres`, `mysql`, `mariadb`)
+- **Маппинг портов**: По умолчанию порт 80 контейнера сопоставляется с портом 13000 хоста, вы можете изменить его по мере необходимости
 
 :::
 
 <Tabs>
 
-<Tab label="Последняя версия">
+<Tab label="Latest версия">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -54,16 +53,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=postgres
@@ -77,7 +76,7 @@ services:
       - DB_USER=nocobase
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
 
     volumes:
@@ -88,7 +87,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,16 +111,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=mysql
@@ -137,7 +136,7 @@ services:
       - DB_PASSWORD=nocobase
       # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
     volumes:
       - ./storage:/app/nocobase/storage
@@ -147,7 +146,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,16 +170,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=mariadb
@@ -196,7 +195,7 @@ services:
       - DB_PASSWORD=nocobase
       # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
     volumes:
       - ./storage:/app/nocobase/storage
@@ -206,7 +205,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -224,7 +223,7 @@ services:
 
 </Tab>
 
-<Tab label="Бета-версия">
+<Tab label="Beta версия">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -236,16 +235,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=postgres
@@ -259,7 +258,7 @@ services:
       - DB_USER=nocobase
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
 
     volumes:
@@ -270,7 +269,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,16 +293,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=mysql
@@ -319,7 +318,7 @@ services:
       - DB_PASSWORD=nocobase
       # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
     volumes:
       - ./storage:/app/nocobase/storage
@@ -329,7 +328,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,16 +352,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=mariadb
@@ -378,7 +377,7 @@ services:
       - DB_PASSWORD=nocobase
       # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
     volumes:
       - ./storage:/app/nocobase/storage
@@ -388,7 +387,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -406,7 +405,7 @@ services:
 
 </Tab>
 
-<Tab label="Альфа-версия">
+<Tab label="Alpha версия">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -418,16 +417,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=postgres
@@ -441,7 +440,7 @@ services:
       - DB_USER=nocobase
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
 
     volumes:
@@ -452,7 +451,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,16 +475,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=mysql
@@ -501,7 +500,7 @@ services:
       - DB_PASSWORD=nocobase
       # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
     volumes:
       - ./storage:/app/nocobase/storage
@@ -511,7 +510,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,16 +534,16 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используемый для генерации токенов пользователей и т. д.
+      # Если APP_KEY будет изменен, старые токены также станут недействительными
+      # Может быть любой случайной строкой, убедитесь, что она не разглашается
       - APP_KEY=your-secret-key
       # Тип базы данных, поддерживает postgres, mysql, mariadb
       - DB_DIALECT=mariadb
@@ -560,7 +559,7 @@ services:
       - DB_PASSWORD=nocobase
       # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
+      # Часовой пояс
       - TZ=Asia/Shanghai
     volumes:
       - ./storage:/app/nocobase/storage
@@ -570,7 +569,7 @@ services:
 
   # Если вы используете существующую службу базы данных, вы можете не запускать mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -590,16 +589,16 @@ services:
 
 </Tabs>
 
-## 3. Установите и запустите NocoBase
+## 3. Установка и запуск NocoBase
 
 ```bash
 # Загрузите последние образы
 docker compose pull
 
-# Запустите в фоновом режиме (при первом запуске установка будет выполнена автоматически)
+# Запустите в фоновом режиме (при первом запуске установка выполнится автоматически)
 docker compose up -d
 
-# Просмотрите логи установки и работы приложения
+# Просмотрите логи установки и работы
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -614,12 +613,12 @@ app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-## 4. Войдите в NocoBase
+## 4. Вход в NocoBase
 
-Откройте [http://localhost:13000](http://localhost:13000) в браузере. Начальные учетные данные: `admin@nocobase.com` и `admin123`.
+Откройте [http://localhost:13000](http://localhost:13000) в браузере. Начальный логин и пароль: `admin@nocobase.com` и `admin123`.
 
 :::warning Уведомление о безопасности учетной записи
 
-После первого входа в систему, пожалуйста, незамедлительно измените пароль по умолчанию для обеспечения безопасности системы.
+После первого входа в систему, пожалуйста, своевременно измените пароль по умолчанию для обеспечения безопасности системы.
 
 :::

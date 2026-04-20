@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "ソリューションの概要"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "詳細設計"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "インストール"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "その他の内容"
   }
 ]

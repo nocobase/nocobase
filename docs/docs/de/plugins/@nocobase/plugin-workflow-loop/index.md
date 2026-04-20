@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Loop node"
+displayName: "Workflow: Loop-Knoten"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
+  Wird zur wiederholten Teilprozessverarbeitung für jeden Wert in einem Array verwendet und kann auch für eine feste Anzahl von Teilprozesswiederholungen verwendet werden.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Loop node
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/plugins/@nocobase/plugin-workflow-loop/index).
+:::
+
+# Workflow: Loop-Knoten

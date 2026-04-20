@@ -17,12 +17,14 @@
  */
 
 import { pick } from 'lodash';
+import Joi from 'joi';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import {
   EventOptions,
   EXECUTION_STATUS,
   Trigger,
+  validateCollectionField,
   WorkflowModel,
   getWorkflowExecutionLogMeta,
 } from '@nocobase/plugin-workflow';
@@ -40,6 +42,35 @@ class RequestInterceptionError extends Error {
 
 export default class RequestInterceptionTrigger extends Trigger {
   static TYPE = 'request-interception';
+
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+    global: Joi.boolean().optional(),
+    actions: Joi.when('global', {
+      is: true,
+      then: Joi.array()
+        .items(
+          Joi.string().valid(
+            INTERCEPTABLE_ACTIONS.CREATE,
+            INTERCEPTABLE_ACTIONS.UPDATE,
+            INTERCEPTABLE_ACTIONS.UPSERT,
+            INTERCEPTABLE_ACTIONS.DESTROY,
+          ),
+        )
+        .min(1)
+        .required()
+        .messages({ 'array.min': 'At least one action is required in global mode' }),
+      otherwise: Joi.array().items(Joi.string()).optional(),
+    }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
 
   sync = true;
 

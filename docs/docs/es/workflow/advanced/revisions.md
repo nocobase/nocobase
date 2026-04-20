@@ -12,7 +12,7 @@ En la página de configuración del `flujo de trabajo`, puede ver las versiones 
 
 En el menú de más acciones ("...") a su derecha, puede elegir copiar la versión que está viendo actualmente a una nueva versión:
 
-![Copiar flujo de trabajo a una nueva versión](https://static-docs.nocobase.com/280798e6caca2af004893390a744256.png)
+![Copiar flujo de trabajo a una nueva versión](https://static-docs.nocobase.com/2805798e6caca2af004893390a744256.png)
 
 Después de copiar a una nueva versión, haga clic en el interruptor "Activar"/"Desactivar" para cambiar la versión correspondiente al estado activado. Una vez hecho esto, la nueva versión del `flujo de trabajo` entrará en vigor.
 

@@ -1,5 +1,5 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/fields/specific/js-column).
 :::
 
 # Colonne JS
@@ -23,7 +23,7 @@ Lors du rendu de chaque cellule, la colonne JS met à votre disposition les API 
 -   `ctx.openView(options)` : Ouvre une vue configurée (modale/tiroir/page) ;
 -   `ctx.i18n.t()` / `ctx.t()` : Internationalisation ;
 -   `ctx.onRefReady(ctx.ref, cb)` : Effectue le rendu une fois le conteneur prêt ;
--   `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` : Les bibliothèques intégrées React, ReactDOM, Ant Design, les icônes Ant Design et dayjs, utilisées pour le rendu JSX et les utilitaires de date/heure. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sont conservées pour la compatibilité.)
+-   `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula` : Les bibliothèques intégrées React, ReactDOM, Ant Design, les icônes Ant Design, dayjs, lodash, math.js et formula.js, utilisées pour le rendu JSX, le traitement du temps, la manipulation de données et les calculs mathématiques. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sont conservées pour la compatibilité.)
 -   `ctx.render(vnode)` : Rend un élément React/HTML/DOM dans le conteneur par défaut `ctx.element` (la cellule actuelle). Plusieurs rendus réutiliseront la racine et écraseront le contenu existant du conteneur.
 
 ## Éditeur et Snippets
@@ -37,7 +37,7 @@ L'éditeur de script de la colonne JS prend en charge la coloration syntaxique, 
 
 Vous pouvez également utiliser un employé IA pour générer du code :
 
--   [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/ai-coding)
+-   [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/features/built-in-employee)
 
 ## Cas d'utilisation courants
 

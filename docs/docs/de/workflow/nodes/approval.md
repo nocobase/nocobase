@@ -1,10 +1,10 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/workflow/nodes/approval).
+:::
 
 # Genehmigung
 
@@ -133,6 +133,18 @@ Nachdem Sie die Aktionsschaltflächen 'Neu zuweisen' oder 'Mitunterzeichner hinz
 Wenn eine Aktionsschaltfläche aktiviert oder deaktiviert wird oder der Zuweisungsbereich geändert wird, müssen Sie die Konfiguration des Knotens speichern, nachdem Sie das Pop-up für die Aktions-Oberflächenkonfiguration geschlossen haben. Andernfalls werden die Änderungen an der Aktionsschaltfläche nicht wirksam.
 :::
 
+### „Meine Genehmigungen“-Karte <Badge>2.0+</Badge>
+
+Dient zur Konfiguration der Aufgabenkarten in der Liste „Meine Genehmigungen“ im Aufgaben-Center.
+
+![20260214141554](https://static-docs.nocobase.com/20260214141554.png)
+
+In der Karte können Geschäftsfelder (außer Beziehungsfeldern) oder genehmigungsbezogene Informationen frei konfiguriert werden.
+
+Sobald die Genehmigung diesen Knoten erreicht, wird die benutzerdefinierte Aufgabenkarte in der Liste des Aufgaben-Centers angezeigt:
+
+![20260214141722](https://static-docs.nocobase.com/20260214141722.png)
+
 ## Knotenergebnis
 
 Nach Abschluss der Genehmigung werden der relevante Status und die Daten im Knotenergebnis erfasst und können von nachfolgenden Knoten als Variablen verwendet werden.
@@ -156,7 +168,7 @@ Das Genehmigungsprotokoll ist ein Array, das die Bearbeitungsprotokolle aller Ge
 | Feld        | Typ    | Beschreibung                               |
 | :---------- | :----- | :----------------------------------------- |
 | `id`        | `number` | Eindeutiger Bezeichner des Protokolleintrags |
-| `userId`    | `number` | Benutzer-ID, der diesen Eintrag bearbeitet hat |
+| `userId`    | `number` | Benutzer-ID des Benutzers, der diesen Eintrag bearbeitet hat |
 | `status`    | `number` | Bearbeitungsstatus                         |
 | `comment`   | `string` | Kommentar zum Zeitpunkt der Bearbeitung   |
 | `updatedAt` | `string` | Aktualisierungszeitpunkt des Protokolleintrags |

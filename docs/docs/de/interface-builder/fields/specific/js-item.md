@@ -1,42 +1,42 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/fields/specific/js-item).
 :::
 
-# JS-Element
+# JS Item
 
 ## Einführung
 
-JS-Elemente werden in Formularen für „benutzerdefinierte Elemente“ verwendet (die nicht an ein Feld gebunden sind). Sie können JavaScript/JSX verwenden, um beliebige Inhalte (wie Hinweise, Statistiken, Vorschauen, Schaltflächen usw.) zu rendern und mit dem Formular- und Datensatzkontext zu interagieren. Dies eignet sich ideal für Szenarien wie Echtzeit-Vorschauen, Hinweistexte und kleine interaktive Komponenten.
+JS Item wird für „Benutzerdefinierte Elemente“ in Formularen verwendet (keine Feldbindung). Sie können JavaScript/JSX verwenden, um beliebige Inhalte zu rendern (Hinweise, Statistiken, Vorschauen, Schaltflächen usw.) und mit dem Formular- und Datensatz-Kontext zu interagieren. Es eignet sich für Szenarien wie Echtzeit-Vorschauen, Erläuterungshinweise, kleine interaktive Komponenten und Ähnliches.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
 ## Laufzeit-Kontext-API (häufig verwendet)
 
-- `ctx.element`: Der DOM-Container (ElementProxy) des aktuellen Elements, der `innerHTML`, `querySelector`, `addEventListener` usw. unterstützt.
-- `ctx.form`: Die AntD Form-Instanz, die Operationen wie `getFieldValue / getFieldsValue / setFieldsValue / validateFields` usw. ermöglicht.
-- `ctx.blockModel`: Das Modell des Formularblocks, zu dem es gehört, das auf `formValuesChange` hören kann, um Verknüpfungen zu implementieren.
-- `ctx.record` / `ctx.collection`: Der aktuelle Datensatz und die Metadaten der **Sammlung** (in einigen Szenarien verfügbar).
-- `ctx.requireAsync(url)`: Lädt eine AMD/UMD-Bibliothek asynchron über eine URL.
-- `ctx.importAsync(url)`: Importiert ein ESM-Modul dynamisch über eine URL.
-- `ctx.openView(viewUid, options)`: Öffnet eine konfigurierte Ansicht (Schublade/Dialog/Seite).
-- `ctx.message` / `ctx.notification`: Globale Nachrichten und Benachrichtigungen.
-- `ctx.t()` / `ctx.i18n.t()`: Internationalisierung.
-- `ctx.onRefReady(ctx.ref, cb)`: Rendert, nachdem der Container bereit ist.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Integrierte Bibliotheken wie React, ReactDOM, Ant Design, Ant Design Icons und dayjs für JSX-Rendering und Datums-/Zeit-Dienstprogramme. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` bleiben aus Kompatibilitätsgründen erhalten.)
-- `ctx.render(vnode)`: Rendert ein React-Element/HTML/DOM in den Standard-Container `ctx.element`. Mehrere Render-Vorgänge verwenden die Root wieder und überschreiben den vorhandenen Inhalt des Containers.
+- `ctx.element`: DOM-Container des aktuellen Elements (ElementProxy), unterstützt `innerHTML`, `querySelector`, `addEventListener` usw.;
+- `ctx.form`: AntD Form-Instanz, ermöglicht `getFieldValue / getFieldsValue / setFieldsValue / validateFields` usw.;
+- `ctx.blockModel`: Modell des Formularblocks, in dem es sich befindet; kann `formValuesChange` überwachen, um Verknüpfungen zu implementieren;
+- `ctx.record` / `ctx.collection`: Aktueller Datensatz und Metainformationen der **Sammlung** (in einigen Szenarien verfügbar);
+- `ctx.requireAsync(url)`: Lädt AMD/UMD-Bibliotheken asynchron per URL;
+- `ctx.importAsync(url)`: Importiert ESM-Module dynamisch per URL;
+- `ctx.openView(viewUid, options)`: Öffnet eine konfigurierte Ansicht (Schublade/Dialog/Seite);
+- `ctx.message` / `ctx.notification`: Globale Hinweise und Benachrichtigungen;
+- `ctx.t()` / `ctx.i18n.t()`: Internationalisierung;
+- `ctx.onRefReady(ctx.ref, cb)`: Rendert erst, wenn der Container bereit ist;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Integrierte Bibliotheken wie React / ReactDOM / Ant Design / Ant Design Icons / dayjs / lodash / math.js / formula.js für JSX-Rendering, Zeitverarbeitung, Datenoperationen und mathematische Berechnungen. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` bleiben zur Kompatibilität erhalten.)
+- `ctx.render(vnode)`: Rendert React-Elemente/HTML/DOM in den Standard-Container `ctx.element`; bei mehrfachem Rendern wird die Root wiederverwendet und der vorhandene Inhalt des Containers überschrieben.
 
 ## Editor und Snippets
 
-- `Snippets`: Öffnet eine Liste der integrierten Code-Snippets, die Sie suchen und mit einem Klick an der aktuellen Cursorposition einfügen können.
-- `Run`: Führt den aktuellen Code direkt aus und gibt die Ausführungsprotokolle im unteren `Logs`-Panel aus. Es unterstützt `console.log/info/warn/error` und die Hervorhebung von Fehlern.
+- `Snippets`: Öffnet eine Liste integrierter Code-Fragmente, die gesucht und mit einem Klick an der aktuellen Cursorposition eingefügt werden können.
+- `Run`: Führt den aktuellen Code direkt aus und gibt die Protokolle im unteren Bereich `Logs` aus; unterstützt `console.log/info/warn/error` und Fehlerhervorhebung.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Kann zusammen mit dem KI-Mitarbeiter verwendet werden, um Skripte zu generieren/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Entwickler](/ai-employees/built-in/ai-coding)
+- Kann mit KI-Mitarbeitern kombiniert werden, um Skripte zu erstellen/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
 
-## Häufige Anwendungsfälle (vereinfachte Beispiele)
+## Häufige Verwendung (vereinfachte Beispiele)
 
-### 1) Echtzeit-Vorschau (Lesen von Formularwerten)
+### 1) Echtzeit-Vorschau (Formularwerte lesen)
 
 ```js
 const render = () => {
@@ -53,7 +53,7 @@ render();
 ctx.blockModel?.on?.('formValuesChange', () => render());
 ```
 
-### 2) Eine Ansicht öffnen (Schublade)
+### 2) Ansicht öffnen (Schublade)
 
 ```js
 ctx.render(
@@ -80,9 +80,9 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 
 ## Hinweise
 
-- Es wird empfohlen, für das Laden externer Bibliotheken vertrauenswürdige CDNs zu verwenden und für Fehlerfälle eine Fallback-Strategie zu implementieren (z. B. `if (!lib) return;`).
-- Es wird empfohlen, für Selektoren `class` oder `[name=...]` zu bevorzugen und feste `id`s zu vermeiden, um doppelte `id`s in mehreren Blöcken/Popups zu verhindern.
-- Ereignisbereinigung: Häufige Änderungen von Formularwerten lösen mehrere Render-Vorgänge aus. Vor dem Binden eines Ereignisses sollte dieses bereinigt oder dedupliziert werden (z. B. zuerst `remove` und dann `add`, oder `{ once: true }`, oder ein `dataset`-Attribut zur Vermeidung von Duplikaten verwenden).
+- Das Laden externer Bibliotheken sollte über vertrauenswürdige CDNs erfolgen; für Fehlerfälle sollten Rückfalloptionen vorgesehen werden (z. B. `if (!lib) return;`).
+- Bei Selektoren sollten bevorzugt `class` oder `[name=...]` verwendet werden; vermeiden Sie feste `id`s, um doppelte `id`s in mehreren Blöcken/Popups zu verhindern.
+- Ereignisbereinigung: Häufige Änderungen der Formularwerte lösen mehrfaches Rendern aus; vor dem Binden von Ereignissen sollten diese bereinigt oder dedupliziert werden (z. B. erst `remove`, dann `add`, oder `{ once: true }`, oder Markierung per `dataset` zur Vermeidung von Duplikaten).
 
 ## Verwandte Dokumentation
 

@@ -4,7 +4,7 @@
 
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 *   **타입**: `string`
 *   **기본값**: `docs`

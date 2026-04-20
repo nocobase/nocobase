@@ -1,44 +1,48 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/template-print/syntax/formatters/date-formatting).
 :::
 
-### Formatage des dates
+### Formatage de date
 
 #### 1. :formatD(patternOut, patternIn)
 
 ##### Explication de la syntaxe
-Formate une date en acceptant un modèle de format de sortie (`patternOut`) et un modèle de format d'entrée optionnel (`patternIn`), qui utilise par défaut la norme ISO 8601. Vous pouvez ajuster le fuseau horaire et la langue via les options `options.timezone` et `options.lang`.
+Formatez la date, accepte le modèle de format de sortie `patternOut` et le modèle de format d'entrée `patternIn` (par défaut ISO 8601).
 
-##### Exemple
+##### Exemples courants
 ```
-// Environnement d'exemple : options API { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // Sortie 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // Sortie 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // Sortie 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Sortie 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // Sortie 1月15日
+{d.meetingTime:formatD(HH:mm)}              // Sortie 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // Sortie 2024年1月15日 星期一
+```
+
+##### Plus d'exemples de formats
+```
 '20160131':formatD(L)      // Sortie 01/31/2016
 '20160131':formatD(LL)     // Sortie January 31, 2016
 '20160131':formatD(LLLL)   // Sortie Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // Sortie Sunday
-
-// Exemple en français :
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Sortie mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Sortie dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Sortie dimanche 14 septembre 2014 19:27
 ```
 
 ##### Résultat
-La sortie est une chaîne de caractères représentant la date formatée selon le modèle spécifié.
+La sortie est une chaîne de date au format spécifié.
+
 
 #### 2. :addD(amount, unit, patternIn)
 
 ##### Explication de la syntaxe
-Ajoute une durée spécifiée à une date. Les unités prises en charge sont : `day` (jour), `week` (semaine), `month` (mois), `quarter` (trimestre), `year` (année), `hour` (heure), `minute` (minute), `second` (seconde), `millisecond` (milliseconde).
-
+Ajoutez une quantité de temps spécifiée à la date. Unités prises en charge : day, week, month, quarter, year, hour, minute, second, millisecond.  
 Paramètres :
-- `amount` : La quantité à ajouter.
-- `unit` : L'unité de temps (insensible à la casse).
-- `patternIn` : Optionnel, le format d'entrée (par défaut ISO8601).
+- amount : La quantité à ajouter
+- unit : L'unité de temps (insensible à la casse)
+- patternIn : Optionnel, format d'entrée, par défaut ISO8601
 
 ##### Exemple
 ```
-// Environnement d'exemple : options API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // Sortie "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // Sortie "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // Sortie "2016-02-03T00:00:00.000Z"
@@ -47,16 +51,16 @@ Paramètres :
 ```
 
 ##### Résultat
-La sortie est la nouvelle date après l'ajout de la durée spécifiée.
+La sortie est la nouvelle date après l'ajout du temps.
+
 
 #### 3. :subD(amount, unit, patternIn)
 
 ##### Explication de la syntaxe
-Soustrait une durée spécifiée d'une date. Les paramètres sont identiques à ceux de `:addD`.
+Soustrayez une quantité de temps spécifiée de la date. Paramètres identiques à `addD`.
 
 ##### Exemple
 ```
-// Environnement d'exemple : options API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // Sortie "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // Sortie "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // Sortie "2016-01-28T00:00:00.000Z"
@@ -65,20 +69,19 @@ Soustrait une durée spécifiée d'une date. Les paramètres sont identiques à 
 ```
 
 ##### Résultat
-La sortie est la nouvelle date après la soustraction de la durée spécifiée.
+La sortie est la nouvelle date après la soustraction du temps.
+
 
 #### 4. :startOfD(unit, patternIn)
 
 ##### Explication de la syntaxe
-Définit la date au début de l'unité de temps spécifiée.
-
+Définit la date au début de l'unité de temps spécifiée.  
 Paramètres :
-- `unit` : L'unité de temps.
-- `patternIn` : Optionnel, le format d'entrée.
+- unit : L'unité de temps
+- patternIn : Optionnel, format d'entrée
 
 ##### Exemple
 ```
-// Environnement d'exemple : options API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // Sortie "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // Sortie "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // Sortie "2016-01-31T00:00:00.000Z"
@@ -87,18 +90,17 @@ Paramètres :
 ```
 
 ##### Résultat
-La sortie est une chaîne de caractères représentant la date définie au début de l'unité spécifiée.
+La sortie est une chaîne de date représentant le moment du début.
+
 
 #### 5. :endOfD(unit, patternIn)
 
 ##### Explication de la syntaxe
-Définit la date à la fin de l'unité de temps spécifiée.
-
-Les paramètres sont identiques à ceux de `:startOfD`.
+Définit la date à la fin de l'unité de temps spécifiée.  
+Paramètres identiques ci-dessus.
 
 ##### Exemple
 ```
-// Environnement d'exemple : options API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // Sortie "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // Sortie "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // Sortie "2016-01-31T23:59:59.999Z"
@@ -107,27 +109,28 @@ Les paramètres sont identiques à ceux de `:startOfD`.
 ```
 
 ##### Résultat
-La sortie est une chaîne de caractères représentant la date définie à la fin de l'unité spécifiée.
+La sortie est une chaîne de date représentant le moment de la fin.
+
 
 #### 6. :diffD(toDate, unit, patternFromDate, patternToDate)
 
 ##### Explication de la syntaxe
-Calcule la différence entre deux dates et l'affiche dans l'unité spécifiée. Les unités de sortie prises en charge sont :
-- `day(s)` ou `d` (jour(s))
-- `week(s)` ou `w` (semaine(s))
-- `quarter(s)` ou `Q` (trimestre(s))
-- `month(s)` ou `M` (mois)
-- `year(s)` ou `y` (année(s))
-- `hour(s)` ou `h` (heure(s))
-- `minute(s)` ou `m` (minute(s))
-- `second(s)` ou `s` (seconde(s))
-- `millisecond(s)` ou `ms` (milliseconde(s), unité par défaut)
+Calcule la différence entre deux dates et l'affiche dans l'unité spécifiée. Les unités de sortie prises en charge incluent :
+- `day(s)` ou `d`
+- `week(s)` ou `w`
+- `quarter(s)` ou `Q`
+- `month(s)` ou `M`
+- `year(s)` ou `y`
+- `hour(s)` ou `h`
+- `minute(s)` ou `m`
+- `second(s)` ou `s`
+- `millisecond(s)` ou `ms` (unité par défaut)
 
 Paramètres :
-- `toDate` : La date cible.
-- `unit` : L'unité de sortie.
-- `patternFromDate` : Optionnel, le format de la date de début.
-- `patternToDate` : Optionnel, le format de la date cible.
+- toDate : Date cible
+- unit : Unité de sortie
+- patternFromDate : Optionnel, format de la date de départ
+- patternToDate : Optionnel, format de la date cible
 
 ##### Exemple
 ```
@@ -142,49 +145,46 @@ Paramètres :
 ```
 
 ##### Résultat
-La sortie est la différence de temps entre les deux dates, convertie dans l'unité spécifiée.
+La sortie est la différence de temps entre les deux dates, convertie selon l'unité spécifiée.
+
 
 #### 7. :convDate(patternIn, patternOut)
 
 ##### Explication de la syntaxe
-Convertit une date d'un format à un autre (utilisation non recommandée).
-
+Convertit une date d'un format à un autre. (Utilisation non recommandée)  
 Paramètres :
-- `patternIn` : Le format d'entrée de la date.
-- `patternOut` : Le format de sortie de la date.
+- patternIn : Format de la date d'entrée
+- patternOut : Format de la date de sortie
 
 ##### Exemple
 ```
-// Environnement d'exemple : options API { "lang": "en", "timezone": "Europe/Paris" }
 '20160131':convDate('YYYYMMDD', 'L')      // Sortie "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // Sortie "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // Sortie "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // Sortie "Sunday"
 1410715640:convDate('X', 'LLLL')          // Sortie "Sunday, September 14, 2014 7:27 PM"
-// Exemple en français :
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Sortie "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Sortie "dimanche"
 ```
 
 ##### Résultat
-La sortie est une chaîne de caractères représentant la date convertie au format spécifié.
+La sortie est la chaîne de date convertie.
+
 
 #### 8. Modèles de format de date
-Symboles de format de date courants (se référer à la documentation de DayJS) :
-- `X` : Horodatage Unix (en secondes), par exemple 1360013296
-- `x` : Horodatage Unix en millisecondes, par exemple 1360013296123
-- `YY` : Année sur deux chiffres, par exemple 18
-- `YYYY` : Année sur quatre chiffres, par exemple 2018
-- `M`, `MM`, `MMM`, `MMMM` : Mois (numérique, sur deux chiffres, abrégé, nom complet)
-- `D`, `DD` : Jour (numérique, sur deux chiffres)
-- `d`, `dd`, `ddd`, `dddd` : Jour de la semaine (numérique, minimal, abrégé, nom complet)
-- `H`, `HH`, `h`, `hh` : Heure (format 24 heures ou 12 heures)
+Description des formats de date courants (référez-vous aux explications de DayJS) :
+- `X` : Horodatage Unix (secondes), ex: 1360013296
+- `x` : Horodatage Unix en millisecondes, ex: 1360013296123
+- `YY` : Année sur deux chiffres, ex: 18
+- `YYYY` : Année sur quatre chiffres, ex: 2018
+- `M`, `MM`, `MMM`, `MMMM` : Mois (chiffre, deux chiffres, abrégé, nom complet)
+- `D`, `DD` : Jour (chiffre, deux chiffres)
+- `d`, `dd`, `ddd`, `dddd` : Semaine (chiffre, minimal, abrégé, nom complet)
+- `H`, `HH`, `h`, `hh` : Heure (format 24h ou 12h)
 - `m`, `mm` : Minute
 - `s`, `ss` : Seconde
 - `SSS` : Milliseconde (3 chiffres)
-- `Z`, `ZZ` : Décalage UTC, par exemple +05:00 ou +0500
+- `Z`, `ZZ` : Décalage UTC, ex: +05:00 ou +0500
 - `A`, `a` : AM/PM
 - `Q` : Trimestre (1-4)
-- `Do` : Jour du mois avec ordinal, par exemple 1er, 2e, ...
-- Pour les autres formats, veuillez vous référer à la documentation complète.
-  De plus, il existe des formats localisés basés sur la langue, tels que `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL`, etc.
+- `Do` : Jour avec suffixe ordinal, ex: 1st, 2nd, …
+- Pour d'autres formats, veuillez consulter la documentation complète.  
+  De plus, il existe des formats localisés basés sur la langue : comme `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL`, etc.

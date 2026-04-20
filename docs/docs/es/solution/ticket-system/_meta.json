@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Introducción a la solución"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "Diseño detallado"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Instalación"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Más contenido"
   }
 ]

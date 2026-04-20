@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: External PostgreSQL"
+displayName: "Источник данных: Внешний PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external PostgreSQL databases as data sources.
+  Используйте внешнюю базу данных PostgreSQL в качестве источника данных.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: External PostgreSQL
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-data-source-external-postgres/index).
+:::
+
+# Источник данных: Внешний PostgreSQL

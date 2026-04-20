@@ -1,5 +1,5 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/template-print/syntax/formatters/currency-formatting).
 :::
 
 ### Formatage de devise
@@ -7,50 +7,45 @@ Cette documentation a été traduite automatiquement par IA.
 #### 1. :formatC(precisionOrFormat, targetCurrency)
 
 ##### Explication de la syntaxe
-Permet de formater un nombre représentant une devise et de spécifier le nombre de décimales ou un format de sortie particulier.  
+Formate un nombre de devise, vous pouvez spécifier le nombre de décimales ou un format de sortie spécifique.  
 Paramètres :
-- precisionOrFormat : Un paramètre optionnel qui peut être soit un nombre (pour spécifier le nombre de décimales), soit un identifiant de format :
-  - Un entier : modifie la précision décimale par défaut.
-  - `'M'` : affiche uniquement le nom principal de la devise.
-  - `'L'` : affiche le nombre accompagné du symbole de la devise (par défaut).
-  - `'LL'` : affiche le nombre accompagné du nom principal de la devise.
-- targetCurrency : Optionnel ; le code de la devise cible (en majuscules, par exemple USD, EUR) qui remplacera les paramètres globaux.
+- precisionOrFormat : Paramètre optionnel, peut être soit un nombre (spécifiant le nombre de décimales), soit un identifiant de format spécifique :
+  - Entier : modifie la précision décimale par défaut
+  - `'M'` : affiche uniquement le nom principal de la devise
+  - `'L'` : affiche le nombre accompagné du symbole de la devise (par défaut)
+  - `'LL'` : affiche le nombre accompagné du nom principal de la devise
+- targetCurrency : Optionnel, code de la devise cible (en majuscules, ex. USD, EUR), écrasera les paramètres globaux
 
 ##### Exemple
 ```
-// Environnement d'exemple : options de l'API { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-'1000.456':formatC()      // Affiche "$2,000.91"
-'1000.456':formatC('M')    // Affiche "dollars"
-'1':formatC('M')           // Affiche "dollar"
-'1000':formatC('L')        // Affiche "$2,000.00"
-'1000':formatC('LL')       // Affiche "2,000.00 dollars"
-
-// Exemple en français (lorsque les paramètres d'environnement sont différents) :
-'1000.456':formatC()      // Affiche "2 000,91 ..."  
-'1000.456':formatC()      // Lorsque les devises source et cible sont identiques, affiche "1 000,46 €"
+'1000.456':formatC()      // Sortie "$2,000.91"
+'1000.456':formatC('M')    // Sortie "dollars"
+'1':formatC('M')           // Sortie "dollar"
+'1000':formatC('L')        // Sortie "$2,000.00"
+'1000':formatC('LL')       // Sortie "2,000.00 dollars"
 ```
 
 ##### Résultat
-Le résultat affiché dépend des options de l'API et des paramètres de taux de change.
+Le résultat de la sortie dépend des options de l'API et des paramètres de taux de change.
+
 
 #### 2. :convCurr(target, source)
 
 ##### Explication de la syntaxe
 Convertit un nombre d'une devise à une autre. Le taux de change peut être transmis via les options de l'API ou défini globalement.  
-Si aucun paramètre n'est spécifié, la conversion est automatiquement effectuée de `options.currencySource` vers `options.currencyTarget`.  
+Si aucun paramètre n'est spécifié, la conversion s'effectue automatiquement de `options.currencySource` vers `options.currencyTarget`.  
 Paramètres :
-- target : Optionnel ; le code de la devise cible (par défaut, `options.currencyTarget`).
-- source : Optionnel ; le code de la devise source (par défaut, `options.currencySource`).
+- target : Optionnel, code de la devise cible (par défaut égal à `options.currencyTarget`)
+- source : Optionnel, code de la devise source (par défaut égal à `options.currencySource`)
 
 ##### Exemple
 ```
-// Environnement d'exemple : options de l'API { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-10:convCurr()              // Affiche 20
-1000:convCurr()            // Affiche 2000
-1000:convCurr('EUR')        // Affiche 1000
-1000:convCurr('USD')        // Affiche 2000
-1000:convCurr('USD', 'USD') // Affiche 1000
+10:convCurr()              // Sortie 20
+1000:convCurr()            // Sortie 2000
+1000:convCurr('EUR')        // Sortie 1000
+1000:convCurr('USD')        // Sortie 2000
+1000:convCurr('USD', 'USD') // Sortie 1000
 ```
 
 ##### Résultat
-Le résultat est la valeur de la devise convertie.
+La sortie est la valeur numérique de la devise convertie.

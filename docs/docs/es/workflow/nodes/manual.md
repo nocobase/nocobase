@@ -104,11 +104,11 @@ Para el procesamiento manual, también necesita añadir una lista de tareas pend
 
 Puede seleccionar "Tareas pendientes del **flujo de trabajo**" de los bloques de una página para añadir un bloque de lista de tareas pendientes:
 
-![Nodo manual_Añadir bloque de tareas pendientes](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![Nodo manual_Añadir bloque de tareas pendientes](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Ejemplo de bloque de lista de tareas pendientes:
 
-![Nodo manual_Lista de tareas pendientes](https://static-docs.nocobase.com/cfefb05d6b220f34.png)
+![Nodo manual_Lista de tareas pendientes](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Detalles de la tarea pendiente
 

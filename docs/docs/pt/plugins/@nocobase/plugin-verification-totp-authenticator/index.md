@@ -1,15 +1,19 @@
 ---
-displayName: "Verification: TOTP authenticator"
+displayName: "Verificação: Autenticador TOTP"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support users in binding a TOTP authenticator and verifying their identity using time-based one-time codes (TOTP).
+  Permite que os usuários vinculem um autenticador TOTP e verifiquem sua identidade usando códigos de uso único baseados em tempo (TOTP).
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Verification: TOTP authenticator
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-verification-totp-authenticator/index).
+:::
+
+# Verificação: Autenticador TOTP

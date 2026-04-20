@@ -1,12 +1,12 @@
 ---
-displayName: "Auth: SMS"
+displayName: "Authentication: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  SMS authentication.
+  Authenticate identity via SMS verification code.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Auth: SMS
+# Authentication: SMS

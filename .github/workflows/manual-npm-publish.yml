@@ -1,0 +1,284 @@
+name: Manual npm publish
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.tag }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to publish, for example v1.7.0 or v2.0.0-beta.1'
+        required: true
+        type: string
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    with:
+      require_tag: ${{ inputs.tag }}
+      # For v1.x maintenance releases, only include repos that have the v1 branch.
+      # For v2+ we keep the original behavior (no filtering at this stage).
+      require_branch: ${{ startsWith(inputs.tag, 'v1.') && 'v1' || '' }}
+    secrets: inherit
+
+  publish-npm:
+    needs: get-plugins
+    runs-on: ubuntu-latest
+    env:
+      TARGET_TAG: ${{ inputs.tag }}
+      NPM_DIST_TAG: republish
+    steps:
+      - name: Set Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Print mode
+        run: |
+          echo "Mode: publish"
+          echo "Target tag: $TARGET_TAG"
+          echo "Publish dist-tag: $NPM_DIST_TAG"
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }}${{ needs.get-plugins.outputs.all-plugins != '[]' && needs.get-plugins.outputs.unreleased-plugins != '[]' && ',' || '' }}${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), ',') }}
+          skip-token-revoke: true
+
+      - name: Resolve repos with this tag
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="$TARGET_TAG"
+
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' && '${{ needs.get-plugins.outputs.unreleased-plugins }}' == '[]' ]]; then
+            echo "No plugin repos contain tag $TAG." >&2
+            exit 1
+          fi
+
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' == '[]' ]]; then
+            echo "Only unreleased plugin repos contain tag $TAG."
+          elif [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' == '[]' ]]; then
+            echo "No unreleased plugin repos contain tag $TAG."
+          else
+            echo "Resolved released and unreleased plugin repos for $TAG successfully."
+          fi
+
+          if [[ '${{ needs.get-plugins.outputs.all-plugins }}' != '[]' ]]; then
+            echo "Released plugins with tag $TAG: ${{ needs.get-plugins.outputs.all-plugins }}"
+          fi
+
+          if [[ '${{ needs.get-plugins.outputs.unreleased-plugins }}' != '[]' ]]; then
+            echo "Unreleased plugins with tag $TAG: ${{ needs.get-plugins.outputs.unreleased-plugins }}"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.TARGET_TAG }}
+
+      - name: Send curl request and parse response
+        env:
+          PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
+          PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
+        run: |
+          mkdir git-ci-cache
+          apt-get update && apt-get install -y jq
+          response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token1=$(echo "$response1" | jq -r '.token')
+          response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token2=$(echo "$response2" | jq -r '.token')
+          echo "PKG_NOCOBASE_TOKEN=$token1" >> "$GITHUB_ENV"
+          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> "$GITHUB_ENV"
+
+      - name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          if ! node -e "require.resolve('dayjs-timezone-iana-plugin')" >/dev/null 2>&1; then
+            yarn add -W dayjs-timezone-iana-plugin@0.1.0
+          fi
+          yarn build
+
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ref: ${{ env.TARGET_TAG }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Clone released pro repos
+        if: ${{ needs.get-plugins.outputs.all-plugins != '[]' }}
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          do
+            git clone -b $TARGET_TAG https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+
+      - name: Clone unreleased pro repos
+        if: ${{ needs.get-plugins.outputs.unreleased-plugins != '[]' }}
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.unreleased-plugins), ' ') }}
+          do
+            if [[ -d "packages/pro-plugins/@nocobase/$repo" ]]; then
+              continue
+            fi
+            git clone -b $TARGET_TAG https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+
+      - name: Build Pro plugins
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          if ! node -e "require.resolve('dayjs-timezone-iana-plugin')" >/dev/null 2>&1; then
+            yarn add -W dayjs-timezone-iana-plugin@0.1.0
+          fi
+          yarn build packages/pro-plugins
+
+      - name: Resolve pro plugin scopes
+        id: pro-plugin-scopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_JSONS=$(
+            node -e "
+              const fs = require('fs');
+              const path = require('path');
+              const root = path.resolve('packages/pro-plugins');
+              const results = [];
+              function walk(dir) {
+                for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                  if (entry.name === 'node_modules') continue;
+                  const fullPath = path.join(dir, entry.name);
+                  if (entry.isDirectory()) {
+                    walk(fullPath);
+                    continue;
+                  }
+                  if (entry.name !== 'package.json') continue;
+                  if (fullPath === path.join(root, 'package.json')) continue;
+                  const pkg = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                  if (pkg.private === true) continue;
+                  results.push(fullPath);
+                }
+              }
+              walk(root);
+              results.sort().forEach((file) => console.log(file));
+            "
+          )
+
+          if [[ -n "$PACKAGE_JSONS" ]]; then
+            echo "Packages to publish:"
+            while IFS= read -r package_json; do
+              [[ -n "$package_json" ]] || continue
+              node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json"
+            done <<< "$PACKAGE_JSONS"
+            echo "count=1" >> "$GITHUB_OUTPUT"
+            {
+              echo 'package_jsons<<EOF'
+              printf '%s\n' "$PACKAGE_JSONS"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "No pro plugin packages to publish."
+            echo "count=0" >> "$GITHUB_OUTPUT"
+            {
+              echo 'package_jsons<<EOF'
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: publish pkg.nocobase.com
+        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard
+          npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
+
+          publish_or_skip() {
+            local package_dir="$1"
+            local registry="$2"
+            local package_name="$3"
+            local log_file
+            log_file=$(mktemp)
+
+            if npm publish "$package_dir" --registry "$registry" --tag "$NPM_DIST_TAG" >"$log_file" 2>&1; then
+              cat "$log_file"
+              rm -f "$log_file"
+              return 0
+            fi
+
+            cat "$log_file"
+            if grep -q "E409" "$log_file" || grep -q "already present" "$log_file"; then
+              echo "Skip publishing $package_name to $registry because this version already exists."
+              rm -f "$log_file"
+              return 0
+            fi
+
+            rm -f "$log_file"
+            return 1
+          }
+
+          while IFS= read -r package_json; do
+            [[ -n "$package_json" ]] || continue
+            package_dir=$(dirname "$package_json")
+            package_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json")
+            echo "Publishing $package_name to pkg.nocobase.com"
+            publish_or_skip "$package_dir" "https://pkg.nocobase.com" "$package_name"
+          done <<'EOF'
+          ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
+          EOF
+
+      - name: publish pkg-src.nocobase.com
+        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard
+          bash generate-npmignore.sh ignore-src
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
+
+          publish_or_skip() {
+            local package_dir="$1"
+            local registry="$2"
+            local package_name="$3"
+            local log_file
+            log_file=$(mktemp)
+
+            if npm publish "$package_dir" --registry "$registry" --tag "$NPM_DIST_TAG" >"$log_file" 2>&1; then
+              cat "$log_file"
+              rm -f "$log_file"
+              return 0
+            fi
+
+            cat "$log_file"
+            if grep -q "E409" "$log_file" || grep -q "already present" "$log_file"; then
+              echo "Skip publishing $package_name to $registry because this version already exists."
+              rm -f "$log_file"
+              return 0
+            fi
+
+            rm -f "$log_file"
+            return 1
+          }
+
+          while IFS= read -r package_json; do
+            [[ -n "$package_json" ]] || continue
+            package_dir=$(dirname "$package_json")
+            package_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).name)" "$package_json")
+            echo "Publishing $package_name to pkg-src.nocobase.com"
+            publish_or_skip "$package_dir" "https://pkg-src.nocobase.com" "$package_name"
+          done <<'EOF'
+          ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
+          EOF

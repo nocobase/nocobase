@@ -1,690 +1,688 @@
-# Ticketing Solution Detailed Design
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/solution/ticket-system/design)をご参照ください。
+:::
 
-> **Version**: v2.0-beta
+# チケットソリューション詳細設計
 
-> **Updated**: 2026-01-05
+> **バージョン**: v2.0-beta
 
-> **Status**: Preview
+> **更新日**: 2026-01-05
 
+> **ステータス**: プレビュー版
 
-## 1. System Overview and Design Philosophy
+## 1. システム概要と設計理念
 
-### 1.1 System Positioning
+### 1.1 システムのポジショニング
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+本システムは、NocoBase 低コードプラットフォームに基づいて構築された **AI駆動型インテリジェントチケット管理プラットフォーム** です。コア目標は以下の通りです：
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+カスタマーサービスが煩雑なプロセス操作ではなく、問題解決に集中できるようにする
 ```
 
-### 1.2 Design Philosophy
+### 1.2 設計理念
 
-#### Philosophy One: T-Shaped Data Architecture
+#### 理念1：T型データアーキテクチャ
 
-**What is T-Shaped Architecture?**
+**T型アーキテクチャとは？**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+「T型人材」の概念（横方向の広さ ＋ 縦方向の深さ）を借用しています：
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **横方向（主テーブル）**：すべての業務タイプに共通する汎用能力 —— 番号、ステータス、担当者、SLAなどのコアフィールドをカバー
+- **縦方向（拡張テーブル）**：特定の業務に特化した専門フィールド —— 機器修理ならシリアル番号、苦情なら賠償案など
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
-**Why This Design?**
+**なぜこのように設計するのか？**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| 従来のソリューション | T型アーキテクチャ |
+|----------|---------|
+| 業務ごとにテーブルを作成し、フィールドが重複する | 共通フィールドを一元管理し、業務フィールドを必要に応じて拡張する |
+| 統計レポートのために複数のテーブルを結合する必要がある | 1つの主テーブルで直接すべてのチケットを統計できる |
+| プロセス変更時に複数箇所の修正が必要 | コアプロセスは1箇所の修正で済む |
+| 新しい業務タイプの追加に新テーブル作成が必要 | 拡張テーブルを追加するだけで、メインフローは変更不要 |
 
-#### Philosophy Two: AI Employee Team
+#### 理念2：AI従業員チーム
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+単なる「AI機能」ではなく、「AI従業員」として定義します。各AIには明確な役割、性格、職責があります：
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| AI従業員 | 役職 | 主な職責 | トリガーシーン |
+|--------|------|----------|----------|
+| **Sam** | サービスデスクマネージャー | チケットの振り分け、優先度評価、エスカレーションの意思決定 | チケット作成時に自動実行 |
+| **Grace** | カスタマーサクセスエキスパート | 回答の生成、トーンの調整、苦情処理 | スタッフが「AI回答」をクリックした時 |
+| **Max** | ナレッジアシスタント | 類似ケースの検索、ナレッジの推奨、ソリューションの統合 | チケット詳細ページで自動実行 |
+| **Lexi** | 翻訳官 | 多言語翻訳、コメントの翻訳 | 外国語を検知した時に自動実行 |
 
-**Why the "AI Employee" Model?**
+**なぜ「AI従業員」モデルを採用するのか？**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **職責の明確化**：Samは振り分け、Graceは回答を担当することで、混乱を防ぎます。
+- **理解しやすさ**：ユーザーに対して「分類APIを呼び出す」と言うよりも「Samに分析してもらう」と言う方が親しみやすくなります。
+- **拡張性**：新しいAI機能の追加 ＝ 新しい従業員の採用として扱えます。
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### 理念3：ナレッジの自己循環
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+これにより、**ナレッジの蓄積 ─ ナレッジの活用** というクローズドループが形成されます。
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. コアエンティティとデータモデル
 
-### 2.1 Entity Relationship Overview
+### 2.1 エンティティ関係の概要
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 コアテーブル詳細
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 チケット主テーブル (nb_tts_tickets)
 
-**Basic Information**
+システムの核心であり、頻繁に使用されるフィールドをすべて主テーブルに配置する「ワイドテーブル」設計を採用しています。
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**基本情報**
 
-**Source Tracking**
+| フィールド | タイプ | 説明 | 例 |
+|------|------|------|------|
+| id | BIGINT | 主キー | 1001 |
+| ticket_no | VARCHAR | チケット番号 | TKT-20251229-0001 |
+| title | VARCHAR | タイトル | ネットワーク接続が遅い |
+| description | TEXT | 問題の説明 | 今朝からオフィスのネットワークが... |
+| biz_type | VARCHAR | 業務タイプ | it_support |
+| priority | VARCHAR | 優先度 | P1 |
+| status | VARCHAR | ステータス | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**ソース追跡**
 
-**Contact Information**
+| フィールド | タイプ | 説明 | 例 |
+|------|------|------|------|
+| source_system | VARCHAR | ソースシステム | crm / email / iot |
+| source_channel | VARCHAR | ソースチャネル | web / phone / wechat |
+| external_ref_id | VARCHAR | 外部参照ID | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**連絡先情報**
 
-**Assignee Information**
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| customer_id | BIGINT | 顧客ID |
+| contact_name | VARCHAR | 連絡先氏名 |
+| contact_phone | VARCHAR | 電話番号 |
+| contact_email | VARCHAR | メールアドレス |
+| contact_company | VARCHAR | 会社名 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**担当者情報**
 
-**Time Nodes**
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| assignee_id | BIGINT | 担当者ID |
+| assignee_department_id | BIGINT | 担当部門ID |
+| transfer_count | INT | 転送回数 |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**タイムスタンプ**
 
-**SLA Related**
+| フィールド | タイプ | 説明 | トリガータイミング |
+|------|------|------|----------|
+| submitted_at | TIMESTAMP | 提出時間 | チケット作成時 |
+| assigned_at | TIMESTAMP | 割り当て時間 | 担当者指定時 |
+| first_response_at | TIMESTAMP | 初回応答時間 | 顧客への初回回答時 |
+| resolved_at | TIMESTAMP | 解決時間 | ステータスが resolved に変更された時 |
+| closed_at | TIMESTAMP | クローズ時間 | ステータスが closed に変更された時 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**SLA関連**
 
-**AI Analysis Results**
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| sla_config_id | BIGINT | SLA設定ID |
+| sla_response_due | TIMESTAMP | 応答期限 |
+| sla_resolve_due | TIMESTAMP | 解決期限 |
+| sla_paused_at | TIMESTAMP | SLA一時停止開始時間 |
+| sla_paused_duration | INT | 累計一時停止時間（分） |
+| is_sla_response_breached | BOOLEAN | 応答期限超過の有無 |
+| is_sla_resolve_breached | BOOLEAN | 解決期限超過の有無 |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**AI分析結果**
 
-**Multi-Language Support**
+| フィールド | タイプ | 説明 | 入力者 |
+|------|------|------|----------|
+| ai_category_code | VARCHAR | AI識別カテゴリ | Sam |
+| ai_sentiment | VARCHAR | 感情分析 | Sam |
+| ai_urgency | VARCHAR | 緊急度 | Sam |
+| ai_keywords | JSONB | キーワード | Sam |
+| ai_reasoning | TEXT | 推論プロセス | Sam |
+| ai_suggested_reply | TEXT | 推奨回答 | Sam/Grace |
+| ai_confidence_score | NUMERIC | 信頼度スコア | Sam |
+| ai_analysis | JSONB | 完全な分析結果 | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**多言語サポート**
 
-#### 2.2.2 Business Extension Tables
+| フィールド | タイプ | 説明 | 入力者 |
+|------|------|------|----------|
+| source_language_code | VARCHAR | 元の言語 | Sam/Lexi |
+| target_language_code | VARCHAR | ターゲット言語 | システムデフォルト EN |
+| is_translated | BOOLEAN | 翻訳済みか | Lexi |
+| description_translated | TEXT | 翻訳後の説明 | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 業務拡張テーブル
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**機器修理 (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| ticket_id | BIGINT | 関連チケットID |
+| equipment_model | VARCHAR | 機器モデル |
+| serial_number | VARCHAR | シリアル番号 |
+| fault_code | VARCHAR | 故障コード |
+| spare_parts | JSONB | スペアパーツリスト |
+| maintenance_type | VARCHAR | メンテナンスタイプ |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**ITサポート (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| ticket_id | BIGINT | 関連チケットID |
+| asset_number | VARCHAR | 資産番号 |
+| os_version | VARCHAR | OSバージョン |
+| software_name | VARCHAR | 対象ソフトウェア |
+| remote_address | VARCHAR | リモートアドレス |
+| error_code | VARCHAR | エラーコード |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**顧客の苦情 (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| ticket_id | BIGINT | 関連チケットID |
+| related_order_no | VARCHAR | 関連注文番号 |
+| complaint_level | VARCHAR | 苦情レベル |
+| compensation_amount | DECIMAL | 賠償金額 |
+| compensation_type | VARCHAR | 賠償方法 |
+| root_cause | TEXT | 根本原因 |
 
-**Core Fields**
+#### 2.2.3 コメントテーブル (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**コアフィールド**
 
-**AI Review Fields (for outbound)**
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| id | BIGINT | 主キー |
+| ticket_id | BIGINT | チケットID |
+| parent_id | BIGINT | 親コメントID（ツリー構造対応） |
+| content | TEXT | コメント内容 |
+| direction | VARCHAR | 方向: inbound(顧客)/outbound(スタッフ) |
+| is_internal | BOOLEAN | 内部メモか |
+| is_first_response | BOOLEAN | 初回応答か |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**AI監査フィールド (outbound用)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| source_language_code | VARCHAR | 元の言語 |
+| content_translated | TEXT | 翻訳内容 |
+| is_translated | BOOLEAN | 翻訳済みか |
+| is_ai_blocked | BOOLEAN | AIによるブロックの有無 |
+| ai_block_reason | VARCHAR | ブロック理由 |
+| ai_block_detail | TEXT | 詳細説明 |
+| ai_quality_score | NUMERIC | 品質スコア |
+| ai_suggestions | TEXT | 改善提案 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 評価テーブル (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| ticket_id | BIGINT | チケットID (一意) |
+| overall_rating | INT | 総合満足度 (1-5) |
+| response_rating | INT | 応答速度 (1-5) |
+| professionalism_rating | INT | 専門性 (1-5) |
+| resolution_rating | INT | 問題解決 (1-5) |
+| nps_score | INT | NPSスコア (0-10) |
+| tags | JSONB | クイックタグ |
+| comment | TEXT | テキスト評価 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 ナレッジ記事テーブル (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| フィールド | タイプ | 説明 |
+|------|------|------|
+| article_no | VARCHAR | 記事番号 KB-T0001 |
+| title | VARCHAR | タイトル |
+| content | TEXT | 内容(Markdown) |
+| summary | TEXT | 要約 |
+| category_code | VARCHAR | カテゴリコード |
+| keywords | JSONB | キーワード |
+| source_type | VARCHAR | ソース: ticket/faq/manual |
+| source_ticket_id | BIGINT | 元チケットID |
+| ai_generated | BOOLEAN | AI生成か |
+| ai_quality_score | NUMERIC | 品質スコア |
+| status | VARCHAR | ステータス: draft/published/archived |
+| view_count | INT | 閲覧数 |
+| helpful_count | INT | 「役に立った」数 |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 データテーブル一覧
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| 番号 | テーブル名 | 説明 | レコードタイプ |
+|------|------|------|----------|
+| 1 | nb_tts_tickets | チケット主テーブル | 業務データ |
+| 2 | nb_tts_biz_repair | 機器修理拡張 | 業務データ |
+| 3 | nb_tts_biz_it_support | ITサポート拡張 | 業務データ |
+| 4 | nb_tts_biz_complaint | 顧客の苦情拡張 | 業務データ |
+| 5 | nb_tts_customers | 顧客主テーブル | 業務データ |
+| 6 | nb_tts_customer_contacts | 顧客連絡先 | 業務データ |
+| 7 | nb_tts_ticket_comments | チケットコメント | 業務データ |
+| 8 | nb_tts_ratings | 満足度評価 | 業務データ |
+| 9 | nb_tts_qa_articles | ナレッジ記事 | ナレッジデータ |
+| 10 | nb_tts_qa_article_relations | 記事関連付け | ナレッジデータ |
+| 11 | nb_tts_faqs | よくある質問 | ナレッジデータ |
+| 12 | nb_tts_tickets_categories | チケットカテゴリ | 設定データ |
+| 13 | nb_tts_sla_configs | SLA設定 | 設定データ |
+| 14 | nb_tts_skill_configs | スキル設定 | 設定データ |
+| 15 | nb_tts_business_types | 業務タイプ | 設定データ |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. チケットのライフサイクル
 
-### 4.1 Priority and SLA Configuration
+### 3.1 ステータス定義
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| ステータス | 日本語名 | 説明 | SLA計測 | 色 |
+|------|------|------|---------|------|
+| new | 新規 | 作成直後、アサイン待ち | 開始 | 🔵 青 |
+| assigned | アサイン済み | 担当者指定済み、受付待ち | 継続 | 🔷 シアン |
+| processing | 処理中 | 処理を実行中 | 継続 | 🟠 オレンジ |
+| pending | 保留 | 顧客のフィードバック待ち | **停止** | ⚫ グレー |
+| transferred | 転送済み | 他の担当者へ転送 | 継続 | 🟣 紫 |
+| resolved | 解決済み | 顧客の確認待ち | 停止 | 🟢 緑 |
+| closed | クローズ済み | チケット終了 | 停止 | ⚫ グレー |
+| cancelled | キャンセル済み | チケットキャンセル | 停止 | ⚫ グレー |
 
-### 4.2 SLA Calculation Logic
+### 3.2 ステータス遷移図
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**メインフロー（左から右へ）**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**分岐フロー**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**完全なステートマシン**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 主要なステータス遷移ルール
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| 遷移元 | 遷移先 | トリガー条件 | システムアクション |
+|----|----|---------|---------|
+| new | assigned | 担当者を指定 | assigned_at を記録 |
+| assigned | processing | 担当者が「受付」をクリック | なし |
+| processing | pending | 「保留」をクリック | sla_paused_at を記録 |
+| pending | processing | 顧客の返信 / 手動で再開 | 一時停止時間を計算し、paused_at をクリア |
+| processing | resolved | 「解決」をクリック | resolved_at を記録 |
+| resolved | closed | 顧客の確認 / 3日間のタイムアウト | closed_at を記録 |
+| * | cancelled | チケットをキャンセル | なし |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. SLAサービスレベル管理
 
-### 5.1 AI Employee Team
+### 4.1 優先度とSLA設定
 
-The system configures 8 AI employees in two categories:
+| 優先度 | 名称 | 応答時間 | 解決時間 | 警告しきい値 | 典型的なシナリオ |
+|--------|------|----------|----------|----------|----------|
+| P0 | 緊急 | 15分 | 2時間 | 80% | システムダウン、生産ライン停止 |
+| P1 | 高 | 1時間 | 8時間 | 80% | 重要機能の故障 |
+| P2 | 中 | 4時間 | 24時間 | 80% | 一般的な問題 |
+| P3 | 低 | 8時間 | 72時間 | 80% | 問い合わせ、提案 |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 SLA計算ロジック
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
-**Reused Employees (General Capabilities)**
+#### チケット作成時
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+応答期限 = 提出時間 + 応答制限時間（分）
+解決期限 = 提出時間 + 解決制限時間（分）
+```
 
-### 5.2 AI Task List
+#### 保留時 (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+SLA一時停止開始時間 = 現在時刻
+```
 
-#### Sam's Tasks
+#### 再開時 (pending から processing へ戻る)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- 今回の一時停止時間を計算
+今回の一時停止時間 = 現在時刻 - SLA一時停止開始時間
 
-#### Grace's Tasks
+-- 累計一時停止時間に加算
+累計一時停止時間 = 累計一時停止時間 + 今回の一時停止時間
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- 期限を延長（保留期間はSLAにカウントしない）
+応答期限 = 応答期限 + 今回の一時停止時間
+解決期限 = 解決期限 + 今回の一時停止時間
 
-#### Max's Tasks
+-- 一時停止開始時間をクリア
+SLA一時停止開始時間 = NULL
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### SLA違反判定
 
-#### Lexi's Tasks
+```
+-- 応答違反判定
+応答違反か = (初回応答時間が空 かつ 現在時刻 > 応答期限)
+            または (初回応答時間 > 応答期限)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- 解決違反判定
+解決違反か = (解決時間が空 かつ 現在時刻 > 解決期限)
+            または (解決時間 > 解決期限)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 SLA警告メカニズム
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| 警告レベル | 条件 | 通知対象 | 通知方法 |
+|----------|------|----------|----------|
+| イエロー警告 | 残り時間 < 20% | 担当者 | アプリ内通知 |
+| レッド警告 | 期限超過 | 担当者 + マネージャー | アプリ内通知 + メール |
+| エスカレーション警告 | 超過1時間 | 部門長 | メール + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 SLAダッシュボード指標
 
-#### SAM-01 Ticket Analysis Response
+| 指標 | 計算式 | 健全なしきい値 |
+|------|----------|----------|
+| 応答達成率 | 違反のないチケット数 / 総チケット数 | > 95% |
+| 解決達成率 | 解決期限内の解決数 / 解決済みチケット数 | > 90% |
+| 平均応答時間 | SUM(応答時間) / チケット数 | < SLAの50% |
+| 平均解決時間 | SUM(解決時間) / チケット数 | < SLAの80% |
+
+---
+
+## 5. AI能力と従業員システム
+
+### 5.1 AI従業員チーム
+
+システムには8名のAI従業員が設定されており、2つのカテゴリに分かれています：
+
+**新規従業員（チケットシステム専用）**
+
+| ID | 氏名 | 役職 | コア能力 |
+|----|------|------|----------|
+| sam | Sam | サービスデスクマネージャー | チケット振り分け、優先度評価、エスカレーション決定、SLAリスク識別 |
+| grace | Grace | カスタマーサクセスエキスパート | 専門的な回答生成、トーン調整、苦情処理、満足度回復 |
+| max | Max | ナレッジアシスタント | 類似ケース検索、ナレッジ推奨、ソリューション統合 |
+
+**再利用従業員（汎用能力）**
+
+| ID | 氏名 | 役職 | コア能力 |
+|----|------|------|----------|
+| dex | Dex | データオーガナイザー | メール/電話からのチケット作成、一括データクリーニング |
+| ellis | Ellis | メールエキスパート | メールの感情分析、スレッド要約、返信ドラフト作成 |
+| lexi | Lexi | 翻訳官 | チケット翻訳、回答翻訳、リアルタイム対話翻訳 |
+| cole | Cole | NocoBaseエキスパート | システム利用ガイド、ワークフロー設定支援 |
+| vera | Vera | リサーチアナリスト | 技術ソリューション調査、製品情報検証 |
+
+### 5.2 AIタスクリスト
+
+各AI従業員には4つの具体的なタスクが設定されています：
+
+#### Samのタスク
+
+| タスクID | 名称 | トリガー方法 | 説明 |
+|--------|------|----------|------|
+| SAM-01 | チケット分析・振り分け | ワークフロー自動 | 新規チケット作成時に自動分析 |
+| SAM-02 | 優先度再評価 | フロントエンド操作 | 新しい情報に基づき優先度を調整 |
+| SAM-03 | エスカレーション決定 | フロントエンド/ワークフロー | エスカレーションの必要性を判断 |
+| SAM-04 | SLAリスク評価 | ワークフロー自動 | 期限超過リスクを識別 |
+
+#### Graceのタスク
+
+| タスクID | 名称 | トリガー方法 | 説明 |
+|--------|------|----------|------|
+| GRACE-01 | 専門的回答生成 | フロントエンド操作 | コンテキストに基づき回答を生成 |
+| GRACE-02 | 回答トーン調整 | フロントエンド操作 | 既存の回答のトーンを最適化 |
+| GRACE-03 | 苦情の沈静化処理 | フロントエンド/ワークフロー | 顧客の苦情を解消 |
+| GRACE-04 | 満足度回復 | フロントエンド/ワークフロー | ネガティブな体験後のフォローアップ |
+
+#### Maxのタスク
+
+| タスクID | 名称 | トリガー方法 | 説明 |
+|--------|------|----------|------|
+| MAX-01 | 類似ケース検索 | フロントエンド/ワークフロー | 過去の類似チケットを検索 |
+| MAX-02 | ナレッジ記事推奨 | フロントエンド/ワークフロー | 関連するナレッジ記事を推奨 |
+| MAX-03 | ソリューション統合 | フロントエンド操作 | 複数ソースから解決策を統合 |
+| MAX-04 | トラブルシューティングガイド | フロントエンド操作 | 体系的な調査プロセスを作成 |
+
+#### Lexiのタスク
+
+| タスクID | 名称 | トリガー方法 | 説明 |
+|--------|------|----------|------|
+| LEXI-01 | チケット翻訳 | ワークフロー自動 | チケット内容を翻訳 |
+| LEXI-02 | 回答翻訳 | フロントエンド操作 | スタッフの回答を翻訳 |
+| LEXI-03 | 一括翻訳 | ワークフロー自動 | 大量のデータを一括翻訳 |
+| LEXI-04 | リアルタイム対話翻訳 | フロントエンド操作 | 対話をリアルタイムで翻訳 |
+
+### 5.3 AI従業員とチケットライフサイクル
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+
+### 5.4 AI応答例
+
+#### SAM-01 チケット分析応答
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "ログイン失敗", "タイムアウト", "月末決算"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "このチケットはERPシステムのログイン問題を説明しており、財務部門の月末決算に影響するため、緊急度が高いと判断しました。",
+  "suggested_reply": "お客様、この問題をご報告いただきありがとうございます...",
   "source_language_code": "zh",
   "is_translated": true,
   "description_translated": "Hello, our ERP system cannot login..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 回答生成応答
 
 ```
-Dear Mr. Zhang,
+張様
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+ERPのログイン問題についてご連絡いただきありがとうございます。
+この問題が貴社の月末決算業務に影響を与えていることを重く受け止め、
+最優先事項として対応させていただきます。
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+現在の状況：
+- 技術チームがサーバー接続問題を調査中です
+- 30分以内に進捗状況を更新する予定です
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+その間、以下の方法をお試しいただけますでしょうか：
+1. バックアップアドレスからのアクセス: https://erp-backup.company.com
+2. お急ぎのレポートが必要な場合は、弊社でエクスポートを代行いたします
 
-Please feel free to contact me if you have any other questions.
+ご不明な点がございましたら、いつでもご連絡ください。
 
-Best regards,
-Technical Support Team
+敬具
+テクニカルサポートチーム
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 AI情動（EQ）ファイアウォール
 
-Grace's reply quality review blocks the following issues:
+Graceが担当する回答品質監査では、以下の問題をブロックします：
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| 問題タイプ | 原文例 | AIの提案 |
+|----------|----------|--------|
+| 否定的なトーン | 「無理です。保証対象外です」 | 「あいにく本故障は無償保証の対象外ですが、有償修理プランをご提案可能です」 |
+| 顧客を責める | 「お客様が壊したのでしょう」 | 「確認の結果、本故障は偶発的な損傷に該当します」 |
+| 責任転嫁 | 「弊社の問題ではありません」 | 「原因をさらに詳しく調査させていただきます」 |
+| 冷淡な表現 | 「知りません」 | 「関連情報を確認いたしますので、少々お待ちください」 |
+| 機密情報 | 「パスワードは abc123 です」 | [ブロック] 機密情報が含まれているため送信を許可しません |
 
 ---
 
-## 6. Knowledge Base System
+## 6. ナレッジベース体系
 
-### 6.1 Knowledge Sources
+### 6.1 ナレッジソース
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 チケットからナレッジへの変換フロー
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**評価基準**：
+- **汎用性**: これはよくある問題か？
+- **完全性**: 解決策は明確で完全か？
+- **再現性**: 手順は再利用可能か？
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 ナレッジ推奨メカニズム
+
+スタッフがチケット詳細を開くと、Maxが自動的に関連ナレッジを推奨します：
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 推奨ナレッジ                                [展開/折りたたみ] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 CNCサーボシステム故障診断ガイド      一致度: 94%    │ │
+│ │ 内容: アラームコードの解釈、サーボドライブの点検手順        │ │
+│ │ [表示] [回答に適用] [役に立った]                        │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 XYZ-CNC3000シリーズ保守マニュアル    一致度: 87%    │ │
+│ │ 内容: よくある故障、予防保守計画                          │ │
+│ │ [表示] [回答に適用] [役に立った]                        │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. ワークフローエンジン
+
+### 7.1 ワークフロー分類
+
+| 番号 | 分類 | 説明 | トリガー方法 |
+|------|------|------|----------|
+| WF-T | チケットフロー | チケットライフサイクル管理 | フォームイベント |
+| WF-S | SLAフロー | SLA計算と警告 | フォームイベント/スケジュール |
+| WF-C | コメントフロー | コメント処理と翻訳 | フォームイベント |
+| WF-R | 評価フロー | 評価依頼と統計 | フォームイベント/スケジュール |
+| WF-N | 通知フロー | 通知送信 | イベント駆動 |
+| WF-AI | AIフロー | AI分析と生成 | フォームイベント |
+
+### 7.2 コアワークフロー
+
+#### WF-T01: チケット作成フロー
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+
+#### WF-AI01: チケットAI分析
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+
+#### WF-AI04: コメント翻訳と監査
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+
+#### WF-AI03: ナレッジ生成
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
+
+### 7.3 定期タスク
+
+| タスク | 実行頻度 | 説明 |
+|------|----------|------|
+| SLA警告チェック | 5分ごと | 期限が迫っているチケットをチェック |
+| チケット自動クローズ | 毎日 | resolved ステータスから3日後に自動クローズ |
+| 評価依頼送信 | 毎日 | クローズから24時間後に評価依頼を送信 |
+| 統計データ更新 | 1時間ごと | 顧客のチケット統計を更新 |
 
 ---
 
-## 7. Workflow Engine
+## 8. メニューとインターフェース設計
 
-### 7.1 Workflow Categories
+### 8.1 管理バックエンド
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
-### 7.2 Core Workflows
+### 8.2 顧客ポータル
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 ダッシュボード設計
 
-#### WF-AI01: Ticket AI Analysis
+#### エグゼクティブビュー
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| コンポーネント | タイプ | データ説明 |
+|------|------|----------|
+| SLA達成率 | ゲージ | 今月の応答/解決達成率 |
+| 満足度トレンド | 折れ線グラフ | 直近30日の満足度変化 |
+| チケット量トレンド | 棒グラフ | 直近30日のチケット件数 |
+| 業務タイプ分布 | 円グラフ | 各業務タイプの割合 |
 
-#### WF-AI04: Comment Translation & Review
+#### マネージャービュー
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| コンポーネント | タイプ | データ説明 |
+|------|------|----------|
+| 期限超過警告 | リスト | 期限間近/超過チケット |
+| メンバー負荷 | 棒グラフ | チームメンバーごとのチケット数 |
+| 未処理分布 | 積み上げグラフ | ステータス別のチケット数 |
+| 処理効率 | ヒートマップ | 平均処理時間の分布 |
 
-#### WF-AI03: Knowledge Generation
+#### スタッフビュー
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| コンポーネント | タイプ | データ説明 |
+|------|------|----------|
+| マイタスク | 数値カード | 未処理チケット数 |
+| 優先度分布 | 円グラフ | P0/P1/P2/P3の分布 |
+| 本日の統計 | 指標カード | 本日の処理/解決数 |
+| SLAカウントダウン | リスト | 最も緊急な5件のチケット |
 
 ---
 
-## Appendix
+## 付録
 
-### A. Business Type Configuration
+### A. 業務タイプ設定
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| タイプコード | 名称 | アイコン | 関連拡張テーブル |
+|----------|------|------|------------|
+| repair | 機器修理 | 🔧 | nb_tts_biz_repair |
+| it_support | ITサポート | 💻 | nb_tts_biz_it_support |
+| complaint | 顧客の苦情 | 📢 | nb_tts_biz_complaint |
+| consultation | 問い合わせ・提案 | ❓ | なし |
+| other | その他 | 📝 | なし |
 
-### B. Category Codes
+### B. カテゴリコード
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| コード | 名称 | 説明 |
+|------|------|------|
+| CONVEYOR | 搬送システム | 搬送システムの問題 |
+| PACKAGING | 包装機 | 包装機の問題 |
+| WELDING | 溶接設備 | 溶接設備の問題 |
+| COMPRESSOR | 空圧機 | 空圧機の問題 |
+| COLD_STORE | 冷蔵庫 | 冷蔵庫の問題 |
+| CENTRAL_AC | 中央エアコン | 中央エアコンの問題 |
+| FORKLIFT | フォークリフト | フォークリフトの問題 |
+| COMPUTER | コンピュータ | コンピュータハードウェアの問題 |
+| PRINTER | プリンタ | プリンタの問題 |
+| PROJECTOR | プロジェクター | プロジェクターの問題 |
+| INTERNET | ネットワーク | ネットワーク接続の問題 |
+| EMAIL | メール | メールシステムの問題 |
+| ACCESS | 権限 | アカウント権限の問題 |
+| PROD_INQ | 製品問い合わせ | 製品に関する問い合わせ |
+| COMPLAINT | 一般的な苦情 | 一般的な苦情 |
+| DELAY | 物流遅延 | 物流遅延に関する苦情 |
+| DAMAGE | 梱包破損 | 梱包破損に関する苦情 |
+| QUANTITY | 数量不足 | 数量不足に関する苦情 |
+| SVC_ATTITUDE | サービス態度 | サービス態度に関する苦情 |
+| PROD_QUALITY | 製品品質 | 製品品質に関する苦情 |
+| TRAINING | トレーニング | トレーニングの依頼 |
+| RETURN | 返品 | 返品の依頼 |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*ドキュメントバージョン: 2.0 | 最終更新: 2026-01-05*

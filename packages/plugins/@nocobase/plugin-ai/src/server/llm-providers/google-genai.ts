@@ -8,11 +8,11 @@
  */
 
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { EmbeddingProvider, LLMProvider } from './provider';
+import { EmbeddingProvider, LLMProvider, ParsedAttachmentResult } from './provider';
 import axios from 'axios';
 import { Model } from '@nocobase/database';
 import { encodeFile } from '../utils';
-import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Context } from '@nocobase/actions';
@@ -71,7 +71,7 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -103,16 +103,17 @@ export class GoogleGenAIProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
   }
 
-  async parseAttachment(ctx: Context, attachment: any) {
+  protected async convertToContent(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(ctx, decodeURIComponent(url));
-    if (attachment.mimetype.startsWith('image/')) {
+    if (attachment.mimetype?.startsWith('image/')) {
+      const data = await encodeFile(ctx, decodeURIComponent(url));
       return {
         placement: 'contentBlocks',
         content: {
@@ -123,6 +124,7 @@ export class GoogleGenAIProvider extends LLMProvider {
         },
       };
     } else {
+      const data = await encodeFile(ctx, decodeURIComponent(url));
       return {
         placement: 'contentBlocks',
         content: {

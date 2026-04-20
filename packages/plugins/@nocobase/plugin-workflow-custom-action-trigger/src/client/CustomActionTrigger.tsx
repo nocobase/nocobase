@@ -109,6 +109,43 @@ function useVariables(config, options) {
 export default class extends Trigger {
   title = `{{t("Custom action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('When the "Trigger Workflow" button is clicked, the event is triggered based on different context where the button is located. For complex data processing that cannot be handled simply by built-in operations (CRUD) of NocoBase, you can define a series of operations through a workflow and trigger it with the "Trigger Workflow" button.', { ns: "${NAMESPACE}" })}}`;
+  presetFieldset = {
+    type: {
+      type: 'number',
+      title: `{{t("Context type", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: CONTEXT_TYPE_OPTIONS,
+      },
+      required: true,
+      default: CONTEXT_TYPE.GLOBAL,
+    },
+    collection: {
+      type: 'string',
+      title: '{{t("Collection")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'DataSourceCollectionCascader',
+      'x-component-props': {
+        dataSourceFilter(item) {
+          return item.options.key === 'main' || item.options.isDBInstance;
+        },
+      },
+      ['x-reactions']: [
+        {
+          dependencies: ['.type'],
+          fulfill: {
+            state: {
+              visible: '{{Boolean($deps[0])}}',
+            },
+          },
+        },
+      ],
+    },
+  };
   fieldset = {
     type: {
       type: 'number',
@@ -121,7 +158,7 @@ export default class extends Trigger {
         options: CONTEXT_TYPE_OPTIONS,
       },
       default: CONTEXT_TYPE.GLOBAL,
-      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-disabled': true,
     },
     collection: {
       type: 'string',
@@ -129,7 +166,7 @@ export default class extends Trigger {
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'DataSourceCollectionCascader',
-      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-disabled': true,
       ['x-reactions']: [
         {
           target: 'appends',

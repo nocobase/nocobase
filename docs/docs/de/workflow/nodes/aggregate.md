@@ -64,7 +64,7 @@ Als Nächstes erstellen Sie einen Workflow, der durch ein Sammlungsereignis ausg
 
 Danach fügen Sie einen Aggregatabfrage-Knoten hinzu und konfigurieren ihn wie folgt:
 
-![Aggregatabfrage-Knoten_Beispiel_Knotenkonfiguration](https://static-docs.nocobase.com/542272e667373d1b37ddda78.png)
+![Aggregatabfrage-Knoten_Beispiel_Knotenkonfiguration](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
 
 Auf diese Weise zählt der Aggregatabfrage-Knoten nach dem Auslösen des Workflows die Anzahl aller Artikel in der Kategorie des neu hinzugefügten Artikels und speichert dies als Knotenergebnis.
 

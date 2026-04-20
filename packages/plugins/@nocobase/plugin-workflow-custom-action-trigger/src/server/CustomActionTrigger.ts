@@ -16,11 +16,13 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
+import Joi from 'joi';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import WorkflowPluginServer, {
   EventOptions,
   EXECUTION_STATUS,
   Trigger,
+  validateCollectionField,
   WorkflowModel,
   getWorkflowExecutionLogMeta,
 } from '@nocobase/plugin-workflow';
@@ -45,7 +47,28 @@ class CustomActionInterceptionError extends Error {
 export default class CustomActionTrigger extends Trigger {
   static TYPE = EVENT_TYPE;
 
-  async globalTriggerAction(context: ResourcerContext, next: Next) {
+  configSchema = Joi.object({
+    type: Joi.number().valid(CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS, CONTEXT_TYPE.GLOBAL).required(),
+    collection: Joi.when('type', {
+      is: Joi.valid(CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS),
+      then: Joi.string().required().messages({ 'any.required': 'Collection is required for record-based context' }),
+      otherwise: Joi.string().allow(null, ''),
+    }),
+    appends: Joi.array().items(Joi.string()).optional(),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    if (config.collection) {
+      return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+    }
+    return null;
+  }
+
+  async globalTriggerAction(context: Context, next: Next) {
     const { triggerWorkflows, values = {} } = context.action!.params;
 
     const { currentUser, currentRole } = context.state;

@@ -54,7 +54,7 @@ export class PluginManager {
   }
 
   private async initRemotePlugins() {
-    const res = await this.app.apiClient.request({ url: 'pm:listEnabled' });
+    const res = await this.app.apiClient.request({ url: 'pm:listEnabledV2' });
     const pluginList: PluginData[] = res?.data?.data || [];
     const plugins = await getPlugins({
       requirejs: this.app.requirejs,

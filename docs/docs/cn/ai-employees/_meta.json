@@ -41,7 +41,17 @@
       {
         "type": "custom-link",
         "label": "使用技能",
-        "link": "/ai-employees/features/tool"
+        "link": "/ai-employees/features/skills"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用工具",
+        "link": "/ai-employees/features/tools"
+      },
+      {
+        "type": "custom-link",
+        "label": "MCP 接入",
+        "link": "/ai-employees/features/mcp"
       },
       {
         "type": "custom-link",
@@ -70,7 +80,6 @@
     "label": "文件管理",
     "link": "/ai-employees/file-manager"
   },
-
   {
     "type": "custom-link",
     "label": "AI 知识库",
@@ -128,6 +137,16 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase MCP",
+    "link": "/ai-employees/mcp"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase Skills",
+    "link": "/ai-employees/skills"
   },
   {
     "type": "custom-link",

@@ -11,15 +11,15 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 ## Vorlagenkonfiguration
 
 Gehen Sie zum E-Mail-Verwaltungszentrum und klicken Sie auf die Schaltfläche "Einstellungen":
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
 Wechseln Sie zum Vorlagen-Panel:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_53_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_12_PM.png)
 
 Hier können Sie Vorlagen verwalten:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM.png)
 
 ## Vorlagen verwenden
 
 Klicken Sie im Textfeld der E-Mail auf das Vorlagen-Symbol, um die gewünschte Vorlage auszuwählen:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM%20(1).png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM%20(1).png)

@@ -168,7 +168,7 @@ Si vous devez passer de la page de connexion à la page d'inscription, vous devr
 
 ### Formulaire de paramètres d'administration
 
-![](https://static-docs.nocobase.com/f4b544b5b0f4afee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 La partie supérieure présente la configuration générique de l'authentificateur, tandis que la partie inférieure correspond à la section du formulaire de configuration personnalisée qui peut être enregistrée.
 

@@ -49,16 +49,16 @@ Die Wissensdatenbank unterstützt derzeit folgende Dokumenttypen: txt, pdf, doc,
 
 Eine Lokale Wissensdatenbank ist eine Wissensdatenbank, die direkt in NocoBase gespeichert wird. Sowohl die Dokumente als auch deren Vektordaten werden von NocoBase lokal gespeichert.
 
-![20251023101620](https://static-docs.nocobase.com/2025101620.png)
+![20251023101620](https://static-docs.nocobase.com/20251023101620.png)
 
 ### Nur-Lese-Wissensdatenbank
 
 Eine Nur-Lese-Wissensdatenbank ist eine schreibgeschützte Wissensdatenbank. Die Dokumente und Vektordaten werden extern verwaltet. In NocoBase wird lediglich eine Verbindung zur Vektordatenbank hergestellt (derzeit wird nur PGVector unterstützt).
 
-![20251023101743](https://static-docs.nocobase.com/2025101743.png)
+![20251023101743](https://static-docs.nocobase.com/20251023101743.png)
 
 ### Externe Wissensdatenbank
 
 Eine Externe Wissensdatenbank ist eine Wissensdatenbank, bei der Dokumente und Vektordaten extern verwaltet werden. Die Abfrage der Vektordatenbank erfordert eine Erweiterung durch Entwickler, wodurch auch Vektordatenbanken genutzt werden können, die derzeit von NocoBase nicht direkt unterstützt werden.
 
-![20251023101949](https://static-docs.nocobase.com/2025101949.png)
+![20251023101949](https://static-docs.nocobase.com/20251023101949.png)

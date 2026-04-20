@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "Outil de test de traduction"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-locale-tester/index).
+:::
+
+# Outil de test de traduction

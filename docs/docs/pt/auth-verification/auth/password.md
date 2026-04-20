@@ -24,7 +24,7 @@ Página de cadastro
 
 Quando o cadastro não é permitido, a página de login não exibirá o link para criar uma conta.
 
-![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a934745121.png)
+![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
 Quando o cadastro não é permitido, a página de cadastro não poderá ser acessada.
 

@@ -19,7 +19,7 @@ Usually you need to confirm:
 
 1. Select Provider.
 2. Fill API Key.
-3. Configure `Enabled Models`; default `Recommend` is usually enough.
+3. Configure `Enabled Models`; simply use Recommend by default.
 
 ## Enable Built-in Employees
 
@@ -51,7 +51,7 @@ AI Employees can also automatically get page structure as context. For example, 
 
 ## Shortcut Tasks
 
-You can preset common tasks for each AI Employee at the current location, so work can start with one click.
+You can preset common tasks for each AI Employee at the current location, so you can start working with one click, making it fast and convenient.
 
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
 
@@ -74,7 +74,7 @@ You only need to:
 | **Lexi** | Translation Assistant | Multilingual translation, communication assistance |
 | **Vera** | Research Analyst | Web search, information aggregation, in-depth research |
 | **Dara** | Data Visualization Expert | Chart configuration, visual report generation |
-| **Orin** | Data Modeling Expert | Assist in designing data table structures, field suggestions |
+| **Orin** | Data Modeling Expert | Assist in designing collection structures, field suggestions |
 | **Nathan** | Frontend Engineer | Assist in writing frontend code snippets, style adjustments |
 
 **Notes**

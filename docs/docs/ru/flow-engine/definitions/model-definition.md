@@ -4,7 +4,7 @@
 
 # ModelDefinition
 
-ModelDefinition определяет параметры создания модели потока, которые используются для создания экземпляра модели с помощью метода `FlowEngine.createModel()`. Оно включает базовую конфигурацию, свойства, подмодели и другую информацию о модели.
+ModelDefinition определяет параметры создания модели потока, которые используются для создания экземпляра модели с помощью метода `FlowEngine.createModelAsync()`. Оно включает базовую конфигурацию, свойства, подмодели и другую информацию о модели.
 
 ## Определение типа
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Создание экземпляра модели
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // Использование динамической ссылки
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Регистрация класса модели
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Динамический импорт: модуль модели загружается только тогда, когда эта модель впервые действительно нужна
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Создание экземпляра модели
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

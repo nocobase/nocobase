@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster-Betrieb und Wartung"
+description: "Cluster-Betrieb: Startreihenfolge beim ersten Start, Versionsupgrade (Stopp, Backup, Update, Verifizierung) und In-App-Wartung (Plugins, Backup) auf einem einzelnen Knoten."
+keywords: "Cluster Betrieb,Upgrade,In-App-Wartung,Plugin-Verwaltung,Backup,Rolling-Upgrade,NocoBase"
+---
+
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::

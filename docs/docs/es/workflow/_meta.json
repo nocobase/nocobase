@@ -5,7 +5,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Visión general",
+    "label": "Descripción general",
     "link": "/workflow/index"
   },
   {
@@ -20,37 +20,37 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Visión general",
+        "label": "Descripción general",
         "link": "/workflow/triggers/index"
       },
       {
         "type": "custom-link",
-        "label": "Eventos de tabla de datos",
+        "label": "Evento de colección",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Tareas programadas",
+        "label": "Tarea programada",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "Evento pre-acción",
+        "label": "Evento previo a la acción",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "Evento post-acción",
+        "label": "Evento posterior a la acción",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "Evento de acción personalizado",
+        "label": "Evento de acción personalizada",
         "link": "/workflow/triggers/custom-action"
       },
       {
         "type": "custom-link",
-        "label": "Aprobaciones",
+        "label": "Aprobación",
         "link": "/workflow/triggers/approval"
       },
       {
@@ -67,16 +67,16 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Visión general",
+        "label": "Descripción general",
         "link": "/workflow/nodes/index"
       },
       {
         "type": "custom-link",
-        "label": "Inteligencia Artificial (AI)",
+        "label": "Inteligencia artificial",
         "items": [
           {
             "type": "custom-link",
-            "label": "Modelo Lingüístico Grande (LLM)",
+            "label": "Gran modelo de lenguaje",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -107,7 +107,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Bifurcación en paralelo",
+            "label": "Bifurcación paralela",
             "link": "/workflow/nodes/parallel"
           },
           {
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Salida de flujo",
+            "label": "Salida del flujo",
             "link": "/workflow/nodes/output"
           },
           {
@@ -132,7 +132,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Finalizar",
+            "label": "Fin",
             "link": "/workflow/nodes/end"
           }
         ]
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Añadir datos",
+            "label": "Crear datos",
             "link": "/workflow/nodes/create"
           },
           {
@@ -200,12 +200,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Aprobaciones",
+            "label": "Aprobación",
             "link": "/workflow/nodes/approval"
           },
           {
             "type": "custom-link",
-            "label": "Enviar copia (CC)",
+            "label": "CC",
             "link": "/workflow/nodes/cc"
           }
         ]
@@ -226,12 +226,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Notificaciones",
+            "label": "Notificación",
             "link": "/notification-manager/#工作流通知节点"
           },
           {
             "type": "custom-link",
-            "label": "Enviar correo",
+            "label": "Envío de correo electrónico",
             "link": "/workflow/nodes/mailer"
           },
           {
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Registro de ejecución",
-    "link": "/workflow/advanced/execution"
+    "label": "Historial de ejecución",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -274,22 +274,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Visión general",
+        "label": "Descripción general",
         "link": "/workflow/development/index"
       },
       {
         "type": "custom-link",
-        "label": "Extender tipo de disparador",
+        "label": "Extender tipos de disparadores",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "Extender tipo de nodo",
+        "label": "Extender tipos de nodos",
         "link": "/workflow/development/node"
       },
       {
         "type": "custom-link",
-        "label": "Referencia de API",
+        "label": "Referencia de la API",
         "link": "/workflow/development/api"
       }
     ]

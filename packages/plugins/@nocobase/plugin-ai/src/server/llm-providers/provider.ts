@@ -9,19 +9,20 @@
 
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { Model } from '@nocobase/database';
-import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
-import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
+import { buildTool, encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
-import { tool } from 'langchain';
 import '@langchain/core/utils/stream';
-import { ToolsEntry } from '@nocobase/ai';
 import { LLMResult } from '@langchain/core/outputs';
 import { ContentBlock } from '@langchain/core/messages';
+import { CachedDocumentLoader, SUPPORTED_DOCUMENT_EXTNAMES, SupportedDocumentExtname } from '../document-loader';
+import path from 'node:path';
+import PluginAIServer from '../plugin';
 
 export type ParsedAttachmentResult = {
   placement: string;
@@ -42,7 +43,7 @@ export abstract class LLMProvider {
 
   abstract createModel(): BaseChatModel | any;
 
-  get baseURL() {
+  get baseURL(): string | null {
     return null;
   }
 
@@ -58,7 +59,7 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    const toolDefinitions = context.tools?.map(ToolDefinition.from('ToolsEntry'));
+    const toolDefinitions = context.tools?.map(buildTool);
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
@@ -135,7 +136,34 @@ export abstract class LLMProvider {
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
+  async parseAttachment(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
+    if (this.isApiSupportedAttachment(attachment)) {
+      return await this.convertToContent(ctx, attachment);
+    } else if (this.isDocumentLoaderSupportedAttachment(attachment)) {
+      return await this.loadDocument(ctx, attachment);
+    } else {
+      const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
+      return {
+        placement: 'system',
+        content: `The user has uploaded a ${attachment.mimetype} file (filename: ${safeFilename}). Please inform the user directly that you do not support parsing image content.`,
+      };
+    }
+  }
+
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    const media = ['image/'];
+    const pdf = ['application/pdf'];
+    const supportedMedia = media.some((it) => attachment?.mimetype?.startsWith(it));
+    const supportedPdf = pdf.some((it) => attachment?.mimetype?.includes(it));
+    return supportedMedia || supportedPdf;
+  }
+
+  protected isDocumentLoaderSupportedAttachment(attachment: AttachmentModel): boolean {
+    const ext = path.extname(attachment?.filename ?? '').toLocaleLowerCase();
+    return SUPPORTED_DOCUMENT_EXTNAMES.includes(ext as SupportedDocumentExtname);
+  }
+
+  protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
     const data = await encodeFile(ctx, decodeURIComponent(url));
@@ -162,6 +190,27 @@ export abstract class LLMProvider {
         } as ContentBlock.Multimodal.File,
       } as ParsedAttachmentResult;
     }
+  }
+
+  protected async loadDocument(_ctx: Context, attachment: any): Promise<any> {
+    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
+    const parsed = await this.documentLoader.load(attachment);
+    if (!parsed.supported) {
+      return {
+        placement: 'system',
+        content: `File ${safeFilename} is not a supported document type for text parsing.`,
+      };
+    }
+    if (parsed.text.length === 0) {
+      return {
+        placement: 'system',
+        content: `The file provided by the user is an empty file, file name is "${safeFilename}"`,
+      };
+    }
+    return {
+      placement: 'system',
+      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
+    };
   }
 
   getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']): any {
@@ -239,6 +288,14 @@ export abstract class LLMProvider {
   parseResponseError(err) {
     return err?.message ?? 'Unexpected LLM service error';
   }
+
+  protected get documentLoader(): CachedDocumentLoader {
+    return this.aiPlugin.documentLoaders.cached;
+  }
+
+  protected get aiPlugin(): PluginAIServer {
+    return this.app.pm.get('ai');
+  }
 }
 
 export interface EmbeddingProviderOptions {
@@ -282,39 +339,5 @@ export abstract class EmbeddingProvider {
       throw new Error('Embedding model is required');
     }
     return model;
-  }
-}
-
-type FromType = 'ToolsEntry';
-
-export class ToolDefinition<T> {
-  constructor(
-    private from: FromType,
-    private _tool: T,
-  ) {}
-
-  static from(from: FromType) {
-    return (tool: any) => new ToolDefinition(from, tool).tool;
-  }
-
-  get tool() {
-    if (this.from === 'ToolsEntry') {
-      return this.convertToolOptions();
-    } else {
-      throw new Error('not supported tool definitions');
-    }
-  }
-
-  private convertToolOptions() {
-    const {
-      invoke,
-      definition: { name, description, schema },
-    } = this._tool as ToolsEntry;
-    return tool((input, { toolCall, context }) => invoke(context.ctx, input, toolCall.id), {
-      name,
-      description,
-      schema,
-      returnDirect: false,
-    });
   }
 }

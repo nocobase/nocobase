@@ -41,7 +41,17 @@
       {
         "type": "custom-link",
         "label": "Use Skills",
-        "link": "/ai-employees/features/tool"
+        "link": "/ai-employees/features/skills"
+      },
+      {
+        "type": "custom-link",
+        "label": "Use Tools",
+        "link": "/ai-employees/features/tools"
+      },
+      {
+        "type": "custom-link",
+        "label": "MCP Integration",
+        "link": "/ai-employees/features/mcp"
       },
       {
         "type": "custom-link",
@@ -128,6 +138,16 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase MCP",
+    "link": "/ai-employees/mcp"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase Skills",
+    "link": "/ai-employees/skills"
   },
   {
     "type": "custom-link",

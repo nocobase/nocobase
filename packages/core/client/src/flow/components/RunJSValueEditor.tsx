@@ -13,7 +13,7 @@ import { CodeEditor } from './code-editor';
 
 export interface RunJSValueEditorProps {
   t?: (key: string) => string;
-  value: unknown;
+  value?: unknown;
   onChange?: (value: RunJSValue) => void;
   height?: string;
   scene?: string;

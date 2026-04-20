@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { MockServer, createMockServer, sleep } from '@nocobase/test';
+import { storagePathJoin } from '@nocobase/utils';
 import { Plugin } from '../plugin';
 
 class MockPlugin extends Plugin {
@@ -324,7 +325,7 @@ describe('memory queue adapter', () => {
   describe('storage', () => {
     test('graceful shutdown, will create storage', async () => {
       const mockListener = vi.fn();
-      const queueFile = path.resolve(process.cwd(), 'storage', 'apps', app.name, 'event-queue.json');
+      const queueFile = storagePathJoin('apps', app.name, 'event-queue.json');
       await expect(fs.stat(queueFile)).rejects.toThrowError();
       await app.eventQueue.subscribe('test1', {
         idle: () => true,

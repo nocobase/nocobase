@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-workflow-variable'
 
 ワークフロー設定画面で、フロー内のプラス（「+」）ボタンをクリックして、「変数」ノードを追加します。
 
-![変数ノードを追加](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![変数ノードを追加](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## ノードの設定
 

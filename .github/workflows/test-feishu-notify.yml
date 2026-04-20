@@ -1,12 +1,12 @@
-name: Test Feishu Release Notification
+name: Test Feishu Notification
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version tag (e.g. v2.0.34)'
+      title:
+        description: 'Card title'
         required: true
-        default: 'v0.0.0-test'
+        default: 'NocoBase 版本 v0.0.0-test Release 结果通知'
       status:
         description: 'Build status'
         required: true
@@ -15,6 +15,10 @@ on:
           - success
           - failure
         default: 'success'
+      content:
+        description: 'Card body content in lark_md format (leave empty for default)'
+        required: false
+        default: ''
       build_time:
         description: 'Build time (leave empty for current time)'
         required: false
@@ -34,8 +38,9 @@ jobs:
         shell: bash
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
-          VERSION: ${{ inputs.version }}
+          TITLE: ${{ inputs.title }}
           STATUS: ${{ inputs.status }}
+          CONTENT: ${{ inputs.content }}
           BUILD_TIME: ${{ inputs.build_time }}
           WORKFLOW_URL: ${{ inputs.workflow_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
-        run: bash scripts/feishu-release-notify.sh
+        run: bash scripts/feishu-notify.sh

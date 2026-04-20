@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Journalisation",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Logs du serveur",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logs du serveur, logs d'audit, historique des enregistrements",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Télémétrie",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Manuel d'utilisation",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "Exportateur",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

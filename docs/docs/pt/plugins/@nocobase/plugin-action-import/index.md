@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records"
+displayName: "Ação: Importar registros"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
+  Importe dados usando modelos do Excel. Você pode configurar quais campos importar e os modelos serão gerados automaticamente.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Import records
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-action-import/index).
+:::
+
+# Ação: Importar registros

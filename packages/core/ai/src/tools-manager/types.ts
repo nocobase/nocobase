@@ -21,6 +21,7 @@ export interface ToolsRegistration {
 
 export type ToolsOptions = {
   scope: Scope;
+  from?: From;
   execution?: 'frontend' | 'backend';
   defaultPermission?: Permission;
   silence?: boolean;
@@ -33,13 +34,19 @@ export type ToolsOptions = {
     description: string;
     schema?: any;
   };
-  invoke: (ctx: Context, args: any, id: string) => Promise<any>;
+  invoke: (ctx: Context, args: any, runtime: ToolsRuntime) => Promise<any>;
+};
+
+export type ToolsRuntime = {
+  toolCallId: string;
+  writer: (chunk: any) => void;
 };
 
 export type ToolsEntry = ToolsOptions;
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
 export type Permission = 'ASK' | 'ALLOW';
+export type From = 'loader' | 'workflow' | 'mcp';
 
 export type DynamicToolsProvider = (register: ToolsRegistration) => Promise<void>;
 

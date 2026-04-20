@@ -12,10 +12,10 @@ Si desea personalizar la configuración de compilación, puede crear un archivo 
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // Vite se utiliza para empaquetar el código del lado del cliente (`src/client`).
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild se utiliza para empaquetar el código del lado del cliente (`src/client`).
 
-    // Modifique la configuración de Vite. Para más detalles, consulte: https://vitejs.dev/guide/
+    // Modifique la configuración de Rsbuild. Para más detalles, consulte: https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {

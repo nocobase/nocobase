@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider } from './provider';
+import { LLMProvider, ParsedAttachmentResult } from './provider';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import axios from 'axios';
@@ -108,7 +108,7 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -146,6 +146,7 @@ export class AnthropicProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
@@ -191,7 +192,7 @@ export class AnthropicProvider extends LLMProvider {
       }));
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
+  protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
     const data = await encodeFile(ctx, decodeURIComponent(url));

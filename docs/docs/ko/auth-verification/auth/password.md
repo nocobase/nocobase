@@ -24,7 +24,7 @@ pkg: '@nocobase/plugin-auth'
 
 회원가입이 허용되지 않은 경우, 로그인 페이지에 계정 생성 링크가 표시되지 않습니다.
 
-![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a3745121.png)
+![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
 회원가입이 허용되지 않은 경우, 회원가입 페이지에 접근할 수 없습니다.
 

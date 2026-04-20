@@ -8,7 +8,7 @@
  */
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
-import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { Registry, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -19,7 +19,8 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
-import { isAbsolute, resolve } from 'path';
+import { homedir } from 'node:os';
+import { extname, isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -29,10 +30,13 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
 import { Duplex } from 'node:stream';
+
+export { getHost, getHostname } from './utils';
 
 const compress = promisify(compression());
 
@@ -62,18 +66,25 @@ interface RunOptions {
 }
 
 export interface AppSelectorMiddlewareContext {
-  req: IncomingRequest;
+  req: IncomingMessage | IncomingRequest;
   resolvedAppName: string | null;
 }
 
+function normalizeBasePath(path = '') {
+  const normalized = path.replace(/\/+/g, '/').replace(/\/$/, '');
+  return normalized || '/';
+}
+
+/** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
 function getSocketPath() {
-  const { SOCKET_PATH } = process.env;
-
-  if (isAbsolute(SOCKET_PATH)) {
-    return SOCKET_PATH;
+  const socketPath = process.env.SOCKET_PATH;
+  if (socketPath) {
+    return isAbsolute(socketPath) ? socketPath : resolve(process.cwd(), socketPath);
   }
-
-  return resolve(process.cwd(), SOCKET_PATH);
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return resolve(homedir(), '.nocobase', 'gateway.sock');
+  }
+  return storagePathJoin('gateway.sock');
 }
 
 export class Gateway extends EventEmitter {
@@ -90,7 +101,8 @@ export class Gateway extends EventEmitter {
   loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
-  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
+  private socketPath = getSocketPath();
+  private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
 
   private onTerminate = async (signal?: NodeJS.Signals) => {
@@ -127,7 +139,6 @@ export class Gateway extends EventEmitter {
   private constructor() {
     super();
     this.reset();
-    this.socketPath = getSocketPath();
     process.once('SIGTERM', this.onTerminate);
     process.once('SIGINT', this.onTerminate);
   }
@@ -167,14 +178,35 @@ export class Gateway extends EventEmitter {
     this.addAppSelectorMiddleware(
       async (ctx: AppSelectorMiddlewareContext, next) => {
         const { req } = ctx;
-        const appName = qs.parse(parse(req.url).query)?.__appName as string | null;
+        const parsedUrl = parse(req.url);
+        const appName = qs.parse(parsedUrl.query)?.__appName as string | null;
+        const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+        const appPathPrefix = `${apiBasePath}/__app/`;
+
+        if (req.headers['x-app']) {
+          ctx.resolvedAppName = req.headers['x-app'] as string;
+        }
 
         if (appName) {
           ctx.resolvedAppName = appName;
         }
 
-        if (req.headers['x-app']) {
-          ctx.resolvedAppName = req.headers['x-app'];
+        if (parsedUrl.pathname?.startsWith(appPathPrefix)) {
+          const restPath = parsedUrl.pathname.slice(appPathPrefix.length);
+          const [pathAppName, ...segments] = restPath.split('/');
+
+          if (pathAppName) {
+            ctx.resolvedAppName = pathAppName;
+
+            const rewrittenPath = `${apiBasePath}${segments.length ? `/${segments.join('/')}` : ''}`;
+            const rewrittenUrl = `${rewrittenPath}${parsedUrl.search || ''}`;
+
+            if (!(req as any).originalUrl) {
+              (req as any).originalUrl = req.url;
+            }
+
+            req.url = rewrittenUrl;
+          }
         }
 
         await next();
@@ -256,9 +288,101 @@ export class Gateway extends EventEmitter {
     this.responseError(res, error);
   }
 
+  private getV2PublicPath() {
+    return resolveV2PublicPath(process.env.APP_PUBLIC_PATH || '/');
+  }
+
+  private getAppPublicPath() {
+    return resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
+  }
+
+  private isV2Request(pathname: string) {
+    const v2PublicPath = this.getV2PublicPath();
+    return pathname === v2PublicPath.slice(0, -1) || pathname.startsWith(v2PublicPath);
+  }
+
+  private isV2IndexRequest(pathname: string) {
+    if (!this.isV2Request(pathname)) {
+      return false;
+    }
+    const v2PublicPath = this.getV2PublicPath();
+    if (
+      pathname === v2PublicPath ||
+      pathname === v2PublicPath.slice(0, -1) ||
+      pathname === `${v2PublicPath}index.html`
+    ) {
+      return true;
+    }
+    return !extname(pathname);
+  }
+
+  private getV2RuntimeConfig() {
+    return {
+      __nocobase_public_path__: this.getV2PublicPath(),
+      __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+      __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
+      __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
+      __nocobase_api_client_share_token__: process.env.API_CLIENT_SHARE_TOKEN === 'true',
+      __nocobase_ws_url__: process.env.WEBSOCKET_URL || '',
+      __nocobase_ws_path__: process.env.WS_PATH,
+      __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+      __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
+    };
+  }
+
+  private getV2RuntimeConfigScript() {
+    const runtimeConfig = this.getV2RuntimeConfig();
+    const scriptContent = Object.entries(runtimeConfig)
+      .map(([key, value]) => `window['${key}'] = ${JSON.stringify(value)};`)
+      .join('\n');
+
+    return `<script>${scriptContent}</script>`;
+  }
+
+  private getV2AssetPublicPath() {
+    if (process.env.CDN_BASE_URL) {
+      return `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/v2/`;
+    }
+
+    return this.getV2PublicPath();
+  }
+
+  private getV2IndexTemplate() {
+    const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/v2/index.html`;
+    if (!fs.existsSync(file)) {
+      return null;
+    }
+    const stat = fs.statSync(file);
+    if (
+      this.v2IndexTemplateCache &&
+      this.v2IndexTemplateCache.file === file &&
+      this.v2IndexTemplateCache.mtimeMs === stat.mtimeMs
+    ) {
+      return this.v2IndexTemplateCache.html;
+    }
+
+    const html = fs.readFileSync(file, 'utf-8');
+    this.v2IndexTemplateCache = {
+      file,
+      mtimeMs: stat.mtimeMs,
+      html,
+    };
+    return html;
+  }
+
+  private renderV2IndexHtml() {
+    const template = this.getV2IndexTemplate();
+    if (!template) {
+      return null;
+    }
+    const html = rewriteV2AssetPublicPath(template, this.getV2AssetPublicPath());
+    return injectRuntimeScript(html, this.getV2RuntimeConfigScript());
+  }
+
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
-    const { PLUGIN_STATICS_PATH, APP_PUBLIC_PATH } = process.env;
+    const { PLUGIN_STATICS_PATH } = process.env;
+    const APP_PUBLIC_PATH = this.getAppPublicPath();
 
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
@@ -269,7 +393,7 @@ export class Gateway extends EventEmitter {
     const supervisor = AppSupervisor.getInstance();
     let handleApp = 'main';
     try {
-      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+      handleApp = await this.getRequestHandleAppName(req);
     } catch (error) {
       this.getLogger('main', res).error('Failed to get handle app name', { error });
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
@@ -318,6 +442,30 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      if (this.isV2Request(pathname)) {
+        if (handleApp !== 'main') {
+          const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+          if (isProxy) {
+            return;
+          }
+        }
+
+        if (this.isV2IndexRequest(pathname)) {
+          const v2Html = this.renderV2IndexHtml();
+          if (v2Html) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(v2Html);
+            return;
+          }
+        }
+
+        req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+        await compress(req, res);
+        return handler(req, res, {
+          public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
+        });
+      }
+
       if (handleApp !== 'main') {
         const isProxy = await supervisor.proxyWeb(handleApp, req, res);
         if (isProxy) {
@@ -408,7 +556,7 @@ export class Gateway extends EventEmitter {
     return this.selectorMiddlewares;
   }
 
-  async getRequestHandleAppName(req: IncomingRequest) {
+  async getRequestHandleAppName(req: IncomingMessage | IncomingRequest) {
     const appSelectorMiddlewares = this.selectorMiddlewares.sort();
 
     const ctx: AppSelectorMiddlewareContext = {
