@@ -17,11 +17,16 @@ type AuthType = 'token' | 'oauth';
 type EnvScope = Exclude<CliHomeScope, 'auto'>;
 
 export default class EnvAdd extends Command {
-  static summary =
+  static override summary =
     'Save a named NocoBase API endpoint (token or OAuth), then switch the CLI to use it';
-  static id = 'env add';
 
-  static args = {
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> local',
+    '<%= config.bin %> <%= command.id %> local --scope project --api-base-url http://localhost:13000/api --auth-type oauth',
+  ];
+
+  static override args = {
     name: Args.string({
       description:
         'Label for this environment (optional first argument; in a TTY, prompted when omitted; required when not using a TTY)',
@@ -29,7 +34,14 @@ export default class EnvAdd extends Command {
     }),
   };
 
-  static flags = {
+  static override flags = {
+    env: Flags.string({
+      char: 'e',
+      hidden: true,
+      deprecated: true,
+      description:
+        'Environment name (same as the optional positional argument; for compatibility with -e/--env on other commands)',
+    }),
     verbose: Flags.boolean({
       description: 'Print detailed progress while writing config',
       default: false,
@@ -69,7 +81,14 @@ export default class EnvAdd extends Command {
     const { args, flags } = await this.parse(EnvAdd);
     setVerboseMode(flags.verbose);
 
-    let name = args.name;
+    const nameArg = args.name?.trim();
+    const nameFlag = flags.env?.trim() || undefined;
+    if (nameArg && nameFlag && nameArg !== nameFlag) {
+      this.error(
+        `Environment name was given both as the argument ("${nameArg}") and as --env ("${nameFlag}"); use only one.`,
+      );
+    }
+    let name = nameArg || nameFlag || undefined;
     let scope = flags.scope as EnvScope | undefined;
     let baseUrl = flags['api-base-url'] ?? flags['base-url'];
     let authType = flags['auth-type'] as AuthType | undefined;
@@ -79,7 +98,7 @@ export default class EnvAdd extends Command {
     if (!interactive) {
       const missing: string[] = [];
       if (!name?.trim()) {
-        missing.push('<name> (first argument)');
+        missing.push('<name> (first argument or --env)');
       }
       if (!scope) {
         missing.push('--scope');
@@ -92,7 +111,7 @@ export default class EnvAdd extends Command {
       }
       if (missing.length > 0) {
         this.error(
-          `Non-interactive mode requires: ${missing.join(', ')}. Example: nb env add local --scope project --api-base-url http://localhost:13000/api --auth-type oauth`,
+          `Non-interactive mode requires: ${missing.join(', ')}. Example: nb env add -e local --scope project --api-base-url http://localhost:13000/api --auth-type oauth`,
         );
       }
     } else {

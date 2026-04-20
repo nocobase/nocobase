@@ -18,17 +18,21 @@ import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default class EnvUpdate extends Command {
-  static summary = 'Refresh an environment runtime from swagger:get and persist connection overrides';
-  static id = 'env update';
+  static override summary = 'Refresh an environment runtime from swagger:get and persist connection overrides';
 
-  static args = {
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> prod',
+  ];
+
+  static override args = {
     name: Args.string({
       description: 'Environment name (omit to use the current env)',
       required: false,
     }),
   };
 
-  static flags = {
+  static override flags = {
     verbose: Flags.boolean({
       description: 'Show detailed progress output',
       default: false,

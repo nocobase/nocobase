@@ -14,9 +14,12 @@ import { renderTable } from '../../lib/ui.js';
 
 export default class EnvList extends Command {
   static summary = 'List configured environments';
-  static id = 'env list';
 
-  static flags = {
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+  ];
+
+  static override flags = {
     scope: Flags.string({
       char: 's',
       description: 'Config scope',

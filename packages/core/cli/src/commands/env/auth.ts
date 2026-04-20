@@ -14,17 +14,28 @@ import { authenticateEnvWithOauth } from '../../lib/env-auth.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 
 export default class EnvAuth extends Command {
-  static summary = 'Authenticate an environment with OAuth';
-  static id = 'env auth';
+  static override summary = 'Authenticate an environment with OAuth';
 
-  static args = {
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> prod',
+  ];
+
+  static override args = {
     name: Args.string({
       description: 'Environment name (omit to use the current env)',
       required: false,
     }),
   };
 
-  static flags = {
+  static override flags = {
+    env: Flags.string({
+      char: 'e',
+      hidden: true,
+      deprecated: true,
+      description:
+        'Environment name (same as the optional positional argument; for compatibility with -e/--env on other commands)',
+    }),
     scope: Flags.string({
       char: 's',
       description: 'Config scope',
@@ -35,7 +46,14 @@ export default class EnvAuth extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvAuth);
     const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
-    const envName = args.name;
+    const nameArg = args.name?.trim();
+    const nameFlag = flags.env?.trim() || undefined;
+    if (nameArg && nameFlag && nameArg !== nameFlag) {
+      this.error(
+        `Environment name was given both as the argument ("${nameArg}") and as --env ("${nameFlag}"); use only one.`,
+      );
+    }
+    const envName = nameArg || nameFlag || undefined;
     const envLabel = envName ?? (await getCurrentEnvName({ scope }));
 
     startTask(`Authenticating env: ${envLabel}${scope ? ` (${formatCliHomeScope(scope)})` : ''}`);
