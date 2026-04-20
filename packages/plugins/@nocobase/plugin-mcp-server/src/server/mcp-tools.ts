@@ -20,17 +20,7 @@ type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
 
 const SWAGGER_TARGETS = ['swagger.json', 'swagger/index.json', 'swagger'];
-export const DEFAULT_MCP_PACKAGE_PATTERNS = [
-  '@nocobase/plugin-data-source-main',
-  '@nocobase/plugin-data-source-manager',
-  '@nocobase/plugin-workflow*',
-  '@nocobase/plugin-acl',
-  '@nocobase/plugin-users',
-  '@nocobase/plugin-auth',
-  '@nocobase/plugin-client',
-  '@nocobase/plugin-flow-engine',
-  '@nocobase/plugin-ai',
-];
+export const DEFAULT_MCP_PACKAGE_PATTERNS = [];
 
 function getSwaggerPrefixes() {
   if (process.env.NODE_ENV === 'production') {

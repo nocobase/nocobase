@@ -412,6 +412,71 @@ SELECT * FROM numbers;
     expect(viewCollectionWithEmail.getField('email')).toBeTruthy();
   });
 
+  it.each([
+    { collectionName: 'view', viewName: 'test_view' },
+    { collectionName: 'test_view', viewName: 'test_view' },
+  ])(
+    'should sync main data source fields when collection name is $collectionName and underlying view is $viewName',
+    async ({ collectionName, viewName }) => {
+      await app.db.getRepository('collections').create({
+        values: {
+          name: 'users',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await app.db.sync();
+      const UserCollection = app.db.getCollection('users');
+      const createViewName = app.db.options.schema ? `${app.db.options.schema}.${viewName}` : viewName;
+      const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
+      await app.db.sequelize.query(dropSQL);
+      const viewSQL = `CREATE VIEW ${createViewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+      await app.db.sequelize.query(viewSQL);
+
+      const viewDetailResponse = await agent.resource('dbViews').get({
+        filterByTk: viewName,
+        schema: app.db.options.schema,
+      });
+
+      await app.db.getRepository('collections').create({
+        values: {
+          name: collectionName,
+          view: true,
+          viewName,
+          schema: app.db.inDialect('postgres') ? app.db.options.schema || 'public' : undefined,
+          fields: Object.values(viewDetailResponse.body.data.fields),
+        },
+        context: {},
+      });
+
+      UserCollection.addField('email', { type: 'string' });
+      await app.db.sync();
+
+      await app.db.sequelize.query(dropSQL);
+      const viewSQL2 = `CREATE VIEW ${createViewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+      await app.db.sequelize.query(viewSQL2);
+
+      const syncResponse = await agent.resource('mainDataSource').syncFields();
+
+      expect(syncResponse.status).toEqual(200);
+
+      const viewCollectionModel = await app.db.getRepository('collections').findOne({
+        filter: {
+          name: collectionName,
+        },
+        appends: ['fields'],
+      });
+
+      expect(viewCollectionModel.fields.some((field) => field.name === 'email')).toBeTruthy();
+    },
+  );
+
   it('should access view collection resource', async () => {
     const UserCollection = app.db.collection({
       name: 'users',

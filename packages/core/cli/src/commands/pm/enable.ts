@@ -7,30 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {Args, Command, Flags} from '@oclif/core'
+import { Args, Command } from '@oclif/core';
 
 export default class PmEnable extends Command {
   static override args = {
-    file: Args.string({description: 'file to read'}),
-  }
-  static override description = 'describe the command here'
+    packages: Args.string({
+      required: true,
+      multiple: true,
+      description:
+        'Plugin package name(s) to enable (e.g. `@nocobase/plugin-sample`). Pass one or more names as separate arguments.',
+    }),
+  };
+
+  static override description = 'Enable one or more plugins';
+
   static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-  ]
-  static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
-  }
+    '<%= config.bin %> <%= command.id %> @nocobase/plugin-sample',
+    '<%= config.bin %> <%= command.id %> @nocobase/plugin-a @nocobase/plugin-b',
+  ];
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(PmEnable)
-
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from packages/core/cli/src/commands/pm/enable.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
+    const { args } = await this.parse(PmEnable);
+    const packages = args.packages;
+    if (!Array.isArray(packages) || packages.length === 0) {
+      this.error('Pass at least one plugin package name.');
     }
+    await this.config.runCommand('api:pm:enable', ['--await-response', '--filter-by-tk', packages.join(',')]);
   }
 }

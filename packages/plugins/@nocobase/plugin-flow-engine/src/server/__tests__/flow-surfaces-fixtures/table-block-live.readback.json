@@ -1525,8 +1525,8 @@
                                           "stepParams": {
                                             "buttonSettings": {
                                               "general": {
-                                                "title": "Save Changes",
-                                                "type": ""
+                                                "title": "Submit",
+                                                "type": "primary"
                                               }
                                             },
                                             "submitSettings": {
@@ -2074,8 +2074,8 @@
                                     "stepParams": {
                                       "buttonSettings": {
                                         "general": {
-                                          "title": "Save",
-                                          "type": ""
+                                          "title": "Submit",
+                                          "type": "primary"
                                         }
                                       },
                                       "submitSettings": {
@@ -3333,8 +3333,8 @@
       "stepParams": {
         "buttonSettings": {
           "general": {
-            "title": "Save Changes",
-            "type": ""
+            "title": "Submit",
+            "type": "primary"
           }
         },
         "submitSettings": {
@@ -3749,8 +3749,8 @@
       "stepParams": {
         "buttonSettings": {
           "general": {
-            "title": "Save",
-            "type": ""
+            "title": "Submit",
+            "type": "primary"
           }
         },
         "submitSettings": {

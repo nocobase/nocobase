@@ -309,11 +309,19 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.properties.layout.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeLayout',
     );
+    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.required).toEqual(['key']);
+    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.anyOf).toEqual([
+      { required: ['type'] },
+      { required: ['template'] },
+    ]);
     expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.type.enum).toEqual([
       'approvalInitiator',
       'approvalApprover',
       'approvalInformation',
     ]);
+    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.template.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockTemplateRef',
+    );
     expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.actions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApprovalBlueprintActionSpec',
     );
@@ -323,9 +331,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApprovalBlueprintActionSpec.oneOf[0].enum).not.toEqual(
       expect.arrayContaining(['submit', 'refresh']),
     );
-    expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.template).toBeUndefined();
     expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('initiator');
     expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('taskCard');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('template: { uid, mode }');
     expect(schemas.FlowSurfaceApplyApprovalBlueprintResponse.required).toEqual([
       'version',
       'mode',
@@ -394,7 +402,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceApplyBlueprintLayout' },
     ]);
-    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('only on tabs and inline popup documents');
+    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('field-grid-block `fieldsLayout`');
+    expect(schemas.FlowSurfaceApplyBlueprintLayout.description).toContain('Block-level `layout` is still not allowed');
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.layout.description).toContain('not on individual blocks');
     expect(schemas.FlowSurfaceApplyBlueprintTab.properties.layout.description).toContain('not on individual blocks');
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.blocks.description).toContain(
@@ -602,6 +611,7 @@ describe('flowSurfaces swagger', () => {
     expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
     expect(applyApprovalBlueprintPath.description).toContain('node.config.approvalUid');
     expect(applyApprovalBlueprintPath.description).toContain("surface='taskCard'");
+    expect(applyApprovalBlueprintPath.description).toContain('template: { uid, mode }');
     expect(applyApprovalBlueprintPath.description).toContain('preferred whole-surface bootstrap / replace entry');
     expect(applyApprovalBlueprintPath.description).toContain('reconciles approval runtime config');
     const applyApprovalBlueprintRequest = applyApprovalBlueprintPath.requestBody.content['application/json'];
@@ -628,6 +638,8 @@ describe('flowSurfaces swagger', () => {
       'reconciles the related workflow/node runtime config',
     );
     expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('approval-specific keys');
+    expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('commentFormUid');
+    expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('assignValues');
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
     expect(contextRequest.example?.path).toBe('record');

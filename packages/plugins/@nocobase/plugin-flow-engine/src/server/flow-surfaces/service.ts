@@ -62,6 +62,12 @@ import {
 } from './blueprint';
 import { compileTabComposeValues } from './blueprint/compile-blocks';
 import { APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS } from './blueprint/private-utils';
+import {
+  FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY,
+  getFlowSurfaceDefaultBlockActions,
+  mergeFlowSurfaceDefaultBlockActions,
+  type FlowSurfaceDefaultBlockActionDescriptor,
+} from './default-block-actions';
 import type { FlowSurfacePlanOnlyActionName } from './planning/action-specs';
 import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
 import { collectFlowSurfaceCreatedKeys, collectPersistableFlowSurfaceCreatedKeys } from './planning/created-keys';
@@ -207,6 +213,7 @@ import {
   isFlowSurfaceDefaultActionPopupUse,
   pickFlowSurfaceDefaultActionPopupFieldPaths,
   resolveFlowSurfaceDefaultActionPopupTabTitle,
+  type FlowSurfaceDefaultActionPopupType,
 } from './default-action-popup';
 import {
   assertFlowSurfaceComposeUniqueKeys,
@@ -342,6 +349,7 @@ const SIMPLE_FORM_BLOCK_USES = new Set([
   'EditFormModel',
   ...APPROVAL_FORM_BLOCK_USES,
 ]);
+const COMPOSE_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
@@ -442,6 +450,18 @@ const POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES = new Set([
 ]);
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
 const CONFIRMABLE_SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel']);
+const APPROVAL_CONFIRM_ACTION_USES = new Set([
+  'ApplyFormSubmitModel',
+  'ApplyFormSaveDraftModel',
+  'ApplyFormWithdrawModel',
+]);
+const APPROVAL_ASSIGN_ACTION_USES = new Set(['ApplyFormSubmitModel', 'ApplyFormSaveDraftModel']);
+const APPROVAL_COMMENT_ACTION_USES = new Set([
+  'ProcessFormApproveModel',
+  'ProcessFormRejectModel',
+  'ProcessFormReturnModel',
+]);
+const APPROVAL_REASSIGN_ACTION_USES = new Set(['ProcessFormDelegateModel', 'ProcessFormAddAssigneeModel']);
 const ITEM_CONTEXT_OWNER_USES = new Set([
   'SubFormFieldModel',
   'SubFormListFieldModel',
@@ -655,6 +675,8 @@ type FlowSurfaceTemplateListTargetContext = {
   popupProfile?: FlowSurfacePopupBlockProfile | null;
 };
 
+type FlowSurfacePopupTemplateSemanticType = FlowSurfaceDefaultActionPopupType | 'generic';
+
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
 
 export class FlowSurfacesService {
@@ -688,6 +710,14 @@ export class FlowSurfacesService {
         `flowSurfaces ${actionName} requires '@nocobase/plugin-ui-templates' to be enabled`,
         'FLOW_SURFACE_TEMPLATE_FEATURE_UNAVAILABLE',
       );
+    }
+  }
+
+  private getFlowTemplateRepositorySafe() {
+    try {
+      return this.db.getRepository('flowModelTemplates');
+    } catch (error) {
+      return null;
     }
   }
 
@@ -4794,6 +4824,7 @@ export class FlowSurfacesService {
           ...options,
           deferAutoLayout: true,
           enabledPackages,
+          skipDefaultBlockActions: true,
         }),
       applyNodeSettings: async (actionName, targetUid, settings) => {
         if (!targetUid) {
@@ -4829,10 +4860,7 @@ export class FlowSurfacesService {
         }),
       collectActionKeys: async (actionUid) => this.collectComposeActionKeys(actionUid, options.transaction),
       buildExplicitLayoutPayload: async (input) => {
-        const finalGrid = await this.repository.findModelById(input.gridUid, {
-          transaction: options.transaction,
-          includeAsyncNode: true,
-        });
+        const finalGrid = await this.surfaceContext.resolveGridNode(input.targetUid, options.transaction);
         const finalItems = _.castArray(finalGrid?.subModels?.items || []).filter((item: any) => item?.uid);
         return this.buildComposeLayoutPayload({
           layout: input.layout,
@@ -5746,7 +5774,10 @@ export class FlowSurfacesService {
             }
           : {}),
       },
-      options,
+      {
+        ...options,
+        skipDefaultBlockActions: true,
+      },
     );
     const templateFieldsResult = await this.applyTemplateFieldsToBlock(
       'addBlock',
@@ -5890,7 +5921,12 @@ export class FlowSurfacesService {
 
   async addBlock(
     values: Record<string, any>,
-    options: { transaction?: any; deferAutoLayout?: boolean; enabledPackages?: ReadonlySet<string> } = {},
+    options: {
+      transaction?: any;
+      deferAutoLayout?: boolean;
+      enabledPackages?: ReadonlySet<string>;
+      skipDefaultBlockActions?: boolean;
+    } = {},
   ) {
     const templateRef = !_.isUndefined(values?.template)
       ? this.normalizeFlowTemplateReference('addBlock', values.template, {
@@ -6015,6 +6051,18 @@ export class FlowSurfacesService {
         : {}),
     };
     await this.applyInlineNodeSettings('addBlock', created, inlineSettings, options);
+    if (!options.skipDefaultBlockActions) {
+      await this.applyDefaultActionsForCreatedBlock(
+        {
+          blockUid: created,
+          blockType: String(catalogItem.key || values.type || '').trim(),
+        },
+        {
+          ...options,
+          enabledPackages,
+        },
+      );
+    }
     if (!options.deferAutoLayout && initialGrid?.uid) {
       const finalGrid = await this.repository.findModelById(parentUid, {
         transaction: options.transaction,
@@ -6365,7 +6413,10 @@ export class FlowSurfacesService {
       fieldPath: normalizedFieldBinding.fieldPath,
     };
     await this.applyInlineFieldSettings('addField', result, inlineSettings, options);
-    await this.applyInlineFieldPopup('addField', result, inlinePopup, options);
+    await this.applyInlineFieldPopup('addField', result, inlinePopup, {
+      ...options,
+      enabledPackages,
+    });
     await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
     return result;
   }
@@ -6442,6 +6493,7 @@ export class FlowSurfacesService {
     await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
     await this.applyInlineActionPopup('addAction', created, inlinePopup, {
       ...options,
+      enabledPackages,
       popupActionContext: {
         hasCurrentRecord: false,
       },
@@ -6524,6 +6576,7 @@ export class FlowSurfacesService {
     await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
     await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, {
       ...options,
+      enabledPackages,
       popupActionContext: {
         hasCurrentRecord: true,
       },
@@ -6949,6 +7002,153 @@ export class FlowSurfacesService {
     delete result.popupGridUid;
   }
 
+  private buildLegacyAutoGeneratedPopupTemplateMetadata(identity: string) {
+    return {
+      name: `Auto popup ${identity}`,
+      description: `Auto-generated popup template ${identity}`,
+    };
+  }
+
+  private formatAutoGeneratedPopupTemplateMetadata(input: {
+    defaultType: 'view' | 'edit';
+    sourceCollectionLabel: string;
+    associationFieldLabel: string;
+    targetCollectionLabel: string;
+  }) {
+    const popupLabel = input.defaultType === 'edit' ? 'edit popup' : 'details popup';
+    return {
+      name: `${input.sourceCollectionLabel} -> ${input.associationFieldLabel} ${popupLabel} (Auto generated)`,
+      description: `Automatically generated ${popupLabel} template for relation field '${input.associationFieldLabel}' in collection '${input.sourceCollectionLabel}', targeting '${input.targetCollectionLabel}'.`,
+    };
+  }
+
+  private formatAutoGeneratedActionPopupTemplateMetadata(input: {
+    popupType: 'addNew' | 'view' | 'edit';
+    collectionLabel: string;
+  }) {
+    const popupLabel =
+      input.popupType === 'addNew' ? 'create popup' : input.popupType === 'edit' ? 'edit popup' : 'details popup';
+    return {
+      name: `${input.collectionLabel} ${popupLabel} (Auto generated)`,
+      description: `Automatically generated ${popupLabel} template for collection '${input.collectionLabel}'.`,
+    };
+  }
+
+  private resolveFieldBindingContext(fieldNode: any, wrapperNode: any) {
+    const fieldInit = fieldNode?.stepParams?.fieldSettings?.init || wrapperNode?.stepParams?.fieldSettings?.init || {};
+    const dataSourceKey = String(fieldInit.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(fieldInit.collectionName || '').trim() || undefined;
+    const fieldPath = String(fieldInit.fieldPath || '').trim() || undefined;
+    const associationPathName = String(fieldInit.associationPathName || '').trim() || undefined;
+    const sourceCollection = collectionName ? this.getCollection(dataSourceKey, collectionName) : undefined;
+
+    if (!sourceCollection || !fieldPath) {
+      return {
+        dataSourceKey,
+        collectionName,
+        fieldPath,
+        associationPathName,
+        sourceCollection,
+      };
+    }
+
+    const associationContext = this.resolveFieldAssociationContextFromBinding({
+      collection: sourceCollection,
+      fieldPath,
+      associationPathName,
+      dataSourceKey,
+      collectionName,
+    });
+
+    return {
+      dataSourceKey,
+      collectionName,
+      fieldPath,
+      associationPathName,
+      sourceCollection,
+      targetCollectionName: associationContext.collectionName,
+      associationName: associationContext.associationName,
+      associationField: associationContext.associationField,
+      targetCollection: associationContext.targetCollection,
+    };
+  }
+
+  private async resolveAutoGeneratedFieldPopupTemplateMetadata(
+    fieldHostUid: string,
+    defaultType: 'view' | 'edit',
+    identity: string,
+    transaction?: any,
+  ) {
+    const fallback = this.buildLegacyAutoGeneratedPopupTemplateMetadata(identity);
+    try {
+      const { fieldNode, wrapperNode } = await this.loadFieldHostNodes(fieldHostUid, transaction);
+      const bindingContext = this.resolveFieldBindingContext(fieldNode, wrapperNode);
+      if (!bindingContext.collectionName || !bindingContext.fieldPath || !bindingContext.sourceCollection) {
+        return fallback;
+      }
+      if (!bindingContext.associationField || !bindingContext.targetCollection) {
+        return fallback;
+      }
+
+      const sourceCollectionLabel =
+        String(getCollectionTitle(bindingContext.sourceCollection) || '').trim() || bindingContext.collectionName;
+      const associationFieldLabel =
+        String(
+          getFieldTitle(bindingContext.associationField) || getFieldName(bindingContext.associationField) || '',
+        ).trim() || String(getFieldName(bindingContext.associationField) || '').trim();
+      const targetCollectionLabel =
+        String(getCollectionTitle(bindingContext.targetCollection) || '').trim() ||
+        String(getCollectionName(bindingContext.targetCollection) || '').trim();
+      if (!sourceCollectionLabel || !associationFieldLabel || !targetCollectionLabel) {
+        return fallback;
+      }
+
+      return this.formatAutoGeneratedPopupTemplateMetadata({
+        defaultType,
+        sourceCollectionLabel,
+        associationFieldLabel,
+        targetCollectionLabel,
+      });
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  private shouldAutoSaveDefaultActionPopupTemplate(popup: Record<string, any> | undefined) {
+    return popup?.[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] === true;
+  }
+
+  private async resolveAutoGeneratedActionPopupTemplateMetadata(
+    actionUid: string,
+    identity: string,
+    transaction?: any,
+  ) {
+    const fallback = this.buildLegacyAutoGeneratedPopupTemplateMetadata(identity);
+    try {
+      const actionNode = await this.repository.findModelById(actionUid, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      const actionConfig = getFlowSurfaceDefaultActionPopupConfigByUse(actionNode?.use);
+      const popupProfile = actionNode?.uid
+        ? await this.resolvePopupBlockProfile(actionNode.uid, null, actionNode, transaction).catch(() => null)
+        : null;
+      const popupType = actionConfig?.type;
+      const collectionLabel =
+        String(getCollectionTitle(popupProfile?.currentCollection) || '').trim() ||
+        String(popupProfile?.collectionName || '').trim();
+      if (!popupType || !collectionLabel) {
+        return fallback;
+      }
+      return this.formatAutoGeneratedActionPopupTemplateMetadata({
+        popupType,
+        collectionLabel,
+      });
+    } catch (error) {
+      return fallback;
+    }
+  }
+
   private async savePopupAsTemplate(
     hostUid: string | undefined,
     popup: Record<string, any> | undefined,
@@ -7121,7 +7321,35 @@ export class FlowSurfacesService {
     return undefined;
   }
 
-  private inferPopupDefaultTypeFromTemplateTree(node: any): 'view' | 'edit' | undefined {
+  private getPopupTryTemplateAllowedDefaultTypes(
+    popup: Record<string, any> | undefined,
+    targetContext?: FlowSurfaceTemplateListTargetContext,
+    popupActionContext?: FlowSurfaceTemplateListPopupActionContext,
+  ): FlowSurfacePopupTemplateSemanticType[] | undefined {
+    const requestedDefaultType = this.getRequestedPopupDefaultType(popup);
+    if (requestedDefaultType) {
+      return [requestedDefaultType];
+    }
+
+    const targetUse = String(targetContext?.node?.use || '').trim();
+    if (!targetUse) {
+      return undefined;
+    }
+    if (this.isPopupFieldHostUse(targetUse)) {
+      return ['view', 'generic'];
+    }
+
+    const actionConfig = getFlowSurfaceDefaultActionPopupConfigByUse(targetUse);
+    if (actionConfig) {
+      return actionConfig.type === 'view' ? ['view', 'generic'] : [actionConfig.type];
+    }
+    if (POPUP_ACTION_USES.has(targetUse)) {
+      return popupActionContext?.hasCurrentRecord ? ['view', 'generic'] : ['generic'];
+    }
+    return undefined;
+  }
+
+  private inferPopupDefaultTypeFromTemplateTree(node: any): FlowSurfacePopupTemplateSemanticType {
     const popupPage = getSingleNodeSubModel(node?.subModels?.page);
     const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
     const popupGrid = getSingleNodeSubModel(popupTab?.subModels?.grid);
@@ -7132,16 +7360,21 @@ export class FlowSurfacesService {
     if (popupBlock?.use === 'EditFormModel') {
       return 'edit';
     }
-    return undefined;
+    if (popupBlock?.use === 'CreateFormModel') {
+      return 'addNew';
+    }
+    return 'generic';
   }
 
   private async popupTemplateMatchesDefaultType(
     template: FlowSurfaceTemplateRow,
     popup: Record<string, any> | undefined,
-    options: { transaction?: any } = {},
+    options: { allowedDefaultTypes?: FlowSurfacePopupTemplateSemanticType[]; transaction?: any } = {},
   ) {
-    const requestedDefaultType = this.getRequestedPopupDefaultType(popup);
-    if (!requestedDefaultType) {
+    const allowedDefaultTypes = options.allowedDefaultTypes?.length
+      ? Array.from(new Set(options.allowedDefaultTypes))
+      : undefined;
+    if (!allowedDefaultTypes) {
       return true;
     }
     const templateTargetUid = String(template?.targetUid || '').trim();
@@ -7152,7 +7385,7 @@ export class FlowSurfacesService {
       transaction: options.transaction,
       includeAsyncNode: true,
     });
-    return this.inferPopupDefaultTypeFromTemplateTree(templateTree) === requestedDefaultType;
+    return allowedDefaultTypes.includes(this.inferPopupDefaultTypeFromTemplateTree(templateTree));
   }
 
   private async tryResolvePopupTemplateForHost(
@@ -7166,7 +7399,10 @@ export class FlowSurfacesService {
       return null;
     }
 
-    const repo = this.getFlowTemplateRepository(actionName);
+    const repo = this.getFlowTemplateRepositorySafe();
+    if (!repo) {
+      return null;
+    }
     const targetContext = await this.loadTemplateListTargetContext({ uid: normalizedHostUid }, options.transaction);
     const templates = await repo.find({
       filter: buildTemplateListFilter(undefined, undefined, 'popup'),
@@ -7182,6 +7418,11 @@ export class FlowSurfacesService {
       },
     );
     const expectedAssociationName = this.getPopupTryTemplateExpectedAssociationName(targetContext);
+    const allowedDefaultTypes = this.getPopupTryTemplateAllowedDefaultTypes(
+      popup,
+      targetContext,
+      options.popupActionContext,
+    );
 
     for (const priority of [0, 1] as const) {
       for (const template of annotatedTemplates) {
@@ -7191,7 +7432,12 @@ export class FlowSurfacesService {
         ) {
           continue;
         }
-        if (await this.popupTemplateMatchesDefaultType(template, popup, options)) {
+        if (
+          await this.popupTemplateMatchesDefaultType(template, popup, {
+            ...options,
+            allowedDefaultTypes,
+          })
+        ) {
           return template;
         }
       }
@@ -7664,7 +7910,11 @@ export class FlowSurfacesService {
     actionName: string,
     result: FlowSurfaceAddFieldResult,
     popup: Record<string, any> | undefined,
-    options: { transaction?: any; popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession },
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+    },
   ) {
     popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
     const fieldHostUid = result.fieldUid || result.uid;
@@ -7732,7 +7982,7 @@ export class FlowSurfacesService {
               uid: fieldHostUid,
             },
             mode: popup.mode || 'replace',
-            blocks: this.buildDefaultFieldPopupBlocks(fieldNode, popupContext, defaultType),
+            blocks: this.buildDefaultFieldPopupBlocks(fieldNode, popupContext, defaultType, options.enabledPackages),
             layout: popup.layout,
           },
           options,
@@ -7866,6 +8116,7 @@ export class FlowSurfacesService {
     defaultType: 'view' | 'edit';
     fieldNode: any;
     popupContext: Record<string, any>;
+    enabledPackages?: ReadonlySet<string>;
   }) {
     const collectionName = String(input.popupContext.collectionName || '').trim();
     if (!collectionName) {
@@ -7880,6 +8131,7 @@ export class FlowSurfacesService {
         dataSourceKey: input.popupContext.dataSourceKey || 'main',
         collectionName,
       },
+      enabledPackages: input.enabledPackages,
     });
     return pickFlowSurfaceDefaultActionPopupFieldPaths(directCandidates, {
       excludeAuditTimestampFields: input.defaultType === 'edit',
@@ -7891,6 +8143,7 @@ export class FlowSurfacesService {
     fieldNode: any,
     popupContext: Record<string, any>,
     defaultType: 'view' | 'edit',
+    enabledPackages?: ReadonlySet<string>,
   ) {
     const actionUse = defaultType === 'edit' ? 'EditActionModel' : 'ViewActionModel';
     const namespace = normalizeFlowSurfaceComposeKey(
@@ -7909,6 +8162,7 @@ export class FlowSurfacesService {
       defaultType,
       fieldNode,
       popupContext,
+      enabledPackages,
     });
     return this.remapDefaultActionPopupBlocks(
       buildFlowSurfaceDefaultActionPopupBlocks(actionUse, fieldPaths),
@@ -7922,6 +8176,9 @@ export class FlowSurfacesService {
     popup: Record<string, any> | undefined,
     options: { transaction?: any; popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession },
   ) {
+    if (!this.getFlowTemplateRepositorySafe()) {
+      return;
+    }
     const fieldHostUid = result.fieldUid || result.uid;
     if (!fieldHostUid) {
       return;
@@ -7945,18 +8202,78 @@ export class FlowSurfacesService {
       }),
     );
     const identity = createHash('sha1').update(uniqueKeySource).digest('hex').slice(0, 12);
+    const defaultType = this.getRequestedPopupDefaultType(popup) || 'view';
+    const metadata = await this.resolveAutoGeneratedFieldPopupTemplateMetadata(
+      fieldHostUid,
+      defaultType,
+      identity,
+      options.transaction,
+    );
     await this.saveTemplate(
       {
         target: {
           uid: fieldHostUid,
         },
-        name: `Auto popup ${identity}`,
-        description: `Auto-generated popup template ${identity}`,
+        name: metadata.name,
+        description: metadata.description,
         saveMode: 'convert',
       },
       options,
     );
     this.clearPopupSurfaceKeys(result);
+  }
+
+  private async autoSaveDefaultActionPopupAsTemplate(
+    actionUid: string,
+    _popup: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    if (!this.getFlowTemplateRepositorySafe()) {
+      return;
+    }
+    const actionNode = await this.repository.findModelById(actionUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (!actionNode?.uid) {
+      return;
+    }
+    const actionConfig = getFlowSurfaceDefaultActionPopupConfigByUse(actionNode.use);
+    if (!actionConfig) {
+      return;
+    }
+    const openView = this.resolvePopupHostOpenView(actionNode);
+    if (String(openView?.popupTemplateUid || '').trim()) {
+      return;
+    }
+    const uniqueKeySource = JSON.stringify(
+      buildDefinedPayload({
+        actionUse: actionNode.use,
+        dataSourceKey: openView?.dataSourceKey,
+        collectionName: openView?.collectionName,
+        associationName: openView?.associationName,
+        filterByTk: openView?.filterByTk,
+        sourceId: openView?.sourceId,
+        popupType: actionConfig.type,
+      }),
+    );
+    const identity = createHash('sha1').update(uniqueKeySource).digest('hex').slice(0, 12);
+    const metadata = await this.resolveAutoGeneratedActionPopupTemplateMetadata(
+      actionUid,
+      identity,
+      options.transaction,
+    );
+    await this.saveTemplate(
+      {
+        target: {
+          uid: actionUid,
+        },
+        name: metadata.name,
+        description: metadata.description,
+        saveMode: 'convert',
+      },
+      options,
+    );
   }
 
   private shouldAutoCompleteDefaultActionPopup(
@@ -7983,6 +8300,7 @@ export class FlowSurfacesService {
   private buildDefaultActionPopupFieldPaths(input: {
     actionUse: string;
     popupProfile: FlowSurfacePopupBlockProfile | null;
+    enabledPackages?: ReadonlySet<string>;
   }) {
     const collectionName = String(input.popupProfile?.collectionName || '').trim();
     if (!collectionName) {
@@ -8000,6 +8318,7 @@ export class FlowSurfacesService {
         dataSourceKey: input.popupProfile?.dataSourceKey || 'main',
         collectionName,
       },
+      enabledPackages: input.enabledPackages,
     });
     return pickFlowSurfaceDefaultActionPopupFieldPaths(directCandidates, {
       excludeAuditTimestampFields: mode === 'form',
@@ -8123,10 +8442,12 @@ export class FlowSurfacesService {
     popupProfile: FlowSurfacePopupBlockProfile | null,
     keyMap: ReadonlyMap<string, string>,
     namespace?: string,
+    enabledPackages?: ReadonlySet<string>,
   ) {
     const fieldPaths = this.buildDefaultActionPopupFieldPaths({
       actionUse: actionNode?.use,
       popupProfile,
+      enabledPackages,
     });
     return this.remapDefaultActionPopupBlocks(
       buildFlowSurfaceDefaultActionPopupBlocks(actionNode?.use, fieldPaths),
@@ -8139,6 +8460,7 @@ export class FlowSurfacesService {
     actionNode: any,
     popupProfile: FlowSurfacePopupBlockProfile,
     popup: Record<string, any> | undefined,
+    enabledPackages?: ReadonlySet<string>,
   ) {
     const namespace = this.buildDefaultActionPopupNamespace(actionNode);
     const keyMap = this.buildDefaultActionPopupKeyMap(actionNode, namespace);
@@ -8147,7 +8469,7 @@ export class FlowSurfacesService {
         uid: actionNode.uid,
       },
       mode: popup?.mode || 'replace',
-      blocks: this.buildDefaultActionPopupBlocks(actionNode, popupProfile, keyMap, namespace),
+      blocks: this.buildDefaultActionPopupBlocks(actionNode, popupProfile, keyMap, namespace, enabledPackages),
       layout: this.remapDefaultActionPopupLayout(popup?.layout, keyMap),
     };
   }
@@ -8228,14 +8550,17 @@ export class FlowSurfacesService {
   private async applyDefaultActionPopupContent(
     actionNode: any,
     popup: Record<string, any> | undefined,
-    options: { transaction?: any },
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> },
   ) {
     const popupProfile = await this.resolvePopupBlockProfile(actionNode.uid, null, actionNode, options.transaction);
     if (!popupProfile?.isPopupSurface) {
       return;
     }
 
-    await this.compose(this.buildDefaultActionPopupComposeValues(actionNode, popupProfile, popup), options);
+    await this.compose(
+      this.buildDefaultActionPopupComposeValues(actionNode, popupProfile, popup, options.enabledPackages),
+      options,
+    );
 
     const popupState = await this.resolveDefaultActionPopupSurfaceState(actionNode.uid, options.transaction);
     await this.resetDefaultActionPopupFormLinkageRules(popupState.popupBlock, options);
@@ -8249,6 +8574,7 @@ export class FlowSurfacesService {
     options: {
       transaction?: any;
       autoCompleteDefaultPopup?: boolean;
+      enabledPackages?: ReadonlySet<string>;
       popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     },
@@ -8327,6 +8653,9 @@ export class FlowSurfacesService {
     try {
       if (shouldAutoCompleteDefaultPopup) {
         await this.applyDefaultActionPopupContent(actionNode, popup, options);
+        if (this.shouldAutoSaveDefaultActionPopupTemplate(popup)) {
+          await this.autoSaveDefaultActionPopupAsTemplate(actionUid, popup, options);
+        }
       } else if (!_.isUndefined(popup)) {
         await this.compose(
           {
@@ -9006,12 +9335,23 @@ export class FlowSurfacesService {
 
   async transaction<T>(callback: (transaction: any) => Promise<T>) {
     const transaction = await this.db.sequelize.transaction();
+    const transactionState = transaction as typeof transaction & {
+      finished?: string | null;
+    };
     try {
       const result = await callback(transaction);
       await transaction.commit();
       return result;
     } catch (error) {
-      await transaction.rollback();
+      if (!transactionState.finished) {
+        try {
+          await transaction.rollback();
+        } catch (rollbackError: any) {
+          if (!String(rollbackError?.message || '').includes('Transaction cannot be rolled back')) {
+            throw rollbackError;
+          }
+        }
+      }
       throw error;
     }
   }
@@ -9890,6 +10230,151 @@ export class FlowSurfacesService {
     };
   }
 
+  private buildInjectedComposeDefaultActionSpec(
+    descriptor: FlowSurfaceDefaultBlockActionDescriptor,
+    existingKeys: Set<string>,
+    context: string,
+  ) {
+    const baseKey = `${descriptor.type}Default`;
+    let candidate = baseKey;
+    let suffix = 2;
+    while (existingKeys.has(candidate)) {
+      candidate = `${baseKey}${suffix}`;
+      suffix += 1;
+    }
+    existingKeys.add(candidate);
+    return {
+      key: normalizeFlowSurfaceComposeKey(candidate, `${context} default ${descriptor.scope} '${descriptor.type}'`),
+      type: descriptor.type,
+      settings: {},
+      ...(descriptor.popup ? { popup: _.cloneDeep(descriptor.popup) } : {}),
+    };
+  }
+
+  private normalizeComposeFieldsLayout(
+    input: any,
+    options: {
+      blockContext: string;
+      blockDescriptor: string;
+      blockType?: string;
+      fields: Array<{ key: string }>;
+    },
+  ) {
+    if (_.isUndefined(input)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`${options.blockContext} fieldsLayout must be an object`);
+    }
+    if (!COMPOSE_FIELD_GRID_BLOCK_TYPES.has(options.blockType || '')) {
+      throwBadRequest(`flowSurfaces compose ${options.blockDescriptor} does not support fieldsLayout`);
+    }
+    if (!options.fields.length) {
+      throwBadRequest(`${options.blockContext} fieldsLayout requires fields[] on the same block`);
+    }
+
+    const rows = _.castArray(input.rows || []);
+    if (!rows.length) {
+      throwBadRequest(`${options.blockContext} fieldsLayout.rows must be a non-empty array`);
+    }
+
+    const fieldKeys = new Set(options.fields.map((field) => field.key).filter(Boolean));
+    const mentioned = new Set<string>();
+    const normalizedRows = rows.map((row: any, rowIndex: number) => {
+      if (!Array.isArray(row) || !row.length) {
+        throwBadRequest(`${options.blockContext} fieldsLayout row #${rowIndex + 1} must be a non-empty array`);
+      }
+      return row.map((cell: any, cellIndex: number) => {
+        const cellContext = `${options.blockContext} fieldsLayout row #${rowIndex + 1} cell #${cellIndex + 1}`;
+        const normalizedCell = this.normalizeComposeFieldsLayoutCell(cell, cellContext);
+        if (!fieldKeys.has(normalizedCell.key)) {
+          throwBadRequest(`${cellContext} references unknown field '${normalizedCell.key}'`);
+        }
+        if (mentioned.has(normalizedCell.key)) {
+          throwBadRequest(`${cellContext} duplicates field '${normalizedCell.key}'`);
+        }
+        mentioned.add(normalizedCell.key);
+        return normalizedCell.raw;
+      });
+    });
+
+    const missingFieldKeys = options.fields.map((field) => field.key).filter((key) => !mentioned.has(key));
+    if (missingFieldKeys.length) {
+      throwBadRequest(
+        `${options.blockContext} fieldsLayout must place every field exactly once; missing: ${missingFieldKeys.join(
+          ', ',
+        )}`,
+      );
+    }
+
+    return {
+      rows: normalizedRows,
+    };
+  }
+
+  private normalizeComposeFieldsLayoutCell(
+    cell: any,
+    context: string,
+  ): {
+    key: string;
+    raw: string | Record<string, any>;
+  } {
+    if (typeof cell === 'string') {
+      const key = String(cell || '').trim();
+      if (!key) {
+        throwBadRequest(`${context} cannot be empty`);
+      }
+      return {
+        key,
+        raw: key,
+      };
+    }
+    if (!_.isPlainObject(cell)) {
+      throwBadRequest(`${context} must be a string or object`);
+    }
+    const key = String(cell.key || '').trim();
+    if (!key) {
+      throwBadRequest(`${context}.key cannot be empty`);
+    }
+    return {
+      key,
+      raw: buildDefinedPayload({
+        key,
+        span: _.isUndefined(cell.span)
+          ? undefined
+          : _.isNumber(cell.span)
+            ? cell.span
+            : throwBadRequest(`${context}.span must be a number`),
+      }),
+    };
+  }
+
+  private async applyDefaultActionsForCreatedBlock(
+    input: {
+      blockUid: string;
+      blockType?: string;
+    },
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
+    const descriptors = getFlowSurfaceDefaultBlockActions({
+      blockType: input.blockType,
+    });
+    for (const descriptor of descriptors) {
+      const actionValues = buildDefinedPayload({
+        target: {
+          uid: input.blockUid,
+        },
+        type: descriptor.type,
+        popup: descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined,
+      });
+      if (descriptor.scope === 'actions') {
+        await this.addAction(actionValues, options);
+      } else {
+        await this.addRecordAction(actionValues, options);
+      }
+    }
+  }
+
   private normalizeComposeBlock(input: any, index: number, enabledPackages?: ReadonlySet<string>) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
@@ -9961,6 +10446,31 @@ export class FlowSurfacesService {
     if (blockCatalogItem) {
       this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions, enabledPackages);
     }
+    const actionKeys = new Set(actions.map((item) => item.key).filter(Boolean));
+    const recordActionKeys = new Set(recordActions.map((item) => item.key).filter(Boolean));
+    const blockDescriptor = this.describeComposeBlock({
+      index: index + 1,
+      key,
+      type,
+    });
+    const fieldsLayout = this.normalizeComposeFieldsLayout(input.fieldsLayout, {
+      blockContext: `flowSurfaces compose block #${index + 1}`,
+      blockDescriptor,
+      blockType: type,
+      fields,
+    });
+    const mergedActions = mergeFlowSurfaceDefaultBlockActions({
+      blockType: type,
+      template,
+      actions,
+      recordActions,
+      createAction: (descriptor) =>
+        this.buildInjectedComposeDefaultActionSpec(
+          descriptor,
+          descriptor.scope === 'actions' ? actionKeys : recordActionKeys,
+          `flowSurfaces compose block #${index + 1}`,
+        ),
+    });
     return {
       index: index + 1,
       key,
@@ -9969,8 +10479,9 @@ export class FlowSurfacesService {
       resource: this.normalizeResourceInput(input.resource),
       settings: _.isPlainObject(input.settings) ? input.settings : {},
       fields,
-      actions,
-      recordActions,
+      ...(fieldsLayout ? { fieldsLayout } : {}),
+      actions: mergedActions.actions,
+      recordActions: mergedActions.recordActions,
       template,
     };
   }
@@ -11482,10 +11993,16 @@ export class FlowSurfacesService {
       );
     }
     if (hasOwnDefined(changes, 'assigneesScope')) {
-      if (!['ProcessFormDelegateModel', 'ProcessFormAddAssigneeModel'].includes(use)) {
+      if (!APPROVAL_REASSIGN_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support assigneesScope`);
       }
       _.set(stepParams, ['clickSettings', 'saveResource', 'assigneesScope'], _.cloneDeep(changes.assigneesScope || {}));
+    }
+    if (hasOwnDefined(changes, 'commentFormUid')) {
+      if (!APPROVAL_COMMENT_ACTION_USES.has(use)) {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support commentFormUid`);
+      }
+      _.set(stepParams, ['clickSettings', 'saveResource', 'commentModelUid'], _.cloneDeep(changes.commentFormUid));
     }
     if (!_.isUndefined(changes.openView)) {
       if (use === 'UploadActionModel') {
@@ -11505,6 +12022,11 @@ export class FlowSurfacesService {
         stepParams.deleteSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
+      } else if (APPROVAL_CONFIRM_ACTION_USES.has(use)) {
+        stepParams.clickSettings = {
+          ...(stepParams.clickSettings || {}),
+          confirm: normalizeSimpleConfirm(changes.confirm),
+        };
       } else if (CONFIRMABLE_SUBMIT_ACTION_USES.has(use)) {
         stepParams.submitSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
@@ -11518,20 +12040,28 @@ export class FlowSurfacesService {
       }
     }
     if (hasOwnDefined(changes, 'assignValues')) {
-      if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
+      if (APPROVAL_ASSIGN_ACTION_USES.has(use)) {
+        stepParams.clickSettings = {
+          ...(stepParams.clickSettings || {}),
+          assignFieldValues: {
+            assignedValues: changes.assignValues,
+          },
+        };
+      } else if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support assignValues`);
+      } else {
+        stepParams.assignSettings = {
+          ...(stepParams.assignSettings || {}),
+          assignFieldValues: {
+            assignedValues: changes.assignValues,
+          },
+        };
+        stepParams.apply = {
+          apply: {
+            assignedValues: changes.assignValues,
+          },
+        };
       }
-      stepParams.assignSettings = {
-        ...(stepParams.assignSettings || {}),
-        assignFieldValues: {
-          assignedValues: changes.assignValues,
-        },
-      };
-      stepParams.apply = {
-        apply: {
-          assignedValues: changes.assignValues,
-        },
-      };
     }
     if (hasOwnDefined(changes, 'editMode')) {
       if (use !== 'BulkEditActionModel') {
@@ -12591,7 +13121,9 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceContextSemantic> {
     const collection = await this.resolveContextOwnerCollection(uid, transaction).catch(() => null);
     const ancestors = await this.loadContextAncestorChain(uid, resolved, transaction);
-    const recordContextOwner = ancestors.find((node) => RECORD_CONTEXT_OWNER_USES.has(node?.use));
+    const recordContextOwner =
+      ancestors.find((node) => RECORD_CONTEXT_OWNER_USES.has(node?.use)) ||
+      this.resolveRecordActionContextOwner(ancestors);
     const recordCollection = recordContextOwner
       ? await this.resolveContextOwnerCollection(recordContextOwner.uid, transaction)
       : null;
@@ -12636,6 +13168,14 @@ export class FlowSurfacesService {
       popupLevels,
       chart: await this.buildChartContextSemantic(chartNode, transaction),
     };
+  }
+
+  private resolveRecordActionContextOwner(ancestors: any[]) {
+    const currentNode = ancestors[0];
+    if (!String(currentNode?.use || '').endsWith('ActionModel')) {
+      return null;
+    }
+    return ancestors.slice(1).find((node) => getActionContainerScope(node?.use) === 'record') || null;
   }
 
   private async loadContextAncestorChain(uid: string, resolved: FlowSurfaceResolvedTarget, transaction?: any) {

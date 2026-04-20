@@ -17,6 +17,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { addBlockData, createPage, expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.helpers';
 import {
   FLOW_SURFACES_APPROVAL_BLUEPRINT_TEST_PLUGIN_INSTALLS,
   FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
@@ -208,6 +209,107 @@ describe('flowSurfaces approval blueprint API contract', () => {
         (item: any) => item.use,
       ),
     ).not.toContain('ApplyFormWithdrawModel');
+  });
+
+  it('should pass template blocks through approval blueprint page surfaces to the common template pipeline', async () => {
+    const workflow = await createApprovalWorkflow(context);
+
+    const templateRes = await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
+      values: {
+        surface: 'initiator',
+        workflowId: workflow.id,
+        blocks: [
+          {
+            key: 'templated',
+            template: {
+              uid: 'template-uid',
+              mode: 'reference',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(templateRes.status).toBe(400);
+    expect(readErrorMessage(templateRes)).toContain(`template 'template-uid' does not exist`);
+  });
+
+  it('should apply referenced block templates through approval blueprint page surfaces and track usage', async () => {
+    const sourcePage = await createPage(rootAgent, {
+      title: 'Approval blueprint template source',
+      tabTitle: 'Template source',
+    });
+    const sourceBlock = await addBlockData(rootAgent, {
+      target: { uid: sourcePage.gridUid },
+      type: 'markdown',
+      settings: {
+        title: 'Approval template note',
+        content: '# Approval template',
+      },
+    });
+    const template = await saveTemplate(rootAgent, {
+      target: { uid: sourceBlock.uid },
+      name: 'Approval blueprint markdown template',
+      description: 'Reusable markdown block for approval blueprint template coverage.',
+      saveMode: 'duplicate',
+    });
+    await expectTemplateUsage(rootAgent, template.uid, 0);
+
+    const workflow = await createApprovalWorkflow(context);
+    const result = getData(
+      await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
+        values: {
+          surface: 'initiator',
+          workflowId: workflow.id,
+          blocks: [
+            {
+              key: 'templated',
+              template: {
+                uid: template.uid,
+                mode: 'reference',
+              },
+            },
+          ],
+          layout: {
+            rows: [['templated']],
+          },
+        },
+      }),
+    );
+    const readback = await getSurface(rootAgent, {
+      uid: result.target.uid,
+    });
+    const templatedBlock = readback.tree.subModels.tabs[0].subModels.grid.subModels.items[0];
+    expect(templatedBlock.use).toBe('ReferenceBlockModel');
+    expect(templatedBlock.template).toMatchObject({
+      uid: template.uid,
+      mode: 'reference',
+    });
+    await expectTemplateUsage(rootAgent, template.uid, 1);
+
+    getData(
+      await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
+        values: {
+          surface: 'initiator',
+          workflowId: workflow.id,
+          blocks: [
+            {
+              key: 'applyForm',
+              type: 'approvalInitiator',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+            },
+          ],
+          layout: {
+            rows: [['applyForm']],
+          },
+        },
+      }),
+    );
+    await expectTemplateUsage(rootAgent, template.uid, 0);
   });
 
   it('should apply a workflow task-card approval blueprint and persist workflow.config.taskCardUid', async () => {

@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildBlockTree, buildFieldTree } from '../flow-surfaces/builder';
+import { prepareFlowSurfaceApplyApprovalBlueprintDocument } from '../flow-surfaces/approval/blueprint';
 import {
   getAvailableBlockCatalogItems,
   getSupportedFieldComponentUseSet,
@@ -276,10 +277,34 @@ describe('flowSurfaces approval surface', () => {
     expect(getConfigureOptionsForUse('ProcessFormApproveModel')).toEqual(
       expect.objectContaining({
         title: expect.any(Object),
+        commentFormUid: expect.any(Object),
+      }),
+    );
+    expect(getConfigureOptionsForUse('ProcessFormRejectModel')).toEqual(
+      expect.objectContaining({
+        commentFormUid: expect.any(Object),
+      }),
+    );
+    expect(getConfigureOptionsForUse('ApplyFormSubmitModel')).toEqual(
+      expect.objectContaining({
+        confirm: expect.any(Object),
+        assignValues: expect.any(Object),
+      }),
+    );
+    expect(getConfigureOptionsForUse('ApplyFormSaveDraftModel')).toEqual(
+      expect.objectContaining({
+        confirm: expect.any(Object),
+        assignValues: expect.any(Object),
+      }),
+    );
+    expect(getConfigureOptionsForUse('ApplyFormWithdrawModel')).toEqual(
+      expect.objectContaining({
+        confirm: expect.any(Object),
       }),
     );
     expect(getConfigureOptionsForUse('ProcessFormReturnModel')).toEqual(
       expect.objectContaining({
+        commentFormUid: expect.any(Object),
         approvalReturn: expect.any(Object),
       }),
     );
@@ -293,6 +318,36 @@ describe('flowSurfaces approval surface', () => {
         assigneesScope: expect.any(Object),
       }),
     );
+  });
+
+  it('should preserve template blocks in approval blueprint page-like documents', () => {
+    expect(
+      prepareFlowSurfaceApplyApprovalBlueprintDocument({
+        surface: 'initiator',
+        workflowId: 1,
+        blocks: [
+          {
+            key: 'templated',
+            template: {
+              uid: 'template-uid',
+              mode: 'reference',
+            },
+          },
+        ],
+      }),
+    ).toMatchObject({
+      surface: 'initiator',
+      workflowId: 1,
+      blocks: [
+        {
+          key: 'templated',
+          template: {
+            uid: 'template-uid',
+            mode: 'reference',
+          },
+        },
+      ],
+    });
   });
 
   it('should expose details semantics for approval task-card models', () => {

@@ -66,14 +66,21 @@ function hasBooleanFlag(argv: string[], name: string) {
 }
 
 function getCommandToken(argv: string[]) {
+  const tokens: string[] = [];
+
   for (const token of argv) {
     if (!token || token.startsWith('-')) {
       continue;
     }
-    return token;
+
+    tokens.push(token);
   }
 
-  return undefined;
+  if (tokens[0] === 'api') {
+    return tokens[1] ?? tokens[0];
+  }
+
+  return tokens[0];
 }
 
 function hasHelpFlag(argv: string[]) {
@@ -85,8 +92,10 @@ function hasVersionFlag(argv: string[]) {
 }
 
 function isBuiltinCommand(argv: string[]) {
-  const commandToken = getCommandToken(argv);
-  return commandToken === 'env' || commandToken === 'resource';
+  const commandTokens = argv.filter((token) => token && !token.startsWith('-'));
+  const [topic, subtopic] = commandTokens;
+
+  return topic === 'env' || topic === 'resource' || (topic === 'api' && subtopic === 'resource');
 }
 
 export function shouldSkipRuntimeBootstrap(argv: string[]) {
@@ -319,7 +328,7 @@ export function formatSwaggerSchemaError(
       `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
       `Base URL: ${context.baseUrl}`,
       details,
-      'Update the API key with `nb env add --name <name> --base-url <url> --token <api-key>`, log in with `nb env auth -e <name>`, or rerun the command with `--token <api-key>`.',
+      'Update the API key with `nb env add <name> --base-url <url> --auth-type token --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--token <api-key>`.',
       commandHint,
     ].join('\n');
   }
@@ -331,7 +340,7 @@ export function formatSwaggerSchemaError(
       `Base URL: ${context.baseUrl}`,
       `Network error: ${rawMessage}`,
       'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
-      'If you recently changed the server address, update it with `nb env add --name <name> --base-url <url>` and retry `nb env update`.',
+      'If you recently changed the server address, update it with `nb env add <name> --base-url <url>` and retry `nb env update`.',
       'Use `nb env list` to inspect the current env configuration.',
     ].join('\n');
   }
@@ -343,7 +352,7 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
   if (!commandToken) {
     return [
       'No env is configured for runtime commands.',
-      'Run `nb env add --name <name> --base-url <url>` first.',
+      'Run `nb env add <name> --base-url <url>` first.',
       'If you configure multiple environments later, switch with `nb env use <name>`.',
     ].join('\n');
   }
@@ -352,7 +361,7 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
     `Unable to resolve runtime command \`${commandToken}\`.`,
     'No env is configured, so the CLI cannot load runtime commands from `swagger:get`.',
     'If this is a built-in command or a typo, run `nb --help` to inspect available commands.',
-    'If this should be an application runtime command, run `nb env add --name <name> --base-url <url>` and then `nb env update`.',
+    'If this should be an application runtime command, run `nb env add <name> --base-url <url>` and then `nb env update`.',
   ].join('\n');
 }
 
@@ -449,7 +458,7 @@ export async function updateEnvRuntime(options: {
     throw new Error(
       [
         `Env "${envName}" is missing a base URL.`,
-        'Update it with `nb env add --name <name> --base-url <url>` first.',
+        'Update it with `nb env add <name> --base-url <url>` first.',
       ].join('\n'),
     );
   }

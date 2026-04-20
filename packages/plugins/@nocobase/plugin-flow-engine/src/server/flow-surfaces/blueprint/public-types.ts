@@ -158,6 +158,7 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   template?: Record<string, any>;
   settings?: Record<string, any>;
   fields?: FlowSurfaceApplyBlueprintFieldSpec[];
+  fieldsLayout?: FlowSurfaceApplyBlueprintLayout;
   actions?: FlowSurfaceApplyBlueprintActionSpec[];
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
   script?: string;

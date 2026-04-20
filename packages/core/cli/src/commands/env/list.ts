@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import { listEnvs } from '../../lib/auth-store.js';
 import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
@@ -5,9 +14,12 @@ import { renderTable } from '../../lib/ui.js';
 
 export default class EnvList extends Command {
   static summary = 'List configured environments';
-  static id = 'env list';
 
-  static flags = {
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+  ];
+
+  static override flags = {
     scope: Flags.string({
       char: 's',
       description: 'Config scope',
@@ -23,7 +35,7 @@ export default class EnvList extends Command {
 
     if (!names.length) {
       this.log(`No envs configured${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
-      this.log('Run `nb env add --name <name> --base-url <url>` to add one.');
+      this.log('Run `nb env add <name> --base-url <url>` to add one.');
       return;
     }
 

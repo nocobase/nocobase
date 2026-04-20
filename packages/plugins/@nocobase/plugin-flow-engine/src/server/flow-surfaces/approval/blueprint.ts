@@ -82,9 +82,6 @@ function normalizeBlocks(input: any) {
     if (!_.isPlainObject(block)) {
       throwBadRequest(`flowSurfaces applyApprovalBlueprint blocks[${index}] must be an object`);
     }
-    if (!_.isUndefined(block.template)) {
-      throwBadRequest(`flowSurfaces applyApprovalBlueprint blocks[${index}] does not accept template`);
-    }
   });
   return normalized;
 }

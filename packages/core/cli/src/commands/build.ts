@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { runNocoBaseCommand, runNpm } from '../lib/run-npm.ts';
+import { runNocoBaseCommand } from '../lib/run-npm.ts';
 
 export default class Build extends Command {
   static override args = {
@@ -28,7 +28,7 @@ export default class Build extends Command {
     '<%= config.bin %> <%= command.id %> @nocobase/acl @nocobase/actions',
   ];
   static override flags = {
-    env: Flags.string({ description: 'Environment', char: 'e', required: false }),
+    'cwd': Flags.string({ description: 'Current working directory', char: 'c', required: false }),
     'no-dts': Flags.boolean({ description: 'not generate dts' }),
     sourcemap: Flags.boolean({ description: 'generate sourcemap' }),
   };
@@ -44,7 +44,7 @@ export default class Build extends Command {
       npmArgs.push('--sourcemap');
     }
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd());
+      await runNocoBaseCommand(npmArgs, { cwd: flags['cwd'] });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

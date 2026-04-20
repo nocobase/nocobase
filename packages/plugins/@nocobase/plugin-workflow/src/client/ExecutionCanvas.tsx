@@ -34,6 +34,7 @@ import { StatusButton } from './components/StatusButton';
 import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
+import { LogCollapse } from './nodes';
 import useStyles from './style';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
 import { get } from 'lodash';
@@ -62,21 +63,41 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
 }
 
+function useJobData(id) {
+  return useRequest(
+    {
+      resource: 'jobs',
+      action: 'get',
+      params: {
+        filterByTk: id,
+      },
+    },
+    {
+      cacheKey: `job-${id}`,
+    },
+  );
+}
+
 function JobResult(props) {
   const { viewJob } = useFlowContext();
-  const { data, loading } = useRequest({
-    resource: 'jobs',
-    action: 'get',
-    params: {
-      filterByTk: viewJob.id,
-    },
-  });
+  const { data, loading } = useJobData(viewJob.id);
 
   if (loading) {
     return <Spin />;
   }
   const result = get(data, 'data.result');
   return <Input.JSON {...props} value={result} disabled />;
+}
+
+function JobLog() {
+  const { viewJob } = useFlowContext();
+  const { data, loading } = useJobData(viewJob.id);
+
+  if (loading) {
+    return null;
+  }
+  const log = get(data, 'data.log');
+  return <LogCollapse value={log} />;
 }
 
 function JobModal() {
@@ -93,6 +114,7 @@ function JobModal() {
       <SchemaComponent
         components={{
           JobResult,
+          JobLog,
         }}
         schema={{
           type: 'void',
@@ -142,6 +164,10 @@ function JobModal() {
                       maxRows: 32,
                     },
                   },
+                },
+                log: {
+                  type: 'string',
+                  'x-component': 'JobLog',
                 },
               },
             },

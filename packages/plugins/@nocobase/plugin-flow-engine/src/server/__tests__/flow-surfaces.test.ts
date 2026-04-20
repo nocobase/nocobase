@@ -1767,6 +1767,10 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(templatedPopup.type).toBe('popup');
+    expect(templatedPopup.name).toBe('Employees -> department edit popup (Auto generated)');
+    expect(templatedPopup.description).toBe(
+      "Automatically generated edit popup template for relation field 'department' in collection 'Employees', targeting 'Departments'.",
+    );
     expect(templatedPopup.collectionName).toBe('departments');
     expect(templatedPopup.associationName).toBe('employees.department');
 
@@ -1784,6 +1788,62 @@ describe('flowSurfaces resource', () => {
     expect(popupFieldPaths).not.toContain('manager');
     const popupActionUses = _.castArray(popupBlock?.subModels?.actions || []).map((item: any) => item?.use);
     expect(popupActionUses).toContain('FormSubmitActionModel');
+  });
+
+  it('should auto-complete association field popups with defaultType view and save them as reusable templates', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Association field details popup page',
+      tabTitle: 'Association field details popup tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const defaultViewPopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        fieldPath: 'department.title',
+        popup: {
+          defaultType: 'view',
+        },
+      },
+    });
+    expect(defaultViewPopupRes.status).toBe(200);
+    const defaultViewPopupField = getData(defaultViewPopupRes);
+
+    const defaultViewPopupReadback = await getSurface(rootAgent, {
+      uid: defaultViewPopupField.fieldUid,
+    });
+    expect(defaultViewPopupReadback.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+
+    const templatedPopup = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: defaultViewPopupReadback.tree.popup?.template?.uid,
+        },
+      }),
+    );
+    expect(templatedPopup.type).toBe('popup');
+    expect(templatedPopup.name).toBe('Employees -> department details popup (Auto generated)');
+    expect(templatedPopup.description).toBe(
+      "Automatically generated details popup template for relation field 'department' in collection 'Employees', targeting 'Departments'.",
+    );
+    expect(templatedPopup.collectionName).toBe('departments');
+    expect(templatedPopup.associationName).toBe('employees.department');
+
+    const templatedPopupSurface = await getSurface(rootAgent, {
+      uid: templatedPopup.targetUid,
+    });
+    const popupBlock = _.castArray(
+      templatedPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(popupBlock?.use).toBe('DetailsBlockModel');
   });
 
   it('should support field popup content in addFields and compose field specs', async () => {
@@ -2013,6 +2073,31 @@ describe('flowSurfaces resource', () => {
         },
         changes: {
           openView: {
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureFieldRes.status).toBe(200);
+
+    const configuredFieldReadback = await getSurface(rootAgent, {
+      uid: field.fieldUid,
+    });
+    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+      associationName: 'employees.department',
+    });
+
+    const configureFieldExplicitRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
             dataSourceKey: 'main',
             collectionName: 'departments',
             associationName: 'employees.department',
@@ -2021,17 +2106,17 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(configureFieldRes.status).toBe(200);
-    const configuredField = getData(configureFieldRes);
+    expect(configureFieldExplicitRes.status).toBe(200);
+    const configuredField = getData(configureFieldExplicitRes);
     expect(configuredField.popupPageUid).toBeTruthy();
     expect(configuredField.popupTabUid).toBeTruthy();
     expect(configuredField.popupGridUid).toBeTruthy();
 
-    const configuredFieldReadback = await getSurface(rootAgent, {
+    const explicitlyConfiguredFieldReadback = await getSurface(rootAgent, {
       uid: field.fieldUid,
     });
-    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
-    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+    expect(explicitlyConfiguredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(explicitlyConfiguredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
       mode: 'dialog',
       dataSourceKey: 'main',
       collectionName: 'departments',
@@ -2654,7 +2739,9 @@ describe('flowSurfaces resource', () => {
     expect(viewPopupTab?.props?.title).toBe('Details');
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(viewPopupBlock?.subModels?.actions).toBeUndefined();
+    expect(_.castArray(viewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['EditActionModel']),
+    );
     expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
     expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
 
@@ -2983,7 +3070,12 @@ describe('flowSurfaces resource', () => {
       uid: updateRecordAction.uid,
     });
     expect(detailsReadback.tree.use).toBe('DetailsBlockModel');
-    expect(_.castArray(detailsReadback.tree.subModels?.actions || [])[0]?.uid).toBe(updateRecordAction.uid);
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['EditActionModel', 'UpdateRecordActionModel']),
+    );
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || []).map((item: any) => item?.uid)).toContain(
+      updateRecordAction.uid,
+    );
     expect(updateRecordAction.assignFormUid).toBeTruthy();
     expect(updateActionReadback.tree.flowRegistry?.beforeAssignConfirm?.on).toMatchObject({
       eventName: 'click',
@@ -6590,6 +6682,50 @@ describe('flowSurfaces resource', () => {
     );
     expect(wrappedValuesRes.status).toBe(400);
     expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+  });
+
+  it('should use technical names or legacy fallback when auto-generated popup template metadata cannot use titles', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any);
+    const originalLoadFieldHostNodes = (service as any).loadFieldHostNodes;
+    const originalResolveFieldBindingContext = (service as any).resolveFieldBindingContext;
+
+    try {
+      (service as any).loadFieldHostNodes = async () => ({
+        fieldNode: {},
+        wrapperNode: {},
+      });
+      (service as any).resolveFieldBindingContext = () => ({
+        collectionName: 'employees',
+        fieldPath: 'department.title',
+        sourceCollection: { name: 'employees' },
+        associationField: { name: 'department' },
+        targetCollection: { name: 'departments' },
+      });
+
+      await expect(
+        (service as any).resolveAutoGeneratedFieldPopupTemplateMetadata('field-host', 'view', 'techname123456'),
+      ).resolves.toEqual({
+        name: 'employees -> department details popup (Auto generated)',
+        description:
+          "Automatically generated details popup template for relation field 'department' in collection 'employees', targeting 'departments'.",
+      });
+
+      (service as any).resolveFieldBindingContext = () => ({
+        collectionName: undefined,
+        fieldPath: undefined,
+        sourceCollection: undefined,
+      });
+
+      await expect(
+        (service as any).resolveAutoGeneratedFieldPopupTemplateMetadata('field-host', 'edit', 'legacy123456'),
+      ).resolves.toEqual({
+        name: 'Auto popup legacy123456',
+        description: 'Auto-generated popup template legacy123456',
+      });
+    } finally {
+      (service as any).loadFieldHostNodes = originalLoadFieldHostNodes;
+      (service as any).resolveFieldBindingContext = originalResolveFieldBindingContext;
+    }
   });
 
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {

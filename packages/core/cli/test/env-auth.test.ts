@@ -189,7 +189,7 @@ test('resolveAccessToken explains OAuth metadata network failures clearly', asyn
             /Request URL: http:\/\/localhost:13000\/api\/\.well-known\/oauth-authorization-server/,
           );
           assert.match(error.message, /Network error: fetch failed/);
-          assert.match(error.message, /nb env auth -e test/);
+          assert.match(error.message, /nb env auth test/);
           assert.match(error.message, /nb env list/);
           return true;
         },

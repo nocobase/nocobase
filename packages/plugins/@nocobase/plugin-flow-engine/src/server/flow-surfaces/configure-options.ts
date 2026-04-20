@@ -482,6 +482,12 @@ const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
   updateMode: stringOption('Update mode', { example: 'overwrite' }),
 };
 
+const APPROVAL_ASSIGN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
+  assignValues: objectOption('Assigned values persisted with the approval action payload', {
+    example: { department: 'finance' },
+  }),
+};
+
 const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   linkageRules: arrayOption(
     'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setActionLinkageRules` instead of guessing this configure key directly.',
@@ -500,6 +506,12 @@ const APPROVAL_RETURN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
       type: 'specific',
       target: 'approval-node-key',
     },
+  }),
+};
+
+const APPROVAL_COMMENT_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
+  commentFormUid: stringOption('Comment form model uid', {
+    example: 'comment-form-uid',
   }),
 };
 
@@ -624,11 +636,6 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'ExportActionModel':
     case 'ExportAttachmentActionModel':
     case 'ImportActionModel':
-    case 'ApplyFormSubmitModel':
-    case 'ApplyFormSaveDraftModel':
-    case 'ApplyFormWithdrawModel':
-    case 'ProcessFormApproveModel':
-    case 'ProcessFormRejectModel':
     case 'TemplatePrintCollectionActionModel':
     case 'TemplatePrintRecordActionModel':
     case 'CollectionTriggerWorkflowActionModel':
@@ -641,8 +648,16 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'FilterFormSubmitActionModel':
     case 'FilterFormResetActionModel':
       return merged(ACTION_LINKAGE_OPTIONS);
+    case 'ApplyFormSubmitModel':
+    case 'ApplyFormSaveDraftModel':
+      return merged(ACTION_CONFIRM_OPTIONS, APPROVAL_ASSIGN_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'ApplyFormWithdrawModel':
+      return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'ProcessFormApproveModel':
+    case 'ProcessFormRejectModel':
+      return merged(APPROVAL_COMMENT_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'ProcessFormReturnModel':
-      return merged(ACTION_LINKAGE_OPTIONS, APPROVAL_RETURN_ACTION_OPTIONS);
+      return merged(APPROVAL_COMMENT_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS, APPROVAL_RETURN_ACTION_OPTIONS);
     case 'ProcessFormDelegateModel':
     case 'ProcessFormAddAssigneeModel':
       return merged(ACTION_LINKAGE_OPTIONS, APPROVAL_REASSIGN_ACTION_OPTIONS);

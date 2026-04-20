@@ -81,8 +81,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       key: 'defaultSubmit',
       type: 'submit',
       settings: {
-        title: 'Save',
-        type: '',
+        title: 'Submit',
+        type: 'primary',
         confirm: false,
       },
     },
@@ -128,8 +128,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       key: 'defaultSubmit',
       type: 'submit',
       settings: {
-        title: 'Save Changes',
-        type: '',
+        title: 'Submit',
+        type: 'primary',
         confirm: false,
       },
     },

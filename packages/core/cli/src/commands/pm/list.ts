@@ -10,27 +10,15 @@
 import {Args, Command, Flags} from '@oclif/core'
 
 export default class PmList extends Command {
-  static override args = {
-    file: Args.string({description: 'file to read'}),
-  }
-  static override description = 'describe the command here'
+  static override args = {}
+  static override summary = 'List all plugins';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
   ]
-  static override flags = {
-    // flag with no value (-f, --force)
-    force: Flags.boolean({char: 'f'}),
-    // flag with a value (-n, --name=VALUE)
-    name: Flags.string({char: 'n', description: 'name to print'}),
-  }
+  static override flags = {}
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(PmList)
-
-    const name = flags.name ?? 'world'
-    this.log(`hello ${name} from packages/core/cli/src/commands/pm/list.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
-    }
+    const {args, flags} = await this.parse(PmList);
+    await this.config.runCommand('api:pm:list', ['--mode=summary']);
   }
 }

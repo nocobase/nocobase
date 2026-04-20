@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import path, { isAbsolute } from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveCliHomeDir } from './cli-home.js';
 
@@ -21,7 +30,21 @@ export interface OauthAuthConfig {
 
 export interface EnvConfigEntry {
   baseUrl?: string;
+  apibaseUrl?: string;
   auth?: TokenAuthConfig | OauthAuthConfig;
+  appRootPath?: string;
+  storagePath?: string;
+  /** Optional DB hints for this env (aligns with NocoBase DB_* / .env usage). */
+  dbHost?: string;
+  dbDatabase?: string;
+  dbUser?: string;
+  dbDialect?: string;
+  dbPassword?: string;
+  dbPort?: number | string;
+  dbSchema?: string;
+  dbTablePrefix?: string;
+  dbUnderscored?: boolean;
+  dbLogging?: boolean;
   runtime?: {
     version?: string;
     schemaHash?: string;
@@ -88,10 +111,49 @@ export async function setCurrentEnv(envName: string, options: AuthStoreOptions =
   await saveAuthConfig(config, options);
 }
 
+export class Env {
+  constructor(protected readonly config: EnvConfigEntry & { name?: string } = {}) {}
+
+  get name() {
+    return this.config.name;
+  }
+
+  get baseUrl() {
+    return this.config.baseUrl;
+  }
+
+  get auth() {
+    return this.config.auth;
+  }
+
+  get runtime() {
+    return this.config.runtime;
+  }
+
+  get appRootPath() {
+    const appRootPath = this.config.appRootPath;
+    if (!appRootPath) {
+      return process.cwd();
+    }
+    if (isAbsolute(appRootPath)) {
+      return appRootPath;
+    }
+    return path.resolve(process.cwd(), appRootPath);
+  }
+
+  get storagePath() {
+    const storagePath = this.config.storagePath;
+    if (isAbsolute(storagePath)) {
+      return storagePath;
+    }
+    return path.resolve(process.cwd(), storagePath);
+  }
+}
+
 export async function getEnv(envName?: string, options: AuthStoreOptions = {}) {
   const config = await loadAuthConfig(options);
   const resolved = envName || config.currentEnv || 'default';
-  return config.envs[resolved];
+  return new Env({ ...config.envs[resolved], name: resolved });
 }
 
 function areAuthConfigsEquivalent(left?: EnvConfigEntry['auth'], right?: EnvConfigEntry['auth']) {
@@ -136,13 +198,13 @@ async function writeEnv(
 
 export async function upsertEnv(
   envName: string,
-  baseUrl: string,
-  accessToken?: string,
+  config: Record<string, any>,
   options: AuthStoreOptions = {},
 ) {
   await writeEnv(
     envName,
     (previous) => {
+      const { baseUrl, accessToken, ...rest } = config;
       const baseUrlChanged = previous?.baseUrl !== baseUrl;
       const nextAuth = accessToken
         ? ({
@@ -158,6 +220,7 @@ export async function upsertEnv(
         ...previous,
         baseUrl,
         auth: nextAuth,
+        ...rest,
         runtime: baseUrlChanged || authChanged ? undefined : previous?.runtime,
       };
     },

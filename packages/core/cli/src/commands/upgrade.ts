@@ -28,7 +28,7 @@ export default class Upgrade extends Command {
       npmArgs.push('--skip-code-update');
     }
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd());
+      await runNocoBaseCommand(npmArgs);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

@@ -360,6 +360,104 @@ describe('flowSurfaces reaction', () => {
     });
   });
 
+  it('should expose record paths for table row action linkage and accept record-based writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Reaction row action page',
+      tabTitle: 'Reaction row action tab',
+    });
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const deleteAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+          type: 'delete',
+        },
+      }),
+    );
+
+    const meta = await service.getReactionMeta({
+      target: {
+        uid: deleteAction.uid,
+      },
+    });
+    const actionCapability = findCapability(meta, 'actionLinkage');
+    expect(actionCapability.conditionMeta?.operatorsByPath?.['record.nickname']).toEqual(
+      expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
+    );
+
+    const writeResult = await service.transaction((transaction) =>
+      service.setActionLinkageRules(
+        {
+          target: {
+            uid: deleteAction.uid,
+          },
+          rules: [
+            {
+              key: 'disableReadonlyDelete',
+              when: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'record.nickname',
+                    operator: '$eq',
+                    value: 'readonly',
+                  },
+                ],
+              },
+              then: [
+                {
+                  type: 'setActionState',
+                  state: 'disabled',
+                },
+              ],
+            },
+          ],
+        },
+        { transaction },
+      ),
+    );
+    expect(writeResult.resolvedScene).toBe('action');
+    expect(writeResult.normalizedRules).toMatchObject([
+      {
+        key: 'disableReadonlyDelete',
+        when: {
+          logic: '$and',
+          items: [
+            {
+              path: 'record.nickname',
+              operator: '$eq',
+              value: 'readonly',
+            },
+          ],
+        },
+      },
+    ]);
+
+    const readback = await getSurface(rootAgent, {
+      uid: deleteAction.uid,
+    });
+    expect(readback.tree.stepParams?.buttonSettings?.linkageRules).toMatchObject([
+      {
+        key: 'disableReadonlyDelete',
+        condition: {
+          logic: '$and',
+          items: [
+            {
+              path: '{{ ctx.record.nickname }}',
+              operator: '$eq',
+              value: 'readonly',
+            },
+          ],
+        },
+      },
+    ]);
+  });
+
   it('should clear field value slots with rules: []', async () => {
     const page = await createPage(rootAgent, {
       title: 'Reaction clear page',
