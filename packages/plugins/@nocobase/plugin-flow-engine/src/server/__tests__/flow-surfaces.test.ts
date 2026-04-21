@@ -1669,7 +1669,7 @@ describe('flowSurfaces resource', () => {
     const tableReadback = await getSurface(rootAgent, {
       uid: table.uid,
     });
-    expect(tableReadback.tree.props?.title).toBe('Employees table');
+    expect(tableReadback.tree.stepParams?.cardSettings?.titleDescription?.title).toBe('Employees table');
     expect(tableReadback.tree.stepParams?.tableSettings?.pageSize?.pageSize).toBe(50);
 
     const addFieldRes = await rootAgent.resource('flowSurfaces').addField({
@@ -2894,10 +2894,34 @@ describe('flowSurfaces resource', () => {
     expect(Object.values(bundle.refs).some((item: any) => item?.uid === nicknameField.wrapperUid)).toBe(true);
     expect(Object.values(bundle.refs).some((item: any) => item?.uid === statusField.wrapperUid)).toBe(true);
 
-    const addNewReadback = await getSurface(rootAgent, {
-      uid: addNewAction.uid,
-    });
-    const addNewPopupTab = _.castArray(addNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const readActionPopupSurface = async (actionUid: string) => {
+      const actionSurface = await getSurface(rootAgent, {
+        uid: actionUid,
+      });
+      const popupTemplateUid = actionSurface.tree.popup?.template?.uid;
+      if (!popupTemplateUid) {
+        return {
+          actionSurface,
+          popupSurface: actionSurface,
+        };
+      }
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: popupTemplateUid,
+          },
+        }),
+      );
+      return {
+        actionSurface,
+        popupSurface: await getSurface(rootAgent, {
+          uid: popupTemplate.targetUid,
+        }),
+      };
+    };
+
+    const { popupSurface: addNewPopupSurface } = await readActionPopupSurface(addNewAction.uid);
+    const addNewPopupTab = _.castArray(addNewPopupSurface.tree.subModels?.page?.subModels?.tabs || [])[0];
     const addNewPopupBlock = _.castArray(addNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     const addNewPopupFieldPaths = _.castArray(addNewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
@@ -2913,10 +2937,8 @@ describe('flowSurfaces resource', () => {
       'FormSubmitActionModel',
     );
 
-    const viewReadback = await getSurface(rootAgent, {
-      uid: viewAction.uid,
-    });
-    const viewPopupTab = _.castArray(viewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const { popupSurface: viewPopupSurface } = await readActionPopupSurface(viewAction.uid);
+    const viewPopupTab = _.castArray(viewPopupSurface.tree.subModels?.page?.subModels?.tabs || [])[0];
     const viewPopupBlock = _.castArray(viewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     const viewPopupFieldPaths = _.castArray(viewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
@@ -2930,10 +2952,8 @@ describe('flowSurfaces resource', () => {
     expect(viewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
     expect(viewPopupFieldPaths).not.toEqual(expect.arrayContaining(['departmentId', 'tasks', 'logs', 'skills']));
 
-    const editReadback = await getSurface(rootAgent, {
-      uid: editAction.uid,
-    });
-    const editPopupTab = _.castArray(editReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
+    const { popupSurface: editPopupSurface } = await readActionPopupSurface(editAction.uid);
+    const editPopupTab = _.castArray(editPopupSurface.tree.subModels?.page?.subModels?.tabs || [])[0];
     const editPopupBlock = _.castArray(editPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     const editPopupFieldPaths = _.castArray(editPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,

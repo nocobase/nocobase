@@ -2445,7 +2445,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const validTableReadback = await getSurface(rootAgent, {
       uid: addBlocksData.blocks[0].result.uid,
     });
-    expect(validTableReadback.tree.props?.title).toBe('Valid employees table');
+    expect(validTableReadback.tree.stepParams?.cardSettings?.titleDescription?.title).toBe('Valid employees table');
   });
 
   it('should require dataSourceKey when addBlock creates a collection block from raw resourceInit', async () => {
