@@ -9,7 +9,6 @@
 
 import { Command, Flags } from '@oclif/core';
 import { getEnv } from '../lib/auth-store.ts';
-import type { CliHomeScope } from '../lib/cli-home.ts';
 import { runNocoBaseCommand } from '../lib/run-npm.ts';
 
 export default class Stop extends Command {
@@ -18,7 +17,6 @@ export default class Stop extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -e local',
-    '<%= config.bin %> <%= command.id %> -e local -s project',
   ];
 
   static override flags = {
@@ -27,19 +25,12 @@ export default class Stop extends Command {
       description:
         'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
     }),
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope for resolving the env',
-      options: ['project', 'global'],
-      default: 'project',
-    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Stop);
 
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'>;
-    const env = await getEnv(flags.env?.trim() || undefined, { scope });
+    const env = await getEnv(flags.env);
 
     if (!env) {
       this.error('Env is not configured');

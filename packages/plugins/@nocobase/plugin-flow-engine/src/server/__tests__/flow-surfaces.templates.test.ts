@@ -8,6 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
+import _ from 'lodash';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import {
@@ -2725,7 +2726,7 @@ describe('flowSurfaces templates', () => {
     });
   });
 
-  it('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while preserving default popup completion', async () => {
+  it('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while auto-saving default popup completion as templates', async () => {
     await rootAgent.resource('collections').create({
       values: {
         name: 'popup_try_template_miss_targets',
@@ -2880,16 +2881,33 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    expect(defaultViewAction.popupPageUid).toBeTruthy();
-    expect(defaultViewAction.popupTabUid).toBeTruthy();
-    expect(defaultViewAction.popupGridUid).toBeTruthy();
+    expect(defaultViewAction.popupPageUid).toBeUndefined();
+    expect(defaultViewAction.popupTabUid).toBeUndefined();
+    expect(defaultViewAction.popupGridUid).toBeUndefined();
     const defaultViewActionSurface = await getSurface(rootAgent, {
       uid: defaultViewAction.uid,
     });
-    expect(defaultViewActionSurface.tree.popup?.template).toBeUndefined();
-    expect(defaultViewActionSurface.tree.popup?.pageUid).toBe(defaultViewAction.popupPageUid);
-    expect(defaultViewActionSurface.tree.popup?.tabUid).toBe(defaultViewAction.popupTabUid);
-    expect(defaultViewActionSurface.tree.popup?.gridUid).toBe(defaultViewAction.popupGridUid);
+    expect(defaultViewActionSurface.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(defaultViewActionSurface.tree.popup?.pageUid).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup?.tabUid).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup?.gridUid).toBeUndefined();
+    const defaultViewPopupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: defaultViewActionSurface.tree.popup?.template?.uid,
+        },
+      }),
+    );
+    expect(defaultViewPopupTemplate.collectionName).toBe('popup_try_template_miss_targets');
+    const defaultViewPopupSurface = await getSurface(rootAgent, {
+      uid: defaultViewPopupTemplate.targetUid,
+    });
+    const defaultViewPopupBlock = _.castArray(
+      defaultViewPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(defaultViewPopupBlock?.use).toBe('DetailsBlockModel');
 
     const configurablePopupAction = getData(
       await rootAgent.resource('flowSurfaces').addAction({

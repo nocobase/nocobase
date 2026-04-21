@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command } from '@oclif/core';
+import { Args, Command, Flags } from '@oclif/core';
+import { getEnv } from '../../lib/auth-store.ts';
+import { runNocoBaseCommand } from '../../lib/run-npm.ts';
 
 export default class PmDisable extends Command {
   static override args = {
@@ -24,14 +26,43 @@ export default class PmDisable extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> @nocobase/plugin-sample',
     '<%= config.bin %> <%= command.id %> @nocobase/plugin-a @nocobase/plugin-b',
+    '<%= config.bin %> <%= command.id %> -e local @nocobase/plugin-sample',
   ];
 
+  static override flags = {
+    env: Flags.string({
+      char: 'e',
+      description:
+        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+    }),
+  };
+
   public async run(): Promise<void> {
-    const { args } = await this.parse(PmDisable);
+    const { args, flags } = await this.parse(PmDisable);
     const packages = args.packages;
     if (!Array.isArray(packages) || packages.length === 0) {
       this.error('Pass at least one plugin package name.');
     }
+
+    const env = await getEnv(flags.env);
+
+    if (!env) {
+      this.error('Env is not configured');
+    }
+
+    if (env.config.appRootPath) {
+      try {
+        await runNocoBaseCommand(['pm', 'disable', ...packages], {
+          cwd: env.appRootPath,
+          env: env.envVars,
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.error(message);
+      }
+      return;
+    }
+
     await this.config.runCommand('api:pm:disable', ['--await-response', '--filter-by-tk', packages.join(',')]);
   }
 }

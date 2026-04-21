@@ -142,7 +142,11 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       collectionName: 'pets',
     },
   });
-  const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew');
+  const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, hostPopup.uid, `Nested ${key}`, {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
@@ -162,7 +166,11 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       });
       await configureTableBlock(rootAgent, nestedTable.uid);
 
-      const addNew = await ensureBlockAction(rootAgent, nestedTable.uid, 'addNew');
+      const addNew = await ensureBlockAction(rootAgent, nestedTable.uid, 'addNew', {
+        popup: {
+          tryTemplate: false,
+        },
+      });
       await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
@@ -193,14 +201,22 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
 
       await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
-      const view = await addAction(rootAgent, nestedTable.uid, 'view');
+      const view = await addAction(rootAgent, nestedTable.uid, 'view', {
+        popup: {
+          tryTemplate: false,
+        },
+      });
       await configurePopupAction(rootAgent, view.uid, 'View', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
-      const edit = await addAction(rootAgent, nestedTable.uid, 'edit');
+      const edit = await addAction(rootAgent, nestedTable.uid, 'edit', {
+        popup: {
+          tryTemplate: false,
+        },
+      });
       await configurePopupAction(rootAgent, edit.uid, 'Edit', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
@@ -278,7 +294,11 @@ async function createTableParityReadback(rootAgent: any) {
 
   await configureTableBlock(rootAgent, table.uid);
 
-  const addNew = await ensureBlockAction(rootAgent, table.uid, 'addNew');
+  const addNew = await ensureBlockAction(rootAgent, table.uid, 'addNew', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, addNew.uid, 'Add Pet', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
@@ -309,14 +329,22 @@ async function createTableParityReadback(rootAgent: any) {
 
   await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
-  const view = await addAction(rootAgent, table.uid, 'view');
+  const view = await addAction(rootAgent, table.uid, 'view', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, view.uid, 'View', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
-  const edit = await addAction(rootAgent, table.uid, 'edit');
+  const edit = await addAction(rootAgent, table.uid, 'edit', {
+    popup: {
+      tryTemplate: false,
+    },
+  });
   await configurePopupAction(rootAgent, edit.uid, 'Edit', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
@@ -777,6 +805,18 @@ async function moveNode(rootAgent: any, sourceUid: string, targetUid: string, po
   );
 }
 
+async function removeNode(rootAgent: any, uid: string) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid,
+        },
+      },
+    }),
+  );
+}
+
 async function updateNodeSettings(rootAgent: any, uid: string, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').updateSettings({
@@ -868,6 +908,26 @@ const BLOCK_ACTION_MODEL_USE_BY_TYPE: Record<string, string> = {
   bulkDelete: 'BulkDeleteActionModel',
 };
 
+async function findBlockActionByUse(rootAgent: any, targetUid: string, use: string) {
+  const surface = await getSurface(rootAgent, {
+    uid: targetUid,
+  });
+  const actions = _.castArray(surface.tree?.subModels?.actions || []).filter((item: any) => item?.uid);
+  const index = actions.findIndex((item: any) => item?.use === use);
+  if (index < 0) {
+    return {
+      action: null,
+      previousAction: null,
+      nextAction: null,
+    };
+  }
+  return {
+    action: actions[index],
+    previousAction: actions[index - 1] || null,
+    nextAction: actions[index + 1] || null,
+  };
+}
+
 async function ensureBlockAction(
   rootAgent: any,
   targetUid: string,
@@ -875,15 +935,20 @@ async function ensureBlockAction(
   extraValues: Record<string, any> = {},
 ) {
   const expectedUse = BLOCK_ACTION_MODEL_USE_BY_TYPE[type];
-  if (expectedUse && !Object.keys(extraValues).length) {
-    const surface = await getSurface(rootAgent, {
-      uid: targetUid,
-    });
-    const existingAction = _.castArray(surface.tree?.subModels?.actions || []).find(
-      (item: any) => item?.use === expectedUse,
-    );
-    if (existingAction?.uid) {
-      return existingAction;
+  if (expectedUse) {
+    const existing = await findBlockActionByUse(rootAgent, targetUid, expectedUse);
+    if (existing.action?.uid) {
+      if (!Object.keys(extraValues).length) {
+        return existing.action;
+      }
+      await removeNode(rootAgent, existing.action.uid);
+      const created = await addAction(rootAgent, targetUid, type, extraValues);
+      if (existing.nextAction?.uid) {
+        await moveNode(rootAgent, created.uid, existing.nextAction.uid, 'before');
+      } else if (existing.previousAction?.uid) {
+        await moveNode(rootAgent, created.uid, existing.previousAction.uid, 'after');
+      }
+      return created;
     }
   }
   return addAction(rootAgent, targetUid, type, extraValues);

@@ -265,10 +265,12 @@ describe('flowSurfaces approval surface', () => {
   it('should expose configure options for approval blocks, wrappers and actions', () => {
     expect(getConfigureOptionsForUse('ApplyFormModel')).toEqual(
       expect.objectContaining({
+        description: expect.any(Object),
         layout: expect.any(Object),
         labelWidth: expect.any(Object),
       }),
     );
+    expect(getConfigureOptionsForUse('ApplyFormModel')).not.toHaveProperty('displayTitle');
     expect(getConfigureOptionsForUse('ApprovalDetailsItemModel')).toEqual(
       expect.objectContaining({
         label: expect.any(Object),
@@ -376,6 +378,8 @@ describe('flowSurfaces approval surface', () => {
       expect.arrayContaining(['fieldValue', 'blockLinkage', 'fieldLinkage']),
     );
     expect(getReactionKindsForUse('ApprovalDetailsModel')).toEqual(expect.arrayContaining(['blockLinkage']));
+    expect(getReactionKindsForUse('MarkdownBlockModel')).toEqual(expect.arrayContaining(['blockLinkage']));
+    expect(getReactionKindsForUse('IframeBlockModel')).toEqual(expect.arrayContaining(['blockLinkage']));
     expect(getReactionKindsForUse('ProcessFormApproveModel')).toEqual(expect.arrayContaining(['actionLinkage']));
   });
 

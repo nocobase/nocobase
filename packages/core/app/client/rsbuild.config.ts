@@ -102,7 +102,7 @@ export default defineConfig(({ command }) => {
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${clientPort + 1}`;
-  const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST || 'localhost';
+  const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT, clientPort);
   const workspaceAliases = getRsbuildAlias();
 

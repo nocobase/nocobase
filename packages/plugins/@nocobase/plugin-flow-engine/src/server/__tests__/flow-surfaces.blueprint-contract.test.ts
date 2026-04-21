@@ -67,6 +67,39 @@ describe('flowSurfaces applyBlueprint contract', () => {
     return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
   }
 
+  async function readPrimaryPopupBlockFromAction(actionUid: string) {
+    const actionReadback = await getSurface(rootAgent, {
+      uid: actionUid,
+    });
+    const popupTemplateUid = actionReadback.tree?.popup?.template?.uid;
+    if (popupTemplateUid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: popupTemplateUid,
+          },
+        }),
+      );
+      const popupSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      return {
+        actionReadback,
+        popupSurface,
+        popupBlock: _.castArray(
+          popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+        )[0],
+      };
+    }
+    return {
+      actionReadback,
+      popupSurface: actionReadback,
+      popupBlock: _.castArray(
+        actionReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0],
+    };
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
       plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
@@ -1486,11 +1519,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(userEditAction?.uid).toBeTruthy();
 
-    const userEditReadback = await getSurface(rootAgent, {
-      uid: userEditAction.uid,
-    });
-    const userEditForm = _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock: userEditForm } = await readPrimaryPopupBlockFromAction(userEditAction.uid);
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
@@ -1525,15 +1554,199 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(roleEditAction?.uid).toBeTruthy();
 
-    const roleEditReadback = await getSurface(rootAgent, {
-      uid: roleEditAction.uid,
-    });
-    const roleEditForm = _.castArray(roleEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock: roleEditForm } = await readPrimaryPopupBlockFromAction(roleEditAction.uid);
     expect(roleEditForm?.use).toBe('EditFormModel');
     expect(_.castArray(roleEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
+  });
+
+  it('should create a details-root page with a popup recordAction, associated-records table, and nested edit popups', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Details root popup page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Details root popup page',
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'rootDetails',
+                type: 'details',
+                collection: 'users',
+                fields: ['username', 'nickname', 'roles'],
+                recordActions: [
+                  {
+                    type: 'popup',
+                    title: 'Details',
+                    popup: {
+                      layout: {
+                        rows: [
+                          [
+                            { key: 'userDetails', span: 12 },
+                            { key: 'userRoles', span: 12 },
+                          ],
+                        ],
+                      },
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username', 'nickname', 'email', 'roles'],
+                        },
+                        {
+                          key: 'userRoles',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: 'roles',
+                          },
+                          fields: [
+                            {
+                              field: 'title',
+                              popup: {
+                                title: 'Role details',
+                                blocks: [
+                                  {
+                                    key: 'roleDetails',
+                                    type: 'details',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: 'roles',
+                                    },
+                                    fields: ['title', 'name'],
+                                  },
+                                ],
+                              },
+                            },
+                            'name',
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const rootDetails = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'DetailsBlockModel')[0];
+    expect(rootDetails?.uid).toBeTruthy();
+
+    const rootDetailsReadback = await getSurface(rootAgent, {
+      uid: rootDetails.uid,
+    });
+    expect(rootDetailsReadback.tree.use).toBe('DetailsBlockModel');
+    expect(collectFieldPaths(rootDetailsReadback.tree)).toEqual(
+      expect.arrayContaining(['username', 'nickname', 'roles']),
+    );
+    const rootPopupAction = _.castArray(rootDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'PopupCollectionActionModel',
+    );
+    expect(rootPopupAction?.uid).toBeTruthy();
+
+    const rootPopupReadback = await getSurface(rootAgent, {
+      uid: rootPopupAction.uid,
+    });
+    const popupItems = _.castArray(
+      _.castArray(rootPopupReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels
+        ?.items || [],
+    );
+    expect(popupItems).toHaveLength(2);
+    const userDetailsBlock = popupItems.find((item: any) => item?.use === 'DetailsBlockModel');
+    const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
+    expect(userDetailsBlock?.uid).toBeTruthy();
+    expect(userRolesTable?.uid).toBeTruthy();
+
+    const userDetailsReadback = await getSurface(rootAgent, {
+      uid: userDetailsBlock.uid,
+    });
+    expect(collectFieldPaths(userDetailsReadback.tree)).toEqual(expect.arrayContaining(['email', 'roles']));
+    expect(readNodeActionUses(userDetailsReadback.tree)).toContain('EditActionModel');
+    const userEditAction = _.castArray(userDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(userEditAction?.uid).toBeTruthy();
+
+    const { popupBlock: userEditForm } = await readPrimaryPopupBlockFromAction(userEditAction.uid);
+    expect(userEditForm?.use).toBe('EditFormModel');
+    expect(readNodeActionUses(userEditForm)).toContain('FormSubmitActionModel');
+
+    const userRolesReadback = await getSurface(rootAgent, {
+      uid: userRolesTable.uid,
+    });
+    expect(userRolesReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+    });
+    expect(collectFieldPaths(userRolesReadback.tree)).toEqual(expect.arrayContaining(['title', 'name']));
+    const roleTitleFieldNodes = collectDescendantNodes(
+      userRolesReadback.tree,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title',
+    );
+    const roleTitleField =
+      roleTitleFieldNodes.find(
+        (item) =>
+          item?.props?.clickToOpen === true ||
+          !!item?.popup?.template?.uid ||
+          !!item?.subModels?.page?.uid ||
+          !!item?.stepParams?.popupSettings?.openView,
+      ) || roleTitleFieldNodes[roleTitleFieldNodes.length - 1];
+    expect(roleTitleField?.props?.clickToOpen).toBe(true);
+
+    let roleDetailsBlock;
+    if (roleTitleField?.popup?.template?.uid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: roleTitleField.popup.template.uid,
+          },
+        }),
+      );
+      const popupTemplateSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      roleDetailsBlock = _.castArray(
+        popupTemplateSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+    } else {
+      expect(roleTitleField?.subModels?.page?.use).toBe('ChildPageModel');
+      roleDetailsBlock = _.castArray(
+        roleTitleField?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+    }
+    expect(roleDetailsBlock?.use).toBe('DetailsBlockModel');
+
+    const roleDetailsReadback = await getSurface(rootAgent, {
+      uid: roleDetailsBlock.uid,
+    });
+    expect(readNodeActionUses(roleDetailsReadback.tree)).toContain('EditActionModel');
+    const roleEditAction = _.castArray(roleDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(roleEditAction?.uid).toBeTruthy();
+
+    const { popupBlock: roleEditForm } = await readPrimaryPopupBlockFromAction(roleEditAction.uid);
+    expect(roleEditForm?.use).toBe('EditFormModel');
+    expect(readNodeActionUses(roleEditForm)).toContain('FormSubmitActionModel');
   });
 
   it('should allow custom edit popups with one inherited editForm plus sibling blocks', async () => {
@@ -2636,6 +2849,188 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
       "flowSurfaces applyBlueprint tabs[0].blocks[0].fieldsLayout.rows[0][0] references unknown field 'missingField'",
+    );
+  });
+
+  it('should auto-apply compact filterForm layout when fieldsLayout is omitted', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint filter compact layout',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fields: [
+                  { key: 'nicknameFilter', field: 'nickname', target: 'employeesTable' },
+                  { key: 'statusFilter', field: 'status', target: 'employeesTable' },
+                  { key: 'departmentFilter', field: 'department', target: 'employeesTable' },
+                ],
+                actions: ['submit', 'reset'],
+              },
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const overviewTab = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0];
+    const filterBlock = overviewTab?.subModels?.grid?.subModels?.items?.[0];
+    expect(filterBlock?.use).toBe('FilterFormBlockModel');
+
+    const filterGrid = filterBlock?.subModels?.grid;
+    const filterItems = _.castArray(filterGrid?.subModels?.items || []);
+    const nicknameWrapper = filterItems.find(
+      (item: any) => item?.stepParams?.filterFormItemSettings?.init?.filterField?.name === 'nickname',
+    )?.uid;
+    const statusWrapper = filterItems.find(
+      (item: any) => item?.stepParams?.filterFormItemSettings?.init?.filterField?.name === 'status',
+    )?.uid;
+    const departmentWrapper = filterItems.find(
+      (item: any) => item?.stepParams?.filterFormItemSettings?.init?.filterField?.name === 'department',
+    )?.uid;
+
+    expect(filterGrid?.props?.rowOrder).toEqual(['row1']);
+    expect(filterGrid?.props?.rows).toEqual({
+      row1: [[nicknameWrapper], [statusWrapper], [departmentWrapper]],
+    });
+    expect(filterGrid?.props?.sizes).toEqual({
+      row1: [8, 8, 8],
+    });
+  });
+
+  it('should compile fieldGroups into divider items and compact rows through applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint field groups',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fieldGroups: [
+                  {
+                    title: 'Basic information',
+                    fields: [
+                      { key: 'nicknameField', field: 'nickname' },
+                      { key: 'statusField', field: 'status' },
+                    ],
+                  },
+                  {
+                    title: 'Contact',
+                    fields: [{ key: 'departmentField', field: 'department' }],
+                  },
+                ],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const formBlock = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items?.[0];
+    expect(formBlock?.use).toBe('CreateFormModel');
+
+    const formGrid = formBlock?.subModels?.grid;
+    const formItems = _.castArray(formGrid?.subModels?.items || []);
+    const basicDividerNode = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Basic information',
+    );
+    const contactDividerNode = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Contact',
+    );
+    const basicDivider = basicDividerNode?.uid;
+    const contactDivider = contactDividerNode?.uid;
+    const nicknameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+    )?.uid;
+    const statusWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
+      ?.uid;
+    const departmentWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    )?.uid;
+
+    expect(basicDividerNode?.props?.orientation).toBe('left');
+    expect(basicDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Basic information',
+      orientation: 'left',
+    });
+    expect(contactDividerNode?.props?.orientation).toBe('left');
+    expect(contactDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Contact',
+      orientation: 'left',
+    });
+    expect(formGrid?.props?.rowOrder).toEqual(['row1', 'row2', 'row3', 'row4']);
+    expect(formGrid?.props?.rows).toEqual({
+      row1: [[basicDivider]],
+      row2: [[nicknameWrapper], [statusWrapper]],
+      row3: [[contactDivider]],
+      row4: [[departmentWrapper]],
+    });
+    expect(formGrid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [12, 12],
+      row3: [24],
+      row4: [24],
+    });
+  });
+
+  it('should reject fieldGroups outside createForm editForm and details blocks', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fieldGroups: [
+                  {
+                    title: 'Invalid',
+                    fields: ['nickname'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldGroups is only supported on createForm, editForm or details',
     );
   });
 

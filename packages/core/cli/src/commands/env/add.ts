@@ -8,12 +8,15 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import * as p from '@clack/prompts';
 import { upsertEnv } from '../../lib/auth-store.js';
-import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
-import { isInteractiveTerminal, printVerbose, setVerboseMode } from '../../lib/ui.js';
+import { type CliHomeScope } from '../../lib/cli-home.js';
+import {
+  runPromptCatalog,
+  type PromptInitialValues,
+  type PromptsCatalog,
+} from '../../lib/prompt-catalog.js';
+import { setVerboseMode } from '../../lib/ui.js';
 
-type AuthType = 'token' | 'oauth';
 type EnvScope = Exclude<CliHomeScope, 'auto'>;
 
 export default class EnvAdd extends Command {
@@ -51,6 +54,7 @@ export default class EnvAdd extends Command {
       description:
         'Where to store env config: project (.nocobase in the repo) or global (user-level); prompted in a TTY when omitted',
       options: ['project', 'global'],
+      default: 'project',
     }),
     'default-api-base-url': Flags.string({
       char: 'd',
@@ -78,170 +82,142 @@ export default class EnvAdd extends Command {
     }),
   };
 
-  private exitCancelled(): never {
-    p.cancel('Cancelled.');
-    this.exit(0);
+  static prompts: PromptsCatalog = {
+    intro: {
+      type: 'intro',
+      title: 'Add NocoBase API endpoint',
+    },
+    name: {
+      type: 'text',
+      message: 'Environment name',
+      placeholder: 'default',
+      required: true,
+    },
+    scope: {
+      type: 'select',
+      message: 'Where should this env be stored?',
+      options: [
+        { value: 'project', label: 'Project', hint: '.nocobase in this repo' },
+        { value: 'global', label: 'Global', hint: 'user-level config' },
+      ],
+      initialValue: 'project',
+      required: true,
+    },
+    apiBaseUrl: {
+      type: 'text',
+      message: 'API base URL',
+      placeholder: 'http://localhost:13000/api',
+      initialValue: 'http://localhost:13000/api',
+      required: true,
+    },
+    authType: {
+      type: 'select',
+      message: 'How do you want to authenticate?',
+      options: [
+        { value: 'oauth', label: 'OAuth (browser login)', hint: 'runs nb env auth after save' },
+        { value: 'token', label: 'API token / API key' },
+      ],
+      initialValue: 'oauth',
+      required: true,
+    },
+    accessToken: {
+      type: 'text',
+      message: 'API token / API key',
+      placeholder: 'Enter your API token / API key',
+      required: true,
+      hidden: (values) => values.authType !== 'token',
+    },
+    upsertEnv: {
+      type: 'run',
+      run: async (values) => {
+        await upsertEnv(
+          String(values.name),
+          {
+            baseUrl: String(values.apiBaseUrl),
+            ...(values.authType === 'token' && values.accessToken != null
+              ? { accessToken: String(values.accessToken) }
+              : {}),
+          },
+          { scope: values.scope as EnvScope },
+        );
+      },
+    },
+    oauthLogin: {
+      type: 'run',
+      when: (values) => values.authType === 'oauth',
+      run: async (values, command) => {
+        const cmd = command as EnvAdd;
+        const argv = [String(values.name)];
+        if (values.scope !== undefined && values.scope !== '') {
+          argv.push('-s', String(values.scope));
+        }
+        await cmd.config.runCommand('env:auth', argv);
+      },
+    },
+    loadCommands: {
+      type: 'run',
+      run: async (values, command) => {
+        const cmd = command as EnvAdd;
+        await cmd.config.runCommand('env:update', [String(values.name)]);
+      },
+    },
+    outro: {
+      type: 'outro',
+      message: 'Prompts complete — finishing setup.',
+    },
+  };
+
+  private buildValues(
+    nameArg: string | undefined,
+    flags: {
+      env?: string;
+      scope?: string;
+      'default-api-base-url'?: string;
+      'api-base-url'?: string;
+      'base-url'?: string;
+      'auth-type'?: string;
+      'access-token'?: string;
+      token?: string;
+    },
+  ): PromptInitialValues {
+    const iv: PromptInitialValues = {};
+    const name = nameArg?.trim() || flags.env?.trim();
+    if (name) {
+      iv.name = name;
+    }
+    if (flags.scope) {
+      iv.scope = flags.scope;
+    }
+    const apiFromFlag = flags['api-base-url'] ?? flags['base-url'];
+    if (typeof apiFromFlag === 'string' && apiFromFlag.trim() !== '') {
+      iv.apiBaseUrl = apiFromFlag.trim();
+    }
+    if (flags['auth-type']) {
+      iv.authType = flags['auth-type'];
+    }
+    const token = flags['access-token'] ?? flags.token;
+    if (typeof token === 'string' && token !== '') {
+      iv.accessToken = token;
+    }
+    return iv;
+  }
+
+  runPromptCatalog({ initialValues, values }) {
+    return runPromptCatalog(EnvAdd.prompts, {
+      initialValues,
+      values,
+      command: this,
+    });
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvAdd);
     setVerboseMode(flags.verbose);
-
-    const nameArg = args.name?.trim();
-    const nameFlag = flags.env?.trim() || undefined;
-    if (nameArg && nameFlag && nameArg !== nameFlag) {
-      this.error(
-        `Environment name was given both as the argument ("${nameArg}") and as --env ("${nameFlag}"); use only one.`,
-      );
-    }
-    let name = nameArg || nameFlag || undefined;
-    let scope = flags.scope as EnvScope | undefined;
-    let baseUrl = flags['api-base-url'] ?? flags['base-url'];
-    let defaultApiBaseUrl = flags['default-api-base-url'] ?? 'http://localhost:13000/api';
-    let authType = flags['auth-type'] as AuthType | undefined;
-
-    const interactive = isInteractiveTerminal();
-
-    if (!interactive) {
-      const missing: string[] = [];
-      if (!name?.trim()) {
-        missing.push('<name> (first argument or --env)');
-      }
-      if (!scope) {
-        missing.push('--scope');
-      }
-      if (!baseUrl) {
-        missing.push('--api-base-url');
-      }
-      if (!authType) {
-        missing.push('--auth-type');
-      }
-      if (missing.length > 0) {
-        this.error(
-          `Non-interactive mode requires: ${missing.join(', ')}. Example: nb env add -e local --scope project --api-base-url http://localhost:13000/api --auth-type oauth`,
-        );
-      }
-    } else {
-      if (!name?.trim()) {
-        const answer = await p.text({
-          message: 'Environment name',
-          placeholder: 'default',
-          defaultValue: 'default',
-        });
-        if (p.isCancel(answer)) {
-          this.exitCancelled();
-        }
-        name = answer;
-      }
-
-      if (!scope) {
-        const answer = await p.select<EnvScope>({
-          message: 'Where should this env be stored?',
-          options: [
-            { value: 'project', label: 'Project', hint: '.nocobase in this repo' },
-            { value: 'global', label: 'Global', hint: 'user-level config' },
-          ],
-          initialValue: 'project',
-        });
-        if (p.isCancel(answer)) {
-          this.exitCancelled();
-        }
-        scope = answer;
-      }
-
-      if (!baseUrl) {
-        const answer = await p.text({
-          message: 'API base URL',
-          placeholder: defaultApiBaseUrl,
-          initialValue: defaultApiBaseUrl,
-        });
-        if (p.isCancel(answer)) {
-          this.exitCancelled();
-        }
-        baseUrl = answer;
-      }
-
-      if (!authType) {
-        const answer = await p.select<AuthType>({
-          message: 'How do you want to authenticate?',
-          options: [
-            { value: 'oauth', label: 'OAuth (browser login)', hint: 'runs nb env auth after save' },
-            { value: 'token', label: 'API token / API key' },
-          ],
-          initialValue: 'oauth',
-        });
-        if (p.isCancel(answer)) {
-          this.exitCancelled();
-        }
-        authType = answer;
-      }
-    }
-
-    const accessTokenKeys = ['access-token', 'token'] as const;
-    const accessTokenFlagPresent = accessTokenKeys.some((key) => Object.prototype.hasOwnProperty.call(flags, key));
-    if (accessTokenFlagPresent && !flags['access-token'] && !flags['token']) {
-      if (!interactive) {
-        this.error(
-          'When passing --access-token (or --token) without a value, run in a TTY or provide the token as the flag value.',
-        );
-      }
-      const prompted = await p.password({
-        message: 'Access token / API key',
-        validate: (value) => (value.trim() ? undefined : 'Token cannot be empty'),
-      });
-      if (p.isCancel(prompted)) {
-        this.exitCancelled();
-      }
-      flags['access-token'] = prompted;
-    }
-
-    let token = flags['access-token'] ?? flags['token'];
-
-    if (!name?.trim()) {
-      this.error('Environment name cannot be empty.');
-    }
-    if (!baseUrl?.trim()) {
-      this.error('API base URL cannot be empty.');
-    }
-
-    name = name.trim();
-    baseUrl = baseUrl.trim();
-
-    if (authType === 'token') {
-      if (!token && interactive) {
-        const answer = await p.password({
-          message: 'Access token / API key',
-          validate: (value) => (value.trim() ? undefined : 'Token cannot be empty'),
-        });
-        if (p.isCancel(answer)) {
-          this.exitCancelled();
-        }
-        token = answer;
-      }
-      if (!token?.trim()) {
-        this.error(
-          'Auth type token requires an access token. Pass `--access-token`, or run in a TTY to enter it.',
-        );
-      }
-
-      printVerbose(`Saving env "${name}" with API base URL ${baseUrl} (token auth)`);
-      await upsertEnv(name, { baseUrl, accessToken: token }, { scope });
-      this.log(
-        `Saved env "${name}" and set it as current${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`,
-      );
-      return;
-    }
-
-    printVerbose(`Saving env "${name}" with API base URL ${baseUrl} (OAuth next)`);
-    await upsertEnv(name, { baseUrl }, { scope });
-    this.log(
-      `Saved env "${name}"${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}. Starting OAuth login (\`nb env auth ${name}\`).`,
-    );
-
-    const authArgv = [name];
-    if (scope) {
-      authArgv.push('-s', scope);
-    }
-    await this.config.runCommand('env:auth', authArgv);
+    await this.runPromptCatalog({
+      values: this.buildValues(args.name, flags),
+      initialValues: {
+        apiBaseUrl: flags['default-api-base-url'],
+      },
+    });
   }
 }

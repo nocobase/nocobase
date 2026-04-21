@@ -63,12 +63,9 @@ export function normalizeChartCardSettings(cardSettings: any) {
   }
 
   const nextCardSettings = _.cloneDeep(cardSettings);
-  const title =
-    typeof _.get(nextCardSettings, ['titleDescription', 'title']) === 'string'
-      ? _.get(nextCardSettings, ['titleDescription', 'title']).trim()
-      : _.get(nextCardSettings, ['titleDescription', 'title']);
-  if (title) {
-    _.set(nextCardSettings, ['titleDescription', 'title'], title);
+  const titleDescription = normalizeBlockTitleDescription(_.get(nextCardSettings, ['titleDescription']));
+  if (titleDescription) {
+    _.set(nextCardSettings, ['titleDescription'], titleDescription);
   } else {
     _.unset(nextCardSettings, ['titleDescription']);
   }
@@ -98,22 +95,69 @@ export function normalizeChartCardSettings(cardSettings: any) {
   return nextCardSettings;
 }
 
+export function normalizeBlockTitleDescriptionValue(value: any) {
+  if (_.isNull(value)) {
+    return '';
+  }
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+export function normalizeBlockTitleDescription(titleDescription: any) {
+  if (!_.isPlainObject(titleDescription)) {
+    return undefined;
+  }
+
+  const nextTitleDescription = _.cloneDeep(titleDescription);
+  const title = normalizeBlockTitleDescriptionValue(nextTitleDescription.title);
+  const description = normalizeBlockTitleDescriptionValue(nextTitleDescription.description);
+
+  if (title) {
+    nextTitleDescription.title = title;
+  } else {
+    delete nextTitleDescription.title;
+  }
+
+  if (description) {
+    nextTitleDescription.description = description;
+  } else {
+    delete nextTitleDescription.description;
+  }
+
+  return Object.keys(nextTitleDescription).length ? nextTitleDescription : undefined;
+}
+
+export function buildBlockTitleDescriptionFromSemanticChanges(changes: Record<string, any>) {
+  if (!hasDefinedValue(changes, ['title', 'description'])) {
+    return undefined;
+  }
+
+  return {
+    titleDescription: buildDefinedPayload({
+      ...(hasOwnDefined(changes, 'title') ? { title: normalizeBlockTitleDescriptionValue(changes.title) } : {}),
+      ...(hasOwnDefined(changes, 'description')
+        ? { description: normalizeBlockTitleDescriptionValue(changes.description) }
+        : {}),
+    }),
+  };
+}
+
 export function buildChartCardSettingsFromSemanticChanges(currentCardSettings: any, changes: Record<string, any>) {
   const nextCardSettings = _.cloneDeep(currentCardSettings || {});
 
-  const currentTitle =
-    typeof _.get(currentCardSettings, ['titleDescription', 'title']) === 'string'
-      ? _.get(currentCardSettings, ['titleDescription', 'title']).trim()
-      : _.get(currentCardSettings, ['titleDescription', 'title']);
-  const nextTitle = hasOwnDefined(changes, 'title')
-    ? typeof changes.title === 'string'
-      ? changes.title.trim()
-      : changes.title
-    : currentTitle;
-  const shouldShowTitle = hasOwnDefined(changes, 'displayTitle') ? changes.displayTitle !== false : !!nextTitle;
+  const currentTitleDescription = _.get(currentCardSettings, ['titleDescription']);
+  const nextTitleDescription = normalizeBlockTitleDescription(
+    buildDefinedPayload({
+      title: hasOwnDefined(changes, 'title')
+        ? normalizeBlockTitleDescriptionValue(changes.title)
+        : _.get(currentTitleDescription, ['title']),
+      description: hasOwnDefined(changes, 'description')
+        ? normalizeBlockTitleDescriptionValue(changes.description)
+        : _.get(currentTitleDescription, ['description']),
+    }),
+  );
 
-  if (nextTitle && shouldShowTitle) {
-    _.set(nextCardSettings, ['titleDescription', 'title'], nextTitle);
+  if (nextTitleDescription) {
+    _.set(nextCardSettings, ['titleDescription'], nextTitleDescription);
   } else {
     _.unset(nextCardSettings, ['titleDescription']);
   }

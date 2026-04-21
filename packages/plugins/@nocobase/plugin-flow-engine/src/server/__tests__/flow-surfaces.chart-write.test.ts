@@ -628,7 +628,7 @@ chart.on('click', 'series', function(params) {
         target: { uid: chartBlock.uid },
         changes: {
           title: 'Revenue by status',
-          displayTitle: true,
+          description: 'Monthly revenue grouped by status',
           height: 420,
           heightMode: 'fixed',
         },
@@ -647,6 +647,7 @@ chart.on('click', 'series', function(params) {
     expect(visibleSurface.tree.decoratorProps || {}).not.toHaveProperty('heightMode');
     expect(visibleSurface.tree.stepParams?.cardSettings?.titleDescription).toMatchObject({
       title: 'Revenue by status',
+      description: 'Monthly revenue grouped by status',
     });
     expect(visibleSurface.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
       heightMode: 'specifyValue',
@@ -657,7 +658,8 @@ chart.on('click', 'series', function(params) {
       values: {
         target: { uid: chartBlock.uid },
         changes: {
-          displayTitle: false,
+          title: '',
+          description: '',
           heightMode: 'defaultHeight',
         },
       },
@@ -736,7 +738,6 @@ chart.on('click', 'series', function(params) {
         target: { uid: chartUid },
         changes: {
           title: 'Revenue by status',
-          displayTitle: true,
         },
       },
     });

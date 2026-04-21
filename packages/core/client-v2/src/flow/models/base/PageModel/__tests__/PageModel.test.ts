@@ -387,6 +387,26 @@ describe('PageModel', () => {
 
       expect(tabsElement.props.tabBarExtraContent.right).toBe('custom-right');
     });
+
+    it('should inject default right spacing via tabBarExtraContent', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+        themeToken: { paddingLG: 24 },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+      const rightExtraContent = tabsElement.props.tabBarExtraContent.right;
+
+      expect(rightExtraContent).toBeTruthy();
+      expect(rightExtraContent.props.style).toMatchObject({
+        display: 'inline-flex',
+        marginInlineEnd: 24,
+      });
+    });
   });
 
   describe('render header spacing with tabs', () => {

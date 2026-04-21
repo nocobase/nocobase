@@ -746,7 +746,13 @@ function createFieldNode(
 ) {
   const popup = normalizeApplyPopup(desiredNode, `flowSurfaces apply field '${desiredNode.use}'`);
   const standaloneType =
-    desiredNode.use === 'JSColumnModel' ? 'jsColumn' : desiredNode.use === 'JSItemModel' ? 'jsItem' : undefined;
+    desiredNode.use === 'JSColumnModel'
+      ? 'jsColumn'
+      : desiredNode.use === 'JSItemModel'
+        ? 'jsItem'
+        : desiredNode.use === 'DividerItemModel'
+          ? 'divider'
+          : undefined;
   if (standaloneType) {
     if (popup) {
       throw new FlowSurfaceBadRequestError(
