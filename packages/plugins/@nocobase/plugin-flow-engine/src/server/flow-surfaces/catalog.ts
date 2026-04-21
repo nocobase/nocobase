@@ -1345,6 +1345,7 @@ const FIELD_NODE_CONTRACT = createContract({
     'icon',
     'titleField',
     'clickToOpen',
+    'mode',
     'autoSize',
     'allowMultiple',
     'multiple',

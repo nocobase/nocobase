@@ -555,6 +555,77 @@ describe('flowSurfaces applyBlueprint contract', () => {
     ).toHaveLength(1);
   });
 
+  it('should preserve checkboxGroup mode defaults in addNew popup create forms built by applyBlueprint', async () => {
+    const collectionName = `blueprint_checkbox_group_${Date.now()}`;
+    const checkboxGroupFieldPath = 'tags';
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: 'Blueprint checkbox group targets',
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          {
+            name: checkboxGroupFieldPath,
+            type: 'array',
+            interface: 'checkboxGroup',
+            enum: [
+              { value: 'option1', label: 'Option 1' },
+              { value: 'option2', label: 'Option 2' },
+            ],
+          },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [collectionName]: ['title', checkboxGroupFieldPath],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Checkbox group popup page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: collectionName,
+                fields: ['title', checkboxGroupFieldPath],
+                actions: ['addNew'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const addNewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'AddNewActionModel')[0];
+    expect(addNewAction?.uid).toBeTruthy();
+
+    const { popupBlock } = await readPrimaryPopupBlockFromAction(addNewAction.uid);
+    expect(popupBlock?.use).toBe('CreateFormModel');
+
+    const checkboxGroupField = collectDescendantNodes(
+      popupBlock,
+      (item) =>
+        item?.use === 'SelectFieldModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === checkboxGroupFieldPath,
+    )[0];
+    expect(checkboxGroupField?.use).toBe('SelectFieldModel');
+    expect(checkboxGroupField?.props).toMatchObject({
+      allowClear: true,
+      mode: 'tags',
+    });
+  });
+
   it('should save inline popup content as templates through applyBlueprint popup.saveAsTemplate', async () => {
     const unique = Date.now();
     const fieldTemplateName = `Blueprint popup saveAsTemplate field ${unique}`;

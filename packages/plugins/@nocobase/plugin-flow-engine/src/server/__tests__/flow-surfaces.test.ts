@@ -2797,6 +2797,78 @@ describe('flowSurfaces resource', () => {
     });
   });
 
+  it('should accept SelectFieldModel mode in field props writes and preserve checkboxGroup defaults', async () => {
+    const collectionName = `select_field_mode_${Date.now()}`;
+    const checkboxGroupFieldPath = 'preferenceTags';
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: 'Select field mode targets',
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          {
+            name: checkboxGroupFieldPath,
+            type: 'array',
+            interface: 'checkboxGroup',
+            enum: [
+              {
+                label: 'Option 1',
+                value: 'option1',
+              },
+              {
+                label: 'Option 2',
+                value: 'option2',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(db, {
+      [collectionName]: ['title', checkboxGroupFieldPath],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Select field mode page',
+      tabTitle: 'Select field mode tab',
+    });
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName,
+    });
+    const checkboxGroupField = await addField(rootAgent, formUid, checkboxGroupFieldPath);
+
+    const initialReadback = await getSurface(rootAgent, {
+      uid: checkboxGroupField.fieldUid,
+    });
+    expect(initialReadback.tree.use).toBe('SelectFieldModel');
+    expect(initialReadback.tree.props).toMatchObject({
+      allowClear: true,
+      mode: 'tags',
+    });
+
+    const updateFieldMode = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: checkboxGroupField.fieldUid,
+        },
+        props: {
+          allowClear: false,
+          mode: 'tags',
+        },
+      },
+    });
+    expect(updateFieldMode.status).toBe(200);
+
+    const updatedReadback = await getSurface(rootAgent, {
+      uid: checkboxGroupField.fieldUid,
+    });
+    expect(updatedReadback.tree.props).toMatchObject({
+      allowClear: false,
+      mode: 'tags',
+    });
+  });
+
   it('should build simple table surface with create action row actions and association columns', async () => {
     const page = await createPage(rootAgent, {
       title: 'Table page',
