@@ -52,6 +52,12 @@ export default class EnvAdd extends Command {
         'Where to store env config: project (.nocobase in the repo) or global (user-level); prompted in a TTY when omitted',
       options: ['project', 'global'],
     }),
+    'default-api-base-url': Flags.string({
+      char: 'd',
+      hidden: true,
+      description:
+        'Default API base URL for HTTP API calls, including the /api prefix (e.g. http://localhost:13000/api); prompted in a TTY when omitted',
+    }),
     'api-base-url': Flags.string({
       char: 'u',
       aliases: ['base-url'],
@@ -91,6 +97,7 @@ export default class EnvAdd extends Command {
     let name = nameArg || nameFlag || undefined;
     let scope = flags.scope as EnvScope | undefined;
     let baseUrl = flags['api-base-url'] ?? flags['base-url'];
+    let defaultApiBaseUrl = flags['default-api-base-url'] ?? 'http://localhost:13000/api';
     let authType = flags['auth-type'] as AuthType | undefined;
 
     const interactive = isInteractiveTerminal();
@@ -145,8 +152,8 @@ export default class EnvAdd extends Command {
       if (!baseUrl) {
         const answer = await p.text({
           message: 'API base URL',
-          placeholder: 'http://localhost:13000/api',
-          defaultValue: 'http://localhost:13000/api',
+          placeholder: defaultApiBaseUrl,
+          initialValue: defaultApiBaseUrl,
         });
         if (p.isCancel(answer)) {
           this.exitCancelled();

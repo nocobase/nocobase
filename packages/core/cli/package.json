@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "yarn clean && tsc -p tsconfig.json",
-    "test": "node --import tsx --test ./test/*.test.ts"
+    "test": "TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli"
   },
   "keywords": [],
   "author": "",

@@ -68,6 +68,11 @@ export interface AuthStoreOptions {
   scope?: CliHomeScope;
 }
 
+/** Options for {@link getEnv}; pass `config` to reuse a loaded snapshot and skip `loadAuthConfig`. */
+export type GetEnvOptions = AuthStoreOptions & {
+  config?: AuthConfig;
+};
+
 function getConfigFile(options: AuthStoreOptions = {}) {
   return path.join(resolveCliHomeDir(options.scope), 'config.json');
 }
@@ -114,7 +119,7 @@ export async function setCurrentEnv(envName: string, options: AuthStoreOptions =
 }
 
 export class Env {
-  constructor(protected readonly config: EnvConfigEntry & { name?: string } = {}) {}
+  constructor(public readonly config: EnvConfigEntry & { name?: string } = {}) {}
 
   get name() {
     return this.config.name;
@@ -154,12 +159,37 @@ export class Env {
   get appPort() {
     return this.config.appPort;
   }
+
+  get envVars(): Record<string, string> {
+    const out: Record<string, string> = {
+      STORAGE_PATH: this.storagePath,
+    };
+    const put = (key: string, value: string | number | undefined | null) => {
+      if (value === undefined || value === null) {
+        return;
+      }
+      out[key] = String(value);
+    };
+    put('APP_PORT', this.appPort);
+    put('DB_DIALECT', this.config.dbDialect);
+    put('DB_HOST', this.config.dbHost);
+    put('DB_PORT', this.config.dbPort);
+    put('DB_DATABASE', this.config.dbDatabase);
+    put('DB_USER', this.config.dbUser);
+    put('DB_PASSWORD', this.config.dbPassword);
+    return out;
+  }
 }
 
-export async function getEnv(envName?: string, options: AuthStoreOptions = {}) {
-  const config = await loadAuthConfig(options);
-  const resolved = envName || config.currentEnv || 'default';
-  return new Env({ ...config.envs[resolved], name: resolved });
+export async function getEnv(envName?: string, options: GetEnvOptions = {}): Promise<Env | undefined> {
+  const { config: snapshot, ...loadOptions } = options;
+  const config = snapshot ?? (await loadAuthConfig(loadOptions));
+  const resolved = envName?.trim() || config.currentEnv || 'default';
+  const envConfig = config.envs[resolved];
+  if (!envConfig) {
+    return undefined;
+  }
+  return new Env({ ...envConfig, name: resolved });
 }
 
 function areAuthConfigsEquivalent(left?: EnvConfigEntry['auth'], right?: EnvConfigEntry['auth']) {

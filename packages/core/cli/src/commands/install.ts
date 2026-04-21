@@ -131,42 +131,21 @@ export default class Install extends Command {
     return '5432';
   }
 
-  private resolveAppRoot(flagPath: string | undefined, saved?: EnvConfigEntry['appRootPath']): string {
-    if (flagPath) {
-      return path.resolve(process.cwd(), flagPath);
+  /** Application root as given (flag / saved / default), without normalizing or resolving. */
+  private rawAppRootPath(flagPath: string | undefined, saved?: EnvConfigEntry['appRootPath']): string {
+    if (flagPath !== undefined && flagPath !== '') {
+      return flagPath;
     }
-    if (saved) {
-      return path.isAbsolute(saved) ? saved : path.resolve(process.cwd(), saved);
+    if (saved !== undefined && saved !== '') {
+      return saved;
     }
-    return path.resolve(process.cwd(), 'nocobase');
-  }
-
-  private resolveStoragePath(
-    flagPath: string | undefined,
-    envName: string,
-    saved?: EnvConfigEntry['storagePath'],
-  ): string {
-    if (flagPath) {
-      return path.resolve(process.cwd(), flagPath);
-    }
-    if (saved) {
-      return path.isAbsolute(saved) ? saved : path.resolve(process.cwd(), saved);
-    }
-    return path.resolve(process.cwd(), 'storage', envName);
-  }
-
-  private pathForConfig(absPath: string): string {
-    const rel = path.relative(process.cwd(), absPath);
-    if (!rel || rel.startsWith('..')) {
-      return absPath;
-    }
-    return rel;
+    return 'nocobase';
   }
 
   private async persistCliEnvProfile(
     envName: string,
     data: {
-      appRoot: string;
+      appRootPath?: string;
       storagePath: string;
       appPort: string;
       dbDialect: string;
@@ -181,8 +160,8 @@ export default class Install extends Command {
     const prev = config.envs[envName] ?? {};
     config.envs[envName] = {
       ...prev,
-      appRootPath: this.pathForConfig(data.appRoot),
-      storagePath: this.pathForConfig(data.storagePath),
+      ...(data.appRootPath !== undefined ? { appRootPath: data.appRootPath } : {}),
+      storagePath: data.storagePath,
       appPort: data.appPort,
       dbDialect: data.dbDialect,
       dbHost: data.dbHost,
@@ -231,36 +210,17 @@ export default class Install extends Command {
     }
 
     if (!runDownload) {
-      if (interactive && !hasSavedEnv) {
-        const defaultRoot =
-          appRootPathFlag ?? path.relative(process.cwd(), this.resolveAppRoot(undefined, savedEnv?.appRootPath));
-        const rootAns = await p.text({
-          message: 'Application root directory (where nocobase-v1 runs; relative to cwd)',
-          initialValue: defaultRoot || 'nocobase',
-        });
-        if (p.isCancel(rootAns)) {
-          p.cancel('Install cancelled.');
-          this.exit(0);
-        }
-        appRootPathFlag = rootAns.trim() || appRootPathFlag;
-      }
-      const appRoot = this.resolveAppRoot(appRootPathFlag, savedEnv?.appRootPath);
+      const appRoot = this.rawAppRootPath(appRootPathFlag, savedEnv?.appRootPath);
       return { appRoot };
     }
 
     const downloadArgv: string[] = [];
     if (!interactive) {
       downloadArgv.push('-y', '--source', 'npm');
-      const outputDir =
-        appRootPathFlag?.trim() ||
-        path.relative(process.cwd(), this.resolveAppRoot(undefined, savedEnv?.appRootPath)) ||
-        'nocobase';
+      const outputDir = appRootPathFlag || this.rawAppRootPath(undefined, savedEnv?.appRootPath);
       downloadArgv.push('-o', outputDir);
-    } else {
-      const out = appRootPathFlag?.trim();
-      if (out) {
-        downloadArgv.push('-o', out);
-      }
+    } else if (appRootPathFlag) {
+      downloadArgv.push('-o', appRootPathFlag);
     }
 
     if (interactive) {
@@ -270,12 +230,7 @@ export default class Install extends Command {
     }
     const dl = await this.config.runCommand<DownloadCommandResult>('download', downloadArgv);
 
-    let appRoot: string;
-    if (dl.projectRoot) {
-      appRoot = path.resolve(dl.projectRoot);
-    } else {
-      appRoot = this.resolveAppRoot(appRootPathFlag, savedEnv?.appRootPath);
-    }
+    const appRoot = dl.projectRoot ?? this.rawAppRootPath(appRootPathFlag, savedEnv?.appRootPath);
 
     return { appRoot };
   }
@@ -289,24 +244,25 @@ export default class Install extends Command {
     hadApiEnvBeforeInstall: boolean;
     envName: string;
     interactive: boolean;
+    appPort: string;
   }): Promise<'ok' | 'failed'> {
-    const { hadApiEnvBeforeInstall, envName, interactive } = options;
+    const { hadApiEnvBeforeInstall, envName, interactive, appPort } = options;
+    const apiBaseUrl = `http://127.0.0.1:${appPort}/api`;
+    const envAddArgv = [
+      envName,
+      '--scope',
+      CONFIG_SCOPE,
+      '--default-api-base-url',
+      apiBaseUrl,
+    ];
     try {
-      if (hadApiEnvBeforeInstall) {
-        if (interactive) {
-          p.log.step('Running nb env update');
-        } else {
-          this.log('Running nb env update');
-        }
-        await this.config.runCommand('env:add', [envName, '--scope', CONFIG_SCOPE]);
+      const label = hadApiEnvBeforeInstall ? 'Running nb env update' : 'Running nb env add';
+      if (interactive) {
+        p.log.step(label);
       } else {
-        if (interactive) {
-          p.log.step('Running nb env add');
-        } else {
-          this.log('Running nb env add');
-        }
-        await this.config.runCommand('env:add', [envName, '--scope', CONFIG_SCOPE]);
+        this.log(label);
       }
+      await this.config.runCommand('env:add', envAddArgv);
       return 'ok';
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -394,7 +350,6 @@ export default class Install extends Command {
     if (rootPassword === undefined) {
       const passAns = await p.password({
         message: 'Root user password (--root-password)',
-        initialValue: rootPassword,
       });
       if (p.isCancel(passAns)) {
         p.cancel('Install cancelled.');
@@ -506,6 +461,7 @@ export default class Install extends Command {
     procEnv: Record<string, string>,
     flags: NocoBaseInstallArgvFlags,
     interactive: boolean,
+    envName: string,
   ): Promise<void> {
     const rel = path.relative(process.cwd(), appRoot);
     const where =
@@ -521,30 +477,22 @@ export default class Install extends Command {
       this.log(label);
     }
     const npmArgs = this.buildNocoBaseInstallArgs(flags);
-    await runNocoBaseCommand(['pm2', 'kill'], { cwd: appRoot, env: procEnv });
+    try {
+      await this.config.runCommand('stop', ['-e', envName, '-s', CONFIG_SCOPE]);
+    } catch {
+      /* Best-effort: env may be missing, remote-only, or nothing was running. */
+    }
     await runNocoBaseCommand(npmArgs, { cwd: appRoot, env: procEnv });
   }
 
-  private async runNocoBaseStart(
-    appRoot: string,
-    procEnv: Record<string, string>,
-    appPort: string,
-    interactive: boolean,
-  ): Promise<void> {
-    const rel = path.relative(process.cwd(), appRoot);
-    const where =
-      rel === '' || rel === '.'
-        ? 'this folder'
-        : rel.startsWith('..')
-          ? appRoot
-          : `./${rel.split(path.sep).join('/')}`;
-    const label = `Starting NocoBase in ${where} (port ${appPort})`;
+  private async runNocoBaseStart(appPort: string, interactive: boolean, envName: string): Promise<void> {
+    const label = `Starting NocoBase (env "${envName}", port ${appPort})`;
     if (interactive) {
       p.log.step(label);
     } else {
       this.log(label);
     }
-    await runNocoBaseCommand(['start', '--port', appPort, '--daemon'], { cwd: appRoot, env: procEnv });
+    await this.config.runCommand('start', ['-e', envName, '-s', CONFIG_SCOPE, '-p', appPort, '-d']);
   }
 
   public async run(): Promise<void> {
@@ -715,7 +663,6 @@ export default class Install extends Command {
 
       const passAns = await p.password({
         message: 'Database password',
-        initialValue: dbPassword,
       });
       if (p.isCancel(passAns)) {
         p.cancel('Install cancelled.');
@@ -725,21 +672,46 @@ export default class Install extends Command {
         typeof passAns === 'string' && passAns.length > 0 ? passAns : dbPassword;
     }
 
-    let resolvedStorage = this.resolveStoragePath(flags['storage-path'], envName, savedEnv?.storagePath);
-    let appPort = savedEnv?.appPort ?? flags['app-port'] ?? '13000';
+    let appRootPathFlag: string | undefined = flags['app-root-path'];
+    const hasAppRootFlag = appRootPathFlag !== undefined && appRootPathFlag !== '';
+    const hasSavedAppRoot =
+      savedEnv?.appRootPath !== undefined && savedEnv.appRootPath !== '';
+    if (interactive && !hasAppRootFlag && !hasSavedAppRoot) {
+      const rootAns = await p.text({
+        message: 'Application root directory (--app-root-path, relative to cwd)',
+        placeholder: 'nocobase',
+        initialValue: 'nocobase',
+        validate: (value) => (value.trim() ? undefined : 'Application root is required'),
+      });
+      if (p.isCancel(rootAns)) {
+        p.cancel('Install cancelled.');
+        this.exit(0);
+      }
+      appRootPathFlag = (rootAns as string).trim();
+    }
 
-    if (interactive) {
-      const relInitial = path.relative(process.cwd(), resolvedStorage) || path.join('storage', envName);
+    let storagePath: string;
+    if (flags['storage-path'] !== undefined && flags['storage-path'] !== '') {
+      storagePath = flags['storage-path'];
+    } else if (savedEnv?.storagePath !== undefined && savedEnv.storagePath !== '') {
+      storagePath = savedEnv.storagePath;
+    } else if (interactive) {
+      const defaultStorage = `storage/${envName}`;
       const sp = await p.text({
-        message: 'Storage directory (relative to cwd)',
-        initialValue: relInitial,
+        message: 'Storage directory (--storage-path, relative to cwd)',
+        initialValue: defaultStorage,
+        validate: (value) => (value.trim() ? undefined : 'Storage path is required'),
       });
       if (p.isCancel(sp)) {
         p.cancel('Install cancelled.');
         this.exit(0);
       }
-      resolvedStorage = path.resolve(process.cwd(), sp.trim() || relInitial);
+      storagePath = (sp as string).trim();
+    } else {
+      storagePath = `storage/${envName}`;
     }
+
+    let appPort = String(savedEnv?.appPort ?? flags['app-port'] ?? '13000');
 
     if (interactive) {
       const portAns = await p.text({
@@ -753,10 +725,31 @@ export default class Install extends Command {
       appPort = portAns.trim() || appPort;
     }
 
+    try {
+      await this.persistCliEnvProfile(envName, {
+        appRootPath: appRootPathFlag,
+        storagePath,
+        appPort,
+        dbDialect,
+        dbHost,
+        dbPort,
+        dbDatabase,
+        dbUser,
+        dbPassword,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (interactive) {
+        p.log.warn(`Could not save CLI env profile: ${message}`);
+      } else {
+        this.warn(`Could not save CLI env profile: ${message}`);
+      }
+    }
+
     const { appRoot } = await this.resolveAppRootWithOptionalDownload({
       interactive,
       hasSavedEnv,
-      appRootPathFlag: flags['app-root-path'],
+      appRootPathFlag,
       savedEnv,
       fetchSourceFlag: Boolean(flags['fetch-source']),
     });
@@ -793,7 +786,7 @@ export default class Install extends Command {
     };
 
     const procEnv = this.buildInstallProcessEnv({
-      storagePath: resolvedStorage,
+      storagePath,
       appPort,
       dbDialect,
       dbHost,
@@ -808,8 +801,8 @@ export default class Install extends Command {
     });
 
     try {
-      await this.runNocoBaseInstall(appRoot, procEnv, argvFlags, interactive);
-      await this.runNocoBaseStart(appRoot, procEnv, appPort, interactive);
+      await this.runNocoBaseInstall(appRoot, procEnv, argvFlags, interactive, envName);
+      await this.runNocoBaseStart(appPort, interactive, envName);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       if (interactive) {
@@ -818,31 +811,11 @@ export default class Install extends Command {
       this.error(message);
     }
 
-    try {
-      await this.persistCliEnvProfile(envName, {
-        appRoot,
-        storagePath: resolvedStorage,
-        appPort,
-        dbDialect,
-        dbHost,
-        dbPort,
-        dbDatabase,
-        dbUser,
-        dbPassword,
-      });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (interactive) {
-        p.log.warn(`Could not save CLI env profile: ${message}`);
-      } else {
-        this.warn(`Could not save CLI env profile: ${message}`);
-      }
-    }
-
     await this.runPostInstallEnvCommand({
       hadApiEnvBeforeInstall,
       envName,
       interactive,
+      appPort,
     });
 
     if (interactive) {

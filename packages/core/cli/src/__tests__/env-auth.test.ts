@@ -2,15 +2,15 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import test from 'node:test';
-import { saveAuthConfig } from '../src/lib/auth-store.js';
+import { test } from 'vitest';
+import { saveAuthConfig } from '../lib/auth-store.js';
 import {
   buildOauthRedirectHtml,
   getOauthMetadataUrl,
   getOauthResource,
   isOauthAccessTokenExpired,
   resolveAccessToken,
-} from '../src/lib/env-auth.js';
+} from '../lib/env-auth.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NOCOBASE_CTL_HOME;
