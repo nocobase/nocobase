@@ -61,12 +61,21 @@ features:
       - title: 解放双手，用 WorkBuddy 驱动 NocoBase
         details: 腾讯出品，20+ 内置技能，支持企业微信、飞书等多平台远程操控 NocoBase。
         link: /ai/workbuddy
+      - title: Claude Code + NocoBase：最强 AI 大脑，你的 NocoBase 首席架构师
+        details: 实力强劲的 AI 架构师——理解项目上下文，搭建 NocoBase 像写代码一样自然。
+        link: /ai/claude-code
+      - title: 用 Codex 操作 NocoBase，搭建开发两不误
+        details: OpenAI 出品，GPT 系列加持，安全沙箱里帮你搭建 NocoBase，每一步都可控。
+        link: /ai/codex
+      - title: OpenCode + NocoBase：开源、自由、不被绑定的 NocoBase 搭建方式
+        details: 同是开源社区驱动，模型自由切换，开发者的自由之选。
+        link: /ai/opencode
 
   - title: AI 工具与资源
     details: 支撑 NocoBase AI 能力的基础设施——CLI、Skills 和 MCP。
     items:
       - title: NocoBase CLI
-        details: NocoBase 的命令行工具，用于安装、升级与部署，同时支持 AI Agent 协同操作。
+        details: NocoBase 的命令行工具，安装即就绪——内置 AI Skills，让你的 AI 助手直接上手操作 NocoBase。
         link: /get-started/nocobase-cli
       - title: NocoBase Skills
         details: 可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的能力和规范。
