@@ -90,7 +90,7 @@ parentPort?.on('message', async (payload: ParsePayload) => {
         id: doc.id,
       })),
     };
-    parentPort.postMessage(response);
+    parentPort?.postMessage(response);
   } catch (error) {
     const response: WorkerResponse = {
       error: String(error?.stack || error),
