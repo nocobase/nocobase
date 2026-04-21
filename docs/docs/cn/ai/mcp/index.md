@@ -1,5 +1,6 @@
 ---
 pkg: '@nocobase/plugin-mcp-server'
+sidebar: false
 ---
 
 # NocoBase MCP
@@ -139,4 +140,4 @@ opencode mcp debug nocobase
 
 ## 配合 Skills 使用
 
-建议配合 NocoBase Skills 一起使用，参考 [NocoBase Skills](../skills/index.md).
+建议配合 NocoBase Skills 一起使用，参考 [NocoBase Skills](../../ai-builder/index.md#nocobase-skills).

@@ -8,7 +8,7 @@ features:
   - title: AI 搭建与开发
     details: 用 AI 构建 NocoBase 应用和插件——从自然语言描述到可用的系统或插件代码。
     items:
-      - title: AI 搭建概述
+      - title: AI 搭建快速开始
         details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder
       - title: 一句话创建数据模型
@@ -45,9 +45,9 @@ features:
       - title: 一键执行快捷任务
         details: 把常用的 AI 操作封装成快捷任务，一键触发，省去重复对话。
         link: /ai-employees/features/task
-      - title: 在工作流中接入 AI
+      - title: 在工作流中接入 AI 员工
         details: 在工作流节点中接入 AI 员工，实现自动化的智能决策和内容生成。
-        link: /ai-employees/workflow/nodes/llm/chat
+        link: /ai-employees/workflow/nodes/employee/configuration
 
   - title: 接入你的 AI Agent
     details: 你最爱的 AI Agent，现在也能操作 NocoBase 了。
@@ -70,8 +70,8 @@ features:
         link: /get-started/nocobase-cli
       - title: NocoBase Skills
         details: 可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的能力和规范。
-        link: /ai-builder
+        link: /ai-builder#nocobase-skills
       - title: NocoBase MCP
         details: Model Context Protocol 接入，让 AI Agent 通过标准化协议与 NocoBase 交互。
-        link: /ai-employees/mcp
+        link: /ai/mcp
 ---

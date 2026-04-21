@@ -6,15 +6,16 @@ keywords: "AI 搭建,插件管理,插件启用,插件停用"
 
 # 插件管理
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 插件管理 Skill 用于查看、启用和停用 NocoBase 插件——它会自动识别本地或远程环境，选择合适的执行后端，并通过读回校验确保操作成功。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-plugin-manage -y
-```
 
 ## 能力范围
 

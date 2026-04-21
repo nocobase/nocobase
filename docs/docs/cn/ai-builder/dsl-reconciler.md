@@ -6,17 +6,18 @@ keywords: "AI 搭建,解决方案,应用搭建,YAML,批量建表,仪表盘"
 
 # 解决方案
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 解决方案 Skill 用于从 YAML 配置文件批量搭建 NocoBase 应用——一次性创建数据表、配置页面、生成仪表盘和图表。
 
 适合需要快速搭建整套业务系统的场景，比如 CRM、工单管理、进销存等。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-dsl-reconciler -y
-```
 
 ## 能力范围
 

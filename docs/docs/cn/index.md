@@ -18,14 +18,11 @@ hero:
 
 features:
   - title: 开始
-    details: 了解 NocoBase 如何使用，并完成安装部署。
+    details: 传统方式上手 NocoBase——安装、配置、逐步探索。
     items:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
         link: /get-started/how-nocobase-works
-      - title: NocoBase CLI
-        details: NocoBase 的命令行工具，用于安装、升级与部署，同时支持 AI Agent 协同操作。
-        link: /get-started/nocobase-cli
       - title: 安装与升级插件
         details: 了解如何添加、管理和更新插件，扩展系统能力。
         link: /get-started/install-upgrade-plugins
@@ -34,8 +31,11 @@ features:
         link: /tutorials/v2/
 
   - title: AI
-    details: 让 AI 融入 NocoBase 的搭建、使用和开发全流程。
+    details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。
     items:
+      - title: NocoBase CLI
+        details: NocoBase 的命令行工具，安装即就绪——内置 AI Skills，让你的 AI 助手直接上手操作 NocoBase。
+        link: /get-started/nocobase-cli
       - title: AI 搭建
         details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder

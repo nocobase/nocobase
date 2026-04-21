@@ -6,17 +6,18 @@ keywords: "AI 搭建,权限配置,ACL,角色,权限,用户绑定,风险评估"
 
 # 权限配置
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 权限配置 Skill 用于通过自然语言管理 NocoBase 的角色、权限策略、用户绑定和 ACL 风险评估——你描述业务目标，它来选择命令和参数。
 
 使用前需要确保 [NocoBase CLI](../get-started/nocobase-cli.md) 环境已就绪。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-acl-manage -y
-```
 
 ## 能力范围
 

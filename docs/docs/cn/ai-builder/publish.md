@@ -6,15 +6,16 @@ keywords: "AI 搭建,发布管理,跨环境发布,备份恢复,迁移,回滚"
 
 # 发布管理
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 发布管理 Skill 用于在多环境之间执行可审计的发布操作——支持备份恢复（`backup_restore`）和迁移（`migration`）两种发布方式，关键步骤都有严格的校验逻辑。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-publish-manage -y
-```
 
 ## 能力范围
 
@@ -63,4 +64,4 @@ npx skills add nocobase/skills --skill nocobase-publish-manage -y
 ## 相关链接
 
 - [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
-- [安装升级](./env-bootstrap) — 环境检查、安装部署和故障诊断
+- [环境管理](./env-bootstrap) — 环境检查、安装部署和故障诊断

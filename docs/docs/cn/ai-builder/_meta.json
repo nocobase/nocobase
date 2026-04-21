@@ -1,13 +1,13 @@
 [
   {
     "type": "custom-link",
-    "label": "概述",
+    "label": "快速开始",
     "link": "/ai-builder"
   },
   {
     "type": "file",
     "name": "env-bootstrap",
-    "label": "安装升级"
+    "label": "环境管理"
   },
   {
     "type": "file",

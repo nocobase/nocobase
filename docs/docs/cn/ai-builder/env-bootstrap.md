@@ -1,20 +1,21 @@
 ---
-title: "安装升级"
-description: "安装升级 Skill 负责 NocoBase 的环境检查、安装部署、升级和故障诊断。"
-keywords: "AI 搭建,安装升级,安装,部署,升级,诊断,Docker"
+title: "环境管理"
+description: "环境管理 Skill 负责 NocoBase 的环境检查、安装部署、升级和故障诊断。"
+keywords: "AI 搭建,环境管理,安装,部署,升级,诊断,Docker"
 ---
 
-# 安装升级
+# 环境管理
+
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
 
 ## 简介
 
-安装升级 Skill 负责 NocoBase 的环境检查、安装部署、升级和故障诊断——从「还没装 NocoBase」到「可以登录使用」，并维护 CLI 运行环境。
+环境管理 Skill 负责 NocoBase 的环境检查、安装部署、升级和故障诊断——从「还没装 NocoBase」到「可以登录使用」，并维护 CLI 运行环境。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-env-bootstrap -y
-```
 
 ## 能力范围
 

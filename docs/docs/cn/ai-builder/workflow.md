@@ -6,15 +6,16 @@ keywords: "AI 搭建,工作流,触发器,节点,审批,自动化"
 
 # 工作流管理
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 工作流管理 Skill 用于创建、编辑、启用和诊断 NocoBase 工作流——从触发器选择到节点链搭建，再到执行结果排查，覆盖工作流使用的完整生命周期。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-workflow-manage -y
-```
 
 ## 能力范围
 
@@ -29,7 +30,7 @@ npx skills add nocobase/skills --skill nocobase-workflow-manage -y
 不能做：
 
 - 不能设计数据模型（用[数据建模 Skill](./data-modeling)）
-- 不能安装 MCP 或处理环境问题（用[安装升级 Skill](./env-bootstrap)）
+- 不能安装 MCP 或处理环境问题（用[环境管理 Skill](./env-bootstrap)）
 - 不能删除整个工作流（需要单独确认的高风险操作）
 - 不能凭空编造节点类型或触发器类型
 
@@ -168,4 +169,4 @@ Skill 会先确认触发器类型和节点链设计，确认后逐步创建。
 
 - [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
 - [数据建模](./data-modeling) — 用 AI 创建和管理数据表
-- [安装升级](./env-bootstrap) — 环境检查、安装部署和故障诊断
+- [环境管理](./env-bootstrap) — 环境检查、安装部署和故障诊断

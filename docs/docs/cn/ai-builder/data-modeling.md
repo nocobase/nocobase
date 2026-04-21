@@ -6,17 +6,18 @@ keywords: "AI 搭建,数据建模,数据表,字段,关联关系,集合"
 
 # 数据建模
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 数据建模 Skill 用于通过自然语言创建和管理 NocoBase 的数据表——建表、加字段、设关联关系等。
 
 使用前需要确保目标数据源已在「数据源管理」中配置好。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-data-modeling -y
-```
 
 ## 能力范围
 

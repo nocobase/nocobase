@@ -6,15 +6,16 @@ keywords: "AI 搭建,界面配置,页面,区块,弹窗,联动,UI Builder"
 
 # 界面配置
 
+:::tip 前置条件
+
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+
+:::
+
 ## 简介
 
 界面配置 Skill 用于创建和编辑 NocoBase 的页面、区块、字段和操作配置——你用业务语言描述想要的页面，它来处理蓝图生成、区块布局和交互联动。
 
-## 安装
-
-```bash
-npx skills add nocobase/skills --skill nocobase-ui-builder -y
-```
 
 ## 能力范围
 
