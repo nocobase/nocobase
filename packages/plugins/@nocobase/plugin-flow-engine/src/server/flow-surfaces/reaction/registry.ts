@@ -71,6 +71,8 @@ export const FLOW_SURFACE_REACTION_SUPPORTED_KINDS_BY_USE = {
   TableBlockModel: ['blockLinkage'],
   ListBlockModel: ['blockLinkage'],
   GridCardBlockModel: ['blockLinkage'],
+  MarkdownBlockModel: ['blockLinkage'],
+  IframeBlockModel: ['blockLinkage'],
   MapBlockModel: ['blockLinkage'],
   CommentsBlockModel: ['blockLinkage'],
   ChartBlockModel: ['blockLinkage'],

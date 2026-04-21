@@ -8,6 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
+import _ from 'lodash';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import {

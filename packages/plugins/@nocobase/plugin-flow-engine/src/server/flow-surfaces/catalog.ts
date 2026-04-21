@@ -279,16 +279,6 @@ const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
     'defaultValues.value': ARRAY_SCHEMA,
   },
 };
-const TITLE_DESCRIPTION_CARD_SETTINGS_GROUP = {
-  allowedPaths: ['titleDescription.title', 'titleDescription.description'],
-  clearable: true,
-  mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['titleDescription'],
-  pathSchemas: {
-    'titleDescription.title': STRING_SCHEMA,
-    'titleDescription.description': STRING_SCHEMA,
-  },
-};
 const BLOCK_CARD_SETTINGS_GROUP = {
   allowedPaths: ['titleDescription.title', 'titleDescription.description', 'linkageRules'],
   clearable: true,
@@ -987,7 +977,7 @@ const MARKDOWN_BLOCK_CONTRACT = createContract({
   },
 });
 MARKDOWN_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
-  cardSettings: TITLE_DESCRIPTION_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
   markdownBlockSettings: {
     allowedPaths: ['editMarkdown.content'],
     clearable: true,
@@ -1008,7 +998,7 @@ const IFRAME_BLOCK_CONTRACT = createContract({
   },
 });
 IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
-  cardSettings: TITLE_DESCRIPTION_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
   iframeBlockSettings: {
     allowedPaths: [
       'editIframe.mode',

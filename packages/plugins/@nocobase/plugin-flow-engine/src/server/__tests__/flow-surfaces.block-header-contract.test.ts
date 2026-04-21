@@ -10,6 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getNodeContract } from '../flow-surfaces/catalog';
 import { getConfigureOptionsForUse } from '../flow-surfaces/configure-options';
+import { getReactionKindsForUse } from '../flow-surfaces/reaction/registry';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 
 describe('flowSurfaces block header contracts', () => {
@@ -84,6 +85,18 @@ describe('flowSurfaces block header contracts', () => {
     }
   });
 
+  it('should expose block linkage cardSettings and reaction capabilities for markdown and iframe blocks', () => {
+    for (const use of ['MarkdownBlockModel', 'IframeBlockModel']) {
+      const contract = getNodeContract(use);
+      const cardSettingsAllowedPaths = contract.domains.stepParams?.groups?.cardSettings?.allowedPaths || [];
+
+      expect(cardSettingsAllowedPaths).toEqual(
+        expect.arrayContaining(['titleDescription.title', 'titleDescription.description', 'linkageRules']),
+      );
+      expect(getReactionKindsForUse(use)).toEqual(expect.arrayContaining(['blockLinkage']));
+    }
+  });
+
   it('should publish map height configure options and persist them through decoratorProps writes', async () => {
     const options = getConfigureOptionsForUse('MapBlockModel');
     expect(options.heightMode.enum).toEqual(['defaultHeight', 'specifyValue', 'fullHeight']);
@@ -129,12 +142,16 @@ describe('flowSurfaces block header contracts', () => {
     );
   });
 
-  it('should mirror raw map height props to decoratorProps during updateSettings normalization', () => {
+  it('should mirror and refresh raw map height props in decoratorProps during updateSettings normalization', () => {
     const service = new FlowSurfacesService({ db: {} } as any);
     const nextPayload = {
       props: {
         height: 360,
         heightMode: 'specifyValue',
+      },
+      decoratorProps: {
+        height: 240,
+        heightMode: 'defaultHeight',
       },
     };
 

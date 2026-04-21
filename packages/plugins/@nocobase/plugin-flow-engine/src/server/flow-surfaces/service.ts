@@ -9032,17 +9032,14 @@ export class FlowSurfacesService {
     const nextDecoratorProps = _.cloneDeep(nextPayload.decoratorProps ?? current?.decoratorProps ?? {});
     let changed = false;
 
-    if (
-      Object.prototype.hasOwnProperty.call(nextProps, 'height') &&
-      !Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'height')
-    ) {
+    if (Object.prototype.hasOwnProperty.call(nextProps, 'height') && nextDecoratorProps.height !== nextProps.height) {
       nextDecoratorProps.height = nextProps.height;
       changed = true;
     }
 
     if (
       Object.prototype.hasOwnProperty.call(nextProps, 'heightMode') &&
-      !Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode')
+      nextDecoratorProps.heightMode !== nextProps.heightMode
     ) {
       nextDecoratorProps.heightMode = nextProps.heightMode;
       changed = true;

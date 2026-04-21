@@ -378,6 +378,8 @@ describe('flowSurfaces approval surface', () => {
       expect.arrayContaining(['fieldValue', 'blockLinkage', 'fieldLinkage']),
     );
     expect(getReactionKindsForUse('ApprovalDetailsModel')).toEqual(expect.arrayContaining(['blockLinkage']));
+    expect(getReactionKindsForUse('MarkdownBlockModel')).toEqual(expect.arrayContaining(['blockLinkage']));
+    expect(getReactionKindsForUse('IframeBlockModel')).toEqual(expect.arrayContaining(['blockLinkage']));
     expect(getReactionKindsForUse('ProcessFormApproveModel')).toEqual(expect.arrayContaining(['actionLinkage']));
   });
 
