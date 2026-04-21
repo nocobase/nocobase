@@ -18,8 +18,8 @@ import { AddLLMModal } from './AddLLMModal';
 import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
 import { isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from './model';
 
-export const ModelSwitcher: React.FC = observer(
-  () => {
+export const ModelSwitcher: React.FC<{ disabled?: boolean }> = observer(
+  ({ disabled }) => {
     const t = useT();
     const app = useApp();
     const api = useAPIClient();
@@ -206,6 +206,7 @@ export const ModelSwitcher: React.FC = observer(
     return (
       <>
         <Dropdown
+          disabled={disabled}
           menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
           trigger={['hover']}
           open={isOpen}

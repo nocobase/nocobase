@@ -25,6 +25,7 @@ export const SenderFooter: React.FC<{
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
+  const readonly = useChatBoxStore.use.readonly();
 
   const loading = useChatMessagesStore.use.responseLoading();
   const addContextItems = useChatMessagesStore.use.addContextItems();
@@ -52,19 +53,21 @@ export const SenderFooter: React.FC<{
     }
   }, [senderRef, senderValue, contextItems]);
 
+  const disabled = !currentEmployee || readonly;
+
   return (
     <Flex justify="space-between" align="center">
       <Flex gap="middle" align="center">
         <AddContextButton
           onAdd={addContextItems}
           onRemove={removeContextItem}
-          disabled={!currentEmployee}
+          disabled={disabled}
           ignore={(key) => key === 'flow-model.variable'}
         />
-        <Upload />
-        <SearchSwitch />
-        <AIEmployeeSwitcher />
-        <ModelSwitcher />
+        <Upload disabled={disabled} />
+        <SearchSwitch disabled={disabled} />
+        <AIEmployeeSwitcher disabled={readonly} />
+        <ModelSwitcher disabled={disabled} />
       </Flex>
       <Flex align="center" gap="middle">
         {loading ? (

@@ -18,7 +18,7 @@ import matter from 'gray-matter';
 import path from 'path';
 import { SkillsScope } from '../skills-manager';
 
-export type SkillsLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
+export type SkillsLoaderOptions = { pluginName: string; scan: DirectoryScannerOptions; log?: Logger };
 export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
   protected readonly scanner: DirectoryScanner;
 

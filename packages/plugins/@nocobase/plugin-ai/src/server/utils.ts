@@ -115,7 +115,7 @@ export async function parseVariables(ctx: Context, value: string) {
   for (const [key, value] of Object.entries(dateVariables)) {
     if (typeof value === 'function') {
       $nDate[key] = value({
-        timezone: ctx.get('x-timezone'),
+        timezone: ctx.get?.('x-timezone'),
         now: new Date().toISOString(),
       });
     } else {
@@ -125,7 +125,7 @@ export async function parseVariables(ctx: Context, value: string) {
   return parse(value)({
     $user,
     $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
-    $nLang: ctx.getCurrentLocale(),
+    $nLang: ctx.getCurrentLocale?.(),
     $nDate,
   });
 }

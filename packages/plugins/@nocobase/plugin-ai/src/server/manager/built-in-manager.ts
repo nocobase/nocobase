@@ -24,9 +24,9 @@ export class BuiltInManager {
     if (!aiEmployee.builtIn) {
       return;
     }
-    aiEmployee.nickname = ctx.t(aiEmployee.nickname, { ns: pkg.name });
-    aiEmployee.position = ctx.t(aiEmployee.position, { ns: pkg.name });
-    aiEmployee.bio = ctx.t(aiEmployee.bio, { ns: pkg.name });
-    aiEmployee.greeting = ctx.t(aiEmployee.greeting, { ns: pkg.name });
+    aiEmployee.nickname = ctx.t?.(aiEmployee.nickname, { ns: pkg.name });
+    aiEmployee.position = ctx.t?.(aiEmployee.position, { ns: pkg.name });
+    aiEmployee.bio = ctx.t?.(aiEmployee.bio, { ns: pkg.name });
+    aiEmployee.greeting = ctx.t?.(aiEmployee.greeting, { ns: pkg.name });
   }
 }

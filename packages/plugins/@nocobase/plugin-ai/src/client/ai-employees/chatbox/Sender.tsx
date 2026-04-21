@@ -26,6 +26,7 @@ const useSendMessage = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
   const editingMessageId = useChatBoxStore.use.editingMessageId();
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const webSearch = useChatConversationsStore.use.webSearch();
@@ -39,6 +40,7 @@ const useSendMessage = () => {
 
   const { send } = useChatBoxActions();
   const handleSubmit = (content: string) => {
+    setShowSenderHint(false);
     send({
       sessionId: currentConversation,
       aiEmployee: currentEmployee,
@@ -77,7 +79,9 @@ export const Sender: React.FC = () => {
   const senderValue = useChatBoxStore.use.senderValue();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
   const setSenderRef = useChatBoxStore.use.setSenderRef();
+  const readonly = useChatBoxStore.use.readonly();
 
   const setAttachments = useChatMessagesStore.use.setAttachments();
   const uploadProps = useUploadFiles();
@@ -199,10 +203,13 @@ export const Sender: React.FC = () => {
         onPaste={handlePaste}
         onSubmit={handleSubmit}
         onCancel={cancelRequest}
+        onBlur={() => {
+          setShowSenderHint(false);
+        }}
         header={<SenderHeader />}
         loading={responseLoading}
         footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
-        disabled={!currentEmployee}
+        disabled={!currentEmployee || readonly}
         placeholder={t('Enter your question')}
         actions={false}
         autoSize={{ minRows: 2, maxRows: 8 }}

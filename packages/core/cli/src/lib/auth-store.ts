@@ -34,6 +34,8 @@ export interface EnvConfigEntry {
   auth?: TokenAuthConfig | OauthAuthConfig;
   appRootPath?: string;
   storagePath?: string;
+  /** Application HTTP port (APP_PORT). */
+  appPort?: number | string;
   /** Optional DB hints for this env (aligns with NocoBase DB_* / .env usage). */
   dbHost?: string;
   dbDatabase?: string;
@@ -147,6 +149,10 @@ export class Env {
       return storagePath;
     }
     return path.resolve(process.cwd(), storagePath);
+  }
+
+  get appPort() {
+    return this.config.appPort;
   }
 }
 

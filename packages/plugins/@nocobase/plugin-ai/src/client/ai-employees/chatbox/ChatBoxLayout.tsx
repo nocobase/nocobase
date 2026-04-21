@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { useMobileLayout } from '@nocobase/client';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { useApp, useMobileLayout } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
 import { Helmet } from 'react-helmet';
 import { ChatButton } from './ChatButton';
@@ -18,6 +18,7 @@ import { ToolModal } from './generative-ui/ToolModal';
 import { useChatToolsStore } from './stores/chat-tools';
 // [AI_DEBUG]
 import { DebugPanel } from './DebugPanel';
+import { useWorkflowTasks } from './hooks/useWorkflowTasks';
 
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
@@ -30,6 +31,18 @@ export const ChatBoxLayout: React.FC<{
   const { isMobileLayout } = useMobileLayout();
 
   useChatBoxEffect();
+
+  const app = useApp();
+  const { refresh: onAIEmployeeTaskStatusUpdate } = useWorkflowTasks();
+  useEffect(() => {
+    onAIEmployeeTaskStatusUpdate();
+  }, []);
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    };
+  }, [app.eventBus, onAIEmployeeTaskStatusUpdate]);
 
   return (
     <>

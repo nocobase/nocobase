@@ -37,7 +37,6 @@ describe('workflow: custom action trigger', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      acl: true,
       plugins: ['system-settings', 'users', 'auth', 'acl', 'data-source-manager', 'error-handler', Plugin],
     });
 
@@ -58,6 +57,12 @@ describe('workflow: custom action trigger', () => {
     });
 
     userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
+
+    // Allow trigger on another data source for workflow behavior tests
+    const anotherDs = app.dataSourceManager.dataSources.get('another');
+    if (anotherDs) {
+      anotherDs.acl.allow('*', ['trigger', 'triggerNew'], 'loggedIn');
+    }
   });
 
   afterEach(() => app.destroy());

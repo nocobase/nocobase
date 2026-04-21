@@ -65,5 +65,15 @@ export default defineCollection({
       name: 'options',
       type: 'jsonb',
     },
+    {
+      name: 'llmActiveState',
+      type: 'string', // idle,streaming,invoking,
+      defaultValue: 'idle',
+    },
+    {
+      name: 'category',
+      type: 'string', // chat, task
+      defaultValue: 'chat',
+    },
   ],
 });

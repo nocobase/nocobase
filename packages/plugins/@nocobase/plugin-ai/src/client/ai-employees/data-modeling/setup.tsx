@@ -8,7 +8,7 @@
  */
 
 import { PluginDataSourceManagerClient } from '@nocobase/plugin-data-source-manager/client';
-import PluginAIClient from '../..';
+import PluginAIClient, { useChatMessagesStore } from '../..';
 import React, { useMemo, useState } from 'react';
 import { Avatar, Button, Popover } from 'antd';
 import { ProfileCard } from '../ProfileCard';
@@ -35,6 +35,8 @@ const AIButton = () => {
   });
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const setReadonly = useChatBoxStore.use.setReadonly();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
 
@@ -66,6 +68,8 @@ const AIButton = () => {
           border: '1px solid #eee',
         }}
         onClick={() => {
+          setReadonly(false);
+          setResponseLoading(false);
           if (!open) {
             setOpen(true);
             switchAIEmployee(aiEmployee);

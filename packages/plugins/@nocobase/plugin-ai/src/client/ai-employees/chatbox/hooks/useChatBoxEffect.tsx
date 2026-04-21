@@ -12,6 +12,7 @@ import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
 import { useChatConversationActions } from './useChatConversationActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 export const useChatBoxEffect = () => {
   const aiConfigRepository = useAIConfigRepository();
@@ -23,6 +24,7 @@ export const useChatBoxEffect = () => {
   const setRoles = useChatBoxStore.use.setRoles();
 
   const { conversationsService } = useChatConversationActions();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees();
@@ -57,9 +59,14 @@ export const useChatBoxEffect = () => {
     if (open) {
       conversationsService.run();
       senderRef?.current?.focus();
-      aiConfigRepository.refreshAITools();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      aiConfigRepository.refreshAITools(currentConversation);
+    }
+  }, [open, currentConversation]);
 
   // Refresh conversations when current employee changes
   useEffect(() => {

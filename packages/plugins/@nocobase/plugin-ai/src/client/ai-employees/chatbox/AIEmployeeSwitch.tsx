@@ -19,7 +19,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
-export const AIEmployeeSwitcher: React.FC = observer(() => {
+export const AIEmployeeSwitcher: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const aiConfigRepository = useAIConfigRepository();
@@ -101,6 +101,7 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
 
   return (
     <Dropdown
+      disabled={disabled}
       menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
       trigger={['hover']}
       open={isOpen}
