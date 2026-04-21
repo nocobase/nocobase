@@ -10950,7 +10950,7 @@ export class FlowSurfacesService {
             type: 'divider',
             settings: {
               label: title,
-              orientation: 'center',
+              orientation: 'left',
             },
           },
           groupIndex * 1000,

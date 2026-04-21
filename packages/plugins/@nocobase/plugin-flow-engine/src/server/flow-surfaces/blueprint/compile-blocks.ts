@@ -684,7 +684,7 @@ function compileFieldGroups(
       type: 'divider',
       settings: {
         label: title,
-        orientation: 'center',
+        orientation: 'left',
       },
     });
     expanded.push(...groupFields);

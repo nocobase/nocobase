@@ -1249,15 +1249,15 @@ describe('flowSurfaces catalog + compose contract', () => {
     const emailWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'email')
       ?.uid;
 
-    expect(basicDividerNode?.props?.orientation).toBe('center');
+    expect(basicDividerNode?.props?.orientation).toBe('left');
     expect(basicDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
       label: 'Basic information',
-      orientation: 'center',
+      orientation: 'left',
     });
-    expect(contactDividerNode?.props?.orientation).toBe('center');
+    expect(contactDividerNode?.props?.orientation).toBe('left');
     expect(contactDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
       label: 'Contact',
-      orientation: 'center',
+      orientation: 'left',
     });
     expect(formReadback.tree.subModels?.grid?.props?.rows).toEqual({
       row1: [[basicDivider]],

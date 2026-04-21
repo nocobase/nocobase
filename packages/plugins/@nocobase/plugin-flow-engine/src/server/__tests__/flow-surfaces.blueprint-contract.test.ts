@@ -2977,15 +2977,15 @@ describe('flowSurfaces applyBlueprint contract', () => {
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
     )?.uid;
 
-    expect(basicDividerNode?.props?.orientation).toBe('center');
+    expect(basicDividerNode?.props?.orientation).toBe('left');
     expect(basicDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
       label: 'Basic information',
-      orientation: 'center',
+      orientation: 'left',
     });
-    expect(contactDividerNode?.props?.orientation).toBe('center');
+    expect(contactDividerNode?.props?.orientation).toBe('left');
     expect(contactDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
       label: 'Contact',
-      orientation: 'center',
+      orientation: 'left',
     });
     expect(formGrid?.props?.rowOrder).toEqual(['row1', 'row2', 'row3', 'row4']);
     expect(formGrid?.props?.rows).toEqual({

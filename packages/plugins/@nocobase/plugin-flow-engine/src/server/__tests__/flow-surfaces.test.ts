@@ -4512,7 +4512,7 @@ describe('flowSurfaces resource', () => {
     expect(dividerSurface.tree.use).toBe('DividerItemModel');
     expect(dividerSurface.tree.props).toMatchObject({
       label: 'Form section',
-      orientation: 'center',
+      orientation: 'left',
     });
     expect(dividerSurface.tree.stepParams?.markdownItemSetting?.title).toMatchObject({
       label: 'Form section',
