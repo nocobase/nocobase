@@ -1446,10 +1446,25 @@ JS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const DIVIDER_ITEM_CONTRACT = createContract({
-  editableDomains: ['props'],
+  editableDomains: ['props', 'stepParams'],
   props: ['label', 'orientation', 'dashed', 'color', 'borderColor'],
+  stepParams: ['markdownItemSetting'],
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
+  },
+});
+DIVIDER_ITEM_CONTRACT.domains.stepParams = groupedDomain({
+  markdownItemSetting: {
+    allowedPaths: ['title.label', 'title.orientation', 'title.dashed', 'title.color', 'title.borderColor'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['title'],
+    pathSchemas: {
+      'title.label': STRING_SCHEMA,
+      'title.orientation': STRING_SCHEMA,
+      'title.dashed': BOOLEAN_SCHEMA,
+      'title.color': STRING_SCHEMA,
+      'title.borderColor': STRING_SCHEMA,
+    },
   },
 });
 FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({

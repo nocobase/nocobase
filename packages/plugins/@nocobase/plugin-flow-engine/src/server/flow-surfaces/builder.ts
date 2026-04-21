@@ -1001,7 +1001,7 @@ function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
       return {
         props: {
           label: 'Divider',
-          orientation: 'left',
+          orientation: 'center',
         },
       };
     default:

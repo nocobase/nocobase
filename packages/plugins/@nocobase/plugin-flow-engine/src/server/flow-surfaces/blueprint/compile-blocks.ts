@@ -682,7 +682,10 @@ function compileFieldGroups(
     expanded.push({
       key: `${groupLocalKey}_divider`,
       type: 'divider',
-      label: title,
+      settings: {
+        label: title,
+        orientation: 'center',
+      },
     });
     expanded.push(...groupFields);
   });

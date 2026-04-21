@@ -597,6 +597,14 @@ const FILTER_FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] 
   { domain: 'props', key: 'labelWrap', stepParamsPath: ['formFilterBlockModelSettings', 'layout', 'labelWrap'] },
 ];
 
+const DIVIDER_ITEM_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'props', key: 'label', stepParamsPath: ['markdownItemSetting', 'title', 'label'] },
+  { domain: 'props', key: 'orientation', stepParamsPath: ['markdownItemSetting', 'title', 'orientation'] },
+  { domain: 'props', key: 'dashed', stepParamsPath: ['markdownItemSetting', 'title', 'dashed'] },
+  { domain: 'props', key: 'color', stepParamsPath: ['markdownItemSetting', 'title', 'color'] },
+  { domain: 'props', key: 'borderColor', stepParamsPath: ['markdownItemSetting', 'title', 'borderColor'] },
+];
+
 const UPDATE_SETTINGS_STEP_PARAM_MIRRORS_BY_USE: Partial<Record<string, FlowSurfaceStepParamMirror[]>> = {
   TableActionsColumnModel: TABLE_COLUMN_STEP_PARAM_MIRRORS,
   JSColumnModel: TABLE_COLUMN_STEP_PARAM_MIRRORS,
@@ -619,6 +627,7 @@ const UPDATE_SETTINGS_STEP_PARAM_MIRRORS_BY_USE: Partial<Record<string, FlowSurf
   ApplyTaskCardDetailsModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
   ApprovalTaskCardDetailsModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
   FilterFormBlockModel: FILTER_FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  DividerItemModel: DIVIDER_ITEM_STEP_PARAM_MIRRORS,
 };
 
 type FlowSurfaceAddFieldResult = {
@@ -4945,6 +4954,7 @@ export class FlowSurfacesService {
       applyActionPopup: async (actionName, actionUid, popup) =>
         this.applyInlineActionPopup(actionName, actionUid, popup, {
           ...options,
+          enabledPackages,
           ...(actionName === 'compose recordAction'
             ? {
                 popupActionContext: {
@@ -8263,6 +8273,10 @@ export class FlowSurfacesService {
     return !hasFlowSurfaceInlinePopupTemplate(popup) && !hasFlowSurfaceInlinePopupBlocks(popup);
   }
 
+  private isEmptyInlinePopupPayload(popup: Record<string, any> | undefined) {
+    return _.isPlainObject(popup) && Object.keys(popup).length === 0;
+  }
+
   private shouldAutoCompleteDefaultFieldPopup(fieldNode: any, popup: Record<string, any> | undefined) {
     if (!_.isPlainObject(popup)) {
       return false;
@@ -8397,7 +8411,7 @@ export class FlowSurfacesService {
 
   private async autoSaveDefaultActionPopupAsTemplate(
     actionUid: string,
-    _popup: Record<string, any> | undefined,
+    popup: Record<string, any> | undefined,
     options: { transaction?: any },
   ) {
     if (!this.getFlowTemplateRepositorySafe()) {
@@ -8446,6 +8460,10 @@ export class FlowSurfacesService {
       },
       options,
     );
+    await this.syncDefaultActionPopupOpenViewTitle(actionUid, actionNode, {
+      ...options,
+      openViewTitle: this.resolveDefaultActionPopupTemplateOpenViewTitle(actionNode, popup),
+    });
   }
 
   private shouldAutoCompleteDefaultActionPopup(
@@ -8700,11 +8718,14 @@ export class FlowSurfacesService {
     return normalizedTitle || undefined;
   }
 
-  private async syncDefaultActionPopupTabTitle(actionNode: any, popupTab: any, options: { transaction?: any }) {
-    const popupTabTitle = resolveFlowSurfaceDefaultActionPopupTabTitle(
-      actionNode?.use,
-      this.getActionButtonTitle(actionNode),
-    );
+  private async syncDefaultActionPopupTabTitle(
+    actionNode: any,
+    popupTab: any,
+    options: { transaction?: any; popupTabTitle?: string },
+  ) {
+    const popupTabTitle =
+      this.normalizeOptionalPopupTitle(options.popupTabTitle) ||
+      resolveFlowSurfaceDefaultActionPopupTabTitle(actionNode?.use, this.getActionButtonTitle(actionNode));
     if (!popupTab?.uid || !popupTabTitle || this.resolvePopupTabTitle(popupTab) === popupTabTitle) {
       return;
     }
@@ -8748,6 +8769,64 @@ export class FlowSurfacesService {
         title: popupTabTitle,
       },
       options,
+    );
+  }
+
+  private async syncDefaultActionPopupCopiedTemplateTabTitle(
+    actionUid: string,
+    fallbackActionNode: any,
+    options: { transaction?: any; popupTabTitle?: string },
+  ) {
+    const actionNode =
+      (await this.repository.findModelById(actionUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      })) || fallbackActionNode;
+    const openView = this.resolvePopupHostOpenView(actionNode);
+    const copiedPopupHostUid = this.resolveDetachedPopupCopyUid(actionUid, openView);
+    if (!copiedPopupHostUid) {
+      return;
+    }
+    await this.syncDefaultActionPopupTabTitleForHost(actionNode || fallbackActionNode, copiedPopupHostUid, options);
+  }
+
+  private async syncDefaultActionPopupOpenViewTitle(
+    actionUid: string,
+    fallbackActionNode: any,
+    options: { transaction?: any; openViewTitle?: string },
+  ) {
+    const actionNode =
+      (await this.repository.findModelById(actionUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      })) || fallbackActionNode;
+    const openViewStep = findFlowTemplateOpenViewStep(actionNode);
+    const openViewTitle =
+      this.normalizeOptionalPopupTitle(options.openViewTitle) ||
+      resolveFlowSurfaceDefaultActionPopupTabTitle(actionNode?.use, this.getActionButtonTitle(actionNode));
+    if (!openViewStep || !openViewTitle) {
+      return;
+    }
+    const currentOpenView = _.isPlainObject(openViewStep.openView) ? openViewStep.openView : {};
+    if (this.normalizeOptionalPopupTitle(currentOpenView.title) === openViewTitle) {
+      return;
+    }
+
+    const nextStepParams = _.cloneDeep(actionNode?.stepParams || {});
+    const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
+      ? _.cloneDeep(nextStepParams[openViewStep.flowKey])
+      : {};
+    currentGroup[openViewStep.stepKey] = buildDefinedPayload({
+      ...currentOpenView,
+      title: openViewTitle,
+    });
+    nextStepParams[openViewStep.flowKey] = currentGroup;
+    await this.repository.patch(
+      {
+        uid: actionNode.uid,
+        stepParams: nextStepParams,
+      },
+      { transaction: options.transaction },
     );
   }
 
@@ -8812,7 +8891,7 @@ export class FlowSurfacesService {
   private async applyDefaultActionPopupContent(
     actionNode: any,
     popup: Record<string, any> | undefined,
-    options: { transaction?: any; enabledPackages?: ReadonlySet<string> },
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string>; popupTabTitle?: string },
   ) {
     const popupProfile = await this.resolvePopupBlockProfile(actionNode.uid, null, actionNode, options.transaction);
     if (!popupProfile?.isPopupSurface) {
@@ -8826,7 +8905,10 @@ export class FlowSurfacesService {
 
     const popupState = await this.resolveDefaultActionPopupSurfaceState(actionNode.uid, options.transaction);
     await this.resetDefaultActionPopupFormLinkageRules(popupState.popupBlock, options);
-    await this.syncDefaultActionPopupTabTitle(popupState.actionNode || actionNode, popupState.popupTab, options);
+    await this.syncDefaultActionPopupTabTitle(popupState.actionNode || actionNode, popupState.popupTab, {
+      ...options,
+      popupTabTitle: options.popupTabTitle,
+    });
   }
 
   private async applyInlineActionPopup(
@@ -8847,6 +8929,17 @@ export class FlowSurfacesService {
     });
     if (!actionNode?.uid) {
       throwBadRequest(`flowSurfaces ${actionName} action '${actionUid}' does not exist`);
+    }
+
+    const initialOpenView = this.resolvePopupHostOpenView(actionNode);
+    if (_.isUndefined(popup) && options.autoCompleteDefaultPopup === false) {
+      return;
+    }
+    if (
+      this.isExternalPopupOpenView(initialOpenView, actionNode.uid) &&
+      (_.isUndefined(popup) || this.isEmptyInlinePopupPayload(popup))
+    ) {
+      return;
     }
 
     popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
@@ -8873,8 +8966,8 @@ export class FlowSurfacesService {
           openViewActionName: actionName,
         },
       );
-      if (isFlowSurfaceDefaultActionPopupUse(actionNode?.use)) {
-        await this.syncDefaultActionPopupTabTitleForHost(actionNode, template.targetUid, {
+      if (isFlowSurfaceDefaultActionPopupUse(actionNode?.use) && templateRef.mode === 'copy') {
+        await this.syncDefaultActionPopupCopiedTemplateTabTitle(actionUid, actionNode, {
           ...options,
           popupTabTitle: templateOpenViewTitle,
         });
@@ -8905,12 +8998,6 @@ export class FlowSurfacesService {
           openViewActionName: actionName,
         },
       );
-      if (isFlowSurfaceDefaultActionPopupUse(actionNode?.use)) {
-        await this.syncDefaultActionPopupTabTitleForHost(actionNode, matchedTemplate.targetUid, {
-          ...options,
-          popupTabTitle: templateOpenViewTitle,
-        });
-      }
       return;
     }
 
@@ -8941,7 +9028,10 @@ export class FlowSurfacesService {
 
     try {
       if (shouldAutoCompleteDefaultPopup) {
-        await this.applyDefaultActionPopupContent(actionNode, popup, options);
+        await this.applyDefaultActionPopupContent(actionNode, popup, {
+          ...options,
+          popupTabTitle: templateOpenViewTitle,
+        });
         if (this.shouldAutoSaveDefaultActionPopupTemplate(popup)) {
           await this.autoSaveDefaultActionPopupAsTemplate(actionUid, popup, options);
         }
@@ -10860,6 +10950,7 @@ export class FlowSurfacesService {
             type: 'divider',
             settings: {
               label: title,
+              orientation: 'center',
             },
           },
           groupIndex * 1000,
@@ -12171,16 +12262,24 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('DividerItemModel');
     assertSupportedSimpleChanges('divider', changes, allowedKeys);
+    const dividerSettings = buildDefinedPayload({
+      label: changes.label,
+      orientation: changes.orientation,
+      dashed: changes.dashed,
+      color: changes.color,
+      borderColor: changes.borderColor,
+    });
     return this.updateSettings(
       {
         target,
-        props: buildDefinedPayload({
-          label: changes.label,
-          orientation: changes.orientation,
-          dashed: changes.dashed,
-          color: changes.color,
-          borderColor: changes.borderColor,
-        }),
+        props: dividerSettings,
+        stepParams: Object.keys(dividerSettings).length
+          ? {
+              markdownItemSetting: {
+                title: dividerSettings,
+              },
+            }
+          : undefined,
       },
       options,
     );

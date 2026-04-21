@@ -67,6 +67,39 @@ describe('flowSurfaces applyBlueprint contract', () => {
     return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
   }
 
+  async function readPrimaryPopupBlockFromAction(actionUid: string) {
+    const actionReadback = await getSurface(rootAgent, {
+      uid: actionUid,
+    });
+    const popupTemplateUid = actionReadback.tree?.popup?.template?.uid;
+    if (popupTemplateUid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: popupTemplateUid,
+          },
+        }),
+      );
+      const popupSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      return {
+        actionReadback,
+        popupSurface,
+        popupBlock: _.castArray(
+          popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+        )[0],
+      };
+    }
+    return {
+      actionReadback,
+      popupSurface: actionReadback,
+      popupBlock: _.castArray(
+        actionReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0],
+    };
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
       plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
@@ -1486,11 +1519,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(userEditAction?.uid).toBeTruthy();
 
-    const userEditReadback = await getSurface(rootAgent, {
-      uid: userEditAction.uid,
-    });
-    const userEditForm = _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock: userEditForm } = await readPrimaryPopupBlockFromAction(userEditAction.uid);
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
@@ -1525,11 +1554,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(roleEditAction?.uid).toBeTruthy();
 
-    const roleEditReadback = await getSurface(rootAgent, {
-      uid: roleEditAction.uid,
-    });
-    const roleEditForm = _.castArray(roleEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock: roleEditForm } = await readPrimaryPopupBlockFromAction(roleEditAction.uid);
     expect(roleEditForm?.use).toBe('EditFormModel');
     expect(_.castArray(roleEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
@@ -1661,11 +1686,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(userEditAction?.uid).toBeTruthy();
 
-    const userEditReadback = await getSurface(rootAgent, {
-      uid: userEditAction.uid,
-    });
-    const userEditForm = _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock: userEditForm } = await readPrimaryPopupBlockFromAction(userEditAction.uid);
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(readNodeActionUses(userEditForm)).toContain('FormSubmitActionModel');
 
@@ -1723,11 +1744,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(roleEditAction?.uid).toBeTruthy();
 
-    const roleEditReadback = await getSurface(rootAgent, {
-      uid: roleEditAction.uid,
-    });
-    const roleEditForm = _.castArray(roleEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock: roleEditForm } = await readPrimaryPopupBlockFromAction(roleEditAction.uid);
     expect(roleEditForm?.use).toBe('EditFormModel');
     expect(readNodeActionUses(roleEditForm)).toContain('FormSubmitActionModel');
   });
@@ -2925,7 +2942,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   },
                   {
                     title: 'Contact',
-                    fields: [{ key: 'emailField', field: 'email' }],
+                    fields: [{ key: 'departmentField', field: 'department' }],
                   },
                 ],
                 actions: ['submit'],
@@ -2943,26 +2960,39 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     const formGrid = formBlock?.subModels?.grid;
     const formItems = _.castArray(formGrid?.subModels?.items || []);
-    const basicDivider = formItems.find(
+    const basicDividerNode = formItems.find(
       (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Basic information',
-    )?.uid;
-    const contactDivider = formItems.find(
+    );
+    const contactDividerNode = formItems.find(
       (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Contact',
-    )?.uid;
+    );
+    const basicDivider = basicDividerNode?.uid;
+    const contactDivider = contactDividerNode?.uid;
     const nicknameWrapper = formItems.find(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
     )?.uid;
     const statusWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
       ?.uid;
-    const emailWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'email')
-      ?.uid;
+    const departmentWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    )?.uid;
 
+    expect(basicDividerNode?.props?.orientation).toBe('center');
+    expect(basicDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Basic information',
+      orientation: 'center',
+    });
+    expect(contactDividerNode?.props?.orientation).toBe('center');
+    expect(contactDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Contact',
+      orientation: 'center',
+    });
     expect(formGrid?.props?.rowOrder).toEqual(['row1', 'row2', 'row3', 'row4']);
     expect(formGrid?.props?.rows).toEqual({
       row1: [[basicDivider]],
       row2: [[nicknameWrapper], [statusWrapper]],
       row3: [[contactDivider]],
-      row4: [[emailWrapper]],
+      row4: [[departmentWrapper]],
     });
     expect(formGrid?.props?.sizes).toEqual({
       row1: [24],

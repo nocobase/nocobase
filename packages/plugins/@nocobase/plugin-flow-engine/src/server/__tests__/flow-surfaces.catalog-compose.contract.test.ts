@@ -1232,12 +1232,14 @@ describe('flowSurfaces catalog + compose contract', () => {
       uid: formBlock.uid,
     });
     const formItems = _.castArray(formReadback.tree.subModels?.grid?.subModels?.items || []);
-    const basicDivider = formItems.find(
+    const basicDividerNode = formItems.find(
       (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Basic information',
-    )?.uid;
-    const contactDivider = formItems.find(
+    );
+    const contactDividerNode = formItems.find(
       (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Contact',
-    )?.uid;
+    );
+    const basicDivider = basicDividerNode?.uid;
+    const contactDivider = contactDividerNode?.uid;
     const usernameWrapper = formItems.find(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'username',
     )?.uid;
@@ -1247,6 +1249,16 @@ describe('flowSurfaces catalog + compose contract', () => {
     const emailWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'email')
       ?.uid;
 
+    expect(basicDividerNode?.props?.orientation).toBe('center');
+    expect(basicDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Basic information',
+      orientation: 'center',
+    });
+    expect(contactDividerNode?.props?.orientation).toBe('center');
+    expect(contactDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Contact',
+      orientation: 'center',
+    });
     expect(formReadback.tree.subModels?.grid?.props?.rows).toEqual({
       row1: [[basicDivider]],
       row2: [[usernameWrapper], [nicknameWrapper]],
@@ -2317,7 +2329,8 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(implicitAddNewSurface.tree.popup.template).toMatchObject({
       mode: 'reference',
     });
-    expect(implicitAddNewPopupTab?.props?.title).toBe('Create employee');
+    expect(implicitAddNewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Create employee');
+    expect(implicitAddNewPopupTab?.props?.title).toBe('Add new');
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
     expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -2367,7 +2380,8 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(implicitViewSurface.tree.popup.template).toMatchObject({
       mode: 'reference',
     });
-    expect(implicitViewPopupTab?.props?.title).toBe('Inspect employee');
+    expect(implicitViewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect employee');
+    expect(implicitViewPopupTab?.props?.title).toBe('Details');
     expect(implicitViewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
 
@@ -2380,7 +2394,8 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(implicitEditSurface.tree.popup.template).toMatchObject({
       mode: 'reference',
     });
-    expect(implicitEditPopupTab?.props?.title).toBe('Modify employee');
+    expect(implicitEditSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify employee');
+    expect(implicitEditPopupTab?.props?.title).toBe('Edit');
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
     expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(

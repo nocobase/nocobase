@@ -805,6 +805,18 @@ async function moveNode(rootAgent: any, sourceUid: string, targetUid: string, po
   );
 }
 
+async function removeNode(rootAgent: any, uid: string) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid,
+        },
+      },
+    }),
+  );
+}
+
 async function updateNodeSettings(rootAgent: any, uid: string, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').updateSettings({
@@ -896,6 +908,26 @@ const BLOCK_ACTION_MODEL_USE_BY_TYPE: Record<string, string> = {
   bulkDelete: 'BulkDeleteActionModel',
 };
 
+async function findBlockActionByUse(rootAgent: any, targetUid: string, use: string) {
+  const surface = await getSurface(rootAgent, {
+    uid: targetUid,
+  });
+  const actions = _.castArray(surface.tree?.subModels?.actions || []).filter((item: any) => item?.uid);
+  const index = actions.findIndex((item: any) => item?.use === use);
+  if (index < 0) {
+    return {
+      action: null,
+      previousAction: null,
+      nextAction: null,
+    };
+  }
+  return {
+    action: actions[index],
+    previousAction: actions[index - 1] || null,
+    nextAction: actions[index + 1] || null,
+  };
+}
+
 async function ensureBlockAction(
   rootAgent: any,
   targetUid: string,
@@ -903,15 +935,20 @@ async function ensureBlockAction(
   extraValues: Record<string, any> = {},
 ) {
   const expectedUse = BLOCK_ACTION_MODEL_USE_BY_TYPE[type];
-  if (expectedUse && !Object.keys(extraValues).length) {
-    const surface = await getSurface(rootAgent, {
-      uid: targetUid,
-    });
-    const existingAction = _.castArray(surface.tree?.subModels?.actions || []).find(
-      (item: any) => item?.use === expectedUse,
-    );
-    if (existingAction?.uid) {
-      return existingAction;
+  if (expectedUse) {
+    const existing = await findBlockActionByUse(rootAgent, targetUid, expectedUse);
+    if (existing.action?.uid) {
+      if (!Object.keys(extraValues).length) {
+        return existing.action;
+      }
+      await removeNode(rootAgent, existing.action.uid);
+      const created = await addAction(rootAgent, targetUid, type, extraValues);
+      if (existing.nextAction?.uid) {
+        await moveNode(rootAgent, created.uid, existing.nextAction.uid, 'before');
+      } else if (existing.previousAction?.uid) {
+        await moveNode(rootAgent, created.uid, existing.previousAction.uid, 'after');
+      }
+      return created;
     }
   }
   return addAction(rootAgent, targetUid, type, extraValues);

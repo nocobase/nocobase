@@ -2926,7 +2926,7 @@ describe('flowSurfaces resource', () => {
     const addNewPopupFieldPaths = _.castArray(addNewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
     );
-    expect(addNewPopupTab?.props?.title).toBe('Create New');
+    expect(addNewPopupTab?.props?.title).toBe('Add new');
     expect(addNewPopupBlock?.use).toBe('CreateFormModel');
     expect(addNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(addNewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
@@ -3036,7 +3036,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(addNewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
     expect(addNewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Create Employee');
-    expect(addNewPopup.popupTab?.props?.title).toBe('Create Employee');
+    expect(addNewPopup.popupTab?.props?.title).toBe('Add new');
     expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
     expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(_.castArray(addNewPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -3052,7 +3052,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(viewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
     expect(viewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect Employee');
-    expect(viewPopup.popupTab?.props?.title).toBe('Inspect Employee');
+    expect(viewPopup.popupTab?.props?.title).toBe('Details');
     expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
 
@@ -3075,7 +3075,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(editPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
     expect(editPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify Employee');
-    expect(editPopup.popupTab?.props?.title).toBe('Modify Employee');
+    expect(editPopup.popupTab?.props?.title).toBe('Edit');
     expect(editPopup.popupBlock?.use).toBe('EditFormModel');
     expect(editPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(_.castArray(editPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -4484,16 +4484,39 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
+    const divider = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+          type: 'divider',
+          settings: {
+            label: 'Form section',
+          },
+        },
+      }),
+    );
 
     expect(tableJsField.renderer).toBe('js');
     expect(formJsField.renderer).toBe('js');
     expect(jsColumn.type).toBe('jsColumn');
     expect(jsItem.type).toBe('jsItem');
+    expect(divider.type).toBe('divider');
     expect((await getSurface(rootAgent, { uid: tableJsField.fieldUid })).tree.use).toBe('JSFieldModel');
     expect((await getSurface(rootAgent, { uid: detailsJsField.fieldUid })).tree.use).toBe('JSFieldModel');
     expect((await getSurface(rootAgent, { uid: formJsField.fieldUid })).tree.use).toBe('JSEditableFieldModel');
     expect((await getSurface(rootAgent, { uid: jsColumn.uid })).tree.use).toBe('JSColumnModel');
     expect((await getSurface(rootAgent, { uid: jsItem.uid })).tree.use).toBe('JSItemModel');
+    const dividerSurface = await getSurface(rootAgent, { uid: divider.uid });
+    expect(dividerSurface.tree.use).toBe('DividerItemModel');
+    expect(dividerSurface.tree.props).toMatchObject({
+      label: 'Form section',
+      orientation: 'center',
+    });
+    expect(dividerSurface.tree.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Form section',
+    });
 
     const invalidFilterRenderer = await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -4718,6 +4741,16 @@ describe('flowSurfaces resource', () => {
     const filterField = await addField(rootAgent, filterFormUid, 'status', {
       defaultTargetUid: tableUid,
     });
+    const divider = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+          type: 'divider',
+        },
+      }),
+    );
 
     const tableConfigureRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -4797,11 +4830,28 @@ describe('flowSurfaces resource', () => {
     });
     expect(formBlockUpdateRes.status).toBe(200);
 
+    const dividerUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: divider.uid,
+        },
+        props: {
+          label: 'Mirror section',
+          orientation: 'right',
+          dashed: true,
+          color: '#333333',
+          borderColor: '#dddddd',
+        },
+      },
+    });
+    expect(dividerUpdateRes.status).toBe(200);
+
     const tableReadback = await getSurface(rootAgent, { uid: tableField.wrapperUid });
     const formReadback = await getSurface(rootAgent, { uid: formField.wrapperUid });
     const detailsReadback = await getSurface(rootAgent, { uid: detailsField.wrapperUid });
     const filterReadback = await getSurface(rootAgent, { uid: filterField.wrapperUid });
     const formBlockReadback = await getSurface(rootAgent, { uid: createFormUid });
+    const dividerReadback = await getSurface(rootAgent, { uid: divider.uid });
 
     expect(tableReadback.tree.stepParams?.tableColumnSettings).toMatchObject({
       title: {
@@ -4881,6 +4931,21 @@ describe('flowSurfaces resource', () => {
     expect(formBlockReadback.tree.stepParams?.formModelSettings?.layout).toMatchObject({
       labelWidth: 180,
       labelWrap: false,
+    });
+
+    expect(dividerReadback.tree.props).toMatchObject({
+      label: 'Mirror section',
+      orientation: 'right',
+      dashed: true,
+      color: '#333333',
+      borderColor: '#dddddd',
+    });
+    expect(dividerReadback.tree.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Mirror section',
+      orientation: 'right',
+      dashed: true,
+      color: '#333333',
+      borderColor: '#dddddd',
     });
   });
 
