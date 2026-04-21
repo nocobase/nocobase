@@ -72,7 +72,19 @@ cd my-nocobase
 nb init
 ```
 
-在终端里逐步引导你完成配置：是否安装 [NocoBase Skills](https://github.com/nocobase/skills)、是否已有 NocoBase、安装方式选择等。
+在终端里逐步引导你完成配置：是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）、是否已有 NocoBase、安装方式选择等。
+
+:::tip 提示
+
+如果初始化时跳过了 Skills 安装，后续可以随时手动补装：
+
+```bash
+npx skills add nocobase/skills -y
+```
+
+安装后重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等）即可生效。
+
+:::
 
 **可视化向导（浏览器）**
 
@@ -160,11 +172,19 @@ nb env list
 
 ### Step 6：完成
 
-告诉用户安装已完成。如果安装了 Skills，提示用户重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等），以加载 Skills。重启后 AI Agent 就能帮你搭建应用、配置页面、管理权限等。
+告诉用户安装已完成。
+
+检查项目目录下 `.agent/skills` 是否包含 nocobase 相关的 Skills。如果没有，询问用户是否安装 NocoBase Skills（方便后续让 AI Agent 操作 NocoBase CLI）。如果用户选择安装，执行：
+
+```bash
+npx skills add nocobase/skills -y
+```
+
+如果用户选择不安装，跳过即可。
+
+安装了 Skills 的情况下，提示用户重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等），以加载 Skills。重启后 AI Agent 就能帮你搭建应用、配置页面、管理权限等。
 
 ## 构建与运行
-
-### 本地环境
 
 ```bash
 # 构建
@@ -176,16 +196,6 @@ nb start
 # 启动（开发模式，支持热更新）
 nb dev
 ```
-
-### 远程环境
-
-远程环境需要通过 `--env` 指定环境名：
-
-```bash
-nb start --env=test
-```
-
-<!-- TODO: 补充端口配置、日志查看等详细说明 -->
 
 ## 升级
 
@@ -206,18 +216,17 @@ nb upgrade
 | `nb init -y` | 初始化工作目录（跳过提示，使用默认配置） |
 | `nb install` | 安装 NocoBase |
 | `nb download` | 下载 NocoBase 源码或镜像 |
-| `nb self-update` | 更新 NocoBase CLI 到最新版本 |
 
 ### 环境管理
 
 | 命令 | 说明 |
 |------|------|
-| `nb env add` | 添加环境配置 |
-| `nb env list` | 列出所有环境 |
-| `nb env use <name>` | 切换当前环境 |
-| `nb env auth [name]` | OAuth 认证 |
+| `nb env add [name]` | 添加环境配置 |
 | `nb env update [name]` | 刷新环境运行时信息 |
+| `nb env list` | 列出所有环境 |
 | `nb env remove <name>` | 移除环境 |
+| `nb env auth <name>` | OAuth 认证 |
+| `nb env use <name>` | 切换当前环境 |
 
 ### 构建与运行
 
@@ -225,6 +234,7 @@ nb upgrade
 |------|------|
 | `nb build` | 构建 |
 | `nb start` | 启动（生产模式） |
+| `nb stop` | 停止应用 |
 | `nb dev` | 启动（开发模式） |
 | `nb upgrade` | 升级 |
 
@@ -235,18 +245,35 @@ nb upgrade
 | `nb scaffold plugin <pkg>` | 生成插件脚手架 |
 | `nb scaffold migration <name>` | 生成升级脚本脚手架 |
 
+### 插件管理
+
+| 命令 | 说明 |
+|------|------|
+| `nb pm list` | 列出所有插件 |
+| `nb pm enable <pkg>` | 启用插件 |
+| `nb pm disable <pkg>` | 停用插件 |
+
 ### API 操作
 
 | 命令 | 说明 |
 |------|------|
-| `nb api resource list` | 列出资源记录 |
-| `nb api resource get` | 获取单条记录 |
-| `nb api resource create` | 创建记录 |
-| `nb api resource update` | 更新记录 |
-| `nb api resource destroy` | 删除记录 |
-| `nb api resource query` | 聚合查询 |
+| `nb api acl` | 权限管理——管理角色、资源权限和操作权限 |
+| `nb api api-keys` | API Key 管理 |
+| `nb api app` | 应用管理 |
+| `nb api authenticators` | 认证管理——密码、短信、SSO 等认证方式 |
+| `nb api data-modeling` | 数据建模——管理数据源、数据表和字段 |
+| `nb api file-manager` | 文件管理——存储服务和附件 |
+| `nb api flow-surfaces` | 页面编排——页面、区块、字段和操作 |
+| `nb api resource` | 通用资源操作——对任意数据表进行 CRUD |
+| `nb api system-settings` | 系统设置——标题、Logo、语言等全局配置 |
+| `nb api theme-editor` | 主题管理——颜色、尺寸和主题切换 |
+| `nb api workflow` | 工作流——自动化流程管理 |
 
-<!-- TODO: 补充每个命令的详细参数和示例 -->
+:::tip 提示
+
+每个命令都支持 `--help` 查看完整参数说明，比如 `nb install --help`、`nb env add --help`。AI Agent 遇到不确定的命令用法时，可以直接运行 `--help` 查询。
+
+:::
 
 ## 相关链接
 
