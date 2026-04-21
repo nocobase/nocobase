@@ -11,7 +11,7 @@ import 'antd/dist/reset.css';
 
 export * from './BaseApplication';
 export * from './Application';
-export * from './HeaderActionsManager';
+export * from './PinnedPluginListContext';
 export * from './RouteRepository';
 export * from './acl';
 export * from './ai';

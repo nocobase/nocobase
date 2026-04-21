@@ -28,7 +28,6 @@ import { isValidElementType } from 'react-is';
 import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
-import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
 import type { PluginClass, PluginManager, PluginType } from './PluginManager';
@@ -118,7 +117,6 @@ export abstract class BaseApplication<
   public pluginManager: TPluginManager;
   public pluginSettingsManager: TPluginSettingsManager;
   public aiManager!: AIManager;
-  public headerActionsManager!: HeaderActionsManager;
   public devDynamicImport?: DevDynamicImport;
   public requirejs!: RequireJS;
   public name: string;
@@ -216,7 +214,6 @@ export abstract class BaseApplication<
   }
 
   protected initializeExtendedState() {
-    this.headerActionsManager = new HeaderActionsManager(this.eventBus);
     this.systemSettings = new SystemSettingsSource(this.apiClient);
   }
 

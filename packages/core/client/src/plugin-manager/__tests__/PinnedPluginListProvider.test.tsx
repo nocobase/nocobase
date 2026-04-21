@@ -14,44 +14,39 @@ import { ACLContext } from '../../acl/ACLProvider';
 import { Application } from '../../application/Application';
 import { ApplicationContext } from '../../application/context';
 import { SchemaComponentOptions } from '../../schema-component';
+import { getPinnedPluginListKeys, PinnedPluginListContext } from '../context';
 import { PinnedPluginList, PinnedPluginListProvider } from '../PinnedPluginListProvider';
 
 describe('PinnedPluginListProvider', () => {
-  it('should register legacy items and unregister them on unmount', async () => {
-    const app = new Application({ disableAcl: true });
-    const Foo = () => <div>Foo action</div>;
+  it('should keep unordered items in place while sorting ordered slots', () => {
+    expect(
+      getPinnedPluginListKeys({
+        foo: { component: 'Foo', order: 301, pin: true, snippet: '*' },
+        bar: { component: 'Bar', pin: true, snippet: '*' },
+        baz: { component: 'Baz', order: 300, pin: true, snippet: '*' },
+      }),
+    ).toEqual(['foo', 'bar', 'baz']);
+  });
 
-    const { unmount } = render(
-      <ApplicationContext.Provider value={app}>
-        <PinnedPluginListProvider
-          items={{
-            foo: { component: 'Foo', order: 300, pin: true, snippet: '*' },
-          }}
-        >
-          <SchemaComponentOptions components={{ Foo }}>
-            <div>provider child</div>
-          </SchemaComponentOptions>
-        </PinnedPluginListProvider>
-      </ApplicationContext.Provider>,
+  it('should merge legacy items into pinned plugin list context', async () => {
+    render(
+      <PinnedPluginListProvider
+        items={{
+          foo: { component: 'Foo', order: 300, pin: true, snippet: '*' },
+        }}
+      >
+        <PinnedPluginListContext.Consumer>
+          {(value) => <div>{JSON.stringify(value.items)}</div>}
+        </PinnedPluginListContext.Consumer>
+      </PinnedPluginListProvider>,
     );
 
     await waitFor(() => {
-      expect(app.headerActionsManager.getItems()).toHaveLength(1);
-    });
-
-    const [item] = app.headerActionsManager.getItems();
-    expect(item.name).toBe('foo');
-    expect(item.order).toBe(300);
-    expect(await item.componentLoader()).toBe('Foo');
-
-    unmount();
-
-    await waitFor(() => {
-      expect(app.headerActionsManager.getItems()).toEqual([]);
+      expect(screen.getByText('{"foo":{"component":"Foo","order":300,"pin":true,"snippet":"*"}}')).toBeInTheDocument();
     });
   });
 
-  it('should render actions from headerActionsManager as the final data source', async () => {
+  it('should render actions from merged context as the final data source', async () => {
     const app = new Application({ disableAcl: true });
     const Foo = () => <div>Foo action</div>;
 
