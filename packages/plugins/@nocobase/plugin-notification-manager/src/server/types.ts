@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Transactionable } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { BaseNotificationChannel } from './base-notification-channel';
 
@@ -37,12 +38,13 @@ export type SendFnType<Message> = (args: {
   message: Message;
   channel: ChannelOptions;
   receivers?: ReceiversOptions;
-}) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
+  transaction?: Transactionable['transaction'];
+}) => Promise<{ message: Message; status: 'success' | 'failure'; reason?: string }>;
 
 export type ReceiversOptions =
   | { value: number[]; type: 'userId' }
   | { value: any; type: 'channel-self-defined'; channelType: string };
-export interface SendOptions {
+export interface SendOptions extends Transactionable {
   channelName: string;
   message: Record<string, any>;
   triggerFrom: string;
@@ -50,7 +52,9 @@ export interface SendOptions {
   data?: Record<string, any>;
 }
 
-export interface SendUserOptions {
+export type NotificationQueueMessage = Omit<SendOptions, 'transaction'>;
+
+export interface SendUserOptions extends Transactionable {
   userIds: number[];
   channels: string[];
   message: Record<string, any>;

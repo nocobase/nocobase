@@ -258,6 +258,31 @@ describe('query', () => {
       expect(context2.action.params.values.queryParams.group).toEqual(['formatted-field']);
     });
 
+    it('should sanitize order direction', async () => {
+      const queryParser = createQueryParser(db);
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: {
+              collection: 'orders',
+              orders: [
+                {
+                  field: ['createdAt'],
+                  alias: 'createdAt',
+                  order: `ASC'); SELECT pg_sleep(1)--`,
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context, async () => {});
+
+      expect(context.action.params.values.queryParams.order).toEqual([[db.sequelize.col('orders.created_at'), 'ASC']]);
+    });
+
     it('should parse filter', async () => {
       const filter = {
         createdAt: {

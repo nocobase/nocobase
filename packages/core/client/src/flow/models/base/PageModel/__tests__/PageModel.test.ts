@@ -316,7 +316,7 @@ describe('PageModel', () => {
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
     });
 
-    it('should apply tabs root className in flow settings mode', () => {
+    it('should not apply tabs root className in flow settings mode anymore', () => {
       // @ts-ignore
       pageModel.context = {
         t: (str: string) => str,
@@ -327,8 +327,7 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
 
-      expect(typeof tabsElement.props.className).toBe('string');
-      expect(tabsElement.props.className.length).toBeGreaterThan(0);
+      expect(tabsElement.props.className).toBeUndefined();
     });
 
     it('should not apply tabs root className in normal mode', () => {
@@ -387,6 +386,26 @@ describe('PageModel', () => {
       const tabsElement = result.props.children;
 
       expect(tabsElement.props.tabBarExtraContent.right).toBe('custom-right');
+    });
+
+    it('should inject default right spacing via tabBarExtraContent', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+        themeToken: { paddingLG: 24 },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+      const rightExtraContent = tabsElement.props.tabBarExtraContent.right;
+
+      expect(rightExtraContent).toBeTruthy();
+      expect(rightExtraContent.props.style).toMatchObject({
+        display: 'inline-flex',
+        marginInlineEnd: 24,
+      });
     });
   });
 

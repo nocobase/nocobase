@@ -20,7 +20,7 @@ import React from 'react';
 import { uid } from '@formily/shared';
 import { FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
-import { RecordPickerContent } from '../RecordPickerFieldModel';
+import { buildRecordPickerPopupContextInputArgs, RecordPickerContent } from '../RecordPickerFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
@@ -59,6 +59,15 @@ export class SubTableFieldModel extends AssociationFieldModel {
   updateAssociation = true;
   setCurrentPage;
   currentPageSize;
+
+  getCurrentValue = () => {
+    const fallback = Array.isArray(this.props.value) ? this.props.value : [];
+    const fieldPathArray = this.parent?.context?.fieldPathArray;
+    if (!Array.isArray(fieldPathArray) || !fieldPathArray.length) return fallback;
+    const latest = this.context.blockModel?.context?.form?.getFieldValue?.(fieldPathArray as any);
+    return Array.isArray(latest) ? latest : fallback;
+  };
+
   get collection() {
     return this.context.collection;
   }
@@ -111,6 +120,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         parentFieldIndex={this.context.fieldIndex}
         parentItem={this.context.item}
         filterTargetKey={this.collection.filterTargetKey}
+        getCurrentValue={this.getCurrentValue}
       />
     );
   }
@@ -296,7 +306,9 @@ SubTableFieldModel.registerFlow({
         };
         const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
-        ctx.model.selectedRows.value = ctx.model.props.value || [];
+        const currentValue = ctx.model.getCurrentValue();
+        ctx.model.selectedRows.value = currentValue;
+        const currentItemValue = ctx.inputArgs.currentItemValue ?? currentValue;
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -308,26 +320,24 @@ SubTableFieldModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
+            ...buildRecordPickerPopupContextInputArgs(ctx, {
+              currentItemValue,
+            }),
             rowSelectionProps: {
               type: 'checkbox',
-              defaultSelectedRows: () => {
-                return ctx.model.props.value;
-              },
+              defaultSelectedRows: () => ctx.model.getCurrentValue(),
               renderCell: undefined,
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
-                const prev = ctx.model.props.value || [];
+                const prev = ctx.model.getCurrentValue();
                 const merged = [
                   ...prev,
-                  ...selectedRows.map((v) => {
-                    return {
-                      ...v,
-                      __is_stored__: true,
-                    };
-                  }),
+                  ...selectedRows.map((row) => ({
+                    ...row,
+                    __is_stored__: true,
+                  })),
                 ];
 
-                // 去重，防止同一个值重复
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===

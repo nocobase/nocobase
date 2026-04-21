@@ -88,32 +88,48 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   // 解析 queryBuider 表单值为请求参数
   parseQuery(query: Record<string, any>) {
     const [dataSource, collection] = query.collectionPath || [];
+    const measures = (query.measures || []).map((item: any) => {
+      const measure = { ...item };
+      if (item.aggregation && !item.alias) {
+        const { alias } = parseField(item.field);
+        measure.alias = alias;
+      }
+      return measure;
+    });
+    const dimensions = (query.dimensions || []).map((item: any) => {
+      const dimension = { ...item };
+      if (item.format && !item.alias) {
+        const { alias } = parseField(item.field);
+        dimension.alias = alias;
+      }
+      return dimension;
+    });
+    const selectedFieldAliasMap = new Map<string, string>();
+    [...dimensions, ...measures].forEach((item: any) => {
+      const fieldKey = Array.isArray(item?.field) ? item.field.filter(Boolean).join('.') : item?.field;
+      const alias = item?.alias || fieldKey;
+      if (!fieldKey || !alias) return;
+      selectedFieldAliasMap.set(fieldKey, alias);
+      selectedFieldAliasMap.set(alias, alias);
+    });
+
     const data = {
       mode: query.mode, // 模式：builder | sql
       sql: query.sql, // 仅当 mode === 'sql' 时有效
       dataSource, // 数据源
       collection, // db 表名
       // 度量 yAxis
-      measures: (query.measures || []).map((item: any) => {
-        const measure = { ...item };
-        if (item.aggregation && !item.alias) {
-          const { alias } = parseField(item.field);
-          measure.alias = alias;
-        }
-        return measure;
-      }),
+      measures,
       // 维度 xAxis
-      dimensions: (query.dimensions || []).map((item: any) => {
-        const dimension = { ...item };
-        if (item.format && !item.alias) {
-          const { alias } = parseField(item.field);
-          dimension.alias = alias;
-        }
-        return dimension;
-      }),
+      dimensions,
       // 过滤条件
       filter: query.filter ? removeUnparsableFilter(transformFilter(query.filter)) : undefined,
-      orders: query.orders,
+      orders: (query.orders || []).map((item: any) => {
+        const order = { ...item };
+        const fieldKey = Array.isArray(item?.field) ? item.field.filter(Boolean).join('.') : item?.field;
+        order.alias = item?.alias || selectedFieldAliasMap.get(fieldKey) || fieldKey;
+        return order;
+      }),
       limit: query.limit,
       offset: query.offset,
       contextParams: query.contextParams,

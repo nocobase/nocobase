@@ -133,7 +133,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   // if (ver === 'alpha' && baseRefName !== 'develop') {
   //   return { number };
   // }
-  const typeRegExp = /\[x\] ([^(\\\r)]+)/;
+  const typeRegExp = /^\s*-\s*\[x\]\s+([^\r\n]+)$/m;
   const typeMatch = body.match(typeRegExp);
   const prType = typeMatch ? typeMatch[1] : '';
   if (!prType) {

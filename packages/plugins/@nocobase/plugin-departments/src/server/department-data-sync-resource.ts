@@ -41,7 +41,6 @@ export class DepartmentDataSyncResource extends UserDataResource {
       'uid',
       'createdAt',
       'updatedAt',
-      'sort',
       'createdById',
       'updatedById',
       'isDeleted',
@@ -49,6 +48,35 @@ export class DepartmentDataSyncResource extends UserDataResource {
       'parentUid',
     ];
     return lodash.omit(sourceDepartment, deleteProps);
+  }
+
+  async updateDepartmentIsLeaf(parentId: PrimaryKey | null | undefined) {
+    if (!parentId) {
+      return;
+    }
+    const hasChild = await this.deptRepo.count({
+      filter: {
+        parentId,
+      },
+    });
+    await this.deptRepo.update({
+      filterByTk: parentId,
+      values: {
+        isLeaf: !hasChild,
+      },
+    });
+  }
+
+  async markDepartmentAsNonLeaf(parentId: PrimaryKey | null | undefined) {
+    if (!parentId) {
+      return;
+    }
+    await this.deptRepo.update({
+      filterByTk: parentId,
+      values: {
+        isLeaf: false,
+      },
+    });
   }
 
   async update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]> {
@@ -272,7 +300,9 @@ export class DepartmentDataSyncResource extends UserDataResource {
 
   async updateDepartment(department: Model, sourceDepartment: FormatDepartment, sourceName: string) {
     if (sourceDepartment.isDeleted) {
+      const parentId = department.get('parentId');
       await department.destroy();
+      await this.updateDepartmentIsLeaf(parentId);
       return;
     }
     let dataChanged = false;
@@ -292,17 +322,22 @@ export class DepartmentDataSyncResource extends UserDataResource {
   async createDepartment(sourceDepartment: FormatDepartment, sourceName: string): Promise<string> {
     const filteredSourceDepartment = this.getFlteredSourceDepartment(sourceDepartment);
     const department = await this.deptRepo.create({
-      values: filteredSourceDepartment,
+      values: {
+        isLeaf: true,
+        ...filteredSourceDepartment,
+      },
     });
     await this.updateParentDepartment(department, sourceDepartment.parentUid, sourceName);
     return department.id;
   }
 
   async updateParentDepartment(department: Model, parentUid: string, sourceName: string) {
+    const oldParentId = department.get('parentId');
     if (!parentUid) {
       const parentDepartment = await department.getParent();
       if (parentDepartment) {
         await department.setParent(null);
+        await this.updateDepartmentIsLeaf(oldParentId);
       }
     } else {
       const syncDepartmentRecord = await this.syncRecordRepo.findOne({
@@ -320,18 +355,25 @@ export class DepartmentDataSyncResource extends UserDataResource {
         });
         if (!parentDepartment) {
           await department.setParent(null);
+          await this.updateDepartmentIsLeaf(oldParentId);
           return;
         }
         const parent = await department.getParent();
         if (parent) {
           if (parentDepartment.id !== parent.id) {
             await department.setParent(parentDepartment);
+            await Promise.all([
+              this.updateDepartmentIsLeaf(oldParentId),
+              this.markDepartmentAsNonLeaf(parentDepartment.id),
+            ]);
           }
         } else {
           await department.setParent(parentDepartment);
+          await this.markDepartmentAsNonLeaf(parentDepartment.id);
         }
       } else {
         await department.setParent(null);
+        await this.updateDepartmentIsLeaf(oldParentId);
       }
     }
   }

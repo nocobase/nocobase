@@ -359,6 +359,27 @@ Processeurs de données de trace activés. La valeur par défaut est `console`. 
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_WHITELIST
+
+Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées côté serveur, afin de prévenir les attaques SSRF (Server-Side Request Forgery). Accepte une liste séparée par des virgules d'IPs exactes, de plages CIDR, de noms d'hôtes exacts et de sous-domaines génériques à un seul niveau.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**S'applique à** : Les nœuds « Requête HTTP » dans les workflows et les boutons d'action de requête personnalisée. Les requêtes avec chemin relatif (appels à l'API NocoBase elle-même) ne sont pas affectées.
+
+**Non configuré** : Toutes les requêtes `http`/`https` sortantes sont autorisées (comportement existant). **Configuré** : Seules les requêtes dont l'hôte correspond à une entrée de la liste blanche sont autorisées ; les requêtes non correspondantes génèrent une erreur.
+
+Formats pris en charge :
+
+| Format | Exemple | Correspond à |
+| --- | --- | --- |
+| IPv4 exacte | `1.2.3.4` | Uniquement cette IP |
+| IPv4 CIDR | `10.0.0.0/8` | Toutes les IPs du sous-réseau |
+| Nom d'hôte exact | `api.example.com` | Uniquement ce nom d'hôte |
+| Sous-domaine générique | `*.example.com` | Un niveau de sous-domaine, ex. `foo.example.com` ; **pas** `example.com` ni `a.b.example.com` |
+
 ## Variables d'environnement expérimentales
 
 ### APPEND_PRESET_LOCAL_PLUGINS

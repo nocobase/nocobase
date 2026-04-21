@@ -13,6 +13,7 @@ import { Formatter } from '../formatter/formatter';
 import { Database } from '@nocobase/database';
 
 const AllowedAggFuncs = ['sum', 'count', 'avg', 'min', 'max'];
+const AllowedOrderDirections = ['ASC', 'DESC'];
 
 export class QueryParser {
   db: Database;
@@ -84,7 +85,7 @@ export class QueryParser {
     orders.forEach((item: OrderProps) => {
       const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
       const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-      let sort = item.order || 'ASC';
+      let sort = AllowedOrderDirections.includes(item.order?.toUpperCase()) ? item.order.toUpperCase() : 'ASC';
       if (item.nulls === 'first') {
         sort += ' NULLS FIRST';
       }
