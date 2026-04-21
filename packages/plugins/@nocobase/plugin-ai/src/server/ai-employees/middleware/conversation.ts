@@ -10,12 +10,7 @@
 import { AIMessage, createMiddleware, HumanMessage, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import { AIMessageInput } from '../../types';
-import {
-  AIMessage as AIConversationMessage,
-  AIMessageContent,
-  AIToolCall,
-  AIToolMessage,
-} from '../../types/ai-message.type';
+import { AIMessage as AIConversationMessage, AIToolCall, AIToolMessage } from '../../types/ai-message.type';
 import z from 'zod';
 import { Model } from '@nocobase/database';
 import { ToolsEntry } from '@nocobase/ai';
