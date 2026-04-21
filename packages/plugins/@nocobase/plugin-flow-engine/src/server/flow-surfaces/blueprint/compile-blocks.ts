@@ -815,9 +815,6 @@ function compilePopup(
   if (saveAsTemplate && template) {
     throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
   }
-  if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
-    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.tryTemplate`);
-  }
   if (template) {
     return {
       popup: {
@@ -831,7 +828,7 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
-  if (saveAsTemplate && !popupBlocks.length) {
+  if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true) {
     throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
   }
   const compiledBlocks = popupBlocks.length

@@ -100,6 +100,35 @@ describe('flowSurfaces applyBlueprint contract', () => {
     };
   }
 
+  async function createPopupTestCollection(name: string) {
+    await rootAgent.resource('collections').create({
+      values: {
+        name,
+        title: name,
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [name]: ['name', 'code', 'label'],
+    });
+  }
+
+  async function findPopupTemplateByName(name: string) {
+    const listed = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: name,
+        },
+      }),
+    );
+    return listed.rows.find((row: any) => row.name === name);
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
       plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
@@ -862,6 +891,188 @@ describe('flowSurfaces applyBlueprint contract', () => {
       collectDescendantNodes(data.surface.tree, (item) => item?.popup?.template?.uid === template.uid),
     ).toHaveLength(2);
     await expectTemplateUsage(rootAgent, template.uid, 2);
+  });
+
+  it('should let popup.template.local reuse the final bound template uid from combined tryTemplate + saveAsTemplate producers in applyBlueprint', async () => {
+    const unique = Date.now();
+    const hitCollection = `popup_bp_hit_${unique}`;
+    const missCollection = `popup_bp_miss_${unique}`;
+    await createPopupTestCollection(hitCollection);
+    await createPopupTestCollection(missCollection);
+
+    const sourcePage = await createPage(rootAgent, {
+      title: `Blueprint combined popup source ${unique}`,
+      tabTitle: 'Blueprint combined popup source',
+    });
+    const sourceDetails = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: sourcePage.gridUid },
+        type: 'details',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: hitCollection,
+        },
+      },
+    });
+    expect(sourceDetails.status).toBe(200);
+    const sourceField = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: getData(sourceDetails).uid },
+        fieldPath: 'name',
+        popup: {
+          blocks: [
+            {
+              key: 'blueprintCombinedHitSourcePopup',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['name'],
+            },
+          ],
+        },
+      },
+    });
+    expect(sourceField.status).toBe(200);
+    const sourceTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: getData(sourceField).fieldUid || getData(sourceField).uid },
+          name: `Blueprint combined popup hit source ${unique}`,
+          description: 'Existing template reused through a combined applyBlueprint producer.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const hitIgnoredTemplateName = `Blueprint combined popup hit ignored ${unique}`;
+    const hitRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint combined popup hit ${unique}`,
+          },
+        },
+        page: {
+          title: 'Blueprint combined popup hit',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'hitDetails',
+                type: 'details',
+                collection: hitCollection,
+                fields: [
+                  {
+                    key: 'hitProducer',
+                    field: 'code',
+                    popup: {
+                      tryTemplate: true,
+                      saveAsTemplate: {
+                        name: hitIgnoredTemplateName,
+                        description: 'Ignored on tryTemplate hit inside applyBlueprint.',
+                        local: 'blueprintHitAlias',
+                      },
+                    },
+                  },
+                  {
+                    key: 'hitConsumer',
+                    field: 'label',
+                    popup: {
+                      template: {
+                        local: 'blueprintHitAlias',
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(hitRes.status).toBe(200);
+    const hitData = getData(hitRes);
+    expect(
+      collectDescendantNodes(hitData.surface.tree, (item) => item?.popup?.template?.uid === sourceTemplate.uid),
+    ).toHaveLength(2);
+    expect(await findPopupTemplateByName(hitIgnoredTemplateName)).toBeUndefined();
+    await expectTemplateUsage(rootAgent, sourceTemplate.uid, 2);
+
+    const missTemplateName = `Blueprint combined popup miss ${unique}`;
+    const missRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint combined popup miss ${unique}`,
+          },
+        },
+        page: {
+          title: 'Blueprint combined popup miss',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'missDetails',
+                type: 'details',
+                collection: missCollection,
+                fields: [
+                  {
+                    key: 'missProducer',
+                    field: 'name',
+                    popup: {
+                      tryTemplate: true,
+                      blocks: [
+                        {
+                          key: 'blueprintCombinedMissPopup',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['name'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: missTemplateName,
+                        description: 'Saved after tryTemplate miss inside applyBlueprint.',
+                        local: 'blueprintMissAlias',
+                      },
+                    },
+                  },
+                  {
+                    key: 'missConsumer',
+                    field: 'code',
+                    popup: {
+                      template: {
+                        local: 'blueprintMissAlias',
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(missRes.status).toBe(200);
+    const missData = getData(missRes);
+    const missTemplate = await findPopupTemplateByName(missTemplateName);
+    expect(missTemplate?.uid).toBeTruthy();
+    expect(
+      collectDescendantNodes(missData.surface.tree, (item) => item?.popup?.template?.uid === missTemplate.uid),
+    ).toHaveLength(2);
+    await expectTemplateUsage(rootAgent, missTemplate.uid, 2);
   });
 
   it('should reject invalid applyBlueprint popup local template aliases', async () => {

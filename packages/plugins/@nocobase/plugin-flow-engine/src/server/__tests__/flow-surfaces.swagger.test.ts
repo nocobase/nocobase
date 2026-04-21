@@ -386,9 +386,15 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
     );
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.tryTemplate.description).toContain(
+      'a hit reuses the matched template directly',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.saveAsTemplate.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceRequestPopupSaveAsTemplate' },
     ]);
+    expect(schemas.FlowSurfaceApplyBlueprintPopup.properties.saveAsTemplate.description).toContain(
+      'cannot be combined with `popup.template`',
+    );
     expect(schemas.FlowSurfaceRequestPopupTemplateRef.properties.local.type).toBe('string');
     expect(schemas.FlowSurfaceRequestPopupSaveAsTemplate.properties.local.type).toBe('string');
     expect(schemas.FlowSurfacePopupTemplateRef.allOf).toEqual([
@@ -606,6 +612,8 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('exactly one `editForm` block');
     expect(applyBlueprintPath.description).toContain('popup.saveAsTemplate={ name, description, local? }');
     expect(applyBlueprintPath.description).toContain('popup.template={ local, mode }');
+    expect(applyBlueprintPath.description).toContain('a hit binds the matched template immediately');
+    expect(applyBlueprintPath.description).toContain('a miss requires explicit local `popup.blocks`');
     const applyApprovalBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyApprovalBlueprint'].post;
     expect(applyApprovalBlueprintPath.summary).toContain('approval blueprint');
     expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
@@ -628,6 +636,12 @@ describe('flowSurfaces swagger', () => {
       'popup.saveAsTemplate={ name, description, local? }',
     );
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain('popup.template={ local, mode }');
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      'a hit binds the matched template immediately',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      'a miss requires explicit local `popup.blocks`',
+    );
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
       'do not auto-create an approval root',
     );
@@ -733,9 +747,15 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
     );
     expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.tryTemplate.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.tryTemplate.description).toContain(
+      'a hit reuses the matched template directly',
+    );
     expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.saveAsTemplate.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceRequestPopupSaveAsTemplate' },
     ]);
+    expect(schemas.FlowSurfaceComposeRequestActionPopup.properties.saveAsTemplate.description).toContain(
+      'cannot be combined with `popup.template`',
+    );
     expect(schemas.FlowSurfaceComposeRequestFieldPopup.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceRequestPopupTemplateRef',
     );
@@ -759,6 +779,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeFieldPopup.properties.saveAsTemplate.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfacePopupSaveAsTemplate' },
     ]);
+    expect(schemas.FlowSurfaceComposeFieldPopup.properties.saveAsTemplate.description).toContain(
+      'final bound template uid',
+    );
     expect(schemas.FlowSurfaceApplyNodePopup.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfacePopupTemplateRef',
     );

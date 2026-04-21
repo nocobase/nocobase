@@ -7060,9 +7060,6 @@ export class FlowSurfacesService {
     if (saveAsTemplate && !_.isUndefined(normalizedPopup.template)) {
       throwBadRequest(`flowSurfaces ${actionName} popup.saveAsTemplate cannot be combined with popup.template`);
     }
-    if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
-      throwBadRequest(`flowSurfaces ${actionName} popup.saveAsTemplate cannot be combined with popup.tryTemplate`);
-    }
     if (_.isUndefined(tryTemplate)) {
       delete normalizedPopup.tryTemplate;
     } else {
@@ -8141,6 +8138,7 @@ export class FlowSurfacesService {
           },
         ),
       );
+      this.registerInlinePopupTemplateAlias(actionName, popup, matchedTemplate, options.popupTemplateAliasSession);
       return;
     }
     try {
@@ -8998,6 +8996,7 @@ export class FlowSurfacesService {
           openViewActionName: actionName,
         },
       );
+      this.registerInlinePopupTemplateAlias(actionName, popup, matchedTemplate, options.popupTemplateAliasSession);
       return;
     }
 
