@@ -7,4 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { HeaderActionsManager } from '@nocobase/client-v2';
+export {
+  getPinnedPluginListKeys,
+  PinnedPluginListContext,
+  type PinnedPluginListContextValue,
+  type PinnedPluginListItem,
+  type PinnedPluginListItems,
+} from '@nocobase/client-v2';

@@ -36,7 +36,7 @@ import { Migration } from '@nocobase/server';
  * This migration runs only during upgrades (appVersion < 2.0.40), not on fresh installs.
  */
 export default class extends Migration {
-  appVersion = '<2.0.40';
+  appVersion = '<2.1.0-alpha.21';
   on = 'afterSync';
 
   async up() {

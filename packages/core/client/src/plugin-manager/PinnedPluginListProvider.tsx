@@ -8,71 +8,23 @@
  */
 
 import { css } from '@emotion/css';
+import { SchemaOptionsContext } from '@formily/react';
 import { ConfigProvider, Divider } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import get from 'lodash/get';
+import React, { useContext } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { type ComponentTypeAndString } from '../application/RouterManager';
-import { useApp } from '../application/hooks';
 import { UserCenter } from '../route-switch/antd/admin-layout/UserCenterButton';
 import { Help } from '../user/Help';
-import { HeaderActionRenderer } from './headerActions';
-import { HEADER_ACTIONS_MANAGER_CHANGED, HeaderActionItem } from '@nocobase/client-v2';
+import { getPinnedPluginListKeys, PinnedPluginListContext, type PinnedPluginListItems } from './context';
 
-type LegacyPinnedPluginItem = {
-  component: ComponentTypeAndString;
-  order?: number;
-  pin?: boolean;
-  snippet?: string;
-};
-
-type LegacyPinnedPluginItems = Record<string, LegacyPinnedPluginItem>;
-
-const PinnedPluginListCompatibilityContext = createContext(0);
-PinnedPluginListCompatibilityContext.displayName = 'PinnedPluginListCompatibilityContext';
-
-const normalizeLegacyPinnedPluginItems = (items: LegacyPinnedPluginItems = {}): HeaderActionItem[] => {
-  return Object.entries(items)
-    .filter(([, item]) => !!item?.component)
-    .map(([name, item]) => ({
-      name,
-      order: item.order,
-      pin: item.pin,
-      snippet: item.snippet,
-      componentLoader: () => Promise.resolve(item.component),
-    }));
-};
-
-export const PinnedPluginListProvider: React.FC<{ items: LegacyPinnedPluginItems }> = (props) => {
-  const app = useApp();
-  const parentPriority = useContext(PinnedPluginListCompatibilityContext);
-  const priority = parentPriority + 1;
-  const sourceIdRef = useRef(`pinned-plugin-list:${Math.random().toString(36).slice(2)}`);
-  const headerActionItems = useMemo(() => normalizeLegacyPinnedPluginItems(props.items), [props.items]);
-
-  useEffect(() => {
-    const sourceId = sourceIdRef.current;
-
-    app.headerActionsManager.unregisterBySource(sourceId);
-
-    if (headerActionItems.length) {
-      app.headerActionsManager.register(
-        headerActionItems.map((item) => ({
-          ...item,
-          priority,
-          sourceId,
-        })),
-      );
-    }
-
-    return () => {
-      app.headerActionsManager.unregisterBySource(sourceId);
-    };
-  }, [app, headerActionItems, priority]);
+export const PinnedPluginListProvider: React.FC<{ items: PinnedPluginListItems }> = (props) => {
+  const { children, items } = props;
+  const ctx = useContext(PinnedPluginListContext);
 
   return (
-    <PinnedPluginListCompatibilityContext.Provider value={priority}>
-      {props.children}
-    </PinnedPluginListCompatibilityContext.Provider>
+    <PinnedPluginListContext.Provider value={{ items: { ...ctx.items, ...items } }}>
+      {children}
+    </PinnedPluginListContext.Provider>
   );
 };
 
@@ -138,34 +90,33 @@ const dividerTheme = {
 };
 
 export const PinnedPluginList = React.memo((props: { onClick?: () => void }) => {
-  const app = useApp();
   const { allowAll, snippets } = useACLRoleContext();
-  const [, setVersion] = useState(0);
+  const ctx = useContext(PinnedPluginListContext);
+  const { components } = useContext(SchemaOptionsContext);
 
   const getSnippetsAllow = (aclKey) => {
     return allowAll || aclKey === '*' || snippets?.includes(aclKey);
   };
 
-  useEffect(() => {
-    const handleChange = () => {
-      setVersion((current) => current + 1);
-    };
-
-    app.eventBus.addEventListener(HEADER_ACTIONS_MANAGER_CHANGED, handleChange);
-
-    return () => {
-      app.eventBus.removeEventListener(HEADER_ACTIONS_MANAGER_CHANGED, handleChange);
-    };
-  }, [app]);
-
-  const items = app.headerActionsManager.resolveVisibleItems(getSnippetsAllow);
-
   return (
     <div className={pinnedPluginListClassName}>
       <div onClick={props.onClick}>
-        {items.map((item) => (
-          <HeaderActionRenderer key={item.name} item={item} />
-        ))}
+        {getPinnedPluginListKeys(ctx.items)
+          .filter((key) => getSnippetsAllow(ctx.items[key]?.snippet))
+          .map((key) => {
+            const component = ctx.items[key]?.component;
+            if (!component) {
+              return null;
+            }
+
+            if (typeof component !== 'string') {
+              const Action = component;
+              return <Action key={key} />;
+            }
+
+            const Action = get(components, component);
+            return Action ? <Action key={key} /> : null;
+          })}
       </div>
       <ConfigProvider theme={dividerTheme}>
         <Divider type="vertical" />

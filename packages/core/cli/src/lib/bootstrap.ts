@@ -457,9 +457,13 @@ export async function updateEnvRuntime(options: {
   if (!baseUrl) {
     throw new Error(
       [
-        `Env "${envName}" is missing a base URL.`,
-        'Update it with `nb env add <name> --base-url <url>` first.',
-      ].join('\n'),
+        env
+          ? `Env "${envName}" is missing a base URL.`
+          : `Env "${envName}" is not configured. Run \`nb env add ${envName}\` first.`,
+        env ? 'Update it with `nb env add <name> --base-url <url>` first.' : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
     );
   }
 

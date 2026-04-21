@@ -8,16 +8,16 @@
  */
 
 import { css } from '@emotion/css';
+import { SchemaOptionsContext } from '@formily/react';
 import { ConfigProvider, Divider } from 'antd';
-import React, { useEffect, useState } from 'react';
+import get from 'lodash/get';
+import React, { useContext } from 'react';
 import { useAclSnippets } from '../../../acl';
 import { useApp } from '../../../flow-compat';
 import { FlowModelRenderer } from '@nocobase/flow-engine';
-import { HeaderActionRenderer, type HeaderActionItemLite } from './HeaderActionRendererLite';
+import { getPinnedPluginListKeys, PinnedPluginListContext } from '../../../PinnedPluginListContext';
 import { HelpLite } from './HelpLite';
 import { USER_CENTER_ACTION_ID, UserCenterTopbarActionModel } from '../../models/topbar/UserCenterTopbarActionModel';
-
-const HEADER_ACTIONS_MANAGER_CHANGED = 'header-actions-manager:changed';
 
 const pinnedPluginListClassName = css`
   display: inline-flex;
@@ -86,21 +86,8 @@ const dividerTheme = {
 export const PinnedPluginListLite = React.memo((props: { onClick?: () => void }) => {
   const app = useApp();
   const { allow } = useAclSnippets();
-  const [, setVersion] = useState(0);
-
-  useEffect(() => {
-    const handleChange = () => {
-      setVersion((current) => current + 1);
-    };
-
-    app.eventBus.addEventListener(HEADER_ACTIONS_MANAGER_CHANGED, handleChange);
-
-    return () => {
-      app.eventBus.removeEventListener(HEADER_ACTIONS_MANAGER_CHANGED, handleChange);
-    };
-  }, [app]);
-
-  const items = app.headerActionsManager.resolveVisibleItems(allow) as HeaderActionItemLite[];
+  const ctx = useContext(PinnedPluginListContext);
+  const { components } = useContext(SchemaOptionsContext);
   const hasUserCenterModel = !!app.flowEngine.getModelClass('UserCenterTopbarActionModel');
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -113,9 +100,22 @@ export const PinnedPluginListLite = React.memo((props: { onClick?: () => void })
   return (
     <div className={pinnedPluginListClassName}>
       <div onClick={props.onClick}>
-        {items.map((item) => (
-          <HeaderActionRenderer key={item.name} item={item} />
-        ))}
+        {getPinnedPluginListKeys(ctx.items)
+          .filter((key) => allow(ctx.items[key]?.snippet))
+          .map((key) => {
+            const component = ctx.items[key]?.component;
+            if (!component) {
+              return null;
+            }
+
+            if (typeof component !== 'string') {
+              const Action = component;
+              return <Action key={key} />;
+            }
+
+            const Action = get(components, component);
+            return Action ? <Action key={key} /> : null;
+          })}
       </div>
       <ConfigProvider theme={dividerTheme}>
         <Divider type="vertical" />

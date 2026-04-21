@@ -597,9 +597,13 @@ export async function authenticateEnvWithOauth(options: {
   if (!baseUrl) {
     throw new Error(
       [
-        `Env "${envName}" is missing a base URL.`,
-        'Run `nb env add <name> --base-url <url>` first.',
-      ].join('\n'),
+        env
+          ? `Env "${envName}" is missing a base URL.`
+          : `Env "${envName}" is not configured. Run \`nb env add ${envName}\` first.`,
+        env ? 'Run `nb env add <name> --base-url <url>` first.' : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
     );
   }
 

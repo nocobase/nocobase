@@ -181,6 +181,10 @@ export const getFilterInclude = (isServer, isCoverage) => {
     return false;
   });
 
+  if (argv[0] === 'run' || argv[0] === 'watch') {
+    argv = argv.slice(1);
+  }
+
   let filterFileOrDir = argv[0];
 
   if (!filterFileOrDir) return {};
