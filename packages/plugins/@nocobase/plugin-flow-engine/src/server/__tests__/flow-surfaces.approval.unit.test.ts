@@ -265,10 +265,12 @@ describe('flowSurfaces approval surface', () => {
   it('should expose configure options for approval blocks, wrappers and actions', () => {
     expect(getConfigureOptionsForUse('ApplyFormModel')).toEqual(
       expect.objectContaining({
+        description: expect.any(Object),
         layout: expect.any(Object),
         labelWidth: expect.any(Object),
       }),
     );
+    expect(getConfigureOptionsForUse('ApplyFormModel')).not.toHaveProperty('displayTitle');
     expect(getConfigureOptionsForUse('ApprovalDetailsItemModel')).toEqual(
       expect.objectContaining({
         label: expect.any(Object),

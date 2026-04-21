@@ -219,6 +219,7 @@ import {
 import {
   assertFlowSurfaceComposeUniqueKeys,
   assertSupportedSimpleChanges,
+  buildBlockTitleDescriptionFromSemanticChanges,
   buildChartCardSettingsFromSemanticChanges,
   buildDefaultFieldState,
   buildDefinedPayload,
@@ -238,6 +239,8 @@ import {
   isFieldNodeUse,
   isMissingRequiredResourceInitValue,
   joinRequiredFieldPaths,
+  normalizeBlockTitleDescription,
+  normalizeBlockTitleDescriptionValue,
   normalizeChartCardSettings,
   normalizeChartCardHeightModeForWrite,
   normalizeFlowSurfaceComposeKey,
@@ -354,6 +357,21 @@ const COMPOSE_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'detai
 const COMPOSE_FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
+const CANONICAL_BLOCK_HEADER_USES = new Set([
+  'TableBlockModel',
+  'FormBlockModel',
+  'CreateFormModel',
+  'EditFormModel',
+  'DetailsBlockModel',
+  'ListBlockModel',
+  'GridCardBlockModel',
+  'MarkdownBlockModel',
+  'IframeBlockModel',
+  'ChartBlockModel',
+  'ActionPanelBlockModel',
+  'MapBlockModel',
+  'CommentsBlockModel',
+]);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
 const GRID_SETTINGS_FLOW_KEY = 'gridSettings';
 const GRID_SETTINGS_LAYOUT_STEP_KEY = 'grid';
@@ -4942,6 +4960,12 @@ export class FlowSurfacesService {
     if (current?.use === 'ActionPanelBlockModel') {
       return this.configureActionPanelBlock(target, values.changes, options);
     }
+    if (current?.use === 'MapBlockModel') {
+      return this.configureMapBlock(target, values.changes, options);
+    }
+    if (current?.use === 'CommentsBlockModel') {
+      return this.configureCommentsBlock(target, values.changes, options);
+    }
     if (current?.use === 'TableActionsColumnModel') {
       return this.configureActionColumn(target, values.changes, options);
     }
@@ -8758,11 +8782,14 @@ export class FlowSurfacesService {
     const writeTarget = this.normalizeWriteTarget('updateSettings', values?.target, values);
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
+    const normalizedValues = _.cloneDeep(values || {});
+    this.normalizeCanonicalBlockHeaderWriteForUpdateSettings(current, normalizedValues);
     const contract = getNodeContract(current.use);
     const nextPayload: Record<string, any> = { uid: current.uid };
+    const shouldStripLegacyBlockHeader = _.has(normalizedValues, ['stepParams', 'cardSettings', 'titleDescription']);
 
     (['props', 'decoratorProps', 'stepParams', 'flowRegistry'] as FlowSurfaceNodeDomain[]).forEach((domain) => {
-      if (typeof values[domain] === 'undefined') {
+      if (typeof normalizedValues[domain] === 'undefined') {
         return;
       }
       if (!contract.editableDomains.includes(domain)) {
@@ -8775,7 +8802,7 @@ export class FlowSurfacesService {
       nextPayload[domain] = this.contractGuard.mergeDomainValue(
         domain,
         current[domain],
-        values[domain],
+        normalizedValues[domain],
         domainContract,
         current.use,
       );
@@ -8797,11 +8824,14 @@ export class FlowSurfacesService {
     );
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
     await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
+    this.syncCanonicalBlockHeaderForUpdateSettings(current, nextPayload);
+    this.syncMapHeightChromeForUpdateSettings(current, nextPayload);
     this.syncChartCardRuntimeStepParamsForUpdateSettings(
       current,
       nextPayload,
-      options.replaceChartCardSettings ? _.get(values, ['stepParams', 'cardSettings']) : undefined,
+      options.replaceChartCardSettings ? _.get(normalizedValues, ['stepParams', 'cardSettings']) : undefined,
     );
+    this.stripLegacyBlockHeaderChromeForUpdateSettings(current, nextPayload, shouldStripLegacyBlockHeader);
     this.stripLegacyChartCardChromeForUpdateSettings(current, nextPayload);
 
     const effectiveNode = {
@@ -8888,6 +8918,138 @@ export class FlowSurfacesService {
 
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
+    }
+  }
+
+  private normalizeCanonicalBlockHeaderWriteForUpdateSettings(current: any, values: Record<string, any>) {
+    const semanticUse = normalizeApprovalSemanticUse(current?.use);
+    if (!CANONICAL_BLOCK_HEADER_USES.has(semanticUse)) {
+      return;
+    }
+
+    const titleDescriptionPath = ['stepParams', 'cardSettings', 'titleDescription'];
+    if (!_.has(values, titleDescriptionPath)) {
+      return;
+    }
+
+    const titleDescription = _.get(values, titleDescriptionPath);
+    if (titleDescription === null || (_.isPlainObject(titleDescription) && !Object.keys(titleDescription).length)) {
+      _.set(values, titleDescriptionPath, {
+        title: '',
+        description: '',
+      });
+      return;
+    }
+
+    if (!_.isPlainObject(titleDescription)) {
+      return;
+    }
+
+    const normalizedTitleDescription = _.cloneDeep(titleDescription);
+    if (Object.prototype.hasOwnProperty.call(titleDescription, 'title')) {
+      normalizedTitleDescription.title = normalizeBlockTitleDescriptionValue(titleDescription.title);
+    }
+    if (Object.prototype.hasOwnProperty.call(titleDescription, 'description')) {
+      normalizedTitleDescription.description = normalizeBlockTitleDescriptionValue(titleDescription.description);
+    }
+    _.set(values, titleDescriptionPath, normalizedTitleDescription);
+  }
+
+  private syncCanonicalBlockHeaderForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    const semanticUse = normalizeApprovalSemanticUse(current?.use);
+    if (!CANONICAL_BLOCK_HEADER_USES.has(semanticUse)) {
+      return;
+    }
+
+    if (_.isUndefined(_.get(nextPayload, ['stepParams', 'cardSettings']))) {
+      return;
+    }
+
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    const nextCardSettings = _.cloneDeep(_.get(nextStepParams, ['cardSettings']) || {});
+    const normalizedTitleDescription = normalizeBlockTitleDescription(_.get(nextCardSettings, ['titleDescription']));
+
+    if (normalizedTitleDescription) {
+      _.set(nextCardSettings, ['titleDescription'], normalizedTitleDescription);
+    } else {
+      _.unset(nextCardSettings, ['titleDescription']);
+    }
+
+    if (_.isEmpty(nextCardSettings)) {
+      _.unset(nextStepParams, ['cardSettings']);
+    } else {
+      _.set(nextStepParams, ['cardSettings'], nextCardSettings);
+    }
+
+    nextPayload.stepParams = nextStepParams;
+  }
+
+  private stripLegacyBlockHeaderChromeForUpdateSettings(
+    current: any,
+    nextPayload: Record<string, any>,
+    shouldStrip: boolean,
+  ) {
+    if (!shouldStrip) {
+      return;
+    }
+
+    const semanticUse = normalizeApprovalSemanticUse(current?.use);
+    if (!CANONICAL_BLOCK_HEADER_USES.has(semanticUse)) {
+      return;
+    }
+
+    const currentProps = _.isPlainObject(current?.props) ? current.props : {};
+    const currentDecoratorProps = _.isPlainObject(current?.decoratorProps) ? current.decoratorProps : {};
+    const legacyPropKeys = ['title', 'displayTitle'];
+    const legacyDecoratorKeys = ['title', 'description'];
+    const hasLegacyProps = legacyPropKeys.some((key) => Object.prototype.hasOwnProperty.call(currentProps, key));
+    const hasLegacyDecoratorProps = legacyDecoratorKeys.some((key) =>
+      Object.prototype.hasOwnProperty.call(currentDecoratorProps, key),
+    );
+
+    if (hasLegacyProps) {
+      nextPayload.props = _.omit(_.cloneDeep(nextPayload.props ?? currentProps), legacyPropKeys);
+    }
+
+    if (hasLegacyDecoratorProps) {
+      nextPayload.decoratorProps = _.omit(
+        _.cloneDeep(nextPayload.decoratorProps ?? currentDecoratorProps),
+        legacyDecoratorKeys,
+      );
+    }
+  }
+
+  private syncMapHeightChromeForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (current?.use !== 'MapBlockModel') {
+      return;
+    }
+
+    const nextProps = _.isPlainObject(nextPayload.props) ? nextPayload.props : undefined;
+    if (!nextProps) {
+      return;
+    }
+
+    const nextDecoratorProps = _.cloneDeep(nextPayload.decoratorProps ?? current?.decoratorProps ?? {});
+    let changed = false;
+
+    if (
+      Object.prototype.hasOwnProperty.call(nextProps, 'height') &&
+      !Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'height')
+    ) {
+      nextDecoratorProps.height = nextProps.height;
+      changed = true;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(nextProps, 'heightMode') &&
+      !Object.prototype.hasOwnProperty.call(nextDecoratorProps, 'heightMode')
+    ) {
+      nextDecoratorProps.heightMode = nextProps.heightMode;
+      changed = true;
+    }
+
+    if (changed) {
+      nextPayload.decoratorProps = buildDefinedPayload(nextDecoratorProps);
     }
   }
 
@@ -11071,19 +11233,17 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('TableBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('table', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
-        props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
-        }),
         decoratorProps: buildDefinedPayload({
           height: changes.height,
           heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
+          ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
             ? {
                 resourceSettings: {
@@ -11135,9 +11295,13 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse(use);
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('form', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const nextStepParams: Record<string, any> = {};
+    if (cardSettings) {
+      nextStepParams.cardSettings = cardSettings;
+    }
     if (changes.resource) {
       nextStepParams.resourceSettings = {
         init: normalizeSimpleResourceInit(changes.resource),
@@ -11175,8 +11339,6 @@ export class FlowSurfacesService {
       {
         target,
         props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
           ...(hasOwnDefined(changes, 'labelWidth') ? { labelWidth: changes.labelWidth } : {}),
           ...(hasOwnDefined(changes, 'labelWrap') ? { labelWrap: changes.labelWrap } : {}),
         }),
@@ -11196,14 +11358,13 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('DetailsBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('details', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
           ...(hasOwnDefined(changes, 'labelWidth') ? { labelWidth: changes.labelWidth } : {}),
           ...(hasOwnDefined(changes, 'labelWrap') ? { labelWrap: changes.labelWrap } : {}),
         }),
@@ -11212,6 +11373,7 @@ export class FlowSurfacesService {
           ...(hasOwnDefined(changes, 'labelWrap') ? { labelWrap: changes.labelWrap } : {}),
         }),
         stepParams: {
+          ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
             ? {
                 resourceSettings: {
@@ -11321,20 +11483,18 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('ListBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('list', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
         target,
-        props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
-        }),
         decoratorProps: buildDefinedPayload({
           height: changes.height,
           heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
+          ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
             ? {
                 resourceSettings: {
@@ -11364,21 +11524,19 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('GridCardBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('gridCard', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const columns = normalizeGridCardColumns(changes.columns);
     return this.updateSettings(
       {
         target,
-        props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
-        }),
         decoratorProps: buildDefinedPayload({
           height: changes.height,
           heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
+          ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
             ? {
                 resourceSettings: {
@@ -11409,25 +11567,27 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('MarkdownBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('markdown', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
           content: changes.content,
           value: changes.content,
         }),
-        stepParams: hasOwnDefined(changes, 'content')
-          ? {
-              markdownBlockSettings: {
-                editMarkdown: {
-                  content: changes.content,
+        stepParams: buildDefinedPayload({
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(hasOwnDefined(changes, 'content')
+            ? {
+                markdownBlockSettings: {
+                  editMarkdown: {
+                    content: changes.content,
+                  },
                 },
-              },
-            }
-          : undefined,
+              }
+            : {}),
+        }),
       },
       options,
     );
@@ -11439,13 +11599,12 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('IframeBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('iframe', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
           height: changes.height,
           heightMode: changes.heightMode,
           mode: changes.mode,
@@ -11455,21 +11614,24 @@ export class FlowSurfacesService {
           allow: changes.allow,
           htmlId: changes.htmlId,
         }),
-        stepParams: hasDefinedValue(changes, ['height', 'mode', 'url', 'html', 'params', 'allow', 'htmlId'])
-          ? {
-              iframeBlockSettings: {
-                editIframe: buildDefinedPayload({
-                  height: changes.height,
-                  mode: changes.mode,
-                  url: changes.url,
-                  html: changes.html,
-                  params: changes.params,
-                  allow: changes.allow,
-                  htmlId: changes.htmlId,
-                }),
-              },
-            }
-          : undefined,
+        stepParams: buildDefinedPayload({
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(hasDefinedValue(changes, ['height', 'mode', 'url', 'html', 'params', 'allow', 'htmlId'])
+            ? {
+                iframeBlockSettings: {
+                  editIframe: buildDefinedPayload({
+                    height: changes.height,
+                    mode: changes.mode,
+                    url: changes.url,
+                    html: changes.html,
+                    params: changes.params,
+                    allow: changes.allow,
+                    htmlId: changes.htmlId,
+                  }),
+                },
+              }
+            : {}),
+        }),
       },
       options,
     );
@@ -11482,7 +11644,7 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('ChartBlockModel');
     assertSupportedSimpleChanges('chart', changes, allowedKeys);
-    const shouldUpdateCardSettings = ['title', 'displayTitle', 'height', 'heightMode'].some((key) =>
+    const shouldUpdateCardSettings = ['title', 'description', 'height', 'heightMode'].some((key) =>
       Object.prototype.hasOwnProperty.call(changes, key),
     );
     const shouldUpdateConfigure = ['configure', 'query', 'visual', 'events'].some((key) =>
@@ -11561,25 +11723,108 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('ActionPanelBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('actionPanel', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
-          title: changes.title,
-          displayTitle: changes.displayTitle,
           layout: layoutValue,
           ellipsis: changes.ellipsis,
         }),
-        stepParams: hasDefinedValue(changes, ['layout', 'ellipsis'])
-          ? {
-              actionPanelBlockSetting: buildDefinedPayload({
-                ...(hasOwnDefined(changes, 'layout') ? { layout: { layout: layoutValue } } : {}),
-                ...(hasOwnDefined(changes, 'ellipsis') ? { ellipsis: { ellipsis: changes.ellipsis } } : {}),
-              }),
-            }
-          : undefined,
+        stepParams: buildDefinedPayload({
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(hasDefinedValue(changes, ['layout', 'ellipsis'])
+            ? {
+                actionPanelBlockSetting: buildDefinedPayload({
+                  ...(hasOwnDefined(changes, 'layout') ? { layout: { layout: layoutValue } } : {}),
+                  ...(hasOwnDefined(changes, 'ellipsis') ? { ellipsis: { ellipsis: changes.ellipsis } } : {}),
+                }),
+              }
+            : {}),
+        }),
+      },
+      options,
+    );
+  }
+
+  private async configureMapBlock(
+    target: FlowSurfaceWriteTarget,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
+    const allowedKeys = getConfigureOptionKeysForUse('MapBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    assertSupportedSimpleChanges('map', changes, allowedKeys);
+    return this.updateSettings(
+      {
+        target,
+        decoratorProps: buildDefinedPayload({
+          height: changes.height,
+          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
+        }),
+        stepParams: buildDefinedPayload({
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(changes.resource
+            ? {
+                resourceSettings: {
+                  init: normalizeSimpleResourceInit(changes.resource),
+                },
+              }
+            : {}),
+          ...(hasDefinedValue(changes, ['mapField', 'marker', 'dataScope', 'sorting', 'zoom'])
+            ? {
+                createMapBlock: buildDefinedPayload({
+                  ...(hasOwnDefined(changes, 'mapField') || hasOwnDefined(changes, 'marker')
+                    ? {
+                        init: buildDefinedPayload({
+                          mapField: changes.mapField,
+                          marker: changes.marker,
+                        }),
+                      }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting') ? { lineSort: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'zoom') ? { mapZoom: { zoom: changes.zoom } } : {}),
+                }),
+              }
+            : {}),
+        }),
+      },
+      options,
+    );
+  }
+
+  private async configureCommentsBlock(
+    target: FlowSurfaceWriteTarget,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
+    const allowedKeys = getConfigureOptionKeysForUse('CommentsBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    assertSupportedSimpleChanges('comments', changes, allowedKeys);
+    return this.updateSettings(
+      {
+        target,
+        stepParams: buildDefinedPayload({
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(changes.resource
+            ? {
+                resourceSettings: {
+                  init: normalizeSimpleResourceInit(changes.resource),
+                },
+              }
+            : {}),
+          ...(hasDefinedValue(changes, ['pageSize', 'dataScope'])
+            ? {
+                commentsSettings: buildDefinedPayload({
+                  ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: { pageSize: changes.pageSize } } : {}),
+                  ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
+                }),
+              }
+            : {}),
+        }),
       },
       options,
     );

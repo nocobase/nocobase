@@ -1536,6 +1536,202 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   });
 
+  it('should create a details-root page with a popup recordAction, associated-records table, and nested edit popups', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Details root popup page ${Date.now()}`,
+          },
+        },
+        page: {
+          title: 'Details root popup page',
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'rootDetails',
+                type: 'details',
+                collection: 'users',
+                fields: ['username', 'nickname', 'roles'],
+                recordActions: [
+                  {
+                    type: 'popup',
+                    title: 'Details',
+                    popup: {
+                      layout: {
+                        rows: [
+                          [
+                            { key: 'userDetails', span: 12 },
+                            { key: 'userRoles', span: 12 },
+                          ],
+                        ],
+                      },
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username', 'nickname', 'email', 'roles'],
+                        },
+                        {
+                          key: 'userRoles',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: 'roles',
+                          },
+                          fields: [
+                            {
+                              field: 'title',
+                              popup: {
+                                title: 'Role details',
+                                blocks: [
+                                  {
+                                    key: 'roleDetails',
+                                    type: 'details',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: 'roles',
+                                    },
+                                    fields: ['title', 'name'],
+                                  },
+                                ],
+                              },
+                            },
+                            'name',
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const rootDetails = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'DetailsBlockModel')[0];
+    expect(rootDetails?.uid).toBeTruthy();
+
+    const rootDetailsReadback = await getSurface(rootAgent, {
+      uid: rootDetails.uid,
+    });
+    expect(rootDetailsReadback.tree.use).toBe('DetailsBlockModel');
+    expect(collectFieldPaths(rootDetailsReadback.tree)).toEqual(
+      expect.arrayContaining(['username', 'nickname', 'roles']),
+    );
+    const rootPopupAction = _.castArray(rootDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'PopupCollectionActionModel',
+    );
+    expect(rootPopupAction?.uid).toBeTruthy();
+
+    const rootPopupReadback = await getSurface(rootAgent, {
+      uid: rootPopupAction.uid,
+    });
+    const popupItems = _.castArray(
+      _.castArray(rootPopupReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels
+        ?.items || [],
+    );
+    expect(popupItems).toHaveLength(2);
+    const userDetailsBlock = popupItems.find((item: any) => item?.use === 'DetailsBlockModel');
+    const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
+    expect(userDetailsBlock?.uid).toBeTruthy();
+    expect(userRolesTable?.uid).toBeTruthy();
+
+    const userDetailsReadback = await getSurface(rootAgent, {
+      uid: userDetailsBlock.uid,
+    });
+    expect(collectFieldPaths(userDetailsReadback.tree)).toEqual(expect.arrayContaining(['email', 'roles']));
+    expect(readNodeActionUses(userDetailsReadback.tree)).toContain('EditActionModel');
+    const userEditAction = _.castArray(userDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(userEditAction?.uid).toBeTruthy();
+
+    const userEditReadback = await getSurface(rootAgent, {
+      uid: userEditAction.uid,
+    });
+    const userEditForm = _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
+      ?.subModels?.items?.[0];
+    expect(userEditForm?.use).toBe('EditFormModel');
+    expect(readNodeActionUses(userEditForm)).toContain('FormSubmitActionModel');
+
+    const userRolesReadback = await getSurface(rootAgent, {
+      uid: userRolesTable.uid,
+    });
+    expect(userRolesReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+    });
+    expect(collectFieldPaths(userRolesReadback.tree)).toEqual(expect.arrayContaining(['title', 'name']));
+    const roleTitleFieldNodes = collectDescendantNodes(
+      userRolesReadback.tree,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title',
+    );
+    const roleTitleField =
+      roleTitleFieldNodes.find(
+        (item) =>
+          item?.props?.clickToOpen === true ||
+          !!item?.popup?.template?.uid ||
+          !!item?.subModels?.page?.uid ||
+          !!item?.stepParams?.popupSettings?.openView,
+      ) || roleTitleFieldNodes[roleTitleFieldNodes.length - 1];
+    expect(roleTitleField?.props?.clickToOpen).toBe(true);
+
+    let roleDetailsBlock;
+    if (roleTitleField?.popup?.template?.uid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: roleTitleField.popup.template.uid,
+          },
+        }),
+      );
+      const popupTemplateSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      roleDetailsBlock = _.castArray(
+        popupTemplateSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+    } else {
+      expect(roleTitleField?.subModels?.page?.use).toBe('ChildPageModel');
+      roleDetailsBlock = _.castArray(
+        roleTitleField?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0];
+    }
+    expect(roleDetailsBlock?.use).toBe('DetailsBlockModel');
+
+    const roleDetailsReadback = await getSurface(rootAgent, {
+      uid: roleDetailsBlock.uid,
+    });
+    expect(readNodeActionUses(roleDetailsReadback.tree)).toContain('EditActionModel');
+    const roleEditAction = _.castArray(roleDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(roleEditAction?.uid).toBeTruthy();
+
+    const roleEditReadback = await getSurface(rootAgent, {
+      uid: roleEditAction.uid,
+    });
+    const roleEditForm = _.castArray(roleEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
+      ?.subModels?.items?.[0];
+    expect(roleEditForm?.use).toBe('EditFormModel');
+    expect(readNodeActionUses(roleEditForm)).toContain('FormSubmitActionModel');
+  });
+
   it('should allow custom edit popups with one inherited editForm plus sibling blocks', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

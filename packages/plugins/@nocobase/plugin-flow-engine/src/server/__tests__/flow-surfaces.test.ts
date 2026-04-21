@@ -1101,6 +1101,147 @@ describe('flowSurfaces resource', () => {
     }
   });
 
+  it('should persist canonical block headers through configure for representative block families', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Canonical block header page',
+      tabTitle: 'Canonical block header tab',
+    });
+
+    const blockCases = [
+      {
+        type: 'table',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      {
+        type: 'createForm',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      {
+        type: 'details',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      {
+        type: 'list',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      {
+        type: 'gridCard',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      { type: 'markdown' },
+      { type: 'iframe' },
+      { type: 'chart' },
+      { type: 'actionPanel' },
+    ];
+
+    for (const [index, blockCase] of blockCases.entries()) {
+      const uid = await addBlock(rootAgent, page.tabSchemaUid, blockCase.type, blockCase.resourceInit);
+      const configureRes = await rootAgent.resource('flowSurfaces').configure({
+        values: {
+          target: {
+            uid,
+          },
+          changes: {
+            title: `Header ${index + 1}`,
+            description: `Description ${index + 1}`,
+          },
+        },
+      });
+      expect(configureRes.status).toBe(200);
+
+      const readback = await getSurface(rootAgent, {
+        uid,
+      });
+      expect(readback.tree.stepParams?.cardSettings?.titleDescription).toMatchObject({
+        title: `Header ${index + 1}`,
+        description: `Description ${index + 1}`,
+      });
+    }
+  });
+
+  it('should reject legacy raw block header writes and clear canonical titleDescription without dropping linkageRules', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Canonical header write page',
+      tabTitle: 'Canonical header write tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const markdownUid = await addBlock(rootAgent, page.tabSchemaUid, 'markdown');
+
+    for (const uid of [tableUid, formUid, markdownUid]) {
+      const invalidTitleRes = await rootAgent.resource('flowSurfaces').updateSettings({
+        values: {
+          target: {
+            uid,
+          },
+          props: {
+            title: 'Legacy raw title',
+          },
+        },
+      });
+      expect(invalidTitleRes.status).toBe(400);
+      expect(readErrorMessage(invalidTitleRes)).toContain(`domain 'props'`);
+
+      const invalidDisplayTitleRes = await rootAgent.resource('flowSurfaces').updateSettings({
+        values: {
+          target: {
+            uid,
+          },
+          props: {
+            displayTitle: false,
+          },
+        },
+      });
+      expect(invalidDisplayTitleRes.status).toBe(400);
+      expect(readErrorMessage(invalidDisplayTitleRes)).toContain(`domain 'props'`);
+    }
+
+    const validHeaderRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        stepParams: {
+          cardSettings: {
+            titleDescription: {
+              title: 'Employees',
+              description: 'All active employees',
+            },
+            linkageRules: [],
+          },
+        },
+      },
+    });
+    expect(validHeaderRes.status).toBe(200);
+
+    const clearHeaderRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        stepParams: {
+          cardSettings: {
+            titleDescription: {},
+          },
+        },
+      },
+    });
+    expect(clearHeaderRes.status).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    expect(readback.tree.stepParams?.cardSettings?.titleDescription).toBeUndefined();
+    expect(readback.tree.stepParams?.cardSettings?.linkageRules).toEqual([]);
+  });
+
   it('should enforce real block settings keys for representative built-in block contracts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Block contract page',

@@ -279,11 +279,24 @@ const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
     'defaultValues.value': ARRAY_SCHEMA,
   },
 };
-const BLOCK_LINKAGE_CARD_SETTINGS_GROUP = {
-  allowedPaths: ['linkageRules'],
+const TITLE_DESCRIPTION_CARD_SETTINGS_GROUP = {
+  allowedPaths: ['titleDescription.title', 'titleDescription.description'],
+  clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['linkageRules'],
+  eventBindingSteps: ['titleDescription'],
   pathSchemas: {
+    'titleDescription.title': STRING_SCHEMA,
+    'titleDescription.description': STRING_SCHEMA,
+  },
+};
+const BLOCK_CARD_SETTINGS_GROUP = {
+  allowedPaths: ['titleDescription.title', 'titleDescription.description', 'linkageRules'],
+  clearable: true,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['titleDescription', 'linkageRules'],
+  pathSchemas: {
+    'titleDescription.title': STRING_SCHEMA,
+    'titleDescription.description': STRING_SCHEMA,
     linkageRules: ARRAY_SCHEMA,
   },
 };
@@ -761,7 +774,7 @@ TAB_NODE_CONTRACT.domains.stepParams = groupedDomain({
 
 const TABLE_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'height', 'heightMode'],
+  props: ['height', 'heightMode'],
   decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'tableSettings', 'cardSettings'],
   flowRegistry: true,
@@ -773,12 +786,12 @@ const TABLE_BLOCK_CONTRACT = createContract({
 TABLE_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   tableSettings: TABLE_SETTINGS_GROUP,
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
+  props: ['labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
   stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'cardSettings'],
   flowRegistry: true,
@@ -791,12 +804,12 @@ FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const CREATE_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
+  props: ['labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
   stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings', 'cardSettings'],
   flowRegistry: true,
@@ -810,12 +823,12 @@ CREATE_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
   formSettings: CREATE_FORM_SETTINGS_EVENT_ONLY_GROUP,
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const EDIT_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
+  props: ['labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
   stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings', 'cardSettings'],
   flowRegistry: true,
@@ -829,12 +842,12 @@ EDIT_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
   formSettings: EDIT_FORM_SETTINGS_GROUP,
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const DETAILS_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
+  props: ['labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
   stepParams: ['resourceSettings', 'detailsSettings', 'cardSettings'],
   flowRegistry: true,
@@ -846,7 +859,7 @@ const DETAILS_BLOCK_CONTRACT = createContract({
 DETAILS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   detailsSettings: DETAILS_SETTINGS_GROUP,
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const FILTER_FORM_BLOCK_CONTRACT = createContract({
@@ -867,7 +880,7 @@ FILTER_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 
 const LIST_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle'],
+  props: [],
   decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'listSettings', 'cardSettings'],
   flowRegistry: true,
@@ -903,12 +916,12 @@ LIST_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'layout.layout': STRING_SCHEMA,
     },
   },
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const GRID_CARD_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle'],
+  props: [],
   decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'GridCardSettings', 'cardSettings'],
   flowRegistry: true,
@@ -961,19 +974,20 @@ GRID_CARD_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'layout.layout': STRING_SCHEMA,
     },
   },
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const MARKDOWN_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'content', 'value'],
-  stepParams: ['markdownBlockSettings'],
+  props: ['content', 'value'],
+  stepParams: ['markdownBlockSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
   },
 });
 MARKDOWN_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  cardSettings: TITLE_DESCRIPTION_CARD_SETTINGS_GROUP,
   markdownBlockSettings: {
     allowedPaths: ['editMarkdown.content'],
     clearable: true,
@@ -986,14 +1000,15 @@ MARKDOWN_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 
 const IFRAME_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'url', 'height', 'heightMode', 'mode', 'html', 'params', 'allow', 'htmlId'],
-  stepParams: ['iframeBlockSettings'],
+  props: ['url', 'height', 'heightMode', 'mode', 'html', 'params', 'allow', 'htmlId'],
+  stepParams: ['iframeBlockSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
   },
 });
 IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  cardSettings: TITLE_DESCRIPTION_CARD_SETTINGS_GROUP,
   iframeBlockSettings: {
     allowedPaths: [
       'editIframe.mode',
@@ -1019,12 +1034,19 @@ IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const CHART_CARD_SETTINGS_GROUP = {
-  allowedPaths: ['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height', 'linkageRules'],
+  allowedPaths: [
+    'titleDescription.title',
+    'titleDescription.description',
+    'blockHeight.heightMode',
+    'blockHeight.height',
+    'linkageRules',
+  ],
   clearable: true,
   mergeStrategy: 'deep' as const,
   eventBindingSteps: ['titleDescription', 'blockHeight', 'linkageRules'],
   pathSchemas: {
     'titleDescription.title': STRING_SCHEMA,
+    'titleDescription.description': STRING_SCHEMA,
     'blockHeight.heightMode': STRING_SCHEMA,
     'blockHeight.height': NUMBER_SCHEMA,
     linkageRules: ARRAY_SCHEMA,
@@ -1054,7 +1076,7 @@ CHART_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 
 const ACTION_PANEL_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'layout', 'ellipsis'],
+  props: ['layout', 'ellipsis'],
   stepParams: ['actionPanelBlockSetting', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1070,7 +1092,7 @@ ACTION_PANEL_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'ellipsis.ellipsis': BOOLEAN_SCHEMA,
     },
   },
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const JS_BLOCK_CONTRACT = createContract({
@@ -1092,8 +1114,9 @@ JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const MAP_BLOCK_CONTRACT = createContract({
-  editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'height', 'heightMode', 'mapField', 'marker', 'lineSort', 'zoom'],
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ['height', 'heightMode', 'mapField', 'marker', 'lineSort', 'zoom'],
+  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'createMapBlock', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1130,12 +1153,12 @@ MAP_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'mapZoom.zoom': NUMBER_SCHEMA,
     },
   },
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const COMMENTS_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle'],
+  props: [],
   stepParams: ['resourceSettings', 'commentsSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1161,7 +1184,7 @@ COMMENTS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
       'init.associationPathName': STRING_SCHEMA,
     },
   },
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
   commentsSettings: {
     allowedPaths: ['pageSize.pageSize', 'dataScope.filter'],
     clearable: true,
@@ -1998,7 +2021,7 @@ JS_ACTION_CONTRACT.domains.stepParams = groupedDomain({
 
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'labelWidth', 'labelWrap'],
+  props: ['labelWidth', 'labelWrap'],
   decoratorProps: ['labelWidth', 'labelWrap'],
   stepParams: ['resourceSettings', 'formModelSettings', 'eventSettings', 'cardSettings', 'patternSettings'],
   flowRegistry: true,
@@ -2011,7 +2034,7 @@ APPROVAL_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   formModelSettings: FORM_MODEL_SETTINGS_GROUP,
   eventSettings: EVENT_SETTINGS_GROUP,
-  cardSettings: BLOCK_LINKAGE_CARD_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
   patternSettings: {
     allowedPaths: ['pattern.pattern'],
     mergeStrategy: 'deep',
