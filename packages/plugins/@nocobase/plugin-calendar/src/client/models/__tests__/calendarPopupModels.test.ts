@@ -75,4 +75,109 @@ describe('calendarPopupModels', () => {
       },
     });
   });
+
+  it('should preserve selected time ranges for datetime fields', () => {
+    const slotInfo = {
+      start: new Date(2026, 3, 20, 9, 30, 0),
+      end: new Date(2026, 3, 20, 11, 45, 0),
+    };
+    const collection = {
+      getField(fieldName: string) {
+        if (fieldName === 'startsAt' || fieldName === 'endsAt') {
+          return {
+            getComponentProps: () => ({ picker: 'date', showTime: true }),
+          };
+        }
+
+        return null;
+      },
+    };
+
+    expect(
+      buildCalendarSlotFormData({
+        slotInfo,
+        collection,
+        fieldNames: {
+          start: 'startsAt',
+          end: 'endsAt',
+        },
+      }),
+    ).toEqual({
+      startsAt: '2026-04-20 09:30:00',
+      endsAt: '2026-04-20 11:45:00',
+    });
+  });
+
+  it('should prefer popup form field props over collection defaults', () => {
+    const slotInfo = {
+      start: new Date(2026, 3, 20, 14, 15, 0),
+      end: new Date(2026, 3, 20, 16, 45, 0),
+    };
+    const collection = {
+      getField(fieldName: string) {
+        if (fieldName === 'startsAt' || fieldName === 'endsAt') {
+          return {
+            getComponentProps: () => ({ picker: 'date', dateOnly: true }),
+          };
+        }
+
+        return null;
+      },
+    };
+    const popupAction = {
+      subModels: {
+        page: {
+          subModels: {
+            form: {
+              subModels: {
+                grid: {
+                  subModels: {
+                    startField: {
+                      getStepParams: (flowKey: string, stepKey: string) => {
+                        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+                          return { fieldPath: 'startsAt' };
+                        }
+                      },
+                      subModels: {
+                        field: {
+                          props: { picker: 'date', showTime: true },
+                        },
+                      },
+                    },
+                    endField: {
+                      getStepParams: (flowKey: string, stepKey: string) => {
+                        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+                          return { fieldPath: 'endsAt' };
+                        }
+                      },
+                      subModels: {
+                        field: {
+                          props: { picker: 'date', showTime: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    expect(
+      buildCalendarSlotFormData({
+        slotInfo,
+        collection,
+        popupAction,
+        fieldNames: {
+          start: 'startsAt',
+          end: 'endsAt',
+        },
+      }),
+    ).toEqual({
+      startsAt: '2026-04-20 14:15:00',
+      endsAt: '2026-04-20 16:45:00',
+    });
+  });
 });

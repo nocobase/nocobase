@@ -27,8 +27,44 @@ export const createCalendarEventViewActionOptions = (uid?: string) => {
   };
 };
 
-const getCalendarFieldComponentProps = (collection: any, fieldPath?: string | string[]) => {
+const findCalendarActionFieldComponentProps = (
+  model: any,
+  normalizedFieldPath?: string,
+): Record<string, any> | null => {
+  if (!model || !normalizedFieldPath) {
+    return null;
+  }
+
+  const stepFieldPath = model.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+  if (stepFieldPath && normalizeCalendarFieldPath(stepFieldPath) === normalizedFieldPath) {
+    return {
+      ...(model.subModels?.field?.props || {}),
+      ...(model.props?.['x-component-props'] || {}),
+      ...(model.props || {}),
+    };
+  }
+
+  const subModels = Object.values(model.subModels || {});
+  for (const subModelValue of subModels) {
+    const subModelList = Array.isArray(subModelValue) ? subModelValue : [subModelValue];
+    for (const subModel of subModelList) {
+      const matched = findCalendarActionFieldComponentProps(subModel, normalizedFieldPath);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+
+  return null;
+};
+
+const getCalendarFieldComponentProps = (collection: any, popupAction: any, fieldPath?: string | string[]) => {
   const normalizedFieldPath = normalizeCalendarFieldPath(fieldPath);
+  const actionFieldProps = findCalendarActionFieldComponentProps(popupAction, normalizedFieldPath);
+  if (actionFieldProps) {
+    return actionFieldProps;
+  }
+
   const collectionField = normalizedFieldPath ? collection?.getField?.(normalizedFieldPath) : null;
 
   if (!collectionField) {
@@ -44,6 +80,7 @@ const getCalendarFieldComponentProps = (collection: any, fieldPath?: string | st
 const setCalendarSlotFormValue = (
   formData: Record<string, any>,
   collection: any,
+  popupAction: any,
   fieldPath: string | string[] | undefined,
   value: unknown,
 ) => {
@@ -51,7 +88,7 @@ const setCalendarSlotFormValue = (
     return;
   }
 
-  const componentProps = getCalendarFieldComponentProps(collection, fieldPath) || {};
+  const componentProps = getCalendarFieldComponentProps(collection, popupAction, fieldPath) || {};
   const formattedValue = handleDateChangeOnForm(
     dayjs(value as any),
     componentProps.dateOnly,
@@ -72,10 +109,12 @@ const setCalendarSlotFormValue = (
 export const buildCalendarSlotFormData = ({
   slotInfo,
   collection,
+  popupAction,
   fieldNames,
 }: {
   slotInfo?: { start?: unknown; end?: unknown };
   collection?: any;
+  popupAction?: any;
   fieldNames?: {
     start?: string | string[];
     end?: string | string[];
@@ -91,23 +130,28 @@ export const buildCalendarSlotFormData = ({
   const normalizedStartFieldPath = normalizeCalendarFieldPath(startFieldPath);
   const normalizedEndFieldPath = normalizeCalendarFieldPath(endFieldPath);
 
-  setCalendarSlotFormValue(formData, collection, startFieldPath, slotInfo.start);
+  setCalendarSlotFormValue(formData, collection, popupAction, startFieldPath, slotInfo.start);
 
   if (normalizedEndFieldPath && normalizedEndFieldPath !== normalizedStartFieldPath) {
-    setCalendarSlotFormValue(formData, collection, endFieldPath, slotInfo.end || slotInfo.start);
+    setCalendarSlotFormValue(formData, collection, popupAction, endFieldPath, slotInfo.end || slotInfo.start);
   }
 
   return formData;
 };
 
 class CalendarPopupActionModel extends PopupActionModel {
+  get collection() {
+    return this.context.collection || this.context.blockModel?.collection;
+  }
+
   getInputArgs() {
     const inputArgs = super.getInputArgs();
+    const collection = this.collection;
 
     return {
       ...inputArgs,
-      dataSourceKey: this.collection?.dataSourceKey,
-      collectionName: this.collection?.name,
+      dataSourceKey: collection?.dataSourceKey,
+      collectionName: collection?.name,
     };
   }
 }
@@ -117,7 +161,7 @@ export class CalendarQuickCreateActionModel extends CalendarPopupActionModel {
 
   defaultPopupTitle = tExpr('Add new', { ns: 'calendar' });
 
-  getAclActionName() {
+  getAclActionName(): any {
     return 'create';
   }
 }
@@ -134,7 +178,7 @@ export class CalendarEventViewActionModel extends CalendarPopupActionModel {
 
   defaultPopupTitle = tExpr('Details');
 
-  getAclActionName() {
+  getAclActionName(): any {
     return 'view';
   }
 }

@@ -59,12 +59,6 @@ const WEEK_START_OPTIONS = [
   { label: tExpr('Sunday'), value: 0 },
 ];
 
-const EVENT_OPEN_MODE_OPTIONS = [
-  { label: tExpr('Drawer'), value: 'drawer' },
-  { label: tExpr('Dialog'), value: 'dialog' },
-  { label: tExpr('Page'), value: 'embed' },
-];
-
 const normalizeEventOpenMode = (value?: string) => {
   if (value === 'modal') {
     return 'dialog';
@@ -211,10 +205,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return this.props?.defaultView || 'month';
   }
 
-  getEventOpenMode() {
-    return normalizeEventOpenMode(this.props?.eventOpenMode);
-  }
-
   getWeekStart() {
     return parseCalendarWeekStart(this.props?.weekStart ?? 1);
   }
@@ -270,25 +260,60 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return `${this.uid}-${actionKey}`;
   }
 
-  async syncPopupActionOpenMode(action: any) {
+  getPopupSettingsDefaults(actionUid?: string) {
+    return {
+      mode: normalizeEventOpenMode(this.props?.eventOpenMode),
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      uid: actionUid,
+      collectionName: this.collection?.name,
+      dataSourceKey: this.collection?.dataSourceKey,
+    };
+  }
+
+  getPopupSettings(action?: any, actionUid?: string) {
+    return {
+      ...this.getPopupSettingsDefaults(action?.uid || actionUid),
+      ...(action?.getStepParams?.('popupSettings', 'openView') || {}),
+      uid: action?.uid || actionUid,
+      collectionName: this.collection?.name,
+      dataSourceKey: this.collection?.dataSourceKey,
+    };
+  }
+
+  async syncPopupActionSettings(action: any, popupSettings?: Record<string, any>) {
     if (!action) {
       return;
     }
 
-    const nextMode = this.getEventOpenMode();
+    const nextSettings = this.getPopupSettings(action, action?.uid);
     const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
+    const mergedParams = {
+      ...currentParams,
+      ...nextSettings,
+      ...(popupSettings || {}),
+      uid: action.uid,
+      collectionName: this.collection?.name,
+      dataSourceKey: this.collection?.dataSourceKey,
+    };
 
-    if (currentParams.mode === nextMode) {
+    if (JSON.stringify(currentParams) === JSON.stringify(mergedParams)) {
       return;
     }
 
-    action.setStepParams('popupSettings', 'openView', {
-      ...currentParams,
-      mode: nextMode,
-    });
+    action.setStepParams('popupSettings', 'openView', mergedParams);
 
     if (this.context.flowSettingsEnabled && action?.saveStepParams) {
       await action.saveStepParams();
+    }
+  }
+
+  async loadPopupAction(actionKey: 'quickCreateAction' | 'eventViewAction') {
+    const actionUid = this.getPopupActionUid(actionKey);
+    try {
+      return this.flowEngine.getModel(actionUid) || (await this.flowEngine.loadModel({ uid: actionUid }));
+    } catch (error) {
+      return null;
     }
   }
 
@@ -300,7 +325,14 @@ export class CalendarBlockModel extends CollectionBlockModel {
     let action = this.subModels?.[actionKey] as any;
 
     if (!action) {
-      this.setSubModel(actionKey, buildActionOptions());
+      const loadedAction = await this.loadPopupAction(actionKey);
+
+      if (loadedAction) {
+        this.setSubModel(actionKey, loadedAction);
+      } else {
+        this.setSubModel(actionKey, buildActionOptions());
+      }
+
       action = this.subModels?.[actionKey] as any;
     }
 
@@ -308,7 +340,7 @@ export class CalendarBlockModel extends CollectionBlockModel {
       await action.save();
     }
 
-    await this.syncPopupActionOpenMode(action);
+    await this.syncPopupActionSettings(action);
 
     return action;
   }
@@ -326,13 +358,13 @@ export class CalendarBlockModel extends CollectionBlockModel {
     const formData = buildCalendarSlotFormData({
       slotInfo,
       collection: this.collection,
+      popupAction: action,
       fieldNames: this.getFieldNames(),
     });
 
     await action.dispatchEvent(
       'click',
       {
-        mode: this.getEventOpenMode(),
         ...(Object.keys(formData).length ? { formData } : {}),
         defineProperties: {
           calendarSelectedSlot: { value: slotInfo },
@@ -357,7 +389,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
     await action.dispatchEvent(
       'click',
       {
-        mode: this.getEventOpenMode(),
         filterByTk,
       },
       { debounce: true },
@@ -643,27 +674,24 @@ CalendarBlockModel.registerFlow({
         (ctx.model as CalendarBlockModel).setProps({ enableQuickCreateEvent: params.enableQuickCreateEvent !== false });
       },
     },
-    eventOpenMode: {
-      title: tExpr('Event open mode', { ns: 'calendar' }),
-      uiMode: {
-        type: 'select',
-        key: 'eventOpenMode',
-        props: {
-          options: EVENT_OPEN_MODE_OPTIONS,
-        },
-      },
-      defaultParams(ctx) {
-        return {
-          eventOpenMode: (ctx.model as CalendarBlockModel).getEventOpenMode(),
-        };
+    popupSettings: {
+      use: 'openView',
+      title: tExpr('Popup settings'),
+      async defaultParams(ctx) {
+        const model = ctx.model as CalendarBlockModel;
+        const action = await model.ensurePopupAction('eventViewAction');
+        return model.getPopupSettings(action, model.getPopupActionUid('eventViewAction'));
       },
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
-        model.setProps({ eventOpenMode: normalizeEventOpenMode(params.eventOpenMode) });
+        const [quickCreateAction, eventViewAction] = await Promise.all([
+          model.ensurePopupAction('quickCreateAction'),
+          model.ensurePopupAction('eventViewAction'),
+        ]);
 
         await Promise.all([
-          model.syncPopupActionOpenMode(model.getQuickCreateAction()),
-          model.syncPopupActionOpenMode(model.getEventViewAction()),
+          model.syncPopupActionSettings(quickCreateAction, params),
+          model.syncPopupActionSettings(eventViewAction, params),
         ]);
       },
     },
