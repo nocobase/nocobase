@@ -120,6 +120,7 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
 
     const shouldUseIncomingType =
       Boolean(fieldOptions.rawType) &&
+      Boolean(modelOptions.rawType || modelOptions.type) &&
       (modelOptions.rawType
         ? fieldOptions.rawType !== modelOptions.rawType && !hasCompatibleStorageType
         : !incomingPossibleTypes.includes(modelOptions.type) && !hasCompatibleStorageType);

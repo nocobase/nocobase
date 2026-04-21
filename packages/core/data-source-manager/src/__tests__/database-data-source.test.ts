@@ -112,4 +112,54 @@ describe('database data source', () => {
       },
     });
   });
+
+  it('should preserve interface-only overrides during resync', () => {
+    const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource<any>;
+
+    const [mergedCollection] = dataSource.mergeWithLoadedCollections(
+      [
+        {
+          name: 'metrics',
+          fields: [
+            {
+              name: 'ratio',
+              type: 'float',
+              rawType: 'DOUBLE PRECISION',
+              interface: 'number',
+              uiSchema: {
+                title: 'ratio',
+              },
+            },
+          ],
+        },
+      ] as any,
+      {
+        metrics: {
+          name: 'metrics',
+          fields: [
+            {
+              name: 'ratio',
+              interface: 'percent',
+              uiSchema: {
+                title: 'Completion ratio',
+                'x-component': 'Percent',
+              },
+            },
+          ],
+        },
+      } as any,
+    );
+
+    expect(mergedCollection.fields).toHaveLength(1);
+    expect(mergedCollection.fields[0]).toMatchObject({
+      name: 'ratio',
+      type: 'float',
+      rawType: 'DOUBLE PRECISION',
+      interface: 'percent',
+      uiSchema: {
+        title: 'Completion ratio',
+        'x-component': 'Percent',
+      },
+    });
+  });
 });
