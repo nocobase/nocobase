@@ -156,7 +156,7 @@ import {
   FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT,
   FLOW_SURFACE_REACTION_UNKNOWN_TARGET_KEY,
 } from './reaction/errors';
-import { resolveFlowTemplateDisplayRows, type TemplateTranslate } from './template-display';
+import { compileTemplateString, resolveFlowTemplateDisplayRows, type TemplateTranslate } from './template-display';
 import {
   APPROVAL_SINGLETON_ACTION_USES,
   APPROVAL_DETAILS_BLOCK_USES,
@@ -7207,15 +7207,23 @@ export class FlowSurfacesService {
         return fallback;
       }
 
-      const sourceCollectionLabel =
-        String(getCollectionTitle(bindingContext.sourceCollection) || '').trim() || bindingContext.collectionName;
-      const associationFieldLabel =
-        String(
+      const sourceCollectionLabel = String(
+        compileTemplateString(
+          getCollectionTitle(bindingContext.sourceCollection) || bindingContext.collectionName || '',
+        ) || '',
+      ).trim();
+      const associationFieldLabel = String(
+        compileTemplateString(
           getFieldTitle(bindingContext.associationField) || getFieldName(bindingContext.associationField) || '',
-        ).trim() || String(getFieldName(bindingContext.associationField) || '').trim();
-      const targetCollectionLabel =
-        String(getCollectionTitle(bindingContext.targetCollection) || '').trim() ||
-        String(getCollectionName(bindingContext.targetCollection) || '').trim();
+        ) || '',
+      ).trim();
+      const targetCollectionLabel = String(
+        compileTemplateString(
+          getCollectionTitle(bindingContext.targetCollection) ||
+            getCollectionName(bindingContext.targetCollection) ||
+            '',
+        ) || '',
+      ).trim();
       if (!sourceCollectionLabel || !associationFieldLabel || !targetCollectionLabel) {
         return fallback;
       }
@@ -7279,9 +7287,11 @@ export class FlowSurfacesService {
         ? await this.resolvePopupBlockProfile(actionNode.uid, null, actionNode, transaction).catch(() => null)
         : null;
       const popupType = actionConfig?.type;
-      const collectionLabel =
-        String(getCollectionTitle(popupProfile?.currentCollection) || '').trim() ||
-        String(popupProfile?.collectionName || '').trim();
+      const collectionLabel = String(
+        compileTemplateString(
+          getCollectionTitle(popupProfile?.currentCollection) || popupProfile?.collectionName || '',
+        ) || '',
+      ).trim();
       if (!popupType || !collectionLabel) {
         return fallback;
       }

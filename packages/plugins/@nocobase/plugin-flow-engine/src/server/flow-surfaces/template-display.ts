@@ -41,7 +41,7 @@ function sanitizePendingTranslationTokens(value: string) {
   return value.replace(/\{\{\s*t\(([\s\S]*?)\)\s*\}\}/g, (_match, tokenContent) => extractTranslationKey(tokenContent));
 }
 
-function compileTemplateString(value: any, t?: TemplateTranslate) {
+export function compileTemplateString(value: any, t?: TemplateTranslate) {
   if (typeof value !== 'string' || !value) {
     return value;
   }
