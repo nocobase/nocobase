@@ -31,7 +31,7 @@ npx skills add nocobase/skills --skill nocobase-ui-builder -y
 - 不能配置 ACL 权限（用[权限配置 Skill](./acl)）
 - 不能设计数据表结构（用[数据建模 Skill](./data-modeling)）
 - 不能编排工作流（用[工作流管理 Skill](./workflow)）
-- 不能处理非现代页面（v2）的导航
+- 不能处理非现代页面（v1）的导航，只支持处理 v2 的页面。
 
 ## 提示词示例
 
