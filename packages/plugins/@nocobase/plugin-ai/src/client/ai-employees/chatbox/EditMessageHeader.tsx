@@ -11,7 +11,7 @@ import React from 'react';
 import { Alert } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
-import { useT } from '../../locale';
+import { namespace, useT } from '../../locale';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxStore } from './stores/chat-box';
@@ -37,7 +37,7 @@ export const EditMessageHeader: React.FC = () => {
         color: token.colorText,
       }}
       icon={<EditOutlined style={{ color: token.colorText }} />}
-      message={t('Editing message for AI employee')}
+      message={t('Editing message for AI employee', { ns: namespace })}
       type="info"
       showIcon
       closable

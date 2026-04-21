@@ -481,7 +481,7 @@ function TestFormFieldset({ value, onChange }) {
   );
 }
 
-function LogCollapse({ value }) {
+export function LogCollapse({ value }) {
   return value ? (
     <Collapse
       ghost

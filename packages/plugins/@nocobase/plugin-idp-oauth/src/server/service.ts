@@ -257,6 +257,8 @@ export class IdpOauthService {
 
   private getRequestResourceConfig(ctx: any) {
     const requestPath = normalizeBasePath(ctx.path || this.getRequestPath(ctx) || '/');
+    let matchedConfig: ResourceServerConfig | undefined;
+    let matchedPathLength = -1;
 
     for (const config of this.resourceServers.values()) {
       const resourcePath = this.getResourcePath(config);
@@ -272,10 +274,14 @@ export class IdpOauthService {
         (isRootResource && requestPath.startsWith(`${this.getApiBasePath()}/`));
 
       if (matches) {
-        return config;
+        if (normalizedResourcePath.length > matchedPathLength) {
+          matchedConfig = config;
+          matchedPathLength = normalizedResourcePath.length;
+        }
       }
     }
-    return undefined;
+
+    return matchedConfig;
   }
 
   private async getProviderJwks(provider: ProviderInstance) {
@@ -525,7 +531,10 @@ export class IdpOauthService {
     const authorizationHeader = `Bearer ${internalToken}`;
 
     ctx.req.headers.authorization = authorizationHeader;
+    ctx.request.headers.authorization = authorizationHeader;
+    ctx.getBearerToken = () => internalToken;
     ctx.req.headers['x-authenticator'] = 'basic';
+    ctx.request.headers['x-authenticator'] = 'basic';
     ctx.state.currentUser = user;
     ctx.auth = ctx.auth || {};
     ctx.auth.user = user;

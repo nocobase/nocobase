@@ -7,17 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bubble } from '@ant-design/x';
-import { Spin, Layout, Divider, Button } from 'antd';
-import { RightOutlined, DownOutlined } from '@ant-design/icons';
-import { useT } from '../../locale';
-import { useToken } from '@nocobase/client';
+import { Spin, Layout, Divider, Button, Space, Typography } from 'antd';
+import { RightOutlined, DownOutlined, LoadingOutlined } from '@ant-design/icons';
+import { namespace, useT } from '../../locale';
+import { useAPIClient, useApp, useToken } from '@nocobase/client';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
 import { flattenMessages, formatConversationDuration, RenderedItem } from './utils';
+import { useWorkflowTasks } from './hooks/useWorkflowTasks';
+import { useChatConversationsStore } from './stores/chat-conversations';
+
+const { Text, Link } = Typography;
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -169,6 +173,30 @@ export const Messages: React.FC = () => {
     );
   };
 
+  const app = useApp();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const { updateReadonly } = useWorkflowTasks();
+  const onAIEmployeeTaskStatusUpdate = useCallback(
+    (e: any) => {
+      const { sessionId, status } = e.detail;
+      if (currentConversation && currentConversation === sessionId) {
+        if (status !== 'processing') {
+          messagesService.run(sessionId);
+          setResponseLoading(false);
+          updateReadonly(sessionId).catch(console.log);
+        }
+      }
+    },
+    [messagesService, updateReadonly, setResponseLoading, currentConversation],
+  );
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    };
+  }, [app.eventBus, onAIEmployeeTaskStatusUpdate]);
+
   return (
     <Layout.Content
       ref={containerRef}
@@ -187,7 +215,10 @@ export const Messages: React.FC = () => {
         />
       )}
       {renderedMessages.length ? (
-        <div>{renderedMessages.map((item, index) => renderItem(item, String(index)))}</div>
+        <div>
+          {renderedMessages.map((item, index) => renderItem(item, String(index)))}
+          <BackgroundWorkingHint />
+        </div>
       ) : (
         <div
           style={{
@@ -202,5 +233,76 @@ export const Messages: React.FC = () => {
         </div>
       )}
     </Layout.Content>
+  );
+};
+
+const BackgroundWorkingHint: React.FC = () => {
+  const api = useAPIClient();
+  const t = useT();
+  const { messagesService } = useChatMessageActions();
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
+  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
+  const messages = useChatMessagesStore.use.messages();
+  const [show, setShow] = useState(false);
+  const messageCount = useRef(0);
+  const { updateReadonly } = useWorkflowTasks();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+
+  const refreshMessages = useCallback(() => {
+    if (currentConversation) {
+      messagesService.run(currentConversation);
+    }
+  }, [messagesService, currentConversation]);
+
+  const doStateCheck = useCallback(async () => {
+    if (currentConversation) {
+      const res = await api.resource('aiConversations').get({
+        filter: { sessionId: currentConversation },
+      });
+      if (res.data?.data?.llmActiveState === 'invoking') {
+        setShow(true);
+      } else {
+        setShow(false);
+      }
+    }
+  }, [api, currentConversation, updateReadonly, setResponseLoading]);
+
+  useEffect(() => {
+    if (messages.length !== messageCount.current) {
+      messageCount.current = messages.length;
+      doStateCheck().catch(console.error);
+    }
+  }, [messages]);
+
+  if (!currentConversation) {
+    return null;
+  }
+
+  const Content: React.FC = () => (
+    <Typography>
+      <Space>
+        <Spin indicator={<LoadingOutlined spin />} />
+        <Text type="secondary">
+          {t('{{ nickname }} is working in background.', { ns: namespace, nickname: currentEmployee?.nickname })}
+        </Text>
+        <Link onClick={refreshMessages}>{t('Click', { ns: namespace })}</Link>
+        <Text type="secondary">{t('to Refresh.', { ns: namespace })}</Text>
+      </Space>
+    </Typography>
+  );
+
+  return (
+    show && (
+      <Bubble
+        placement="start"
+        variant="borderless"
+        styles={{
+          content: {
+            margin: '8px 16px',
+          },
+        }}
+        messageRender={() => <Content />}
+      />
+    )
   );
 };

@@ -17,17 +17,17 @@ export class DefaultToolsManager implements ToolsManager {
     private readonly dynamicTools: DynamicToolsProvider[] = [],
   ) {}
 
-  async getTools(toolName: string): Promise<ToolsEntry> {
+  async getTools(toolName: string, filter?: ToolsFilter): Promise<ToolsEntry> {
     const target = this.tools.get(toolName);
     if (target) {
       return target;
     }
-    const dynamicTools = await this.syncDynamicTools();
+    const dynamicTools = await this.syncDynamicTools(filter);
     return dynamicTools.find((x) => x.definition.name === toolName);
   }
 
   async listTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
-    const toolsList = await this.getToolsList();
+    const toolsList = await this.getToolsList(filter);
     return toolsList.filter((x) => {
       if (!filter) {
         return true;
@@ -48,6 +48,14 @@ export class DefaultToolsManager implements ToolsManager {
 
       return result;
     });
+  }
+
+  isToolsExisted(toolName: string): boolean {
+    const target = this.tools.get(toolName);
+    if (target) {
+      return true;
+    }
+    return false;
   }
 
   registerTools(options: ToolsOptions | ToolsOptions[]): void {
@@ -77,18 +85,18 @@ export class DefaultToolsManager implements ToolsManager {
     this.dynamicTools.push(provider);
   }
 
-  private async getToolsList(): Promise<ToolsEntry[]> {
-    const dynamicTools = await this.syncDynamicTools();
+  private async getToolsList(filter?: ToolsFilter): Promise<ToolsEntry[]> {
+    const dynamicTools = await this.syncDynamicTools(filter);
     return [...this.tools.getValues(), ...dynamicTools];
   }
 
-  private async syncDynamicTools(): Promise<ToolsEntry[]> {
+  private async syncDynamicTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
     if (this.dynamicTools.length === 0) {
       return [];
     }
     const registry = new Registry<ToolsEntry>();
     const ephemeral = new DefaultToolsManager(registry);
-    await Promise.all(this.dynamicTools.map((register) => register(ephemeral)));
+    await Promise.all(this.dynamicTools.map((register) => register(ephemeral, filter)));
     return [...registry.getValues()];
   }
 }

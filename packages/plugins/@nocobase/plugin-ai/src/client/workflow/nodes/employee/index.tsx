@@ -10,68 +10,62 @@
 import React from 'react';
 import { Instruction, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 import { UserOutlined } from '@ant-design/icons';
-import { Card, Avatar } from 'antd';
-const { Meta } = Card;
-
-const AIEmployee = () => {
-  return (
-    <Card variant="borderless">
-      <Meta
-        avatar={<Avatar src="https://api.dicebear.com/7.x/miniavs/svg?seed=8" />}
-        title="LinguaBridge"
-        description="Translates customer messages, emails, and documents in real-time across multiple languages."
-      />
-    </Card>
-  );
-};
+import { Configuration } from './configuration';
+import { tExpr } from '@nocobase/flow-engine';
+import { namespace } from '../../../locale';
 
 export class AIEmployeeInstruction extends Instruction {
-  title = 'AI employee';
+  title = tExpr('AI employee', {
+    ns: namespace,
+  });
   type = 'ai-employee';
   group = 'ai';
   // @ts-ignore
   icon = (<UserOutlined />);
   fieldset = {
-    employee: {
-      type: 'string',
-      title: 'AI Employee',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'AIEmployee',
-    },
-    message: {
-      type: 'string',
-      title: 'Message',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'WorkflowVariableRawTextArea',
-      'x-component-props': {
-        autoSize: {
-          minRows: 5,
-        },
-      },
-    },
-    colleague: {
-      type: 'string',
-      title: 'Collaborating human colleague',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-    },
-    manual: {
-      type: 'boolean',
-      title: 'Require human colleague confirmation to continue',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
+    configuration: {
+      type: 'void',
+      'x-component': 'Configuration',
     },
   };
   components = {
-    AIEmployee,
+    Configuration,
     WorkflowVariableRawTextArea,
   };
 
   isAvailable({ engine, workflow }) {
     return !engine.isWorkflowSync(workflow);
   }
+
+  useVariables(node) {
+    const outputSchema = node.config?.structuredOutput?.schema;
+    if (!outputSchema) {
+      return null;
+    }
+    const schema = typeof outputSchema === 'string' ? JSON.parse(outputSchema) : outputSchema;
+    return {
+      label: node.title,
+      value: node.key,
+      children: traversal(schema),
+    };
+  }
 }
+
+const traversal = (schema?: TSchema): any[] => {
+  return Object.entries(schema?.properties ?? {}).map(([key, value]) => {
+    const children = traversal(value);
+    return {
+      label: value.title ?? key,
+      value: key,
+      children: children.length ? children : undefined,
+    };
+  });
+};
+
+type TSchema = {
+  title?: string;
+  type: string;
+  properties?: {
+    [key: string]: TSchema;
+  };
+};

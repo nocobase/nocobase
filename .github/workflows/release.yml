@@ -362,12 +362,14 @@ jobs:
           else
             echo "status=failure" >> $GITHUB_OUTPUT
           fi
+      - name: Set current date
+        run: echo "CURRENT_DATE=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
       - name: Send Feishu notification
         shell: bash
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           TITLE: "NocoBase 版本 ${{ github.ref_name }} Release 结果通知"
           STATUS: ${{ steps.result.outputs.status }}
-          CONTENT: "**版本：**${{ github.ref_name }}\n**时间：**$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')\n**状态：**${{ steps.result.outputs.status == 'success' && '✅ 构建成功' || '❌ 构建失败' }}"
+          CONTENT: "**版本：**${{ github.ref_name }}\n**时间：**${{ env.CURRENT_DATE }}\n**状态：**${{ steps.result.outputs.status == 'success' && '✅ 构建成功' || '❌ 构建失败' }}"
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: bash scripts/feishu-notify.sh

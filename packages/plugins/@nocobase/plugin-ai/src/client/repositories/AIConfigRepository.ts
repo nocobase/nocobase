@@ -34,6 +34,7 @@ export class AIConfigRepository {
   private llmServicesLoaded = false;
   private aiEmployeesLoaded = false;
   private aiToolsLoaded = false;
+  private aiToolsBySessionId = null;
   private aiSkillsLoaded = false;
   private llmServicesInFlight: Promise<LLMServiceItem[]> | null = null;
   private aiEmployeesInFlight: Promise<AIEmployee[]> | null = null;
@@ -119,11 +120,11 @@ export class AIConfigRepository {
     }, {});
   }
 
-  async getAITools(): Promise<ToolsEntry[]> {
+  async getAITools(sessionId?: string): Promise<ToolsEntry[]> {
     if (this.aiToolsInFlight) {
       return this.aiToolsInFlight;
     }
-    if (this.aiToolsLoaded) {
+    if (this.aiToolsLoaded && this.aiToolsBySessionId === sessionId) {
       return this.aiTools;
     }
     return this.startRefresh(
@@ -131,18 +132,18 @@ export class AIConfigRepository {
       (promise) => {
         this.aiToolsInFlight = promise;
       },
-      () => this.doRefreshAITools(),
+      () => this.doRefreshAITools(sessionId),
       () => this.aiTools,
     );
   }
 
-  async refreshAITools(): Promise<ToolsEntry[]> {
+  async refreshAITools(sessionId?: string): Promise<ToolsEntry[]> {
     return this.startRefresh(
       this.aiToolsInFlight,
       (promise) => {
         this.aiToolsInFlight = promise;
       },
-      () => this.doRefreshAITools(),
+      () => this.doRefreshAITools(sessionId),
       () => this.aiTools,
     );
   }
@@ -225,21 +226,25 @@ export class AIConfigRepository {
     }
   }
 
-  private async doRefreshAITools() {
+  private async doRefreshAITools(sessionId?: string) {
     this.aiToolsLoading = true;
     try {
       let tools: ToolsEntry[] = [];
       if (this.options?.toolsManager) {
-        tools = await this.options.toolsManager.listTools();
+        tools = await this.options.toolsManager.listTools({ sessionId });
       } else {
-        const { data: res } = await this.apiClient.resource('aiTools').list({});
+        const { data: res } = await this.apiClient.resource('aiTools').list({
+          filter: { sessionId },
+        });
         tools = Array.isArray(res?.data) ? res.data : [];
       }
       this.aiTools = tools;
       this.aiToolsLoaded = true;
+      this.aiToolsBySessionId = sessionId;
     } catch {
       this.aiTools = [];
       this.aiToolsLoaded = false;
+      this.aiToolsBySessionId = null;
     } finally {
       this.aiToolsLoading = false;
     }

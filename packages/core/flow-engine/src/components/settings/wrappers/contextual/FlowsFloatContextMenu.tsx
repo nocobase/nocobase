@@ -27,10 +27,9 @@ import {
 } from './useFloatToolbarPortal';
 import { useFloatToolbarVisibility } from './useFloatToolbarVisibility';
 
-const TOOLBAR_Z_INDEX = 999;
-
 type ToolbarPosition = 'inside' | 'above' | 'below';
 const TOOLBAR_ITEM_WIDTH = 19;
+const DEFAULT_POPUP_BASE_Z_INDEX = 1000;
 
 interface BaseFloatContextMenuProps {
   children?: React.ReactNode;
@@ -93,12 +92,14 @@ const toolbarContainerStyles = ({
   showBackground,
   showBorder,
   ctx,
+  toolbarZIndex,
 }: {
   showBackground: boolean;
   showBorder: boolean;
   ctx: any;
+  toolbarZIndex: number;
 }) => css`
-  z-index: ${TOOLBAR_Z_INDEX};
+  z-index: ${toolbarZIndex};
   opacity: 0;
   pointer-events: none;
   overflow: visible;
@@ -331,6 +332,7 @@ const buildToolbarContainerClassName = ({
   showBackground,
   showBorder,
   ctx,
+  toolbarZIndex,
   portalRenderSnapshot,
   isToolbarVisible,
   className,
@@ -338,12 +340,13 @@ const buildToolbarContainerClassName = ({
   showBackground: boolean;
   showBorder: boolean;
   ctx: any;
+  toolbarZIndex: number;
   portalRenderSnapshot: ToolbarPortalRenderSnapshot | null;
   isToolbarVisible: boolean;
   className?: string;
 }) =>
   [
-    toolbarContainerStyles({ showBackground, showBorder, ctx }),
+    toolbarContainerStyles({ showBackground, showBorder, ctx, toolbarZIndex }),
     'nb-toolbar-portal',
     portalRenderSnapshot?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
     isToolbarVisible ? 'nb-toolbar-visible' : '',
@@ -628,10 +631,12 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
+    const toolbarZIndex = (model.context.themeToken?.zIndexPopupBase || DEFAULT_POPUP_BASE_Z_INDEX) + 1;
     const toolbarContainerClassName = buildToolbarContainerClassName({
       showBackground,
       showBorder,
       ctx: model.context,
+      toolbarZIndex,
       portalRenderSnapshot,
       isToolbarVisible,
       className,

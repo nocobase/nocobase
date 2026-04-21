@@ -18,6 +18,7 @@ import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { useChatBoxStore } from '../stores/chat-box';
 const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   return {
     onOk: async () => {},
@@ -30,9 +31,10 @@ export const ToolModal: React.FC = observer(() => {
   const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
 
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   useEffect(() => {
-    aiConfigRepository.getAITools();
-  }, [aiConfigRepository]);
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
 
   const open = useChatToolsStore.use.openToolModal();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
@@ -42,8 +44,7 @@ export const ToolModal: React.FC = observer(() => {
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
   const toolsByName = useChatToolsStore.use.toolsByName();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const readonly = useChatBoxStore.use.readonly();
 
   const { updateToolArgs, messagesService } = useChatMessageActions();
 
@@ -128,7 +129,7 @@ export const ToolModal: React.FC = observer(() => {
         setOpen(false);
       }}
       okButtonProps={{
-        disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus),
+        disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus) || readonly,
       }}
       footer={
         FooterComponent && resolvedActiveTool ? (

@@ -50,8 +50,10 @@ import {
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
 import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
+import { aiEmployeeWorkflowTaskOutputTool } from './ai-employees/workflow-tasks/tools';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { AIEmployeeInstruction } from './workflow/nodes/employee';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -185,6 +187,7 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...getCodeSnippetTool);
     this.ai.toolsManager.registerTools(...suggestionsTool);
     this.ai.toolsManager.registerTools(...dispatchSubAgentTaskTool);
+    this.ai.toolsManager.registerTools(...aiEmployeeWorkflowTaskOutputTool);
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
@@ -196,7 +199,7 @@ export class PluginAIClient extends Plugin {
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
-    // workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
+    workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 }
 

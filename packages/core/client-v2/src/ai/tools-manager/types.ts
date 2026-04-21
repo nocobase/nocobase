@@ -91,13 +91,14 @@ export type ToolsUIProperties<ToolCallArgs = unknown> = {
 export type DecisionActions = {
   approve: () => Promise<void>;
   edit: (args: any) => Promise<void>;
-  reject: (message: string) => Promise<void>;
+  reject: (message?: string) => Promise<void>;
 };
 
 export type ToolsFilter = {
   scope?: Scope;
   defaultPermission?: Permission;
   silence?: boolean;
+  sessionId?: string;
 };
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';

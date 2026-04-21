@@ -413,7 +413,6 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.acl.allow('userWorkflowTasks', 'listMine', 'loggedIn');
-    this.app.acl.allow('*', ['trigger'], 'loggedIn');
 
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterCreate', this.onAfterCreate);

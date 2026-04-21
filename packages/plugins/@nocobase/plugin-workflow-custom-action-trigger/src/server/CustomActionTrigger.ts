@@ -29,15 +29,16 @@ import WorkflowPluginServer, {
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 import Application from '@nocobase/server';
 import { get, pick } from 'lodash';
-import { Context, Next } from '@nocobase/actions';
-import { CONTEXT_TYPE, EVENT_TYPE } from '../common/constants';
+import { Next } from '@nocobase/actions';
+import { CONTEXT_TYPE, EVENT_TYPE, NAMESPACE } from '../common/constants';
+import { ResourcerContext } from '@nocobase/resourcer';
 
-type CustomActionTriggerEvent = [WorkflowModel, Record<string, any>?];
+type CustomActionTriggerEvent = [WorkflowModel, Record<string, any>];
 
 class CustomActionInterceptionError extends Error {
   status = 400;
   messages: any[] = [];
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'CustomActionInterceptionError';
   }
@@ -67,8 +68,8 @@ export default class CustomActionTrigger extends Trigger {
     return null;
   }
 
-  async globalTriggerAction(context: Context, next: Next) {
-    const { triggerWorkflows, values = {} } = context.action.params;
+  async globalTriggerAction(context: ResourcerContext, next: Next) {
+    const { triggerWorkflows, values = {} } = context.action!.params;
 
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
@@ -101,11 +102,10 @@ export default class CustomActionTrigger extends Trigger {
       }
     }
 
-    const syncGroup = [];
-    const asyncGroup = [];
+    const syncGroup: CustomActionTriggerEvent[] = [];
+    const asyncGroup: CustomActionTriggerEvent[] = [];
     for (const workflow of workflows) {
-      const event: CustomActionTriggerEvent = [workflow];
-      event.push({ data: values, ...userInfo });
+      const event: CustomActionTriggerEvent = [workflow, { data: values, ...userInfo }];
       (workflow.sync ? syncGroup : asyncGroup).push(event);
     }
 
@@ -116,11 +116,11 @@ export default class CustomActionTrigger extends Trigger {
     });
   }
 
-  triggerAction = async (context: Context, next: Next) => {
+  triggerAction = async (context: ResourcerContext, next: Next) => {
     const {
       resourceName,
       params: { filterByTk, values, triggerWorkflows = '', associatedIndex },
-    } = context.action;
+    } = context.action!;
 
     if (!triggerWorkflows) {
       return context.throw(400, 'parameter "triggerWorkflows" is required');
@@ -170,22 +170,28 @@ export default class CustomActionTrigger extends Trigger {
       }
     }
 
-    const syncGroup = [];
-    const asyncGroup = [];
+    // Extract ACL scope filter (e.g., from "own data" scope configuration)
+    const scopeFilter = context.permission?.parsedParams?.filter;
+
+    const syncGroup: CustomActionTriggerEvent[] = [];
+    const asyncGroup: CustomActionTriggerEvent[] = [];
     for (const workflow of workflows) {
-      const event: [WorkflowModel, Record<string, any>?] = [workflow];
+      const event: CustomActionTriggerEvent = [workflow, {}];
       const { appends = [] } = workflow.config;
       const dataPath = triggerWorkflowsMap.get(workflow.key);
       const formData = dataPath ? get(values, dataPath) : values;
       let data = formData;
       if (filterByTk != null) {
         if (Array.isArray(filterByTk)) {
-          data = (await repository.find({ filterByTk, appends, context })).map((item) =>
+          data = (await repository.find({ filterByTk, appends, context, filter: scopeFilter })).map((item) =>
             Object.assign(item.toJSON(), formData),
           );
         } else {
-          data = await repository.findOne({ filterByTk, appends, context });
+          data = await repository.findOne({ filterByTk, appends, context, filter: scopeFilter });
           if (!data) {
+            if (scopeFilter) {
+              return context.throw(403, 'No permissions');
+            }
             continue;
           }
           if (typeof data.toJSON === 'function') {
@@ -195,7 +201,7 @@ export default class CustomActionTrigger extends Trigger {
           }
         }
       }
-      event.push({ data, ...userInfo });
+      event[1] = { data, ...userInfo };
       (workflow.sync ? syncGroup : asyncGroup).push(event);
     }
 
@@ -211,11 +217,41 @@ export default class CustomActionTrigger extends Trigger {
 
     this.workflow.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.registerActionHandler('trigger', this.triggerAction);
-      // TODO: ACL on `:trigger` action
-      // dataSource.acl.setAvailableAction('trigger', {
-      //   displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
-      // });
-      dataSource.acl.allow('*', ['trigger'], 'loggedIn');
+      dataSource.acl.setAvailableAction('trigger', {
+        displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
+      });
+      dataSource.acl.setAvailableAction('triggerNew', {
+        displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
+        onNewRecord: true,
+      });
+
+      // When a `:trigger` request has no filterByTk, it targets a not-yet-persisted record.
+      // Rewrite actionName to `triggerNew` so ACL evaluates the new-data permission, then
+      // restore it before the handler runs so everything downstream sees the real action.
+      // Handler dispatch uses the immutable Action.name, so the rewrite never affects it.
+      dataSource.resourceManager.use(
+        async (ctx, next) => {
+          const { resourceName, actionName, params } = ctx.action ?? {};
+          if (actionName === 'trigger' && resourceName !== 'workflows' && params?.filterByTk == null) {
+            ctx.action.actionName = 'triggerNew';
+            ctx.state.__customActionTriggerRenamed = true;
+          }
+          await next();
+        },
+        { tag: 'customActionTriggerRename', before: 'acl', after: 'auth' },
+      );
+      dataSource.resourceManager.use(
+        async (ctx, next) => {
+          if (ctx.state.__customActionTriggerRenamed) {
+            ctx.action.actionName = 'trigger';
+          }
+          await next();
+        },
+        { tag: 'customActionTriggerRestore', after: 'acl' },
+      );
+
+      // TODO: ACL on `workflows:trigger` action
+      dataSource.acl.allow('workflows', ['trigger'], 'loggedIn');
     });
 
     (workflow.app.pm.get(PluginErrorHandler) as PluginErrorHandler).errorHandler.register(
@@ -235,7 +271,7 @@ export default class CustomActionTrigger extends Trigger {
     next,
   }: {
     events: [CustomActionTriggerEvent[], CustomActionTriggerEvent[]];
-    context: Context;
+    context: ResourcerContext;
     next: Next;
   }) {
     if (!syncGroup.length && !asyncGroup.length) {
@@ -243,7 +279,7 @@ export default class CustomActionTrigger extends Trigger {
       return context.throw(500, 'No action done, please contact the administrator');
     }
 
-    const { resourceName, actionName } = context.action;
+    const { resourceName, actionName } = context.action!;
 
     for (const [index, event] of syncGroup.entries()) {
       const workflow = event[0];
@@ -323,7 +359,7 @@ export default class CustomActionTrigger extends Trigger {
     }
   }
 
-  validateContext(values, workflow: WorkflowModel) {
+  validateContext(values: any, workflow: WorkflowModel) {
     const { type } = workflow.config;
     if (type === CONTEXT_TYPE.SINGLE_RECORD) {
       if (!values.data) {
@@ -342,7 +378,7 @@ export default class CustomActionTrigger extends Trigger {
     return null;
   }
 
-  async execute(workflow: WorkflowModel, values, options: EventOptions) {
+  async execute(workflow: WorkflowModel, values: Record<string, any>, options: EventOptions) {
     const { userId } = values;
     if (userId == null) {
       throw new Error('user is not provided');
@@ -393,7 +429,7 @@ export default class CustomActionTrigger extends Trigger {
         filterByTk = collection.isMultiFilterTargetKey()
           ? pick(
               data,
-              collection.filterTargetKey.sort((a, b) => a.localeCompare(b)),
+              collection.filterTargetKey.sort((a: string, b: string) => a.localeCompare(b)),
             )
           : get(data, collection.filterTargetKey);
       } else {

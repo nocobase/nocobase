@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
-import { Avatar, Dropdown, FloatButton } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Avatar, Badge } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
-import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
-import { isHide, isLeader } from '../built-in/utils';
-import { useChatConversationsStore } from './stores/chat-conversations';
+import { isLeader } from '../built-in/utils';
 import { useLocation } from 'react-router-dom';
+import { useWorkflowTasks } from './hooks/useWorkflowTasks';
+import { useChatMessagesStore } from './stores/chat-messages';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -27,6 +27,7 @@ export const ChatButton: React.FC = observer(() => {
   const { isMobileLayout } = useMobileLayout();
   const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { token } = useToken();
+  const { unreadCount } = useWorkflowTasks();
 
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
@@ -38,7 +39,8 @@ export const ChatButton: React.FC = observer(() => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setReadonly = useChatBoxStore.use.setReadonly();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
 
   const { switchAIEmployee } = useChatBoxActions();
 
@@ -53,6 +55,8 @@ export const ChatButton: React.FC = observer(() => {
       <div
         onClick={() => {
           setDropdownOpen(false);
+          setReadonly(false);
+          setResponseLoading(false);
           setOpen(true);
           const leaderEmployee = aiEmployees.find(isLeader);
           if (leaderEmployee) {
@@ -92,7 +96,9 @@ export const ChatButton: React.FC = observer(() => {
             : ''}
         `}
       >
-        <Avatar src={icon} size={42} shape="square" />
+        <Badge count={unreadCount} offset={[-5, 5]}>
+          <Avatar src={icon} size={42} shape="square" />
+        </Badge>
       </div>
     )
   );

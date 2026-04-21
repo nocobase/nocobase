@@ -66,6 +66,39 @@ describe('flowSurfaces catalog + compose contract', () => {
     };
   }
 
+  async function readPrimaryPopupBlock(actionUid: string) {
+    const actionSurface = await getSurface(rootAgent, {
+      uid: actionUid,
+    });
+    const popupTemplateUid = actionSurface.tree?.popup?.template?.uid;
+    if (popupTemplateUid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: popupTemplateUid,
+          },
+        }),
+      );
+      const popupSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      return {
+        actionSurface,
+        popupSurface,
+        popupBlock: _.castArray(
+          popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+        )[0],
+      };
+    }
+    return {
+      actionSurface,
+      popupSurface: actionSurface,
+      popupBlock: _.castArray(
+        actionSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0],
+    };
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
     ({ app, flowRepo, rootAgent } = context);
@@ -847,6 +880,14 @@ describe('flowSurfaces catalog + compose contract', () => {
                 target: 'table',
               },
             ],
+            fieldsLayout: {
+              rows: [
+                [
+                  { key: 'nickname', span: 12 },
+                  { key: 'username', span: 12 },
+                ],
+              ],
+            },
             actions: ['submit', 'reset'],
           },
           {
@@ -947,33 +988,18 @@ describe('flowSurfaces catalog + compose contract', () => {
     const composedViewAction = composedTableBlock?.recordActions?.find((item: any) => item.type === 'view');
     const composedEditAction = composedTableBlock?.recordActions?.find((item: any) => item.type === 'edit');
 
-    const addNewPopupReadback = await getSurface(rootAgent, {
-      uid: composedAddNewAction.uid,
-    });
-    const addNewPopupBlock = _.castArray(
-      addNewPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-    )[0];
+    const { popupBlock: addNewPopupBlock } = await readPrimaryPopupBlock(composedAddNewAction.uid);
     expect(addNewPopupBlock?.use).toBe('CreateFormModel');
     expect(addNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(addNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
 
-    const viewPopupReadback = await getSurface(rootAgent, {
-      uid: composedViewAction.uid,
-    });
-    const viewPopupBlock = _.castArray(
-      viewPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-    )[0];
+    const { popupBlock: viewPopupBlock } = await readPrimaryPopupBlock(composedViewAction.uid);
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
 
-    const editPopupReadback = await getSurface(rootAgent, {
-      uid: composedEditAction.uid,
-    });
-    const editPopupBlock = _.castArray(
-      editPopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-    )[0];
+    const { popupBlock: editPopupBlock } = await readPrimaryPopupBlock(composedEditAction.uid);
     expect(editPopupBlock?.use).toBe('EditFormModel');
     expect(editPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(editPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -987,15 +1013,117 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(_.castArray(filterReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
       expect.arrayContaining(['FilterFormSubmitActionModel', 'FilterFormResetActionModel']),
     );
+    expect(filterReadback.tree.subModels?.grid?.props?.rowOrder).toEqual(['row1']);
 
     const usernameFilter = composed.blocks
       .find((item: any) => item.key === 'filter')
       ?.fields?.find((item: any) => item.fieldPath === 'username');
+    const nicknameFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'nickname');
+    expect(nicknameFilter?.wrapperUid).toBeTruthy();
     expect(usernameFilter?.wrapperUid).toBeTruthy();
+    expect(filterReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[nicknameFilter.wrapperUid], [usernameFilter.wrapperUid]],
+    });
+    expect(filterReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [12, 12],
+    });
     const usernameFilterReadback = await getSurface(rootAgent, {
       uid: usernameFilter.wrapperUid,
     });
     expect(usernameFilterReadback.tree.stepParams?.filterFormItemSettings?.init?.defaultTargetUid).toBe(tableBlock.uid);
+  });
+
+  it('should reject fieldsLayout on compose blocks that do not own a field grid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Invalid compose fieldsLayout page',
+      tabTitle: 'Invalid compose fieldsLayout tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['username', 'nickname'],
+            fieldsLayout: {
+              rows: [['username']],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expect(readErrorMessage(composeRes)).toContain(
+      `flowSurfaces compose block #1 ("employeesTable", type="table") does not support fieldsLayout`,
+    );
+  });
+
+  it('should reject invalid compose fieldsLayout cell placement and span values', async () => {
+    const cases = [
+      {
+        title: 'Duplicate compose fieldsLayout field page',
+        fieldsLayout: {
+          rows: [['username', 'username']],
+        },
+        expectedMessage: "flowSurfaces compose block #1 fieldsLayout row #1 cell #2 duplicates field 'username'",
+      },
+      {
+        title: 'Missing compose fieldsLayout field page',
+        fieldsLayout: {
+          rows: [['username']],
+        },
+        expectedMessage:
+          'flowSurfaces compose block #1 fieldsLayout must place every field exactly once; missing: nickname',
+      },
+      {
+        title: 'Invalid compose fieldsLayout span page',
+        fieldsLayout: {
+          rows: [[{ key: 'username', span: '12' }, 'nickname']],
+        },
+        expectedMessage: 'flowSurfaces compose block #1 fieldsLayout row #1 cell #1.span must be a number',
+      },
+    ];
+
+    for (const item of cases) {
+      const page = await createPage(rootAgent, {
+        title: item.title,
+        tabTitle: 'Invalid compose fieldsLayout tab',
+      });
+
+      const composeRes = await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'employeeForm',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username', 'nickname'],
+              fieldsLayout: item.fieldsLayout,
+            },
+          ],
+        },
+      });
+
+      expect(composeRes.status).toBe(400);
+      expect(readErrorMessage(composeRes)).toContain(item.expectedMessage);
+    }
   });
 
   it('should compose a list block with item fields block actions and record actions', async () => {
@@ -1056,7 +1184,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listBlock.itemUid).toBeTruthy();
     expect(listBlock.itemGridUid).toBeTruthy();
     expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
-    expect(listBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
+    expect(listBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
     expect(listBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'popup', 'delete']);
     const popupActionResult = listBlock.recordActions.find((item: any) => item.type === 'popup');
     expect(popupActionResult.popupPageUid).toBeTruthy();
@@ -1070,7 +1198,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listReadback.tree.subModels?.item?.use).toBe('ListItemModel');
     expect(listReadback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
     expect(_.castArray(listReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['AddNewActionModel', 'RefreshActionModel']),
+      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
     );
     expect(
       _.castArray(listReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
@@ -1155,7 +1283,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardBlock.itemUid).toBeTruthy();
     expect(gridCardBlock.itemGridUid).toBeTruthy();
     expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
-    expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
+    expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
     expect(gridCardBlock.recordActions.map((item: any) => item.type)).toEqual([
       'view',
       'edit',
@@ -1173,7 +1301,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardReadback.tree.subModels?.item?.use).toBe('GridCardItemModel');
     expect(gridCardReadback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
     expect(_.castArray(gridCardReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['AddNewActionModel', 'RefreshActionModel']),
+      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
     );
     expect(
       _.castArray(gridCardReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
@@ -1215,7 +1343,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(tableRecordActionsRes.status).toBe(200);
 
     const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.key === 'table');
-    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
+    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
     expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'delete']);
     expect(tableBlock.actionsColumnUid).toBeTruthy();
 
@@ -1246,7 +1374,18 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(detailsRecordActionsRes.status).toBe(200);
     const detailsBlock = getData(detailsRecordActionsRes).blocks.find((item: any) => item.key === 'details');
-    expect(detailsBlock.recordActions.map((item: any) => item.type)).toEqual(['view']);
+    expect(detailsBlock.recordActions.map((item: any) => item.type)).toEqual(['edit', 'view']);
+    const defaultEditAction = detailsBlock.recordActions.find((item: any) => item.type === 'edit');
+    const defaultEditActionSurface = await getSurface(rootAgent, {
+      uid: defaultEditAction.uid,
+    });
+    expect(defaultEditActionSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(defaultEditActionSurface.tree.popup.template?.uid).toBeTruthy();
+    expect(defaultEditActionSurface.tree.popup.pageUid).toBeUndefined();
+    expect(defaultEditActionSurface.tree.popup.tabUid).toBeUndefined();
+    expect(defaultEditActionSurface.tree.popup.gridUid).toBeUndefined();
 
     const listBlockOnlyRes = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -1710,6 +1849,26 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(addBlocksData.errorCount).toBe(0);
     const tableUid = addBlocksData.blocks.find((item: any) => item.key === 'table')?.result?.uid;
     expect(tableUid).toBeTruthy();
+    const tableReadback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    expect(_.castArray(tableReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
+    );
+    const defaultAddNewActionUid = _.castArray(tableReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'AddNewActionModel',
+    )?.uid;
+    expect(defaultAddNewActionUid).toBeTruthy();
+    const defaultAddNewActionSurface = await getSurface(rootAgent, {
+      uid: defaultAddNewActionUid,
+    });
+    expect(defaultAddNewActionSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(defaultAddNewActionSurface.tree.popup.template?.uid).toBeTruthy();
+    expect(defaultAddNewActionSurface.tree.popup.pageUid).toBeUndefined();
+    expect(defaultAddNewActionSurface.tree.popup.tabUid).toBeUndefined();
+    expect(defaultAddNewActionSurface.tree.popup.gridUid).toBeUndefined();
 
     const addFieldsRes = await rootAgent.resource('flowSurfaces').addFields({
       values: {

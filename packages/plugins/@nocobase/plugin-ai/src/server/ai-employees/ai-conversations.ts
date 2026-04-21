@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op } from '@nocobase/database';
+import { Model, Op, Transaction } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
@@ -26,11 +26,13 @@ export type AIConversationFilterParams = {
 };
 
 export type CreateAIConversationParams = {
-  userId: string;
+  userId?: string;
   aiEmployee: { username: string };
   title?: string;
   options?: AIConversationsOptions;
   from?: 'main-agent' | 'sub-agent';
+  transaction?: Transaction;
+  category?: 'chat' | 'task';
 };
 
 export type UpdateAIConversationParams = {
@@ -58,7 +60,15 @@ export type GetAIConversationMessagesResult = {
 export class AIConversationsManager {
   constructor(protected plugin: PluginAIServer) {}
 
-  async create({ userId, aiEmployee, title, options = {}, from = 'main-agent' }: CreateAIConversationParams) {
+  async create({
+    userId,
+    aiEmployee,
+    title,
+    options = {},
+    from = 'main-agent',
+    transaction,
+    category = 'chat',
+  }: CreateAIConversationParams) {
     return await this.aiConversationsRepo.create({
       values: {
         userId,
@@ -67,16 +77,16 @@ export class AIConversationsManager {
         options,
         thread: 1,
         from,
+        category,
       },
+      transaction,
     });
   }
 
   async update({ userId, sessionId, title, options: inputOptions }: UpdateAIConversationParams) {
-    const conversation = await this.aiConversationsRepo.findOne({
-      filter: {
-        sessionId,
-        userId,
-      },
+    const conversation = await this.getConversation({
+      sessionId,
+      userId,
     });
 
     if (!conversation) {
@@ -108,17 +118,52 @@ export class AIConversationsManager {
     });
   }
 
+  async getConversation({ sessionId, userId }: { sessionId: string; userId?: string }) {
+    const conversation = await this.aiConversationsRepo.findOne({
+      filter: {
+        sessionId,
+      },
+    });
+
+    if (!userId) {
+      return conversation;
+    }
+
+    if (!conversation) {
+      return null;
+    }
+
+    let ownershipCheck = await this.aiConversationsRepo.count({
+      filter: {
+        sessionId,
+        userId,
+      },
+    });
+    if (ownershipCheck === 0) {
+      ownershipCheck = await this.plugin.db.getRepository('aiWorkflowTasks').count({
+        filter: {
+          sessionId,
+          'users.id': userId,
+        },
+      });
+    }
+
+    if (ownershipCheck) {
+      return conversation;
+    } else {
+      return null;
+    }
+  }
+
   async getMessages({
     userId,
     sessionId,
     cursor,
     paginate = true,
   }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
-    const conversation = await this.aiConversationsRepo.findOne({
-      filter: {
-        sessionId,
-        userId,
-      },
+    const conversation = await this.getConversation({
+      sessionId,
+      userId,
     });
 
     if (!conversation) {
@@ -257,7 +302,7 @@ export class AIConversationsManager {
     };
   }
 
-  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | null> {
+  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | undefined> {
     const allInterruptedToolCall = await this.aiToolMessagesRepo.find({
       filter: {
         messageId,
@@ -266,7 +311,7 @@ export class AIConversationsManager {
       order: [['interruptActionOrder', 'ASC']],
     });
     if (!allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting')) {
-      return null;
+      return;
     }
 
     const message = await this.aiMessagesRepo.findOne({

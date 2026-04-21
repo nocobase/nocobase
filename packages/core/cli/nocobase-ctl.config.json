@@ -36,7 +36,7 @@
       "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
       "include": true,
       "resources": {
-        "includes": ["availableActions", "dataSources", "roles", "rolesResourcesScopes"],
+        "includes": ["availableActions", "dataSources", "roles", "rolesResourcesScopes", "desktopRoutes"],
         "excludes": [],
         "overrides": {
           "availableActions": {
@@ -58,6 +58,14 @@
             "name": "roles-resources-scopes",
             "description": "Manage role resource scopes and permissions.",
             "topLevel": false
+          },
+          "desktopRoutes": {
+            "name": "desktop-routes",
+            "description": "Manage desktop route permissions and visibility.",
+            "topLevel": false,
+            "operations": {
+              "includes": ["desktopRoutes:listAccessible"]
+            }
           }
         }
       }
@@ -104,18 +112,16 @@
       "description": "Provide the web client interface for the NocoBase server.",
       "include": true,
       "resources": {
-        "includes": ["desktopRoutes", "roles"],
+        "includes": ["desktopRoutes"],
         "excludes": [],
         "overrides": {
           "desktopRoutes": {
             "name": "desktop-routes",
             "description": "Manage desktop route permissions and visibility.",
-            "topLevel": true
-          },
-          "roles": {
-            "name": "roles",
-            "description": "Manage client permissions scoped by role.",
-            "topLevel": false
+            "topLevel": true,
+            "operations": {
+              "excludes": ["desktopRoutes:listAccessible"]
+            }
           }
         }
       }

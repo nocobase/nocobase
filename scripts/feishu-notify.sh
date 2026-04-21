@@ -10,7 +10,7 @@
 # Optional environment variables:
 #   STATUS_TEXT_SUCCESS - Custom success text (defaults to "构建成功")
 #   STATUS_TEXT_FAILURE - Custom failure text (defaults to "构建失败")
-#   CONTENT       - Card body content in lark_md format (defaults to status line)
+#   CONTENT       - Card body content in lark_md format (defaults to auto-generated)
 #   BUILD_TIME    - Build timestamp (defaults to current time in Asia/Shanghai)
 
 set -euo pipefail
@@ -34,52 +34,49 @@ fi
 
 CONTENT="${CONTENT:-"**时间：**${BUILD_TIME}\n**状态：**${STATUS_EMOJI} ${STATUS_TEXT}"}"
 
-PAYLOAD=$(cat <<EOF
-{
-  "msg_type": "interactive",
-  "card": {
-    "header": {
-      "title": {
-        "tag": "plain_text",
-        "content": "${TITLE}"
+PAYLOAD=$(jq -n \
+  --arg title "$TITLE" \
+  --arg template "$HEADER_TEMPLATE" \
+  --arg content "$CONTENT" \
+  --arg url "$WORKFLOW_URL" \
+  '{
+    msg_type: "interactive",
+    card: {
+      header: {
+        title: { tag: "plain_text", content: $title },
+        template: $template
       },
-      "template": "${HEADER_TEMPLATE}"
-    },
-    "elements": [
-      {
-        "tag": "div",
-        "text": {
-          "tag": "lark_md",
-          "content": "${CONTENT}"
+      elements: [
+        {
+          tag: "div",
+          text: { tag: "lark_md", content: $content }
+        },
+        {
+          tag: "action",
+          actions: [
+            {
+              tag: "button",
+              text: { tag: "plain_text", content: "查看构建详情" },
+              url: $url,
+              type: "primary"
+            }
+          ]
         }
-      },
-      {
-        "tag": "action",
-        "actions": [
-          {
-            "tag": "button",
-            "text": {
-              "tag": "plain_text",
-              "content": "查看详情"
-            },
-            "url": "${WORKFLOW_URL}",
-            "type": "primary"
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
-)
+      ]
+    }
+  }')
 
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$WEBHOOK_URL" \
+RESPONSE_BODY=$(mktemp)
+HTTP_CODE=$(curl -s -o "$RESPONSE_BODY" -w "%{http_code}" -X POST "$WEBHOOK_URL" \
   -H 'Content-Type: application/json' \
   -d "$PAYLOAD")
 
-if [[ "$RESPONSE" -ge 200 && "$RESPONSE" -lt 300 ]]; then
-  echo "Feishu notification sent successfully (HTTP ${RESPONSE})"
+if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
+  echo "Feishu notification sent successfully (HTTP ${HTTP_CODE})"
 else
-  echo "Failed to send Feishu notification (HTTP ${RESPONSE})" >&2
+  echo "Failed to send Feishu notification (HTTP ${HTTP_CODE})" >&2
+  echo "Response: $(cat "$RESPONSE_BODY")" >&2
+  rm -f "$RESPONSE_BODY"
   exit 1
 fi
+rm -f "$RESPONSE_BODY"

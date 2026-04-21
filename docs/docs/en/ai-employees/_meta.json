@@ -136,6 +136,22 @@
             "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Employee Nodes",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Node Configuration",
+            "link": "/ai-employees/workflow/nodes/employee/configuration"
+          },
+          {
+            "type": "custom-link",
+            "label": "Node Approval",
+            "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
       }
     ]
   },

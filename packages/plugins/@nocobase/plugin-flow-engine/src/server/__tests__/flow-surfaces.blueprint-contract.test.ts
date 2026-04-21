@@ -1717,21 +1717,33 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const listReadback = await getSurface(rootAgent, { uid: listBlock?.uid });
     const gridCardReadback = await getSurface(rootAgent, { uid: gridCardBlock?.uid });
 
-    expect(readNodeActionUses(tableReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readNodeActionUses(tableReadback.tree)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
       'DeleteActionModel',
       'ViewActionModel',
       'EditActionModel',
     ]);
 
-    expect(readNodeActionUses(listReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readNodeActionUses(listReadback.tree)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
     expect(readCardItemRecordActionUses(listReadback.tree)).toEqual([
       'DeleteActionModel',
       'ViewActionModel',
       'EditActionModel',
     ]);
 
-    expect(readNodeActionUses(gridCardReadback.tree)).toEqual(['RefreshActionModel']);
+    expect(readNodeActionUses(gridCardReadback.tree)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
     expect(readCardItemRecordActionUses(gridCardReadback.tree)).toEqual([
       'DeleteActionModel',
       'ViewActionModel',
@@ -2469,6 +2481,162 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain('flowSurfaces applyBlueprint tabs[0].layout must be an object');
+  });
+
+  it('should apply fieldsLayout to field-grid blocks through applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint form layout',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nicknameField',
+                    field: 'nickname',
+                  },
+                  {
+                    key: 'statusField',
+                    field: 'status',
+                  },
+                  {
+                    key: 'departmentField',
+                    field: 'department',
+                  },
+                ],
+                fieldsLayout: {
+                  rows: [
+                    ['nicknameField'],
+                    [
+                      { key: 'statusField', span: 12 },
+                      { key: 'departmentField', span: 12 },
+                    ],
+                  ],
+                },
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const formBlock = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items?.[0];
+    expect(formBlock?.use).toBe('CreateFormModel');
+
+    const formGrid = formBlock?.subModels?.grid;
+    const formItems = _.castArray(formGrid?.subModels?.items || []);
+    const nicknameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+    )?.uid;
+    const statusWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
+      ?.uid;
+    const departmentWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    )?.uid;
+
+    expect(nicknameWrapper).toBeTruthy();
+    expect(statusWrapper).toBeTruthy();
+    expect(departmentWrapper).toBeTruthy();
+    expect(formGrid?.props?.rowOrder).toEqual(['row1', 'row2']);
+    expect(formGrid?.props?.rows).toEqual({
+      row1: [[nicknameWrapper]],
+      row2: [[statusWrapper], [departmentWrapper]],
+    });
+    expect(formGrid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [12, 12],
+    });
+  });
+
+  it('should reject fieldsLayout on applyBlueprint blocks that do not own a field grid', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                fieldsLayout: {
+                  rows: [['nickname']],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldsLayout is only supported on createForm, editForm, details or filterForm',
+    );
+  });
+
+  it('should reject applyBlueprint fieldsLayout object cells that reference unknown field keys', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Invalid fieldsLayout field key',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nicknameField',
+                    field: 'nickname',
+                  },
+                  {
+                    key: 'statusField',
+                    field: 'status',
+                  },
+                ],
+                fieldsLayout: {
+                  rows: [
+                    [
+                      { key: 'missingField', span: 12 },
+                      { key: 'statusField', span: 12 },
+                    ],
+                  ],
+                },
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(
+      "flowSurfaces applyBlueprint tabs[0].blocks[0].fieldsLayout.rows[0][0] references unknown field 'missingField'",
+    );
   });
 
   it('should keep page enableTabs unchanged in replace mode when page.enableTabs is omitted', async () => {

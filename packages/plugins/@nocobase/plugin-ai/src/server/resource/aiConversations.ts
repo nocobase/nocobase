@@ -54,6 +54,7 @@ export default {
           ...filter,
           userId,
           from: filter.from ?? 'main-agent',
+          category: 'chat',
         },
       });
       return actions.list(ctx, next);
@@ -179,6 +180,7 @@ export default {
     },
 
     async updateToolArgs(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
@@ -193,11 +195,9 @@ export default {
         ctx.throw(400);
       }
 
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filter: {
-          sessionId,
-          userId,
-        },
+      const conversation = await plugin.aiConversationsManager.getConversation({
+        sessionId,
+        userId,
       });
 
       if (!conversation) {
@@ -269,11 +269,9 @@ export default {
       }
 
       try {
-        const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId,
-          },
+        const conversation = await plugin.aiConversationsManager.getConversation({
+          sessionId,
+          userId,
         });
 
         if (!conversation) {
@@ -317,6 +315,7 @@ export default {
           sessionId,
           systemMessage: conversation.options?.systemMessage,
           skillSettings: conversation.options?.skillSettings,
+          tools: conversation.options?.tools,
           webSearch,
           model,
           legacy,
@@ -377,11 +376,9 @@ export default {
       const { sessionId } = ctx.action.params.values || {};
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filter: {
-          sessionId,
-          userId,
-        },
+      const conversation = await plugin.aiConversationsManager.getConversation({
+        sessionId,
+        userId,
       });
 
       if (!conversation) {
@@ -393,6 +390,7 @@ export default {
     },
 
     async resendMessages(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
@@ -408,11 +406,9 @@ export default {
       }
 
       try {
-        const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId,
-          },
+        const conversation = await plugin.aiConversationsManager.getConversation({
+          sessionId,
+          userId,
         });
 
         if (!conversation) {
@@ -468,6 +464,7 @@ export default {
           sessionId,
           systemMessage: conversation.options?.systemMessage,
           skillSettings: conversation.options?.skillSettings,
+          tools: conversation.options?.tools,
           webSearch,
           model,
         });
@@ -492,11 +489,9 @@ export default {
         ctx.throw(400);
       }
 
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filter: {
-          sessionId,
-          userId,
-        },
+      const conversation = await plugin.aiConversationsManager.getConversation({
+        sessionId,
+        userId,
       });
 
       if (!conversation) {
@@ -554,7 +549,7 @@ export default {
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
-      const toolsList = await plugin.ai.toolsManager.listTools();
+      const toolsList = await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId });
       const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
 
       for (const toolCall of toolCalls) {
@@ -591,11 +586,9 @@ export default {
         return next();
       }
       try {
-        const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId,
-          },
+        const conversation = await plugin.aiConversationsManager.getConversation({
+          sessionId,
+          userId,
         });
         if (!conversation) {
           sendErrorResponse(ctx, 'conversation not found');
@@ -638,6 +631,7 @@ export default {
           sessionId,
           systemMessage: conversation.options?.systemMessage,
           skillSettings: conversation.options?.skillSettings,
+          tools: conversation.options?.tools,
           webSearch,
           model,
         });

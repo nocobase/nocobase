@@ -2,26 +2,45 @@
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const requireFromCli = createRequire(import.meta.url);
 const root = path.resolve(__dirname, '..');
 const realRoot = fs.realpathSync(root);
 const isSourcePackage = realRoot.split(path.sep).join('/').endsWith('/packages/core/cli');
 let isDev = isSourcePackage;
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NB_CLI_USE_DIST === '1') {
   isDev = false;
 }
 
 /**
- * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import tsx`
+ * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import <tsx>`
  * (same effect as a dedicated dev entry with `#!/usr/bin/env -S node --import tsx`).
+ *
+ * Use the tsx package resolved from this CLI install (not CWD), so `nb` works when
+ * invoked from a project directory that does not depend on `tsx`.
  */
 function reexecWithTsx() {
+  let tsxEntry;
+  try {
+    tsxEntry = requireFromCli.resolve('tsx');
+  } catch {
+    console.error(
+      [
+        'Cannot load dev dependency `tsx` for the NocoBase CLI.',
+        'Install monorepo dependencies (e.g. `yarn install` at the repo root),',
+        'or set NB_CLI_USE_DIST=1 to run the compiled CLI without TypeScript sources.',
+      ].join(' '),
+    );
+    process.exit(1);
+  }
+
   const result = spawnSync(
     process.execPath,
-    ['--import', 'tsx', '--disable-warning=ExperimentalWarning', ...process.argv.slice(1)],
+    ['--import', pathToFileURL(tsxEntry).href, '--disable-warning=ExperimentalWarning', ...process.argv.slice(1)],
     {
       stdio: 'inherit',
       env: {
@@ -47,15 +66,21 @@ if (isDev) {
 }
 
 function getCommandToken(argv) {
+  const tokens = [];
+
   for (const token of argv) {
     if (!token || token.startsWith('-')) {
       continue;
     }
 
-    return token;
+    tokens.push(token);
   }
 
-  return undefined;
+  if (tokens[0] === 'api') {
+    return tokens[1] ?? tokens[0];
+  }
+
+  return tokens[0];
 }
 
 function formatCliEntryError(error, argv) {

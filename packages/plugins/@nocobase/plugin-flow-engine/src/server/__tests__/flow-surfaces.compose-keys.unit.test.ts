@@ -31,18 +31,29 @@ describe('flowSurfaces compose key guards', () => {
   });
 
   it('should normalize compose actions with explicit keys', () => {
-    expect(
-      normalizeComposeActionSpec(
-        {
-          key: 'view.user',
-          type: 'view',
-        },
-        0,
-      ),
-    ).toMatchObject({
+    const normalized = normalizeComposeActionSpec(
+      {
+        key: 'view.user',
+        type: 'view',
+      },
+      0,
+    );
+
+    expect(normalized).toMatchObject({
       key: 'view.user',
       type: 'view',
     });
+    expect('popup' in normalized).toBe(false);
+  });
+
+  it('should omit popup when compose actions are normalized from strings', () => {
+    const normalized = normalizeComposeActionSpec('view', 0);
+
+    expect(normalized).toMatchObject({
+      key: 'view',
+      type: 'view',
+    });
+    expect('popup' in normalized).toBe(false);
   });
 
   it('should derive field keys from fieldPath and reject object-style target selectors', () => {

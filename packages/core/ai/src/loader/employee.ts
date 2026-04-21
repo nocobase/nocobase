@@ -17,7 +17,7 @@ import { Logger } from '@nocobase/logger';
 import path from 'path';
 import { AIEmployeeOptions, AIEmployeeToolSetting } from '../ai-employee-manager';
 
-export type AIEmployeeLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
+export type AIEmployeeLoaderOptions = { pluginName: string; scan: DirectoryScannerOptions; log?: Logger };
 
 export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
   protected readonly scanner: DirectoryScanner;

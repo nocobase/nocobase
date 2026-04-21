@@ -9,7 +9,8 @@
 
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { CollisionDetection, DragEndEvent } from '@dnd-kit/core';
+import { closestCenter, pointerWithin } from '@dnd-kit/core';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { DndProvider, observer, useFlowEngine } from '@nocobase/flow-engine';
@@ -223,6 +224,7 @@ const appContainerStyle: React.CSSProperties = {
   scrollPaddingTop: 'var(--nb-header-height)', // 解决调用 scrollIntoView 时顶部菜单被遮挡的问题
 };
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
+const FLOAT_MENU_HOST_SELECTOR = '[data-has-float-menu="true"][data-float-menu-model-uid]';
 
 const GlobalStyle = () => {
   const { token } = antdTheme.useToken();
@@ -436,6 +438,40 @@ export const AdminLayoutComponent = observer((props: any) => {
     [flowEngine],
   );
 
+  const menuCollisionDetection = useCallback<CollisionDetection>(
+    ({ droppableContainers, pointerCoordinates, ...args }) => {
+      if (pointerCoordinates && typeof document !== 'undefined') {
+        const elementUnderPointer = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
+        const hostModelUid = elementUnderPointer
+          ?.closest(FLOAT_MENU_HOST_SELECTOR)
+          ?.getAttribute('data-float-menu-model-uid');
+
+        if (hostModelUid) {
+          const matchedDroppable = droppableContainers.find((container) => String(container.id) === hostModelUid);
+          if (matchedDroppable) {
+            return [
+              {
+                id: matchedDroppable.id,
+                data: {
+                  droppableContainer: matchedDroppable,
+                  value: Number.MAX_SAFE_INTEGER,
+                },
+              },
+            ];
+          }
+        }
+      }
+
+      const pointerCollisions = pointerWithin({ droppableContainers, pointerCoordinates, ...args });
+      if (pointerCollisions.length > 0) {
+        return pointerCollisions;
+      }
+
+      return closestCenter({ droppableContainers, pointerCoordinates, ...args });
+    },
+    [],
+  );
+
   useEffect(() => {
     const routeRepository = flowEngine.context.routeRepository;
     const subscriber = () => {
@@ -592,7 +628,7 @@ export const AdminLayoutComponent = observer((props: any) => {
     <div style={rootStyle}>
       <div id="nocobase-app-container" style={appContainerStyle}>
         <MobileMenuControlContext.Provider value={{ closeMobileMenu }}>
-          <DndProvider onDragEnd={handleMenuDragEnd}>
+          <DndProvider collisionDetection={menuCollisionDetection} onDragEnd={handleMenuDragEnd}>
             <ProLayout
               {...props}
               contentStyle={contentStyle}

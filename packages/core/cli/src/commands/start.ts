@@ -50,7 +50,7 @@ export default class Start extends Command {
       npmArgs.push('--launch-mode', flags['launch-mode']);
     }
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd());
+      await runNocoBaseCommand(npmArgs);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

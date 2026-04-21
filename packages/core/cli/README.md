@@ -35,19 +35,19 @@ npm install -g @nocobase/ctl@latest
 Add an environment:
 
 ```bash
-nb env add --name local --base-url http://localhost:13000/api
+nb env add local --base-url http://localhost:13000/api
 ```
 
 Add an environment with an API key:
 
 ```bash
-nb env add --name local --base-url http://localhost:13000/api --token <api-key>
+nb env add local --base-url http://localhost:13000/api --auth-type token --token <api-key>
 ```
 
 Authenticate an environment with OAuth:
 
 ```bash
-nb env auth -e local
+nb env auth local
 ```
 
 Show the current environment:
@@ -72,7 +72,7 @@ Update the runtime command cache from `swagger:get`:
 
 ```bash
 nb env update
-nb env update -e local
+nb env update local
 ```
 
 Use the generic resource commands:
@@ -96,10 +96,16 @@ If the `API documentation plugin` is disabled, the CLI will prompt to enable it.
 
 ## Environment Selection
 
-Use `-e, --env` to temporarily select an environment:
+`nb env update` and `nb env auth` take an optional environment name as the first argument (omit it to use the current env):
 
 ```bash
-nb env update -e prod
+nb env update prod
+nb env auth prod
+```
+
+Use `-e, --env` on **runtime / API** commands to temporarily select an environment:
+
+```bash
 nb api resource list --resource users -e prod
 ```
 
@@ -120,8 +126,8 @@ Use `-s, --scope` to select one explicitly:
 
 ```bash
 nb env list -s project
-nb env add -s global --name prod --base-url http://example.com/api --token <api-key>
-nb env auth -e prod -s global
+nb env add prod -s global --base-url http://example.com/api --auth-type token --token <api-key>
+nb env auth prod -s global
 nb env use local -s project
 ```
 
@@ -157,7 +163,7 @@ nb api resource --help
 Example:
 
 ```bash
-nb env update -e prod -s global
+nb env update prod -s global
 nb api resource list --resource users -e prod -j
 nb api resource list --resource users -e prod --role admin
 ```

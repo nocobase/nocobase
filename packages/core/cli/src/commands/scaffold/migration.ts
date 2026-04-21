@@ -31,7 +31,7 @@ export default class ScaffoldMigration extends Command {
       npmArgs.push('--on', flags.on);
     }
     try {
-      await runNocoBaseCommand(npmArgs, process.cwd(), { env: { LOGGER_SILENT: 'true' } });
+      await runNocoBaseCommand(npmArgs, { env: { LOGGER_SILENT: 'true' } });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

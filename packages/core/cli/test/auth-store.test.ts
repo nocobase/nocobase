@@ -45,7 +45,7 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
       { scope: 'global' },
     );
 
-    await upsertEnv('test', 'http://localhost:13000/api', 'new-token', { scope: 'global' });
+    await upsertEnv('test', { baseUrl: 'http://localhost:13000/api', accessToken: 'new-token' }, { scope: 'global' });
 
     const env = await getEnv('test', { scope: 'global' });
     assert.equal(env?.auth?.accessToken, 'new-token');
@@ -76,7 +76,7 @@ test('upsertEnv preserves runtime metadata when connection settings are unchange
       { scope: 'global' },
     );
 
-    await upsertEnv('test', 'http://localhost:13000/api', 'same-token', { scope: 'global' });
+    await upsertEnv('test', { baseUrl: 'http://localhost:13000/api', accessToken: 'same-token' }, { scope: 'global' });
 
     const env = await getEnv('test', { scope: 'global' });
     assert.deepEqual(env?.runtime, {
@@ -89,7 +89,7 @@ test('upsertEnv preserves runtime metadata when connection settings are unchange
 
 test('upsertEnv allows saving an env without a token', async () => {
   await withTempCliHome(async () => {
-    await upsertEnv('test', 'http://localhost:13000/api', undefined, { scope: 'global' });
+    await upsertEnv('test', { baseUrl: 'http://localhost:13000/api' }, { scope: 'global' });
 
     const env = await getEnv('test', { scope: 'global' });
     assert.equal(env?.baseUrl, 'http://localhost:13000/api');
@@ -119,7 +119,7 @@ test('upsertEnv clears an OAuth session when the base URL changes', async () => 
       { scope: 'global' },
     );
 
-    await upsertEnv('test', 'http://localhost:14000/api', undefined, { scope: 'global' });
+    await upsertEnv('test', { baseUrl: 'http://localhost:14000/api' }, { scope: 'global' });
 
     const env = await getEnv('test', { scope: 'global' });
     assert.equal(env?.baseUrl, 'http://localhost:14000/api');

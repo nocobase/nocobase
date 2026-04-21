@@ -1,13 +1,26 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName, removeEnv } from '../../lib/auth-store.js';
 import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
 import { confirmAction, isInteractiveTerminal, printVerbose, setVerboseMode } from '../../lib/ui.js';
 
 export default class EnvRemove extends Command {
-  static id = 'env remove';
-  static summary = 'Remove a configured environment';
+  static override summary = 'Remove a configured environment';
 
-  static flags = {
+  static override examples = [
+    '<%= config.bin %> <%= command.id %> staging',
+    '<%= config.bin %> <%= command.id %> staging -f',
+  ];
+
+  static override flags = {
     force: Flags.boolean({
       char: 'f',
       description: 'Remove without confirmation',
@@ -24,7 +37,7 @@ export default class EnvRemove extends Command {
     }),
   };
 
-  static args = {
+  static override args = {
     name: Args.string({
       description: 'Configured environment name',
       required: true,
