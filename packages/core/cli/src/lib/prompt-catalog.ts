@@ -52,7 +52,11 @@ export type TextPromptBlock = {
   hidden?: PromptHiddenPredicate;
   /** Shown when the line is empty (Clack `text` placeholder). */
   placeholder?: string;
-  initialValue?: string;
+  /**
+   * Default line when **`initialValues`** does not set this key. If a function, it receives
+   * **`values` collected so far** (same order as the catalog); use for fields that depend on earlier answers.
+   */
+  initialValue?: string | ((values: PromptCatalogValues) => string);
   /** Default when `yes: true` and the key is not set in merged initial values (after `yesInitialValues`). */
   yesInitialValue?: string;
   /** When true, value must be non-empty (after trim). */
@@ -173,15 +177,29 @@ function hasIvKey(iv: PromptInitialValues, key: string): boolean {
   );
 }
 
+function resolveTextInitial(def: TextPromptBlock, valuesSoFar: PromptCatalogValues): string | undefined {
+  const iv = def.initialValue;
+  if (typeof iv === 'function') {
+    return iv(valuesSoFar);
+  }
+  return iv;
+}
+
 /** `useYesInitial`: when true (resolve under `yes`), use block `yesInitialValue` before catalog `initialValue`. */
-function mergedText(key: string, def: TextPromptBlock, iv: PromptInitialValues, useYesInitial: boolean): string {
+function mergedText(
+  key: string,
+  def: TextPromptBlock,
+  iv: PromptInitialValues,
+  useYesInitial: boolean,
+  valuesSoFar: PromptCatalogValues = {},
+): string {
   if (hasIvKey(iv, key)) {
     return String(iv[key]);
   }
   if (useYesInitial && def.yesInitialValue !== undefined) {
     return def.yesInitialValue;
   }
-  return def.initialValue ?? '';
+  return resolveTextInitial(def, valuesSoFar) ?? '';
 }
 
 function mergedBoolean(key: string, def: BooleanPromptBlock, iv: PromptInitialValues, useYesInitial: boolean): boolean {
@@ -338,7 +356,7 @@ function tryApplyPreset(
  * **Interactive:** prompts when the key is not set in **`values`**; prefill from **`initialValues`** + catalog **`initialValue`** (not `yes*` fields).  
  * **Non-interactive or `yes`:** uses **`values`** first, else merged defaults (no prompts).  
  * **`text`** and **`integer`** blocks may set **`placeholder`** (Clack hint when the line is empty; interactive only).  
- * Any block may set **`hidden: (values) => boolean`** using **`PromptCatalogValues`** so far; when true, the step is skipped (no **`out`** key, no **`intro`/`outro`** line).  
+ * Any block may set **`hidden: (values) => boolean`** using **`PromptCatalogValues`** so far; when true, the step is skipped (no **`out`** key, no **`intro`/`outro`** line), unless **`values`** preset sets this key first (no UI; **`out[key]`** still written).  
  * **`type: 'run'`** runs **`run(values, command?)`** (sync or async) with no UI and no **`out`** entry; optional **`when`** runs only when it returns true. Pass **`command`** (e.g. oclif `this`) in options when handlers need it.  
  * Blocks may set **`required`** (text / password / integer / select): empty or missing values then fail validation or `onMissingNonInteractive`.
  */
@@ -359,11 +377,12 @@ export async function runPromptCatalog(
   const out: Record<string, PromptValue> = {};
 
   for (const [key, def] of Object.entries(catalog)) {
-    if (shouldSkipBlock(def, out)) {
+    // Apply `values` presets before `hidden` / `when` so CLI/env fixes still win without UI.
+    if (tryApplyPreset(key, def, preset, out, hooks)) {
       continue;
     }
 
-    if (tryApplyPreset(key, def, preset, out, hooks)) {
+    if (shouldSkipBlock(def, out)) {
       continue;
     }
 
@@ -384,7 +403,7 @@ export async function runPromptCatalog(
 
     if (def.type === 'text') {
       if (!interactive) {
-        const merged = mergedText(key, def, resolveIv, useYesInitial);
+        const merged = mergedText(key, def, resolveIv, useYesInitial, out);
         if (def.required && isBlankText(merged)) {
           hooks.onMissingNonInteractive(
             `Non-interactive: "${key}" is required; set initialValues.${key}, yesInitialValues.${key}, yesInitialValue on the block, or initialValue.`,
@@ -393,7 +412,7 @@ export async function runPromptCatalog(
         out[key] = merged;
         continue;
       }
-      const merged = mergedText(key, def, promptIv, false);
+      const merged = mergedText(key, def, promptIv, false, out);
       const raw = await p.text({
         message: def.message,
         initialValue: merged,

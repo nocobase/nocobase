@@ -39,7 +39,6 @@ export default class PmList extends Command {
         const message = error instanceof Error ? error.message : String(error);
         this.error(message);
       }
-      return;
     } else {
       await this.config.runCommand('api:pm:list', ['--mode=summary']);
     }

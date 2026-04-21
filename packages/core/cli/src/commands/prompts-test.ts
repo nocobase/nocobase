@@ -36,6 +36,10 @@ export default class PromptsTest extends Command {
         'Accept defaults only (no prompts); uses `yesInitialValues` merged over `initialValues`, then per-block `yesInitialValue`. Same as non-TTY.',
       default: false,
     }),
+    file: Flags.string({
+      char: 'f',
+      description: 'Merged into initialValues.file (default for the text prompt when set)',
+    }),
     text: Flags.string({
       char: 't',
       description: 'Merged into initialValues.text (default for the text prompt when set)',
@@ -120,20 +124,22 @@ export default class PromptsTest extends Command {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(PromptsTest);
 
-    const initialValues = this.buildInitialValuesFromParsed(args, flags);
+    const presetValues = this.buildPresetValuesFromParsed(args, flags);
 
     const results = await runPromptCatalog(PromptsTest.prompts, {
-      initialValues,
+      initialValues: {},
+      values: presetValues,
       yes: flags.yes,
     });
 
     this.log(JSON.stringify(results, null, 2));
   }
 
-  /** Example: map oclif parse result into `initialValues` for `runPromptCatalog`. */
-  private buildInitialValuesFromParsed(
+  /** Map oclif parse result into `values` presets: each key here skips that prompt (no Clack UI). */
+  private buildPresetValuesFromParsed(
     args: { file?: string },
     flags: {
+      file?: string;
       text?: string;
       boolean?: boolean;
       select?: string;
@@ -141,32 +147,33 @@ export default class PromptsTest extends Command {
       integer?: number;
     },
   ): PromptInitialValues {
-    const initialValues: PromptInitialValues = {};
+    const preset: PromptInitialValues = {};
 
-    if (args.file !== undefined) {
-      initialValues.file = args.file;
+    const file = args.file ?? flags.file;
+    if (file !== undefined) {
+      preset.file = file;
     }
 
     if (flags.text !== undefined) {
-      initialValues.text = flags.text;
+      preset.text = flags.text;
     }
 
     if (flags.boolean !== undefined) {
-      initialValues.boolean = flags.boolean;
+      preset.boolean = flags.boolean;
     }
 
     if (flags.select !== undefined) {
-      initialValues.select = flags.select;
+      preset.select = flags.select;
     }
 
     if (flags.password !== undefined) {
-      initialValues.password = flags.password;
+      preset.password = flags.password;
     }
 
     if (flags.integer !== undefined) {
-      initialValues.integer = flags.integer;
+      preset.integer = flags.integer;
     }
 
-    return initialValues;
+    return preset;
   }
 }
