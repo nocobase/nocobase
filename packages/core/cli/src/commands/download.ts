@@ -76,7 +76,7 @@ export type DownloadCommandResult = {
   projectRoot?: string;
 };
 
-type DownloadParsedFlags = {
+export type DownloadParsedFlags = {
   yes: boolean;
   source?: string;
   version?: string;

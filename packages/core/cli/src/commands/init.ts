@@ -17,6 +17,8 @@ import {
   runInitBrowserWizard,
 } from '../lib/init-browser-wizard.ts';
 import { run } from '../lib/run-npm.ts';
+import Install from './install.ts';
+import _ from 'lodash';
 
 export default class Init extends Command {
   static override summary =
@@ -61,6 +63,7 @@ Use \`--ui\` to open a **browser** wizard (local HTTP server; default bind \`0.0
       min: 0,
       max: 65535,
     }),
+    ..._.omit(Install.flags, ['yes']),
   };
 
   public async run(): Promise<void> {

@@ -16,6 +16,7 @@ import {
   type PromptsCatalog,
 } from '../../lib/prompt-catalog.js';
 import { setVerboseMode } from '../../lib/ui.js';
+import * as p from '@clack/prompts';
 
 type EnvScope = Exclude<CliHomeScope, 'auto'>;
 
@@ -107,7 +108,6 @@ export default class EnvAdd extends Command {
       type: 'text',
       message: 'API base URL',
       placeholder: 'http://localhost:13000/api',
-      initialValue: 'http://localhost:13000/api',
       required: true,
     },
     authType: {
@@ -126,44 +126,6 @@ export default class EnvAdd extends Command {
       placeholder: 'Enter your API token / API key',
       required: true,
       hidden: (values) => values.authType !== 'token',
-    },
-    upsertEnv: {
-      type: 'run',
-      run: async (values) => {
-        await upsertEnv(
-          String(values.name),
-          {
-            baseUrl: String(values.apiBaseUrl),
-            ...(values.authType === 'token' && values.accessToken != null
-              ? { accessToken: String(values.accessToken) }
-              : {}),
-          },
-          { scope: values.scope as EnvScope },
-        );
-      },
-    },
-    oauthLogin: {
-      type: 'run',
-      when: (values) => values.authType === 'oauth',
-      run: async (values, command) => {
-        const cmd = command as EnvAdd;
-        const argv = [String(values.name)];
-        if (values.scope !== undefined && values.scope !== '') {
-          argv.push('-s', String(values.scope));
-        }
-        await cmd.config.runCommand('env:auth', argv);
-      },
-    },
-    loadCommands: {
-      type: 'run',
-      run: async (values, command) => {
-        const cmd = command as EnvAdd;
-        await cmd.config.runCommand('env:update', [String(values.name)]);
-      },
-    },
-    outro: {
-      type: 'outro',
-      message: 'Prompts complete — finishing setup.',
     },
   };
 
@@ -212,12 +174,33 @@ export default class EnvAdd extends Command {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvAdd);
-    setVerboseMode(flags.verbose);
-    await this.runPromptCatalog({
+    const results = await this.runPromptCatalog({
       values: this.buildValues(args.name, flags),
       initialValues: {
         apiBaseUrl: flags['default-api-base-url'],
       },
     });
+
+    const envConfig = {
+      baseUrl: String(results.apiBaseUrl),
+      ...(results.authType === 'token' && results.accessToken != null
+        ? { accessToken: String(results.accessToken) }
+        : {}),
+    }
+
+    console.log(results, envConfig);
+
+    await upsertEnv(
+      String(results.name),
+      envConfig,
+      { scope: results.scope as EnvScope },
+    );
+
+    if (results.authType === 'oauth') {
+      await this.config.runCommand('env:auth', [String(results.name)]);
+    }
+    await this.config.runCommand('env:update', [String(results.name)]);
+
+    p.outro(`Env "${String(results.name)}" added successfully.`);
   }
 }
