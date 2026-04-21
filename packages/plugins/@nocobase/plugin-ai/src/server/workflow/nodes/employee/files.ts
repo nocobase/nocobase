@@ -19,7 +19,7 @@ import { Plugin } from '@nocobase/server';
 import { resolveContentType, resolveFileIdentity } from '../../utils';
 
 export abstract class Files {
-  static resolvers(plugin: Plugin, job: JobModel, attachmentPart: Record<string, any>) {
+  static resolvers(plugin: Plugin, attachmentPart: Record<string, any>) {
     const resolveAttachments = async (files: AIEmployeeInstructionFiles[]) => {
       const attachments = files.filter((it) => it.type === 'file_id');
       if (attachments.length) {
@@ -27,11 +27,7 @@ export abstract class Files {
         for (const collection of _.uniq(attachments.map((it) => it.collection))) {
           const repository = plugin.db.getRepository(collection as string);
           if (!repository) {
-            job.set({
-              status: JOB_STATUS.ERROR,
-              result: `Attachment collection [${collection}] not existed`,
-            });
-            return;
+            throw new Error(`Attachment collection [${collection}] not existed`);
           }
           const attachmentKeys = attachmentGroup[collection as string]?.map((it) => it.value);
           const attachmentModels = await repository.find({
@@ -42,11 +38,7 @@ export abstract class Files {
             },
           });
           if (!attachmentModels.length) {
-            job.set({
-              status: JOB_STATUS.ERROR,
-              result: `Attachment [${collection}] record not existed. Keys: [${attachmentKeys.join(',')}]`,
-            });
-            return;
+            throw new Error(`Attachment [${collection}] record not existed. Keys: [${attachmentKeys.join(',')}]`);
           }
           attachmentPart.attachments = [
             ...(attachmentPart.attachments ?? []),

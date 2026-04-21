@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  FlowNodeModel,
-  Instruction,
-  InstructionResult,
-  JOB_STATUS,
-  JobModel,
-  Processor,
-} from '@nocobase/plugin-workflow';
+import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 import _ from 'lodash';
 import PluginAIServer from '../../../plugin';
 import { AIEmployee } from '../../../ai-employees/ai-employee';
@@ -23,7 +16,7 @@ import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
 
 export class AIEmployeeInstruction extends Instruction {
-  run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
+  async run(node: FlowNodeModel, input: any, processor: Processor) {
     const {
       username,
       message,
@@ -50,16 +43,17 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
       typeof message.user === 'object' ? JSON.stringify(message.user) : message.user
     }`;
 
-    const job = processor.saveJob({
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: input?.id ?? null,
     });
 
-    const runner = async () => {
+    await processor.exit();
+
+    try {
       const { conversation, aiWorkflowTasks } = await this.createWorkflowTask({
-        userId: input?.result?.user?.id ?? userId,
         username,
         userMessage,
         systemMessage,
@@ -68,7 +62,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
         toolName,
         node,
         processor,
-        job,
+        jobId: id,
       });
 
       let currentRoles = input?.result?.roleName;
@@ -120,7 +114,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
       const attachmentPart: Record<string, any> = {};
       if (files?.length) {
-        const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, job, attachmentPart);
+        const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
         await resolveAttachments(files);
         await resolveUrls(files);
       }
@@ -172,37 +166,31 @@ Do not send another normal assistant response without invoking it.
         }
 
         isToolInvoke = result.messages
-          .filter((it) => it.type === 'ai')
-          .flatMap((it) => it.tool_calls)
-          .some((it) => it.name === toolName);
+          .filter((it: any) => it.type === 'ai')
+          .flatMap((it: any) => it.tool_calls)
+          .some((it: any) => it.name === toolName);
       } while (!isToolInvoke && retry++ < 2);
 
-      if (isToolInvoke) {
-        await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
-      } else {
-        job.set({
-          status: JOB_STATUS.ERROR,
-          result: 'AI employee not do job correctly',
-        });
-        await this.workflow.resume(job);
+      if (!isToolInvoke) {
+        throw new Error('AI employee not do job correctly');
       }
-    };
 
-    runner().catch((e) => {
-      processor.logger.error(`llm invoke failed, ${e.message}`, {
+      await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
+    } catch (e: any) {
+      processor.logger.error(`ai employee invoke failed, ${e.message}`, {
         node: node.id,
         stack: e.stack,
         chatOptions: node.config,
+      });
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
       });
       job.set({
         status: JOB_STATUS.ERROR,
         result: e.message,
       });
-      this.workflow.resume(job);
-    });
-
-    processor.exit();
-    return job;
+      await this.workflow.resume(job);
+    }
   }
 
   resume(node: FlowNodeModel, job: any, processor: Processor) {
@@ -210,7 +198,6 @@ Do not send another normal assistant response without invoking it.
   }
 
   private async createWorkflowTask({
-    userId,
     username,
     userMessage,
     systemMessage,
@@ -219,9 +206,8 @@ Do not send another normal assistant response without invoking it.
     toolName,
     node,
     processor,
-    job,
+    jobId,
   }: {
-    userId: string;
     username: string;
     userMessage: string;
     systemMessage: string;
@@ -230,7 +216,7 @@ Do not send another normal assistant response without invoking it.
     toolName: string;
     node: FlowNodeModel;
     processor: Processor;
-    job: JobModel;
+    jobId: number;
   }) {
     const ai = this.workflow.app.pm.get(PluginAIServer);
     return await this.workflow.db.sequelize.transaction(async (transaction) => {
@@ -257,9 +243,9 @@ Do not send another normal assistant response without invoking it.
           requiresApproval,
           status: 'processing',
           sessionId: conversation.sessionId,
-          jobId: job.id,
+          jobId,
           executionId: processor.execution.id,
-          nodeId: job.nodeId,
+          nodeId: node.id,
           workflowId: node.workflowId,
         },
         transaction,
