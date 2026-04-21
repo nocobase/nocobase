@@ -207,6 +207,8 @@ nb upgrade
 
 ## 命令参考
 
+以下是常用命令的速查表。每个命令的完整参数说明请参阅 [CLI API 参考](/cn/api/cli/cli)。
+
 ### 初始化与安装
 
 | 命令 | 说明 |
@@ -281,4 +283,5 @@ nb upgrade
 - [AI 员工](/cn/ai-employees) — 与 AI 员工并肩协作，参与系统搭建、数据分析、翻译等业务场景
 - [AI 开发](/cn/ai-dev) — 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架到业务逻辑的全流程
 - [安装方式和版本对比](/cn/get-started/quickstart) — 了解 NocoBase 的不同安装方式和版本通道（后续会逐步被 NocoBase CLI 替代）
+- [CLI API 参考](/cn/api/cli/cli) — 所有命令的完整参数说明
 - [插件开发](/cn/plugin-development) — 学习如何创建、发布与维护自定义插件
