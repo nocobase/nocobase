@@ -1101,6 +1101,61 @@ describe('flowSurfaces resource', () => {
     }
   });
 
+  it('should align trigger and expand action default titles with current frontend persisted strings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Action title parity page',
+      tabTitle: 'Action title parity tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const treeTableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+    });
+    const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
+
+    const treeTableConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: treeTableUid,
+        },
+        changes: {
+          treeTable: true,
+        },
+      },
+    });
+    expect(treeTableConfigureRes.status).toBe(200);
+
+    const collectionTrigger = await addAction(rootAgent, tableUid, 'triggerWorkflow');
+    const workbenchTrigger = await addAction(rootAgent, actionPanelUid, 'triggerWorkflow');
+    const expandCollapse = await addAction(rootAgent, treeTableUid, 'expandCollapse');
+
+    const collectionTriggerReadback = await getSurface(rootAgent, {
+      uid: collectionTrigger.uid,
+    });
+    expect(collectionTriggerReadback.tree.use).toBe('CollectionTriggerWorkflowActionModel');
+    expect(collectionTriggerReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Trigger workflow');
+
+    const workbenchTriggerReadback = await getSurface(rootAgent, {
+      uid: workbenchTrigger.uid,
+    });
+    expect(workbenchTriggerReadback.tree.use).toBe('WorkbenchTriggerWorkflowActionModel');
+    expect(workbenchTriggerReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Trigger global workflow');
+
+    const expandCollapseReadback = await getSurface(rootAgent, {
+      uid: expandCollapse.uid,
+    });
+    expect(expandCollapseReadback.tree.use).toBe('ExpandCollapseActionModel');
+    expect(expandCollapseReadback.tree.props?.title).toBeUndefined();
+    expect(expandCollapseReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'DownOutlined',
+    });
+    expect(expandCollapseReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+  });
+
   it('should persist canonical block headers through configure for representative block families', async () => {
     const page = await createPage(rootAgent, {
       title: 'Canonical block header page',

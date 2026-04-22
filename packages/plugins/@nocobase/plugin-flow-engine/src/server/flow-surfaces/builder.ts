@@ -792,7 +792,6 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       icon: 'ReloadOutlined',
     },
     ExpandCollapseActionModel: {
-      title: 'Expand/Collapse',
       icon: 'DownOutlined',
     },
     BulkDeleteActionModel: {
@@ -856,7 +855,7 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       icon: 'PlayCircleOutlined',
     },
     WorkbenchTriggerWorkflowActionModel: {
-      title: 'Trigger workflow',
+      title: 'Trigger global workflow',
       icon: 'PlayCircleOutlined',
     },
     MailSendActionModel: {
