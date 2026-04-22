@@ -696,6 +696,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const sourceViewName = `Inspect source ${unique}`;
     const associationViewName = `Inspect associated target ${unique}`;
     const targetViewName = `Inspect target fallback ${unique}`;
+    const sourceAddDescription = 'Create one source record.';
+    const sourceViewDescription = 'View one source record.';
+    const associationViewDescription = 'View one related target record.';
+    const targetViewDescription = 'View one target record.';
 
     await rootAgent.resource('collections').create({
       values: {
@@ -770,17 +774,17 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 addNew: {
                   name: sourceAddName,
-                  description: 'Create one source record.',
+                  description: sourceAddDescription,
                 },
                 view: {
                   name: sourceViewName,
-                  description: 'View one source record.',
+                  description: sourceViewDescription,
                 },
                 associations: {
                   target: {
                     view: {
                       name: associationViewName,
-                      description: 'View one related target record.',
+                      description: associationViewDescription,
                     },
                   },
                 },
@@ -802,7 +806,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 view: {
                   name: targetViewName,
-                  description: 'View one target record.',
+                  description: targetViewDescription,
                 },
               },
             },
@@ -856,7 +860,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(addNewFields).toEqual(expect.arrayContaining(['title', 'note', 'target']));
     expect(addNewFields).not.toContain('createdAt');
     expect(addNewFields).not.toContain('updatedAt');
-    expect(await findPopupTemplateByName(sourceAddName)).toBeTruthy();
+    expect(await findPopupTemplateByName(sourceAddName)).toMatchObject({
+      name: sourceAddName,
+      description: sourceAddDescription,
+    });
 
     const viewPopup = await readPrimaryPopupBlockFromAction(viewAction.uid);
     const viewTab = _.castArray(viewPopup.popupSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
@@ -864,7 +871,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(viewTab?.props?.title).toBe(sourceViewName);
     expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
     expect(collectFieldPaths(viewPopup.popupBlock)).toEqual(expect.arrayContaining(['title', 'note', 'createdAt']));
-    expect(await findPopupTemplateByName(sourceViewName)).toBeTruthy();
+    expect(await findPopupTemplateByName(sourceViewName)).toMatchObject({
+      name: sourceViewName,
+      description: sourceViewDescription,
+    });
 
     const fieldPopup = await readPrimaryPopupBlockFromField(targetField.uid);
     expect(fieldPopup.fieldReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(associationViewName);
@@ -872,7 +882,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const associationPopupFields = collectFieldPaths(fieldPopup.popupBlock);
     expect(associationPopupFields).toEqual(expect.arrayContaining(['name', 'label', 'createdAt']));
     expect(associationPopupFields).not.toContain('title');
-    expect(await findPopupTemplateByName(associationViewName)).toBeTruthy();
+    expect(await findPopupTemplateByName(associationViewName)).toMatchObject({
+      name: associationViewName,
+      description: associationViewDescription,
+    });
     expect(await findPopupTemplateByName(targetViewName)).toBeUndefined();
   });
 
@@ -880,6 +893,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const unique = Date.now();
     const roleAddName = `User role add ${unique}`;
     const roleEditName = `User role edit ${unique}`;
+    const roleAddDescription = 'Create one related role record.';
+    const roleEditDescription = 'Edit one related role record.';
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -898,11 +913,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   roles: {
                     addNew: {
                       name: roleAddName,
-                      description: 'Create one related role record.',
+                      description: roleAddDescription,
                     },
                     edit: {
                       name: roleEditName,
-                      description: 'Edit one related role record.',
+                      description: roleEditDescription,
                     },
                   },
                 },
@@ -979,6 +994,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const addNewFields = collectFieldPaths(addNewPopup.popupBlock);
     expect(addNewFields).toContain('title');
     expect(addNewFields).not.toContain('username');
+    expect(await findPopupTemplateByName(roleAddName)).toMatchObject({
+      name: roleAddName,
+      description: roleAddDescription,
+    });
 
     const editPopup = await readPrimaryPopupBlockFromAction(editAction.uid);
     expect(editPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(roleEditName);
@@ -986,6 +1005,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const editFields = collectFieldPaths(editPopup.popupBlock);
     expect(editFields).toContain('title');
     expect(editFields).not.toContain('username');
+    expect(await findPopupTemplateByName(roleEditName)).toMatchObject({
+      name: roleEditName,
+      description: roleEditDescription,
+    });
   });
 
   it('should not regenerate default popup content when popup.tryTemplate hits an existing template', async () => {

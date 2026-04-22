@@ -12,6 +12,7 @@ import type {
   FlowSurfaceApplyBlueprintDefaultCollection,
   FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDefaultPopupActionMap,
+  FlowSurfaceApplyBlueprintDefaultPopupName,
 } from './public-types';
 
 export const FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY = '__flowSurfaceApplyBlueprintPopupDefaults';
@@ -72,24 +73,31 @@ export function getFlowSurfaceApplyBlueprintDefaultCollection(
   return _.isPlainObject(collectionDefaults) ? collectionDefaults : undefined;
 }
 
-function readPopupName(
+function readPopupMetadata(
   popupMap: FlowSurfaceApplyBlueprintDefaultPopupActionMap | undefined,
   actionType: FlowSurfaceApplyBlueprintPopupDefaultActionType | undefined,
-) {
+): FlowSurfaceApplyBlueprintDefaultPopupName | undefined {
   if (!popupMap || !actionType) {
     return undefined;
   }
   const normalizedName = String(popupMap[actionType]?.name || '').trim();
-  return normalizedName || undefined;
+  const normalizedDescription = String(popupMap[actionType]?.description || '').trim();
+  if (!normalizedName || !normalizedDescription) {
+    return undefined;
+  }
+  return {
+    name: normalizedName,
+    description: normalizedDescription,
+  };
 }
 
-export function resolveFlowSurfaceApplyBlueprintDefaultPopupName(input: {
+export function resolveFlowSurfaceApplyBlueprintDefaultPopupMetadata(input: {
   metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
   actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType;
   sourceCollectionName?: string;
   associationField?: string;
   targetCollectionName?: string;
-}) {
+}): FlowSurfaceApplyBlueprintDefaultPopupName | undefined {
   const actionType = input.actionType;
   const sourceCollectionDefaults = getFlowSurfaceApplyBlueprintDefaultCollection(
     input.metadata,
@@ -97,12 +105,12 @@ export function resolveFlowSurfaceApplyBlueprintDefaultPopupName(input: {
   );
   const associationField = String(input.associationField || '').trim();
   if (sourceCollectionDefaults?.popups?.associations && associationField) {
-    const associationPopupName = readPopupName(
+    const associationPopupMetadata = readPopupMetadata(
       sourceCollectionDefaults.popups.associations[associationField],
       actionType,
     );
-    if (associationPopupName) {
-      return associationPopupName;
+    if (associationPopupMetadata) {
+      return associationPopupMetadata;
     }
   }
 
@@ -110,5 +118,5 @@ export function resolveFlowSurfaceApplyBlueprintDefaultPopupName(input: {
     input.metadata,
     input.targetCollectionName,
   );
-  return readPopupName(targetCollectionDefaults?.popups, actionType);
+  return readPopupMetadata(targetCollectionDefaults?.popups, actionType);
 }
