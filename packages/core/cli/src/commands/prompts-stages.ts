@@ -7,43 +7,80 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
 import { Args, Command, Flags } from '@oclif/core';
 import {
   type PromptInitialValues,
   type PromptsCatalog,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
-import {
-  type RunPromptCatalogWebUIOptionsWithoutSource,
-  runPromptCatalogWebUI,
-} from '../lib/prompt-web-ui.ts';
+import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
+import PromptsTest from './prompts-test.ts';
 
-export default class PromptsTest extends Command {
+function buildWebUiStagesFromTestPrompts(
+  c: (typeof PromptsTest)['prompts'],
+): RunPromptCatalogWebUIStage[] {
+  return [
+    {
+      sectionTitle: 'Step 1',
+      sectionDescription: 'intro, file, name, and boolean',
+      catalog: {
+        intro1: c.intro1,
+        file: c.file,
+        text: c.text,
+        boolean: c.boolean,
+      } satisfies PromptsCatalog,
+    },
+    {
+      sectionTitle: 'Step 2',
+      sectionDescription: 'select, then the option1 run hook',
+      catalog: {
+        select: c.select,
+        onOption1: c.onOption1,
+      } satisfies PromptsCatalog,
+    },
+    {
+      sectionTitle: 'Step 3',
+      sectionDescription: 'password, integer, and outro',
+      catalog: {
+        password: c.password,
+        integer: c.integer,
+        outro1: c.outro1,
+      } satisfies PromptsCatalog,
+    },
+  ];
+}
+
+/**
+ * With `--ui`: `runPromptCatalogWebUI` using `stages` + `sectionTitle`, then
+ * `runPromptCatalog` on the same catalog as `prompts-test`. Without `--ui`, same terminal behavior
+ * as `prompts-test` (handy for comparing).
+ */
+export default class PromptsStages extends Command {
   static override hidden = true;
 
   static override args = {
     file: Args.string({ description: 'file to read', required: false }),
   };
+
   static override description =
-    'Demo: declarative `prompts` catalog + `initialValues` + `yesInitialValues` / per-block `yesInitialValue`; runner is `runPromptCatalog`.';
+    'Demo: with --ui, `runPromptCatalogWebUI` with `stages` (section headings in the form); without --ui, same as `prompts-test`. The submitted preset runs through the same `PromptsTest.prompts` catalog as `prompts-test`.';
+
   static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -t Ada --boolean',
-    '<%= config.bin %> <%= command.id %> -y',
-    '<%= config.bin %> <%= command.id %> -y ./README.md -p secret',
-    '<%= config.bin %> <%= command.id %> --ui',
+    '<%= config.bin %> <%= command.id %>  # same terminal flow as `prompts-test`',
+    '<%= config.bin %> <%= command.id %> --ui  # `runPromptCatalogWebUI` with `stages` + `sectionTitle`',
+    '<%= config.bin %> <%= command.id %> -y ./README.md -p secret --ui',
   ];
+
   static override flags = {
     ui: Flags.boolean({
       description:
-        'Open a browser to configure the same parameters in a form (served only on 127.0.0.1). Uses `runPromptCatalogWebUI` with this command’s `prompts` catalog. Submit to continue; then `runPromptCatalog` runs in this terminal with the submitted preset.',
+        'Open the localhost form: `runPromptCatalogWebUI` with `stages` and `sectionTitle` (vs `prompts-test --ui`, which uses one `catalog`). Without --ui, behavior matches `prompts-test` (Clack in TTY / presets).',
       default: false,
     }),
     yes: Flags.boolean({
       char: 'y',
       description:
-        'Accept defaults only (no prompts); uses `yesInitialValues` merged over `initialValues`, then per-block `yesInitialValue`. Same as non-TTY.',
+        'Accept defaults only in the terminal (no Clack after submit); same semantics as `prompts-test` when used with the submitted or default preset.',
       default: false,
     }),
     file: Flags.string({
@@ -74,90 +111,26 @@ export default class PromptsTest extends Command {
     }),
   };
 
-  static prompts: PromptsCatalog = {
-    intro1: {
-      type: 'intro',
-      title: 'Welcome to the prompts test!',
-    },
-    file: {
-      type: 'text',
-      message: 'File to read',
-      initialValue: '',
-      placeholder: 'Enter the file to read',
-      yesInitialValue: 'package.json',
-      required: true,
-    },
-    text: {
-      type: 'text',
-      message: 'What is your name?',
-      initialValue: 'world',
-      placeholder: 'Your name',
-      /**
-       * Example: async validation (Clack re-prompts; Web UI returns 400 on submit with this message).
-       */
-      validate: async (v) => {
-        if (String(v).trim().length < 2) {
-          return 'Name must be at least 2 characters';
-        }
-        return undefined;
-      },
-    },
-    boolean: {
-      type: 'boolean',
-      message: 'Do you want to continue?',
-      initialValue: true,
-    },
-    select: {
-      type: 'select',
-      message: 'Select an option',
-      options: ['option1', 'option2', 'option3'],
-      initialValue: 'option1',
-      yesInitialValue: 'option2',
-    },
-    onOption1: {
-      type: 'run',
-      when: (values) => values.select === 'option1',
-      run: (values) => {
-        p.log.info(`run block: select is option1 (current keys: ${Object.keys(values).join(', ')})`);
-      },
-    },
-    password: {
-      type: 'password',
-      message: 'Enter your password',
-      yesInitialValue: 'demo-secret',
-      required: true,
-    },
-    integer: {
-      type: 'integer',
-      message: 'Enter an integer',
-      initialValue: 0,
-      placeholder: 'e.g. 42',
-      hidden: (values) => values.select === 'option1',
-    },
-    outro1: {
-      type: 'outro',
-      message: 'Done.',
-    },
-  };
-
   public async run(): Promise<void> {
-    const { args, flags } = await this.parse(PromptsTest);
+    const { args, flags } = await this.parse(PromptsStages);
 
     let presetValues = this.buildPresetValuesFromParsed(args, flags);
+
     if (flags.ui) {
-      presetValues = await runPromptCatalogWebUI(PromptsTest.prompts, {
+      presetValues = await runPromptCatalogWebUI({
+        stages: buildWebUiStagesFromTestPrompts(PromptsTest.prompts),
         values: presetValues,
-        pageTitle: 'nb prompts-test — UI',
-        documentHeading: 'nb prompts-test',
+        pageTitle: 'nb prompts-stages — Web UI',
+        documentHeading: 'nb prompts-stages — `stages` demo',
         onServerStart: ({ host, port, url }) => {
           this.log(
-            `Local Web UI ready — ${url} (listening on ${host}:${port}). Submit the form in the browser to continue.`,
+            `Local Web UI (multi-stage) ready — ${url} (listening on ${host}:${port}). Submit the form in the browser to continue.`,
           );
         },
         onOpenBrowserError: (url, err) => {
           this.log(`Open this URL in a browser: ${url} (${err instanceof Error ? err.message : String(err)})`);
         },
-      } satisfies RunPromptCatalogWebUIOptionsWithoutSource);
+      });
     }
 
     const results = await runPromptCatalog(PromptsTest.prompts, {
@@ -169,7 +142,6 @@ export default class PromptsTest extends Command {
     this.log(JSON.stringify(results, null, 2));
   }
 
-  /** Map oclif parse result into `values` presets: each key here skips that prompt (no Clack UI). */
   private buildPresetValuesFromParsed(
     args: { file?: string },
     flags: {
@@ -182,32 +154,25 @@ export default class PromptsTest extends Command {
     },
   ): PromptInitialValues {
     const preset: PromptInitialValues = {};
-
     const file = args.file ?? flags.file;
     if (file !== undefined) {
       preset.file = file;
     }
-
     if (flags.text !== undefined) {
       preset.text = flags.text;
     }
-
     if (flags.boolean !== undefined) {
       preset.boolean = flags.boolean;
     }
-
     if (flags.select !== undefined) {
       preset.select = flags.select;
     }
-
     if (flags.password !== undefined) {
       preset.password = flags.password;
     }
-
     if (flags.integer !== undefined) {
       preset.integer = flags.integer;
     }
-
     return preset;
   }
 }
