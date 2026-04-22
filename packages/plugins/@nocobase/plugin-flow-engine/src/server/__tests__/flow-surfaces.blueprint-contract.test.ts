@@ -770,14 +770,17 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 addNew: {
                   name: sourceAddName,
+                  description: 'Create one source record.',
                 },
                 view: {
                   name: sourceViewName,
+                  description: 'View one source record.',
                 },
                 associations: {
                   target: {
                     view: {
                       name: associationViewName,
+                      description: 'View one related target record.',
                     },
                   },
                 },
@@ -799,6 +802,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 view: {
                   name: targetViewName,
+                  description: 'View one target record.',
                 },
               },
             },
@@ -894,9 +898,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   roles: {
                     addNew: {
                       name: roleAddName,
+                      description: 'Create one related role record.',
                     },
                     edit: {
                       name: roleEditName,
+                      description: 'Edit one related role record.',
                     },
                   },
                 },
@@ -1073,6 +1079,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 view: {
                   name: defaultViewName,
+                  description: 'View one record with the default details popup.',
                 },
               },
             },
