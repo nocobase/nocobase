@@ -1071,6 +1071,18 @@ export class RuleEngine {
     }
   }
 
+  rescheduleAllRules() {
+    if (this.options.isDisposed()) return;
+
+    this.lastRuleWriteByTargetKey.clear();
+    for (const entry of this.rules.values()) {
+      entry.state.runSeq += 1;
+    }
+    for (const id of this.rules.keys()) {
+      this.scheduleRule(id);
+    }
+  }
+
   private scheduleRule(id: string) {
     if (this.options.isDisposed()) return;
     const entry = this.rules.get(id);

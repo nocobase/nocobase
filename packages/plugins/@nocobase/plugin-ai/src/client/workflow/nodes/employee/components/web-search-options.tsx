@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { Switch, Alert } from 'antd';
+import { Switch } from 'antd';
 import { observer, tExpr } from '@nocobase/flow-engine';
 import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
@@ -31,7 +31,6 @@ const WebSearchSwitch: React.FC = observer(() => {
 
   const formDisabled =
     form.disabled || field.disabled || field.pattern === 'disabled' || field.pattern === 'readPretty';
-  const showConflictWarning = !!field.value && !!selectedService?.isToolConflict;
   const showWebSearchNotSupportedWarning = !!modelField.value && selectedService?.supportWebSearch === false;
   const isDisabled = formDisabled || showWebSearchNotSupportedWarning;
 
@@ -46,9 +45,6 @@ const WebSearchSwitch: React.FC = observer(() => {
       <Switch checked={!!field.value} disabled={isDisabled} onChange={(checked) => (field.value = checked)} />
       {showWebSearchNotSupportedWarning && (
         <div style={{ marginTop: 8, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Web search not supported')}</div>
-      )}
-      {showConflictWarning && (
-        <Alert style={{ marginTop: 8 }} type="warning" showIcon={true} message={t('Search disables tools')} />
       )}
     </div>
   );
