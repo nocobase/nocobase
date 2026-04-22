@@ -209,6 +209,7 @@ const LocalPlugins = () => {
     'Notification',
     'System management',
     'Security',
+    'Architecture',
     'Logging and monitoring',
     'Others',
   ];

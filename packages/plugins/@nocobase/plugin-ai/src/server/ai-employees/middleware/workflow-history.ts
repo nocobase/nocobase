@@ -10,6 +10,7 @@
 import { Database } from '@nocobase/database';
 import { AIMessage, createMiddleware, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
+import z from 'zod';
 
 const WORKFLOW_JOB_LOG_MAX_LENGTH = 200;
 
@@ -99,6 +100,26 @@ export const workflowHistoryMiddleware = (
 
   return createMiddleware({
     name: 'WorkflowHistoryMiddleware',
+    contextSchema: z.object({
+      ctx: z.any(),
+      appendMessage: z.any(),
+    }),
+    stateSchema: z.object({
+      messageId: z.coerce.string().optional(),
+      lastMessageIndex: z
+        .object({
+          lastHumanMessageIndex: z.number().default(0),
+          lastAIMessageIndex: z.number().default(0),
+          lastToolMessageIndex: z.number().default(0),
+          lastMessageIndex: z.number().default(0),
+        })
+        .default({
+          lastHumanMessageIndex: 0,
+          lastAIMessageIndex: 0,
+          lastToolMessageIndex: 0,
+          lastMessageIndex: 0,
+        }),
+    }),
     beforeModel: async (state) => {
       const lastToolMessageIndex = state.lastMessageIndex?.lastToolMessageIndex ?? 0;
       const toolMessages = state.messages

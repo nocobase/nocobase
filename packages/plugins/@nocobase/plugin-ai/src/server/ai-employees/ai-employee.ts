@@ -1462,12 +1462,12 @@ If information is missing, clearly state it in the summary.</Important>`;
     const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
     const inWorkflow = await this.isInWorkflow();
     return [
-      ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
       skillToolBindingMiddleware(this, {
         baseToolNames: Array.from(baseToolNames.values()),
       }),
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
+      ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
       conversationMiddleware(this, { providerName, model, messageId, agentThread }),
     ];
   }

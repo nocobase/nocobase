@@ -21,6 +21,8 @@
     "@nocobase/logger": "2.1.0-alpha.20",
     "@nocobase/resourcer": "2.1.0-alpha.20",
     "@nocobase/utils": "2.1.0-alpha.20",
+    "d3-dsv": "2",
+    "xlsx": "^0.18.5",
     "fast-glob": "^3.3.2",
     "flexsearch": "^0.8.2",
     "gray-matter": "^4.0.3",

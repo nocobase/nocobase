@@ -43,6 +43,7 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       blockModel.form.resetFields();
       blockModel.emitter.emit('onFieldReset');
       blockModel.resetUserModifiedFields?.();
+      blockModel.formValueRuntime?.resetAfterFormReset?.();
       if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
         ctx.view.inputArgs.onChange(data?.data);
       }
