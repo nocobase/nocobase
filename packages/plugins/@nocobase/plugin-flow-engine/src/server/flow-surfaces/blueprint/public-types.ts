@@ -133,6 +133,7 @@ export type FlowSurfaceApplyBlueprintDefaultFieldGroupSpec = {
 
 export type FlowSurfaceApplyBlueprintDefaultPopupName = {
   name: string;
+  description: string;
 };
 
 export type FlowSurfaceApplyBlueprintDefaultPopupActionMap = {

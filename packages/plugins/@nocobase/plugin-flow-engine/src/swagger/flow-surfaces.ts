@@ -3637,11 +3637,12 @@ const schemas = {
   },
   FlowSurfaceApplyBlueprintDefaultPopupName: {
     type: 'object',
-    required: ['name'],
+    required: ['name', 'description'],
     description:
-      'Name-only default popup metadata. Do not place blocks, fields, fieldGroups, layout, or other content here.',
+      'Default popup metadata with required `name` and `description`. Do not place blocks, fields, fieldGroups, layout, or other content here.',
     properties: {
       name: { type: 'string' },
+      description: { type: 'string' },
     },
     additionalProperties: false,
   },
@@ -3657,7 +3658,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintDefaultPopups: {
     type: 'object',
     description:
-      'Name-only popup defaults. Use `associations`, not `relations`, for source-collection association field popup names.',
+      'Popup defaults with required `name` and `description` metadata. Use `associations`, not `relations`, for source-collection association field popup names.',
     properties: {
       view: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
       addNew: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
@@ -3672,7 +3673,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintDefaultCollection: {
     type: 'object',
     description:
-      'v1 collection-level defaults. Only `fieldGroups` and name-only `popups` are supported; block-specific defaults are not supported.',
+      'v1 collection-level defaults. Only `fieldGroups` and `popups` with required `name` and `description` metadata are supported; block-specific defaults are not supported.',
     properties: {
       fieldGroups: {
         type: 'array',
@@ -3698,7 +3699,7 @@ const schemas = {
     type: 'object',
     required: ['mode', 'tabs'],
     description:
-      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide collection-level fieldGroups and name-only popup names for generated default popups; v1 does not support `defaults.blocks`.",
+      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide collection-level fieldGroups and popup metadata with required `name` and `description` for generated default popups; v1 does not support `defaults.blocks`.",
     properties: {
       version: {
         type: 'string',

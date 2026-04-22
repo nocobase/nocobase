@@ -46,7 +46,7 @@ const APPLY_BLUEPRINT_REACTION_TYPE_SET = new Set<string>(APPLY_BLUEPRINT_REACTI
 const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups'];
 const APPLY_BLUEPRINT_DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
 const APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
-const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name'];
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTIONS = ['view', 'addNew', 'edit'] as const;
 
@@ -203,6 +203,7 @@ function normalizeDefaultPopupName(input: any, context: string): FlowSurfaceAppl
   assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS);
   return {
     name: assertNonEmptyString(input.name, `${context}.name`),
+    description: assertNonEmptyString(input.description, `${context}.description`),
   };
 }
 

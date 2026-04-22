@@ -2881,11 +2881,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 view: {
                   name: 'User details',
+                  description: 'View one user record.',
                 },
                 associations: {
                   roles: {
                     view: {
                       name: 'User role details',
+                      description: 'View one related role record.',
                     },
                   },
                 },
@@ -2941,6 +2943,60 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'unsupported keys: blocks',
     ],
     [
+      'popups.view missing description',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                view: {
+                  name: 'User details',
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.view.description',
+      'must be a non-empty string',
+    ],
+    [
+      'popups.addNew missing description',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                addNew: {
+                  name: 'Create user',
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.addNew.description',
+      'must be a non-empty string',
+    ],
+    [
+      'popups.edit missing description',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                edit: {
+                  name: 'Edit user',
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.edit.description',
+      'must be a non-empty string',
+    ],
+    [
       'popups.view blocks',
       {
         defaults: {
@@ -2992,6 +3048,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   roles: {
                     view: {
                       name: 'User role details',
+                      description: 'View one related role record.',
                       fieldGroups: [],
                     },
                   },
@@ -3005,6 +3062,28 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'unsupported keys: fieldGroups',
     ],
     [
+      'popups.associations view missing description',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                associations: {
+                  roles: {
+                    view: {
+                      name: 'User role details',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.associations.roles.view.description',
+      'must be a non-empty string',
+    ],
+    [
       'popups.view fieldGroups',
       {
         defaults: {
@@ -3013,6 +3092,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               popups: {
                 view: {
                   name: 'User details',
+                  description: 'View one user record.',
                   fieldGroups: [],
                 },
               },

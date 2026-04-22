@@ -316,12 +316,17 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('associations');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('relations');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('`description`');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.properties.associations.additionalProperties.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopupActionMap',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.required).toEqual(['name', 'description']);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.description).toContain('blocks');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.description).toContain('fieldGroups');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.description).toContain('`description`');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.properties.description.type).toBe('string');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('required `name` and `description`');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.reaction.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintReaction',
     );
