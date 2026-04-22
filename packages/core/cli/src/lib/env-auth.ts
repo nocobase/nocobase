@@ -27,7 +27,7 @@ const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const LOOPBACK_HOST = '127.0.0.1';
 const OAUTH_LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_OAUTH_SCOPE = 'openid api offline_access';
-const DEFAULT_CLIENT_NAME = 'NocoBase CTL';
+const DEFAULT_CLIENT_NAME = 'NocoBase CLI';
 
 interface OauthServerMetadata {
   issuer: string;

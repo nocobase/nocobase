@@ -116,8 +116,13 @@ const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
 
-const COMMON_BLOCK_TITLE_OPTIONS: FlowSurfaceConfigureOptions = {
+const COMMON_BLOCK_HEADER_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Title', { example: 'User Table' }),
+  description: stringOption('Description', { example: 'Team directory and summary' }),
+};
+
+const FILTER_FORM_HEADER_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: stringOption('Title', { example: 'User filters' }),
   displayTitle: booleanOption('Whether to display the title', { example: true }),
 };
 
@@ -145,7 +150,7 @@ const TAB_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const TABLE_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
   pageSize: numberOption('Page size', { example: 20 }),
@@ -161,7 +166,7 @@ const TABLE_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const FORM_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   resource: COMMON_RESOURCE,
   layout: stringOption('Layout key', { example: 'vertical' }),
   labelAlign: stringOption('Label alignment', { example: 'left' }),
@@ -180,7 +185,7 @@ const EDIT_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   resource: COMMON_RESOURCE,
   layout: stringOption('Layout key', { example: 'vertical' }),
   labelAlign: stringOption('Label alignment', { example: 'left' }),
@@ -196,7 +201,7 @@ const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const FILTER_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...FILTER_FORM_HEADER_OPTIONS,
   resource: COMMON_RESOURCE,
   layout: stringOption('Layout key', { example: 'vertical' }),
   labelAlign: stringOption('Label alignment', { example: 'left' }),
@@ -206,7 +211,7 @@ const FILTER_FORM_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const LIST_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
   pageSize: numberOption('Page size', { example: 20 }),
@@ -216,7 +221,7 @@ const LIST_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
   columns: objectOption('Column count. Pass a number or a full responsive object that includes xs/sm/md/lg/xl/xxl.', {
@@ -236,12 +241,12 @@ const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const MARKDOWN_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   content: stringOption('Markdown content', { example: '# Team handbook' }),
 };
 
 const IFRAME_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   mode: stringOption('iframe mode', { example: 'url' }),
   url: stringOption('URL', { example: 'https://example.com/embed' }),
@@ -252,7 +257,7 @@ const IFRAME_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   query: objectOption('Chart query DSL. Builder mode is recommended by default.', {
     example: {
@@ -311,9 +316,27 @@ const CHART_OPTIONS: FlowSurfaceConfigureOptions = {
 };
 
 const ACTION_PANEL_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...COMMON_BLOCK_TITLE_OPTIONS,
+  ...COMMON_BLOCK_HEADER_OPTIONS,
   layout: stringOption('Layout key', { example: 'list' }),
   ellipsis: booleanOption('Whether to collapse overly long buttons', { example: false }),
+};
+
+const MAP_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  mapField: arrayOption('Map field path', { example: ['location'] }),
+  marker: stringOption('Marker field', { example: 'name' }),
+  dataScope: FILTER_GROUP,
+  sorting: SORTING,
+  zoom: numberOption('Default zoom level', { example: 13 }),
+};
+
+const COMMENTS_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  resource: COMMON_RESOURCE,
+  pageSize: numberOption('Page size', { example: 20 }),
+  dataScope: FILTER_GROUP,
 };
 
 const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -456,6 +479,14 @@ const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   code: JS_CODE,
   version: JS_VERSION,
+};
+
+const DIVIDER_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
+  label: stringOption('Divider label', { example: 'Basic information' }),
+  orientation: stringOption('Label position', { example: 'left' }),
+  dashed: booleanOption('Whether the divider is dashed', { example: false }),
+  color: stringOption('Label color'),
+  borderColor: stringOption('Divider line color'),
 };
 
 const ACTION_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -736,6 +767,12 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
     case 'ActionPanelBlockModel':
       options = cloneOptions(ACTION_PANEL_OPTIONS);
       break;
+    case 'MapBlockModel':
+      options = cloneOptions(MAP_OPTIONS);
+      break;
+    case 'CommentsBlockModel':
+      options = cloneOptions(COMMENTS_OPTIONS);
+      break;
     case 'JSBlockModel':
       options = cloneOptions(JS_BLOCK_OPTIONS);
       break;
@@ -767,6 +804,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
     case 'JSItemModel':
     case 'FormJSFieldItemModel':
       options = cloneOptions(JS_ITEM_OPTIONS);
+      break;
+    case 'DividerItemModel':
+      options = cloneOptions(DIVIDER_ITEM_OPTIONS);
       break;
     default:
       if (isGenericFieldNodeUse(normalized) || isGenericFieldNodeUse(semanticUse)) {

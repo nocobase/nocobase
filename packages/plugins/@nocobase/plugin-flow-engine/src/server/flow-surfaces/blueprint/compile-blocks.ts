@@ -21,6 +21,7 @@ import type {
   FlowSurfaceApplyBlueprintBlockResource,
   FlowSurfaceApplyBlueprintBlockSpec,
   FlowSurfaceApplyBlueprintDocument,
+  FlowSurfaceApplyBlueprintFieldGroupSpec,
   FlowSurfaceApplyBlueprintFieldObjectSpec,
   FlowSurfaceApplyBlueprintLayout,
   FlowSurfaceApplyBlueprintPopup,
@@ -76,6 +77,7 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'template',
   'settings',
   'fields',
+  'fieldGroups',
   'fieldsLayout',
   'actions',
   'recordActions',
@@ -97,6 +99,7 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
   'chart',
 ];
 
+const APPLY_BLUEPRINT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
 const APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS = ['key', 'type', 'title', 'settings', 'popup', 'script', 'chart'];
 const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
   'title',
@@ -136,6 +139,7 @@ const APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS = [
 ];
 const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
 const APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
+const APPLY_BLUEPRINT_FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'view',
   'edit',
@@ -600,6 +604,126 @@ function compileScopedLayout(
   };
 }
 
+function buildCompactFieldLayoutRow(keys: string[], blockType?: string) {
+  const normalizedKeys = keys.filter(Boolean);
+  if (!normalizedKeys.length) {
+    return [];
+  }
+  if (blockType === 'filterForm') {
+    const span = normalizedKeys.length === 1 ? 24 : normalizedKeys.length === 2 ? 12 : 8;
+    return normalizedKeys.map((key) => ({ key, span }));
+  }
+  if (normalizedKeys.length === 1) {
+    return [{ key: normalizedKeys[0], span: 24 }];
+  }
+  return normalizedKeys.map((key) => ({ key, span: 12 }));
+}
+
+function buildAutoCompiledFieldsLayout(fields: Array<Record<string, any>>, blockType?: string) {
+  if (!APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES.has(blockType || '') || !fields.length) {
+    return undefined;
+  }
+
+  const rows: Array<Array<{ key: string; span: number }>> = [];
+  const chunkSize = blockType === 'filterForm' ? 3 : 2;
+  let pendingKeys: string[] = [];
+
+  const flushPending = () => {
+    if (!pendingKeys.length) {
+      return;
+    }
+    rows.push(buildCompactFieldLayoutRow(pendingKeys, blockType));
+    pendingKeys = [];
+  };
+
+  fields.forEach((field) => {
+    const key = readOptionalString(field?.key);
+    if (!key) {
+      return;
+    }
+    if (readOptionalString(field?.type) === 'divider') {
+      flushPending();
+      rows.push([{ key, span: 24 }]);
+      return;
+    }
+    pendingKeys.push(key);
+    if (pendingKeys.length >= chunkSize) {
+      flushPending();
+    }
+  });
+
+  flushPending();
+  return rows.length ? { rows } : undefined;
+}
+
+function compileFieldGroups(
+  fieldGroups: FlowSurfaceApplyBlueprintFieldGroupSpec[],
+  context: string,
+): Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec> {
+  const expanded: Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec> = [];
+
+  fieldGroups.forEach((group, groupIndex) => {
+    const groupContext = `${context}[${groupIndex}]`;
+    if (!_.isPlainObject(group)) {
+      throwBadRequest(`${groupContext} must be an object`);
+    }
+    assertOnlyAllowedKeys(group, groupContext, APPLY_BLUEPRINT_FIELD_GROUP_ALLOWED_KEYS);
+    const title = assertNonEmptyString(group.title, `${groupContext}.title`);
+    const groupFields = readOptionalItems(group.fields, `${groupContext}.fields`);
+    if (!groupFields.length) {
+      throwBadRequest(`${groupContext}.fields must be a non-empty array`);
+    }
+
+    const groupLocalKey = normalizeBlueprintLocalKey(
+      group.key,
+      title || `group_${groupIndex + 1}`,
+      `${groupContext}.key`,
+    );
+    expanded.push({
+      key: `${groupLocalKey}_divider`,
+      type: 'divider',
+      settings: {
+        label: title,
+        orientation: 'left',
+      },
+    });
+    expanded.push(...groupFields);
+  });
+
+  return expanded;
+}
+
+function resolveBlockFieldInputs(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  context: string,
+): Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec> {
+  const hasFields = Object.prototype.hasOwnProperty.call(block, 'fields');
+  const hasFieldGroups = Object.prototype.hasOwnProperty.call(block, 'fieldGroups');
+  if (hasFields && hasFieldGroups) {
+    throwBadRequest(`${context} cannot mix fields with fieldGroups`);
+  }
+  if (!hasFieldGroups) {
+    return readOptionalItems(block.fields, `${context}.fields`);
+  }
+
+  const blockType = readOptionalString(block.type);
+  if (!APPLY_BLUEPRINT_FIELD_GROUP_BLOCK_TYPES.has(blockType || '')) {
+    throwBadRequest(`${context}.fieldGroups is only supported on createForm, editForm or details`);
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')) {
+    throwBadRequest(`${context}.fieldsLayout cannot be combined with ${context}.fieldGroups`);
+  }
+
+  const fieldGroups = readOptionalArray<FlowSurfaceApplyBlueprintFieldGroupSpec>(
+    block.fieldGroups,
+    `${context}.fieldGroups`,
+  );
+  if (!fieldGroups?.length) {
+    throwBadRequest(`${context}.fieldGroups must be a non-empty array`);
+  }
+  return compileFieldGroups(fieldGroups, `${context}.fieldGroups`);
+}
+
 function resolveApplyBlueprintFieldLocalKey(
   input: string | FlowSurfaceApplyBlueprintFieldObjectSpec,
   index: number,
@@ -877,7 +1001,7 @@ function compileBlocks(
     if (!_.isPlainObject(block)) {
       throwBadRequest(`${context}[${index}] must be an object`);
     }
-    const fields = readOptionalItems(block?.fields, `${context}[${index}].fields`);
+    const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
     fields.forEach((field: any, fieldIndex: number) => {
       if (typeof field?.target !== 'string' || !field.target.trim()) {
         return;
@@ -927,7 +1051,7 @@ function compileBlocks(
       settings.title = readOptionalString(block.title);
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
-    const fieldInputs = readOptionalItems(block.fields, `${blockContext}.fields`);
+    const fieldInputs = resolveBlockFieldInputs(block, blockContext);
     const fields = fieldInputs.map((field, fieldIndex) =>
       compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
     );
@@ -942,7 +1066,7 @@ function compileBlocks(
           `${blockContext}.fieldsLayout`,
           'field',
         )
-      : undefined;
+      : buildAutoCompiledFieldsLayout(fields, readOptionalString(block.type));
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
     const explicitActions = actions.map((action, actionIndex) =>
       compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),

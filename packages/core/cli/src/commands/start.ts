@@ -9,7 +9,6 @@
 
 import { Command, Flags } from '@oclif/core';
 import { getEnv } from '../lib/auth-store.ts';
-import type { CliHomeScope } from '../lib/cli-home.ts';
 import { runNocoBaseCommand } from '../lib/run-npm.ts';
 
 export default class Start extends Command {
@@ -30,12 +29,6 @@ export default class Start extends Command {
       description:
         'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
     }),
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope for resolving the env',
-      options: ['project', 'global'],
-      default: 'project',
-    }),
     quickstart: Flags.boolean({ description: 'Quickstart the application', required: false }),
     port: Flags.string({ description: 'Port (overrides appPort from env config when set)', char: 'p', required: false }),
     daemon: Flags.boolean({ description: 'Run the application as a daemon', char: 'd', required: false }),
@@ -46,8 +39,7 @@ export default class Start extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Start);
 
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'>;
-    const env = await getEnv(flags.env?.trim() || undefined, { scope });
+    const env = await getEnv(flags.env);
 
     if (!env) {
       this.error('Env is not configured');

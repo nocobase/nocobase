@@ -20,7 +20,12 @@ describe('flowSurfaces chart contract helpers', () => {
     expect(contract.editableDomains).not.toContain('decoratorProps');
     expect(contract.editableDomains).not.toContain('props');
     expect(contract.domains.stepParams?.groups?.cardSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['titleDescription.title', 'blockHeight.heightMode', 'blockHeight.height']),
+      expect.arrayContaining([
+        'titleDescription.title',
+        'titleDescription.description',
+        'blockHeight.heightMode',
+        'blockHeight.height',
+      ]),
     );
   });
 
@@ -37,6 +42,7 @@ describe('flowSurfaces chart contract helpers', () => {
         cardSettings: {
           titleDescription: {
             title: 'Created chart title',
+            description: 'Created chart description',
           },
           blockHeight: {
             heightMode: 'specifyValue',
@@ -49,6 +55,7 @@ describe('flowSurfaces chart contract helpers', () => {
     expect(node.stepParams?.cardSettings).toMatchObject({
       titleDescription: {
         title: 'Created chart title',
+        description: 'Created chart description',
       },
       blockHeight: {
         heightMode: 'specifyValue',

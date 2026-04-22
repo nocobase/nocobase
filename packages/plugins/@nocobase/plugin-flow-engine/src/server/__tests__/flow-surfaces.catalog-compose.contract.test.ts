@@ -1126,6 +1126,153 @@ describe('flowSurfaces catalog + compose contract', () => {
     }
   });
 
+  it('should auto-apply compact filterForm layout in compose when fieldsLayout is omitted', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose compact filter page',
+      tabTitle: 'Compose compact filter tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'filter',
+            type: 'filterForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: [
+              { fieldPath: 'username', target: 'table' },
+              { fieldPath: 'nickname', target: 'table' },
+              { fieldPath: 'email', target: 'table' },
+            ],
+            actions: ['submit', 'reset'],
+          },
+          {
+            key: 'table',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['username'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const filterBlock = getComposeBlock(composed, 'filter');
+    const filterReadback = await getSurface(rootAgent, {
+      uid: filterBlock.uid,
+    });
+
+    const usernameFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'username');
+    const nicknameFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'nickname');
+    const emailFilter = composed.blocks
+      .find((item: any) => item.key === 'filter')
+      ?.fields?.find((item: any) => item.fieldPath === 'email');
+
+    expect(filterReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[usernameFilter.wrapperUid], [nicknameFilter.wrapperUid], [emailFilter.wrapperUid]],
+    });
+    expect(filterReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [8, 8, 8],
+    });
+  });
+
+  it('should compile compose fieldGroups into divider items and compact rows', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose field groups page',
+      tabTitle: 'Compose field groups tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeeForm',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fieldGroups: [
+              {
+                title: 'Basic information',
+                fields: ['username', 'nickname'],
+              },
+              {
+                title: 'Contact',
+                fields: ['email'],
+              },
+            ],
+            actions: ['submit'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const formBlock = getComposeBlock(composed, 'employeeForm');
+    const formReadback = await getSurface(rootAgent, {
+      uid: formBlock.uid,
+    });
+    const formItems = _.castArray(formReadback.tree.subModels?.grid?.subModels?.items || []);
+    const basicDividerNode = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Basic information',
+    );
+    const contactDividerNode = formItems.find(
+      (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Contact',
+    );
+    const basicDivider = basicDividerNode?.uid;
+    const contactDivider = contactDividerNode?.uid;
+    const usernameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'username',
+    )?.uid;
+    const nicknameWrapper = formItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+    )?.uid;
+    const emailWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'email')
+      ?.uid;
+
+    expect(basicDividerNode?.props?.orientation).toBe('left');
+    expect(basicDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Basic information',
+      orientation: 'left',
+    });
+    expect(contactDividerNode?.props?.orientation).toBe('left');
+    expect(contactDividerNode?.stepParams?.markdownItemSetting?.title).toMatchObject({
+      label: 'Contact',
+      orientation: 'left',
+    });
+    expect(formReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[basicDivider]],
+      row2: [[usernameWrapper], [nicknameWrapper]],
+      row3: [[contactDivider]],
+      row4: [[emailWrapper]],
+    });
+    expect(formReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [12, 12],
+      row3: [24],
+      row4: [24],
+    });
+  });
+
   it('should compose a list block with item fields block actions and record actions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose list page',
@@ -1224,20 +1371,28 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const defaultViewAction = listBlock.recordActions.find((item: any) => item.type === 'view');
     const defaultEditAction = listBlock.recordActions.find((item: any) => item.type === 'edit');
-    const defaultViewReadback = await getSurface(rootAgent, {
-      uid: defaultViewAction.uid,
+    const { actionSurface: defaultViewActionSurface, popupBlock: defaultViewPopupBlock } = await readPrimaryPopupBlock(
+      defaultViewAction.uid,
+    );
+    expect(defaultViewActionSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const defaultViewPopupBlock = _.castArray(
-      defaultViewReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-    )[0];
+    expect(defaultViewActionSurface.tree.popup.template?.uid).toBeTruthy();
+    expect(defaultViewActionSurface.tree.popup.pageUid).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup.tabUid).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup.gridUid).toBeUndefined();
     expect(defaultViewPopupBlock?.use).toBe('DetailsBlockModel');
 
-    const defaultEditReadback = await getSurface(rootAgent, {
-      uid: defaultEditAction.uid,
+    const { actionSurface: defaultEditActionSurface, popupBlock: defaultEditPopupBlock } = await readPrimaryPopupBlock(
+      defaultEditAction.uid,
+    );
+    expect(defaultEditActionSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const defaultEditPopupBlock = _.castArray(
-      defaultEditReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-    )[0];
+    expect(defaultEditActionSurface.tree.popup.template?.uid).toBeTruthy();
+    expect(defaultEditActionSurface.tree.popup.pageUid).toBeUndefined();
+    expect(defaultEditActionSurface.tree.popup.tabUid).toBeUndefined();
+    expect(defaultEditActionSurface.tree.popup.gridUid).toBeUndefined();
     expect(defaultEditPopupBlock?.use).toBe('EditFormModel');
     expect(_.castArray(defaultEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
@@ -1375,7 +1530,18 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(detailsRecordActionsRes.status).toBe(200);
     const detailsBlock = getData(detailsRecordActionsRes).blocks.find((item: any) => item.key === 'details');
     expect(detailsBlock.recordActions.map((item: any) => item.type)).toEqual(['edit', 'view']);
+    const defaultViewAction = detailsBlock.recordActions.find((item: any) => item.type === 'view');
     const defaultEditAction = detailsBlock.recordActions.find((item: any) => item.type === 'edit');
+    const defaultViewActionSurface = await getSurface(rootAgent, {
+      uid: defaultViewAction.uid,
+    });
+    expect(defaultViewActionSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
+    });
+    expect(defaultViewActionSurface.tree.popup.template?.uid).toBeTruthy();
+    expect(defaultViewActionSurface.tree.popup.pageUid).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup.tabUid).toBeUndefined();
+    expect(defaultViewActionSurface.tree.popup.gridUid).toBeUndefined();
     const defaultEditActionSurface = await getSurface(rootAgent, {
       uid: defaultEditAction.uid,
     });
@@ -1979,30 +2145,34 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(addActionsData.successCount).toBe(3);
     expect(addActionsData.errorCount).toBe(1);
     expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
-    expect(addActionsData.actions[1].result.popupGridUid).toBeTruthy();
-    expect(addActionsData.actions[2].result.popupGridUid).toBeTruthy();
+    expect(addActionsData.actions[1].result.popupPageUid).toBeUndefined();
+    expect(addActionsData.actions[1].result.popupTabUid).toBeUndefined();
+    expect(addActionsData.actions[1].result.popupGridUid).toBeUndefined();
+    expect(addActionsData.actions[2].result.popupPageUid).toBeUndefined();
+    expect(addActionsData.actions[2].result.popupTabUid).toBeUndefined();
+    expect(addActionsData.actions[2].result.popupGridUid).toBeUndefined();
     expectStructuredError(addActionsData.actions[3].error, {
       status: 400,
       type: 'bad_request',
     });
     expect(addActionsData.actions[3].error.message).toContain(`type 'refresh' does not support popup`);
 
-    const implicitAddNewReadback = await getSurface(rootAgent, {
-      uid: addActionsData.actions[1].result.uid,
+    const { actionSurface: implicitAddNewSurface, popupBlock: implicitAddNewPopupBlock } = await readPrimaryPopupBlock(
+      addActionsData.actions[1].result.uid,
+    );
+    expect(implicitAddNewSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitAddNewPopupTab = _.castArray(implicitAddNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
-    const implicitAddNewPopupBlock = _.castArray(implicitAddNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
     expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
-    const implicitAddNewWithModeReadback = await getSurface(rootAgent, {
-      uid: addActionsData.actions[2].result.uid,
+    const { actionSurface: implicitAddNewWithModeSurface, popupBlock: implicitAddNewWithModePopupBlock } =
+      await readPrimaryPopupBlock(addActionsData.actions[2].result.uid);
+    expect(implicitAddNewWithModeSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitAddNewWithModePopupBlock = _.castArray(
-      implicitAddNewWithModeReadback.tree.subModels?.page?.subModels?.tabs || [],
-    )[0]?.subModels?.grid?.subModels?.items?.[0];
     expect(implicitAddNewWithModePopupBlock?.use).toBe('CreateFormModel');
 
     const addRecordActionsRes = await rootAgent.resource('flowSurfaces').addRecordActions({
@@ -2065,26 +2235,30 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(addRecordActionsData.successCount).toBe(4);
     expect(addRecordActionsData.errorCount).toBe(0);
     expect(addRecordActionsData.recordActions[0].result.popupGridUid).toBeTruthy();
-    expect(addRecordActionsData.recordActions[2].result.popupGridUid).toBeTruthy();
-    expect(addRecordActionsData.recordActions[3].result.popupGridUid).toBeTruthy();
+    expect(addRecordActionsData.recordActions[2].result.popupPageUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[2].result.popupTabUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[2].result.popupGridUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[3].result.popupPageUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[3].result.popupTabUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[3].result.popupGridUid).toBeUndefined();
 
-    const implicitEditReadback = await getSurface(rootAgent, {
-      uid: addRecordActionsData.recordActions[2].result.uid,
+    const { actionSurface: implicitEditSurface, popupBlock: implicitEditPopupBlock } = await readPrimaryPopupBlock(
+      addRecordActionsData.recordActions[2].result.uid,
+    );
+    expect(implicitEditSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitEditPopupTab = _.castArray(implicitEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
-    const implicitEditPopupBlock = _.castArray(implicitEditPopupTab?.subModels?.grid?.subModels?.items || [])[0];
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
     expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
       'FormSubmitActionModel',
     );
 
-    const implicitViewWithLayoutReadback = await getSurface(rootAgent, {
-      uid: addRecordActionsData.recordActions[3].result.uid,
+    const { actionSurface: implicitViewWithLayoutSurface, popupBlock: implicitViewWithLayoutPopupBlock } =
+      await readPrimaryPopupBlock(addRecordActionsData.recordActions[3].result.uid);
+    expect(implicitViewWithLayoutSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitViewWithLayoutPopupBlock = _.castArray(
-      implicitViewWithLayoutReadback.tree.subModels?.page?.subModels?.tabs || [],
-    )[0]?.subModels?.grid?.subModels?.items?.[0];
     expect(implicitViewWithLayoutPopupBlock?.use).toBe('DetailsBlockModel');
 
     const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({
@@ -2140,16 +2314,23 @@ describe('flowSurfaces catalog + compose contract', () => {
     const addActionsData = getData(addActionsRes);
     expect(addActionsData.successCount).toBe(1);
     expect(addActionsData.errorCount).toBe(0);
-    expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
-    expect(addActionsData.actions[0].result.popupTabUid).toBeTruthy();
-    expect(addActionsData.actions[0].result.popupGridUid).toBeTruthy();
+    expect(addActionsData.actions[0].result.popupPageUid).toBeUndefined();
+    expect(addActionsData.actions[0].result.popupTabUid).toBeUndefined();
+    expect(addActionsData.actions[0].result.popupGridUid).toBeUndefined();
 
-    const implicitAddNewReadback = await getSurface(rootAgent, {
-      uid: addActionsData.actions[0].result.uid,
+    const {
+      actionSurface: implicitAddNewSurface,
+      popupSurface: implicitAddNewPopupSurface,
+      popupBlock: implicitAddNewPopupBlock,
+    } = await readPrimaryPopupBlock(addActionsData.actions[0].result.uid);
+    const implicitAddNewPopupTab = _.castArray(
+      implicitAddNewPopupSurface.tree.subModels?.page?.subModels?.tabs || [],
+    )[0];
+    expect(implicitAddNewSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitAddNewPopupTab = _.castArray(implicitAddNewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
-    const implicitAddNewPopupBlock = _.castArray(implicitAddNewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
-    expect(implicitAddNewPopupTab?.props?.title).toBe('Create employee');
+    expect(implicitAddNewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Create employee');
+    expect(implicitAddNewPopupTab?.props?.title).toBe('Add new');
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
     expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -2183,24 +2364,38 @@ describe('flowSurfaces catalog + compose contract', () => {
     const addRecordActionsData = getData(addRecordActionsRes);
     expect(addRecordActionsData.successCount).toBe(2);
     expect(addRecordActionsData.errorCount).toBe(0);
-    expect(addRecordActionsData.recordActions[0].result.popupPageUid).toBeTruthy();
-    expect(addRecordActionsData.recordActions[1].result.popupPageUid).toBeTruthy();
+    expect(addRecordActionsData.recordActions[0].result.popupPageUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[0].result.popupTabUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[0].result.popupGridUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[1].result.popupPageUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[1].result.popupTabUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[1].result.popupGridUid).toBeUndefined();
 
-    const implicitViewReadback = await getSurface(rootAgent, {
-      uid: addRecordActionsData.recordActions[0].result.uid,
+    const {
+      actionSurface: implicitViewSurface,
+      popupSurface: implicitViewPopupSurface,
+      popupBlock: implicitViewPopupBlock,
+    } = await readPrimaryPopupBlock(addRecordActionsData.recordActions[0].result.uid);
+    const implicitViewPopupTab = _.castArray(implicitViewPopupSurface.tree.subModels?.page?.subModels?.tabs || [])[0];
+    expect(implicitViewSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitViewPopupTab = _.castArray(implicitViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
-    const implicitViewPopupBlock = _.castArray(implicitViewPopupTab?.subModels?.grid?.subModels?.items || [])[0];
-    expect(implicitViewPopupTab?.props?.title).toBe('Inspect employee');
+    expect(implicitViewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect employee');
+    expect(implicitViewPopupTab?.props?.title).toBe('Details');
     expect(implicitViewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
 
-    const implicitEditReadback = await getSurface(rootAgent, {
-      uid: addRecordActionsData.recordActions[1].result.uid,
+    const {
+      actionSurface: implicitEditSurface,
+      popupSurface: implicitEditPopupSurface,
+      popupBlock: implicitEditPopupBlock,
+    } = await readPrimaryPopupBlock(addRecordActionsData.recordActions[1].result.uid);
+    const implicitEditPopupTab = _.castArray(implicitEditPopupSurface.tree.subModels?.page?.subModels?.tabs || [])[0];
+    expect(implicitEditSurface.tree.popup.template).toMatchObject({
+      mode: 'reference',
     });
-    const implicitEditPopupTab = _.castArray(implicitEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0];
-    const implicitEditPopupBlock = _.castArray(implicitEditPopupTab?.subModels?.grid?.subModels?.items || [])[0];
-    expect(implicitEditPopupTab?.props?.title).toBe('Modify employee');
+    expect(implicitEditSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify employee');
+    expect(implicitEditPopupTab?.props?.title).toBe('Edit');
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
     expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -2265,7 +2460,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     const validTableReadback = await getSurface(rootAgent, {
       uid: addBlocksData.blocks[0].result.uid,
     });
-    expect(validTableReadback.tree.props?.title).toBe('Valid employees table');
+    expect(validTableReadback.tree.stepParams?.cardSettings?.titleDescription?.title).toBe('Valid employees table');
   });
 
   it('should require dataSourceKey when addBlock creates a collection block from raw resourceInit', async () => {

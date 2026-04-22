@@ -120,6 +120,120 @@ describe('department data sync', async () => {
     expect(department3.parent).toBeNull();
   });
 
+  it('should sync department sort on create and update', async () => {
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '1',
+          title: 'test',
+          sort: 10,
+        },
+      ],
+    });
+
+    const department = await db.getRepository('departments').findOne({
+      filter: {
+        title: 'test',
+      },
+      fields: ['id', 'title', 'sort'],
+    });
+
+    expect(department).toBeTruthy();
+    expect(department.sort).toBe(10);
+
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '1',
+          title: 'test',
+          sort: 20,
+        },
+      ],
+    });
+
+    const updatedDepartment = await db.getRepository('departments').findOne({
+      filterByTk: department.id,
+      fields: ['id', 'title', 'sort'],
+    });
+
+    expect(updatedDepartment).toBeTruthy();
+    expect(updatedDepartment.sort).toBe(20);
+  });
+
+  it('should sync parent isLeaf when sub department is deleted and synced again', async () => {
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '1',
+          title: 'test',
+        },
+        {
+          uid: '2',
+          title: 'sub-test',
+          parentUid: '1',
+        },
+      ],
+    });
+
+    const department = await db.getRepository('departments').findOne({
+      filter: {
+        title: 'test',
+      },
+      fields: ['id', 'title', 'isLeaf'],
+    });
+
+    expect(department).toBeTruthy();
+    expect(department.isLeaf).toBe(false);
+
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '2',
+          title: 'sub-test',
+          isDeleted: true,
+        },
+      ],
+    });
+
+    const updatedDepartment = await db.getRepository('departments').findOne({
+      filterByTk: department.id,
+      fields: ['id', 'title', 'isLeaf'],
+    });
+
+    expect(updatedDepartment).toBeTruthy();
+    expect(updatedDepartment.isLeaf).toBe(true);
+
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '2',
+          title: 'sub-test',
+          parentUid: '1',
+        },
+      ],
+    });
+
+    const resyncedDepartment = await db.getRepository('departments').findOne({
+      filterByTk: department.id,
+      fields: ['id', 'title', 'isLeaf'],
+      appends: ['children'],
+    });
+
+    expect(resyncedDepartment).toBeTruthy();
+    expect(resyncedDepartment.isLeaf).toBe(false);
+    expect(resyncedDepartment.children).toHaveLength(1);
+  });
+
   it('should update user department', async () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',

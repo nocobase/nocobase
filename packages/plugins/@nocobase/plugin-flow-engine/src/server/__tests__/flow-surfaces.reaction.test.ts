@@ -301,6 +301,67 @@ describe('flowSurfaces reaction', () => {
     ]);
   });
 
+  it('should expose and persist block linkage rules for markdown and iframe blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Block linkage content page',
+      tabTitle: 'Block linkage content tab',
+    });
+    const markdownUid = await addBlock(rootAgent, page.tabSchemaUid, 'markdown');
+    const iframeUid = await addBlock(rootAgent, page.tabSchemaUid, 'iframe');
+
+    for (const uid of [markdownUid, iframeUid]) {
+      const meta = await service.getReactionMeta({
+        target: {
+          uid,
+        },
+      });
+      expect(findCapability(meta, 'blockLinkage')).toBeTruthy();
+
+      const blockLinkageResult = await service.transaction((transaction) =>
+        service.setBlockLinkageRules(
+          {
+            target: {
+              uid,
+            },
+            rules: [
+              {
+                key: `hide-${uid}`,
+                then: [
+                  {
+                    type: 'setBlockState',
+                    state: 'hidden',
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      );
+      expect(blockLinkageResult.resolvedScene).toBe('block');
+      expect(blockLinkageResult.normalizedRules).toMatchObject([
+        {
+          key: `hide-${uid}`,
+        },
+      ]);
+
+      const readback = await getSurface(rootAgent, { uid });
+      expect(readback.tree.stepParams?.cardSettings?.linkageRules).toMatchObject([
+        {
+          key: `hide-${uid}`,
+          actions: [
+            {
+              name: 'linkageSetBlockProps',
+              params: {
+                value: 'hidden',
+              },
+            },
+          ],
+        },
+      ]);
+    }
+  });
+
   it('should reject stale reaction fingerprints on field value writes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Reaction conflict page',

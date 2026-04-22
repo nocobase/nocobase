@@ -106,6 +106,21 @@ export const InteractionPage = () => {
     [api, currentPath, interactionApiPath, navigate],
   );
 
+  const onSubmit = useCallback(
+    async (cancel = false) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        await runInteraction('post', cancel ? { cancel: 1 } : { submit: 1 });
+      } catch (error: unknown) {
+        setError(getErrorMessage(error, 'Failed to submit interaction'));
+        setLoading(false);
+      }
+    },
+    [runInteraction],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -126,17 +141,39 @@ export const InteractionPage = () => {
     };
   }, [runInteraction]);
 
-  const onSubmit = async (cancel = false) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await runInteraction('post', cancel ? { cancel: 1 } : { submit: 1 });
-    } catch (error: unknown) {
-      setError(getErrorMessage(error, 'Failed to submit interaction'));
-      setLoading(false);
+  useEffect(() => {
+    if (interaction?.prompt !== 'consent' || loading) {
+      return;
     }
-  };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) {
+        return;
+      }
+      const el = e.target as HTMLElement | null;
+      if (el?.closest('input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
+
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const ae = document.activeElement;
+        if (ae instanceof HTMLButtonElement || ae instanceof HTMLAnchorElement) {
+          return;
+        }
+        e.preventDefault();
+        void onSubmit(false);
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        void onSubmit(true);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [interaction?.prompt, loading, onSubmit]);
 
   if (loading) {
     return (

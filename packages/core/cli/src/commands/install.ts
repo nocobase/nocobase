@@ -478,7 +478,7 @@ export default class Install extends Command {
     }
     const npmArgs = this.buildNocoBaseInstallArgs(flags);
     try {
-      await this.config.runCommand('stop', ['-e', envName, '-s', CONFIG_SCOPE]);
+      await this.config.runCommand('stop', ['-e', envName]);
     } catch {
       /* Best-effort: env may be missing, remote-only, or nothing was running. */
     }
@@ -492,7 +492,7 @@ export default class Install extends Command {
     } else {
       this.log(label);
     }
-    await this.config.runCommand('start', ['-e', envName, '-s', CONFIG_SCOPE, '-p', appPort, '-d']);
+    await this.config.runCommand('start', ['-e', envName, '-p', appPort, '-d']);
   }
 
   public async run(): Promise<void> {
