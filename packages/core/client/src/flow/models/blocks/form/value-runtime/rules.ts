@@ -1172,7 +1172,6 @@ export class RuleEngine {
 
     const ruleContext = this.prepareRuleContext(rule);
     const { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
-
     if (!this.shouldRunRule(rule, targetNamePath, targetKey, baseCtx)) {
       clearDeps(state);
       disposeBinding();
@@ -1487,18 +1486,51 @@ export class RuleEngine {
     // 编辑态默认值规则：
     // - 顶层编辑表单：不应用默认值
     // - 子表单：仅对“新增行/新增对象”（__is_new__ = true）应用默认值
-    let item: any;
+    return this.getItemContext(baseCtx)?.__is_new__ === true;
+  }
+
+  private isStaleToManyItemContext(baseCtx: any): boolean {
+    const item = this.getItemContext(baseCtx);
+    if (!Number.isFinite(item?.index) || !Number.isFinite(item?.length)) return false;
+    return item.index < 0 || item.index >= item.length;
+  }
+
+  private getItemContext(baseCtx: any) {
     try {
-      item = baseCtx?.item;
+      return baseCtx?.item;
     } catch {
-      item = undefined;
+      return undefined;
+    }
+  }
+
+  private getRuntimeRowIdentity(row: any): string | null {
+    const tempKey = row?.__index__;
+    if (tempKey != null && tempKey !== '') {
+      return `tmp:${String(tempKey)}`;
     }
 
-    if (!item || typeof item !== 'object') {
-      return false;
+    const id = row?.id;
+    if (id != null && id !== '') {
+      return `id:${String(id)}`;
     }
 
-    return item.__is_new__ === true;
+    return null;
+  }
+
+  private isMismatchedToManyItemContext(baseCtx: any, targetNamePath: NamePath): boolean {
+    const item = this.getItemContext(baseCtx);
+    if (!item) return false;
+
+    for (let i = targetNamePath.length - 1; i >= 0; i--) {
+      if (typeof targetNamePath[i] !== 'number') continue;
+
+      const currentRow = this.options.getFormValueAtPath(targetNamePath.slice(0, i + 1));
+      const currentIdentity = this.getRuntimeRowIdentity(currentRow);
+      const itemIdentity = this.getRuntimeRowIdentity(item.value);
+      return !!currentIdentity && !!itemIdentity && currentIdentity !== itemIdentity;
+    }
+
+    return false;
   }
 
   private shouldRunRule(
@@ -1509,6 +1541,8 @@ export class RuleEngine {
   ): boolean {
     if (!rule.getEnabled()) return false;
     if (!targetNamePath || !targetKey) return false;
+    if (this.isStaleToManyItemContext(baseCtx)) return false;
+    if (this.isMismatchedToManyItemContext(baseCtx, targetNamePath)) return false;
     if (rule.source === 'default') {
       if (!this.shouldApplyDefaultRuleInCurrentState(baseCtx)) return false;
       if (this.options.findExplicitHit(targetKey)) return false;
@@ -1808,6 +1842,19 @@ export class RuleEngine {
       }
     })();
 
+    // Row/grid rules resolve target paths through fieldIndex (for example `roles.title`
+    // -> `roles[1].title`). When a row is deleted or reordered, the rule must reschedule
+    // even if its value/condition does not reference ctx.item directly.
+    const fieldIndex = baseCtx?.model?.context?.fieldIndex ?? baseCtx?.fieldIndex;
+    const shouldWatchFieldIndex = Array.isArray(fieldIndex) && fieldIndex.some((it) => typeof it === 'string');
+    if (shouldWatchFieldIndex) {
+      const fieldIndexDisposer = reaction(
+        () => this.getFieldIndexSignature(baseCtx),
+        () => this.scheduleRule(rule.id),
+      );
+      state.depDisposers.push(fieldIndexDisposer);
+    }
+
     for (const depKey of deps) {
       if (depKey === 'fv:*') {
         continue;
@@ -1841,14 +1888,9 @@ export class RuleEngine {
       const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
       const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
 
-      // 特殊变量：item 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parentItem/index 链依赖 fieldIndex。
+      // 特殊变量：item 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上）。
+      // fieldIndex 的变化已统一在上面监听，这里只补 item 自身取值的依赖。
       if (varName === 'item') {
-        const fieldIndexDisposer = reaction(
-          () => this.getFieldIndexSignature(baseCtx),
-          () => this.scheduleRule(rule.id),
-        );
-        state.depDisposers.push(fieldIndexDisposer);
-
         if (depPath.length) {
           const trackingFormValues = this.options.createTrackingFormValues({ deps: new Set(), wildcard: false });
           const itemValueDisposer = reaction(
