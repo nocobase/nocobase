@@ -121,6 +121,7 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
 
     const shouldUseIncomingType =
       Boolean(fieldOptions.rawType) &&
+      Boolean(modelOptions.rawType || modelOptions.type) &&
       (modelOptions.rawType
         ? fieldOptions.rawType !== modelOptions.rawType && !hasCompatibleStorageType
         : !incomingPossibleTypes.includes(modelOptions.type) && !hasCompatibleStorageType);
@@ -133,7 +134,8 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
 
     for (const key of [...new Set([...Object.keys(modelOptions), ...Object.keys(fieldOptions)])]) {
       const shouldUseIncoming =
-        dbSyncedKeys.includes(key as keyof FieldOptions) || (modelOptions[key] === null && key in fieldOptions);
+        dbSyncedKeys.includes(key as keyof FieldOptions) ||
+        (modelOptions[key] === null && key in fieldOptions);
       if (shouldUseIncoming) {
         newOptions[key] = fieldOptions[key];
       }

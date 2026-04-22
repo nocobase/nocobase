@@ -302,19 +302,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
       this.tabBarExtraContent.right !== undefined ? (
         this.tabBarExtraContent.right
       ) : (
-        <AddSubModelButton
-          model={this}
-          subModelKey={'tabs'}
-          items={[
-            {
-              key: 'blank',
-              label: this.context.t('Blank tab'),
-              createModelOptions: this.createPageTabModelOptions,
-            },
-          ]}
-        >
-          <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
-        </AddSubModelButton>
+        <span style={{ display: 'inline-flex', marginInlineEnd: tabNavPaddingInlineStart }}>
+          <AddSubModelButton
+            model={this}
+            subModelKey={'tabs'}
+            items={[
+              {
+                key: 'blank',
+                label: this.context.t('Blank tab'),
+                createModelOptions: this.createPageTabModelOptions,
+              },
+            ]}
+          >
+            <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+          </AddSubModelButton>
+        </span>
       );
 
     return (

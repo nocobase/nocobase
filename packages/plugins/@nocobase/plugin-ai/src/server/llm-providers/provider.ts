@@ -22,7 +22,7 @@ import '@langchain/core/utils/stream';
 import { ToolsEntry } from '@nocobase/ai';
 import { LLMResult } from '@langchain/core/outputs';
 import { ContentBlock } from '@langchain/core/messages';
-import { CachedDocumentLoader, SUPPORTED_DOCUMENT_EXTNAMES, SupportedDocumentExtname } from '../document-loader';
+import { CachedDocumentLoader, SUPPORTED_DOCUMENT_EXTNAMES } from '../document-loader';
 import path from 'node:path';
 import PluginAIServer from '../plugin';
 
@@ -147,7 +147,7 @@ export abstract class LLMProvider {
       const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
       return {
         placement: 'system',
-        content: `The user has uploaded a ${attachment.mimetype} file (filename: ${safeFilename}). Please inform the user directly that you do not support parsing image content.`,
+        content: `The user has uploaded a ${attachment.mimetype} file (filename: ${safeFilename}). Please inform the user directly that you do not support parsing ${attachment.mimetype} content.`,
       };
     }
   }
@@ -162,7 +162,7 @@ export abstract class LLMProvider {
 
   protected isDocumentLoaderSupportedAttachment(attachment: AttachmentModel): boolean {
     const ext = path.extname(attachment?.filename ?? '').toLocaleLowerCase();
-    return SUPPORTED_DOCUMENT_EXTNAMES.includes(ext as SupportedDocumentExtname);
+    return SUPPORTED_DOCUMENT_EXTNAMES.includes(ext);
   }
 
   protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {

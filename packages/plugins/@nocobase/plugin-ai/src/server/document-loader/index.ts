@@ -11,7 +11,6 @@ import { DocumentLoader } from './loader';
 import { SUPPORTED_DOCUMENT_EXTNAMES } from './constants';
 import { CachedDocumentLoader } from './cached';
 import { resolveExtname } from './utils';
-import { SupportedDocumentExtname } from './types';
 
 export class DocumentLoaders {
   readonly raw: DocumentLoader;
@@ -24,7 +23,7 @@ export class DocumentLoaders {
       parserVersion: 'v1',
       parsedMimetype: 'text/plain',
       parsedFileExtname: 'txt',
-      supports: (file) => SUPPORTED_DOCUMENT_EXTNAMES.includes(resolveExtname(file) as SupportedDocumentExtname),
+      supports: (file) => SUPPORTED_DOCUMENT_EXTNAMES.includes(resolveExtname(file)),
     });
   }
 }
