@@ -8,7 +8,7 @@
  */
 
 import { KanbanBlockModel } from '../models';
-import { KanbanCreateSortFieldSelect } from '../models/components/KanbanCreateSortFieldSelect';
+import { KanbanCardItemModel } from '../models/KanbanCardItemModel';
 import { FlowEngine } from '@nocobase/flow-engine';
 
 describe('KanbanBlockModel.filterCollection', () => {
@@ -78,67 +78,347 @@ describe('KanbanBlockModel.filterCollection', () => {
     const step: any = flow?.steps?.grouping;
 
     expect(step.defaultParams({ collection } as any)).toEqual({
-      groupField: 'status',
-      groupOptions: [{ value: 'todo', label: 'Todo', color: 'default', enabled: true, isUnknown: undefined }],
+      grouping: {
+        groupField: undefined,
+        groupTitleField: undefined,
+        groupColorField: undefined,
+        groupOptions: undefined,
+      },
+    });
+  });
+
+  test('grouping defaultParams keep current block grouping config when editing an existing block', () => {
+    const statusField = {
+      name: 'status',
+      interface: 'select',
+      uiSchema: {
+        enum: [
+          { value: 'todo', label: 'Todo' },
+          { value: 'done', label: 'Done' },
+        ],
+      },
+    };
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+
+    expect(
+      step.defaultParams({
+        model: {
+          props: {
+            groupField: 'status',
+            groupOptions: [
+              { value: 'done', label: 'Done' },
+              { value: 'todo', label: 'Todo' },
+            ],
+          },
+          collection: {
+            getField: (name: string) => (name === 'status' ? statusField : undefined),
+          },
+          getConfiguredGroupOptions: () => [
+            { value: 'done', label: 'Done' },
+            { value: 'todo', label: 'Todo' },
+          ],
+        },
+      } as any),
+    ).toEqual({
+      grouping: {
+        groupField: 'status',
+        groupTitleField: undefined,
+        groupColorField: undefined,
+        groupOptions: [
+          { value: 'done', label: 'Done' },
+          { value: 'todo', label: 'Todo' },
+        ],
+      },
     });
   });
 
   test('grouping uiSchema requires at least one option before save', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;
-    const schema = step.uiSchema({ model: { uid: 'kanban-1' }, collection: { name: 'posts' } } as any);
+    const schema = step.uiSchema({
+      model: {
+        uid: 'kanban-1',
+        getGroupFieldCandidates: () => [{ label: 'Status', value: 'status' }],
+        translate: (key: string, options?: any) => (options?.ns === 'kanban' ? `zh:${key}` : key),
+      },
+      collection: { name: 'posts', getFields: () => [], getField: () => undefined },
+    } as any);
 
-    expect(schema.groupOptions).toMatchObject({
-      type: 'array',
+    expect(schema.grouping).toMatchObject({
+      type: 'object',
       required: true,
-      'x-validator': [
-        {
-          min: 1,
-          message: '{{t("At least one option is required", {"ns":"kanban"})}}',
+      properties: {
+        groupField: {
+          required: true,
+          'x-component': 'Select',
         },
-      ],
+        groupTitleField: {
+          required: true,
+          'x-component': 'Select',
+        },
+        groupOptions: {
+          required: true,
+          'x-component': 'KanbanGroupingSelector',
+        },
+      },
     });
+    expect(typeof schema.grouping.properties.groupOptions['x-validator']).toBe('function');
+    expect(
+      schema.grouping.properties.groupOptions['x-validator']([], undefined, { field: { selfModified: false } }),
+    ).toBeUndefined();
+    expect(
+      schema.grouping.properties.groupOptions['x-validator']([], undefined, {
+        field: { selfModified: false, modified: true, form: { submitting: false } },
+      }),
+    ).toBeUndefined();
+    expect(
+      schema.grouping.properties.groupOptions['x-validator']([], undefined, {
+        field: { selfModified: true, form: { submitting: false } },
+      }),
+    ).toBe('zh:At least one option is required');
+  });
+
+  test('card click uses flow context openView with the latest card-item props', async () => {
+    const openView = vi.fn().mockResolvedValue(undefined);
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+
+    await KanbanBlockModel.prototype.openCard.call(
+      {
+        context: {
+          openView,
+          layoutContentElement: { id: 'layout-root' },
+        },
+        subModels: {
+          item: {
+            getProps: () => ({ enableCardClick: true }),
+            props: { enableCardClick: false },
+          },
+        },
+        collection: {
+          getFilterByTK: (record: any) => record.id,
+          filterTargetKey: 'id',
+        },
+        ensureCardViewAction,
+        getCardOpenMode: () => 'dialog',
+        isCardClickable: KanbanBlockModel.prototype.isCardClickable,
+      },
+      { id: 1 },
+    );
+
+    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
+    expect(openView).toHaveBeenCalledWith('card-view-action', {
+      mode: 'dialog',
+      filterByTk: 1,
+      navigation: false,
+      target: { id: 'layout-root' },
+    });
+  });
+
+  test('configured select grouping keeps enum colors from the collection field', () => {
+    const options = KanbanBlockModel.prototype.getConfiguredGroupOptions.call({
+      props: {
+        groupOptions: [
+          { value: 'done', label: 'Done' },
+          { value: 'todo', label: 'Todo' },
+        ],
+      },
+      getGroupField: () => ({
+        name: 'status',
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { value: 'todo', label: 'Todo', color: 'blue' },
+            { value: 'done', label: 'Done', color: 'green' },
+          ],
+        },
+      }),
+      getInlineGroupOptions: KanbanBlockModel.prototype.getInlineGroupOptions,
+    });
+
+    expect(options).toEqual([
+      { value: 'done', label: 'Done', color: 'green', isUnknown: undefined },
+      { value: 'todo', label: 'Todo', color: 'blue', isUnknown: undefined },
+    ]);
+  });
+
+  test('syncPopupAction persists pageModelClass alongside other popup settings', async () => {
+    const setStepParams = vi.fn();
+
+    await KanbanBlockModel.prototype.syncPopupAction.call(
+      {
+        context: { flowSettingsEnabled: false },
+      },
+      {
+        getStepParams: () => ({ mode: 'drawer' }),
+        setStepParams,
+      },
+      {
+        mode: 'dialog',
+        size: 'large',
+        popupTemplateUid: 'template-1',
+        uid: 'popup-1',
+        pageModelClass: 'PopupPageModel',
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'dialog',
+      size: 'large',
+      popupTemplateUid: 'template-1',
+      uid: 'popup-1',
+      pageModelClass: 'PopupPageModel',
+    });
+  });
+
+  test('card popup settings sync pageModelClass back to the parent card-view action', async () => {
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+    const syncCardViewAction = vi.fn().mockResolvedValue(undefined);
+    const parentModel = {
+      props: {},
+      setProps: vi.fn(function (this: any, nextProps) {
+        Object.assign(this.props, nextProps);
+      }),
+      ensureCardViewAction,
+      syncCardViewAction,
+      subModels: {},
+    };
+    const itemModel = {
+      props: {},
+      parent: parentModel,
+      setProps: vi.fn(function (this: any, nextProps) {
+        Object.assign(this.props, nextProps);
+      }),
+    };
+
+    const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
+    await flow.steps.popup.handler(
+      {
+        model: itemModel,
+      } as any,
+      {
+        mode: 'dialog',
+        size: 'large',
+        popupTemplateUid: 'template-1',
+        pageModelClass: 'PopupPageModel',
+        uid: 'popup-1',
+      },
+    );
+
+    expect(itemModel.props).toMatchObject({
+      openMode: 'dialog',
+      popupSize: 'large',
+      popupTemplateUid: 'template-1',
+      pageModelClass: 'PopupPageModel',
+      popupTargetUid: 'popup-1',
+    });
+    expect(parentModel.props).toMatchObject({
+      cardPopupPageModelClass: 'PopupPageModel',
+    });
+    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
+    expect(syncCardViewAction).toHaveBeenCalledWith({ uid: 'card-view-action' });
   });
 
   test('grouping uiSchema does not embed cyclical runtime objects in component props', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;
     const model = { uid: 'kanban-1' };
-    const collection = { name: 'posts' };
+    const collection = { name: 'posts', getFields: () => [], getField: () => undefined };
     const schema = step.uiSchema({ model, collection, dataSource: { key: 'main' } } as any);
 
     expect(schema).toEqual({
-      groupField: {
-        title: '{{t("Grouping field", {"ns":"kanban"})}}',
-        description: '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
-        enum: [],
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-      },
-      groupOptions: {
-        title: '{{t("Options", {"ns":"kanban"})}}',
-        type: 'array',
+      grouping: {
+        type: 'object',
         required: true,
-        'x-component': 'KanbanGroupOptionsTable',
-        'x-decorator': 'FormItem',
-        'x-validator': [
-          {
-            min: 1,
-            message: '{{t("At least one option is required", {"ns":"kanban"})}}',
-          },
-        ],
-        'x-reactions': {
-          dependencies: ['.groupField'],
-          fulfill: {
-            state: {
-              componentProps: {
-                groupFieldName: '{{$deps[0]}}',
-              },
+        properties: {
+          groupField: {
+            type: 'string',
+            title: '{{t("Grouping field", {"ns":"kanban"})}}',
+            description:
+              '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
+            required: true,
+            enum: [],
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              options: [],
             },
+            'x-reactions': expect.any(Array),
+          },
+          groupTitleField: {
+            type: 'string',
+            title: '{{t("Title field", {"ns":"kanban"})}}',
+            required: true,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-reactions': expect.any(Array),
+          },
+          groupColorField: {
+            type: 'string',
+            title: '{{t("Color field", {"ns":"kanban"})}}',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              allowClear: true,
+            },
+            'x-reactions': expect.any(Array),
+          },
+          groupOptions: {
+            type: 'array',
+            title: '{{t("Select group values", {"ns":"kanban"})}}',
+            description:
+              '{{t("The order of the selected values determines the kanban column order", {"ns":"kanban"})}}',
+            required: true,
+            'x-component': 'KanbanGroupingSelector',
+            'x-decorator': 'FormItem',
+            'x-validator': expect.any(Function),
+            'x-reactions': expect.any(Array),
           },
         },
       },
     });
+  });
+
+  test('style and sorting settings expose inline menu controls while using the common default sorting modal', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const inlineStyleMode = await flow.steps.styleVariant.uiMode({ model: {} } as any);
+    const inlineDragSortMode = await flow.steps.dragSortBy.uiMode({
+      model: {
+        getSortFieldCandidates: () => [{ label: 'Status sort', value: 'status_sort' }],
+        getGroupField: () => ({ name: 'status' }),
+      },
+    } as any);
+
+    expect(inlineStyleMode).toMatchObject({
+      type: 'select',
+      key: 'styleVariant',
+      props: {
+        options: [
+          { label: lang('Classic'), value: 'default' },
+          { label: lang('Filled'), value: 'filled' },
+        ],
+      },
+    });
+    expect(flow.steps.defaultSorting).toMatchObject({
+      use: 'sortingRule',
+      title: '{{t("Default sorting")}}',
+    });
+    expect(flow.steps.dragEnabled.uiMode).toEqual({ type: 'switch', key: 'dragEnabled' });
+    expect(inlineDragSortMode).toMatchObject({
+      type: 'select',
+      key: 'dragSortBy',
+      props: { options: [{ label: 'Status sort', value: 'status_sort' }], allowClear: true },
+    });
+    expect(
+      flow.steps.dragSortBy.hideInSettings({
+        model: {
+          props: {},
+          getDragEnabled: () => false,
+          getDragSortFieldName: () => undefined,
+        },
+      } as any),
+    ).toBe(true);
+    expect(flow.steps.sorting).toBeUndefined();
   });
 
   test('kanban block settings no longer expose card open mode', () => {
@@ -278,6 +558,45 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(openMode).toBe('dialog');
   });
 
+  test('card popup settings still read persisted item props when getProps is empty', () => {
+    const popupTargetUid = KanbanBlockModel.prototype.getCardPopupTargetUid.call({
+      subModels: {
+        item: {
+          getProps: () => ({}),
+          props: { popupTargetUid: 'popup-card-1' },
+        },
+      },
+      props: {
+        cardPopupTargetUid: 'popup-card-block',
+      },
+    });
+
+    expect(popupTargetUid).toBe('popup-card-1');
+  });
+
+  test('configured inline group options reuse datasource enum colors', () => {
+    const statusField = {
+      name: 'status',
+      interface: 'select',
+      uiSchema: {
+        enum: [
+          { value: 'todo', label: 'Todo', color: 'blue' },
+          { value: 'done', label: 'Done', color: 'green' },
+        ],
+      },
+    };
+
+    const groupOptions = KanbanBlockModel.prototype.getConfiguredGroupOptions.call({
+      props: {
+        groupOptions: [{ value: 'done', label: 'Done' }],
+      },
+      getGroupField: () => statusField,
+      getInlineGroupOptions: KanbanBlockModel.prototype.getInlineGroupOptions,
+    });
+
+    expect(groupOptions).toEqual([{ value: 'done', label: 'Done', color: 'green', isUnknown: undefined }]);
+  });
+
   test('enables drag sorting when dragging is on and sort field comes from params.sort fallback', () => {
     const canDragSort = KanbanBlockModel.prototype.canDragSort.call({
       props: {
@@ -289,8 +608,10 @@ describe('KanbanBlockModel.filterCollection', () => {
       getDragEnabled: KanbanBlockModel.prototype.getDragEnabled,
       getSortFieldName: KanbanBlockModel.prototype.getSortFieldName,
       getConfiguredSortFieldName: KanbanBlockModel.prototype.getConfiguredSortFieldName,
+      getConfiguredDragSortFieldName: KanbanBlockModel.prototype.getConfiguredDragSortFieldName,
       getCompatibleSortFieldName: KanbanBlockModel.prototype.getCompatibleSortFieldName,
       getSortFieldCandidates: KanbanBlockModel.prototype.getSortFieldCandidates,
+      getDragSortFieldName: KanbanBlockModel.prototype.getDragSortFieldName,
       getGroupField: () => ({ name: 'status' }),
       collection: {
         getFields: () => [
@@ -309,33 +630,34 @@ describe('KanbanBlockModel.filterCollection', () => {
         dragEnabled: true,
       },
       getDragEnabled: KanbanBlockModel.prototype.getDragEnabled,
-      getSortFieldName: () => undefined,
+      getDragSortFieldName: () => undefined,
     });
 
     expect(canDragSort).toBe(false);
   });
 
-  test('dragging defaults keep dragging disabled until a sort field is selected', () => {
+  test('drag sorting field becomes visible as soon as drag sorting is enabled', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
-    const step: any = flow?.steps?.dragging;
+    const step: any = flow?.steps?.dragSortBy;
 
+    expect(step.defaultParams({ model: { props: {}, getDragSortFieldName: () => undefined } } as any)).toEqual({
+      dragSortBy: null,
+    });
     expect(
-      step.defaultParams({
+      step.hideInSettings({
         model: {
-          props: {},
+          props: { dragEnabled: true },
           getDragEnabled: () => true,
-          getSortFieldName: () => undefined,
+          getDragSortFieldName: () => undefined,
+          getStepParams: () => ({ dragEnabled: true }),
         },
       } as any),
-    ).toEqual({
-      dragEnabled: false,
-      sortField: null,
-    });
+    ).toBe(false);
   });
 
-  test('dragging handler refreshes columns immediately after settings change', () => {
+  test('drag sort field updates the resource sort and refreshes immediately', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
-    const step: any = flow?.steps?.dragging;
+    const step: any = flow?.steps?.dragSortBy;
     const setProps = vi.fn();
     const setSort = vi.fn();
     const refresh = vi.fn().mockResolvedValue(undefined);
@@ -344,8 +666,10 @@ describe('KanbanBlockModel.filterCollection', () => {
       {
         model: {
           setProps,
-          getGroupField: () => ({ name: 'status', interface: 'select' }),
           getCompatibleSortFieldName: () => 'status_sort',
+          getDragEnabled: () => true,
+          getDragSortFieldName: () => 'status_sort',
+          getConfiguredGlobalSort: () => [],
           resource: {
             setSort,
             refresh,
@@ -353,20 +677,19 @@ describe('KanbanBlockModel.filterCollection', () => {
         },
       } as any,
       {
-        dragEnabled: true,
-        sortField: 'status_sort',
+        dragSortBy: 'status_sort',
       },
     );
 
     expect(setProps).toHaveBeenCalledWith({
       dragEnabled: true,
-      sortField: 'status_sort',
+      dragSortBy: 'status_sort',
     });
     expect(setSort).toHaveBeenCalledWith(['status_sort']);
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
-  test('grouping changes disable dragging when the grouping sort field is missing', () => {
+  test('grouping changes keep the drag switch enabled even when the grouping sort field is missing', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;
     const setProps = vi.fn();
@@ -382,20 +705,25 @@ describe('KanbanBlockModel.filterCollection', () => {
           setProps,
           getDragEnabled: () => true,
           getConfiguredSortFieldName: () => undefined,
+          getConfiguredDragSortFieldName: () => undefined,
           getCompatibleSortFieldName: () => undefined,
         },
       } as any,
       {
-        groupField: 'status',
-        groupOptions: [],
+        grouping: {
+          groupField: 'status',
+          groupOptions: [],
+        },
       },
     );
 
     expect(setProps).toHaveBeenCalledWith({
       groupField: 'status',
+      groupTitleField: undefined,
+      groupColorField: undefined,
       groupOptions: [],
-      sortField: undefined,
-      dragEnabled: false,
+      dragSortBy: undefined,
+      dragEnabled: true,
     });
     expect(setSort).toHaveBeenCalledWith([]);
   });
@@ -404,13 +732,16 @@ describe('KanbanBlockModel.filterCollection', () => {
     const canCrossColumnDrag = KanbanBlockModel.prototype.canCrossColumnDrag.call({
       props: {
         allowCrossColumnDrag: true,
+        dragEnabled: true,
+        dragSortBy: 'status_sort',
         params: {
           sort: ['status_sort'],
         },
       },
       getDragEnabled: KanbanBlockModel.prototype.getDragEnabled,
-      getSortFieldName: KanbanBlockModel.prototype.getSortFieldName,
+      getDragSortFieldName: KanbanBlockModel.prototype.getDragSortFieldName,
       getConfiguredSortFieldName: KanbanBlockModel.prototype.getConfiguredSortFieldName,
+      getConfiguredDragSortFieldName: KanbanBlockModel.prototype.getConfiguredDragSortFieldName,
       getCompatibleSortFieldName: KanbanBlockModel.prototype.getCompatibleSortFieldName,
       getSortFieldCandidates: KanbanBlockModel.prototype.getSortFieldCandidates,
       getGroupField: () => ({ name: 'status' }),
@@ -432,9 +763,16 @@ describe('KanbanBlockModel.filterCollection', () => {
   test('kanban blocks disable automatic base-resource refreshes', () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('location', { value: { search: '' } as any });
+    engine.context.defineProperty('route', { value: { params: {} } as any });
     engine.registerModels({ KanbanBlockModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
+    expect(ds).toBeDefined();
+
+    if (!ds) {
+      return;
+    }
+
     ds.addCollection({
       name: 'posts',
       filterTargetKey: 'id',
@@ -463,9 +801,16 @@ describe('KanbanBlockModel.filterCollection', () => {
   test('kanban block beforeRender does not issue a base list request', async () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('location', { value: { search: '' } as any });
+    engine.context.defineProperty('route', { value: { params: {} } as any });
     engine.registerModels({ KanbanBlockModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
+    expect(ds).toBeDefined();
+
+    if (!ds) {
+      return;
+    }
+
     ds.addCollection({
       name: 'posts',
       filterTargetKey: 'id',
@@ -517,34 +862,239 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(sortField).toBeUndefined();
   });
 
-  test('dragging uiSchema exposes the merged drag switch before sort field selection', () => {
+  test('block popup settings reuse the common popup schema and sync back to kanban props', async () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
-    const step: any = flow?.steps?.dragging;
-    const schema = step.uiSchema({
+    const syncQuickCreateAction = vi.fn().mockResolvedValue(undefined);
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+    const setProps = vi.fn();
+    const step: any = flow?.steps?.popup;
+    const defaultParams = await step.defaultParams({
       model: {
-        collection: {
-          name: 'posts',
-          dataSourceKey: 'main',
-          getFields: () => [],
-        },
-        getGroupField: () => ({ name: 'status', title: 'Status', uiSchema: { title: 'Status' } }),
-        getSortFieldCandidates: () => [],
+        props: {},
+        getPopupMode: () => 'dialog',
+        getPopupSize: () => 'large',
+        getPopupTemplateUid: () => 'tpl-quick-create',
+        getPopupTargetUid: () => 'popup-action-1',
+        uid: 'kanban-popup-test',
       },
-      t: (value: string) => value,
     } as any);
 
-    expect(Object.keys(schema)).toEqual(['dragEnabled', 'sortField']);
-    expect(schema.sortField.required).toBe(false);
-    expect(schema.sortField['x-reactions']).toEqual([
+    expect(step.use).toBe('openView');
+    expect(defaultParams).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      popupTemplateUid: 'tpl-quick-create',
+      uid: 'popup-action-1',
+    });
+
+    await step.handler(
       {
-        dependencies: ['.dragEnabled'],
-        fulfill: {
-          state: {
-            required: '{{$deps[0] === true}}',
-          },
+        model: {
+          setProps,
+          ensureQuickCreateAction,
+          syncQuickCreateAction,
         },
+      } as any,
+      {
+        mode: 'embed',
+        size: 'small',
+        popupTemplateUid: 'tpl-quick-create',
+        uid: 'popup-action-1',
       },
-    ]);
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      popupMode: 'embed',
+      popupSize: 'small',
+      popupTemplateUid: 'tpl-quick-create',
+      popupTargetUid: 'popup-action-1',
+    });
+    expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
+    expect(syncQuickCreateAction).toHaveBeenCalledWith({ uid: 'quick-create-action' });
+  });
+
+  test('block popup settings do not default the popup target uid back to the kanban block itself', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.popup;
+
+    const defaultParams = await step.defaultParams({
+      model: {
+        uid: 'kanban-popup-test',
+        props: {},
+        getPopupMode: () => 'drawer',
+        getPopupSize: () => 'medium',
+        getPopupTemplateUid: () => undefined,
+        getPopupTargetUid: () => undefined,
+      },
+    } as any);
+
+    expect(defaultParams.uid).toBeUndefined();
+  });
+
+  test('syncPopupAction falls back to the popup action uid when the target uid resolves to the kanban block itself', async () => {
+    const setStepParams = vi.fn();
+
+    await KanbanBlockModel.prototype.syncPopupAction.call(
+      {
+        uid: 'kanban-block-1',
+        context: { flowSettingsEnabled: false },
+      },
+      {
+        uid: 'kanban-block-1-quick-create-action',
+        getStepParams: () => ({ mode: 'drawer', uid: 'kanban-block-1' }),
+        setStepParams,
+      },
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'kanban-block-1',
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'kanban-block-1-quick-create-action',
+    });
+  });
+
+  test('syncPopupAction keeps the popup action uid when there is no external popup target uid', async () => {
+    const setStepParams = vi.fn();
+
+    await KanbanBlockModel.prototype.syncPopupAction.call(
+      {
+        uid: 'kanban-block-1',
+        context: { flowSettingsEnabled: false },
+      },
+      {
+        uid: 'kanban-block-1-quick-create-action',
+        getStepParams: () => ({ mode: 'drawer' }),
+        setStepParams,
+      },
+      {
+        mode: 'drawer',
+        size: 'medium',
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'kanban-block-1-quick-create-action',
+    });
+  });
+
+  test('quick create uses flow context openView with the prefilled form data', async () => {
+    const openView = vi.fn().mockResolvedValue(undefined);
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+
+    await KanbanBlockModel.prototype.openQuickCreate.call(
+      {
+        context: {
+          openView,
+          layoutContentElement: { id: 'layout-root' },
+        },
+        props: {
+          quickCreateEnabled: true,
+        },
+        getQuickCreateEnabled: KanbanBlockModel.prototype.getQuickCreateEnabled,
+        ensureQuickCreateAction,
+        buildQuickCreateFormData: () => ({ status: 'todo' }),
+      },
+      { value: 'todo' },
+    );
+
+    expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
+    expect(openView).toHaveBeenCalledWith('quick-create-action', {
+      formData: { status: 'todo' },
+      navigation: false,
+      target: { id: 'layout-root' },
+    });
+  });
+
+  test('quick create falls back to an empty popup shell when the popup action open fails', async () => {
+    const open = vi.fn().mockResolvedValue(undefined);
+    const openView = vi.fn().mockRejectedValue(new Error('open failed'));
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+
+    await KanbanBlockModel.prototype.openQuickCreate.call(
+      {
+        context: {
+          openView,
+          viewer: { open },
+          layoutContentElement: { id: 'layout-root' },
+        },
+        translate: (value: string) => value,
+        props: {
+          quickCreateEnabled: true,
+        },
+        getQuickCreateEnabled: KanbanBlockModel.prototype.getQuickCreateEnabled,
+        getPopupMode: () => 'drawer',
+        getPopupSize: () => 'medium',
+        openEmptyPopupShell: KanbanBlockModel.prototype.openEmptyPopupShell,
+        ensureQuickCreateAction,
+        buildQuickCreateFormData: () => ({ status: 'todo' }),
+      },
+      { value: 'todo' },
+    );
+
+    expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
+    expect(openView).toHaveBeenCalledWith('quick-create-action', {
+      formData: { status: 'todo' },
+      navigation: false,
+      target: { id: 'layout-root' },
+    });
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'drawer',
+        width: '50%',
+        target: { id: 'layout-root' },
+        title: 'Add new',
+      }),
+    );
+  });
+
+  test('card click falls back to an empty popup shell when the popup action open fails', async () => {
+    const open = vi.fn().mockResolvedValue(undefined);
+    const openView = vi.fn().mockRejectedValue(new Error('open failed'));
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+
+    await KanbanBlockModel.prototype.openCard.call(
+      {
+        context: {
+          openView,
+          viewer: { open },
+          layoutContentElement: { id: 'layout-root' },
+        },
+        translate: (value: string) => value,
+        collection: {
+          getFilterByTK: (record: any) => record.id,
+          filterTargetKey: 'id',
+        },
+        getCardOpenMode: () => 'dialog',
+        getCardPopupSize: () => 'large',
+        isCardClickable: () => true,
+        openEmptyPopupShell: KanbanBlockModel.prototype.openEmptyPopupShell,
+        ensureCardViewAction,
+      },
+      { id: 1 },
+    );
+
+    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
+    expect(openView).toHaveBeenCalledWith('card-view-action', {
+      mode: 'dialog',
+      filterByTk: 1,
+      navigation: false,
+      target: { id: 'layout-root' },
+    });
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'dialog',
+        width: '80%',
+        target: { id: 'layout-root' },
+        title: 'Details',
+      }),
+    );
   });
 
   test('page size settings use the fixed dropdown options', () => {
@@ -563,43 +1113,23 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
   });
 
-  test('dragging uiSchema uses the quick-create sort selector with scoped sort options and plain field metadata', () => {
+  test('drag sort field ui mode stays a simple select with scoped sort options', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
-    const step: any = flow?.steps?.dragging;
-    const cyclicalField: any = {
-      name: 'priority',
-      interface: 'integer',
-      scopeKey: 'status',
-      uiSchema: { title: 'Priority' },
-    };
-    cyclicalField.self = cyclicalField;
-    const schema = step.uiSchema({
+    const step: any = flow?.steps?.dragSortBy;
+    const uiMode = step.uiMode({
       model: {
-        collection: {
-          name: 'posts',
-          dataSourceKey: 'main',
-          getFields: () => [cyclicalField],
-        },
-        getGroupField: () => ({ name: 'status', title: 'Status', uiSchema: { title: 'Status' } }),
         getSortFieldCandidates: () => [{ label: 'Status sort', value: 'status_sort', scopeKey: 'status' }],
+        getGroupField: () => ({ name: 'status', title: 'Status', uiSchema: { title: 'Status' } }),
       },
-      t: (value: string) => value,
     } as any);
 
-    expect(schema.sortField['x-component']).toBe(KanbanCreateSortFieldSelect);
-    expect(schema.sortField['x-component-props']).toMatchObject({
-      collectionName: 'posts',
-      dataSource: 'main',
-      groupField: { label: 'Status', value: 'status' },
-      sortFields: [{ label: 'Status sort', value: 'status_sort', scopeKey: 'status' }],
-      collectionFields: [
-        {
-          name: 'priority',
-          interface: 'integer',
-          scopeKey: 'status',
-          uiSchema: { title: 'Priority' },
-        },
-      ],
+    expect(uiMode).toEqual({
+      type: 'select',
+      key: 'dragSortBy',
+      props: {
+        options: [{ label: 'Status sort', value: 'status_sort', scopeKey: 'status' }],
+        allowClear: true,
+      },
     });
   });
 });

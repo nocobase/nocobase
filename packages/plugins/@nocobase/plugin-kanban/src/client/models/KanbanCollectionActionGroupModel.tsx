@@ -14,6 +14,7 @@ import { buildSubModelItem, escapeT, type FlowModelContext } from '@nocobase/flo
 const ALLOWED_KANBAN_COLLECTION_ACTIONS = [
   'AddNewActionModel',
   'PopupCollectionActionModel',
+  'FilterActionModel',
   'LinkActionModel',
   'RefreshActionModel',
   'CustomRequestActionModel',

@@ -18,13 +18,12 @@ import {
 } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
-import { getKanbanRecordKey, normalizeKanbanCardOpenMode } from './utils';
-
-const CARD_OPEN_MODE_OPTIONS = [
-  { label: tExpr('Drawer', { ns: 'kanban' }), value: 'drawer' },
-  { label: tExpr('Dialog', { ns: 'kanban' }), value: 'dialog' },
-  { label: tExpr('Page', { ns: 'kanban' }), value: 'embed' },
-];
+import {
+  normalizeKanbanPopupTargetUid,
+  normalizeKanbanPopupTemplateUid,
+  resolveKanbanOpenViewDefaultParams,
+} from './popupSettings';
+import { getKanbanRecordKey, normalizeKanbanCardOpenMode, normalizeKanbanPopupSize } from './utils';
 
 type KanbanCardItemStructure = {
   subModels: {
@@ -59,8 +58,11 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
     const onCardClick = this.context.onCardClick as (() => void) | undefined;
     const recordKey = getKanbanRecordKey(record, this.context.collection) || String(index);
     const cardScopeKey = String((this as any).forkId || this.uid || recordKey);
-    const fieldIndex = [cardScopeKey];
+    // Keep the card fork scoped like a row-level field host so linkage/design settings
+    // resolve against only this card after refreshes.
+    const fieldIndex = [`${cardScopeKey}:0`];
     const grid = this.subModels.grid.createFork({}, `grid-${cardScopeKey}`) as any;
+    const themeToken = this.context?.themeToken;
 
     grid.gridContainerRef = React.createRef<HTMLDivElement>();
 
@@ -114,12 +116,13 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
             return;
           }
 
+          event.preventDefault();
+          event.stopPropagation();
           onCardClick?.();
         }
       : undefined;
 
     const formLabelWidth = layout === 'horizontal' ? labelWidth : null;
-
     return (
       <Card
         hoverable={clickable}
@@ -134,10 +137,14 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            padding-left: ${themeToken ? `${themeToken.marginMD}px` : '14px'};
+            padding-right: ${themeToken ? `${themeToken.marginMD}px` : '14px'};
+            padding-top: ${themeToken ? `${themeToken.marginSM}px` : '14px'};
+            padding-bottom: ${themeToken ? `${themeToken.marginSM}px` : '14px'};
           }
 
           .ant-form-item {
-            margin-bottom: 6px;
+            margin-bottom: 4px;
           }
         `}
       >
@@ -174,27 +181,40 @@ KanbanCardItemModel.registerFlow({
         });
       },
     },
-    openMode: {
-      title: tExpr('Open mode', { ns: 'kanban' }),
-      uiMode: {
-        type: 'select',
-        key: 'openMode',
-        props: {
-          options: CARD_OPEN_MODE_OPTIONS,
-        },
-      },
-      defaultParams(ctx) {
+    popup: {
+      title: tExpr('Popup settings', { ns: 'kanban' }),
+      use: 'openView',
+      async defaultParams(ctx) {
+        const commonParams = await resolveKanbanOpenViewDefaultParams(ctx as any);
         return {
-          openMode: normalizeKanbanCardOpenMode(ctx.model.props.openMode || ctx.model.parent?.props?.cardOpenMode),
+          ...commonParams,
+          mode: normalizeKanbanCardOpenMode(ctx.model.props.openMode || ctx.model.parent?.props?.cardOpenMode),
+          size: normalizeKanbanPopupSize(ctx.model.props.popupSize || ctx.model.parent?.props?.cardPopupSize),
+          popupTemplateUid: normalizeKanbanPopupTemplateUid(
+            ctx.model.props.popupTemplateUid || ctx.model.parent?.props?.cardPopupTemplateUid,
+          ),
+          pageModelClass: ctx.model.props.pageModelClass || ctx.model.parent?.props?.cardPopupPageModelClass,
+          uid: normalizeKanbanPopupTargetUid(
+            ctx.model.props.popupTargetUid || ctx.model.parent?.props?.cardPopupTargetUid,
+          ),
         };
       },
       async handler(ctx, params) {
+        const parentModel = getKanbanCardPersistentParentModel(ctx.model);
+
         syncKanbanCardModelProps(ctx.model, {
-          openMode: normalizeKanbanCardOpenMode(params.openMode),
+          openMode: normalizeKanbanCardOpenMode(params.mode),
+          popupSize: normalizeKanbanPopupSize(params.size),
+          popupTemplateUid: normalizeKanbanPopupTemplateUid(params.popupTemplateUid),
+          pageModelClass: params.pageModelClass || undefined,
+          popupTargetUid: normalizeKanbanPopupTargetUid(params.uid),
         });
 
-        const parentModel = getKanbanCardPersistentParentModel(ctx.model);
-        await parentModel?.syncCardViewAction?.(parentModel?.subModels?.cardViewAction);
+        parentModel?.setProps?.({
+          cardPopupPageModelClass: params.pageModelClass || undefined,
+        });
+        const action = await parentModel?.ensureCardViewAction?.();
+        await parentModel?.syncCardViewAction?.(action || parentModel?.subModels?.cardViewAction);
       },
     },
     layout: {

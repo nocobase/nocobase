@@ -26,6 +26,7 @@ import {
   KanbanBlockModel,
   KanbanCardItemModel,
   KanbanCollectionActionGroupModel,
+  KanbanQuickCreateActionModel,
   KanbanCardViewActionModel,
   KanbanGroupOptionsTable,
   KanbanGroupingSelector,
@@ -103,6 +104,7 @@ class PluginKanbanClient extends Plugin {
       KanbanBlockModel,
       KanbanCardItemModel,
       KanbanCollectionActionGroupModel,
+      KanbanQuickCreateActionModel,
       KanbanCardViewActionModel,
     });
 

@@ -8,23 +8,41 @@
  */
 
 import { KanbanCardItemModel } from '../models';
+import { KanbanCardViewActionModel } from '../models/actions/KanbanPopupModels';
+import { FlowEngine } from '@nocobase/flow-engine';
 
 describe('KanbanCardItemModel.cardSettings', () => {
-  test('registers click, open mode and layout settings on the card model', () => {
+  test('registers click, popup and layout settings on the card model', async () => {
     const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
 
-    expect(Object.keys(flow.steps)).toEqual(['click', 'openMode', 'layout']);
-    expect(flow.steps.openMode.defaultParams({ model: { props: {} } } as any)).toEqual({ openMode: 'drawer' });
+    expect(Object.keys(flow.steps)).toEqual(['click', 'popup', 'layout']);
+    expect(flow.steps.popup.use).toBe('openView');
+    expect(await flow.steps.popup.defaultParams({ model: { props: {} } } as any)).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+    });
+    expect((await flow.steps.popup.defaultParams({ model: { uid: 'card-1', props: {} } } as any)).uid).toBeUndefined();
     expect(flow.steps.click.defaultParams({ model: { props: {} } } as any)).toEqual({ enableCardClick: true });
   });
 
-  test('open mode changes persist from card forks back to the base card model', async () => {
+  test('card popup action uses the shared Details title', () => {
+    const action = new KanbanCardViewActionModel({
+      uid: 'kanban-card-view-action',
+      flowEngine: new FlowEngine(),
+    } as any);
+
+    expect(action.defaultPopupTitle).toContain('Details');
+  });
+
+  test('popup settings persist from card forks back to the base card model', async () => {
     const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
     const syncCardViewAction = vi.fn();
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
     const masterBlock = {
       subModels: {
         cardViewAction: { uid: 'card-view-action' },
       },
+      ensureCardViewAction,
       syncCardViewAction,
     };
     const forkBlock = {
@@ -46,10 +64,26 @@ describe('KanbanCardItemModel.cardSettings', () => {
       setProps: vi.fn(),
     };
 
-    await flow.steps.openMode.handler({ model: forkItem } as any, { openMode: 'dialog' });
+    await flow.steps.popup.handler({ model: forkItem } as any, {
+      mode: 'dialog',
+      size: 'large',
+      popupTemplateUid: 'tpl-card',
+      uid: 'popup-card-1',
+    });
 
-    expect(forkItem.setProps).toHaveBeenCalledWith({ openMode: 'dialog' });
-    expect(masterItem.setProps).toHaveBeenCalledWith({ openMode: 'dialog' });
+    expect(forkItem.setProps).toHaveBeenCalledWith({
+      openMode: 'dialog',
+      popupSize: 'large',
+      popupTemplateUid: 'tpl-card',
+      popupTargetUid: 'popup-card-1',
+    });
+    expect(masterItem.setProps).toHaveBeenCalledWith({
+      openMode: 'dialog',
+      popupSize: 'large',
+      popupTemplateUid: 'tpl-card',
+      popupTargetUid: 'popup-card-1',
+    });
+    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
     expect(syncCardViewAction).toHaveBeenCalledWith(masterBlock.subModels.cardViewAction);
   });
 

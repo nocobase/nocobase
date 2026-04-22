@@ -8,7 +8,8 @@
  */
 
 import { css } from '@emotion/css';
-import { Alert, Empty, Tag } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { Alert, Badge, Button, Empty, Tooltip } from 'antd';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Droppable } from 'react-beautiful-dnd';
 import type { KanbanBlockModel } from '../../KanbanBlockModel';
@@ -16,15 +17,15 @@ import { toKanbanAlphaColor } from '../../utils';
 import { CardPlaceholder, DraggableKanbanCard, LazyCardRenderer } from './CardRenderer';
 import {
   type ColumnRefreshMeta,
-  type KanbanDesignSettingsHost,
   createColumnResource,
   createInitialColumnState,
   dedupeColumnItemsByRecordKey,
-  isKanbanDesignSettingsHost,
   getRuntimeRecordKey,
+  isKanbanDesignSettingsHost,
   normalizeKanbanRuntimeRecord,
   reuseKanbanRecordReferences,
   type ColumnState,
+  type KanbanDesignSettingsHost,
   type KanbanRuntimeRecord,
   type RuntimeColumn,
 } from './shared';
@@ -65,9 +66,24 @@ const ColumnPanelComponent = ({
   const [autoLoadArmed, setAutoLoadArmed] = useState(false);
   const runtimeState = state || createInitialColumnState();
   const displayCount = runtimeState.count ?? displayItems.length;
-  const panelBackgroundColor = toKanbanAlphaColor(column.color, column.isUnknown ? 0.08 : 0.1);
-  const panelBorderColor = toKanbanAlphaColor(column.color, column.isUnknown ? 0.2 : 0.24);
-  const panelHeaderBackgroundColor = toKanbanAlphaColor(column.color, column.isUnknown ? 0.14 : 0.18);
+  const styleVariant = model.getStyleVariant();
+  const isColorStyle = styleVariant === 'filled';
+  const hasColumnColor = Boolean(column.color);
+  const panelBackgroundColor = isColorStyle
+    ? hasColumnColor
+      ? toKanbanAlphaColor(column.color, column.isUnknown ? 0.08 : 0.1)
+      : 'var(--colorBgLayout)'
+    : 'var(--colorBgLayout)';
+  const panelBorderColor = isColorStyle
+    ? hasColumnColor
+      ? toKanbanAlphaColor(column.color, column.isUnknown ? 0.2 : 0.24)
+      : 'var(--colorBgContainer)'
+    : 'var(--colorBgContainer)';
+  const panelHeaderBackgroundColor = isColorStyle
+    ? hasColumnColor
+      ? toKanbanAlphaColor(column.color, column.isUnknown ? 0.14 : 0.18)
+      : 'var(--colorBgLayout)'
+    : 'var(--colorBgLayout)';
 
   const loadPage = useCallback(
     async (page: number, append = false) => {
@@ -260,7 +276,7 @@ const ColumnPanelComponent = ({
       {...(options?.provided?.droppableProps || {})}
       onScroll={handleScroll}
       style={
-        dragEnabled && options?.snapshot?.isDraggingOver
+        dragEnabled && options?.snapshot?.isDraggingOver && hasColumnColor
           ? {
               background: toKanbanAlphaColor(column.color, column.isUnknown ? 0.12 : 0.14),
             }
@@ -371,21 +387,34 @@ const ColumnPanelComponent = ({
           borderBottom: `1px solid ${panelBorderColor}`,
         }}
       >
-        <Tag
-          color={column.color}
-          style={{
-            flex: '1 1 auto',
-            minWidth: 0,
-            maxWidth: '100%',
-            marginInlineEnd: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {column.label}
-        </Tag>
-        <span style={{ color: 'var(--ant-colorTextDescription)', fontSize: 12 }}>{displayCount}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
+          <Badge color={column.color}></Badge>
+          <span
+            style={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontWeight: 500,
+            }}
+          >
+            {`${column.label}（${displayCount}）`}
+          </span>
+        </div>
+        {model.getQuickCreateEnabled() ? (
+          <Tooltip title={model.translate('Add new')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void model.openQuickCreate(column);
+              }}
+            />
+          </Tooltip>
+        ) : null}
       </div>
       {runtimeState.error ? <Alert type="error" message={runtimeState.error} showIcon /> : null}
       {dragEnabled ? (

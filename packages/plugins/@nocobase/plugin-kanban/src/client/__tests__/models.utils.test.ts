@@ -27,6 +27,7 @@ import {
   isSameKanbanGroupingValue,
   mergeKanbanFilters,
   normalizeKanbanGroupOptions,
+  orderKanbanGroupOptionsBySelection,
   reorderKanbanGroupOptions,
   shouldMigrateKanbanSortFieldScope,
   shouldInsertAfterSameColumnCardMove,
@@ -39,12 +40,12 @@ describe('kanban model utils', () => {
         { value: 'todo', label: 'Todo' },
         { value: 'done', label: 'Done', color: 'green' },
       ],
-      [{ value: 'todo', label: 'Backlog', color: 'blue', enabled: false }],
+      [{ value: 'todo', label: 'Backlog', color: 'blue' }],
     );
 
     expect(options).toEqual([
-      { value: 'todo', label: 'Backlog', color: 'blue', enabled: false, isUnknown: undefined },
-      { value: 'done', label: 'Done', color: 'green', enabled: true, isUnknown: undefined },
+      { value: 'todo', label: 'Backlog', color: 'blue', isUnknown: undefined },
+      { value: 'done', label: 'Done', color: 'green', isUnknown: undefined },
     ]);
   });
 
@@ -64,14 +65,14 @@ describe('kanban model utils', () => {
     expect(options.map((item) => item.value)).toEqual(['done', 'todo', 'doing']);
   });
 
-  test('normalizeKanbanGroupOptions assigns palette colors when source enum colors are missing', () => {
+  test('normalizeKanbanGroupOptions keeps colors empty when source enum colors are missing', () => {
     const options = normalizeKanbanGroupOptions([
       { value: 'todo', label: 'Todo', color: 'default' },
       { value: 'doing', label: 'Doing', color: 'default' },
       { value: 'done', label: 'Done' },
     ]);
 
-    expect(options.map((item) => item.color)).toEqual(['default', 'red', 'volcano']);
+    expect(options.map((item) => item.color)).toEqual([undefined, undefined, undefined]);
   });
 
   test('normalizeKanbanGroupOptions falls back to enum title when label is absent', () => {
@@ -81,8 +82,38 @@ describe('kanban model utils', () => {
     ] as any);
 
     expect(options).toEqual([
-      { value: 'todo', label: 'To do', color: 'default', enabled: true, isUnknown: undefined },
-      { value: 'done', label: 'Done name', color: 'red', enabled: true, isUnknown: undefined },
+      { value: 'todo', label: 'To do', color: undefined, isUnknown: undefined },
+      { value: 'done', label: 'Done name', color: undefined, isUnknown: undefined },
+    ]);
+  });
+
+  test('normalizeKanbanGroupOptions can skip default and saved colors for relation options', () => {
+    const options = normalizeKanbanGroupOptions(
+      [{ value: 'u1', label: 'User 1' }],
+      [{ value: 'u1', label: 'User 1', color: 'blue' }],
+      {
+        useDefaultColors: false,
+        preserveSavedColors: false,
+      },
+    );
+
+    expect(options).toEqual([{ value: 'u1', label: 'User 1', color: undefined, isUnknown: undefined }]);
+  });
+
+  test('orderKanbanGroupOptionsBySelection keeps enabled values in selection order', () => {
+    expect(
+      orderKanbanGroupOptionsBySelection(
+        [
+          { value: 'todo', label: 'Todo', enabled: true },
+          { value: 'doing', label: 'Doing', enabled: false },
+          { value: 'done', label: 'Done', enabled: true },
+        ],
+        ['done', 'todo'],
+      ),
+    ).toEqual([
+      { value: 'done', label: 'Done', enabled: true },
+      { value: 'todo', label: 'Todo', enabled: true },
+      { value: 'doing', label: 'Doing', enabled: false },
     ]);
   });
 

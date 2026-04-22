@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { MultiRecordResource, observer } from '@nocobase/flow-engine';
+import { observer } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
@@ -17,13 +17,9 @@ import {
   buildKanbanBoardDisplayItems,
   getKanbanCrossColumnMoveParams,
   getKanbanRecordKeyValue,
-  getKanbanCollectionFilterTargetKey,
-  getKanbanCollectionTitleField,
   getKanbanFieldScopeKey,
-  getEnabledKanbanGroupOptions,
   getKanbanMoveParamsFromPreviewOrder,
   KANBAN_UNKNOWN_COLUMN_KEY,
-  normalizeKanbanGroupOptions,
   type KanbanGroupOption,
 } from '../utils';
 import { ColumnPanel } from './kanban-block/ColumnPanel';
@@ -80,32 +76,6 @@ const cancelDeferredRefresh = (handle: DeferredRefreshHandle) => {
   window.clearTimeout(handle.id);
 };
 
-const loadRelationGroupOptions = async (model: KanbanBlockModel, field: any): Promise<KanbanGroupOption[]> => {
-  const targetCollection = field?.targetCollection;
-  if (!targetCollection) {
-    return [];
-  }
-
-  const params = model.getResourceSettingsInitParams();
-  const resource = model.context.createResource(MultiRecordResource);
-  const sortField = getKanbanCollectionTitleField(targetCollection);
-  const filterTargetKey = getKanbanCollectionFilterTargetKey(targetCollection);
-  resource.setDataSourceKey(params.dataSourceKey);
-  resource.setResourceName(targetCollection.name);
-  resource.setPage(1);
-  resource.setPageSize(200);
-  resource.setSort([sortField]);
-  await resource.refresh();
-
-  return normalizeKanbanGroupOptions(
-    (resource.getData() || []).map((item: any) => ({
-      label: item?.[sortField] || item?.[filterTargetKey],
-      value: item?.[filterTargetKey],
-    })),
-    model.props.groupOptions || [],
-  );
-};
-
 export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel }) => {
   const [groupOptions, setGroupOptions] = useState<KanbanGroupOption[]>(() => model.getConfiguredGroupOptions());
   const [groupOptionsLoading, setGroupOptionsLoading] = useState(false);
@@ -145,7 +115,6 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   }, []);
 
   const columns = useMemo<RuntimeColumn[]>(() => {
-    const enabledOptions = getEnabledKanbanGroupOptions(groupOptions);
     const runtimeColumns: RuntimeColumn[] = [
       {
         key: KANBAN_UNKNOWN_COLUMN_KEY,
@@ -154,11 +123,11 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         color: 'default',
         isUnknown: true,
       },
-      ...enabledOptions.map((item) => ({
+      ...groupOptions.map((item) => ({
         key: item.value,
         value: item.value,
         label: item.label,
-        color: item.color,
+        color: item.color || 'default',
       })),
     ];
     return runtimeColumns;
@@ -241,18 +210,25 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         return;
       }
 
+      const configuredGroupOptions = model.getConfiguredGroupOptions();
+      if (!configuredGroupOptions.length) {
+        setGroupOptions([]);
+        return;
+      }
+
       const inlineOptions = model.getInlineGroupOptions(groupField);
       if (inlineOptions.length) {
-        setGroupOptions(inlineOptions);
+        setGroupOptions(configuredGroupOptions);
         return;
       }
 
       setGroupOptionsLoading(true);
       setGroupOptionsError(undefined);
       try {
-        const relationOptions = await loadRelationGroupOptions(model, groupField);
+        const relationOptions = await model.loadRelationGroupOptions(groupField);
         if (!cancelled) {
-          setGroupOptions(relationOptions);
+          const selectedValueKeys = new Set(configuredGroupOptions.map((item) => item.value));
+          setGroupOptions(relationOptions.filter((item) => selectedValueKeys.has(item.value)));
         }
       } catch (error: any) {
         if (!cancelled) {
@@ -270,7 +246,14 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     return () => {
       cancelled = true;
     };
-  }, [groupField, groupFieldName, model, model.props.groupOptions]);
+  }, [
+    groupField,
+    groupFieldName,
+    model,
+    model.props.groupColorField,
+    model.props.groupOptions,
+    model.props.groupTitleField,
+  ]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -474,7 +457,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         return;
       }
 
-      const sortField = model.getSortFieldName();
+      const sortField = model.getDragSortFieldName();
       const sourceItems = boardDisplayItemsByColumn[sourceColumnKey] || [];
       const sourceRecord = sourceItems[sourceIndex];
       const sourceId = getKanbanRecordKeyValue(sourceRecord, model.collection);

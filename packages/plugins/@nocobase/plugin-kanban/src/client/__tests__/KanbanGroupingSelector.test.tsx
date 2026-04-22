@@ -8,15 +8,18 @@
  */
 
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { KanbanGroupingSelector } from '../models/components/KanbanGroupingSelector';
+
+const useFormMock = vi.fn(() => undefined);
 
 vi.mock('@formily/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@formily/react')>();
   return {
     ...actual,
     observer: (component: any) => component,
+    useForm: () => useFormMock(),
   };
 });
 
@@ -27,7 +30,13 @@ vi.mock('@nocobase/client', () => ({
 }));
 
 describe('KanbanGroupingSelector', () => {
-  it('does not keep emitting the same empty grouping value', async () => {
+  it('renders an empty state before a grouping field is selected', () => {
+    render(<KanbanGroupingSelector value={[]} collection={{ getField: () => undefined }} />);
+
+    expect(screen.getByText('Select a grouping field first')).toBeInTheDocument();
+  });
+
+  it('does not emit an initial grouping field when nothing is selected yet', async () => {
     const ownerField = {
       name: 'owner',
       interface: 'm2o',
@@ -55,12 +64,30 @@ describe('KanbanGroupingSelector', () => {
     render(<Wrapper />);
 
     await waitFor(() => {
-      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).not.toHaveBeenCalled();
     });
+  });
 
-    expect(onChange).toHaveBeenLastCalledWith({
-      groupField: 'owner',
-      groupOptions: [],
-    });
+  it('renders selected group values', () => {
+    const statusField = {
+      name: 'status',
+      interface: 'select',
+    };
+    const collection = {
+      getFields: () => [statusField],
+      getField: (name: string) => (name === 'status' ? statusField : undefined),
+    };
+
+    render(
+      <KanbanGroupingSelector
+        collection={collection}
+        value={{
+          groupField: 'status',
+          groupOptions: [{ value: 'todo', label: 'Todo', color: 'red', enabled: true }],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Todo')).toBeInTheDocument();
   });
 });

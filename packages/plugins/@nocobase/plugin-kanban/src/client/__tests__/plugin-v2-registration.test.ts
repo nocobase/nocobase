@@ -13,6 +13,7 @@ import {
   KanbanCardItemModel,
   KanbanCollectionActionGroupModel,
   KanbanCardViewActionModel,
+  KanbanQuickCreateActionModel,
   KanbanGroupOptionsTable,
   KanbanGroupingSelector,
 } from '../models';
@@ -56,6 +57,7 @@ describe('plugin-kanban v2 registration', () => {
       KanbanCardItemModel,
       KanbanCollectionActionGroupModel,
       KanbanCardViewActionModel,
+      KanbanQuickCreateActionModel,
     });
     expect(schemaInitializerManager.get).toHaveBeenCalledWith('page:addBlock');
     expect(pageAddBlock.add).toHaveBeenCalledWith(

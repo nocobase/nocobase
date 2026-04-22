@@ -44,9 +44,16 @@ const KANBAN_COLOR_VALUE_MAP: Record<string, string> = {
 export type KanbanGroupOption = {
   value: string;
   label: string;
-  color: string;
-  enabled: boolean;
+  color?: string;
+  enabled?: boolean;
   isUnknown?: boolean;
+};
+
+export type KanbanGroupingValue = {
+  groupField?: string;
+  groupOptions?: KanbanGroupOption[];
+  groupTitleField?: string;
+  groupColorField?: string;
 };
 
 export type KanbanColumnRecord = {
@@ -58,7 +65,7 @@ export type KanbanColumn = {
   key: string;
   value: string;
   label: string;
-  color: string;
+  color?: string;
   isUnknown?: boolean;
   records: KanbanColumnRecord[];
 };
@@ -230,6 +237,10 @@ export const normalizeKanbanCardOpenMode = (value?: string) => {
   return value === 'dialog' || value === 'embed' ? value : 'drawer';
 };
 
+export const normalizeKanbanPopupSize = (value?: string) => {
+  return value === 'small' || value === 'large' ? value : 'medium';
+};
+
 export const isKanbanGroupField = (field: any) => {
   return !!field?.interface && KANBAN_GROUP_FIELD_INTERFACES.includes(field.interface) && !isMultipleGroupField(field);
 };
@@ -353,6 +364,55 @@ export const getKanbanCollectionTitleField = (collection: any) => {
   );
 };
 
+export const getKanbanCollectionSelectableFields = (collection: any) => {
+  return getKanbanCollectionFields(collection).filter((field: any) => {
+    return field?.name && !isMultipleGroupField(field);
+  });
+};
+
+export const getKanbanCollectionFieldOptions = (collection: any) => {
+  return getKanbanCollectionSelectableFields(collection).map((field: any) => ({
+    label: field.title || field.uiSchema?.title || field.name,
+    value: field.name,
+  }));
+};
+
+export const getKanbanFieldEnumColor = (field: any, value: any) => {
+  const normalizedValue = toStringValue(extractRelationValue(value, field) ?? value);
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  const enumOptions = Array.isArray(field?.uiSchema?.enum) ? field.uiSchema.enum : [];
+  const matchedOption = enumOptions.find((item: any) => {
+    return String(item?.value ?? item?.name ?? item?.id ?? '') === normalizedValue;
+  });
+
+  return matchedOption?.color;
+};
+
+export const resolveKanbanFieldColorValue = (field: any, value: any) => {
+  const enumColor = getKanbanFieldEnumColor(field, value);
+  if (enumColor) {
+    return enumColor;
+  }
+
+  const normalizedValue = toStringValue(extractRelationValue(value, field) ?? value);
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  if (
+    KANBAN_COLOR_OPTIONS.includes(normalizedValue) ||
+    normalizedValue.startsWith('#') ||
+    /^rgba?\(/i.test(normalizedValue)
+  ) {
+    return normalizedValue;
+  }
+
+  return undefined;
+};
+
 export const getKanbanGroupFieldCandidates = (collection: any) => {
   return getKanbanCollectionFields(collection)
     .filter((field: any) => isKanbanGroupField(field))
@@ -406,7 +466,6 @@ export const areKanbanGroupOptionsEqual = (
       String(item?.value ?? '') === String(next?.value ?? '') &&
       String(item?.label ?? '') === String(next?.label ?? '') &&
       String(item?.color ?? '') === String(next?.color ?? '') &&
-      (item?.enabled !== false) === (next?.enabled !== false) &&
       Boolean(item?.isUnknown) === Boolean(next?.isUnknown)
     );
   });
@@ -425,7 +484,12 @@ export const isSameKanbanGroupingValue = (
 export const normalizeKanbanGroupOptions = (
   sourceOptions: Array<Partial<KanbanGroupOption>>,
   savedOptions: Array<Partial<KanbanGroupOption>> = [],
+  options: {
+    useDefaultColors?: boolean;
+    preserveSavedColors?: boolean;
+  } = {},
 ) => {
+  const { useDefaultColors = false, preserveSavedColors = true } = options;
   const savedMap = new Map(savedOptions.map((item) => [String(item.value), item]));
   const sourceMap = new Map(sourceOptions.map((item) => [String(item.value ?? ''), item]));
   const mergedOptions = [
@@ -433,15 +497,18 @@ export const normalizeKanbanGroupOptions = (
     ...sourceOptions.filter((item) => !savedMap.has(String(item.value ?? ''))),
   ].filter((item): item is Partial<KanbanGroupOption> => Boolean(item));
 
-  return mergedOptions.map((item, index) => {
+  return mergedOptions.map((item) => {
     const value = String(item.value ?? '');
     const saved = savedMap.get(value);
     const sourceColor = typeof item.color === 'string' && item.color !== 'default' ? item.color : undefined;
+    const savedColor =
+      preserveSavedColors && typeof saved?.color === 'string' && saved.color !== 'default' ? saved.color : undefined;
+    const resolvedColor = sourceColor || savedColor || (useDefaultColors ? getDefaultKanbanColor(0) : undefined);
+
     return {
       value,
       label: saved?.label ? String(saved.label) : getKanbanGroupOptionLabel(item),
-      color: String(saved?.color ?? getDefaultKanbanColor(index, sourceColor)),
-      enabled: saved?.enabled ?? item.enabled ?? true,
+      color: resolvedColor,
       isUnknown: item.isUnknown ?? saved?.isUnknown,
     } satisfies KanbanGroupOption;
   });
@@ -468,8 +535,26 @@ export const reorderKanbanGroupOptions = (
   return next;
 };
 
+export const orderKanbanGroupOptionsBySelection = (
+  options: KanbanGroupOption[] = [],
+  selectedValues: Array<string | number> = [],
+) => {
+  const selectedValueKeys = selectedValues.map((value) => String(value));
+  const selectedValueKeySet = new Set(selectedValueKeys);
+  const optionMap = new Map(options.map((item) => [String(item.value), item]));
+
+  const orderedSelected = selectedValueKeys
+    .map((value) => optionMap.get(value))
+    .filter((item): item is KanbanGroupOption => Boolean(item))
+    .map((item) => ({ ...item }));
+
+  const remaining = options.filter((item) => !selectedValueKeySet.has(String(item.value))).map((item) => ({ ...item }));
+
+  return [...orderedSelected, ...remaining];
+};
+
 export const getEnabledKanbanGroupOptions = (options: KanbanGroupOption[] = []) => {
-  return options.filter((item) => item.enabled !== false && !item.isUnknown);
+  return options.filter((item) => !item.isUnknown);
 };
 
 export const getUnknownKanbanColumn = () => {
@@ -478,7 +563,6 @@ export const getUnknownKanbanColumn = () => {
     key: KANBAN_UNKNOWN_COLUMN_KEY,
     label: 'Unknown',
     color: 'default',
-    enabled: true,
     isUnknown: true,
     records: [] as KanbanColumnRecord[],
   } satisfies KanbanColumn & KanbanGroupOption;
@@ -500,7 +584,7 @@ export const getRecordGroupValues = (record: any, field: { name: string; interfa
 export const getRecordKanbanColumnKey = (options: {
   record: any;
   groupField?: { name: string; interface?: string };
-  groupOptions?: Array<Pick<KanbanGroupOption, 'value' | 'enabled'>>;
+  groupOptions?: Array<Pick<KanbanGroupOption, 'value'>>;
 }) => {
   const { record, groupField, groupOptions = [] } = options;
 
@@ -509,7 +593,7 @@ export const getRecordKanbanColumnKey = (options: {
   }
 
   const recordValues = new Set(getRecordGroupValues(record, groupField).map((value) => String(value)));
-  const matchedOption = groupOptions.find((item) => item?.enabled !== false && recordValues.has(String(item.value)));
+  const matchedOption = groupOptions.find((item) => recordValues.has(String(item.value)));
 
   return matchedOption ? String(matchedOption.value) : KANBAN_UNKNOWN_COLUMN_KEY;
 };
@@ -683,7 +767,7 @@ export const buildKanbanBoardDisplayItems = (options: {
   columnItems: Array<{ columnKey: string; items: any[] }>;
   collection?: KanbanCollectionIdentity;
   groupField?: { name: string; interface?: string };
-  groupOptions?: Array<Pick<KanbanGroupOption, 'value' | 'enabled'>>;
+  groupOptions?: Array<Pick<KanbanGroupOption, 'value'>>;
 }) => {
   const { columnItems, collection, groupField, groupOptions = [] } = options;
   const displayItemsByColumn: Record<string, any[]> = {};
@@ -754,9 +838,8 @@ export const buildKanbanColumns = (options: {
   groupOptions: KanbanGroupOption[];
 }) => {
   const { records, primaryKey, groupField, groupOptions } = options;
-  const enabledOptions = getEnabledKanbanGroupOptions(groupOptions);
   const columnMap = new Map(
-    enabledOptions.map((item) => [
+    groupOptions.map((item) => [
       item.value,
       {
         key: item.value,
@@ -789,7 +872,7 @@ export const buildKanbanColumns = (options: {
   });
 
   const orderedColumns: KanbanColumn[] = [];
-  enabledOptions.forEach((item) => {
+  groupOptions.forEach((item) => {
     const column = columnMap.get(item.value);
     if (column) {
       orderedColumns.push(column);
