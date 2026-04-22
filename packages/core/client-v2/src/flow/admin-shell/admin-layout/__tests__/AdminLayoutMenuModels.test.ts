@@ -1917,7 +1917,7 @@ describe('AdminLayoutModel menu items', () => {
     expect(getModel).not.toHaveBeenCalled();
   });
 
-  it('should move page into group when drag target is a group', () => {
+  it('should keep page drag on group target as sibling reorder', () => {
     const activeModel = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'drag-source-page-into-group',
       use: AdminLayoutMenuItemModel,
@@ -1945,11 +1945,8 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel)).toEqual({
       sourceId: 1,
-      targetScope: {
-        parentId: 10,
-      },
+      targetId: 10,
       sortField: 'sort',
-      method: 'prepend',
     });
   });
 

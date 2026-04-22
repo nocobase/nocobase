@@ -13,6 +13,7 @@ import { waitFor } from '@testing-library/react';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
 import { AdminLayoutModelV1 } from '../AdminLayoutModel';
 import { hydrateLegacyActiveMenuPersistedStateForTest } from '../AdminLayoutComponentV1';
+import { resolveAdminLayoutMenuDragMoveOptions } from '../AdminLayoutMenuUtils';
 import { NocoBaseDesktopRouteType } from '../route-types';
 
 describe('AdminLayoutMenuItemModel legacy behavior', () => {
@@ -206,6 +207,39 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith('/admin/next-page');
+  });
+
+  it('should keep page drag on group target as sibling reorder in client v1', () => {
+    const activeModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-drag-source-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+    const overModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-drag-target-group',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 10,
+          title: 'Group 1',
+          schemaUid: 'group-1',
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+
+    expect(resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel)).toEqual({
+      sourceId: 1,
+      targetId: 10,
+      sortField: 'sort',
+    });
   });
 
   it('should hydrate persisted instance flows in runtime mode when route is marked in client v1', async () => {
