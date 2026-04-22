@@ -3,6 +3,15 @@
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
  * Authors: NocoBase Team.
  *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
  * This program is offered under a commercial license.
  * For more information, see <https://www.nocobase.com/agreement>
  */
@@ -18,6 +27,7 @@ import {
 import { flatten } from '@nocobase/utils/client';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { AddVariableButton } from './AddVariableButton';
+import { registerAdminLayoutMenuBadgeStep } from './adminLayoutMenuBadgeStep';
 import EditBadge from './EditBadge';
 import { useCustomVariablesOptions } from './useCustomVariablesOptions';
 import { variableInitializer } from './variableInitializer';
@@ -28,11 +38,7 @@ class PluginCustomVariablesClient extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(variableInitializer);
 
-    // Add Edit badge setting to menuSettings:menuItem
-    this.app.schemaSettingsManager.addItem('menuSettings:menuItem', 'badge', {
-      Component: EditBadge,
-      sort: 401,
-    });
+    registerAdminLayoutMenuBadgeStep(this.t.bind(this));
 
     this.app.schemaSettingsManager.addItem('PageTabSettings', 'badge', {
       Component: EditBadge,
@@ -48,7 +54,7 @@ class PluginCustomVariablesClient extends Plugin {
     this.app.registerVariable({
       name: '$customVariables',
       useOption() {
-        const { options, refresh, loading } = useCustomVariablesOptions();
+        const { options, refresh, loading, scopeId } = useCustomVariablesOptions();
         const { t } = useTranslation(NAMESPACE);
         const option = useMemo(() => {
           return {
@@ -68,9 +74,9 @@ class PluginCustomVariablesClient extends Plugin {
         return useMemo(() => {
           return {
             option,
-            visible: !loading,
+            visible: !!scopeId && !loading,
           };
-        }, [option, loading]);
+        }, [option, loading, scopeId]);
       },
       useCtx() {
         const api = useAPIClient();
@@ -173,4 +179,5 @@ class PluginCustomVariablesClient extends Plugin {
   }
 }
 
+export { registerAdminLayoutMenuBadgeStep };
 export default PluginCustomVariablesClient;
