@@ -9409,6 +9409,7 @@ export class FlowSurfacesService {
       );
     });
 
+    this.syncFilterActionSettingsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
     const popupActionContext =
       options.popupActionContext ||
@@ -9489,6 +9490,110 @@ export class FlowSurfacesService {
       uid: current.uid,
       updated: Object.keys(_.omit(nextPayload, ['uid'])),
     };
+  }
+
+  private syncFilterActionSettingsForUpdateSettings(
+    current: any,
+    values: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    if (current?.use !== 'FilterActionModel') {
+      return;
+    }
+
+    const hasPropsFilterableFieldNames =
+      _.isPlainObject(values?.props) && Object.prototype.hasOwnProperty.call(values.props, 'filterableFieldNames');
+    const hasPropsDefaultFilterValue =
+      _.isPlainObject(values?.props) && Object.prototype.hasOwnProperty.call(values.props, 'defaultFilterValue');
+    const hasPropsFilterValue =
+      _.isPlainObject(values?.props) && Object.prototype.hasOwnProperty.call(values.props, 'filterValue');
+    const hasStepFilterSettingsClear =
+      _.isPlainObject(values?.stepParams) &&
+      Object.prototype.hasOwnProperty.call(values.stepParams, 'filterSettings') &&
+      (values.stepParams.filterSettings === null ||
+        (_.isPlainObject(values.stepParams.filterSettings) && !Object.keys(values.stepParams.filterSettings).length));
+    const hasStepFilterableFieldNames = _.has(values, [
+      'stepParams',
+      'filterSettings',
+      'filterableFieldNames',
+      'filterableFieldNames',
+    ]);
+    const hasStepDefaultFilter = _.has(values, ['stepParams', 'filterSettings', 'defaultFilter', 'defaultFilter']);
+    if (
+      !hasPropsFilterableFieldNames &&
+      !hasPropsDefaultFilterValue &&
+      !hasPropsFilterValue &&
+      !hasStepFilterSettingsClear &&
+      !hasStepFilterableFieldNames &&
+      !hasStepDefaultFilter
+    ) {
+      return;
+    }
+
+    const nextProps = _.cloneDeep(nextPayload.props ?? current?.props ?? {});
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+
+    if (hasStepFilterSettingsClear) {
+      if (hasPropsFilterableFieldNames || hasPropsDefaultFilterValue || hasPropsFilterValue) {
+        throwBadRequest(
+          "flowSurfaces updateSettings filter action cannot combine 'stepParams.filterSettings' clear with filter props writes",
+        );
+      }
+      _.unset(nextProps, ['filterableFieldNames']);
+      _.unset(nextProps, ['defaultFilterValue']);
+      _.unset(nextProps, ['filterValue']);
+      _.set(nextStepParams, ['filterSettings'], {});
+      nextPayload.props = nextProps;
+      nextPayload.stepParams = nextStepParams;
+      return;
+    }
+
+    if (hasPropsFilterableFieldNames || hasStepFilterableFieldNames) {
+      const nextPropNames = _.cloneDeep(_.get(nextProps, ['filterableFieldNames']));
+      const nextStepNames = _.cloneDeep(
+        _.get(nextStepParams, ['filterSettings', 'filterableFieldNames', 'filterableFieldNames']),
+      );
+      if (hasPropsFilterableFieldNames && hasStepFilterableFieldNames && !_.isEqual(nextPropNames, nextStepNames)) {
+        throwBadRequest(
+          "flowSurfaces updateSettings filter action values 'props.filterableFieldNames' and 'stepParams.filterSettings.filterableFieldNames.filterableFieldNames' must match",
+        );
+      }
+      const fieldNames = hasStepFilterableFieldNames ? nextStepNames : nextPropNames;
+      nextProps.filterableFieldNames = _.cloneDeep(fieldNames);
+      _.set(
+        nextStepParams,
+        ['filterSettings', 'filterableFieldNames', 'filterableFieldNames'],
+        _.cloneDeep(fieldNames),
+      );
+    }
+
+    if (hasPropsDefaultFilterValue || hasPropsFilterValue || hasStepDefaultFilter) {
+      const nextDefaultFilterValue = _.cloneDeep(_.get(nextProps, ['defaultFilterValue']));
+      const nextFilterValue = _.cloneDeep(_.get(nextProps, ['filterValue']));
+      const nextStepFilter = _.cloneDeep(_.get(nextStepParams, ['filterSettings', 'defaultFilter', 'defaultFilter']));
+      if (hasPropsDefaultFilterValue && hasPropsFilterValue && !_.isEqual(nextDefaultFilterValue, nextFilterValue)) {
+        throwBadRequest(
+          "flowSurfaces updateSettings filter action values 'props.defaultFilterValue' and 'props.filterValue' must match",
+        );
+      }
+      const nextPropFilter = hasPropsDefaultFilterValue ? nextDefaultFilterValue : nextFilterValue;
+      if (
+        (hasPropsDefaultFilterValue || hasPropsFilterValue) &&
+        hasStepDefaultFilter &&
+        !_.isEqual(nextPropFilter, nextStepFilter)
+      ) {
+        throwBadRequest(
+          "flowSurfaces updateSettings filter action values 'props.defaultFilterValue/filterValue' and 'stepParams.filterSettings.defaultFilter.defaultFilter' must match",
+        );
+      }
+      const filterValue = hasStepDefaultFilter ? nextStepFilter : nextPropFilter;
+      nextProps.defaultFilterValue = _.cloneDeep(filterValue);
+      nextProps.filterValue = _.cloneDeep(filterValue);
+      _.set(nextStepParams, ['filterSettings', 'defaultFilter', 'defaultFilter'], _.cloneDeep(filterValue));
+    }
+
+    nextPayload.props = nextProps;
+    nextPayload.stepParams = nextStepParams;
   }
 
   private syncMirroredStepParamsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
@@ -13000,6 +13105,17 @@ export class FlowSurfacesService {
     return result;
   }
 
+  private normalizeFilterActionDefaultFilterValue(value: any) {
+    if (value === null || (_.isPlainObject(value) && !Object.keys(value).length)) {
+      return {
+        logic: '$and',
+        items: [],
+      };
+    }
+
+    return _.cloneDeep(value);
+  }
+
   private async configureActionNode(
     target: FlowSurfaceWriteTarget,
     use: string,
@@ -13008,6 +13124,9 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
+    const normalizedDefaultFilter = hasOwnDefined(changes, 'defaultFilter')
+      ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
+      : undefined;
     const stepParams: Record<string, any> = {};
     if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color', 'linkageRules'])) {
       stepParams.buttonSettings = {
@@ -13025,6 +13144,27 @@ export class FlowSurfacesService {
           : {}),
         ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: changes.linkageRules } : {}),
       };
+    }
+    if (hasOwnDefined(changes, 'filterableFieldNames') || hasOwnDefined(changes, 'defaultFilter')) {
+      if (use !== 'FilterActionModel') {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support filterableFieldNames/defaultFilter`);
+      }
+      stepParams.filterSettings = buildDefinedPayload({
+        ...(hasOwnDefined(changes, 'filterableFieldNames')
+          ? {
+              filterableFieldNames: {
+                filterableFieldNames: _.cloneDeep(changes.filterableFieldNames),
+              },
+            }
+          : {}),
+        ...(hasOwnDefined(changes, 'defaultFilter')
+          ? {
+              defaultFilter: {
+                defaultFilter: normalizedDefaultFilter,
+              },
+            }
+          : {}),
+      });
     }
     if (hasOwnDefined(changes, 'approvalReturn')) {
       if (use !== 'ProcessFormReturnModel') {
@@ -13206,6 +13346,15 @@ export class FlowSurfacesService {
           position: changes.position,
           danger: changes.danger,
           color: changes.color,
+          ...(hasOwnDefined(changes, 'filterableFieldNames')
+            ? { filterableFieldNames: _.cloneDeep(changes.filterableFieldNames) }
+            : {}),
+          ...(hasOwnDefined(changes, 'defaultFilter')
+            ? {
+                defaultFilterValue: normalizedDefaultFilter,
+                filterValue: _.cloneDeep(normalizedDefaultFilter),
+              }
+            : {}),
         }),
         stepParams: Object.keys(stepParams).length ? stepParams : undefined,
       },

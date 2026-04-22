@@ -486,13 +486,13 @@ describe('flowSurfaces approval API contract', () => {
     expect(saveDraftActionReadback.tree).toMatchObject({
       use: 'ApplyFormSaveDraftModel',
       props: {
-        title: 'Save draft',
+        title: '{{t("Save draft", { ns: "@nocobase/plugin-workflow-approval" })}}',
       },
     });
     expect(approveActionReadback.tree).toMatchObject({
       use: 'ProcessFormApproveModel',
       props: {
-        title: 'Approve',
+        title: '{{t("Approve", { ns: "@nocobase/plugin-workflow-approval" })}}',
       },
     });
   });

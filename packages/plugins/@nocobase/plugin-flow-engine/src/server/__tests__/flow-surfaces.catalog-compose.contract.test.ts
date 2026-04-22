@@ -2330,7 +2330,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitAddNewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Create employee');
-    expect(implicitAddNewPopupTab?.props?.title).toBe('Add new');
+    expect(implicitAddNewPopupTab?.props?.title).toBe('{{t("Add new")}}');
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
     expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -2381,7 +2381,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitViewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect employee');
-    expect(implicitViewPopupTab?.props?.title).toBe('Details');
+    expect(implicitViewPopupTab?.props?.title).toBe('{{t("Details")}}');
     expect(implicitViewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
 
@@ -2395,7 +2395,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitEditSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify employee');
-    expect(implicitEditPopupTab?.props?.title).toBe('Edit');
+    expect(implicitEditPopupTab?.props?.title).toBe('{{t("Edit")}}');
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
     expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(

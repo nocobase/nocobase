@@ -154,6 +154,15 @@ const FILTER_FORM_ITEM_ALLOWED_PATHS = [
   'initialValue.defaultValue',
 ];
 const ACTION_PROP_KEYS = ['title', 'tooltip', 'icon', 'type', 'htmlType', 'position', 'danger', 'color'];
+const FILTER_ACTION_PROP_KEYS = [...ACTION_PROP_KEYS, 'filterableFieldNames', 'defaultFilterValue', 'filterValue'];
+const FILTER_ACTION_PROP_PATH_SCHEMAS = {
+  filterableFieldNames: {
+    type: 'array',
+    items: STRING_SCHEMA,
+  },
+  defaultFilterValue: FILTER_GROUP_SCHEMA,
+  filterValue: FILTER_GROUP_SCHEMA,
+};
 const ACTION_BUTTON_SETTINGS_GROUP = {
   allowedPaths: [
     'general.title',
@@ -414,13 +423,15 @@ const KNOWN_FIELD_NODE_USES = new Set<string>([
 function keyedDomain(
   allowedKeys: string[],
   mergeStrategy: FlowSurfaceDomainContract['mergeStrategy'] = 'deep',
+  pathSchemas?: Record<string, Record<string, any>>,
 ): FlowSurfaceDomainContract {
   return {
     allowedKeys,
     mergeStrategy,
+    pathSchemas,
     schema: {
       type: 'object',
-      properties: Object.fromEntries(allowedKeys.map((key) => [key, ANY_VALUE_SCHEMA])),
+      properties: Object.fromEntries(allowedKeys.map((key) => [key, pathSchemas?.[key] || ANY_VALUE_SCHEMA])),
       additionalProperties: false,
     },
   };
@@ -527,6 +538,7 @@ function buildSettingsSchema(contract: FlowSurfaceNodeContract) {
         'x-allowedKeys': definition?.allowedKeys || [],
         'x-wildcard': !!definition?.wildcard,
         'x-mergeStrategy': definition?.mergeStrategy || 'deep',
+        'x-pathSchemas': definition?.pathSchemas,
         'x-groups': definition?.groups
           ? Object.fromEntries(
               Object.entries(definition.groups).map(([groupKey, group]) => [
@@ -1831,6 +1843,43 @@ SIMPLE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
 });
 
+const FILTER_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: FILTER_ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'filterSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    filterSettings: {
+      stepKeys: ['filterableFieldNames', 'defaultFilter'],
+    },
+  },
+});
+FILTER_ACTION_CONTRACT.domains.props = keyedDomain(FILTER_ACTION_PROP_KEYS, 'deep', FILTER_ACTION_PROP_PATH_SCHEMAS);
+FILTER_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  filterSettings: {
+    allowedPaths: ['filterableFieldNames.filterableFieldNames', 'defaultFilter.defaultFilter'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['filterableFieldNames', 'defaultFilter'],
+    pathSchemas: {
+      'filterableFieldNames.filterableFieldNames': {
+        type: 'array',
+        items: STRING_SCHEMA,
+      },
+      'defaultFilter.defaultFilter': FILTER_GROUP_SCHEMA,
+    },
+  },
+});
+
 const FILTER_FORM_COLLAPSE_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
@@ -2224,7 +2273,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormSubmitActionModel', FILTER_FORM_SUBMIT_ACTION_CONTRACT],
   ['FilterFormResetActionModel', SIMPLE_ACTION_CONTRACT],
   ['FilterFormCollapseActionModel', FILTER_FORM_COLLAPSE_ACTION_CONTRACT],
-  ['FilterActionModel', SIMPLE_ACTION_CONTRACT],
+  ['FilterActionModel', FILTER_ACTION_CONTRACT],
   ['RefreshActionModel', SIMPLE_ACTION_CONTRACT],
   ['LinkActionModel', SIMPLE_ACTION_CONTRACT],
   ['ExpandCollapseActionModel', SIMPLE_ACTION_CONTRACT],

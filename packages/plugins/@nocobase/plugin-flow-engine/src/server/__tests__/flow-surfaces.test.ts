@@ -1137,13 +1137,17 @@ describe('flowSurfaces resource', () => {
       uid: collectionTrigger.uid,
     });
     expect(collectionTriggerReadback.tree.use).toBe('CollectionTriggerWorkflowActionModel');
-    expect(collectionTriggerReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Trigger workflow');
+    expect(collectionTriggerReadback.tree.stepParams?.buttonSettings?.general?.title).toBe(
+      '{{t("Trigger workflow", { ns: "@nocobase/plugin-workflow-custom-action-trigger" })}}',
+    );
 
     const workbenchTriggerReadback = await getSurface(rootAgent, {
       uid: workbenchTrigger.uid,
     });
     expect(workbenchTriggerReadback.tree.use).toBe('WorkbenchTriggerWorkflowActionModel');
-    expect(workbenchTriggerReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Trigger global workflow');
+    expect(workbenchTriggerReadback.tree.stepParams?.buttonSettings?.general?.title).toBe(
+      '{{t("Trigger global workflow", { ns: "@nocobase/plugin-workflow-custom-action-trigger" })}}',
+    );
 
     const expandCollapseReadback = await getSurface(rootAgent, {
       uid: expandCollapse.uid,
@@ -1695,6 +1699,478 @@ describe('flowSurfaces resource', () => {
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules).toEqual([]);
+  });
+
+  it('should expose and configure filter action built-in filter settings via flowSurfaces', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter action contract page',
+      tabTitle: 'Filter action contract tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    const filterAction = await addAction(rootAgent, tableBlockUid, 'filter');
+    const filterCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: filterAction.uid,
+          },
+          expand: ['item.configureOptions', 'node.contracts'],
+        },
+      }),
+    );
+
+    expect(filterCatalog.node.configureOptions).toMatchObject({
+      filterableFieldNames: {
+        type: 'array',
+      },
+      defaultFilter: {
+        type: 'object',
+        supportsFlowContext: true,
+      },
+      linkageRules: {
+        type: 'array',
+      },
+    });
+    expect(filterCatalog.node.settingsContract?.stepParams?.groups?.filterSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['filterableFieldNames.filterableFieldNames', 'defaultFilter.defaultFilter']),
+    );
+    expect(
+      filterCatalog.node.settingsContract?.stepParams?.groups?.filterSettings?.pathSchemas?.[
+        'filterableFieldNames.filterableFieldNames'
+      ],
+    ).toMatchObject({
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+    });
+    expect(
+      filterCatalog.node.settingsContract?.stepParams?.groups?.filterSettings?.pathSchemas?.[
+        'defaultFilter.defaultFilter'
+      ],
+    ).toMatchObject({
+      type: 'object',
+      required: expect.arrayContaining(['logic', 'items']),
+      'x-flowSurfaceFormat': 'filter-group',
+    });
+    expect(filterCatalog.node.settingsContract?.props?.pathSchemas?.filterableFieldNames).toMatchObject({
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+    });
+    expect(filterCatalog.node.settingsContract?.props?.pathSchemas?.defaultFilterValue).toMatchObject({
+      type: 'object',
+      required: expect.arrayContaining(['logic', 'items']),
+      'x-flowSurfaceFormat': 'filter-group',
+    });
+    expect(filterCatalog.node.settingsContract?.props?.pathSchemas?.filterValue).toMatchObject({
+      type: 'object',
+      required: expect.arrayContaining(['logic', 'items']),
+      'x-flowSurfaceFormat': 'filter-group',
+    });
+
+    const defaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'nocobase',
+        },
+      ],
+    };
+    const configureFilterAction = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        changes: {
+          filterableFieldNames: ['username', 'email', 'roles'],
+          defaultFilter,
+        },
+      },
+    });
+    expect(configureFilterAction.status).toBe(200);
+
+    const filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email', 'roles']);
+    expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
+      'username',
+      'email',
+      'roles',
+    ]);
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual(defaultFilter);
+    expect(filterReadback.tree.props?.filterValue).toEqual(defaultFilter);
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+  });
+
+  it('should normalize and validate filter action filter settings payloads', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter action configure page',
+      tabTitle: 'Filter action configure tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    const filterAction = await addAction(rootAgent, tableBlockUid, 'filter');
+
+    const configureEmptyDefaultFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        changes: {
+          defaultFilter: {},
+        },
+      },
+    });
+    expect(configureEmptyDefaultFilter.status).toBe(200);
+
+    let filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(filterReadback.tree.props?.filterValue).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const configureNullDefaultFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        changes: {
+          defaultFilter: null,
+        },
+      },
+    });
+    expect(configureNullDefaultFilter.status).toBe(200);
+
+    filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(filterReadback.tree.props?.filterValue).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const invalidFilterableFieldNames = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        stepParams: {
+          filterSettings: {
+            filterableFieldNames: {
+              filterableFieldNames: ['username', 1],
+            },
+          },
+        },
+      },
+    });
+    expect(invalidFilterableFieldNames.status).toBe(400);
+    expect(readErrorMessage(invalidFilterableFieldNames)).toContain('stepParams.filterSettings');
+    expect(readErrorMessage(invalidFilterableFieldNames)).toContain(
+      'filterableFieldNames.filterableFieldNames[1] expected string',
+    );
+
+    const legacyFilterableFieldNames = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        stepParams: {
+          filterSettings: {
+            filterableFieldNames: {
+              value: ['username'],
+            },
+          },
+        },
+      },
+    });
+    expect(legacyFilterableFieldNames.status).toBe(400);
+    expect(readErrorMessage(legacyFilterableFieldNames)).toContain('stepParams.filterSettings');
+    expect(readErrorMessage(legacyFilterableFieldNames)).toContain('filterableFieldNames.value');
+
+    const invalidDefaultFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        changes: {
+          defaultFilter: {
+            foo: 'bar',
+          },
+        },
+      },
+    });
+    expect(invalidDefaultFilter.status).toBe(400);
+    expect(readErrorMessage(invalidDefaultFilter)).toContain('props.defaultFilterValue');
+    expect(readErrorMessage(invalidDefaultFilter)).toContain('FilterGroup');
+    expect(readErrorMessage(invalidDefaultFilter)).toContain('logic and items');
+  });
+
+  it('should sync filter action updateSettings writes between props and stepParams', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter action updateSettings sync page',
+      tabTitle: 'Filter action updateSettings sync tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    const filterAction = await addAction(rootAgent, tableBlockUid, 'filter');
+
+    const filterFromDefaultFilterValue = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'nocobase',
+        },
+      ],
+    };
+    const updateViaProps = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          filterableFieldNames: ['username', 'email'],
+          defaultFilterValue: filterFromDefaultFilterValue,
+        },
+      },
+    });
+    expect(updateViaProps.status).toBe(200);
+
+    let filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email']);
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromDefaultFilterValue);
+    expect(filterReadback.tree.props?.filterValue).toEqual(filterFromDefaultFilterValue);
+    expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
+      'username',
+      'email',
+    ]);
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      filterFromDefaultFilterValue,
+    );
+
+    const filterFromFilterValue = {
+      logic: '$and',
+      items: [
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+      ],
+    };
+    const updateViaFilterValue = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          filterValue: filterFromFilterValue,
+        },
+      },
+    });
+    expect(updateViaFilterValue.status).toBe(200);
+
+    filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromFilterValue);
+    expect(filterReadback.tree.props?.filterValue).toEqual(filterFromFilterValue);
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(filterFromFilterValue);
+
+    const filterFromStepParams = {
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+      ],
+    };
+    const updateViaStepParams = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        stepParams: {
+          filterSettings: {
+            filterableFieldNames: {
+              filterableFieldNames: ['nickname', 'roles'],
+            },
+            defaultFilter: {
+              defaultFilter: filterFromStepParams,
+            },
+          },
+        },
+      },
+    });
+    expect(updateViaStepParams.status).toBe(200);
+
+    filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['nickname', 'roles']);
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromStepParams);
+    expect(filterReadback.tree.props?.filterValue).toEqual(filterFromStepParams);
+    expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
+      'nickname',
+      'roles',
+    ]);
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(filterFromStepParams);
+
+    const legacyUpdateViaStepParams = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        stepParams: {
+          filterSettings: {
+            filterableFieldNames: {
+              value: ['legacy'],
+            },
+            defaultFilter: {
+              filter: filterFromDefaultFilterValue,
+            },
+          },
+        },
+      },
+    });
+    expect(legacyUpdateViaStepParams.status).toBe(400);
+    expect(readErrorMessage(legacyUpdateViaStepParams)).toContain('stepParams.filterSettings');
+    expect(readErrorMessage(legacyUpdateViaStepParams)).toContain('filterableFieldNames.value');
+
+    const clearFilterSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        stepParams: {
+          filterSettings: null,
+        },
+      },
+    });
+    expect(clearFilterSettings.status).toBe(200);
+
+    filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.filterableFieldNames).toBeUndefined();
+    expect(filterReadback.tree.props?.defaultFilterValue).toBeUndefined();
+    expect(filterReadback.tree.props?.filterValue).toBeUndefined();
+    expect(filterReadback.tree.stepParams?.filterSettings || {}).toEqual({});
+  });
+
+  it('should reject invalid or conflicting filter action raw props writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter action raw props validation page',
+      tabTitle: 'Filter action raw props validation tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    const filterAction = await addAction(rootAgent, tableBlockUid, 'filter');
+
+    const invalidPropsFilterableFieldNames = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          filterableFieldNames: ['username', 1],
+        },
+      },
+    });
+    expect(invalidPropsFilterableFieldNames.status).toBe(400);
+    expect(readErrorMessage(invalidPropsFilterableFieldNames)).toContain("domain 'props'");
+    expect(readErrorMessage(invalidPropsFilterableFieldNames)).toContain('filterableFieldNames[1] expected string');
+
+    const invalidPropsDefaultFilter = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          defaultFilterValue: {
+            foo: 'bar',
+          },
+        },
+      },
+    });
+    expect(invalidPropsDefaultFilter.status).toBe(400);
+    expect(readErrorMessage(invalidPropsDefaultFilter)).toContain('props.defaultFilterValue');
+    expect(readErrorMessage(invalidPropsDefaultFilter)).toContain('FilterGroup');
+
+    const conflictingPropsFilters = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          defaultFilterValue: {
+            logic: '$and',
+            items: [
+              {
+                path: 'username',
+                operator: '$includes',
+                value: 'nocobase',
+              },
+            ],
+          },
+          filterValue: {
+            logic: '$and',
+            items: [
+              {
+                path: 'email',
+                operator: '$includes',
+                value: '@nocobase.com',
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(conflictingPropsFilters.status).toBe(400);
+    expect(readErrorMessage(conflictingPropsFilters)).toContain('props.defaultFilterValue');
+    expect(readErrorMessage(conflictingPropsFilters)).toContain('props.filterValue');
+    expect(readErrorMessage(conflictingPropsFilters)).toContain('must match');
   });
 
   it('should support inline settings and popup on singular add APIs', async () => {
@@ -3134,7 +3610,7 @@ describe('flowSurfaces resource', () => {
     const addNewPopupFieldPaths = _.castArray(addNewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
     );
-    expect(addNewPopupTab?.props?.title).toBe('Add new');
+    expect(addNewPopupTab?.props?.title).toBe('{{t("Add new")}}');
     expect(addNewPopupBlock?.use).toBe('CreateFormModel');
     expect(addNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(addNewPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
@@ -3151,7 +3627,7 @@ describe('flowSurfaces resource', () => {
     const viewPopupFieldPaths = _.castArray(viewPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
     );
-    expect(viewPopupTab?.props?.title).toBe('Details');
+    expect(viewPopupTab?.props?.title).toBe('{{t("Details")}}');
     expect(viewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(_.castArray(viewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
@@ -3166,7 +3642,7 @@ describe('flowSurfaces resource', () => {
     const editPopupFieldPaths = _.castArray(editPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
     );
-    expect(editPopupTab?.props?.title).toBe('Edit');
+    expect(editPopupTab?.props?.title).toBe('{{t("Edit")}}');
     expect(editPopupBlock?.use).toBe('EditFormModel');
     expect(editPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(editPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
@@ -3244,7 +3720,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(addNewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
     expect(addNewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Create Employee');
-    expect(addNewPopup.popupTab?.props?.title).toBe('Add new');
+    expect(addNewPopup.popupTab?.props?.title).toBe('{{t("Add new")}}');
     expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
     expect(addNewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(_.castArray(addNewPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -3260,7 +3736,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(viewPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
     expect(viewPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect Employee');
-    expect(viewPopup.popupTab?.props?.title).toBe('Details');
+    expect(viewPopup.popupTab?.props?.title).toBe('{{t("Details")}}');
     expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
     expect(viewPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
 
@@ -3283,7 +3759,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(editPopup.actionReadback.tree.popup?.template?.uid).toBeTruthy();
     expect(editPopup.actionReadback.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify Employee');
-    expect(editPopup.popupTab?.props?.title).toBe('Edit');
+    expect(editPopup.popupTab?.props?.title).toBe('{{t("Edit")}}');
     expect(editPopup.popupBlock?.use).toBe('EditFormModel');
     expect(editPopup.popupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
     expect(_.castArray(editPopup.popupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(

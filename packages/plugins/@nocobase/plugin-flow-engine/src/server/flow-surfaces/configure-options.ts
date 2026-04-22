@@ -526,6 +526,13 @@ const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   ),
 };
 
+const FILTER_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
+  filterableFieldNames: arrayOption('Allowed filter field name list', {
+    example: ['username', 'email', 'roles'],
+  }),
+  defaultFilter: FILTER_GROUP,
+};
+
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
@@ -577,6 +584,7 @@ const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
   'assignRules',
   'confirm',
   'dataScope',
+  'defaultFilter',
   'defaultValues',
   'initialValue',
   'linkageRules',
@@ -674,11 +682,12 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'FormTriggerWorkflowActionModel':
     case 'WorkbenchTriggerWorkflowActionModel':
     case 'RefreshActionModel':
-    case 'FilterActionModel':
     case 'ExpandCollapseActionModel':
     case 'FilterFormSubmitActionModel':
     case 'FilterFormResetActionModel':
       return merged(ACTION_LINKAGE_OPTIONS);
+    case 'FilterActionModel':
+      return merged(FILTER_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'ApplyFormSubmitModel':
     case 'ApplyFormSaveDraftModel':
       return merged(ACTION_CONFIRM_OPTIONS, APPROVAL_ASSIGN_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS);

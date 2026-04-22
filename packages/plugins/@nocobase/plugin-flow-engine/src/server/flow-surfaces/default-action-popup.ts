@@ -79,8 +79,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
   {
     type: 'addNew',
     use: 'AddNewActionModel',
-    defaultButtonTitle: 'Add new',
-    defaultPopupTabTitle: 'Add new',
+    defaultButtonTitle: '{{t("Add new")}}',
+    defaultPopupTabTitle: '{{t("Add new")}}',
     blockKey: 'defaultCreateForm',
     blockType: 'createForm',
     blockUse: 'CreateFormModel',
@@ -94,7 +94,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       key: 'defaultSubmit',
       type: 'submit',
       settings: {
-        title: 'Submit',
+        title: '{{t("Submit")}}',
         type: 'primary',
         confirm: false,
       },
@@ -103,8 +103,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
   {
     type: 'view',
     use: 'ViewActionModel',
-    defaultButtonTitle: 'View',
-    defaultPopupTabTitle: 'Details',
+    defaultButtonTitle: '{{t("View")}}',
+    defaultPopupTabTitle: '{{t("Details")}}',
     blockKey: 'defaultDetails',
     blockType: 'details',
     blockUse: 'DetailsBlockModel',
@@ -122,8 +122,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
   {
     type: 'edit',
     use: 'EditActionModel',
-    defaultButtonTitle: 'Edit',
-    defaultPopupTabTitle: 'Edit',
+    defaultButtonTitle: '{{t("Edit")}}',
+    defaultPopupTabTitle: '{{t("Edit")}}',
     blockKey: 'defaultEditForm',
     blockType: 'editForm',
     blockUse: 'EditFormModel',
@@ -141,7 +141,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       key: 'defaultSubmit',
       type: 'submit',
       settings: {
-        title: 'Submit',
+        title: '{{t("Submit")}}',
         type: 'primary',
         confirm: false,
       },
@@ -163,6 +163,12 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIG_BY_USE = FLOW_SURFACE_DEFAULT_ACT
   },
   {} as Record<FlowSurfaceDefaultActionPopupUse, FlowSurfaceDefaultActionPopupConfig>,
 );
+
+const FLOW_SURFACE_DEFAULT_ACTION_POPUP_LEGACY_BUTTON_TITLES: Record<FlowSurfaceDefaultActionPopupUse, string> = {
+  AddNewActionModel: 'Add new',
+  ViewActionModel: 'View',
+  EditActionModel: 'Edit',
+};
 
 export function isFlowSurfaceDefaultActionPopupType(type?: string): type is FlowSurfaceDefaultActionPopupType {
   return FLOW_SURFACE_DEFAULT_ACTION_POPUP_TYPES.has(String(type || '').trim() as FlowSurfaceDefaultActionPopupType);
@@ -186,7 +192,13 @@ export function resolveFlowSurfaceDefaultActionPopupTabTitle(use?: string, curre
     return undefined;
   }
   const normalizedTitle = String(currentTitle || '').trim();
-  if (normalizedTitle && normalizedTitle !== actionConfig.defaultButtonTitle) {
+  const legacyDefaultButtonTitle =
+    FLOW_SURFACE_DEFAULT_ACTION_POPUP_LEGACY_BUTTON_TITLES[actionConfig.use as FlowSurfaceDefaultActionPopupUse];
+  if (
+    normalizedTitle &&
+    normalizedTitle !== actionConfig.defaultButtonTitle &&
+    normalizedTitle !== legacyDefaultButtonTitle
+  ) {
     return normalizedTitle;
   }
   return actionConfig.defaultPopupTabTitle;

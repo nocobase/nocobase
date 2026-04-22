@@ -102,11 +102,23 @@ export class FlowSurfaceContractGuard {
         `flowSurfaces updateSettings domain '${domain}' on '${use}' does not allow keys: ${unknownKeys.join(', ')}`,
       );
     }
-    if (!Object.keys(nextValue).length) {
+    const normalizedValue = normalizeDomainValue(nextValue, contract, {
+      domain,
+      use,
+    });
+    if (!Object.keys(normalizedValue).length) {
       return {};
     }
+    const invalidValueTypes = collectTypedValueErrors(normalizedValue, contract.pathSchemas || {});
+    if (invalidValueTypes.length) {
+      throwBadRequest(
+        `flowSurfaces updateSettings domain '${domain}' on '${use}' has invalid values: ${invalidValueTypes.join(
+          ', ',
+        )}`,
+      );
+    }
     const next = _.cloneDeep(currentValue || {});
-    Object.entries(nextValue).forEach(([key, value]) => {
+    Object.entries(normalizedValue).forEach(([key, value]) => {
       next[key] =
         contract.mergeStrategy === 'replace' || !_.isPlainObject(value) || !Object.keys(value).length
           ? _.cloneDeep(value)
@@ -303,8 +315,49 @@ function collectTypedValueErrors(value: any, pathSchemas: Record<string, Record<
       return [];
     }
     const candidate = _.get(value, path);
-    return matchesValueSchema(candidate, schema) ? [] : [`${path} expected ${schema.type}`];
+    return collectSchemaValueErrors(candidate, schema, path);
   });
+}
+
+function collectSchemaValueErrors(value: any, schema: Record<string, any>, path: string): string[] {
+  if (value === null) {
+    return schema?.nullable === true ? [] : [`${path} expected ${schema?.type || 'value'}`];
+  }
+  switch (schema?.type) {
+    case 'string':
+      return typeof value === 'string' ? [] : [`${path} expected string`];
+    case 'boolean':
+      return typeof value === 'boolean' ? [] : [`${path} expected boolean`];
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value) ? [] : [`${path} expected number`];
+    case 'object':
+      return _.isPlainObject(value) ? [] : [`${path} expected object`];
+    case 'array':
+      if (!Array.isArray(value)) {
+        return [`${path} expected array`];
+      }
+      if (!schema.items) {
+        return [];
+      }
+      return value.flatMap((item, index) => collectSchemaValueErrors(item, schema.items, `${path}[${index}]`));
+    default:
+      return [];
+  }
+}
+
+function normalizeDomainValue(
+  value: Record<string, any>,
+  contract: FlowSurfaceDomainContract,
+  context: { domain: FlowSurfaceNodeDomain; use: string },
+) {
+  const normalized = _.cloneDeep(value);
+  Object.entries(contract.pathSchemas || {}).forEach(([path, schema]) => {
+    if (!_.has(normalized, path) || !isFilterGroupSchema(schema)) {
+      return;
+    }
+    _.set(normalized, path, normalizeFilterGroupValue(_.get(normalized, path), context, path));
+  });
+  return normalized;
 }
 
 function normalizeGroupValue(
@@ -322,33 +375,13 @@ function normalizeGroupValue(
   return normalized;
 }
 
-function matchesValueSchema(value: any, schema: Record<string, any>) {
-  if (value === null) {
-    return schema?.nullable === true;
-  }
-  switch (schema?.type) {
-    case 'string':
-      return typeof value === 'string';
-    case 'boolean':
-      return typeof value === 'boolean';
-    case 'number':
-      return typeof value === 'number' && Number.isFinite(value);
-    case 'object':
-      return _.isPlainObject(value);
-    case 'array':
-      return Array.isArray(value);
-    default:
-      return true;
-  }
-}
-
 function isFilterGroupSchema(schema: Record<string, any> | undefined) {
   return schema?.['x-flowSurfaceFormat'] === 'filter-group';
 }
 
 function normalizeFilterGroupValue(
   value: any,
-  context: { domain: FlowSurfaceNodeDomain; groupKey: string; use: string },
+  context: { domain: FlowSurfaceNodeDomain; groupKey?: string; use: string },
   path: string,
 ) {
   if (value === null || (_.isPlainObject(value) && !Object.keys(value).length)) {
@@ -361,8 +394,9 @@ function normalizeFilterGroupValue(
     return _.cloneDeep(value);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
+    const domainPath = context.groupKey ? `${context.domain}.${context.groupKey}.${path}` : `${context.domain}.${path}`;
     throwBadRequest(
-      `flowSurfaces updateSettings domain '${context.domain}.${context.groupKey}.${path}' on '${context.use}' expects FilterGroup like ${FILTER_GROUP_EXAMPLE}: ${reason}`,
+      `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup like ${FILTER_GROUP_EXAMPLE}: ${reason}`,
     );
   }
 }

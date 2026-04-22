@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildFlowSurfaceDefaultActionPopupBlocks,
   pickFlowSurfaceDefaultActionPopupFieldGroups,
+  resolveFlowSurfaceDefaultActionPopupTabTitle,
 } from '../flow-surfaces/default-action-popup';
 
 function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionModel') {
@@ -21,13 +22,22 @@ function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionMo
 describe('flowSurfaces default action popup', () => {
   it('should use a primary Submit button for add-new and edit popup forms', () => {
     expect(readSubmitActionSettings('AddNewActionModel')).toMatchObject({
-      title: 'Submit',
+      title: '{{t("Submit")}}',
       type: 'primary',
     });
     expect(readSubmitActionSettings('EditActionModel')).toMatchObject({
-      title: 'Submit',
+      title: '{{t("Submit")}}',
       type: 'primary',
     });
+  });
+
+  it('should keep default popup tab titles translatable and compatible with legacy plain button titles', () => {
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel')).toBe('{{t("Details")}}');
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel', '{{t("View")}}')).toBe('{{t("Details")}}');
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel', 'View')).toBe('{{t("Details")}}');
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel', 'Inspect employee')).toBe(
+      'Inspect employee',
+    );
   });
 
   it('should keep each default field group field only once', () => {
