@@ -23,7 +23,6 @@ import { useLocation } from 'react-router-dom';
 import {
   ADMIN_LAYOUT_MODEL_UID,
   AdminLayoutContent,
-  PinnedPluginListLite,
   useApplications,
   useGlobalTheme,
   type CustomToken,
@@ -251,7 +250,7 @@ const MobileActions: FC = () => {
   return (
     <Popover
       rootClassName={popoverStyle}
-      content={<PinnedPluginListLite onClick={handleContentClick} />}
+      content={<PinnedPluginList onClick={handleContentClick} />}
       color={customToken.colorBgHeader}
       trigger="click"
       open={open}
