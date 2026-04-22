@@ -20,6 +20,7 @@ import { userCenterSettings } from './userCenterSettings';
 
 export * from './useDeleteRouteSchema';
 export { AdminDynamicPage } from './AdminDynamicPage';
+export { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
 export { KeepAlive, useKeepAlive } from './KeepAlive';
 export { LayoutContent };
 export { NocoBaseDesktopRouteType } from './route-types';
