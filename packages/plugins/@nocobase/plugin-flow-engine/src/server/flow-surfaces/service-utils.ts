@@ -11,6 +11,10 @@ import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import { getConfigureOptionKeysForUse } from './configure-options';
 import {
+  FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
+  type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+} from './blueprint/defaults';
+import {
   isFlowSurfaceError,
   normalizeFlowSurfaceError,
   throwBadRequest,
@@ -340,6 +344,7 @@ export type NormalizedComposeFieldSpec = {
   settings: Record<string, any>;
   popup?: Record<string, any>;
   __autoPopupForRelationField?: boolean;
+  [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
 };
 
 export function normalizeComposeFieldSpec(input: any, index: number): NormalizedComposeFieldSpec {
@@ -382,6 +387,9 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   }
   const rawKey = String(input.key || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim();
   const key = normalizeFlowSurfaceComposeKey(rawKey, `flowSurfaces compose field #${index + 1}`);
+  const popupDefaultsMetadata = _.isPlainObject(input[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY])
+    ? input[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
+    : undefined;
   return {
     index: index + 1,
     key,
@@ -393,6 +401,7 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
     __autoPopupForRelationField: input.__autoPopupForRelationField === true,
+    ...(popupDefaultsMetadata ? { [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: popupDefaultsMetadata } : {}),
   };
 }
 

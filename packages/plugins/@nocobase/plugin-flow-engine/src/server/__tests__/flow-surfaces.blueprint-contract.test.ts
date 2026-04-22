@@ -100,6 +100,39 @@ describe('flowSurfaces applyBlueprint contract', () => {
     };
   }
 
+  async function readPrimaryPopupBlockFromField(fieldUid: string) {
+    const fieldReadback = await getSurface(rootAgent, {
+      uid: fieldUid,
+    });
+    const popupTemplateUid = fieldReadback.tree?.popup?.template?.uid;
+    if (popupTemplateUid) {
+      const popupTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: popupTemplateUid,
+          },
+        }),
+      );
+      const popupSurface = await getSurface(rootAgent, {
+        uid: popupTemplate.targetUid,
+      });
+      return {
+        fieldReadback,
+        popupSurface,
+        popupBlock: _.castArray(
+          popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+        )[0],
+      };
+    }
+    return {
+      fieldReadback,
+      popupSurface: fieldReadback,
+      popupBlock: _.castArray(
+        fieldReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      )[0],
+    };
+  }
+
   async function createPopupTestCollection(name: string) {
     await rootAgent.resource('collections').create({
       values: {
@@ -211,7 +244,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
       },
     });
 
-    expect(executeRes.status).toBe(200);
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
     const data = getData(executeRes);
 
     expect(data).toMatchObject({
@@ -259,7 +292,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         ],
       },
     });
-    expect(executeRes.status).toBe(200);
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
     const executeData = getData(executeRes);
     const pageSchemaUid = executeData.target.pageSchemaUid;
     const readback = await getSurface(rootAgent, {
@@ -635,7 +668,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
       },
     });
 
-    expect(executeRes.status).toBe(200);
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
     const data = getData(executeRes);
     const addNewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'AddNewActionModel')[0];
     expect(addNewAction?.uid).toBeTruthy();
@@ -653,6 +686,429 @@ describe('flowSurfaces applyBlueprint contract', () => {
       allowClear: true,
       mode: 'tags',
     });
+  });
+
+  it('should apply blueprint defaults to generated popup names and grouped popup fields', async () => {
+    const unique = Date.now();
+    const sourceCollection = `bp_defaults_src_${unique}`;
+    const targetCollection = `bp_defaults_target_${unique}`;
+    const sourceAddName = `Create source ${unique}`;
+    const sourceViewName = `Inspect source ${unique}`;
+    const associationViewName = `Inspect associated target ${unique}`;
+    const targetViewName = `Inspect target fallback ${unique}`;
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: 'Blueprint defaults target',
+        titleField: 'name',
+        filterTargetKey: 'name',
+        createdAt: true,
+        updatedAt: true,
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+          { name: 'createdAt', type: 'date', interface: 'createdAt', field: 'createdAt' },
+          { name: 'updatedAt', type: 'date', interface: 'updatedAt', field: 'updatedAt' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: 'Blueprint defaults source',
+        titleField: 'title',
+        filterTargetKey: 'title',
+        createdAt: true,
+        updatedAt: true,
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'note', type: 'text', interface: 'textarea' },
+          { name: 'createdAt', type: 'date', interface: 'createdAt', field: 'createdAt' },
+          { name: 'updatedAt', type: 'date', interface: 'updatedAt', field: 'updatedAt' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'target',
+        type: 'belongsTo',
+        target: targetCollection,
+        foreignKey: 'targetId',
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [sourceCollection]: ['title', 'note', 'targetId', 'createdAt', 'updatedAt'],
+      [targetCollection]: ['name', 'label', 'createdAt', 'updatedAt'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint defaults runtime ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            [sourceCollection]: {
+              fieldGroups: [
+                {
+                  key: 'sourceMain',
+                  title: 'Source main',
+                  fields: ['title', 'note', 'target', 'createdAt'],
+                },
+                {
+                  key: 'sourceAudit',
+                  title: 'Source audit',
+                  fields: ['createdAt', 'updatedAt'],
+                },
+              ],
+              popups: {
+                addNew: {
+                  name: sourceAddName,
+                },
+                view: {
+                  name: sourceViewName,
+                },
+                associations: {
+                  target: {
+                    view: {
+                      name: associationViewName,
+                    },
+                  },
+                },
+              },
+            },
+            [targetCollection]: {
+              fieldGroups: [
+                {
+                  key: 'targetMain',
+                  title: 'Target main',
+                  fields: ['name', 'label'],
+                },
+                {
+                  key: 'targetAudit',
+                  title: 'Target audit',
+                  fields: ['createdAt', 'updatedAt'],
+                },
+              ],
+              popups: {
+                view: {
+                  name: targetViewName,
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'sourceTable',
+                type: 'table',
+                collection: sourceCollection,
+                fields: ['title', 'target'],
+                actions: ['addNew'],
+                recordActions: ['view'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const addNewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'AddNewActionModel')[0];
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    const targetFieldNodes = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'target',
+    );
+    const targetField =
+      targetFieldNodes.find(
+        (item) =>
+          item?.props?.clickToOpen === true ||
+          !!item?.popup?.template?.uid ||
+          !!item?.subModels?.page?.uid ||
+          !!item?.stepParams?.popupSettings?.openView,
+      ) || targetFieldNodes[targetFieldNodes.length - 1];
+
+    expect(addNewAction?.uid).toBeTruthy();
+    expect(viewAction?.uid).toBeTruthy();
+    expect(targetField?.uid).toBeTruthy();
+
+    const addNewPopup = await readPrimaryPopupBlockFromAction(addNewAction.uid);
+    const addNewTab = _.castArray(addNewPopup.popupSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
+    expect(addNewPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(sourceAddName);
+    expect(addNewTab?.props?.title).toBe(sourceAddName);
+    expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
+    const addNewFields = collectFieldPaths(addNewPopup.popupBlock);
+    expect(addNewFields).toEqual(expect.arrayContaining(['title', 'note', 'target']));
+    expect(addNewFields).not.toContain('createdAt');
+    expect(addNewFields).not.toContain('updatedAt');
+    expect(await findPopupTemplateByName(sourceAddName)).toBeTruthy();
+
+    const viewPopup = await readPrimaryPopupBlockFromAction(viewAction.uid);
+    const viewTab = _.castArray(viewPopup.popupSurface.tree?.subModels?.page?.subModels?.tabs || [])[0];
+    expect(viewPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(sourceViewName);
+    expect(viewTab?.props?.title).toBe(sourceViewName);
+    expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(collectFieldPaths(viewPopup.popupBlock)).toEqual(expect.arrayContaining(['title', 'note', 'createdAt']));
+    expect(await findPopupTemplateByName(sourceViewName)).toBeTruthy();
+
+    const fieldPopup = await readPrimaryPopupBlockFromField(targetField.uid);
+    expect(fieldPopup.fieldReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(associationViewName);
+    expect(fieldPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    const associationPopupFields = collectFieldPaths(fieldPopup.popupBlock);
+    expect(associationPopupFields).toEqual(expect.arrayContaining(['name', 'label', 'createdAt']));
+    expect(associationPopupFields).not.toContain('title');
+    expect(await findPopupTemplateByName(associationViewName)).toBeTruthy();
+    expect(await findPopupTemplateByName(targetViewName)).toBeUndefined();
+  });
+
+  it('should use source association popup names for generated associated-record action popups', async () => {
+    const unique = Date.now();
+    const roleAddName = `User role add ${unique}`;
+    const roleEditName = `User role edit ${unique}`;
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint association action defaults ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                associations: {
+                  roles: {
+                    addNew: {
+                      name: roleAddName,
+                    },
+                    edit: {
+                      name: roleEditName,
+                    },
+                  },
+                },
+              },
+            },
+            roles: {
+              fieldGroups: [
+                {
+                  key: 'roleMain',
+                  title: 'Role main',
+                  fields: ['name', 'title'],
+                },
+              ],
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    key: 'viewUser',
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'userRoles',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: 'roles',
+                          },
+                          fields: ['name', 'title'],
+                          actions: ['addNew'],
+                          recordActions: ['edit'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    expect(viewAction?.uid).toBeTruthy();
+
+    const viewPopup = await readPrimaryPopupBlockFromAction(viewAction.uid);
+    const rolesTable = collectDescendantNodes(
+      viewPopup.popupSurface.tree,
+      (item) => item?.use === 'TableBlockModel',
+    )[0];
+    expect(rolesTable?.uid).toBeTruthy();
+    const addNewAction = collectDescendantNodes(rolesTable, (item) => item?.use === 'AddNewActionModel')[0];
+    const editAction = collectDescendantNodes(rolesTable, (item) => item?.use === 'EditActionModel')[0];
+    expect(addNewAction?.uid).toBeTruthy();
+    expect(editAction?.uid).toBeTruthy();
+
+    const addNewPopup = await readPrimaryPopupBlockFromAction(addNewAction.uid);
+    expect(addNewPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(roleAddName);
+    expect(addNewPopup.popupBlock?.use).toBe('CreateFormModel');
+    const addNewFields = collectFieldPaths(addNewPopup.popupBlock);
+    expect(addNewFields).toContain('title');
+    expect(addNewFields).not.toContain('username');
+
+    const editPopup = await readPrimaryPopupBlockFromAction(editAction.uid);
+    expect(editPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(roleEditName);
+    expect(editPopup.popupBlock?.use).toBe('EditFormModel');
+    const editFields = collectFieldPaths(editPopup.popupBlock);
+    expect(editFields).toContain('title');
+    expect(editFields).not.toContain('username');
+  });
+
+  it('should not regenerate default popup content when popup.tryTemplate hits an existing template', async () => {
+    const unique = Date.now();
+    const collectionName = `bp_defaults_tpl_${unique}`;
+    const existingTemplateName = `Existing defaults template ${unique}`;
+    const defaultViewName = `Default view name ignored by template ${unique}`;
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: 'Blueprint defaults template hit',
+        titleField: 'name',
+        filterTargetKey: 'name',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'extra', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [collectionName]: ['name', 'extra'],
+    });
+
+    const sourcePage = await createPage(rootAgent, {
+      title: `Blueprint defaults template source ${unique}`,
+      tabTitle: 'Source',
+    });
+    const sourceTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: sourcePage.gridUid },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName,
+          },
+        },
+      }),
+    );
+    const sourceAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: sourceTable.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'existingTemplateDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const existingTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceAction.uid },
+          name: existingTemplateName,
+          description: 'Existing popup template that should win over blueprint defaults.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint defaults template hit ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            [collectionName]: {
+              fieldGroups: [
+                {
+                  key: 'defaultGroup',
+                  title: 'Default group',
+                  fields: ['name', 'extra'],
+                },
+              ],
+              popups: {
+                view: {
+                  name: defaultViewName,
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: collectionName,
+                fields: ['name'],
+                recordActions: ['view'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    expect(viewAction?.uid).toBeTruthy();
+
+    const viewPopup = await readPrimaryPopupBlockFromAction(viewAction.uid);
+    expect(viewPopup.actionReadback.tree?.popup?.template).toMatchObject({
+      uid: existingTemplate.uid,
+      mode: 'reference',
+    });
+    expect(viewPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).not.toBe(defaultViewName);
+    const templateFieldPaths = collectFieldPaths(viewPopup.popupBlock);
+    expect(templateFieldPaths).toContain('name');
+    expect(templateFieldPaths).not.toContain('extra');
+    expect(await findPopupTemplateByName(defaultViewName)).toBeUndefined();
   });
 
   it('should save inline popup content as templates through applyBlueprint popup.saveAsTemplate', async () => {
@@ -2400,6 +2856,197 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
 
     expect(validStringRes.status).toBe(200);
+  });
+
+  it('should accept applyBlueprint defaults without attaching popup metadata to injected non-popup actions', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint defaults contract ${Date.now()}`,
+          },
+        },
+        defaults: {
+          collections: {
+            users: {
+              fieldGroups: [
+                {
+                  key: 'basic',
+                  title: 'Basic information',
+                  fields: ['username', 'nickname', 'email'],
+                },
+              ],
+              popups: {
+                view: {
+                  name: 'User details',
+                },
+                associations: {
+                  roles: {
+                    view: {
+                      name: 'User role details',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(200);
+    const data = getData(res);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    const tableActions = _.castArray(tableReadback.tree?.subModels?.actions || []);
+    const filterAction = tableActions.find((item: any) => item?.use === 'FilterActionModel');
+    const refreshAction = tableActions.find((item: any) => item?.use === 'RefreshActionModel');
+
+    expect(tableActions.map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'AddNewActionModel',
+      'RefreshActionModel',
+    ]);
+    expect(filterAction?.popup?.template).toBeUndefined();
+    expect(refreshAction?.popup?.template).toBeUndefined();
+  });
+
+  it.each([
+    [
+      'defaults.collections blocks',
+      {
+        defaults: {
+          collections: {
+            users: {
+              blocks: [],
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users',
+      'unsupported keys: blocks',
+    ],
+    [
+      'popups.view blocks',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                view: {
+                  name: 'User details',
+                  blocks: [],
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.view',
+      'unsupported keys: blocks',
+    ],
+    [
+      'popups relations alias',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                relations: {
+                  roles: {
+                    view: {
+                      name: 'User role details',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups',
+      'unsupported keys: relations',
+    ],
+    [
+      'popups.associations view fieldGroups',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                associations: {
+                  roles: {
+                    view: {
+                      name: 'User role details',
+                      fieldGroups: [],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.associations.roles.view',
+      'unsupported keys: fieldGroups',
+    ],
+    [
+      'popups.view fieldGroups',
+      {
+        defaults: {
+          collections: {
+            users: {
+              popups: {
+                view: {
+                  name: 'User details',
+                  fieldGroups: [],
+                },
+              },
+            },
+          },
+        },
+      },
+      'flowSurfaces applyBlueprint defaults.collections.users.popups.view',
+      'unsupported keys: fieldGroups',
+    ],
+  ])('should reject invalid applyBlueprint defaults %s', async (_label, partial, expectedPath, expectedMessage) => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+              },
+            ],
+          },
+        ],
+        ...partial,
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(readErrorMessage(res)).toContain(expectedPath);
+    expect(readErrorMessage(res)).toContain(expectedMessage);
   });
 
   it('should reject unsupported applyBlueprint top-level keys', async () => {

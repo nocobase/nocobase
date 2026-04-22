@@ -111,6 +111,12 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceDescribeSurfaceResponse',
       'FlowSurfaceApplyBlueprintReactionItem',
       'FlowSurfaceApplyBlueprintReaction',
+      'FlowSurfaceApplyBlueprintDefaultFieldGroup',
+      'FlowSurfaceApplyBlueprintDefaultPopupName',
+      'FlowSurfaceApplyBlueprintDefaultPopupActionMap',
+      'FlowSurfaceApplyBlueprintDefaultPopups',
+      'FlowSurfaceApplyBlueprintDefaultCollection',
+      'FlowSurfaceApplyBlueprintDefaults',
       'FlowSurfaceApplyBlueprintRequest',
       'FlowSurfaceApplyBlueprintResponse',
       'FlowSurfaceApprovalBlueprintSurface',
@@ -291,6 +297,31 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain("defaults to '1'");
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('create does not accept target');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('replace requires target.pageSchemaUid');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('defaults.collections');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('defaults.blocks');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.defaults.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaults.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaults.properties.collections.additionalProperties.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultCollection',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.fieldGroups.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFieldGroup',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.popups.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopups',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('associations');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('relations');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.properties.associations.additionalProperties.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopupActionMap',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.description).toContain('blocks');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultPopupName.description).toContain('fieldGroups');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.reaction.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintReaction',
     );

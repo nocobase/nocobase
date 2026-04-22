@@ -10,6 +10,12 @@
 export type {
   FlowSurfaceApplyBlueprintAssetMap,
   FlowSurfaceApplyBlueprintAssets,
+  FlowSurfaceApplyBlueprintDefaultCollection,
+  FlowSurfaceApplyBlueprintDefaultFieldGroupSpec,
+  FlowSurfaceApplyBlueprintDefaultPopupActionMap,
+  FlowSurfaceApplyBlueprintDefaultPopupName,
+  FlowSurfaceApplyBlueprintDefaultPopups,
+  FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDocument,
   FlowSurfaceApplyBlueprintMode,
   FlowSurfaceApplyBlueprintNavigation,

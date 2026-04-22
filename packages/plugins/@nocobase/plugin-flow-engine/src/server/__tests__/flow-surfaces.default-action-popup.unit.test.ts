@@ -8,7 +8,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildFlowSurfaceDefaultActionPopupBlocks } from '../flow-surfaces/default-action-popup';
+import {
+  buildFlowSurfaceDefaultActionPopupBlocks,
+  pickFlowSurfaceDefaultActionPopupFieldGroups,
+} from '../flow-surfaces/default-action-popup';
 
 function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionModel') {
   const [block] = buildFlowSurfaceDefaultActionPopupBlocks(actionUse, ['name']);
@@ -25,5 +28,45 @@ describe('flowSurfaces default action popup', () => {
       title: 'Submit',
       type: 'primary',
     });
+  });
+
+  it('should keep each default field group field only once', () => {
+    const groups = pickFlowSurfaceDefaultActionPopupFieldGroups(
+      [
+        { fieldPath: 'title', field: { name: 'title', interface: 'input' } },
+        { fieldPath: 'createdAt', field: { name: 'createdAt', interface: 'createdAt' } },
+        { fieldPath: 'updatedAt', field: { name: 'updatedAt', interface: 'updatedAt' } },
+      ],
+      [
+        {
+          key: 'main',
+          title: 'Main',
+          fields: ['title', 'createdAt', 'createdAt'],
+        },
+        {
+          key: 'audit',
+          title: 'Audit',
+          fields: ['createdAt', 'updatedAt'],
+        },
+        {
+          key: 'empty',
+          title: 'Empty',
+          fields: ['createdAt'],
+        },
+      ],
+    );
+
+    expect(groups).toEqual([
+      {
+        key: 'main',
+        title: 'Main',
+        fields: ['title', 'createdAt'],
+      },
+      {
+        key: 'audit',
+        title: 'Audit',
+        fields: ['updatedAt'],
+      },
+    ]);
   });
 });

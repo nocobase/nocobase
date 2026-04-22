@@ -3619,11 +3619,86 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApplyBlueprintDefaultFieldGroup: {
+    type: 'object',
+    required: ['title', 'fields'],
+    description:
+      'Collection-level candidate field group used only for backend-generated default popup content. Scenario-specific filtering may remove fields or whole groups.',
+    properties: {
+      key: { type: 'string' },
+      title: { type: 'string' },
+      fields: {
+        type: 'array',
+        minItems: 1,
+        items: { type: 'string' },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultPopupName: {
+    type: 'object',
+    required: ['name'],
+    description:
+      'Name-only default popup metadata. Do not place blocks, fields, fieldGroups, layout, or other content here.',
+    properties: {
+      name: { type: 'string' },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultPopupActionMap: {
+    type: 'object',
+    properties: {
+      view: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
+      addNew: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
+      edit: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultPopups: {
+    type: 'object',
+    description:
+      'Name-only popup defaults. Use `associations`, not `relations`, for source-collection association field popup names.',
+    properties: {
+      view: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
+      addNew: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
+      edit: ref('FlowSurfaceApplyBlueprintDefaultPopupName'),
+      associations: {
+        type: 'object',
+        additionalProperties: ref('FlowSurfaceApplyBlueprintDefaultPopupActionMap'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultCollection: {
+    type: 'object',
+    description:
+      'v1 collection-level defaults. Only `fieldGroups` and name-only `popups` are supported; block-specific defaults are not supported.',
+    properties: {
+      fieldGroups: {
+        type: 'array',
+        minItems: 1,
+        items: ref('FlowSurfaceApplyBlueprintDefaultFieldGroup'),
+      },
+      popups: ref('FlowSurfaceApplyBlueprintDefaultPopups'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaults: {
+    type: 'object',
+    description: 'Optional v1 applyBlueprint defaults. Supports only `collections`; do not send `defaults.blocks`.',
+    properties: {
+      collections: {
+        type: 'object',
+        additionalProperties: ref('FlowSurfaceApplyBlueprintDefaultCollection'),
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceApplyBlueprintRequest: {
     type: 'object',
     required: ['mode', 'tabs'],
     description:
-      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation.",
+      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide collection-level fieldGroups and name-only popup names for generated default popups; v1 does not support `defaults.blocks`.",
     properties: {
       version: {
         type: 'string',
@@ -3636,6 +3711,7 @@ const schemas = {
       target: ref('FlowSurfaceApplyBlueprintTarget'),
       navigation: ref('FlowSurfaceApplyBlueprintNavigation'),
       page: ref('FlowSurfaceApplyBlueprintPage'),
+      defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
       tabs: {
         type: 'array',
         minItems: 1,
