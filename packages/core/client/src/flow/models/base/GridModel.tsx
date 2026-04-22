@@ -397,7 +397,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     if (!this.dragState) {
       return;
     }
-    const snapshot = buildLayoutSnapshot({ container: this.getDragContainer() });
+    const snapshot = buildLayoutSnapshot({
+      container: this.getDragContainer(),
+      allowColumnInsertSlots: false,
+    });
     this.dragState.slots = snapshot.slots;
     this.dragState.containerRect = snapshot.containerRect;
   }

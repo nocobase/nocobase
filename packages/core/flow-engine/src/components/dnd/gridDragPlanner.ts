@@ -188,6 +188,7 @@ const ensureRowOrder = (layout: GridLayoutData) => {
 
 export interface BuildLayoutSnapshotOptions {
   container: HTMLElement | null;
+  allowColumnInsertSlots?: boolean;
 }
 
 const toRect = (domRect: DOMRect): Rect => ({
@@ -274,7 +275,10 @@ const expandColumnRect = (columnRect: Rect): Rect => ({
   height: Math.max(columnRect.height, MIN_SLOT_THICKNESS),
 });
 
-export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): LayoutSnapshot => {
+export const buildLayoutSnapshot = ({
+  container,
+  allowColumnInsertSlots = true,
+}: BuildLayoutSnapshotOptions): LayoutSnapshot => {
   if (!container) {
     return {
       slots: [],
@@ -384,6 +388,10 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
           columnIndex,
           rect: expandColumnRect(columnRect),
         });
+        return;
+      }
+
+      if (!allowColumnInsertSlots) {
         return;
       }
 

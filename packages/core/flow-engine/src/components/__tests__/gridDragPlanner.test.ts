@@ -115,6 +115,71 @@ describe('buildLayoutSnapshot', () => {
     // 不应混入嵌套 grid（其 top >= 360）
     expect(snapshot.slots.every((slot) => slot.rect.top < 300)).toBe(true);
   });
+
+  it('should skip column insert slots when allowColumnInsertSlots is false', () => {
+    const container = document.createElement('div');
+    const row = document.createElement('div');
+    row.setAttribute('data-grid-row-id', 'row-1');
+    container.appendChild(row);
+
+    const column = document.createElement('div');
+    column.setAttribute('data-grid-column-row-id', 'row-1');
+    column.setAttribute('data-grid-column-index', '0');
+    row.appendChild(column);
+
+    const item = document.createElement('div');
+    item.setAttribute('data-grid-item-row-id', 'row-1');
+    item.setAttribute('data-grid-column-index', '0');
+    item.setAttribute('data-grid-item-index', '0');
+    column.appendChild(item);
+
+    mockRect(container, { top: 0, left: 0, width: 600, height: 200 });
+    mockRect(row, { top: 20, left: 20, width: 320, height: 120 });
+    mockRect(column, { top: 20, left: 20, width: 320, height: 120 });
+    mockRect(item, { top: 30, left: 30, width: 300, height: 80 });
+
+    const snapshot = buildLayoutSnapshot({ container, allowColumnInsertSlots: false });
+
+    expect(snapshot.slots.filter((slot) => slot.type === 'column')).toHaveLength(0);
+    expect(snapshot.slots.filter((slot) => slot.type === 'column-edge')).toHaveLength(2);
+    expect(snapshot.slots.filter((slot) => slot.type === 'row-gap')).toHaveLength(2);
+  });
+
+  it('should skip column insert slots for legacy multi-item columns when allowColumnInsertSlots is false', () => {
+    const container = document.createElement('div');
+    const row = document.createElement('div');
+    row.setAttribute('data-grid-row-id', 'row-1');
+    container.appendChild(row);
+
+    const column = document.createElement('div');
+    column.setAttribute('data-grid-column-row-id', 'row-1');
+    column.setAttribute('data-grid-column-index', '0');
+    row.appendChild(column);
+
+    const firstItem = document.createElement('div');
+    firstItem.setAttribute('data-grid-item-row-id', 'row-1');
+    firstItem.setAttribute('data-grid-column-index', '0');
+    firstItem.setAttribute('data-grid-item-index', '0');
+    column.appendChild(firstItem);
+
+    const secondItem = document.createElement('div');
+    secondItem.setAttribute('data-grid-item-row-id', 'row-1');
+    secondItem.setAttribute('data-grid-column-index', '0');
+    secondItem.setAttribute('data-grid-item-index', '1');
+    column.appendChild(secondItem);
+
+    mockRect(container, { top: 0, left: 0, width: 600, height: 240 });
+    mockRect(row, { top: 20, left: 20, width: 320, height: 160 });
+    mockRect(column, { top: 20, left: 20, width: 320, height: 160 });
+    mockRect(firstItem, { top: 30, left: 30, width: 300, height: 60 });
+    mockRect(secondItem, { top: 100, left: 30, width: 300, height: 60 });
+
+    const snapshot = buildLayoutSnapshot({ container, allowColumnInsertSlots: false });
+
+    expect(snapshot.slots.filter((slot) => slot.type === 'column')).toHaveLength(0);
+    expect(snapshot.slots.filter((slot) => slot.type === 'column-edge')).toHaveLength(2);
+    expect(snapshot.slots.filter((slot) => slot.type === 'row-gap')).toHaveLength(2);
+  });
 });
 
 describe('getSlotKey', () => {
@@ -301,6 +366,43 @@ describe('resolveDropIntent', () => {
     const point: Point = { x: 90, y: 90 };
     const result = resolveDropIntent(point, slots);
     expect(result).toEqual(slot1);
+  });
+
+  it('should fall back to row gap or column edge when column insert slots are absent', () => {
+    const slots: LayoutSlot[] = [
+      {
+        type: 'row-gap',
+        targetRowId: 'row1',
+        position: 'above',
+        rect: { top: 0, left: 100, width: 200, height: 20 },
+      },
+      {
+        type: 'column-edge',
+        rowId: 'row1',
+        columnIndex: 0,
+        direction: 'left',
+        rect: { top: 20, left: 100, width: 20, height: 100 },
+      },
+      {
+        type: 'column-edge',
+        rowId: 'row1',
+        columnIndex: 0,
+        direction: 'right',
+        rect: { top: 20, left: 280, width: 20, height: 100 },
+      },
+      {
+        type: 'row-gap',
+        targetRowId: 'row1',
+        position: 'below',
+        rect: { top: 120, left: 100, width: 200, height: 20 },
+      },
+    ];
+
+    const point: Point = { x: 200, y: 70 };
+    const result = resolveDropIntent(point, slots);
+
+    expect(result).not.toBeNull();
+    expect(result?.type === 'row-gap' || result?.type === 'column-edge').toBe(true);
   });
 });
 
