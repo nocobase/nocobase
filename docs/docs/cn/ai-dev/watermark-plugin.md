@@ -45,7 +45,7 @@ keywords: "AI 开发,水印插件,NocoBase 插件,实战案例,AI 编程"
 在你的 NocoBase 项目根目录下，把下面的提示词发给 AI：
 
 ```
-帮我用 nocobase-plugin-development skill 实现一个 NocoBase 的水印插件，
+帮我用 nocobase-plugin-development skill 开发一个 NocoBase 的水印插件，
 要求：在页面上覆盖半透明水印，显示当前登录用户名，防止截图泄密。
 定时检测水印 DOM 是否被删除，被删除则重新生成。
 在插件设置页里支持配置水印文字、透明度和字号。
@@ -136,7 +136,7 @@ yarn pm enable @my-project/plugin-watermark
 | **合计**          | **~2 小时**  | **~5 分钟** |
 
 
-## 想做更复杂的插件？
+## 想做更多的插件？
 
 水印插件主要涉及前端渲染和简单的后端存储。如果你想了解 AI 还能帮你做哪些事——比如自定义区块、复杂的数据表关联、工作流扩展等——可以看看 [支持的能力](./capabilities)。
 
