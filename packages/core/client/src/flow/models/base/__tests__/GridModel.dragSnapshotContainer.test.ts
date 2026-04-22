@@ -104,4 +104,47 @@ describe('GridModel drag snapshot container', () => {
 
     expect((model as any).dragState?.slots?.length).toBeGreaterThan(0);
   });
+
+  it('uses overlay-sized hit area when resolving drag slot', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-drag-hit-area',
+      props: {},
+      structure: {} as any,
+    });
+
+    model.dragOverlayConfig = {
+      columnEdge: {
+        right: { width: 24, offsetLeft: 8 },
+      },
+    } as any;
+
+    (model as any).dragState = {
+      sourceUid: 'item-1',
+      snapshot: { rows: {}, sizes: {} },
+      slots: [
+        {
+          type: 'column-edge',
+          rowId: 'row-1',
+          columnIndex: 0,
+          direction: 'right',
+          rect: { top: 100, left: 200, width: 16, height: 120 },
+        },
+      ],
+      containerEl: null,
+      containerRect: { top: 0, left: 0, width: 0, height: 0 },
+      activeSlotKey: null,
+      previewLayout: undefined,
+      refreshTimer: null,
+    };
+
+    const resolved = (model as any).resolveDragSlot({ x: 225, y: 140 });
+
+    expect(resolved).toMatchObject({
+      type: 'column-edge',
+      rowId: 'row-1',
+      columnIndex: 0,
+      direction: 'right',
+    });
+  });
 });

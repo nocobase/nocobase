@@ -482,6 +482,25 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     }
   }
 
+  private getHitTestSlot(slot: LayoutSlot): LayoutSlot {
+    return {
+      ...slot,
+      // 命中区域与实际显示的 overlay 保持一致，避免鼠标仍在蓝框内时命中跳走
+      rect: this.computeOverlayRect(slot),
+    };
+  }
+
+  private resolveDragSlot(point: { x: number; y: number }): LayoutSlot | null {
+    if (!this.dragState?.slots.length) {
+      return null;
+    }
+
+    return resolveDropIntent(
+      point,
+      this.dragState.slots.map((slot) => this.getHitTestSlot(slot)),
+    );
+  }
+
   private applyPreview(slot: LayoutSlot | null) {
     if (!this.dragState) {
       return;
@@ -571,7 +590,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       return;
     }
 
-    const slot = resolveDropIntent(point, this.dragState.slots);
+    const slot = this.resolveDragSlot(point);
     this.applyPreview(slot);
   }
 
