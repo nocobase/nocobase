@@ -52,6 +52,11 @@
             "type": "custom-link",
             "label": "Calendar",
             "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kanban",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },

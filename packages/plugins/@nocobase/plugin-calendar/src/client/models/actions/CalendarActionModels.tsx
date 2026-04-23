@@ -155,7 +155,7 @@ CalendarCollectionActionGroupModel.defineChildren = async function defineChildre
 };
 
 export class CalendarTodayActionModel extends ActionModel {
-  static scene = 'collection' as const;
+  // static scene = 'collection' as const;
 
   defaultProps = {
     type: 'default' as const,
@@ -174,7 +174,7 @@ CalendarTodayActionModel.define({
 });
 
 export class CalendarNavActionModel extends ActionModel {
-  static scene = 'collection' as const;
+  // static scene = 'collection' as const;
 
   enableEditTooltip = false;
   enableEditTitle = false;
@@ -194,7 +194,7 @@ CalendarNavActionModel.define({
 });
 
 export class CalendarTitleActionModel extends ActionModel {
-  static scene = 'collection' as const;
+  // static scene = 'collection' as const;
 
   enableEditTooltip = false;
   enableEditTitle = false;
@@ -214,7 +214,7 @@ CalendarTitleActionModel.define({
 });
 
 export class CalendarViewSelectActionModel extends ActionModel {
-  static scene = 'collection' as const;
+  // static scene = 'collection' as const;
 
   enableEditTooltip = false;
   enableEditTitle = false;

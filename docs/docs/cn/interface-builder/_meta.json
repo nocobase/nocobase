@@ -52,6 +52,11 @@
             "type": "custom-link",
             "label": "日历",
             "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "看板",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },

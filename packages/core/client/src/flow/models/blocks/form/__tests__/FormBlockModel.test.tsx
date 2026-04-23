@@ -219,6 +219,22 @@ describe('FlowModel core behaviors (collected)', () => {
     expect(i2).toEqual({ ping: 1 });
   });
 
+  it('stepParams initialized before first beforeRender does not trigger an extra rerun', async () => {
+    vi.useFakeTimers();
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-3-init' });
+
+    model.setStepParams('anyFlow', 'anyStep', { x: 1 });
+    await model.dispatchEvent('beforeRender', { ping: 1 });
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [, e1, i1] = spy.mock.calls[0];
+    expect(e1).toBe('beforeRender');
+    expect(i1).toEqual({ ping: 1 });
+  });
+
   it('applyFlow delegates to executor.runFlow', async () => {
     const spyRun = vi.fn().mockResolvedValue('ok');
     (engine as any).executor.runFlow = spyRun;
