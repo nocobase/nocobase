@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, Badge } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
@@ -41,19 +41,93 @@ export const ChatButton: React.FC = observer(() => {
   const setOpen = useChatBoxStore.use.setOpen();
   const setReadonly = useChatBoxStore.use.setReadonly();
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const [badgeAnimating, setBadgeAnimating] = useState(false);
+  const prevUnreadCountRef = useRef(0);
+  const badgeAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { switchAIEmployee } = useChatBoxActions();
+
+  useEffect(() => {
+    if (badgeAnimationTimerRef.current) {
+      clearTimeout(badgeAnimationTimerRef.current);
+      badgeAnimationTimerRef.current = null;
+    }
+
+    if (unreadCount === 0) {
+      setBadgeAnimating(false);
+    } else if (unreadCount > prevUnreadCountRef.current) {
+      setBadgeAnimating(false);
+      badgeAnimationTimerRef.current = setTimeout(() => {
+        setBadgeAnimating(true);
+        badgeAnimationTimerRef.current = null;
+      }, 800);
+    }
+
+    prevUnreadCountRef.current = unreadCount;
+    return () => {
+      if (badgeAnimationTimerRef.current) {
+        clearTimeout(badgeAnimationTimerRef.current);
+        badgeAnimationTimerRef.current = null;
+      }
+    };
+  }, [unreadCount]);
 
   if (open || !aiEmployees?.length || isV1Page || !pathname.startsWith('/admin')) {
     return null;
   }
 
   const buttonShadow = token.boxShadowSecondary || token.boxShadow;
+  const buttonActive = dropdownOpen || badgeAnimating;
+  const badgeClassName = css`
+    .ant-badge-count,
+    .ant-badge-dot {
+      transform-origin: center;
+    }
+
+    .ant-badge-count {
+      ${badgeAnimating
+        ? `
+          animation: chat-button-badge-shake 1.6s ease-in-out infinite;
+        `
+        : ''}
+    }
+
+    @keyframes chat-button-badge-shake {
+      0%,
+      100% {
+        transform: translate(50%, -50%) translate3d(0, 0, 0) rotate(0deg);
+      }
+      10%,
+      30%,
+      50% {
+        transform: translate(50%, -50%) translate3d(-1px, 0, 0) rotate(-8deg);
+      }
+      20%,
+      40%,
+      60% {
+        transform: translate(50%, -50%) translate3d(1px, 0, 0) rotate(8deg);
+      }
+      70% {
+        transform: translate(50%, -50%) translate3d(-1px, 0, 0) rotate(-4deg);
+      }
+      80% {
+        transform: translate(50%, -50%) translate3d(1px, 0, 0) rotate(4deg);
+      }
+      90% {
+        transform: translate(50%, -50%) translate3d(0, 0, 0) rotate(0deg);
+      }
+    }
+  `;
 
   return (
     !isMobileLayout && (
       <div
         onClick={() => {
+          if (badgeAnimationTimerRef.current) {
+            clearTimeout(badgeAnimationTimerRef.current);
+            badgeAnimationTimerRef.current = null;
+          }
+          setBadgeAnimating(false);
           setDropdownOpen(false);
           setReadonly(false);
           setResponseLoading(false);
@@ -87,16 +161,17 @@ export const ChatButton: React.FC = observer(() => {
             opacity: 1;
             transform: translateX(-8px);
           }
-
-          ${dropdownOpen
-            ? `
-              opacity: 1;
-              transform: translateX(-8px);
-            `
-            : ''}
         `}
+        style={
+          buttonActive
+            ? {
+                opacity: 1,
+                transform: 'translateX(-8px)',
+              }
+            : undefined
+        }
       >
-        <Badge count={unreadCount} offset={[-5, 5]}>
+        <Badge count={unreadCount} offset={[-5, 5]} className={badgeClassName}>
           <Avatar src={icon} size={42} shape="square" />
         </Badge>
       </div>

@@ -17,6 +17,7 @@ type WorkflowTasksState = {
   unreadCount: number;
   loading: boolean;
   keyword: string;
+  selectedJobStatus?: number;
 };
 
 type WorkflowTasksActions = {
@@ -27,6 +28,7 @@ type WorkflowTasksActions = {
   setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
   setLoading: (loading: boolean) => void;
   setKeyword: (keyword: string) => void;
+  setSelectedJobStatus: (selectedJobStatus: number | undefined) => void;
 };
 
 const store = create<WorkflowTasksState & WorkflowTasksActions>((set) => ({
@@ -35,6 +37,7 @@ const store = create<WorkflowTasksState & WorkflowTasksActions>((set) => ({
   unreadCount: 0,
   loading: false,
   keyword: '',
+  selectedJobStatus: undefined,
 
   setWorkflowTasks: (workflowTasks) =>
     set((state) => ({
@@ -57,6 +60,8 @@ const store = create<WorkflowTasksState & WorkflowTasksActions>((set) => ({
   setLoading: (loading) => set({ loading }),
 
   setKeyword: (keyword) => set({ keyword }),
+
+  setSelectedJobStatus: (selectedJobStatus) => set({ selectedJobStatus }),
 }));
 
 export const useWorkflowTasksStore = createSelectors(store);

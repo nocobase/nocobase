@@ -27,7 +27,7 @@ export class AIEmployeeTaskFeedbackModel extends FlowModel {
               'x-component': StructuredOutput,
             },
             requiresApproval: {
-              title: tExpr('Requires approval', { ns: namespace }),
+              title: tExpr('Approval & Notice', { ns: namespace }),
               type: 'string',
               default: 'no_required',
               'x-decorator': 'FormItem',

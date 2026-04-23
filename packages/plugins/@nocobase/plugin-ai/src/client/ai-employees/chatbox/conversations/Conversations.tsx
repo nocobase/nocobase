@@ -8,7 +8,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { Badge, Input, Segmented } from 'antd';
+import { Badge, Input, Segmented, Space } from 'antd';
 import { css } from '@emotion/css';
 import { useRequest } from '@nocobase/client';
 import { useT } from '../../../locale';
@@ -23,10 +23,6 @@ import { ConversationsList, useConversationsList } from './ConversationsList';
 import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
 
 const segmentedClassName = css`
-  .ant-segmented-group {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .ant-segmented-item,
   .ant-segmented-item-selected {
     width: 100%;
@@ -149,9 +145,10 @@ export const Conversations: React.FC = memo(() => {
             { label: t('Conversations'), value: 'conversations' },
             {
               label: (
-                <Badge count={workflowTasksController.unreadCount} size="small" offset={[10, 5]}>
-                  <span>{t('Workflow tasks')}</span>
-                </Badge>
+                <Space>
+                  {t('Workflow tasks')}
+                  <Badge count={workflowTasksController.unreadCount} size="small" />
+                </Space>
               ),
               value: 'workflowTasks',
             },

@@ -384,6 +384,7 @@
   "File (load via URL)": "File (load via URL)",
   "Enable the LLM to use web search tools during task execution": "Enable the LLM to use web search tools during task execution",
   "Feedback & Notification": "Feedback & Notification",
+  "Approval & Notice": "Approval & Notice",
   "Whether user approval is required before the task outputs the final result": "Whether user approval is required before the task outputs the final result",
   "Assignees": "Assignees",
   "Users who can approve the final output result of the task": "Users who can approve the final output result of the task",
