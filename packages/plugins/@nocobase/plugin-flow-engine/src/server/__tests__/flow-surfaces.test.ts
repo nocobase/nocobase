@@ -1934,7 +1934,7 @@ describe('flowSurfaces resource', () => {
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
   });
 
-  it('should reject invalid addBlock defaultActionSettings payloads', async () => {
+  it('should reject invalid addBlock defaultActionSettings payloads only when a default filter action consumes them', async () => {
     const page = await createPage(rootAgent, {
       title: 'Default filter invalid page',
       tabTitle: 'Default filter invalid tab',
@@ -1954,7 +1954,7 @@ describe('flowSurfaces resource', () => {
     expect(invalidKeyRes.status).toBe(400);
     expect(readErrorMessage(invalidKeyRes)).toContain("defaultActionSettings does not support 'refresh'");
 
-    const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
+    const unsupportedBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
           uid: page.tabSchemaUid,
@@ -1965,8 +1965,133 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
+    expect(unsupportedBlockRes.status).toBe(200);
+
+    const noDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+      },
+    });
+    expect(noDefaultFilterRes.status).toBe(200);
+
+    const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        defaultActionSettings: {
+          filter: 'username',
+        },
+      },
+    });
     expect(invalidShapeRes.status).toBe(400);
     expect(readErrorMessage(invalidShapeRes)).toContain('defaultActionSettings.filter must be an object');
+
+    const incompleteFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username', 'email'],
+            defaultFilter: {
+              logic: '$and',
+              items: [{ path: 'username', operator: '$includes', value: '' }],
+            },
+          },
+        },
+      },
+    });
+    expect(incompleteFilterRes.status).toBe(200);
+
+    const invalidDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username'],
+            defaultFilter: {
+              logic: '$and',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidDefaultFilterRes.status).toBe(400);
+    expect(readErrorMessage(invalidDefaultFilterRes)).toContain('filter must have logic and items properties');
+
+    const nestedFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username'],
+            defaultFilter: {
+              logic: '$and',
+              items: [
+                {
+                  logic: '$or',
+                  items: [{ path: 'username', operator: '$includes', value: '' }],
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(nestedFilterRes.status).toBe(200);
+
+    const emptyDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username'],
+            defaultFilter: {},
+          },
+        },
+      },
+    });
+    expect(emptyDefaultFilterRes.status).toBe(200);
   });
 
   it('should normalize and validate filter action filter settings payloads', async () => {

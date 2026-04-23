@@ -1142,6 +1142,9 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
       '`select / subForm / bulkEditForm` scene',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
+      'Optional `defaultActionSettings.filter` is validated and applied only when the created block has an auto-created default filter action; other block types ignore it.',
+    );
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
     expect(
@@ -1276,6 +1279,9 @@ describe('flowSurfaces swagger', () => {
 
     const addBlocksRequest =
       swaggerDocument.paths['/flowSurfaces:addBlocks'].post.requestBody.content['application/json'];
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain(
+      'Optional `defaultActionSettings.filter` is validated and applied only when the created block has an auto-created default filter action; other block types ignore it.',
+    );
     expect(addBlocksRequest.example.blocks).toHaveLength(2);
     expect(addBlocksRequest.example.blocks[0].type).toBe('table');
     expect(addBlocksRequest.example.blocks[1].type).toBe('markdown');
