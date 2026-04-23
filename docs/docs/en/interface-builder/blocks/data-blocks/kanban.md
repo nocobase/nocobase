@@ -28,7 +28,7 @@ The Kanban block requires a grouping field to be specified first. Records will b
   - Title field: Determines which related field value is displayed in the column header.
   - Color field: Determines the background color of the column header and container.
 - “Select grouping values” allows you to control which columns are displayed and their order.
-- Records that do not match selected grouping values will be displayed in the “Unknown” column.
+- Records with empty grouping values will be displayed in the "Unknown" column.
 
 ![](https://static-docs.nocobase.com/Kanban-04-22-2026_09_53_PM%20(1).png)
 ![](https://static-docs.nocobase.com/Kanban-04-22-2026_09_54_PM.png)
