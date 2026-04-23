@@ -113,6 +113,50 @@ describe('database data source', () => {
     });
   });
 
+  it('should use nullable changes from database when syncing existing fields', () => {
+    const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource<any>;
+
+    const [mergedCollection] = dataSource.mergeWithLoadedCollections(
+      [
+        {
+          name: 'users',
+          fields: [
+            {
+              name: 'nickname',
+              type: 'string',
+              interface: 'input',
+              allowNull: true,
+            },
+          ],
+        },
+      ] as any,
+      {
+        users: {
+          name: 'users',
+          fields: [
+            {
+              name: 'nickname',
+              type: 'string',
+              interface: 'input',
+              allowNull: false,
+              uiSchema: {
+                title: 'Nickname',
+              },
+            },
+          ],
+        },
+      } as any,
+    );
+
+    expect(mergedCollection.fields[0]).toMatchObject({
+      name: 'nickname',
+      allowNull: true,
+      uiSchema: {
+        title: 'Nickname',
+      },
+    });
+  });
+
   it('should preserve interface-only overrides during resync', () => {
     const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource<any>;
 
