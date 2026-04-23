@@ -102,6 +102,8 @@ async function buildCreateParityReadback(rootAgent: any, key: FormalFlowSurfaceB
       return createStaticBlockParityReadback(rootAgent, 'jsBlock');
     case 'table':
       return createTableParityReadback(rootAgent);
+    case 'calendar':
+      return createCalendarParityReadback(rootAgent);
     case 'create-form':
       return createCreateFormParityReadback(rootAgent);
     case 'edit-form':
@@ -373,6 +375,26 @@ async function createTableParityReadback(rootAgent: any) {
 
   return getSurface(rootAgent, {
     uid: table.uid,
+  });
+}
+
+async function createCalendarParityReadback(rootAgent: any) {
+  const page = await createPage(rootAgent, {
+    title: 'Create parity calendar page',
+    tabTitle: 'Create parity calendar tab',
+  });
+  const calendar = await createBlockData(rootAgent, {
+    target: {
+      uid: page.tabSchemaUid,
+    },
+    type: 'calendar',
+    resourceInit: {
+      dataSourceKey: 'main',
+      collectionName: 'pets',
+    },
+  });
+  return getSurface(rootAgent, {
+    uid: calendar.uid,
   });
 }
 

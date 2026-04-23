@@ -54,9 +54,25 @@ function resolveFixtureColumnCandidates(db: Database, collectionName: string, re
 export async function waitForFixtureCollectionsReady(
   db: Database,
   requiredCollections: Record<string, string[]>,
-  timeoutMs = process.env.CI ? 60000 : 30000,
+  timeoutMs?: number,
 ) {
-  const deadline = Date.now() + timeoutMs;
+  const resolvedTimeoutMs =
+    timeoutMs ??
+    (() => {
+      const envTimeoutMs = Number(process.env.FLOW_SURFACES_FIXTURE_READY_TIMEOUT_MS);
+      if (Number.isFinite(envTimeoutMs) && envTimeoutMs > 0) {
+        return envTimeoutMs;
+      }
+
+      // MySQL can take noticeably longer to expose freshly synced tables when the
+      // full flow-surfaces suite is creating many temporary collections back-to-back.
+      if (db.inDialect('mysql')) {
+        return process.env.CI ? 120000 : 60000;
+      }
+
+      return process.env.CI ? 60000 : 30000;
+    })();
+  const deadline = Date.now() + resolvedTimeoutMs;
   const queryInterface = db.sequelize.getQueryInterface();
   let pendingCollections: string[] = [];
 
@@ -94,5 +110,5 @@ export async function waitForFixtureCollectionsReady(
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  throw new Error(`Fixture collections are not ready: ${pendingCollections.join(', ')}`);
+  throw new Error(`Fixture collections are not ready after ${resolvedTimeoutMs}ms: ${pendingCollections.join(', ')}`);
 }

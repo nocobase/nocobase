@@ -376,8 +376,22 @@ const COMPOSE_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'detai
 const COMPOSE_FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
+const DEFAULT_CALENDAR_TITLE_FIELD_INTERFACES = ['input', 'select', 'phone', 'email', 'radioGroup'] as const;
+const DEFAULT_CALENDAR_COLOR_FIELD_INTERFACES = ['select', 'radioGroup'] as const;
+const DEFAULT_CALENDAR_DATE_TIME_FIELD_TYPES = [
+  'date',
+  'datetime',
+  'dateOnly',
+  'datetimeNoTz',
+  'unixTimestamp',
+  'createdAt',
+  'updatedAt',
+] as const;
+const CALENDAR_POPUP_ACTION_KEYS = ['quickCreateAction', 'eventViewAction'] as const;
+type CalendarPopupActionKey = (typeof CALENDAR_POPUP_ACTION_KEYS)[number];
 const CANONICAL_BLOCK_HEADER_USES = new Set([
   'TableBlockModel',
+  'CalendarBlockModel',
   'FormBlockModel',
   'CreateFormModel',
   'EditFormModel',
@@ -401,6 +415,7 @@ const OPEN_VIEW_MODE_ALIASES = {
 const OPEN_VIEW_SUPPORTED_MODES = new Set(['drawer', 'dialog', 'embed']);
 const FILTER_TARGET_BLOCK_USES = new Set([
   'TableBlockModel',
+  'CalendarBlockModel',
   'DetailsBlockModel',
   'ListBlockModel',
   'GridCardBlockModel',
@@ -476,6 +491,8 @@ const POPUP_ACTION_USES = new Set([
   'ViewActionModel',
   'EditActionModel',
   'PopupCollectionActionModel',
+  'CalendarQuickCreateActionModel',
+  'CalendarEventViewActionModel',
   'DuplicateActionModel',
   'AddChildActionModel',
   'MailSendActionModel',
@@ -484,6 +501,7 @@ const POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES = new Set([
   'ViewActionModel',
   'EditActionModel',
   'PopupCollectionActionModel',
+  'CalendarEventViewActionModel',
   'AddChildActionModel',
   'DuplicateActionModel',
 ]);
@@ -530,6 +548,7 @@ const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectio
   ApprovalDetailsModel: ['one'],
   CommentsBlockModel: ['one', 'many'],
   TableBlockModel: ['many'],
+  CalendarBlockModel: ['many'],
   ListBlockModel: ['many'],
   GridCardBlockModel: ['many'],
   MapBlockModel: ['many'],
@@ -726,6 +745,20 @@ type FlowSurfaceTemplateListTargetContext = {
 type FlowSurfacePopupTemplateSemanticType = FlowSurfaceDefaultActionPopupType | 'generic';
 
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
+
+function normalizeCalendarFieldCapabilityValues(source: any, defaults: readonly string[]) {
+  const rawValues = Array.isArray(source)
+    ? source
+    : source instanceof Set
+      ? Array.from(source)
+      : typeof source === 'string'
+        ? [source]
+        : source && typeof source === 'object'
+          ? Object.keys(source)
+          : [];
+  const values = rawValues.map((item) => String(item || '').trim()).filter(Boolean);
+  return values.length ? Array.from(new Set(values)) : [...defaults];
+}
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -1643,6 +1676,19 @@ export class FlowSurfacesService {
     };
   }
 
+  private popupHostUsesDefaultRecordContext(hostNode: any, hostContext?: { recordActionContainerUse?: string | null }) {
+    const hostUse = String(hostNode?.use || '').trim();
+    if (!POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(hostUse)) {
+      return false;
+    }
+    // Calendar event-view is a hidden record popup host under the calendar block itself,
+    // not under a row/details record-action container.
+    if (hostUse === 'CalendarEventViewActionModel') {
+      return true;
+    }
+    return !!hostContext?.recordActionContainerUse;
+  }
+
   private buildPopupBlockResourceBindings(
     blockUse: string,
     popupProfile: FlowSurfacePopupBlockProfile,
@@ -1792,11 +1838,7 @@ export class FlowSurfacesService {
       undefined;
     let filterByTk = openView?.filterByTk;
     let hasCurrentRecord = hasConfiguredFlowContextValue(filterByTk);
-    if (
-      !hasCurrentRecord &&
-      POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(hostNode?.use || '') &&
-      hostContext.recordActionContainerUse
-    ) {
+    if (!hasCurrentRecord && this.popupHostUsesDefaultRecordContext(hostNode, hostContext)) {
       filterByTk = '{{ctx.view.inputArgs.filterByTk}}';
       hasCurrentRecord = true;
     }
@@ -5031,6 +5073,9 @@ export class FlowSurfacesService {
     if (current?.use === 'TableBlockModel') {
       return this.configureTableBlock(target, values.changes, options);
     }
+    if (current?.use === 'CalendarBlockModel') {
+      return this.configureCalendarBlock(target, current, values.changes, options);
+    }
     if (SIMPLE_FORM_BLOCK_USES.has(current?.use || '')) {
       return this.configureFormBlock(target, current.use, values.changes, options);
     }
@@ -6212,6 +6257,23 @@ export class FlowSurfacesService {
       resourceInit: resolvedResourceInit,
       resourceField: rawResourceInit ? 'resourceInit' : semanticResource?.kind === 'raw' ? 'resource' : undefined,
     });
+    const effectiveResourceInit =
+      catalogItem.use === 'CalendarBlockModel' &&
+      resolvedResourceInit.collectionName &&
+      !resolvedResourceInit.dataSourceKey
+        ? {
+            ...resolvedResourceInit,
+            dataSourceKey: 'main',
+          }
+        : resolvedResourceInit;
+    const blockProps =
+      catalogItem.use === 'CalendarBlockModel'
+        ? this.buildCalendarInitialBlockProps({
+            actionName: 'addBlock',
+            resourceInit: effectiveResourceInit,
+            props: values.props,
+          })
+        : values.props;
     const initialGrid = options.deferAutoLayout
       ? null
       : await this.repository.findModelById(parentUid, {
@@ -6221,8 +6283,8 @@ export class FlowSurfacesService {
     const tree = buildBlockTree({
       use: catalogItem.use,
       containerUse: parentNode?.use,
-      resourceInit: resolvedResourceInit,
-      props: values.props,
+      resourceInit: effectiveResourceInit,
+      props: blockProps,
       decoratorProps: values.decoratorProps,
       stepParams: values.stepParams,
     });
@@ -7642,7 +7704,8 @@ export class FlowSurfacesService {
       return actionConfig.type === 'view' ? ['view', 'generic'] : [actionConfig.type];
     }
     if (POPUP_ACTION_USES.has(targetUse)) {
-      return popupActionContext?.hasCurrentRecord ? ['view', 'generic'] : ['generic'];
+      const hasCurrentRecord = popupActionContext?.hasCurrentRecord || targetUse === 'CalendarEventViewActionModel';
+      return hasCurrentRecord ? ['view', 'generic'] : ['generic'];
     }
     return undefined;
   }
@@ -8012,7 +8075,7 @@ export class FlowSurfacesService {
       return undefined;
     }
     const hostContext = await this.resolvePopupHostProfileContext(current, transaction).catch(() => null);
-    if (!hostContext?.recordActionContainerUse) {
+    if (!this.popupHostUsesDefaultRecordContext(current, hostContext)) {
       return undefined;
     }
     return {
@@ -9554,6 +9617,8 @@ export class FlowSurfacesService {
     const shouldValidateFlowRegistry =
       !_.isUndefined(nextPayload.flowRegistry) || !_.isUndefined(nextPayload.stepParams);
 
+    this.validateCalendarBlockState('updateSettings', effectiveNode);
+
     if (
       shouldValidateFlowRegistry &&
       _.isPlainObject(effectiveNode.flowRegistry) &&
@@ -9589,6 +9654,9 @@ export class FlowSurfacesService {
       await this.syncFilterFormConnectConfigForNode(effectiveNode, options.transaction);
     } else if (current.use === 'ChartBlockModel' && !_.isUndefined(nextPayload.stepParams?.chartSettings)) {
       await this.syncChartDataBindingsForNode(effectiveNode, options.transaction);
+    }
+    if (current.use === 'CalendarBlockModel') {
+      await this.ensureCalendarBlockPopupHosts(effectiveNode, options.transaction);
     }
     await this.syncFlowTemplateUsagesForNodeTree(current.uid, options.transaction);
     if (APPROVAL_SINGLETON_ACTION_USES.has(current.use || '')) {
@@ -11600,6 +11668,30 @@ export class FlowSurfacesService {
     );
     const hasFields = Object.prototype.hasOwnProperty.call(input, 'fields');
     const hasFieldGroups = Object.prototype.hasOwnProperty.call(input, 'fieldGroups');
+    const hasRecordActions = Object.prototype.hasOwnProperty.call(input, 'recordActions');
+    if (type === 'calendar') {
+      if (hasFields) {
+        throwBadRequest(
+          `flowSurfaces compose block #${
+            index + 1
+          } calendar does not support fields[] on the main block; add event fields under the quick-create or event-view popup host instead`,
+        );
+      }
+      if (hasFieldGroups) {
+        throwBadRequest(
+          `flowSurfaces compose block #${
+            index + 1
+          } calendar does not support fieldGroups[] on the main block; add grouped fields under the quick-create or event-view popup host instead`,
+        );
+      }
+      if (hasRecordActions) {
+        throwBadRequest(
+          `flowSurfaces compose block #${
+            index + 1
+          } calendar does not support recordActions[] on the main block; configure event actions inside the event-view popup host instead`,
+        );
+      }
+    }
     if (hasFields && hasFieldGroups) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} cannot mix fields with fieldGroups`);
     }
@@ -12133,6 +12225,123 @@ export class FlowSurfacesService {
       },
       options,
     );
+  }
+
+  private async configureCalendarBlock(
+    target: FlowSurfaceWriteTarget,
+    current: any,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
+    const allowedKeys = getConfigureOptionKeysForUse('CalendarBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    assertSupportedSimpleChanges('calendar', changes, allowedKeys);
+
+    const currentResourceInit = this.getCalendarBlockResourceInit(current);
+    const nextResourceInit = changes.resource ? normalizeSimpleResourceInit(changes.resource) : currentResourceInit;
+    if (nextResourceInit.collectionName && !nextResourceInit.dataSourceKey) {
+      nextResourceInit.dataSourceKey = 'main';
+    }
+    const resourceChanged = !!changes.resource;
+    const { collection, collectionName } = this.assertCalendarCollectionCompatible('configure', nextResourceInit);
+    const fieldNames = this.normalizeCalendarFieldNamesForCollection({
+      actionName: 'configure',
+      collection,
+      collectionName,
+      currentFieldNames: current?.props?.fieldNames,
+      changes,
+      resetInvalidExisting: resourceChanged,
+    });
+    const quickCreatePopupSettings = Object.prototype.hasOwnProperty.call(changes, 'quickCreatePopup')
+      ? await this.normalizeCalendarPopupConfigureValue({
+          actionName: 'configure calendar quickCreatePopup',
+          blockUid: current.uid,
+          actionKey: 'quickCreateAction',
+          value: changes.quickCreatePopup,
+          transaction: options.transaction,
+        })
+      : undefined;
+    const eventPopupSettings = Object.prototype.hasOwnProperty.call(changes, 'eventPopup')
+      ? await this.normalizeCalendarPopupConfigureValue({
+          actionName: 'configure calendar eventPopup',
+          blockUid: current.uid,
+          actionKey: 'eventViewAction',
+          value: changes.eventPopup,
+          transaction: options.transaction,
+        })
+      : undefined;
+
+    const result = await this.updateSettings(
+      {
+        target,
+        props: buildDefinedPayload({
+          fieldNames,
+          defaultView: changes.defaultView,
+          enableQuickCreateEvent: changes.quickCreateEvent,
+          showLunar: changes.showLunar,
+          weekStart: changes.weekStart,
+          quickCreatePopupSettings,
+          eventPopupSettings,
+        }),
+        decoratorProps: buildDefinedPayload({
+          height: changes.height,
+          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
+        }),
+        stepParams: {
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(changes.resource
+            ? {
+                resourceSettings: {
+                  init: nextResourceInit,
+                },
+              }
+            : {}),
+          ...(hasDefinedValue(changes, [
+            'titleField',
+            'colorField',
+            'startField',
+            'endField',
+            'defaultView',
+            'quickCreateEvent',
+            'showLunar',
+            'weekStart',
+            'dataScope',
+            'linkageRules',
+          ])
+            ? {
+                calendarSettings: buildDefinedPayload({
+                  ...(hasOwnDefined(changes, 'titleField') ? { titleField: { titleField: fieldNames.title } } : {}),
+                  ...(hasOwnDefined(changes, 'colorField')
+                    ? { colorField: { colorFieldName: fieldNames.colorFieldName || '' } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'startField') ? { startDateField: { start: fieldNames.start } } : {}),
+                  ...(hasOwnDefined(changes, 'endField') ? { endDateField: { end: fieldNames.end || '' } } : {}),
+                  ...(hasOwnDefined(changes, 'defaultView')
+                    ? { defaultView: { defaultView: changes.defaultView } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'quickCreateEvent')
+                    ? { quickCreateEvent: { enableQuickCreateEvent: changes.quickCreateEvent !== false } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'showLunar')
+                    ? { showLunar: { showLunar: changes.showLunar === true } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'weekStart') ? { weekStart: { weekStart: changes.weekStart } } : {}),
+                  ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
+                  ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: { value: changes.linkageRules } } : {}),
+                }),
+              }
+            : {}),
+        },
+      },
+      options,
+    );
+
+    const reloaded = await this.repository.findModelById(current.uid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    await this.ensureCalendarBlockPopupHosts(reloaded, options.transaction);
+    return result;
   }
 
   private async configureFormBlock(
@@ -14727,6 +14936,553 @@ export class FlowSurfacesService {
     );
   }
 
+  private normalizeCalendarFieldPathInput(value: any, context: string, options: { allowEmpty?: boolean } = {}) {
+    if (_.isUndefined(value)) {
+      return undefined;
+    }
+    if (_.isNull(value) || value === '') {
+      if (options.allowEmpty) {
+        return '';
+      }
+      throwBadRequest(`${context} is required`);
+    }
+    const normalized = Array.isArray(value)
+      ? value
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+          .join('.')
+      : String(value || '').trim();
+    if (!normalized && !options.allowEmpty) {
+      throwBadRequest(`${context} is required`);
+    }
+    return normalized;
+  }
+
+  private isCalendarDateField(field: any) {
+    const supportedTypes = new Set(this.getCalendarDateFieldTypes());
+    const candidates = [
+      getFieldInterface(field),
+      getFieldType(field),
+      field?.uiSchema?.type,
+      field?.options?.uiSchema?.type,
+    ].filter(Boolean);
+    return candidates.some((item) => supportedTypes.has(String(item)));
+  }
+
+  private isCalendarTitleField(field: any) {
+    return new Set(this.getCalendarTitleFieldInterfaces()).has(String(getFieldInterface(field) || ''));
+  }
+
+  private isCalendarColorField(field: any) {
+    return new Set(this.getCalendarColorFieldInterfaces()).has(String(getFieldInterface(field) || ''));
+  }
+
+  private getCalendarPluginFieldCapabilities(input: {
+    getter: 'getTitleFieldInterfaces' | 'getColorFieldInterfaces' | 'getDateTimeFieldInterfaces';
+    property: 'titleFieldInterfaces' | 'colorFieldInterfaces' | 'dateTimeFieldInterfaces';
+    defaults: readonly string[];
+  }) {
+    const calendarPlugin: any = this.plugin.app.pm.get('calendar');
+    const source =
+      typeof calendarPlugin?.[input.getter] === 'function'
+        ? calendarPlugin[input.getter]()
+        : calendarPlugin?.[input.property];
+    return normalizeCalendarFieldCapabilityValues(source, input.defaults);
+  }
+
+  private getCalendarTitleFieldInterfaces() {
+    const defaults = this.plugin.app.pm.get('field-sequence')
+      ? [...DEFAULT_CALENDAR_TITLE_FIELD_INTERFACES, 'sequence']
+      : DEFAULT_CALENDAR_TITLE_FIELD_INTERFACES;
+    return this.getCalendarPluginFieldCapabilities({
+      getter: 'getTitleFieldInterfaces',
+      property: 'titleFieldInterfaces',
+      defaults,
+    });
+  }
+
+  private getCalendarColorFieldInterfaces() {
+    return this.getCalendarPluginFieldCapabilities({
+      getter: 'getColorFieldInterfaces',
+      property: 'colorFieldInterfaces',
+      defaults: DEFAULT_CALENDAR_COLOR_FIELD_INTERFACES,
+    });
+  }
+
+  private getCalendarDateFieldTypes() {
+    return this.getCalendarPluginFieldCapabilities({
+      getter: 'getDateTimeFieldInterfaces',
+      property: 'dateTimeFieldInterfaces',
+      defaults: DEFAULT_CALENDAR_DATE_TIME_FIELD_TYPES,
+    });
+  }
+
+  private getCalendarTitleFallbackFieldName(collection: any) {
+    const filterTargetKey = collection?.filterTargetKey || collection?.options?.filterTargetKey;
+    if (Array.isArray(filterTargetKey)) {
+      return filterTargetKey[0] || 'id';
+    }
+    return filterTargetKey || 'id';
+  }
+
+  private isCalendarTitleFallbackField(collection: any, fieldPath: string) {
+    const normalized = String(fieldPath || '').trim();
+    return normalized === 'id' || normalized === this.getCalendarTitleFallbackFieldName(collection);
+  }
+
+  private getCalendarDateFields(collection: any) {
+    return getCollectionFields(collection).filter((field) => this.isCalendarDateField(field));
+  }
+
+  private resolveCalendarDefaultFieldNames(collection: any) {
+    const titleField =
+      getCollectionFields(collection)
+        .filter((field) => this.isCalendarTitleField(field))
+        .map((field) => getFieldName(field))
+        .find(Boolean) || this.getCalendarTitleFallbackFieldName(collection);
+    const dateFields = this.getCalendarDateFields(collection)
+      .map((field) => getFieldName(field))
+      .filter(Boolean);
+    const startField = dateFields.find((fieldName) => fieldName === 'createdAt') || dateFields[0];
+    const endField = dateFields.find((fieldName) => fieldName !== startField);
+
+    return buildDefinedPayload({
+      id: 'id',
+      title: titleField,
+      start: startField,
+      end: endField,
+    });
+  }
+
+  private getCalendarCollectionOrThrow(actionName: string, resourceInit: Record<string, any>) {
+    const dataSourceKey = String(resourceInit?.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(resourceInit?.collectionName || '').trim();
+    if (!collectionName) {
+      throwBadRequest(`flowSurfaces ${actionName} calendar block requires resource.collectionName`);
+    }
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    if (!collection) {
+      throwBadRequest(`flowSurfaces ${actionName} calendar collection '${dataSourceKey}.${collectionName}' not found`);
+    }
+    return {
+      dataSourceKey,
+      collectionName,
+      collection,
+    };
+  }
+
+  private assertCalendarCollectionCompatible(actionName: string, resourceInit: Record<string, any>) {
+    const resolved = this.getCalendarCollectionOrThrow(actionName, resourceInit);
+    if (!this.getCalendarDateFields(resolved.collection).length) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} calendar collection '${resolved.dataSourceKey}.${resolved.collectionName}' must contain at least one date field`,
+      );
+    }
+    return resolved;
+  }
+
+  private assertCalendarFieldBinding(input: {
+    actionName: string;
+    collection: any;
+    collectionName: string;
+    fieldPath: string;
+    kind: 'titleField' | 'colorField' | 'startField' | 'endField';
+  }) {
+    const field = resolveFieldFromCollection(input.collection, input.fieldPath);
+    if (input.kind === 'titleField' && !field && this.isCalendarTitleFallbackField(input.collection, input.fieldPath)) {
+      return;
+    }
+    if (!field) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} calendar ${input.kind} '${input.fieldPath}' does not exist in collection '${input.collectionName}'`,
+      );
+    }
+    const supported =
+      input.kind === 'titleField'
+        ? this.isCalendarTitleField(field) || this.isCalendarTitleFallbackField(input.collection, input.fieldPath)
+        : input.kind === 'colorField'
+          ? this.isCalendarColorField(field)
+          : this.isCalendarDateField(field);
+    if (!supported) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} calendar ${input.kind} '${input.fieldPath}' is not supported by CalendarBlockModel`,
+      );
+    }
+  }
+
+  private normalizeCalendarFieldNamesForCollection(input: {
+    actionName: string;
+    collection: any;
+    collectionName: string;
+    currentFieldNames?: Record<string, any>;
+    changes?: Record<string, any>;
+    resetInvalidExisting?: boolean;
+  }) {
+    const defaults = this.resolveCalendarDefaultFieldNames(input.collection);
+    const current = _.cloneDeep(input.currentFieldNames || {});
+    const nextFieldNames: Record<string, any> = {
+      id: current.id || 'id',
+      title: current.title || defaults.title,
+      start: current.start || defaults.start,
+      end: current.end || defaults.end,
+      colorFieldName: current.colorFieldName,
+    };
+
+    const isExistingValid = (kind: 'titleField' | 'colorField' | 'startField' | 'endField', fieldPath: any) => {
+      const normalized = this.normalizeCalendarFieldPathInput(fieldPath, `${input.actionName} ${kind}`, {
+        allowEmpty: kind === 'colorField' || kind === 'endField',
+      });
+      if (!normalized) {
+        return kind === 'colorField' || kind === 'endField';
+      }
+      try {
+        this.assertCalendarFieldBinding({
+          actionName: input.actionName,
+          collection: input.collection,
+          collectionName: input.collectionName,
+          fieldPath: normalized,
+          kind,
+        });
+        return true;
+      } catch (error) {
+        return false;
+      }
+    };
+
+    if (input.resetInvalidExisting) {
+      if (!isExistingValid('titleField', nextFieldNames.title)) {
+        nextFieldNames.title = defaults.title;
+      }
+      if (!isExistingValid('startField', nextFieldNames.start)) {
+        nextFieldNames.start = defaults.start;
+      }
+      if (!isExistingValid('endField', nextFieldNames.end)) {
+        nextFieldNames.end = defaults.end;
+      }
+      if (nextFieldNames.colorFieldName && !isExistingValid('colorField', nextFieldNames.colorFieldName)) {
+        nextFieldNames.colorFieldName = null;
+      }
+    }
+
+    const applyExplicitField = (
+      changeKey: 'titleField' | 'colorField' | 'startField' | 'endField',
+      storageKey: 'title' | 'colorFieldName' | 'start' | 'end',
+      allowEmpty = false,
+    ) => {
+      if (!input.changes || !Object.prototype.hasOwnProperty.call(input.changes, changeKey)) {
+        return;
+      }
+      const normalized = this.normalizeCalendarFieldPathInput(
+        input.changes[changeKey],
+        `flowSurfaces ${input.actionName} calendar ${changeKey}`,
+        { allowEmpty },
+      );
+      if (!normalized) {
+        nextFieldNames[storageKey] = null;
+        return;
+      }
+      this.assertCalendarFieldBinding({
+        actionName: input.actionName,
+        collection: input.collection,
+        collectionName: input.collectionName,
+        fieldPath: normalized,
+        kind: changeKey,
+      });
+      nextFieldNames[storageKey] = normalized;
+    };
+
+    applyExplicitField('titleField', 'title');
+    applyExplicitField('startField', 'start');
+    applyExplicitField('endField', 'end', true);
+    applyExplicitField('colorField', 'colorFieldName', true);
+
+    if (!nextFieldNames.title) {
+      nextFieldNames.title = defaults.title;
+    }
+    if (!nextFieldNames.start) {
+      nextFieldNames.start = defaults.start;
+    }
+
+    return buildDefinedPayload({
+      id: nextFieldNames.id || 'id',
+      title: nextFieldNames.title,
+      start: nextFieldNames.start,
+      end: nextFieldNames.end,
+      colorFieldName: nextFieldNames.colorFieldName,
+    });
+  }
+
+  private normalizeCalendarPopupSettings(actionKey: CalendarPopupActionKey, popupSettings?: Record<string, any>) {
+    const nextParams = _.cloneDeep(popupSettings || {});
+    const popupTemplateUidProvided = Object.prototype.hasOwnProperty.call(nextParams, 'popupTemplateUid');
+    const popupTemplateUid =
+      typeof nextParams.popupTemplateUid === 'string'
+        ? nextParams.popupTemplateUid.trim()
+        : nextParams.popupTemplateUid;
+
+    if (
+      popupTemplateUidProvided &&
+      (popupTemplateUid === undefined || popupTemplateUid === null || popupTemplateUid === '')
+    ) {
+      delete nextParams.popupTemplateUid;
+      delete nextParams.popupTemplateContext;
+      delete nextParams.popupTemplateHasFilterByTk;
+      delete nextParams.popupTemplateHasSourceId;
+      delete nextParams.uid;
+    }
+
+    if (actionKey === 'quickCreateAction') {
+      if (nextParams.popupTemplateHasFilterByTk) {
+        delete nextParams.popupTemplateUid;
+        delete nextParams.popupTemplateContext;
+        delete nextParams.popupTemplateHasFilterByTk;
+        delete nextParams.popupTemplateHasSourceId;
+        delete nextParams.uid;
+      }
+      delete nextParams.filterByTk;
+    }
+
+    return nextParams;
+  }
+
+  private getCalendarPopupActionUse(actionKey: CalendarPopupActionKey) {
+    return actionKey === 'quickCreateAction' ? 'CalendarQuickCreateActionModel' : 'CalendarEventViewActionModel';
+  }
+
+  private getCalendarPopupPropKey(actionKey: CalendarPopupActionKey) {
+    return actionKey === 'quickCreateAction' ? 'quickCreatePopupSettings' : 'eventPopupSettings';
+  }
+
+  private getCalendarPopupActionUid(calendarUid: string, actionKey: CalendarPopupActionKey) {
+    return `${calendarUid}-${actionKey}`;
+  }
+
+  private getCalendarBlockResourceInit(blockNode: any) {
+    const resourceInit = _.cloneDeep(_.get(blockNode, ['stepParams', 'resourceSettings', 'init']) || {});
+    if (resourceInit.collectionName && !resourceInit.dataSourceKey) {
+      resourceInit.dataSourceKey = 'main';
+    }
+    return resourceInit;
+  }
+
+  private buildCalendarPopupOpenView(input: {
+    blockNode: any;
+    actionKey: CalendarPopupActionKey;
+    resourceInit?: Record<string, any>;
+  }) {
+    const actionUid = this.getCalendarPopupActionUid(input.blockNode.uid, input.actionKey);
+    const resourceInit = input.resourceInit || this.getCalendarBlockResourceInit(input.blockNode);
+    const defaults = buildDefinedPayload({
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      uid: actionUid,
+      collectionName: resourceInit.collectionName,
+      dataSourceKey: resourceInit.dataSourceKey || (resourceInit.collectionName ? 'main' : undefined),
+    });
+    const current = this.normalizeCalendarPopupSettings(
+      input.actionKey,
+      _.get(input.blockNode, ['props', this.getCalendarPopupPropKey(input.actionKey)]) || {},
+    );
+    return buildDefinedPayload({
+      ...defaults,
+      ...current,
+      uid: current.uid || defaults.uid,
+      collectionName: current.collectionName || defaults.collectionName,
+      dataSourceKey: current.dataSourceKey || defaults.dataSourceKey,
+    });
+  }
+
+  private async normalizeCalendarPopupConfigureValue(input: {
+    actionName: string;
+    blockUid: string;
+    actionKey: CalendarPopupActionKey;
+    value: any;
+    transaction?: any;
+  }) {
+    if (_.isUndefined(input.value)) {
+      return undefined;
+    }
+    if (_.isNull(input.value)) {
+      return {};
+    }
+    const actionUid = this.getCalendarPopupActionUid(input.blockUid, input.actionKey);
+    const normalized = await this.normalizeOpenView(input.actionName, input.value, {
+      transaction: input.transaction,
+      popupTemplateHostUid: actionUid,
+      popupActionContext: {
+        hasCurrentRecord: input.actionKey === 'eventViewAction',
+      },
+    });
+    return this.normalizeCalendarPopupSettings(input.actionKey, normalized || {});
+  }
+
+  private buildCalendarInitialBlockProps(input: {
+    actionName: string;
+    resourceInit: Record<string, any>;
+    props?: Record<string, any>;
+  }) {
+    const { collection, collectionName } = this.assertCalendarCollectionCompatible(
+      input.actionName,
+      input.resourceInit,
+    );
+    const currentProps = _.cloneDeep(input.props || {});
+    return {
+      ...currentProps,
+      fieldNames: this.normalizeCalendarFieldNamesForCollection({
+        actionName: input.actionName,
+        collection,
+        collectionName,
+        currentFieldNames: currentProps.fieldNames,
+        resetInvalidExisting: true,
+      }),
+      defaultView: currentProps.defaultView || 'month',
+      enableQuickCreateEvent:
+        typeof currentProps.enableQuickCreateEvent === 'boolean' ? currentProps.enableQuickCreateEvent : true,
+      weekStart: typeof currentProps.weekStart === 'number' ? currentProps.weekStart : 1,
+    };
+  }
+
+  private async ensureCalendarBlockPopupHosts(blockNode: any, transaction?: any) {
+    if (!blockNode?.uid || blockNode.use !== 'CalendarBlockModel') {
+      return blockNode;
+    }
+
+    const resourceInit = this.getCalendarBlockResourceInit(blockNode);
+    let changed = false;
+
+    for (const actionKey of CALENDAR_POPUP_ACTION_KEYS) {
+      const existing = getSingleNodeSubModel(blockNode.subModels?.[actionKey]);
+      const expectedUid = this.getCalendarPopupActionUid(blockNode.uid, actionKey);
+      const expectedUse = this.getCalendarPopupActionUse(actionKey);
+      const openView = this.buildCalendarPopupOpenView({
+        blockNode,
+        actionKey,
+        resourceInit,
+      });
+      const currentOpenView = this.resolvePopupHostOpenView(existing);
+      const shouldReplaceExisting = existing?.uid && existing.uid !== expectedUid;
+      const shouldUpsert =
+        !existing?.uid ||
+        shouldReplaceExisting ||
+        existing.use !== expectedUse ||
+        !_.isEqual(currentOpenView, openView);
+
+      if (!shouldUpsert) {
+        continue;
+      }
+
+      if (shouldReplaceExisting) {
+        await this.removeNodeTreeWithBindings(existing.uid, transaction);
+      }
+
+      if (existing?.uid && existing.uid === expectedUid && !_.isEqual(currentOpenView, openView)) {
+        await this.reconcilePopupOpenViewTransition(expectedUid, currentOpenView, openView, transaction);
+      }
+
+      const nextActionNode = {
+        ...(existing?.uid && existing.uid === expectedUid ? _.cloneDeep(existing) : {}),
+        uid: expectedUid,
+        use: expectedUse,
+        stepParams: _.merge({}, existing?.uid === expectedUid ? _.cloneDeep(existing.stepParams || {}) : {}, {
+          popupSettings: {
+            openView,
+          },
+        }),
+      };
+
+      await this.repository.upsertModel(
+        {
+          parentId: blockNode.uid,
+          subKey: actionKey,
+          subType: 'object',
+          ...nextActionNode,
+        },
+        { transaction },
+      );
+      changed = true;
+    }
+
+    if (!changed) {
+      return blockNode;
+    }
+
+    return this.repository.findModelById(blockNode.uid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+  }
+
+  private async ensureCalendarBlockPopupHostsInTree<T = any>(node: T, transaction?: any): Promise<T> {
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+
+    const current: any = node;
+    if (current.use === 'CalendarBlockModel') {
+      return (await this.ensureCalendarBlockPopupHosts(current, transaction)) as T;
+    }
+
+    for (const [subKey, value] of Object.entries(current.subModels || {})) {
+      if (Array.isArray(value)) {
+        const nextItems = [];
+        let changed = false;
+        for (const item of value) {
+          const nextItem = await this.ensureCalendarBlockPopupHostsInTree(item, transaction);
+          nextItems.push(nextItem);
+          changed = changed || nextItem !== item;
+        }
+        if (changed) {
+          current.subModels[subKey] = nextItems;
+        }
+        continue;
+      }
+      const nextValue = await this.ensureCalendarBlockPopupHostsInTree(value, transaction);
+      if (nextValue !== value) {
+        current.subModels[subKey] = nextValue;
+      }
+    }
+
+    return current;
+  }
+
+  private validateCalendarBlockState(actionName: string, node: any) {
+    if (node?.use !== 'CalendarBlockModel') {
+      return;
+    }
+    const resourceInit = this.getCalendarBlockResourceInit(node);
+    const { collection, collectionName } = this.assertCalendarCollectionCompatible(actionName, resourceInit);
+    const fieldNames = node?.props?.fieldNames || {};
+    const checks: Array<['titleField' | 'colorField' | 'startField' | 'endField', any]> = [
+      ['titleField', fieldNames.title],
+      ['startField', fieldNames.start],
+      ['endField', fieldNames.end],
+      ['colorField', fieldNames.colorFieldName],
+    ];
+    for (const [kind, rawFieldPath] of checks) {
+      if (_.isUndefined(rawFieldPath) || _.isNull(rawFieldPath) || rawFieldPath === '') {
+        continue;
+      }
+      const fieldPath = this.normalizeCalendarFieldPathInput(
+        rawFieldPath,
+        `flowSurfaces ${actionName} calendar ${kind}`,
+        {
+          allowEmpty: kind === 'colorField' || kind === 'endField',
+        },
+      );
+      if (!fieldPath) {
+        continue;
+      }
+      this.assertCalendarFieldBinding({
+        actionName,
+        collection,
+        collectionName,
+        fieldPath,
+        kind,
+      });
+    }
+  }
+
   private async resolveFieldDefinition(input: {
     dataSourceKey: string;
     collectionName: string;
@@ -15508,16 +16264,17 @@ export class FlowSurfacesService {
   }
 
   private async loadResolvedNode(resolved: any, transaction?: any) {
+    let node: any;
     if (resolved?.kind === 'page' && resolved?.pageRoute) {
-      return this.routeSync.buildPageTree(resolved.pageRoute, transaction);
+      node = await this.routeSync.buildPageTree(resolved.pageRoute, transaction);
+    } else if (resolved?.kind === 'tab' && resolved?.tabRoute) {
+      node = await this.routeSync.buildTabAnchor(resolved.tabRoute, transaction);
+    } else if (resolved?.node?.uid) {
+      node = resolved.node;
+    } else {
+      node = await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true });
     }
-    if (resolved?.kind === 'tab' && resolved?.tabRoute) {
-      return this.routeSync.buildTabAnchor(resolved.tabRoute, transaction);
-    }
-    if (resolved?.node?.uid) {
-      return resolved.node;
-    }
-    return this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true });
+    return this.ensureCalendarBlockPopupHostsInTree(node, transaction);
   }
 
   private normalizePopupTreeShape<T = any>(node: T): T {

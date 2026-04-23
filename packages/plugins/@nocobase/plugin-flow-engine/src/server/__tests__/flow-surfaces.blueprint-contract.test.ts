@@ -267,6 +267,185 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should create flow-model calendar blocks through applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Calendar blueprint',
+          },
+        },
+        page: {
+          title: 'Calendar blueprint',
+        },
+        tabs: [
+          {
+            title: 'Calendar',
+            blocks: [
+              {
+                key: 'eventsCalendar',
+                type: 'calendar',
+                collection: 'calendar_events',
+                settings: {
+                  title: 'Events',
+                  description: 'Calendar events',
+                  titleField: 'title',
+                  colorField: 'status',
+                  startField: 'startsAt',
+                  endField: 'endsAt',
+                  defaultView: 'week',
+                  quickCreateEvent: false,
+                  showLunar: true,
+                  weekStart: 0,
+                  quickCreatePopup: {
+                    mode: 'dialog',
+                    size: 'large',
+                  },
+                  eventPopup: {
+                    mode: 'drawer',
+                    size: 'large',
+                  },
+                },
+                actions: ['today', 'turnPages', 'title', 'selectView', 'refresh'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const calendarBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
+
+    expect(calendarBlock).toMatchObject({
+      use: 'CalendarBlockModel',
+      props: {
+        fieldNames: {
+          id: 'id',
+          title: 'title',
+          colorFieldName: 'status',
+          start: 'startsAt',
+          end: 'endsAt',
+        },
+        defaultView: 'week',
+        enableQuickCreateEvent: false,
+        showLunar: true,
+        weekStart: 0,
+        quickCreatePopupSettings: {
+          mode: 'dialog',
+          size: 'large',
+        },
+        eventPopupSettings: {
+          mode: 'drawer',
+          size: 'large',
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+          },
+        },
+      },
+      subModels: {
+        quickCreateAction: {
+          use: 'CalendarQuickCreateActionModel',
+        },
+        eventViewAction: {
+          use: 'CalendarEventViewActionModel',
+        },
+      },
+    });
+    expect(calendarBlock.subModels.quickCreateAction.uid).toBe(`${calendarBlock.uid}-quickCreateAction`);
+    expect(calendarBlock.subModels.eventViewAction.uid).toBe(`${calendarBlock.uid}-eventViewAction`);
+    expect(calendarBlock.subModels.quickCreateAction.stepParams.popupSettings.openView).toMatchObject({
+      uid: `${calendarBlock.uid}-quickCreateAction`,
+      collectionName: 'calendar_events',
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(calendarBlock.subModels.eventViewAction.stepParams.popupSettings.openView).toMatchObject({
+      uid: `${calendarBlock.uid}-eventViewAction`,
+      collectionName: 'calendar_events',
+      mode: 'drawer',
+      size: 'large',
+    });
+    expect(readNodeActionUses(calendarBlock)).toEqual([
+      'CalendarTodayActionModel',
+      'CalendarNavActionModel',
+      'CalendarTitleActionModel',
+      'CalendarViewSelectActionModel',
+      'RefreshActionModel',
+    ]);
+  });
+
+  it('should reject calendar main block fields fieldGroups and recordActions in applyBlueprint', async () => {
+    const invalidCases = [
+      {
+        key: 'fields',
+        payload: {
+          fields: ['title'],
+        },
+        message: 'fields is not supported on calendar main blocks',
+      },
+      {
+        key: 'fieldGroups',
+        payload: {
+          fieldGroups: [
+            {
+              title: 'Event fields',
+              fields: ['title'],
+            },
+          ],
+        },
+        message: 'fieldGroups is not supported on calendar main blocks',
+      },
+      {
+        key: 'recordActions',
+        payload: {
+          recordActions: ['view'],
+        },
+        message: 'recordActions is not supported on calendar main blocks',
+      },
+    ];
+
+    for (const item of invalidCases) {
+      const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          mode: 'create',
+          navigation: {
+            item: {
+              title: `Invalid calendar blueprint ${item.key}`,
+            },
+          },
+          page: {
+            title: `Invalid calendar blueprint ${item.key}`,
+          },
+          tabs: [
+            {
+              title: 'Calendar',
+              blocks: [
+                {
+                  key: 'eventsCalendar',
+                  type: 'calendar',
+                  collection: 'calendar_events',
+                  ...item.payload,
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(executeRes.status).toBe(400);
+      expect(readErrorMessage(executeRes)).toContain(item.message);
+      expect(readErrorMessage(executeRes)).toMatch(/quick-create or event-view popup host|event-view popup host/);
+    }
+  });
+
   it('should apply block-level defaultFilter in applyBlueprint data blocks and prefer explicit action settings', async () => {
     const blockDefaultFilter = {
       logic: '$and',

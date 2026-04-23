@@ -1,0 +1,15 @@
+{
+  "block.calendar1": {
+    "uid": "fcal9b1ock1"
+  },
+  "action.calendarEventView1": {
+    "uid": "fcal9b1ock1-eventViewAction"
+  },
+  "action.calendarQuickCreate1": {
+    "uid": "fcal9b1ock1-quickCreateAction"
+  },
+  "page.route": {
+    "routeId": 355813771010048,
+    "schemaUid": "calendarfixturepage"
+  }
+}

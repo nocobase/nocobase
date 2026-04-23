@@ -10,6 +10,7 @@
 export type FormalFlowSurfaceBlockKey =
   | 'js-block'
   | 'table'
+  | 'calendar'
   | 'create-form'
   | 'edit-form'
   | 'details'
@@ -36,6 +37,10 @@ export type FlowSurfaceBlockSupportEntry = {
   createSupported: boolean;
 };
 
+export type FormalFlowSurfaceBlockSupportEntry = FlowSurfaceBlockSupportEntry & {
+  formalKey: FormalFlowSurfaceBlockKey;
+};
+
 export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] = [
   {
     key: 'jsBlock',
@@ -55,6 +60,18 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
     label: 'Table',
     modelUse: 'TableBlockModel',
     ownerPlugin: '@nocobase/core/client',
+    topLevelAddable: true,
+    formalBuiltin: true,
+    fixtureCaptured: true,
+    readbackSupported: true,
+    createSupported: true,
+  },
+  {
+    key: 'calendar',
+    formalKey: 'calendar',
+    label: 'Calendar',
+    modelUse: 'CalendarBlockModel',
+    ownerPlugin: '@nocobase/plugin-calendar',
     topLevelAddable: true,
     formalBuiltin: true,
     fixtureCaptured: true,
@@ -218,12 +235,17 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
   },
 ];
 
-export const FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX = FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter(
-  (entry) => entry.formalBuiltin,
-);
+function hasFormalFlowSurfaceBlockKey(
+  entry: FlowSurfaceBlockSupportEntry,
+): entry is FormalFlowSurfaceBlockSupportEntry {
+  return entry.formalBuiltin && !!entry.formalKey;
+}
+
+export const FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX =
+  FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter(hasFormalFlowSurfaceBlockKey);
 
 export const FORMAL_FLOW_SURFACE_BLOCK_KEYS = FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map(
-  (entry) => entry.formalKey!,
+  (entry) => entry.formalKey,
 ) as FormalFlowSurfaceBlockKey[];
 
 export const FLOW_SURFACE_BLOCK_SUPPORT_BY_KEY = new Map(
@@ -235,9 +257,9 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_BY_USE = new Map(
 );
 
 export const FLOW_SURFACE_SERVICE_KEY_TO_FORMAL_KEY = new Map(
-  FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => [entry.key, entry.formalKey!]),
+  FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => [entry.key, entry.formalKey]),
 );
 
 export const FLOW_SURFACE_FORMAL_KEY_TO_SERVICE_KEY = new Map(
-  FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => [entry.formalKey!, entry.key]),
+  FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => [entry.formalKey, entry.key]),
 );

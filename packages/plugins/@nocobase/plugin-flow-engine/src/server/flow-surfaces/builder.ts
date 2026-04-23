@@ -97,6 +97,13 @@ const JS_ITEM_DEFAULT_CODE = [
 ].join('\n');
 
 const JS_COLUMN_DEFAULT_CODE = `ctx.render('<span class="nb-js-column">JS column</span>');`;
+const CALENDAR_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
+const CALENDAR_EVENT_VIEW_ACTION_KEY = 'eventViewAction';
+const CALENDAR_READONLY_ACTION_MODEL_USES = new Set([
+  'CalendarNavActionModel',
+  'CalendarTitleActionModel',
+  'CalendarViewSelectActionModel',
+]);
 
 const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   JSCollectionActionModel: [
@@ -273,6 +280,7 @@ export function buildBlockTree(options: {
   }
 
   const model: FlowSurfaceNodeSpec = {
+    ...(use === 'CalendarBlockModel' ? { uid: uid() } : {}),
     use,
     ...(typeof approvalBlockDefaults?.async === 'boolean' ? { async: approvalBlockDefaults.async } : {}),
     props: _.merge(
@@ -368,9 +376,80 @@ export function buildBlockTree(options: {
         },
       },
     };
+  } else if (use === 'CalendarBlockModel') {
+    const blockUid = model.uid || uid();
+    model.uid = blockUid;
+    model.subModels = {
+      [CALENDAR_QUICK_CREATE_ACTION_KEY]: buildCalendarPopupActionNode({
+        actionKey: CALENDAR_QUICK_CREATE_ACTION_KEY,
+        blockUid,
+        resourceInit: normalizedResourceInit,
+        popupSettings: model.props?.quickCreatePopupSettings,
+      }),
+      [CALENDAR_EVENT_VIEW_ACTION_KEY]: buildCalendarPopupActionNode({
+        actionKey: CALENDAR_EVENT_VIEW_ACTION_KEY,
+        blockUid,
+        resourceInit: normalizedResourceInit,
+        popupSettings: model.props?.eventPopupSettings,
+      }),
+    };
   }
 
   return assignClientKeysToUids(model, {});
+}
+
+function buildCalendarPopupActionNode(options: {
+  actionKey: typeof CALENDAR_QUICK_CREATE_ACTION_KEY | typeof CALENDAR_EVENT_VIEW_ACTION_KEY;
+  blockUid: string;
+  resourceInit?: Record<string, any>;
+  popupSettings?: Record<string, any>;
+}) {
+  const actionUid = `${options.blockUid}-${options.actionKey}`;
+  return {
+    uid: actionUid,
+    use:
+      options.actionKey === CALENDAR_QUICK_CREATE_ACTION_KEY
+        ? 'CalendarQuickCreateActionModel'
+        : 'CalendarEventViewActionModel',
+    stepParams: {
+      popupSettings: {
+        openView: buildCalendarPopupOpenView({
+          actionUid,
+          resourceInit: options.resourceInit,
+          popupSettings: options.popupSettings,
+        }),
+      },
+    },
+  };
+}
+
+function buildCalendarPopupOpenView(options: {
+  actionUid: string;
+  resourceInit?: Record<string, any>;
+  popupSettings?: Record<string, any>;
+}) {
+  const defaults = _.pickBy(
+    {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      uid: options.actionUid,
+      collectionName: options.resourceInit?.collectionName,
+      dataSourceKey: options.resourceInit?.dataSourceKey || (options.resourceInit?.collectionName ? 'main' : undefined),
+    },
+    (value) => !_.isUndefined(value),
+  );
+  const current = _.cloneDeep(options.popupSettings || {});
+  return _.pickBy(
+    {
+      ...defaults,
+      ...current,
+      uid: current.uid || defaults.uid,
+      collectionName: current.collectionName || defaults.collectionName,
+      dataSourceKey: current.dataSourceKey || defaults.dataSourceKey,
+    },
+    (value) => !_.isUndefined(value),
+  );
 }
 
 export function buildPopupPageTree(options: {
@@ -622,17 +701,24 @@ function buildActionDefaults(options: {
   resourceInit?: Record<string, any>;
 }): FlowSurfaceNodeDefaults {
   const approvalDefaults = buildApprovalActionDefaults(options.use);
+  const readonlyCalendarAction = CALENDAR_READONLY_ACTION_MODEL_USES.has(options.use);
   const props = _.merge(
     {},
     inferActionDefaultProps(options.use, options.catalogItem.scope),
     approvalDefaults?.props || {},
   );
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
-  const stepParams: Record<string, any> = _.merge({}, _.cloneDeep(approvalDefaults?.stepParams || {}), {
-    buttonSettings: {
-      general: pickButtonGeneralProps(normalizedProps),
-    },
-  });
+  const stepParams: Record<string, any> = _.merge(
+    {},
+    _.cloneDeep(approvalDefaults?.stepParams || {}),
+    readonlyCalendarAction
+      ? {}
+      : {
+          buttonSettings: {
+            general: pickButtonGeneralProps(normalizedProps),
+          },
+        },
+  );
   const subModels: Record<string, any> = _.cloneDeep(approvalDefaults?.subModels || {});
 
   if (approvalDefaults) {
@@ -875,6 +961,13 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       type: 'link',
       title: '{{t("Collapse button")}}',
     },
+    CalendarTodayActionModel: {
+      type: 'default',
+      title: '{{t("Today", { ns: "calendar" })}}',
+    },
+    CalendarNavActionModel: {},
+    CalendarTitleActionModel: {},
+    CalendarViewSelectActionModel: {},
     JSCollectionActionModel: {
       title: '{{t("JS action")}}',
       icon: 'JavaScriptOutlined',
@@ -953,6 +1046,18 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
             },
           },
         },
+      },
+    };
+  }
+  if (use === 'CalendarBlockModel') {
+    return {
+      props: {
+        fieldNames: {
+          id: 'id',
+        },
+        defaultView: 'month',
+        enableQuickCreateEvent: true,
+        weekStart: 1,
       },
     };
   }

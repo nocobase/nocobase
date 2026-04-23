@@ -382,6 +382,21 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [{ name: 'bio', type: 'text', interface: 'textarea' }],
     },
   });
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'calendar_events',
+      title: 'Calendar events',
+      createdAt: false,
+      updatedAt: false,
+      timestamps: false,
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'select' },
+        { name: 'startsAt', type: 'date', interface: 'datetime' },
+        { name: 'endsAt', type: 'date', interface: 'datetime' },
+      ],
+    },
+  });
   await rootAgent.resource('collections').apply({
     values: {
       name: 'categories',
@@ -515,6 +530,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
 
   await waitForFixtureCollectionsReady(db, {
     categories: ['title', 'parentId'],
+    calendar_events: ['title', 'status', 'startsAt', 'endsAt'],
     departments: ['title'],
     employees: ['nickname', 'status', 'departmentId', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],

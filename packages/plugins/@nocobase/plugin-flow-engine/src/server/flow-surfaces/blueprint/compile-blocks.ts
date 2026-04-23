@@ -62,6 +62,7 @@ type FlowSurfaceCompiledPopup = {
 
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
+  'calendar',
   'createForm',
   'editForm',
   'details',
@@ -178,6 +179,27 @@ function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, contex
     return;
   }
   throwBadRequest(`${context}.fieldsLayout is only supported on createForm, editForm, details or filterForm`);
+}
+
+function assertApplyBlueprintCalendarMainContent(block: Record<string, any>, context: string) {
+  if (readOptionalString(block.type) !== 'calendar') {
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fields')) {
+    throwBadRequest(
+      `${context}.fields is not supported on calendar main blocks; add event fields under the quick-create or event-view popup host instead`,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fieldGroups')) {
+    throwBadRequest(
+      `${context}.fieldGroups is not supported on calendar main blocks; add grouped fields under the quick-create or event-view popup host instead`,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
+    throwBadRequest(
+      `${context}.recordActions is not supported on calendar main blocks; configure event actions inside the event-view popup host instead`,
+    );
+  }
 }
 
 function assertApplyBlueprintBlockType(type: string | undefined, context: string) {
@@ -1053,6 +1075,7 @@ function compileBlocks(
     if (!_.isPlainObject(block)) {
       throwBadRequest(`${context}[${index}] must be an object`);
     }
+    assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
     fields.forEach((field: any, fieldIndex: number) => {
       if (typeof field?.target !== 'string' || !field.target.trim()) {
@@ -1072,6 +1095,7 @@ function compileBlocks(
     assertApplyBlueprintFieldsLayoutHost(block, `${context}[${index}]`);
     assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
     assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
+    assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     const explicitKey = readString(block.key);
     const fallback = block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`;
     const localKey = normalizeBlueprintLocalKey(block.key, fallback, `${context}[${index}].key`);
@@ -1169,10 +1193,10 @@ function compileBlocks(
       resource: buildBlockResource(block, blockContext),
       template,
       settings: Object.keys(settings).length ? settings : undefined,
-      fields,
-      fieldsLayout,
+      fields: blockType === 'calendar' ? undefined : fields,
+      fieldsLayout: blockType === 'calendar' ? undefined : fieldsLayout,
       actions: actionsWithDefaultFilter,
-      recordActions: mergedActions.recordActions,
+      recordActions: blockType === 'calendar' ? undefined : mergedActions.recordActions,
     });
   });
 
