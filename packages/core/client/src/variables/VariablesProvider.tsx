@@ -49,6 +49,47 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
   };
 };
 
+const getAssociationSourceRecordKey = (associationField: CollectionFieldOptions_deprecated, collection) => {
+  if (associationField?.sourceKey) {
+    return associationField.sourceKey;
+  }
+
+  if (Array.isArray(collection?.filterTargetKey)) {
+    if (collection.filterTargetKey.length === 1) {
+      return collection.filterTargetKey[0];
+    }
+    return collection.filterTargetKey;
+  }
+
+  return collection?.filterTargetKey || collection?.getPrimaryKey?.() || 'id';
+};
+
+const getAssociationSourceId = (
+  record: Record<string, any>,
+  associationField: CollectionFieldOptions_deprecated,
+  collection,
+) => {
+  const sourceRecordKey = getAssociationSourceRecordKey(associationField, collection);
+
+  if (Array.isArray(sourceRecordKey)) {
+    const filterByTk = sourceRecordKey.reduce((result, key) => {
+      if (record?.[key] == null) {
+        return result;
+      }
+      result[key] = record[key];
+      return result;
+    }, {});
+
+    if (Object.keys(filterByTk).length !== sourceRecordKey.length) {
+      return;
+    }
+
+    return encodeURIComponent(JSON.stringify(filterByTk));
+  }
+
+  return record?.[sourceRecordKey];
+};
+
 /**
  * @internal
  * Note: There can only be one VariablesProvider in the entire context. It cannot be used in plugins.
@@ -121,18 +162,13 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         const currentVariablePath = list.slice(0, index + 1).join('.');
         const { fieldPath } = getFieldPath(currentVariablePath, _variableToCollectionName);
         const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
-        const collectionPrimaryKey = getCollection(collectionName, dataSource)?.getPrimaryKey();
+        const sourceCollection = getCollection(collectionName, dataSource);
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (
-              !options?.doNotRequest &&
-              shouldToRequest(item?.[key], item, currentVariablePath) &&
-              item?.[collectionPrimaryKey] != null
-            ) {
+            const sourceId = getAssociationSourceId(item, associationField, sourceCollection);
+            if (!options?.doNotRequest && shouldToRequest(item?.[key], item, currentVariablePath) && sourceId != null) {
               if (associationField?.target) {
-                const url = `/${collectionName}/${
-                  item[associationField.sourceKey || collectionPrimaryKey]
-                }/${key}:${getAction(associationField.type)}`;
+                const url = `/${collectionName}/${sourceId}/${key}:${getAction(associationField.type)}`;
                 if (hasRequested(url)) {
                   return getRequested(url);
                 }
@@ -159,12 +195,11 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         } else if (
           !options?.doNotRequest &&
           shouldToRequest(current[key], current, currentVariablePath) &&
-          current[collectionPrimaryKey] != null &&
+          getAssociationSourceId(current, associationField, sourceCollection) != null &&
           associationField?.target
         ) {
-          const url = `/${collectionName}/${
-            current[associationField.sourceKey || collectionPrimaryKey]
-          }/${key}:${getAction(associationField.type)}`;
+          const sourceId = getAssociationSourceId(current, associationField, sourceCollection);
+          const url = `/${collectionName}/${sourceId}/${key}:${getAction(associationField.type)}`;
           let data = null;
           if (hasRequested(url)) {
             data = await getRequested(url);

@@ -51,7 +51,10 @@ describe('query builder service', () => {
         collectionPath: ['main', 'orders'],
         measures: [{ field: ['price'], aggregation: 'sum', alias: 'Revenue' }],
         dimensions: [{ field: ['createdAt'], format: 'YYYY-MM', alias: 'Month' }],
-        orders: [{ field: 'Revenue', order: 'DESC' }, { field: 'Month', order: 'ASC' }],
+        orders: [
+          { field: 'Revenue', order: 'DESC' },
+          { field: 'Month', order: 'ASC' },
+        ],
       }),
     ).toEqual({ success: true, message: '' });
   });

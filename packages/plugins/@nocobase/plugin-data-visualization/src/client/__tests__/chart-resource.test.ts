@@ -20,7 +20,10 @@ describe('ChartResource', () => {
         collectionPath: ['main', 'orders'],
         measures: [{ field: ['price'], aggregation: 'sum', alias: 'Revenue' }],
         dimensions: [{ field: ['createdAt'], format: 'YYYY-MM', alias: 'Month' }],
-        orders: [{ field: 'Revenue', order: 'DESC' }, { field: ['createdAt'], order: 'ASC' }],
+        orders: [
+          { field: 'Revenue', order: 'DESC' },
+          { field: ['createdAt'], order: 'ASC' },
+        ],
       }),
     ).toMatchObject({
       orders: [

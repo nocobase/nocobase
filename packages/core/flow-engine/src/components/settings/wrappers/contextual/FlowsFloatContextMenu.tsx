@@ -74,6 +74,15 @@ interface BaseFloatContextMenuProps {
   toolbarPosition?: ToolbarPosition;
 }
 
+const getFloatMenuInstanceId = (model?: FlowModel | null) => {
+  if (!model) {
+    return '';
+  }
+
+  const forkId = (model as any)?.isFork ? (model as any)?.forkId : undefined;
+  return forkId == null || forkId === '' ? String(model.uid || '') : `${String(model.uid || '')}::${String(forkId)}`;
+};
+
 const hostContainerStyles = css`
   position: relative;
 
@@ -285,6 +294,7 @@ const detectButtonInDOM = (container: HTMLElement): boolean => {
 // 渲染工具栏项目，并让设置菜单与工具栏共享同一个 popup 容器。
 const renderToolbarItems = (
   model: FlowModel,
+  modelInstanceId: string,
   showDeleteButton: boolean,
   showCopyUidButton: boolean,
   flowEngine: FlowEngine,
@@ -314,7 +324,7 @@ const renderToolbarItems = (
           <ItemComponent
             key={itemConfig.key}
             model={model}
-            id={model.uid}
+            id={modelInstanceId}
             showDeleteButton={showDeleteButton}
             showCopyUidButton={showCopyUidButton}
             menuLevels={settingsMenuLevel}
@@ -532,7 +542,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       updatePortalRect: () => {},
       schedulePortalRectUpdate: () => {},
     });
-    const modelUid = model?.uid || '';
+    const modelUid = getFloatMenuInstanceId(model);
     const flowEngine = useFlowEngine();
     const updatePortalRectProxy = useCallback(() => {
       portalActionsRef.current.updatePortalRect();
@@ -574,6 +584,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         model
           ? renderToolbarItems(
               model,
+              modelUid,
               showDeleteButton,
               showCopyUidButton,
               flowEngine,
@@ -648,7 +659,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         ref={toolbarContainerRef}
         className={`nb-toolbar-container ${toolbarContainerClassName}`}
         style={toolbarContainerStyle}
-        data-model-uid={model.uid}
+        data-model-uid={modelUid}
       >
         {showTitle && (model.title || model.extraTitle) && (
           <div className="nb-toolbar-container-title">
@@ -687,7 +698,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         className={`${hostContainerStyles} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
-        data-float-menu-model-uid={model.uid}
+        data-float-menu-model-uid={modelUid}
         onMouseMove={handleChildHover}
         onMouseEnter={handleHostMouseEnter}
         onMouseLeave={handleHostMouseLeave}
