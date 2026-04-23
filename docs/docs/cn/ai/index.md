@@ -1,9 +1,9 @@
 ---
 pageType: home
 pageName: ai
-title: "NocoBase AI"
-description: "NocoBase 的 AI 能力体系：AI 搭建与开发、AI 员工、AI Agent 对接、AI 工具与资源。"
-keywords: "NocoBase AI,AI 搭建,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP"
+title: 'NocoBase AI'
+description: 'NocoBase 的 AI 能力体系：AI 搭建与开发、AI 员工、AI Agent 对接、AI 工具与资源。'
+keywords: 'NocoBase AI,AI 搭建,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: AI 搭建与开发
     details: 用 AI 构建 NocoBase 应用和插件——从自然语言描述到可用的系统或插件代码。
@@ -41,7 +41,7 @@ features:
         link: /ai-employees/knowledge-base
       - title: 数据驱动的 AI 分析报告
         details: 指定数据范围，让 AI 员工自动生成结构化的分析报告。
-        link: /ai-employees
+        link: /ai-employees/scenarios/business-report
       - title: 一键执行快捷任务
         details: 把常用的 AI 操作封装成快捷任务，一键触发，省去重复对话。
         link: /ai-employees/features/task
