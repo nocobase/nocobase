@@ -22,7 +22,7 @@ function normalizeFilter(input: unknown): Record<string, any> {
   if (!lodash.isPlainObject(input)) {
     return {};
   }
-  return { ...input };
+  return { ...(input as Record<string, any>) };
 }
 
 function applyLocatorFromQuery(params: Record<string, any>, filter: Record<string, any>) {
