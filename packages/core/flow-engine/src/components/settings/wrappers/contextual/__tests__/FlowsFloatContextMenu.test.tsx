@@ -547,7 +547,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('treats forked models as distinct float menu instances even when they share the same uid', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const masterModel = new FlowModel({ uid: 'forked-model', flowEngine: engine });
     masterModel.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
     masterModel.render = vi.fn(function (this: any) {
