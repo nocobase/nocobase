@@ -117,34 +117,32 @@ function formatInitValidationMessage(message: string): string {
 
 export default class Init extends Command {
   static override summary =
-    'Initialize the NocoBase AI setup environment';
-  static override description = `Prepare the current workspace for NocoBase CLI and agent workflows.
+    'Set up NocoBase so coding agents can connect and work with it';
+  static override description = `Set up NocoBase for coding agents in the current workspace.
 
-\`nb init\` guides you through the common setup flow and then runs the next command for you.
+\`nb init\` prepares a NocoBase environment that coding agents can use. It supports two setup paths:
 
-What it can do:
-- Optionally install NocoBase agent skills (\`npx -y skills add nocobase/skills\`).
-- Ask whether you already have a NocoBase application.
-- Continue with exactly one setup path:
-  - Existing app: collect connection details and run \`nb env add\`.
-  - New app: collect installation settings and run \`nb install\`.
+- Connect an existing NocoBase app and save it as a CLI env.
+- Install a new NocoBase app, then save it as a CLI env.
 
-This command never runs both paths in the same session:
-- If you choose an existing app, \`nb install\` is skipped.
-- If you choose a new app, \`nb env add\` is not run automatically afterward.
+It can also install NocoBase AI coding skills (\`nocobase/skills\`) so agents get the project-specific workflow guidance.
 
-Available prompt modes:
-- Default: interactive prompts in the current terminal.
-- \`--ui\`: open the same staged flow in a local browser form. The local HTTP server binds to \`127.0.0.1\` by default and uses a random port unless you set \`--ui-port\`. Use \`--ui-host\` / \`--ui-port\` to override. After submit, the CLI continues in the same terminal and the browser tab will try to close automatically.
-- \`-y\`, \`--yes\`: skip prompts and use defaults. This means install skills, assume you do not already have a NocoBase app, and run \`nb install\`.
+Prompt modes:
+- Default: guided prompts in the terminal.
+- \`--ui\`: open the same setup flow in a local browser form.
+- \`-y\`, \`--yes\`: skip prompts. In this mode \`--env <envName>\` is required, and init creates a new local NocoBase app with safe defaults.
 
-When you choose an existing app, the env fields are collected inside the same init flow and passed directly to \`nb env add\`, so there is no second env wizard. \`--ui\` cannot be combined with \`--yes\`.`;
+\`--ui\` cannot be combined with \`--yes\`.`;
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> --env app1',
     '<%= config.bin %> <%= command.id %> --ui',
-    '<%= config.bin %> <%= command.id %> --ui --ui-host 127.0.0.1 --ui-port 3000',
-    '<%= config.bin %> <%= command.id %> -y',
+    '<%= config.bin %> <%= command.id %> --yes --env app1',
+    '<%= config.bin %> <%= command.id %> --yes --env app1 --source docker --version alpha',
+    '<%= config.bin %> <%= command.id %> --yes --env app1 --source npm --version latest --app-port 13080',
+    '<%= config.bin %> <%= command.id %> --yes --env app1 --source git --version alpha',
+    '<%= config.bin %> <%= command.id %> --ui --ui-port 3000',
   ];
 
   static prompts: PromptsCatalog = {
@@ -241,25 +239,25 @@ When you choose an existing app, the env fields are collected inside the same in
   static flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip all prompts',
+      description: 'Skip prompts and create a new local NocoBase app. Requires --env.',
       default: false,
     }),
     'install-skills': Flags.boolean({
-      description: 'Install NocoBase AI coding skills (`nocobase/skills`) as part of setup',
+      description: 'Install NocoBase AI coding skills (`nocobase/skills`) for this workspace',
       default: false,
     }),
     ui: Flags.boolean({
       description:
-        'Open a staged browser-based setup form backed by the same prompt catalog as the terminal flow (not valid with --yes)',
+        'Open the guided setup flow in a local browser form (not valid with --yes)',
       default: false,
     }),
     'ui-host': Flags.string({
       description:
-        'Bind address for the --ui HTTP server (default 127.0.0.1; only with --ui)',
+        'Host for the local --ui setup server (default: 127.0.0.1)',
     }),
     'ui-port': Flags.integer({
       description:
-        'TCP port for the --ui wizard; 0 = OS-assigned ephemeral port (default 0; only with --ui)',
+        'Port for the local --ui setup server; 0 lets the OS choose an available port',
       min: 0,
       max: 65535,
     }),
@@ -329,12 +327,12 @@ When you choose an existing app, the env fields are collected inside the same in
 
     const appName = String(presetValues.appName ?? '').trim();
     if (useBrowserUi) {
-      p.intro('Set up your NocoBase AI workspace');
+      p.intro('Set Up NocoBase for Coding Agents');
       p.log.info(
         'A local setup form will open in your browser. Submit the form there to continue in this terminal.',
       );
     } else {
-      p.intro('Initialize the NocoBase AI setup environment');
+      p.intro('Set Up NocoBase for Coding Agents');
 
       if (flags.yes) {
         p.log.info(
@@ -364,10 +362,10 @@ When you choose an existing app, the env fields are collected inside the same in
         },
         host: flags['ui-host']?.trim() || '127.0.0.1',
         port: flags['ui-port'] ?? 0,
-        pageTitle: 'Set up your NocoBase AI workspace',
-        documentHeading: 'Set up your NocoBase AI workspace',
+        pageTitle: 'Set Up NocoBase for Coding Agents',
+        documentHeading: 'Set Up NocoBase for Coding Agents',
         documentHint:
-          'Complete this local setup form to continue the init flow in the same terminal session.',
+          'Connect an existing NocoBase app or install a new one, then save it as an agent-ready CLI environment.',
         onServerStart: ({ host, port, url }) => {
           this.log(
             `Local setup form ready at ${url} (listening on ${host}:${port}). Submit it in your browser to continue here.`,

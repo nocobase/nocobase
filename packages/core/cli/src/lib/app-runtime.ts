@@ -21,6 +21,7 @@ export type ManagedAppRuntime =
       envName: string;
       source: 'npm' | 'git' | 'local';
       projectRoot: string;
+      workspaceName?: string;
     }
   | {
       kind: 'docker';
@@ -57,6 +58,16 @@ export function buildDockerAppContainerName(envName: string, workspaceName?: str
   return sanitizeDockerResourceName(`${workspace}-${envName}-app`);
 }
 
+export function buildDockerDbContainerName(
+  envName: string,
+  dbDialect: string,
+  workspaceName?: string,
+): string {
+  const workspace = workspaceName?.trim() || defaultWorkspaceName();
+  const dialect = dbDialect.trim() || 'postgres';
+  return sanitizeDockerResourceName(`${workspace}-${envName}-${dialect}`);
+}
+
 function normalizeEnvSource(env: Env): ManagedAppRuntime['source'] {
   const source = String(env.config.source ?? '').trim();
   if (source === 'docker' || source === 'npm' || source === 'git') {
@@ -79,9 +90,9 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
 
   const resolvedName = env.name || envName?.trim() || config.currentEnv || 'default';
   const source = normalizeEnvSource(env);
+  const workspaceName = config.name?.trim() || defaultWorkspaceName();
 
   if (source === 'docker') {
-    const workspaceName = config.name?.trim() || defaultWorkspaceName();
     return {
       kind: 'docker',
       env,
@@ -99,6 +110,7 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
       envName: resolvedName,
       source: source === 'git' ? 'git' : source === 'npm' ? 'npm' : 'local',
       projectRoot: env.appRootPath,
+      workspaceName,
     };
   }
 

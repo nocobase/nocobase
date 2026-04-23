@@ -187,14 +187,14 @@ export default class Download extends Command {
     source: Flags.string({
       char: 's',
       description:
-        'Choose how to get NocoBase: npm package, Docker image, or Git repository.',
+        'How to get NocoBase: Docker image, npm package, or Git repository.',
       options: ['docker', 'npm', 'git'],
       required: false,
     }),
     version: Flags.string({
       char: 'v',
       description:
-        'Version to download. Supports npm versions or dist-tags, Docker image tags, and Git branches or tags.',
+        'NocoBase version/tag/branch to download or pull (for example: alpha, beta, latest).',
     }),
     replace: Flags.boolean({
       char: 'r',
@@ -206,43 +206,43 @@ export default class Download extends Command {
       char: 'D',
       allowNo: true,
       description:
-        'Install development dependencies when downloading from npm.',
+        'Install development dependencies for npm/git source installs.',
       default: false,
     }),
     'output-dir': Flags.string({
       char: 'o',
       description:
-        'Where to save the downloaded app or Docker tarball.',
+        'Download target directory, or Docker tarball directory when --docker-save is enabled.',
     }),
     'git-url': Flags.string({
-      description: 'Git repository URL to clone from.',
+      description: 'Git repository URL to clone when --source git is used.',
     }),
     'docker-registry': Flags.string({
-      description: 'Docker image repository to pull from, without the tag.',
+      description: 'Docker image repository to pull when --source docker is used.',
     }),
     'docker-platform': Flags.string({
-      description: 'Docker image platform to pull. Use auto to let Docker choose for this machine.',
+      description: 'Docker image platform to pull; use auto to let Docker choose.',
       options: ['auto', 'linux/amd64', 'linux/arm64'],
     }),
     'docker-save': Flags.boolean({
       allowNo: true,
       description:
-        'After pulling a Docker image, also save it as a tarball.',
+        'Also save the pulled Docker image as a tarball.',
       default: false,
     }),
     'npm-registry': Flags.string({
       description:
-        'Custom npm registry to use for npm or Git downloads.',
+        'npm registry for npm/git downloads and dependency installation.',
     }),
     'build': Flags.boolean({
       allowNo: true,
       description:
-        'Build the app after dependencies are installed.',
+        'Build npm/git source after dependencies are installed.',
       default: true,
     }),
     'build-dts': Flags.boolean({
       description:
-        'Generate TypeScript declaration files during the build.',
+        'Generate TypeScript declaration files during the npm/git build.',
       default: false,
     }),
   };

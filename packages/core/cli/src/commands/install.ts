@@ -329,8 +329,8 @@ export default class Install extends Command {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -f',
     '<%= config.bin %> <%= command.id %> -l zh-CN',
-    '<%= config.bin %> <%= command.id %> -u nocobase -m admin@nocobase.com -p admin123',
-    '<%= config.bin %> <%= command.id %> -n "Super Admin"',
+    '<%= config.bin %> <%= command.id %> --root-username nocobase --root-email admin@nocobase.com --root-password admin123',
+    '<%= config.bin %> <%= command.id %> --root-nickname "Super Admin"',
     '<%= config.bin %> <%= command.id %> --app-root-path=./myenv/source/ --storage-path=./myenv/storage/ -e myenv',
     '<%= config.bin %> <%= command.id %> -y --env dev --app-root-path=./dev/source/',
     '<%= config.bin %> <%= command.id %> -y --env dev --fetch-source --app-root-path=./dev/source/',
@@ -344,71 +344,67 @@ export default class Install extends Command {
     env: Flags.string({
       char: 'e',
       description:
-        'Application name (CLI env key). Required. Defaults: app path ./<name>/source/ and storage path ./<name>/storage/ unless overridden',
+        'App/env name to create or update. Defaults app paths to ./<envName>/source/ and ./<envName>/storage/.',
     }),
-    lang: Flags.string({ description: 'Language during installation', char: 'l', required: false }),
+    lang: Flags.string({ description: 'Language for the installed NocoBase app', char: 'l', required: false }),
     force: Flags.boolean({
-      description: 'Reinstall the application by clearing the database',
+      description: 'Reconfigure an existing env and replace conflicting runtime resources when needed',
       char: 'f',
       required: false,
     }),
     'app-root-path': Flags.string({
-      description: 'Application source directory for install (relative to cwd; default: ./<env>/source/)',
+      description: 'Source directory for a local npm/git app (default: ./<envName>/source/)',
     }),
     'app-port': Flags.string({
-      description: 'Application HTTP port (APP_PORT; default: 13000)',
+      description: 'HTTP port for the local app (default: 13000, or an available port with --yes)',
     }),
     'storage-path': Flags.string({
       description:
-        'Storage directory (relative to cwd; default: ./<env>/storage/)',
+        'Storage directory for uploads and managed database data (default: ./<envName>/storage/)',
     }),
     'root-username': Flags.string({
-      char: 'u',
-      description: 'Root username (sets INIT_ROOT_USERNAME for install; forwarded as --root-username)',
+      description: 'Initial admin username for the installed app',
       required: false,
     }),
     'root-email': Flags.string({
-      char: 'm',
-      description: 'Root user email (sets INIT_ROOT_EMAIL for install; forwarded as --root-email)',
+      description: 'Initial admin email for the installed app',
       required: false,
     }),
     'root-password': Flags.string({
-      char: 'p',
-      description: 'Root user password (forwarded as --root-password)',
+      description: 'Initial admin password for the installed app',
       required: false,
     }),
     'root-nickname': Flags.string({
-      char: 'n',
-      description: 'Root user nickname (forwarded as --root-nickname)',
+      description: 'Initial admin display name for the installed app',
       required: false,
     }),
     'builtin-db': Flags.boolean({
       description:
-        'Run `nb db start` before install (use with `-y` when you rely on the CLI-managed database)',
+        'Create and connect a CLI-managed built-in database for the app',
       default: false,
     }),
     'db-dialect': Flags.string({
-      description: 'Database dialect (e.g. postgres, mysql)',
+      description: 'Database dialect for the app',
       options: ['postgres', 'mysql', 'mariadb', 'kingbase'],
     }),
     'db-host': Flags.string({
-      description: 'Database host',
+      description: 'Database host for the app',
     }),
     'db-port': Flags.string({
-      description: 'Database port',
+      description: 'Database port for the app',
     }),
     'db-database': Flags.string({
-      description: 'Database name',
+      description: 'Database name for the app',
     }),
     'db-user': Flags.string({
-      description: 'Database user',
+      description: 'Database username for the app',
     }),
     'db-password': Flags.string({
-      description: 'Database password',
+      description: 'Database password for the app',
     }),
     'fetch-source': Flags.boolean({
       description:
-        'Run `nb download` before install. Use `nb download` for distribution choice and all fetch options (`-v`, `--git-url`, docker image flags, etc.). With `-y`, install delegates using `nb download -y --source docker --version alpha` (`-o` aligns with `--app-root-path` when set).',
+        'Download NocoBase app files or pull a Docker image before installing',
       default: false,
     }),
     ..._.omit(Download.flags, ['yes']),

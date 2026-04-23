@@ -338,9 +338,9 @@ export default class Upgrade extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -e local',
-    '<%= config.bin %> <%= command.id %> --skip-code-update',
+    '<%= config.bin %> <%= command.id %> -s',
     '<%= config.bin %> <%= command.id %> --verbose',
-    '<%= config.bin %> <%= command.id %> -e local-docker --skip-code-update',
+    '<%= config.bin %> <%= command.id %> -e local-docker -s',
   ];
 
   static override flags = {
@@ -350,7 +350,7 @@ export default class Upgrade extends Command {
         'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
     }),
     'skip-code-update': Flags.boolean({
-      char: 'S',
+      char: 's',
       description: 'Restart with the saved local code or Docker image without downloading updates first',
       required: false,
     }),
