@@ -13,6 +13,7 @@
  * level 2 is a popup opened from within the first popup, and so on.
  */
 const popupLayerStates: Record<string | number, boolean> = {};
+const popupLayerCloseTimers: Record<string | number, ReturnType<typeof setTimeout> | undefined> = {};
 
 /**
  * Sets the visibility state of a popup at the specified level
@@ -21,6 +22,26 @@ const popupLayerStates: Record<string | number, boolean> = {};
  */
 export const setPopupLayerState = (layerLevel: number, isOpen: boolean) => {
   popupLayerStates[layerLevel] = isOpen;
+};
+
+export const setPopupLayerCloseTimer = (layerLevel: number, timer: ReturnType<typeof setTimeout>) => {
+  const currentTimer = popupLayerCloseTimers[layerLevel];
+  if (currentTimer) {
+    clearTimeout(currentTimer);
+  }
+  popupLayerCloseTimers[layerLevel] = timer;
+};
+
+export const clearPopupLayerCloseTimer = (layerLevel: number) => {
+  const timer = popupLayerCloseTimers[layerLevel];
+  if (timer) {
+    clearTimeout(timer);
+  }
+  delete popupLayerCloseTimers[layerLevel];
+};
+
+export const hasPopupLayerCloseTimer = (layerLevel: number) => {
+  return !!popupLayerCloseTimers[layerLevel];
 };
 
 /**
@@ -38,5 +59,6 @@ export const getPopupLayerState = (layerLevel: number) => {
  * @param layerLevel - The level of the popup to remove state for
  */
 export const removePopupLayerState = (layerLevel: number) => {
+  clearPopupLayerCloseTimer(layerLevel);
   delete popupLayerStates[layerLevel];
 };

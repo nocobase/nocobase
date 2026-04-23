@@ -7,8 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getPopupParamsFromPath, getPopupPathFromParams, removeLastPopupPath } from '../pagePopupUtils';
+import {
+  clearPopupLayerCloseTimer,
+  getPopupLayerState,
+  hasPopupLayerCloseTimer,
+  removePopupLayerState,
+  setPopupLayerCloseTimer,
+  setPopupLayerState,
+} from '../popupState';
 
 describe('getPopupParamsFromPath', () => {
   it('should parse the path and return the popup parameters', () => {
@@ -129,5 +137,47 @@ describe('removeLastPopupPath', () => {
     const result = removeLastPopupPath(path);
 
     expect(result).toBe('');
+  });
+});
+
+describe('popupState close timers', () => {
+  it('should clear pending close timer when removing popup layer state', () => {
+    vi.useFakeTimers();
+
+    const timer = setTimeout(() => undefined, 300);
+    setPopupLayerState(1, true);
+    setPopupLayerCloseTimer(1, timer);
+
+    expect(getPopupLayerState(1)).toBe(true);
+    expect(hasPopupLayerCloseTimer(1)).toBe(true);
+
+    removePopupLayerState(1);
+
+    expect(getPopupLayerState(1)).toBe(false);
+    expect(hasPopupLayerCloseTimer(1)).toBe(false);
+
+    vi.useRealTimers();
+  });
+
+  it('should replace previous close timer for the same layer', () => {
+    vi.useFakeTimers();
+
+    const firstTimer = setTimeout(() => {
+      throw new Error('first timer should be cleared');
+    }, 300);
+    const secondSpy = vi.fn();
+    const secondTimer = setTimeout(secondSpy, 300);
+
+    setPopupLayerCloseTimer(1, firstTimer);
+    setPopupLayerCloseTimer(1, secondTimer);
+
+    expect(hasPopupLayerCloseTimer(1)).toBe(true);
+
+    vi.advanceTimersByTime(300);
+
+    expect(secondSpy).toHaveBeenCalledTimes(1);
+
+    clearPopupLayerCloseTimer(1);
+    vi.useRealTimers();
   });
 });

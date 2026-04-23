@@ -29,7 +29,7 @@ import {
   getStoredPopupContext,
   usePopupUtils,
 } from './pagePopupUtils';
-import { removePopupLayerState } from './popupState';
+import { clearPopupLayerCloseTimer, removePopupLayerState, setPopupLayerCloseTimer } from './popupState';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -86,6 +86,13 @@ PopupVisibleProvider.displayName = 'PopupVisibleProvider';
 const VisibleProvider: FC<{ popupuid: string }> = React.memo(({ children, popupuid }) => {
   const { closePopup } = usePopupUtils();
   const [visible, _setVisible] = useState(true);
+  const { currentLevel = 0, params } = useCurrentPopupContext() || {};
+
+  useEffect(() => {
+    clearPopupLayerCloseTimer(currentLevel);
+    _setVisible(true);
+  }, [currentLevel, params?.collection, params?.filterbytk, params?.puid, params?.sourceid, params?.tab, popupuid]);
+
   const setVisible = useCallback(
     (visible: boolean) => {
       if (!visible) {
@@ -101,14 +108,17 @@ const VisibleProvider: FC<{ popupuid: string }> = React.memo(({ children, popupu
         }
 
         // Leave some time to refresh the block data
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           closePopup();
           // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
           deleteRandomNestedSchemaKey(popupuid);
         }, 300);
+        clearPopupLayerCloseTimer(currentLevel);
+        // 记录当前层级的延迟关闭定时器，便于下一次快速点击时取消旧关闭动作。
+        setPopupLayerCloseTimer(currentLevel, timer);
       }
     },
-    [closePopup, popupuid],
+    [closePopup, currentLevel, popupuid],
   );
 
   return (

@@ -26,7 +26,14 @@ import {
 import { ActionContext } from '../action/context';
 import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
-import { getPopupLayerState, removePopupLayerState, setPopupLayerState } from './popupState';
+import { deleteRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
+import {
+  clearPopupLayerCloseTimer,
+  getPopupLayerState,
+  hasPopupLayerCloseTimer,
+  removePopupLayerState,
+  setPopupLayerState,
+} from './popupState';
 import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
 export interface PopupParams {
   /** popup uid */
@@ -271,10 +278,23 @@ export const usePopupUtils = (
       if (schema.properties) {
         const nextLevel = currentLevel + 1;
 
+        // 如果上一轮关闭动画仍在延迟阶段，先取消旧关闭任务，避免把新打开的同层弹窗一并关闭。
+        if (hasPopupLayerCloseTimer(nextLevel)) {
+          clearPopupLayerCloseTimer(nextLevel);
+        }
+
         // Prevent route confusion caused by repeated clicks
         if (getPopupLayerState(nextLevel)) {
-          closePopup(); // 已经打开过的弹窗，再次调用 openPopup 时，直接关闭当前弹窗。防止出现点击按钮没反应的问题
+          closePopup(); // 已经打开过的弹窗，再次调用 openPopup 时，先关闭当前弹窗，再立即重开当前点击目标。
           removePopupLayerState(nextLevel);
+          // 同层重开时强制生成新的嵌套 schema key，避免复用上一次已经隐藏的弹窗实例。
+          deleteRandomNestedSchemaKey(currentPopupUidWithoutOpened);
+          let nextBaseUrl = location.pathname;
+          if (_.last(nextBaseUrl) === '/') {
+            nextBaseUrl = nextBaseUrl.slice(0, -1);
+          }
+          navigate(withSearchParams(`${nextBaseUrl}${pathname}`), { replace: true });
+          setPopupLayerState(nextLevel, true);
           return;
         }
         setPopupLayerState(nextLevel, true);
@@ -288,6 +308,7 @@ export const usePopupUtils = (
     [
       association,
       cm,
+      closePopup,
       collection,
       dataSourceKey,
       fieldSchema,
@@ -301,8 +322,10 @@ export const usePopupUtils = (
       getSourceId,
       getNewPopupContext,
       blockData,
+      setVisibleFromAction,
       tableBlockContextBasicValue,
       currentLevel,
+      updatePopupContext,
     ],
   );
 
