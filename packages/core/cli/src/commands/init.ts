@@ -328,7 +328,7 @@ When you choose an existing app, the env fields are collected inside the same in
         'Non-interactive: "appName" is required; set initialValues.appName, yesInitialValues.appName, yesInitialValue on the block, or initialValue.',
       );
       p.log.error(highlightInitValidationMessage(formatted));
-      this.error(formatted);
+      this.exit(1);
     }
 
     if (flags.yes) {
@@ -390,7 +390,7 @@ When you choose an existing app, the env fields are collected inside the same in
         onMissingNonInteractive: (message) => {
           const formatted = formatInitValidationMessage(message);
           p.log.error(highlightInitValidationMessage(formatted));
-          this.error(formatted);
+          this.exit(1);
         },
       },
       command: this,

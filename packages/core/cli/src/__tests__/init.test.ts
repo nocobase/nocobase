@@ -358,17 +358,14 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
       runCommand: vi.fn(async () => undefined),
     },
     log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(message);
-    },
     exit: (code?: number) => {
-      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+      throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
   await assert.rejects(
     () => Init.prototype.run.call(command),
-    /Env "local3" already exists in this workspace/,
+    /exit: 1/,
   );
   assert.equal(mocks.promptError.mock.calls.length, 1);
   assert.match(String(mocks.promptError.mock.calls[0]?.[0] ?? ''), /local3/);
@@ -389,25 +386,23 @@ test('nb init explains that --env is required when --yes skips prompts', async (
       runCommand,
     },
     log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(message);
-    },
     exit: (code?: number) => {
-      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+      throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
   await assert.rejects(
     () => Init.prototype.run.call(command),
-    /App name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
+    /exit: 1/,
   );
   assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
   assert.equal(mocks.promptInfo.mock.calls.length, 0);
   assert.equal(mocks.promptWarn.mock.calls.length, 0);
   assert.equal(runCommand.mock.calls.length, 0);
+  assert.equal(mocks.promptError.mock.calls.length, 1);
   assert.match(
     String(mocks.promptError.mock.calls[0]?.[0] ?? ''),
-    /nb init --yes --env <envName>/,
+    /App name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
   );
 });
 
