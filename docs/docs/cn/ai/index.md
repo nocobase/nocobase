@@ -11,6 +11,9 @@ features:
       - title: AI 搭建快速开始
         details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder
+      - title: 安全与审计：让 AI 操作有迹可循
+        details: 了解 AI Agent 搭建 NocoBase 的鉴权方式、权限控制策略、推荐使用方法，以及如何追溯每一次操作记录。
+        link: /ai-builder/security
       - title: 一句话创建数据模型
         details: 描述业务需求，AI 自动设计数据表、字段和关联关系。
         link: /ai-builder/data-modeling
@@ -20,9 +23,6 @@ features:
       - title: 对话式编排工作流
         details: 用自然语言描述业务流程，AI 自动创建触发器和节点链。
         link: /ai-builder/workflow
-      - title: 从零搭建整套业务系统
-        details: 数据表、页面、仪表盘一步到位，支持 CRM、工单管理等场景。
-        link: /ai-builder/dsl-reconciler
       - title: AI 开发插件
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev

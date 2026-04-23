@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "security",
+    "label": "安全与审计"
+  },
+  {
+    "type": "file",
     "name": "env-bootstrap",
     "label": "环境管理"
   },
