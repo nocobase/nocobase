@@ -13,6 +13,7 @@ The Calendar block provides an intuitive calendar view to display events and dat
 
 ![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_27_PM.png)
 
+
 ## Installation
 
 This block is a built-in plugin and does not require additional installation.
@@ -25,7 +26,7 @@ Select the "Calendar" block and choose the corresponding data table to create th
 
 ## Block settings
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_43_PM.png)
+![](https://static-docs.nocobase.com/Calendar-04-23-2026_10_38_AM.png)
 
 ### Title field
 
@@ -45,7 +46,7 @@ Specifies the end time of an event.
 
 Click on an empty date area in the calendar to quickly open a pop-up for creating an event.
 
-![](https://static-docs.nocobase.com/View-record-04-13-2026_03_27_PM.png)
+![](https://static-docs.nocobase.com/Add-new-04-23-2026_10_39_AM.png)
 
 When clicking on an existing event:
 - The selected event will be highlighted
@@ -55,7 +56,7 @@ When clicking on an existing event:
 
 When enabled, the calendar will display corresponding lunar date information.
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_28_PM.png)
+![](https://static-docs.nocobase.com/Calendar-04-23-2026_10_41_AM.png)
 
 ### Data scope
 
@@ -83,7 +84,7 @@ Steps:
 2. In the calendar block settings, set this field as the "Color Field";
 3. When creating or editing events, select a color to see it applied in the calendar.
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_31_PM.png)
+![](https://static-docs.nocobase.com/Calendar-04-23-2026_10_41_AM%20(1).png)
 
 ### Week start day
 
@@ -92,8 +93,6 @@ Supports setting the first day of the week:
 - Monday (default)
 
 This can be adjusted based on regional preferences for a more natural calendar experience.
-
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_31_PM%20(2).png)
 
 ## Actions
 

@@ -15,3 +15,4 @@ export * from './tools-manager';
 export * from './skills-manager';
 export * from './mcp-manager';
 export * from './loader';
+export * from './document-loader';

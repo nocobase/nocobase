@@ -639,6 +639,114 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['a'])).toBe('user');
   });
 
+  it('reapplies mode=default value after form reset starts a new create session', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-reset-reapply-default',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-reset-reapply-default',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-reset-reapply-default' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: 'AAA',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('AAA'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'AAA1' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('AAA1');
+
+    formStub.__store.a = undefined;
+    delete formStub.__store.a;
+    runtime.resetAfterFormReset();
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('AAA'));
+  });
+
+  it('resets valuesMirror before rescheduling default rules after form reset', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ selector: 'x', x: 'AAA', y: 'BBB' });
+
+    const blockModel: any = {
+      uid: 'form-assign-reset-values-mirror',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-reset-values-mirror',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-reset-values-mirror' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '__DYNAMIC__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('AAA'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'AAA1' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('AAA1');
+
+    for (const key of Object.keys(formStub.__store)) {
+      delete formStub.__store[key];
+    }
+    runtime.resetAfterFormReset();
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['a'])).toBeUndefined();
+
+    await runtime.setFormValues(blockCtx, [{ path: ['selector'], value: 'y' }], { source: 'user' });
+    await runtime.setFormValues(blockCtx, [{ path: ['y'], value: 'BBB2' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('BBB2'));
+  });
+
   it('skips mode=default form assignment in update form', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
