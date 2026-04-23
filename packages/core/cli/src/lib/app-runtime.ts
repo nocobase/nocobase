@@ -110,13 +110,27 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
   };
 }
 
+export function formatMissingManagedAppEnvMessage(envName?: string): string {
+  const requested = String(envName ?? '').trim();
+  if (requested) {
+    return [
+      `Env "${requested}" is not configured in this workspace.`,
+      `If you want to create a new NocoBase AI environment, run \`nb init --env ${requested}\` first.`,
+    ].join('\n');
+  }
+
+  return 'No NocoBase env is configured yet. Run `nb init` to create one first.';
+}
+
 export async function runLocalNocoBaseCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   args: string[],
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
 ): Promise<void> {
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
     env: runtime.env.envVars,
+    stdio: options?.stdio,
   });
 }
 
@@ -137,7 +151,10 @@ export async function dockerContainerIsRunning(containerName: string): Promise<b
   }
 }
 
-export async function startDockerContainer(containerName: string): Promise<'started' | 'already-running'> {
+export async function startDockerContainer(
+  containerName: string,
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
+): Promise<'started' | 'already-running'> {
   const exists = await dockerContainerExists(containerName);
   if (!exists) {
     throw new Error(`Docker app container "${containerName}" does not exist.`);
@@ -149,11 +166,15 @@ export async function startDockerContainer(containerName: string): Promise<'star
 
   await run('docker', ['start', containerName], {
     errorName: 'docker start',
+    stdio: options?.stdio,
   });
   return 'started';
 }
 
-export async function stopDockerContainer(containerName: string): Promise<'stopped' | 'already-stopped'> {
+export async function stopDockerContainer(
+  containerName: string,
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
+): Promise<'stopped' | 'already-stopped'> {
   const exists = await dockerContainerExists(containerName);
   if (!exists) {
     throw new Error(`Docker app container "${containerName}" does not exist.`);
@@ -165,6 +186,7 @@ export async function stopDockerContainer(containerName: string): Promise<'stopp
 
   await run('docker', ['stop', containerName], {
     errorName: 'docker stop',
+    stdio: options?.stdio,
   });
   return 'stopped';
 }

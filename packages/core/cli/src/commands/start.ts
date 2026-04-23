@@ -9,10 +9,12 @@
 
 import { Command, Flags } from '@oclif/core';
 import {
+  formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
   startDockerContainer,
 } from '../lib/app-runtime.js';
+import { failTask, printInfo, startTask, succeedTask } from '../lib/ui.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
@@ -51,6 +53,36 @@ function formatLocalStartFailure(envName: string, options?: { port?: string; sou
   ].join('\n');
 }
 
+function formatAppUrl(port?: string) {
+  const value = String(port ?? '').trim();
+  if (!value) {
+    return undefined;
+  }
+
+  return `http://127.0.0.1:${value}`;
+}
+
+async function isAppAlreadyRunning(appUrl?: string): Promise<boolean> {
+  if (!appUrl) {
+    return false;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1500);
+
+  try {
+    const response = await fetch(`${appUrl}/api/__health_check`, {
+      signal: controller.signal,
+    });
+    const text = await response.text();
+    return response.ok && text.trim().toLowerCase() === 'ok';
+  } catch (_error) {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export default class Start extends Command {
   static override description =
     'Start NocoBase for the selected env. Local npm/git installs run the app command, and Docker installs start the saved app container.';
@@ -63,6 +95,7 @@ export default class Start extends Command {
     '<%= config.bin %> <%= command.id %> --no-daemon',
     '<%= config.bin %> <%= command.id %> --instances 2',
     '<%= config.bin %> <%= command.id %> --launch-mode pm2',
+    '<%= config.bin %> <%= command.id %> --verbose',
     '<%= config.bin %> <%= command.id %> -e local-docker',
   ];
   static override flags = {
@@ -82,6 +115,10 @@ export default class Start extends Command {
     }),
     instances: Flags.integer({ description: 'Number of instances to run', char: 'i', required: false }),
     'launch-mode': Flags.string({ description: 'Launch Mode', required: false, options: ['pm2', 'node'] }),
+    verbose: Flags.boolean({
+      description: 'Show raw startup output from the underlying local or Docker command',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
@@ -89,9 +126,10 @@ export default class Start extends Command {
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
 
     const runtime = await resolveManagedAppRuntime(flags.env);
+    const commandStdio = flags.verbose ? 'inherit' : 'ignore';
 
     if (!runtime) {
-      this.error('No NocoBase env is configured yet. Run `nb install` or `nb env add` first.');
+      this.error(formatMissingManagedAppEnvMessage(flags.env));
     }
 
     if (runtime.kind === 'remote') {
@@ -123,10 +161,22 @@ export default class Start extends Command {
         );
       }
 
+      const appUrl = formatAppUrl(runtime.env.appPort === undefined || runtime.env.appPort === null
+        ? undefined
+        : String(runtime.env.appPort));
+      startTask(`Starting NocoBase for "${runtime.envName}"...`);
       try {
-        await startDockerContainer(runtime.containerName);
+        const state = await startDockerContainer(runtime.containerName, {
+          stdio: commandStdio,
+        });
+        succeedTask(
+          state === 'already-running'
+            ? `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`
+            : `NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
+        );
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
+        failTask(`Failed to start NocoBase for "${runtime.envName}".`);
         this.error(formatDockerStartFailure(runtime.envName, message));
       }
       return;
@@ -152,16 +202,50 @@ export default class Start extends Command {
       npmArgs.push('--launch-mode', flags['launch-mode']);
     }
 
+    const appUrl = formatAppUrl(
+      flags.port
+      || (runtime.env.appPort !== undefined && runtime.env.appPort !== null
+        ? String(runtime.env.appPort).trim()
+        : undefined),
+    );
+
+    if (await isAppAlreadyRunning(appUrl)) {
+      if (flags.daemon === false) {
+        printInfo(
+          `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}. Use \`nb stop -e ${runtime.envName}\` before starting it again in the foreground.`,
+        );
+      } else {
+        succeedTask(
+          `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
+        );
+      }
+      return;
+    }
+
+    if (flags.daemon === false) {
+      printInfo(
+        `Starting NocoBase for "${runtime.envName}" in the foreground${appUrl ? ` at ${appUrl}` : ''}. Press Ctrl+C to stop.`,
+      );
+    } else {
+      startTask(`Starting NocoBase for "${runtime.envName}" in the background...`);
+    }
+
     try {
-      await runLocalNocoBaseCommand(runtime, npmArgs);
+      await runLocalNocoBaseCommand(runtime, npmArgs, {
+        stdio: commandStdio,
+      });
+      if (flags.daemon !== false) {
+        succeedTask(
+          `NocoBase is starting for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
+        );
+      }
     } catch (error: unknown) {
+      failTask(`Failed to start NocoBase for "${runtime.envName}".`);
       this.error(
         formatLocalStartFailure(runtime.envName, {
-          port:
-            flags.port
-            || (runtime.env.appPort !== undefined && runtime.env.appPort !== null
-              ? String(runtime.env.appPort).trim()
-              : undefined),
+          port: flags.port || (runtime.env.appPort !== undefined && runtime.env.appPort !== null
+            ? String(runtime.env.appPort).trim()
+            : undefined),
           source: runtime.source,
         }),
       );

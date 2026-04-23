@@ -9,6 +9,7 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import {
+  formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   runDockerNocoBaseCommand,
   runLocalNocoBaseCommand,
@@ -50,7 +51,7 @@ export default class PmEnable extends Command {
     const runtime = await resolveManagedAppRuntime(flags.env);
 
     if (!runtime) {
-      this.error('Env is not configured');
+      this.error(formatMissingManagedAppEnvMessage(flags.env));
     }
 
     if (runtime.kind === 'local') {

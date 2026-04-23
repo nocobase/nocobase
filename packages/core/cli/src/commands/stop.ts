@@ -9,10 +9,12 @@
 
 import { Command, Flags } from '@oclif/core';
 import {
+  formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
   stopDockerContainer,
 } from '../lib/app-runtime.js';
+import { failTask, startTask, succeedTask } from '../lib/ui.js';
 
 function formatStopFailure(envName: string, message: string): string {
   if (/does not exist/i.test(message)) {
@@ -37,6 +39,7 @@ export default class Stop extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -e local',
+    '<%= config.bin %> <%= command.id %> --verbose',
     '<%= config.bin %> <%= command.id %> -e local-docker',
   ];
 
@@ -46,15 +49,20 @@ export default class Stop extends Command {
       description:
         'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
     }),
+    verbose: Flags.boolean({
+      description: 'Show raw shutdown output from the underlying local or Docker command',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Stop);
 
     const runtime = await resolveManagedAppRuntime(flags.env);
+    const commandStdio = flags.verbose ? 'inherit' : 'ignore';
 
     if (!runtime) {
-      this.error('No NocoBase env is configured yet. Run `nb install` or `nb env add` first.');
+      this.error(formatMissingManagedAppEnvMessage(flags.env));
     }
 
     if (runtime.kind === 'remote') {
@@ -68,19 +76,33 @@ export default class Stop extends Command {
     }
 
     if (runtime.kind === 'docker') {
+      startTask(`Stopping NocoBase for "${runtime.envName}"...`);
       try {
-        await stopDockerContainer(runtime.containerName);
+        const state = await stopDockerContainer(runtime.containerName, {
+          stdio: commandStdio,
+        });
+        succeedTask(
+          state === 'already-stopped'
+            ? `NocoBase is already stopped for "${runtime.envName}".`
+            : `NocoBase has stopped for "${runtime.envName}".`,
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        failTask(`Failed to stop NocoBase for "${runtime.envName}".`);
         this.error(formatStopFailure(runtime.envName, message));
       }
       return;
     }
 
+    startTask(`Stopping NocoBase for "${runtime.envName}"...`);
     try {
-      await runLocalNocoBaseCommand(runtime, ['pm2', 'kill']);
+      await runLocalNocoBaseCommand(runtime, ['pm2', 'kill'], {
+        stdio: commandStdio,
+      });
+      succeedTask(`NocoBase has stopped for "${runtime.envName}".`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      failTask(`Failed to stop NocoBase for "${runtime.envName}".`);
       this.error(formatStopFailure(runtime.envName, message));
     }
   }
