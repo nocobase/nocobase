@@ -132,6 +132,7 @@ describe('flowSurfaces formal block fixtures', () => {
           expect(tree.props?.defaultView).toBe('month');
           expect(tree.props?.enableQuickCreateEvent).toBe(true);
           expect(tree.props?.weekStart).toBe(1);
+          expect(getActionUses(tree)).toEqual(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']);
           expect(getCalendarPopupHostUses(tree)).toEqual({
             quickCreateAction: 'CalendarQuickCreateActionModel',
             eventViewAction: 'CalendarEventViewActionModel',

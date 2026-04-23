@@ -373,13 +373,17 @@ describe('flowSurfaces applyBlueprint contract', () => {
       mode: 'drawer',
       size: 'large',
     });
-    expect(readNodeActionUses(calendarBlock)).toEqual([
-      'CalendarTodayActionModel',
-      'CalendarNavActionModel',
-      'CalendarTitleActionModel',
-      'CalendarViewSelectActionModel',
-      'RefreshActionModel',
-    ]);
+    expect(readNodeActionUses(calendarBlock)).toEqual(
+      expect.arrayContaining([
+        'FilterActionModel',
+        'AddNewActionModel',
+        'CalendarTodayActionModel',
+        'CalendarNavActionModel',
+        'CalendarTitleActionModel',
+        'CalendarViewSelectActionModel',
+        'RefreshActionModel',
+      ]),
+    );
   });
 
   it('should reject calendar main block fields fieldGroups and recordActions in applyBlueprint', async () => {
@@ -467,6 +471,16 @@ describe('flowSurfaces applyBlueprint contract', () => {
         },
       ],
     };
+    const calendarBlockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'title',
+          operator: '$includes',
+          value: 'planning',
+        },
+      ],
+    };
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -494,7 +508,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 key: 'employeesList',
                 type: 'list',
                 collection: 'employees',
-                defaultFilter: {},
+                defaultFilter: blockDefaultFilter,
                 fields: ['nickname'],
               },
               {
@@ -513,9 +527,15 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   },
                 ],
               },
+              {
+                key: 'eventsCalendar',
+                type: 'calendar',
+                collection: 'calendar_events',
+                defaultFilter: calendarBlockDefaultFilter,
+              },
             ],
             layout: {
-              rows: [['employeesTable'], ['employeesList'], ['employeesCards']],
+              rows: [['employeesTable'], ['employeesList'], ['employeesCards'], ['eventsCalendar']],
             },
           },
         ],
@@ -527,6 +547,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const listBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ListBlockModel')[0];
     const gridCardBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'GridCardBlockModel')[0];
+    const calendarBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
     const tableFilterAction = _.castArray(tableBlock?.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
     );
@@ -536,21 +557,22 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const gridCardFilterAction = _.castArray(gridCardBlock?.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
     );
+    const calendarFilterAction = _.castArray(calendarBlock?.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
 
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
-    expect(listFilterAction?.props?.defaultFilterValue).toEqual({
-      logic: '$and',
-      items: [],
-    });
-    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-      logic: '$and',
-      items: [],
-    });
+    expect(listFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
+    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(gridCardFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);
     expect(gridCardFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
       explicitActionFilter,
+    );
+    expect(calendarFilterAction?.props?.defaultFilterValue).toEqual(calendarBlockDefaultFilter);
+    expect(calendarFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      calendarBlockDefaultFilter,
     );
   });
 

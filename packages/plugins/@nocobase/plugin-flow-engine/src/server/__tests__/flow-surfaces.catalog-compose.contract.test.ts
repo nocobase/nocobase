@@ -651,6 +651,10 @@ describe('flowSurfaces catalog + compose contract', () => {
             mode: 'dialog',
             size: 'large',
             filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+            associationName: 'meetings',
+            sourceId: '{{ctx.view.inputArgs.sourceId}}',
+            popupTemplateHasFilterByTk: true,
+            popupTemplateHasSourceId: true,
           },
           eventPopup: {
             mode: 'drawer',
@@ -733,6 +737,18 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty(
       'filterByTk',
     );
+    expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty(
+      'associationName',
+    );
+    expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty(
+      'sourceId',
+    );
+    expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty(
+      'popupTemplateHasFilterByTk',
+    );
+    expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty(
+      'popupTemplateHasSourceId',
+    );
     expect(configured.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
       uid: `${calendar.uid}-eventViewAction`,
       mode: 'drawer',
@@ -755,6 +771,50 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(readErrorMessage(invalidStartFieldRes)).toContain(
       `flowSurfaces configure calendar startField 'title' is not supported by CalendarBlockModel`,
     );
+
+    const invalidCalendarSettingCases = [
+      {
+        changes: { defaultView: 'agenda' },
+        message: 'calendar defaultView must be one of: month, week, day',
+      },
+      {
+        changes: { weekStart: 3 },
+        message: 'calendar weekStart must be 0 or 1',
+      },
+      {
+        changes: { quickCreateEvent: 'false' },
+        message: 'calendar quickCreateEvent must be a boolean',
+      },
+      {
+        changes: { showLunar: 'true' },
+        message: 'calendar showLunar must be a boolean',
+      },
+    ];
+    for (const item of invalidCalendarSettingCases) {
+      const invalidSettingRes = await rootAgent.resource('flowSurfaces').configure({
+        values: {
+          target: {
+            uid: calendar.uid,
+          },
+          changes: item.changes,
+        },
+      });
+      expect(invalidSettingRes.status).toBe(400);
+      expect(readErrorMessage(invalidSettingRes)).toContain(item.message);
+    }
+
+    const invalidRawUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        props: {
+          weekStart: 2,
+        },
+      },
+    });
+    expect(invalidRawUpdateRes.status).toBe(400);
+    expect(readErrorMessage(invalidRawUpdateRes)).toContain('calendar weekStart must be 0 or 1');
 
     const noDateCollectionName = `calendar_no_dates_${uid()}`;
     await rootAgent.resource('collections').create({
@@ -781,6 +841,44 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(invalidCollectionRes.status).toBe(400);
     expect(readErrorMessage(invalidCollectionRes)).toContain(`must contain at least one date field`);
+  });
+
+  it('should project missing calendar popup hosts during readback without persisting them', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar read projection page',
+      tabTitle: 'Calendar read projection tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+
+    const quickCreateActionUid = `${calendar.uid}-quickCreateAction`;
+    const eventViewActionUid = `${calendar.uid}-eventViewAction`;
+    await flowRepo.remove(quickCreateActionUid);
+    await flowRepo.remove(eventViewActionUid);
+    expect(await flowRepo.findModelById(quickCreateActionUid, { includeAsyncNode: true })).toBeNull();
+    expect(await flowRepo.findModelById(eventViewActionUid, { includeAsyncNode: true })).toBeNull();
+
+    const calendarReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(calendarReadback.tree.subModels?.quickCreateAction).toMatchObject({
+      uid: quickCreateActionUid,
+      use: 'CalendarQuickCreateActionModel',
+    });
+    expect(calendarReadback.tree.subModels?.eventViewAction).toMatchObject({
+      uid: eventViewActionUid,
+      use: 'CalendarEventViewActionModel',
+    });
+    expect(await flowRepo.findModelById(quickCreateActionUid, { includeAsyncNode: true })).toBeNull();
+    expect(await flowRepo.findModelById(eventViewActionUid, { includeAsyncNode: true })).toBeNull();
   });
 
   it('should honor server-registered calendar title field interfaces when validating flow-model calendar bindings', async () => {
@@ -903,15 +1001,19 @@ describe('flowSurfaces catalog + compose contract', () => {
     const readback = await getSurface(rootAgent, {
       uid: calendar.uid,
     });
-    expect(_.castArray(readback.tree.subModels?.actions || []).map((item: any) => item.use)).toEqual([
-      'CalendarTodayActionModel',
-      'CalendarNavActionModel',
-      'CalendarTitleActionModel',
-      'CalendarViewSelectActionModel',
-      'RefreshActionModel',
-      'JSCollectionActionModel',
-      'CollectionTriggerWorkflowActionModel',
-    ]);
+    const actionUses = _.castArray(readback.tree.subModels?.actions || []).map((item: any) => item.use);
+    expect(actionUses).toEqual(
+      expect.arrayContaining([
+        'CalendarTodayActionModel',
+        'CalendarNavActionModel',
+        'CalendarTitleActionModel',
+        'CalendarViewSelectActionModel',
+        'RefreshActionModel',
+        'JSCollectionActionModel',
+        'CollectionTriggerWorkflowActionModel',
+      ]),
+    );
+    expect(actionUses).not.toEqual(expect.arrayContaining(['BulkDeleteActionModel', 'ImportActionModel']));
   });
 
   it('should reject direct calendar main block fields fieldGroups and recordActions in compose', async () => {
@@ -1050,6 +1152,110 @@ describe('flowSurfaces catalog + compose contract', () => {
           },
         },
       },
+    });
+  });
+
+  it('should backfill persisted calendar popup hosts before writing to legacy missing host uids', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar popup host backfill page',
+      tabTitle: 'Calendar popup host backfill tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+    const quickCreateActionUid = `${calendar.uid}-quickCreateAction`;
+    const eventViewActionUid = `${calendar.uid}-eventViewAction`;
+    await flowRepo.remove(quickCreateActionUid);
+    await flowRepo.remove(eventViewActionUid);
+    expect(await flowRepo.findModelById(quickCreateActionUid, { includeAsyncNode: true })).toBeNull();
+    expect(await flowRepo.findModelById(eventViewActionUid, { includeAsyncNode: true })).toBeNull();
+
+    const quickCreateForm = await addBlockData(rootAgent, {
+      target: {
+        uid: quickCreateActionUid,
+      },
+      type: 'createForm',
+      resource: {
+        binding: 'currentCollection',
+      },
+    });
+    expect(quickCreateForm.uid).toBeTruthy();
+
+    const quickCreateAction = await flowRepo.findModelById(quickCreateActionUid, { includeAsyncNode: true });
+    const eventViewAction = await flowRepo.findModelById(eventViewActionUid, { includeAsyncNode: true });
+    expect(quickCreateAction).toMatchObject({
+      uid: quickCreateActionUid,
+      use: 'CalendarQuickCreateActionModel',
+    });
+    expect(eventViewAction).toMatchObject({
+      uid: eventViewActionUid,
+      use: 'CalendarEventViewActionModel',
+    });
+    const quickCreateBlock = _.castArray(
+      quickCreateAction?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(quickCreateBlock).toMatchObject({
+      uid: quickCreateForm.uid,
+      use: 'CreateFormModel',
+    });
+  });
+
+  it('should recursively backfill persisted calendar popup hosts in nested calendar popup trees', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Nested calendar popup host backfill page',
+      tabTitle: 'Nested calendar popup host backfill tab',
+    });
+    const outerCalendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+    const nestedCalendar = await addBlockData(rootAgent, {
+      target: {
+        uid: `${outerCalendar.uid}-quickCreateAction`,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+    const nestedQuickCreateActionUid = `${nestedCalendar.uid}-quickCreateAction`;
+    const nestedEventViewActionUid = `${nestedCalendar.uid}-eventViewAction`;
+    await flowRepo.remove(nestedQuickCreateActionUid);
+    await flowRepo.remove(nestedEventViewActionUid);
+    expect(await flowRepo.findModelById(nestedQuickCreateActionUid, { includeAsyncNode: true })).toBeNull();
+    expect(await flowRepo.findModelById(nestedEventViewActionUid, { includeAsyncNode: true })).toBeNull();
+
+    await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'markdown',
+      settings: {
+        content: 'Trigger a page-tree write preflight.',
+      },
+    });
+
+    expect(await flowRepo.findModelById(nestedQuickCreateActionUid, { includeAsyncNode: true })).toMatchObject({
+      uid: nestedQuickCreateActionUid,
+      use: 'CalendarQuickCreateActionModel',
+    });
+    expect(await flowRepo.findModelById(nestedEventViewActionUid, { includeAsyncNode: true })).toMatchObject({
+      uid: nestedEventViewActionUid,
+      use: 'CalendarEventViewActionModel',
     });
   });
 

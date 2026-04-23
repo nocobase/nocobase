@@ -1816,7 +1816,7 @@ describe('flowSurfaces resource', () => {
       title: 'Default filter addBlock page',
       tabTitle: 'Default filter addBlock tab',
     });
-    const defaultFilter = {
+    const usersDefaultFilter = {
       logic: '$and',
       items: [
         {
@@ -1831,21 +1831,61 @@ describe('flowSurfaces resource', () => {
         },
       ],
     };
+    const calendarDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'title',
+          operator: '$includes',
+          value: '',
+        },
+        {
+          path: 'status',
+          operator: '$eq',
+          value: '',
+        },
+      ],
+    };
 
-    for (const blockType of ['table', 'list', 'gridCard']) {
+    for (const blockCase of [
+      {
+        type: 'table',
+        collectionName: 'users',
+        filterableFieldNames: ['username', 'email'],
+        defaultFilter: usersDefaultFilter,
+      },
+      {
+        type: 'list',
+        collectionName: 'users',
+        filterableFieldNames: ['username', 'email'],
+        defaultFilter: usersDefaultFilter,
+      },
+      {
+        type: 'gridCard',
+        collectionName: 'users',
+        filterableFieldNames: ['username', 'email'],
+        defaultFilter: usersDefaultFilter,
+      },
+      {
+        type: 'calendar',
+        collectionName: 'calendar_events',
+        filterableFieldNames: ['title', 'status'],
+        defaultFilter: calendarDefaultFilter,
+      },
+    ]) {
       const blockUid = await addBlock(
         rootAgent,
         page.tabSchemaUid,
-        blockType,
+        blockCase.type,
         {
           dataSourceKey: 'main',
-          collectionName: 'users',
+          collectionName: blockCase.collectionName,
         },
         {
           defaultActionSettings: {
             filter: {
-              filterableFieldNames: ['username', 'email'],
-              defaultFilter,
+              filterableFieldNames: blockCase.filterableFieldNames,
+              defaultFilter: blockCase.defaultFilter,
             },
           },
         },
@@ -1857,14 +1897,13 @@ describe('flowSurfaces resource', () => {
       const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
         (item: any) => item?.use === 'FilterActionModel',
       );
-      expect(filterAction?.props?.filterableFieldNames).toEqual(['username', 'email']);
-      expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
-      expect(filterAction?.props?.filterValue).toEqual(defaultFilter);
-      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
-        'username',
-        'email',
-      ]);
-      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+      expect(filterAction?.props?.filterableFieldNames).toEqual(blockCase.filterableFieldNames);
+      expect(filterAction?.props?.defaultFilterValue).toEqual(blockCase.defaultFilter);
+      expect(filterAction?.props?.filterValue).toEqual(blockCase.defaultFilter);
+      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual(
+        blockCase.filterableFieldNames,
+      );
+      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
     }
   });
 
@@ -1873,7 +1912,7 @@ describe('flowSurfaces resource', () => {
       title: 'Block default filter addBlock page',
       tabTitle: 'Block default filter addBlock tab',
     });
-    const defaultFilter = {
+    const usersDefaultFilter = {
       logic: '$and',
       items: [
         {
@@ -1883,18 +1922,33 @@ describe('flowSurfaces resource', () => {
         },
       ],
     };
+    const calendarDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'title',
+          operator: '$includes',
+          value: 'planning',
+        },
+      ],
+    };
 
-    for (const blockType of ['table', 'list', 'gridCard']) {
+    for (const blockCase of [
+      { type: 'table', collectionName: 'users', defaultFilter: usersDefaultFilter },
+      { type: 'list', collectionName: 'users', defaultFilter: usersDefaultFilter },
+      { type: 'gridCard', collectionName: 'users', defaultFilter: usersDefaultFilter },
+      { type: 'calendar', collectionName: 'calendar_events', defaultFilter: calendarDefaultFilter },
+    ]) {
       const blockUid = await addBlock(
         rootAgent,
         page.tabSchemaUid,
-        blockType,
+        blockCase.type,
         {
           dataSourceKey: 'main',
-          collectionName: 'users',
+          collectionName: blockCase.collectionName,
         },
         {
-          defaultFilter,
+          defaultFilter: blockCase.defaultFilter,
         },
       );
 
@@ -1904,11 +1958,39 @@ describe('flowSurfaces resource', () => {
       const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
         (item: any) => item?.use === 'FilterActionModel',
       );
-      expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
-      expect(filterAction?.props?.filterValue).toEqual(defaultFilter);
-      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+      expect(filterAction?.props?.defaultFilterValue).toEqual(blockCase.defaultFilter);
+      expect(filterAction?.props?.filterValue).toEqual(blockCase.defaultFilter);
+      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
       expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
       expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
+    }
+  });
+
+  it('should reject empty block-level defaultFilter groups on public data blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Empty block default filter addBlock page',
+      tabTitle: 'Empty block default filter addBlock tab',
+    });
+
+    for (const blockCase of [
+      { type: 'table', collectionName: 'users' },
+      { type: 'calendar', collectionName: 'calendar_events' },
+    ]) {
+      const addBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: blockCase.type,
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: blockCase.collectionName,
+          },
+          defaultFilter: {},
+        },
+      });
+      expect(addBlockRes.status).toBe(400);
+      expect(readErrorMessage(addBlockRes)).toContain('must include at least one concrete filter item');
     }
   });
 
@@ -1917,56 +1999,90 @@ describe('flowSurfaces resource', () => {
       title: 'Default filter precedence addBlock page',
       tabTitle: 'Default filter precedence addBlock tab',
     });
-    const blockDefaultFilter = {
-      logic: '$and',
-      items: [
-        {
-          path: 'username',
-          operator: '$includes',
-          value: 'staff',
-        },
-      ],
-    };
-    const settingsDefaultFilter = {
-      logic: '$and',
-      items: [
-        {
-          path: 'email',
-          operator: '$includes',
-          value: '@nocobase.com',
-        },
-      ],
-    };
-
-    const blockUid = await addBlock(
-      rootAgent,
-      page.tabSchemaUid,
-      'table',
+    for (const blockCase of [
       {
-        dataSourceKey: 'main',
+        type: 'table',
         collectionName: 'users',
+        filterableFieldNames: ['email'],
+        blockDefaultFilter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'username',
+              operator: '$includes',
+              value: 'staff',
+            },
+          ],
+        },
+        settingsDefaultFilter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'email',
+              operator: '$includes',
+              value: '@nocobase.com',
+            },
+          ],
+        },
       },
       {
-        defaultFilter: blockDefaultFilter,
-        defaultActionSettings: {
-          filter: {
-            filterableFieldNames: ['email'],
-            defaultFilter: settingsDefaultFilter,
+        type: 'calendar',
+        collectionName: 'calendar_events',
+        filterableFieldNames: ['status'],
+        blockDefaultFilter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'title',
+              operator: '$includes',
+              value: 'planning',
+            },
+          ],
+        },
+        settingsDefaultFilter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'status',
+              operator: '$eq',
+              value: 'confirmed',
+            },
+          ],
+        },
+      },
+    ]) {
+      const blockUid = await addBlock(
+        rootAgent,
+        page.tabSchemaUid,
+        blockCase.type,
+        {
+          dataSourceKey: 'main',
+          collectionName: blockCase.collectionName,
+        },
+        {
+          defaultFilter: blockCase.blockDefaultFilter,
+          defaultActionSettings: {
+            filter: {
+              filterableFieldNames: blockCase.filterableFieldNames,
+              defaultFilter: blockCase.settingsDefaultFilter,
+            },
           },
         },
-      },
-    );
+      );
 
-    const readback = await getSurface(rootAgent, {
-      uid: blockUid,
-    });
-    const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
-      (item: any) => item?.use === 'FilterActionModel',
-    );
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['email']);
-    expect(filterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
-    expect(filterAction?.props?.filterValue).toEqual(settingsDefaultFilter);
-    expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
+      const readback = await getSurface(rootAgent, {
+        uid: blockUid,
+      });
+      const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
+        (item: any) => item?.use === 'FilterActionModel',
+      );
+      expect(filterAction?.props?.filterableFieldNames).toEqual(blockCase.filterableFieldNames);
+      expect(filterAction?.props?.defaultFilterValue).toEqual(blockCase.settingsDefaultFilter);
+      expect(filterAction?.props?.filterValue).toEqual(blockCase.settingsDefaultFilter);
+      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+        blockCase.settingsDefaultFilter,
+      );
+    }
   });
 
   it('should apply addBlocks item defaultActionSettings to auto-created filter actions', async () => {
@@ -2067,6 +2183,16 @@ describe('flowSurfaces resource', () => {
         },
       ],
     };
+    const calendarBlockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'title',
+          operator: '$includes',
+          value: 'planning',
+        },
+      ],
+    };
 
     const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
       values: {
@@ -2098,21 +2224,34 @@ describe('flowSurfaces resource', () => {
               },
             },
           },
+          {
+            key: 'eventsCalendar',
+            type: 'calendar',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'calendar_events',
+            },
+            defaultFilter: calendarBlockDefaultFilter,
+          },
         ],
       },
     });
     expect(addBlocksRes.status).toBe(200);
     const addBlocksData = getData(addBlocksRes);
-    expect(addBlocksData.successCount).toBe(2);
+    expect(addBlocksData.successCount).toBe(3);
     expect(addBlocksData.errorCount).toBe(0);
 
     const tableBlockUid = addBlocksData.blocks.find((item: any) => item.key === 'usersTable')?.result?.uid;
     const listBlockUid = addBlocksData.blocks.find((item: any) => item.key === 'usersList')?.result?.uid;
+    const calendarBlockUid = addBlocksData.blocks.find((item: any) => item.key === 'eventsCalendar')?.result?.uid;
     const tableReadback = await getSurface(rootAgent, {
       uid: tableBlockUid,
     });
     const listReadback = await getSurface(rootAgent, {
       uid: listBlockUid,
+    });
+    const calendarReadback = await getSurface(rootAgent, {
+      uid: calendarBlockUid,
     });
     const tableFilterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
@@ -2120,11 +2259,18 @@ describe('flowSurfaces resource', () => {
     const listFilterAction = _.castArray(listReadback.tree.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
     );
+    const calendarFilterAction = _.castArray(calendarReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(listFilterAction?.props?.filterableFieldNames).toEqual(['nickname']);
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
+    expect(calendarFilterAction?.props?.defaultFilterValue).toEqual(calendarBlockDefaultFilter);
+    expect(calendarFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      calendarBlockDefaultFilter,
+    );
   });
 
   it('should apply compose block-level defaultFilter and prefer explicit filter action settings', async () => {
@@ -2152,6 +2298,16 @@ describe('flowSurfaces resource', () => {
         },
       ],
     };
+    const calendarBlockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'title',
+          operator: '$includes',
+          value: 'planning',
+        },
+      ],
+    };
 
     const composeRes = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -2176,7 +2332,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            defaultFilter: {},
+            defaultFilter: blockDefaultFilter,
             fields: ['username'],
           },
           {
@@ -2197,6 +2353,15 @@ describe('flowSurfaces resource', () => {
               },
             ],
           },
+          {
+            key: 'eventsCalendar',
+            type: 'calendar',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'calendar_events',
+            },
+            defaultFilter: calendarBlockDefaultFilter,
+          },
         ],
       },
     });
@@ -2205,10 +2370,12 @@ describe('flowSurfaces resource', () => {
     const tableBlockUid = composeData.blocks.find((item: any) => item.key === 'usersTable')?.uid;
     const listBlockUid = composeData.blocks.find((item: any) => item.key === 'usersList')?.uid;
     const cardsBlockUid = composeData.blocks.find((item: any) => item.key === 'usersCards')?.uid;
+    const calendarBlockUid = composeData.blocks.find((item: any) => item.key === 'eventsCalendar')?.uid;
 
     const tableReadback = await getSurface(rootAgent, { uid: tableBlockUid });
     const listReadback = await getSurface(rootAgent, { uid: listBlockUid });
     const cardsReadback = await getSurface(rootAgent, { uid: cardsBlockUid });
+    const calendarReadback = await getSurface(rootAgent, { uid: calendarBlockUid });
     const tableFilterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
     );
@@ -2218,18 +2385,19 @@ describe('flowSurfaces resource', () => {
     const cardsFilterAction = _.castArray(cardsReadback.tree.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
     );
+    const calendarFilterAction = _.castArray(calendarReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
-    expect(listFilterAction?.props?.defaultFilterValue).toEqual({
-      logic: '$and',
-      items: [],
-    });
-    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-      logic: '$and',
-      items: [],
-    });
+    expect(listFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
+    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(cardsFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);
     expect(cardsFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(explicitActionFilter);
+    expect(calendarFilterAction?.props?.defaultFilterValue).toEqual(calendarBlockDefaultFilter);
+    expect(calendarFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      calendarBlockDefaultFilter,
+    );
   });
 
   it('should auto-inject submit for form blocks created through addBlocks', async () => {
@@ -9064,6 +9232,22 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
     },
   });
 
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'calendar_events',
+      title: 'Calendar events',
+      createdAt: false,
+      updatedAt: false,
+      timestamps: false,
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'select' },
+        { name: 'startsAt', type: 'date', interface: 'datetime' },
+        { name: 'endsAt', type: 'date', interface: 'datetime' },
+      ],
+    },
+  });
+
   await rootAgent.resource('collections.fields', 'tasks').create({
     values: {
       name: 'employee',
@@ -9155,6 +9339,7 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       departments: ['title', 'location'],
       employees: ['nickname', 'status', 'age', 'bio', 'isManager', 'departmentId'],
       tasks: ['title', 'status', 'employeeId'],
+      calendar_events: ['title', 'status', 'startsAt', 'endsAt'],
       employee_logs: ['content', 'employeeId'],
       skills: ['label'],
       employee_skills: ['id', 'employeeId', 'skillId'],
