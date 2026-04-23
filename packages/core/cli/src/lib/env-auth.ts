@@ -385,6 +385,149 @@ export function buildOauthRedirectHtml(url: string) {
 `;
 }
 
+export function buildOauthCompletionHtml() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authentication complete</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --panel: #ffffff;
+      --panel-border: #f0f0f0;
+      --text: rgba(0, 0, 0, 0.88);
+      --muted: rgba(0, 0, 0, 0.45);
+      --success: #52c41a;
+      --success-soft: #f6ffed;
+      --primary: #1677ff;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .shell {
+      width: min(100%, 560px);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 56px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--panel-border);
+      background: #ffffff;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .card-extra {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .card-body {
+      padding: 40px 32px 28px;
+      text-align: center;
+    }
+    .mark {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--success-soft);
+      border: 1px solid #b7eb8f;
+      color: var(--success);
+      font-size: 30px;
+      font-weight: 700;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .tip {
+      margin-top: 24px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: #fafafa;
+      border: 1px solid #f0f0f0;
+      color: rgba(0, 0, 0, 0.65);
+      font-size: 13px;
+    }
+    .manual {
+      min-height: 22px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .card-foot {
+      padding: 12px 24px;
+      border-top: 1px solid var(--panel-border);
+      background: #fafafa;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="card-head">
+      <div class="card-title">NocoBase CLI</div>
+      <div class="card-extra">OAuth</div>
+    </div>
+    <div class="card-body">
+      <div class="mark">✓</div>
+      <h1>Authentication complete</h1>
+      <p>Your sign-in finished successfully. You can return to the terminal and continue there.</p>
+      <p class="tip">This page will try to close automatically in a moment.</p>
+      <p id="manual" class="manual"></p>
+    </div>
+    <div class="card-foot">You can close this page after returning to the terminal.</div>
+  </main>
+  <script>
+    setTimeout(function () {
+      window.close();
+      setTimeout(function () {
+        var el = document.getElementById('manual');
+        if (document.visibilityState === 'visible' && el) {
+          el.textContent = 'If this tab stays open, you can close it manually.';
+        }
+      }, 400);
+    }, 1000);
+  </script>
+</body>
+</html>
+`;
+}
+
 async function createWindowsBrowserRedirectFile(url: string) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-oauth-'));
   const filePath = path.join(directory, 'authorize.html');
@@ -490,26 +633,7 @@ async function createLoopbackServer(state: string) {
         }
 
         res.statusCode = 200;
-        res.end(`<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8" /><title>Authentication complete</title></head>
-<body>
-<h1>Authentication complete</h1>
-<p>You can return to the terminal.</p>
-<p id="manual"></p>
-<script>
-setTimeout(function () {
-  window.close();
-  setTimeout(function () {
-    var el = document.getElementById('manual');
-    if (document.visibilityState === 'visible' && el) {
-      el.textContent = 'Please close this tab manually if it is still open.';
-    }
-  }, 400);
-}, 1000);
-</script>
-</body>
-</html>`);
+        res.end(buildOauthCompletionHtml());
         resolveWaiter(code);
       } catch (error) {
         reject(error as Error);

@@ -220,6 +220,29 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
 
   assert.deepEqual(mocks.runNocoBaseCommand.mock.calls, [
     [
+      ['pm2', 'kill'],
+      {
+        cwd: projectRoot,
+        env: {
+          STORAGE_PATH: storagePath,
+          APP_PORT: '14000',
+          APP_KEY: plan.appKey,
+          TZ: plan.timeZone,
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'nocobase',
+          INIT_APP_LANG: 'en-US',
+          INIT_ROOT_USERNAME: 'nocobase',
+          INIT_ROOT_EMAIL: 'admin@example.com',
+          INIT_ROOT_PASSWORD: 'admin123',
+          INIT_ROOT_NICKNAME: 'Super Admin',
+        },
+      },
+    ],
+    [
       ['start', '--quickstart', '--daemon'],
       {
         cwd: projectRoot,

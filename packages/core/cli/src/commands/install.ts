@@ -1635,6 +1635,19 @@ export default class Install extends Command {
     });
     const args = ['start', '--quickstart', '--daemon'];
 
+    p.log.step(`Stopping any existing local NocoBase process in ${params.projectRoot}`);
+    try {
+      await runNocoBaseCommand(['pm2', 'kill'], {
+        cwd: params.projectRoot,
+        env,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      p.log.info(
+        `Skipped local process cleanup before start: ${message}`,
+      );
+    }
+
     p.log.step(`Starting local NocoBase app from ${params.projectRoot}`);
     await runNocoBaseCommand(args, {
       cwd: params.projectRoot,

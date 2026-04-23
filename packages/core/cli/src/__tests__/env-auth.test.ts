@@ -14,6 +14,7 @@ import path from 'node:path';
 import { test } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import {
+  buildOauthCompletionHtml,
   buildOauthRedirectHtml,
   getOauthMetadataUrl,
   getOauthResource,
@@ -72,6 +73,16 @@ test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', (
     /window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/,
   );
   assert.doesNotMatch(html, /href="[^"]*&state="/);
+});
+
+test('buildOauthCompletionHtml renders a styled completion page with auto-close guidance', () => {
+  const html = buildOauthCompletionHtml();
+
+  assert.match(html, /<title>Authentication complete<\/title>/);
+  assert.match(html, /NocoBase CLI/);
+  assert.match(html, /This page will try to close automatically in a moment\./);
+  assert.match(html, /window\.close\(\)/);
+  assert.match(html, /If this tab stays open, you can close it manually\./);
 });
 
 test('isOauthAccessTokenExpired uses a refresh window', () => {

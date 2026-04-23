@@ -146,6 +146,32 @@ test('init appName validates workspace env name uniqueness', async () => {
   });
 });
 
+test('init appName allows reusing a workspace env name when --force is set', async () => {
+  await withTempProjectCwd(async () => {
+    await saveAuthConfig(
+      {
+        currentEnv: 'local',
+        envs: {
+          local: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'project' },
+    );
+
+    const appNamePrompt = Init.prompts.appName;
+    assert.equal(appNamePrompt.type, 'text');
+    const originalArgv = process.argv;
+    process.argv = ['node', 'nb', 'init', '--force'];
+    try {
+      assert.equal(await appNamePrompt.validate?.('local', {}), undefined);
+    } finally {
+      process.argv = originalArgv;
+    }
+  });
+});
+
 test('init --yes --env validates workspace env name uniqueness through preset values', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(

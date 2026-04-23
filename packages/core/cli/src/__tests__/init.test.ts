@@ -14,9 +14,11 @@ const mocks = vi.hoisted(() => ({
   runPromptCatalogWebUI: vi.fn(),
   runPromptCatalog: vi.fn(),
   runNpm: vi.fn(),
+  getEnv: vi.fn(),
   promptInfo: vi.fn(),
   promptWarn: vi.fn(),
   promptStep: vi.fn(),
+  promptError: vi.fn(),
   promptOutro: vi.fn(),
   promptCancel: vi.fn(),
 }));
@@ -28,6 +30,20 @@ beforeEach(() => {
 vi.mock('../lib/prompt-web-ui.ts', () => ({
   runPromptCatalogWebUI: mocks.runPromptCatalogWebUI,
 }));
+
+vi.mock('../lib/auth-store.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/auth-store.js')>();
+  return {
+    ...actual,
+    getEnv: (...args: Parameters<typeof actual.getEnv>) => {
+      const impl = mocks.getEnv.getMockImplementation();
+      if (impl) {
+        return impl(...args);
+      }
+      return actual.getEnv(...args);
+    },
+  };
+});
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-catalog.js')>();
@@ -46,6 +62,7 @@ vi.mock('@clack/prompts', () => ({
     info: mocks.promptInfo,
     warn: mocks.promptWarn,
     step: mocks.promptStep,
+    error: mocks.promptError,
   },
   outro: mocks.promptOutro,
   cancel: mocks.promptCancel,
@@ -317,6 +334,107 @@ test('nb init does not forward the default app port in --yes mode unless it was 
   } finally {
     process.argv = originalArgv;
   }
+});
+
+test('nb init logs duplicate env validation errors with Clack in --yes mode', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => {
+    options.hooks?.onMissingNonInteractive?.(
+      'Env "local3" already exists in this workspace. Choose another app name.',
+    );
+    return {};
+  });
+
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        ui: false,
+        'app-port': '13000',
+      },
+    })),
+    config: {
+      runCommand: vi.fn(async () => undefined),
+    },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await assert.rejects(
+    () => Init.prototype.run.call(command),
+    /Env "local3" already exists in this workspace/,
+  );
+  assert.equal(mocks.promptError.mock.calls.length, 1);
+  assert.match(String(mocks.promptError.mock.calls[0]?.[0] ?? ''), /local3/);
+});
+
+test('nb init --force allows reconfiguring an existing workspace env and warns before install', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  mocks.getEnv.mockResolvedValue({
+    name: 'local5',
+    config: {
+      baseUrl: 'http://localhost:13000/api',
+    },
+  });
+
+  const originalArgv = process.argv;
+  process.argv = ['node', 'nb', 'init', '--yes', '--env', 'local5', '--force'];
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    appName: 'local5',
+    hasNocobase: 'no',
+    installSkills: false,
+    lang: 'en-US',
+    appRootPath: './nocobase',
+    appPort: '13000',
+    storagePath: './storage/local5',
+    fetchSource: false,
+    ...(options.values ?? {}),
+  }));
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        ui: false,
+        env: 'local5',
+        force: true,
+      },
+    })),
+    config: { runCommand },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(`unexpected error: ${message}`);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  try {
+    await Init.prototype.run.call(command);
+  } finally {
+    process.argv = originalArgv;
+  }
+
+  assert.deepEqual(runCommand.mock.calls[0], [
+    'install',
+    ['-y', '-e', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
+  ]);
+  assert.equal(
+    mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env')),
+    true,
+  );
+  assert.equal(
+    mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('local5')),
+    true,
+  );
 });
 
 test('nb init forwards dynamically selected ports in --yes mode', async () => {

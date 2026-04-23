@@ -71,6 +71,10 @@ function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
 }
 
+function shouldAllowExistingInitEnv(): boolean {
+  return argvHasToken(process.argv.slice(2), ['--force', '-f']);
+}
+
 async function validateInitAppName(value: PromptValue): Promise<string | undefined> {
   const formatError = validateEnvKey(value);
   if (formatError) {
@@ -84,10 +88,20 @@ async function validateInitAppName(value: PromptValue): Promise<string | undefin
 
   const existingEnv = await getEnv(envName, { scope: 'project' });
   if (existingEnv) {
+    if (shouldAllowExistingInitEnv()) {
+      return undefined;
+    }
     return `Env "${envName}" already exists in this workspace. Choose another app name.`;
   }
 
   return undefined;
+}
+
+function highlightInitValidationMessage(message: string): string {
+  return message.replace(
+    /Env "([^"]+)"/,
+    (_match, envName: string) => `Env ${pc.cyan(pc.bold(`"${envName}"`))}`,
+  );
 }
 
 export default class Init extends Command {
@@ -351,12 +365,25 @@ When you choose an existing app, the env fields are collected inside the same in
           p.cancel('Init cancelled.');
           this.exit(0);
         },
+        onMissingNonInteractive: (message) => {
+          p.log.error(highlightInitValidationMessage(message));
+          this.error(message);
+        },
       },
       command: this,
     });
 
     const installSkills = Boolean(results.installSkills);
     const hasNocobase = results.hasNocobase === 'yes';
+    const existingEnv = !hasNocobase
+      ? await getEnv(String(results.appName ?? '').trim(), { scope: 'project' })
+      : undefined;
+
+    if (existingEnv && Boolean(flags.force)) {
+      p.log.warn(
+        `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} in this workspace because ${pc.bold('--force')} was set. The env config will be updated after install succeeds.`,
+      );
+    }
 
     if (installSkills) {
       try {
