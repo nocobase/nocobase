@@ -1482,6 +1482,169 @@ test('pm disable routes local envs to the local nocobase command', async () => {
   );
 });
 
+test('dev runs local npm/git source envs with saved env settings', async () => {
+  const { default: Dev } = await import('../commands/dev.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'dev',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: {
+        APP_PORT: '13000',
+      },
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'dev',
+      'db-sync': true,
+      client: true,
+      inspect: '9229',
+    },
+  });
+
+  await Dev.prototype.run.call(command);
+
+  assert.deepEqual(mocks.printInfo.mock.calls, [
+    ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
+  ]);
+  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls, [[
+    runtime,
+    ['dev', '--rsbuild', '--db-sync', '--port', '13000', '--client', '--inspect', '9229'],
+    { stdio: 'inherit' },
+  ]]);
+});
+
+test('dev uses an explicit port instead of the saved app port', async () => {
+  const { default: Dev } = await import('../commands/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'dev',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: {},
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'dev',
+      port: '12000',
+      server: true,
+    },
+  });
+
+  await Dev.prototype.run.call(command);
+
+  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1], [
+    'dev',
+    '--rsbuild',
+    '--port',
+    '12000',
+    '--server',
+  ]);
+});
+
+test('dev explains when the app is already running on the target port', async () => {
+  const { default: Dev } = await import('../commands/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'dev',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: {},
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      text: async () => 'ok',
+    })),
+  );
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'dev',
+    },
+  });
+
+  await assert.rejects(
+    () => Dev.prototype.run.call(command),
+    /NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb stop -e dev.*dev port/s,
+  );
+  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
+});
+
+test('dev rejects docker envs with source-oriented guidance', async () => {
+  const { default: Dev } = await import('../commands/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {},
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+    },
+  });
+
+  await assert.rejects(
+    () => Dev.prototype.run.call(command),
+    /Can't run dev mode for "docker-local".*requires a local npm or Git source directory/s,
+  );
+  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
+});
+
+test('dev rejects remote envs because they have no local source directory', async () => {
+  const { default: Dev } = await import('../commands/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'remote',
+    envName: 'remote',
+    source: undefined,
+    env: {},
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'remote',
+    },
+  });
+
+  await assert.rejects(
+    () => Dev.prototype.run.call(command),
+    /Can't run dev mode for "remote".*only has an API connection/s,
+  );
+});
+
+test('dev explains when the requested env does not exist', async () => {
+  const { default: Dev } = await import('../commands/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local53',
+    },
+  });
+
+  await assert.rejects(
+    () => Dev.prototype.run.call(command),
+    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
+  );
+});
+
 test('pm list keeps API fallback for remote envs', async () => {
   const { default: PmList } = await import('../commands/pm/list.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
