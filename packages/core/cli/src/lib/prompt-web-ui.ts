@@ -1743,7 +1743,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       }
       return el.value;
     }
-    function collect() {
+    function collect(options) {
+      var dirtyOnly = !!(options && options.dirtyOnly);
       var o = {};
       if (!form || !form.elements) { return o; }
       var nodes = form.querySelectorAll('[data-pwc-wrap]');
@@ -1752,6 +1753,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         if (w.style.display === 'none') { continue; }
         var k = w.getAttribute('data-pwc-wrap');
         if (!k) { continue; }
+        if (dirtyOnly && !pwcIsFieldDirty(k)) { continue; }
         var inp = getControl(form, k);
         if (inp == null) { continue; }
         var rawVal = getControlValue(form, k);
@@ -1774,7 +1776,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       return o;
     }
     function reflow() {
-      fetch(ref, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collect()) })
+      clearTimeout(t);
+      return fetch(ref, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collect({ dirtyOnly: true })) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           var sh = d.show || {};
@@ -1789,7 +1792,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             for (var i = 0; i < ctrls.length; i++) {
               ctrls[i].disabled = hidden;
             }
-            if (!hidden && wasHidden && k && !pwcIsFieldDirty(k) && Object.prototype.hasOwnProperty.call(vals, k)) {
+            if (!hidden && k && !pwcIsFieldDirty(k) && Object.prototype.hasOwnProperty.call(vals, k)) {
               setControlValue(form, k, vals[k]);
             }
           });
@@ -2009,8 +2012,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       if (pwcVisibleStepPosition(pwcCur) >= pwcVisibleSteps.length - 1) { return Promise.resolve(); }
       if (!validateCurrentStep()) { return Promise.resolve(); }
       if (pwcValStep == null) {
-        pwcSetStep(pwcVisibleNext(pwcCur));
-        return Promise.resolve();
+        return reflow().then(function () { pwcSetStep(pwcVisibleNext(pwcCur)); });
       }
       pwcSetStatusHint('Checking…');
       return fetch(pwcValStep, {
@@ -2029,7 +2031,10 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
           }
           return r.json();
         })
-        .then(function () { pwcSetStatusEmpty(); pwcSetStep(pwcVisibleNext(pwcCur)); })
+        .then(function () {
+          pwcSetStatusEmpty();
+          return reflow().then(function () { pwcSetStep(pwcVisibleNext(pwcCur)); });
+        })
         .catch(function (err) {
           if (err && err.pwcFieldKey) {
             pwcSetFieldError(err.pwcFieldKey, err.message || String(err));

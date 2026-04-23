@@ -42,7 +42,6 @@ import EnvAdd from './env/add.ts';
 
 const DEFAULT_INSTALL_ENV_NAME = 'local';
 const DEFAULT_INSTALL_LANG = 'en-US';
-const DEFAULT_INSTALL_APP_ROOT_PATH = './nocobase';
 const DEFAULT_INSTALL_APP_PORT = '13000';
 const DEFAULT_INSTALL_DB_HOST = '127.0.0.1';
 const DEFAULT_INSTALL_BUILTIN_DB_HOST = 'postgres';
@@ -157,6 +156,16 @@ function defaultDbHostForBuiltinDb(values: PromptCatalogValues): string {
   return Boolean(values.builtinDb)
     ? DEFAULT_INSTALL_BUILTIN_DB_HOST
     : DEFAULT_INSTALL_DB_HOST;
+}
+
+function defaultInstallAppRootPath(envName: PromptValue | undefined): string {
+  const name = String(envName ?? DEFAULT_INSTALL_ENV_NAME).trim() || DEFAULT_INSTALL_ENV_NAME;
+  return `./${name}/source/`;
+}
+
+function defaultInstallStoragePath(envName: PromptValue | undefined): string {
+  const name = String(envName ?? DEFAULT_INSTALL_ENV_NAME).trim() || DEFAULT_INSTALL_ENV_NAME;
+  return `./${name}/storage/`;
 }
 
 function pickPresetKeys(
@@ -321,9 +330,9 @@ export default class Install extends Command {
     '<%= config.bin %> <%= command.id %> -l zh-CN',
     '<%= config.bin %> <%= command.id %> -u nocobase -m admin@nocobase.com -p admin123',
     '<%= config.bin %> <%= command.id %> -n "Super Admin"',
-    '<%= config.bin %> <%= command.id %> --app-root-path=./nocobase --storage-path=./storage/myenv -e myenv',
-    '<%= config.bin %> <%= command.id %> -y --env dev --app-root-path=./nocobase',
-    '<%= config.bin %> <%= command.id %> -y --env dev --fetch-source --app-root-path=./nocobase',
+    '<%= config.bin %> <%= command.id %> --app-root-path=./myenv/source/ --storage-path=./myenv/storage/ -e myenv',
+    '<%= config.bin %> <%= command.id %> -y --env dev --app-root-path=./dev/source/',
+    '<%= config.bin %> <%= command.id %> -y --env dev --fetch-source --app-root-path=./dev/source/',
   ];
   static override flags = {
     yes: Flags.boolean({
@@ -334,7 +343,7 @@ export default class Install extends Command {
     env: Flags.string({
       char: 'e',
       description:
-        'Application name (CLI env key). Required. Storage defaults to ./storage/<name> unless --storage-path is set',
+        'Application name (CLI env key). Required. Defaults: app path ./<name>/source/ and storage path ./<name>/storage/ unless overridden',
     }),
     lang: Flags.string({ description: 'Language during installation', char: 'l', required: false }),
     force: Flags.boolean({
@@ -343,14 +352,14 @@ export default class Install extends Command {
       required: false,
     }),
     'app-root-path': Flags.string({
-      description: 'Application root directory for install (relative to cwd; default: ./nocobase)',
+      description: 'Application source directory for install (relative to cwd; default: ./<env>/source/)',
     }),
     'app-port': Flags.string({
       description: 'Application HTTP port (APP_PORT; default: 13000)',
     }),
     'storage-path': Flags.string({
       description:
-        'Storage directory (relative to cwd; default: ./storage/<env> when --env is set, else ./storage/default)',
+        'Storage directory (relative to cwd; default: ./<env>/storage/)',
     }),
     'root-username': Flags.string({
       char: 'u',
@@ -436,9 +445,8 @@ export default class Install extends Command {
     appRootPath: {
       type: 'text',
       message: 'Where should this app be stored?',
-      placeholder: DEFAULT_INSTALL_APP_ROOT_PATH,
-      initialValue: DEFAULT_INSTALL_APP_ROOT_PATH,
-      yesInitialValue: DEFAULT_INSTALL_APP_ROOT_PATH,
+      placeholder: './<env>/source/',
+      initialValue: (values) => defaultInstallAppRootPath(values.env ?? values.appName),
     },
     appPort: {
       type: 'text',
@@ -449,12 +457,8 @@ export default class Install extends Command {
     storagePath: {
       type: 'text',
       message: 'Where should uploads and local files be stored?',
-      placeholder: './storage/<env>',
-      initialValue: (values) => {
-        const name =
-          String(values.env ?? DEFAULT_INSTALL_ENV_NAME).trim() || DEFAULT_INSTALL_ENV_NAME;
-        return `./storage/${name}`;
-      },
+      placeholder: './<env>/storage/',
+      initialValue: (values) => defaultInstallStoragePath(values.env ?? values.appName),
     },
     fetchSource: {
       type: 'boolean',
@@ -755,22 +759,32 @@ export default class Install extends Command {
     return nextPort;
   }
 
-  static async buildAppPromptInitialValues(
-    flags: Pick<InstallParsedFlags, 'app-port'>,
-  ): Promise<PromptInitialValues> {
-    if (flags['app-port'] !== undefined) {
-      return {};
+  static async buildAppPromptInitialValues(params: {
+    envName?: string;
+    flags: Pick<InstallParsedFlags, 'app-port' | 'app-root-path' | 'storage-path'>;
+  }): Promise<PromptInitialValues> {
+    const initialValues: PromptInitialValues = {};
+    const envName = params.envName ?? DEFAULT_INSTALL_ENV_NAME;
+
+    if (params.flags['app-root-path'] === undefined) {
+      initialValues.appRootPath = defaultInstallAppRootPath(envName);
     }
 
-    return {
-      appPort: await Install.resolveAvailableDefaultPort(
+    if (params.flags['storage-path'] === undefined) {
+      initialValues.storagePath = defaultInstallStoragePath(envName);
+    }
+
+    if (params.flags['app-port'] === undefined) {
+      initialValues.appPort = await Install.resolveAvailableDefaultPort(
         DEFAULT_INSTALL_APP_PORT,
         {
           label: 'Default app port',
           warn: true,
         },
-      ),
-    };
+      );
+    }
+
+    return initialValues;
   }
 
   private static shouldPublishBuiltinDbPortForValues(values: Record<string, PromptValue>): boolean {
@@ -816,8 +830,9 @@ export default class Install extends Command {
    */
   private static buildDownloadPromptOptionsForInstall(
     appResults: Record<string, PromptValue>,
+    envName: string,
   ): RunPromptCatalogOptions {
-    const appRoot = String(appResults.appRootPath ?? '').trim() || './nocobase';
+    const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
     const initialValues: PromptInitialValues = {
       lang,
@@ -853,11 +868,12 @@ export default class Install extends Command {
   private static buildDownloadPresetValuesForInstall(
     flags: DownloadParsedFlags,
     appResults: Record<string, PromptValue>,
+    envName: string,
     yes: boolean,
   ): PromptInitialValues {
     const preset: PromptInitialValues = {};
     const argv = process.argv.slice(2);
-    const appRoot = String(appResults.appRootPath ?? '').trim() || './nocobase';
+    const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
 
     preset.lang = lang;
@@ -874,6 +890,13 @@ export default class Install extends Command {
       const value = String(flags['docker-registry'] ?? '').trim();
       if (value) {
         preset.dockerRegistry = value;
+      }
+    }
+
+    if (flags['docker-platform'] !== undefined) {
+      const value = String(flags['docker-platform'] ?? '').trim();
+      if (value) {
+        preset.dockerPlatform = value;
       }
     }
 
@@ -1308,7 +1331,7 @@ export default class Install extends Command {
   }): Promise<BuiltinDbPlan> {
     const storagePath =
       String(params.appResults.storagePath ?? '').trim()
-      || `./storage/${params.envName}`;
+      || defaultInstallStoragePath(params.envName);
     const plan = Install.buildBuiltinDbPlan({
       envName: params.envName,
       workspaceName: params.workspaceName,
@@ -1364,7 +1387,7 @@ export default class Install extends Command {
     const storagePath =
       path.resolve(
         String(params.appResults.storagePath ?? '').trim()
-        || `./storage/${params.envName}`,
+        || defaultInstallStoragePath(params.envName),
       );
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
     const dbHost = String(params.dbResults.dbHost ?? DEFAULT_INSTALL_DB_HOST).trim() || DEFAULT_INSTALL_DB_HOST;
@@ -1514,6 +1537,7 @@ export default class Install extends Command {
     Install.pushDownloadArgIfValue(argv, '--output-dir', results.outputDir);
     Install.pushDownloadArgIfValue(argv, '--git-url', results.gitUrl);
     Install.pushDownloadArgIfValue(argv, '--docker-registry', results.dockerRegistry);
+    Install.pushDownloadArgIfValue(argv, '--docker-platform', results.dockerPlatform);
     Install.pushDownloadArgIfValue(argv, '--npm-registry', results.npmRegistry);
 
     if (Boolean(results.replace)) {
@@ -1536,6 +1560,7 @@ export default class Install extends Command {
   }
 
   private static resolveLocalProjectRoot(params: {
+    envName: string;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
     downloadCommandResult?: DownloadCommandResult;
@@ -1548,11 +1573,12 @@ export default class Install extends Command {
     const outputDir =
       String(params.downloadResults.outputDir ?? '').trim()
       || String(params.appResults.appRootPath ?? '').trim()
-      || DEFAULT_INSTALL_APP_ROOT_PATH;
+      || defaultInstallAppRootPath(params.envName);
     return path.resolve(process.cwd(), outputDir);
   }
 
   private async downloadLocalApp(params: {
+    envName: string;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
   }): Promise<string> {
@@ -1564,6 +1590,7 @@ export default class Install extends Command {
     ) as DownloadCommandResult | undefined;
 
     const projectRoot = Install.resolveLocalProjectRoot({
+      envName: params.envName,
       appResults: params.appResults,
       downloadResults: params.downloadResults,
       downloadCommandResult: result,
@@ -1580,7 +1607,7 @@ export default class Install extends Command {
   }): Record<string, string> {
     const storagePath = path.resolve(
       String(params.appResults.storagePath ?? '').trim()
-      || `./storage/${params.envName}`,
+      || defaultInstallStoragePath(params.envName),
     );
     const dbDialect =
       String(params.dbResults.dbDialect ?? 'postgres').trim()
@@ -1845,7 +1872,7 @@ export default class Install extends Command {
       || DEFAULT_INSTALL_APP_PORT;
     const storagePath =
       String(params.appResults.storagePath ?? '').trim()
-      || `./storage/${params.envName}`;
+      || defaultInstallStoragePath(params.envName);
     const apiBaseUrl = Install.resolveApiBaseUrl({
       appResults: params.appResults,
       envAddResults: params.envAddResults,
@@ -1871,6 +1898,46 @@ export default class Install extends Command {
       argv,
       '--source',
       downloadResultsValue(params.downloadResults, 'source'),
+    );
+    Install.pushArgIfValue(
+      argv,
+      '--download-version',
+      downloadResultsValue(params.downloadResults, 'version'),
+    );
+    Install.pushArgIfValue(
+      argv,
+      '--docker-registry',
+      downloadResultsValue(params.downloadResults, 'dockerRegistry'),
+    );
+    Install.pushArgIfValue(
+      argv,
+      '--docker-platform',
+      downloadResultsValue(params.downloadResults, 'dockerPlatform'),
+    );
+    Install.pushArgIfValue(
+      argv,
+      '--git-url',
+      downloadResultsValue(params.downloadResults, 'gitUrl'),
+    );
+    Install.pushArgIfValue(
+      argv,
+      '--npm-registry',
+      downloadResultsValue(params.downloadResults, 'npmRegistry'),
+    );
+    Install.pushBooleanArgIfSet(
+      argv,
+      '--dev-dependencies',
+      downloadResultsValue(params.downloadResults, 'devDependencies'),
+    );
+    Install.pushBooleanArgIfSet(
+      argv,
+      '--build',
+      downloadResultsValue(params.downloadResults, 'build'),
+    );
+    Install.pushBooleanArgIfSet(
+      argv,
+      '--build-dts',
+      downloadResultsValue(params.downloadResults, 'buildDts'),
     );
     Install.pushArgIfValue(argv, '--app-root-path', params.appResults.appRootPath);
     Install.pushArgIfValue(argv, '--app-key', params.appResults.appKey);
@@ -1909,17 +1976,20 @@ export default class Install extends Command {
     const appPreset = Install.buildAppPresetValuesFromFlags(parsed);
     const appCatalog = Install.buildAppPromptsCatalog(envName);
     const appResults = await runPromptCatalog(appCatalog, {
-      initialValues: await Install.buildAppPromptInitialValues(parsed),
+      initialValues: await Install.buildAppPromptInitialValues({
+        envName,
+        flags: parsed,
+      }),
       values: appPreset,
       yes,
     });
 
     let downloadResults: Record<string, PromptValue> = {};
     if (Boolean(appResults.fetchSource)) {
-      const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults);
+      const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults, envName);
       downloadOpts.values = {
         ...downloadOpts.values,
-        ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, yes),
+        ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, envName, yes),
       };
       downloadOpts.yes = yes;
       downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
@@ -2025,6 +2095,7 @@ export default class Install extends Command {
         appResults.timeZone = dockerAppPlan.timeZone;
       } else if (source === 'npm' || source === 'git') {
         const projectRoot = await this.downloadLocalApp({
+          envName,
           appResults,
           downloadResults,
         });

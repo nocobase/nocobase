@@ -81,6 +81,7 @@ test('downloadFromDocker pulls image and saves a sanitized tarball path', async 
     build: true,
     'build-dts': false,
     'docker-registry': 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+    'docker-platform': 'linux/arm64',
     'docker-save': true,
     'output-dir': './docker-images',
   };
@@ -97,7 +98,7 @@ test('downloadFromDocker pulls image and saves a sanitized tarball path', async 
   assert.deepEqual(mocks.run.mock.calls, [
     [
       'docker',
-      ['pull', imageRef],
+      ['pull', '--platform', 'linux/arm64', imageRef],
       { errorName: 'docker pull', loadingMessage: 'Pulling the Docker image', stdio: 'ignore' },
     ],
     [

@@ -532,7 +532,10 @@ test('nb init treats the --yes download source as docker when resolving dynamic 
       }
     ).buildDynamicInitialValuesForInstall;
 
-    await buildDynamicInitialValuesForInstall({ yes: true }, { appPort: '13000' });
+    const initialValues = await buildDynamicInitialValuesForInstall({ yes: true }, { appPort: '13000' });
+
+    assert.equal(Object.prototype.hasOwnProperty.call(initialValues, 'appRootPath'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(initialValues, 'storagePath'), false);
 
     assert.equal(
       buildDbPromptInitialValues.mock.calls[0]?.[0].downloadResults.source,
@@ -570,6 +573,7 @@ test('nb init preserves argument values that contain spaces when building instal
         source: 'docker',
         version: 'alpha',
         dockerRegistry: 'nocobase/nocobase',
+        dockerPlatform: 'arm64',
         builtinDb: true,
         dbDialect: 'postgres',
         dbDatabase: 'nocobase',
@@ -586,6 +590,10 @@ test('nb init preserves argument values that contain spaces when building instal
     const nicknameIndex = argv.indexOf('--root-nickname');
     assert.notEqual(nicknameIndex, -1);
     assert.equal(argv[nicknameIndex + 1], 'Super Admin');
+    assert.deepEqual(
+      argv.slice(argv.indexOf('--docker-platform'), argv.indexOf('--docker-platform') + 2),
+      ['--docker-platform', 'arm64'],
+    );
   } finally {
     process.argv = originalArgv;
   }

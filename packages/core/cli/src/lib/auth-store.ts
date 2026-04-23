@@ -34,6 +34,22 @@ export interface EnvConfigEntry {
   auth?: TokenAuthConfig | OauthAuthConfig;
   /** How this env's app was installed or fetched. */
   source?: string;
+  /** Download/source version used for npm, git, or docker installs. */
+  downloadVersion?: string;
+  /** Docker image registry/repository used for docker installs. */
+  dockerRegistry?: string;
+  /** Docker image platform used for docker pulls. */
+  dockerPlatform?: string;
+  /** Git repository URL used for git installs. */
+  gitUrl?: string;
+  /** Custom npm registry used for npm/git installs. */
+  npmRegistry?: string;
+  /** Whether npm installs included development dependencies. */
+  devDependencies?: boolean;
+  /** Whether download built the app after fetching npm/git sources. */
+  build?: boolean;
+  /** Whether download emitted declaration files during build. */
+  buildDts?: boolean;
   appRootPath?: string;
   storagePath?: string;
   /** Application HTTP port (APP_PORT). */

@@ -65,7 +65,10 @@ type InstallStatics = {
     envAddResults: Record<string, unknown>;
   }) => string[];
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
-  buildAppPromptInitialValues: (flags: { 'app-port'?: string }) => Promise<Record<string, unknown>>;
+  buildAppPromptInitialValues: (params: {
+    envName?: string;
+    flags: { 'app-port'?: string; 'app-root-path'?: string; 'storage-path'?: string };
+  }) => Promise<Record<string, unknown>>;
   buildDbPromptInitialValues: (params: {
     flags: { 'db-port'?: string };
     downloadResults: Record<string, unknown>;
@@ -255,6 +258,11 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     },
     downloadResults: {
       source: 'git',
+      version: 'alpha',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      npmRegistry: 'https://registry.npmmirror.com',
+      build: false,
+      buildDts: false,
     },
     dbResults: {
       builtinDb: true,
@@ -286,6 +294,14 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     './storage/demo',
     '--source',
     'git',
+    '--download-version',
+    'alpha',
+    '--git-url',
+    'https://github.com/nocobase/nocobase.git',
+    '--npm-registry',
+    'https://registry.npmmirror.com',
+    '--no-build',
+    '--no-build-dts',
     '--app-root-path',
     './apps/demo',
     '--app-key',
@@ -338,6 +354,47 @@ test('install env add argv records when an env uses an external database', () =>
   assert.equal(argv.includes('--builtin-db'), false);
 });
 
+test('install env add argv records docker download settings for later upgrades', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const argv = installStatics.buildEnvAddArgv({
+    envName: 'docker-demo',
+    appResults: {
+      appPort: '13082',
+      appKey: 'app-key-456',
+      timeZone: 'Asia/Shanghai',
+      storagePath: './storage/docker-demo',
+    },
+    downloadResults: {
+      source: 'docker',
+      version: 'alpha',
+      dockerRegistry: 'nocobase/nocobase',
+      dockerPlatform: 'linux/amd64',
+    },
+    dbResults: {
+      builtinDb: true,
+      dbDialect: 'postgres',
+      dbHost: 'nb-demo-docker-demo-postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    },
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13082/api',
+      authType: 'oauth',
+    },
+  });
+
+  assert.equal(argv.includes('--source'), true);
+  assert.equal(argv.includes('docker'), true);
+  assert.equal(argv.includes('--download-version'), true);
+  assert.equal(argv.includes('alpha'), true);
+  assert.equal(argv.includes('--docker-registry'), true);
+  assert.equal(argv.includes('nocobase/nocobase'), true);
+  assert.equal(argv.includes('--docker-platform'), true);
+  assert.equal(argv.includes('linux/amd64'), true);
+});
+
 test('install resolves an available app port default when the preferred port is busy', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const server = net.createServer();
@@ -372,10 +429,18 @@ test('install resolves an available app port default when the preferred port is 
 test('install seeds app port initial values unless the user provided --app-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
 
-  const initialValues = await installStatics.buildAppPromptInitialValues({});
+  const initialValues = await installStatics.buildAppPromptInitialValues({
+    envName: 'demo',
+    flags: {},
+  });
+  assert.equal(initialValues.appRootPath, './demo/source/');
+  assert.equal(initialValues.storagePath, './demo/storage/');
   assert.equal(typeof initialValues.appPort, 'string');
   assert.equal(await validateAvailableTcpPort(String(initialValues.appPort)), undefined);
-  assert.deepEqual(await installStatics.buildAppPromptInitialValues({ 'app-port': '14000' }), {});
+  assert.deepEqual(await installStatics.buildAppPromptInitialValues({
+    envName: 'demo',
+    flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
+  }), {});
 });
 
 test('install seeds built-in database host port for npm/git sources when the default port is busy', async () => {

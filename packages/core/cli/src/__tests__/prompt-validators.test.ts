@@ -296,6 +296,7 @@ test('install prompts expose the expected defaults and validators', () => {
 
 test('docker image defaults follow app language', () => {
   const dockerRegistryPrompt = Download.prompts.dockerRegistry;
+  const dockerPlatformPrompt = Download.prompts.dockerPlatform;
 
   assert.equal(defaultDockerRegistryForLang('zh-CN'), 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
   assert.equal(defaultDockerRegistryForLang('en-US'), 'nocobase/nocobase');
@@ -309,6 +310,12 @@ test('docker image defaults follow app language', () => {
     dockerRegistryPrompt.initialValue?.({ lang: 'en-US' }),
     'nocobase/nocobase',
   );
+
+  assert.equal(dockerPlatformPrompt.type, 'select');
+  assert.equal(dockerPlatformPrompt.initialValue, 'auto');
+  assert.equal(dockerPlatformPrompt.yesInitialValue, 'auto');
+  assert.equal(dockerPlatformPrompt.hidden?.({ source: 'docker' }), false);
+  assert.equal(dockerPlatformPrompt.hidden?.({ source: 'npm' }), true);
 });
 
 test('install download prompt options pass app language into docker image defaults', () => {
@@ -316,6 +323,7 @@ test('install download prompt options pass app language into docker image defaul
     Install as unknown as {
       buildDownloadPromptOptionsForInstall: (
         appResults: Record<string, unknown>,
+        envName: string,
       ) => {
         initialValues: Record<string, unknown>;
         values: Record<string, unknown>;
@@ -323,6 +331,7 @@ test('install download prompt options pass app language into docker image defaul
       buildDownloadPresetValuesForInstall: (
         flags: Record<string, unknown>,
         appResults: Record<string, unknown>,
+        envName: string,
         yes: boolean,
       ) => Record<string, unknown>;
     }
@@ -333,6 +342,7 @@ test('install download prompt options pass app language into docker image defaul
       lang: 'zh-CN',
       appRootPath: './apps/zh-demo',
     },
+    'zh-demo',
   );
   assert.equal(zhOptions.initialValues.lang, 'zh-CN');
   assert.equal(
@@ -347,6 +357,7 @@ test('install download prompt options pass app language into docker image defaul
       lang: 'en-US',
       appRootPath: './apps/en-demo',
     },
+    'en-demo',
   );
   assert.equal(enOptions.initialValues.lang, 'en-US');
   assert.equal(enOptions.initialValues.dockerRegistry, 'nocobase/nocobase');
@@ -369,6 +380,7 @@ test('install download prompt options pass app language into docker image defaul
         lang: 'en-US',
         appRootPath: './apps/en-demo',
       },
+      'en-demo',
       true,
     );
 

@@ -32,6 +32,14 @@ type EnvAddParsedFlags = {
   'access-token'?: string;
   token?: string;
   source?: string;
+  'download-version'?: string;
+  'docker-registry'?: string;
+  'docker-platform'?: string;
+  'git-url'?: string;
+  'npm-registry'?: string;
+  'dev-dependencies'?: boolean;
+  build?: boolean;
+  'build-dts'?: boolean;
   'app-root-path'?: string;
   'storage-path'?: string;
   'app-port'?: string;
@@ -48,6 +56,11 @@ type EnvAddParsedFlags = {
 
 const ENV_RUNTIME_FLAG_MAP = {
   source: 'source',
+  'download-version': 'downloadVersion',
+  'docker-registry': 'dockerRegistry',
+  'docker-platform': 'dockerPlatform',
+  'git-url': 'gitUrl',
+  'npm-registry': 'npmRegistry',
   'app-root-path': 'appRootPath',
   'storage-path': 'storagePath',
   'app-port': 'appPort',
@@ -63,6 +76,9 @@ const ENV_RUNTIME_FLAG_MAP = {
 
 const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
   'builtin-db': 'builtinDb',
+  'dev-dependencies': 'devDependencies',
+  build: 'build',
+  'build-dts': 'buildDts',
 } as const;
 
 export default class EnvAdd extends Command {
@@ -129,6 +145,41 @@ export default class EnvAdd extends Command {
     source: Flags.string({
       hidden: true,
       description: 'Application source saved with this env',
+    }),
+    'download-version': Flags.string({
+      hidden: true,
+      description: 'Downloaded app version saved with this env',
+    }),
+    'docker-registry': Flags.string({
+      hidden: true,
+      description: 'Docker registry saved with this env',
+    }),
+    'docker-platform': Flags.string({
+      hidden: true,
+      description: 'Docker image platform saved with this env',
+    }),
+    'git-url': Flags.string({
+      hidden: true,
+      description: 'Git repository URL saved with this env',
+    }),
+    'npm-registry': Flags.string({
+      hidden: true,
+      description: 'npm registry saved with this env',
+    }),
+    'dev-dependencies': Flags.boolean({
+      allowNo: true,
+      hidden: true,
+      description: 'Whether development dependencies were installed for this env',
+    }),
+    build: Flags.boolean({
+      allowNo: true,
+      hidden: true,
+      description: 'Whether the app was built after download for this env',
+    }),
+    'build-dts': Flags.boolean({
+      allowNo: true,
+      hidden: true,
+      description: 'Whether declaration files were emitted during build for this env',
     }),
     'app-root-path': Flags.string({
       hidden: true,

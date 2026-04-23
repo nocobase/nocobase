@@ -333,6 +333,20 @@ test('reflow returns default values for fields that become visible later', async
   }
 });
 
+test('reflow recomputes init app paths from the current app name', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(Init.prompts, {
+    appName: 'demoapp',
+  });
+
+  assert.equal(state.show.appRootPath, true);
+  assert.equal(state.show.storagePath, true);
+  assert.equal(state.values.appRootPath, './demoapp/source/');
+  assert.equal(state.values.storagePath, './demoapp/storage/');
+});
+
 test('validate_field returns a field error for an occupied app port in web UI mode', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
   const { default: Install } = await import('../commands/install.js');

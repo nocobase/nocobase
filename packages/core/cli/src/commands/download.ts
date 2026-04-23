@@ -22,8 +22,10 @@ import { run } from '../lib/run-npm.ts';
 import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '../lib/ui.js';
 
 type DownloadSource = 'docker' | 'npm' | 'git';
+type DockerPlatform = 'auto' | 'linux/amd64' | 'linux/arm64';
 const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DEFAULT_DOCKER_REGISTRY_ZH_CN = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase';
+const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
 
 function defaultOutputDirForVersion(versionTag: string): string {
   const safe = versionTag.replace(/[/\\]/g, '-');
@@ -79,6 +81,22 @@ function downloadSourceLabel(source: DownloadSource): string {
   }
 }
 
+function normalizeDockerPlatform(value: unknown): DockerPlatform {
+  const text = String(value ?? '').trim();
+  if (text === 'linux/amd64' || text === 'linux/arm64') {
+    return text;
+  }
+  return DEFAULT_DOCKER_PLATFORM;
+}
+
+function dockerPlatformArg(value: unknown): string | undefined {
+  const platform = normalizeDockerPlatform(value);
+  if (platform === 'auto') {
+    return undefined;
+  }
+  return platform;
+}
+
 const EXTERNAL_COMMAND_LOADING_DELAY_MS = 8_000;
 const EXTERNAL_COMMAND_LOADING_UPDATE_MS = 15_000;
 
@@ -96,6 +114,8 @@ export type DownloadResolvedFlags = Record<string, unknown> & {
   'output-dir'?: string;
   'git-url'?: string;
   'docker-registry'?: string;
+  /** docker only: platform for `docker pull`; "auto" omits --platform. */
+  'docker-platform'?: DockerPlatform;
   /** docker only: after `docker pull`, run `docker save` into `--output-dir`; npm/git omit this key */
   'docker-save'?: boolean;
   /** npm/git: optional; omit or empty string means use npm/yarn default registry */
@@ -121,6 +141,7 @@ export type DownloadParsedFlags = {
   'output-dir'?: string;
   'git-url'?: string;
   'docker-registry'?: string;
+  'docker-platform'?: string;
   'docker-save': boolean;
   'npm-registry'?: string;
 };
@@ -138,7 +159,7 @@ export default class Download extends Command {
     '<%= config.bin %> <%= command.id %> -y --source npm --version latest --no-build',
     '<%= config.bin %> <%= command.id %> --source npm --version latest',
     '<%= config.bin %> <%= command.id %> --source npm --version latest --output-dir=./app',
-    '<%= config.bin %> <%= command.id %> --source docker --version latest --docker-registry=nocobase/nocobase',
+    '<%= config.bin %> <%= command.id %> --source docker --version latest --docker-registry=nocobase/nocobase --docker-platform=arm64',
     '<%= config.bin %> <%= command.id %> -y --source docker -v latest --docker-save -o ./docker-images',
     '<%= config.bin %> <%= command.id %> --source git --version alpha --git-url=git@github.com:nocobase/nocobase.git',
     '<%= config.bin %> <%= command.id %> -y --source git --version latest --no-build',
@@ -192,6 +213,10 @@ export default class Download extends Command {
     }),
     'docker-registry': Flags.string({
       description: 'Docker image repository to pull from, without the tag.',
+    }),
+    'docker-platform': Flags.string({
+      description: 'Docker image platform to pull. Use auto to let Docker choose for this machine.',
+      options: ['auto', 'linux/amd64', 'linux/arm64'],
     }),
     'docker-save': Flags.boolean({
       allowNo: true,
@@ -247,6 +272,19 @@ export default class Download extends Command {
       placeholder: DEFAULT_DOCKER_REGISTRY,
       initialValue: (values) => defaultDockerRegistryForLang(values.lang),
       yesInitialValue: DEFAULT_DOCKER_REGISTRY,
+      required: true,
+      hidden: (values) => values.source !== 'docker',
+    },
+    dockerPlatform: {
+      type: 'select',
+      message: 'Which Docker image platform should be used?',
+      options: [
+        { value: 'auto', label: 'Auto', hint: 'Use Docker default for this machine' },
+        { value: 'linux/amd64', label: 'linux/amd64' },
+        { value: 'linux/arm64', label: 'linux/arm64' },
+      ],
+      initialValue: DEFAULT_DOCKER_PLATFORM,
+      yesInitialValue: DEFAULT_DOCKER_PLATFORM,
       required: true,
       hidden: (values) => values.source !== 'docker',
     },
@@ -394,6 +432,8 @@ export default class Download extends Command {
       initialValues.dockerRegistry = String(flags['docker-registry'] ?? '').trim();
     }
 
+    initialValues.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
+
     initialValues.dockerSave = flags['docker-save'];
 
     if (flags['npm-registry'] !== undefined) {
@@ -431,6 +471,10 @@ export default class Download extends Command {
       if (v) {
         preset.dockerRegistry = v;
       }
+    }
+
+    if (argvHasToken(argv, ['--docker-platform'])) {
+      preset.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
     }
 
     if (flags['output-dir'] !== undefined) {
@@ -519,6 +563,15 @@ export default class Download extends Command {
         ? String(results.dockerRegistry).trim() || undefined
         : flags['docker-registry']?.trim() || undefined;
 
+    const dockerPlatform =
+      source === 'docker'
+        ? normalizeDockerPlatform(
+          results.dockerPlatform !== undefined
+            ? results.dockerPlatform
+            : flags['docker-platform'],
+        )
+        : undefined;
+
     const dockerSave =
       source === 'docker'
         ? results.dockerSave !== undefined
@@ -542,6 +595,7 @@ export default class Download extends Command {
       'output-dir': outputDir,
       'git-url': gitUrl,
       'docker-registry': dockerRegistry,
+      ...(source === 'docker' ? { 'docker-platform': dockerPlatform } : {}),
       ...(source === 'docker' ? { 'docker-save': dockerSave } : {}),
       ...(npmRegistry ? { 'npm-registry': npmRegistry } : {}),
     } as DownloadResolvedFlags;
@@ -702,9 +756,15 @@ export default class Download extends Command {
     const image = flags['docker-registry'] ?? DEFAULT_DOCKER_REGISTRY;
     const tag = flags.version ?? 'latest';
     const imageRef = `${image}:${tag}`;
+    const platform = dockerPlatformArg(flags['docker-platform']);
+    const pullArgs = ['pull'];
+    if (platform) {
+      pullArgs.push('--platform', platform);
+    }
+    pullArgs.push(imageRef);
     this.finishPreparationTask();
     p.log.step(`Pulling Docker image ${imageRef}`);
-    await this.runExternalCommand('docker', ['pull', imageRef], {
+    await this.runExternalCommand('docker', pullArgs, {
       errorName: 'docker pull',
       loadingMessage: 'Pulling the Docker image',
     });

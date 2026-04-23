@@ -189,6 +189,7 @@ When you choose an existing app, the env fields are collected inside the same in
     source: downloadInNewInstallOnly(Download.prompts.source),
     version: downloadInNewInstallOnly(Download.prompts.version),
     dockerRegistry: downloadInNewInstallOnly(Download.prompts.dockerRegistry),
+    dockerPlatform: downloadInNewInstallOnly(Download.prompts.dockerPlatform),
     dockerSave: downloadInNewInstallOnly(Download.prompts.dockerSave),
     gitUrl: downloadInNewInstallOnly(Download.prompts.gitUrl),
     outputDir: downloadInNewInstallOnly({
@@ -319,6 +320,7 @@ When you choose an existing app, the env fields are collected inside the same in
         'output-dir'?: string;
         'git-url'?: string;
         'docker-registry'?: string;
+        'docker-platform'?: string;
         'docker-save'?: boolean;
         'npm-registry'?: string;
         'install-skills'?: boolean;
@@ -418,7 +420,9 @@ When you choose an existing app, the env fields are collected inside the same in
 
   private static async buildDynamicInitialValuesForInstall(
     flags: {
+      'app-root-path'?: string;
       'app-port'?: string;
+      'storage-path'?: string;
       'db-port'?: string;
       yes?: boolean;
     },
@@ -427,10 +431,17 @@ When you choose an existing app, the env fields are collected inside the same in
     const out: PromptInitialValues = {};
 
     if (!Object.prototype.hasOwnProperty.call(presetValues, 'appPort')) {
-      Object.assign(
-        out,
-        await Install.buildAppPromptInitialValues(flags),
-      );
+      const appInitialValues = await Install.buildAppPromptInitialValues({
+        envName: String(presetValues.appName ?? '').trim(),
+        flags: {
+          ...flags,
+          'app-root-path': flags['app-root-path'] ?? '',
+          'storage-path': flags['storage-path'] ?? '',
+        },
+      });
+      if (appInitialValues.appPort !== undefined) {
+        out.appPort = appInitialValues.appPort;
+      }
     }
 
     const downloadSeed = { ...presetValues };
@@ -496,6 +507,7 @@ When you choose an existing app, the env fields are collected inside the same in
           source: c.source,
           version: c.version,
           dockerRegistry: c.dockerRegistry,
+          dockerPlatform: c.dockerPlatform,
           dockerSave: c.dockerSave,
           gitUrl: c.gitUrl,
           outputDir: c.outputDir,
@@ -559,6 +571,7 @@ When you choose an existing app, the env fields are collected inside the same in
     'output-dir'?: string;
     'git-url'?: string;
     'docker-registry'?: string;
+    'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
     'install-skills'?: boolean;
@@ -622,6 +635,9 @@ When you choose an existing app, the env fields are collected inside the same in
     }
     if (flags['docker-registry'] !== undefined && String(flags['docker-registry']).trim() !== '') {
       preset.dockerRegistry = String(flags['docker-registry']).trim();
+    }
+    if (flags['docker-platform'] !== undefined && String(flags['docker-platform']).trim() !== '') {
+      preset.dockerPlatform = String(flags['docker-platform']).trim();
     }
     if (flags['output-dir'] !== undefined && String(flags['output-dir']).trim() !== '') {
       preset.outputDir = String(flags['output-dir']).trim();
@@ -736,6 +752,11 @@ When you choose an existing app, the env fields are collected inside the same in
       const dockerRegistry = String(results.dockerRegistry ?? '').trim();
       if (dockerRegistry) {
         argv.push('--docker-registry', dockerRegistry);
+      }
+
+      const dockerPlatform = String(results.dockerPlatform ?? '').trim();
+      if (dockerPlatform) {
+        argv.push('--docker-platform', dockerPlatform);
       }
 
       const npmRegistry = String(results.npmRegistry ?? '').trim();
