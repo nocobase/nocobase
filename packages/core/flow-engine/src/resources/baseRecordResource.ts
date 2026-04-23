@@ -106,7 +106,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
       this.runActionOptions?.[action],
       rest,
     );
-    if (['create', 'update', 'firstOrCreate', 'updateOrCreate'].includes(action)) {
+    if (['create', 'update', 'firstOrCreate', 'updateOrCreate', 'upsert'].includes(action)) {
       config.params = config.params || {};
       config.params.updateAssociationValues = this.getUpdateAssociationValues();
     }

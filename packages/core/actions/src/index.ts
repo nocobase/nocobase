@@ -48,6 +48,7 @@ export function registerActions(api: any) {
       'move',
       'firstOrCreate',
       'updateOrCreate',
+      'upsert',
     ]),
   );
 }
