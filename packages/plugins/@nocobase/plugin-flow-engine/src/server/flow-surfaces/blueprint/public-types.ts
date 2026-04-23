@@ -196,6 +196,7 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   fields?: FlowSurfaceApplyBlueprintFieldSpec[];
   fieldGroups?: FlowSurfaceApplyBlueprintFieldGroupSpec[];
   fieldsLayout?: FlowSurfaceApplyBlueprintLayout;
+  defaultFilter?: Record<string, any>;
   actions?: FlowSurfaceApplyBlueprintActionSpec[];
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
   script?: string;

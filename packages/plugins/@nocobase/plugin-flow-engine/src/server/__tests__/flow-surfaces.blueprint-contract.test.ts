@@ -267,6 +267,114 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should apply block-level defaultFilter in applyBlueprint data blocks and prefer explicit action settings', async () => {
+    const blockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'staff',
+        },
+      ],
+    };
+    const explicitActionFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'active',
+        },
+      ],
+    };
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees default filters',
+          },
+        },
+        page: {
+          title: 'Employees default filters',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: blockDefaultFilter,
+                fields: ['nickname'],
+              },
+              {
+                key: 'employeesList',
+                type: 'list',
+                collection: 'employees',
+                defaultFilter: {},
+                fields: ['nickname'],
+              },
+              {
+                key: 'employeesCards',
+                type: 'gridCard',
+                collection: 'employees',
+                defaultFilter: blockDefaultFilter,
+                fields: ['nickname'],
+                actions: [
+                  {
+                    key: 'filterAction',
+                    type: 'filter',
+                    settings: {
+                      defaultFilter: explicitActionFilter,
+                    },
+                  },
+                ],
+              },
+            ],
+            layout: {
+              rows: [['employeesTable'], ['employeesList'], ['employeesCards']],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const listBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ListBlockModel')[0];
+    const gridCardBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'GridCardBlockModel')[0];
+    const tableFilterAction = _.castArray(tableBlock?.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    const listFilterAction = _.castArray(listBlock?.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    const gridCardFilterAction = _.castArray(gridCardBlock?.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+
+    expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
+    expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
+    expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(listFilterAction?.props?.defaultFilterValue).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(gridCardFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);
+    expect(gridCardFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      explicitActionFilter,
+    );
+  });
+
   it('should auto-complete bare relation fields in applyBlueprint with non-empty view popups', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

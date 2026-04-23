@@ -1868,6 +1868,107 @@ describe('flowSurfaces resource', () => {
     }
   });
 
+  it('should apply addBlock block-level defaultFilter to auto-created filter actions on data blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Block default filter addBlock page',
+      tabTitle: 'Block default filter addBlock tab',
+    });
+    const defaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+      ],
+    };
+
+    for (const blockType of ['table', 'list', 'gridCard']) {
+      const blockUid = await addBlock(
+        rootAgent,
+        page.tabSchemaUid,
+        blockType,
+        {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        {
+          defaultFilter,
+        },
+      );
+
+      const readback = await getSurface(rootAgent, {
+        uid: blockUid,
+      });
+      const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
+        (item: any) => item?.use === 'FilterActionModel',
+      );
+      expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
+      expect(filterAction?.props?.filterValue).toEqual(defaultFilter);
+      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+      expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
+    }
+  });
+
+  it('should let addBlock defaultActionSettings override block-level defaultFilter', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Default filter precedence addBlock page',
+      tabTitle: 'Default filter precedence addBlock tab',
+    });
+    const blockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+      ],
+    };
+    const settingsDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+      ],
+    };
+
+    const blockUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'table',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+      {
+        defaultFilter: blockDefaultFilter,
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['email'],
+            defaultFilter: settingsDefaultFilter,
+          },
+        },
+      },
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: blockUid,
+    });
+    const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['email']);
+    expect(filterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
+    expect(filterAction?.props?.filterValue).toEqual(settingsDefaultFilter);
+    expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
+  });
+
   it('should apply addBlocks item defaultActionSettings to auto-created filter actions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Default filter addBlocks page',
@@ -1934,6 +2035,201 @@ describe('flowSurfaces resource', () => {
     expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname']);
     expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+  });
+
+  it('should apply addBlocks item block-level defaultFilter and preserve defaultActionSettings precedence', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Block default filter addBlocks page',
+      tabTitle: 'Block default filter addBlocks tab',
+    });
+    const tabReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    const tabGridUid = tabReadback.tree?.subModels?.grid?.uid;
+    expect(tabGridUid).toBeTruthy();
+    const blockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+      ],
+    };
+    const settingsDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+      ],
+    };
+
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: tabGridUid,
+        },
+        blocks: [
+          {
+            key: 'usersTable',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultFilter: blockDefaultFilter,
+          },
+          {
+            key: 'usersList',
+            type: 'list',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultFilter: blockDefaultFilter,
+            defaultActionSettings: {
+              filter: {
+                filterableFieldNames: ['nickname'],
+                defaultFilter: settingsDefaultFilter,
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    expect(addBlocksData.successCount).toBe(2);
+    expect(addBlocksData.errorCount).toBe(0);
+
+    const tableBlockUid = addBlocksData.blocks.find((item: any) => item.key === 'usersTable')?.result?.uid;
+    const listBlockUid = addBlocksData.blocks.find((item: any) => item.key === 'usersList')?.result?.uid;
+    const tableReadback = await getSurface(rootAgent, {
+      uid: tableBlockUid,
+    });
+    const listReadback = await getSurface(rootAgent, {
+      uid: listBlockUid,
+    });
+    const tableFilterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    const listFilterAction = _.castArray(listReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
+    expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
+    expect(listFilterAction?.props?.filterableFieldNames).toEqual(['nickname']);
+    expect(listFilterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
+    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
+  });
+
+  it('should apply compose block-level defaultFilter and prefer explicit filter action settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Block default filter compose page',
+      tabTitle: 'Block default filter compose tab',
+    });
+    const blockDefaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+      ],
+    };
+    const explicitActionFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+      ],
+    };
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'usersTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultFilter: blockDefaultFilter,
+            fields: ['username'],
+          },
+          {
+            key: 'usersList',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultFilter: {},
+            fields: ['username'],
+          },
+          {
+            key: 'usersCards',
+            type: 'gridCard',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultFilter: blockDefaultFilter,
+            fields: ['username'],
+            actions: [
+              {
+                type: 'filter',
+                settings: {
+                  defaultFilter: explicitActionFilter,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const composeData = getData(composeRes);
+    const tableBlockUid = composeData.blocks.find((item: any) => item.key === 'usersTable')?.uid;
+    const listBlockUid = composeData.blocks.find((item: any) => item.key === 'usersList')?.uid;
+    const cardsBlockUid = composeData.blocks.find((item: any) => item.key === 'usersCards')?.uid;
+
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlockUid });
+    const listReadback = await getSurface(rootAgent, { uid: listBlockUid });
+    const cardsReadback = await getSurface(rootAgent, { uid: cardsBlockUid });
+    const tableFilterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    const listFilterAction = _.castArray(listReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    const cardsFilterAction = _.castArray(cardsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
+    expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
+    expect(listFilterAction?.props?.defaultFilterValue).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+    expect(cardsFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);
+    expect(cardsFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(explicitActionFilter);
   });
 
   it('should auto-inject submit for form blocks created through addBlocks', async () => {
@@ -4424,6 +4720,63 @@ describe('flowSurfaces resource', () => {
       row1: [[nicknameField.wrapperUid], [statusField.wrapperUid]],
     });
     expect(readback.tree.subModels?.grid?.props?.rowOrder).toEqual(['row1']);
+  });
+
+  it('should reuse auto-injected submit when addAction requests submit on create and edit forms', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Reused submit page',
+      tabTitle: 'Reused submit tab',
+    });
+
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const createInitialReadback = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    const editInitialReadback = await getSurface(rootAgent, {
+      uid: editFormUid,
+    });
+    const createInitialSubmitUid = _.castArray(createInitialReadback.tree.subModels?.actions || [])[0]?.uid;
+    const editInitialSubmitUid = _.castArray(editInitialReadback.tree.subModels?.actions || [])[0]?.uid;
+    expect(createInitialSubmitUid).toBeTruthy();
+    expect(editInitialSubmitUid).toBeTruthy();
+
+    const createSubmit = await addAction(rootAgent, createFormUid, 'submit', {
+      settings: {
+        title: 'Create employee',
+      },
+    });
+    const editSubmit = await addAction(rootAgent, editFormUid, 'submit', {
+      settings: {
+        title: 'Save employee',
+      },
+    });
+
+    expect(createSubmit.uid).toBe(createInitialSubmitUid);
+    expect(editSubmit.uid).toBe(editInitialSubmitUid);
+
+    const createReadback = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    const editReadback = await getSurface(rootAgent, {
+      uid: editFormUid,
+    });
+    const createActions = _.castArray(createReadback.tree.subModels?.actions || []);
+    const editActions = _.castArray(editReadback.tree.subModels?.actions || []);
+
+    expect(createActions).toHaveLength(1);
+    expect(editActions).toHaveLength(1);
+    expect(createActions[0]?.uid).toBe(createInitialSubmitUid);
+    expect(editActions[0]?.uid).toBe(editInitialSubmitUid);
+    expect(createActions[0]?.stepParams?.buttonSettings?.general?.title).toBe('Create employee');
+    expect(editActions[0]?.stepParams?.buttonSettings?.general?.title).toBe('Save employee');
   });
 
   it('should create edit-form and details blocks with fields actions and event flow replacement', async () => {

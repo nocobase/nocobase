@@ -466,6 +466,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
+    ]);
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
+      'action-level value wins',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
     );
@@ -603,9 +609,10 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.key).toBe('main');
     expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.title).toBe('Overview');
     expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[0]?.key).toBe('employeeForm');
-    expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[1]?.actions?.[0]?.key).toBe(
-      'refreshAction',
-    );
+    const applyBlueprintTableBlock = applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[1];
+    expect(applyBlueprintTableBlock?.defaultFilter?.items).toHaveLength(2);
+    expect(applyBlueprintTableBlock?.actions?.[0]?.key).toBe('filterAction');
+    expect(applyBlueprintTableBlock?.actions?.[0]?.settings?.defaultFilter?.items?.[0]?.value).toBe('active');
     expect(applyBlueprintRequest.examples?.createPage?.value?.reaction?.items).toHaveLength(4);
     expect(applyBlueprintRequest.examples?.createPage?.value?.reaction?.items?.[0]?.type).toBe('setFieldValueRules');
     expect(applyBlueprintRequest.examples?.createPage?.value?.reaction?.items?.[0]?.target).toBe('main.employeeForm');
@@ -850,6 +857,7 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
       '`select / subForm / bulkEditForm` scene',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain('block-level `defaultFilter`');
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
     expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.key).toBe('filter');
     const filterTableBlock = composeRequest.examples.filterTable.value.blocks[1];
@@ -860,7 +868,15 @@ describe('flowSurfaces swagger', () => {
         }),
       ]),
     );
-    expect(filterTableBlock.actions).toEqual(['filter', 'addNew', 'refresh', 'bulkDelete', 'link']);
+    expect(filterTableBlock.defaultFilter.items).toHaveLength(3);
+    expect(filterTableBlock.actions.map((item: any) => (typeof item === 'string' ? item : item.type))).toEqual([
+      'filter',
+      'addNew',
+      'refresh',
+      'bulkDelete',
+      'link',
+    ]);
+    expect(filterTableBlock.actions[0].settings.defaultFilter.items[0].value).toBe('active');
     expect(filterTableBlock.recordActions.map((item: any) => (typeof item === 'string' ? item : item.type))).toEqual([
       'view',
       'edit',
@@ -872,6 +888,7 @@ describe('flowSurfaces swagger', () => {
     expect(composeRequest.examples.staticBlocks.value.blocks[0].type).toBe('markdown');
     expect(composeRequest.examples.staticBlocks.value.blocks[1].type).toBe('iframe');
     expect(composeRequest.examples.listRich.value.blocks[0].type).toBe('list');
+    expect(composeRequest.examples.listRich.value.blocks[0].defaultFilter.items).toHaveLength(1);
     expect(composeRequest.examples.listRich.value.blocks[0].recordActions).toBeTruthy();
     expect(
       composeRequest.examples.listRich.value.blocks[0].recordActions.map((item: any) =>
@@ -879,6 +896,7 @@ describe('flowSurfaces swagger', () => {
       ),
     ).toEqual(expect.arrayContaining(['view', 'edit', 'popup', 'delete']));
     expect(composeRequest.examples.gridCardRich.value.blocks[0].type).toBe('gridCard');
+    expect(composeRequest.examples.gridCardRich.value.blocks[0].defaultFilter.items).toHaveLength(1);
     expect(composeRequest.examples.gridCardRich.value.blocks[0].recordActions).toBeTruthy();
     expect(
       composeRequest.examples.gridCardRich.value.blocks[0].recordActions.map((item: any) =>
@@ -891,6 +909,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeRecordActionSpec',
     );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
+    ]);
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.actions.description).toContain('Block-level actions');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
@@ -1142,14 +1163,16 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
       '`select / subForm / bulkEditForm` scene',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain('block-level `defaultFilter`');
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
-      'Optional `defaultActionSettings.filter` is validated and applied only when the created block has an auto-created default filter action; other block types ignore it.',
+      'defaultActionSettings.filter.defaultFilter',
     );
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
     expect(
       addBlockRequest.examples.tableDefaultFilters.value.defaultActionSettings.filter.filterableFieldNames,
     ).toEqual(['username', 'email', 'status']);
+    expect(addBlockRequest.examples.tableDefaultFilters.value.defaultFilter.items[0].value).toBe('staff');
     expect(addBlockRequest.examples.popupCurrentRecord.value.resource.binding).toBe('currentRecord');
     expect(addBlockRequest.examples.popupAssociatedRecords.value.resource).toMatchObject({
       binding: 'associatedRecords',
@@ -1170,12 +1193,16 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
+    ]);
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );
     expect(schemas.FlowSurfaceDefaultActionSettings.properties.filter.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultFilterActionSettings',
     );
+    expect(schemas.FlowSurfaceDefaultActionSettings.description).toContain('Legacy');
     expect(schemas.FlowSurfaceDefaultActionSettings.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceDefaultFilterActionSettings.properties.defaultFilter.$ref).toBe(
       '#/components/schemas/FlowSurfaceFilterGroup',
@@ -1279,17 +1306,22 @@ describe('flowSurfaces swagger', () => {
 
     const addBlocksRequest =
       swaggerDocument.paths['/flowSurfaces:addBlocks'].post.requestBody.content['application/json'];
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain('block-level `defaultFilter`');
     expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain(
-      'Optional `defaultActionSettings.filter` is validated and applied only when the created block has an auto-created default filter action; other block types ignore it.',
+      'defaultActionSettings.filter.defaultFilter',
     );
     expect(addBlocksRequest.example.blocks).toHaveLength(2);
     expect(addBlocksRequest.example.blocks[0].type).toBe('table');
     expect(addBlocksRequest.example.blocks[1].type).toBe('markdown');
     expect(addBlocksRequest.example.blocks[0].settings.pageSize).toBe(50);
+    expect(addBlocksRequest.example.blocks[0].defaultFilter.items[0].value).toBe('staff');
     expect(addBlocksRequest.example.blocks[0].defaultActionSettings.filter.defaultFilter.items).toHaveLength(3);
     expect(addBlocksRequest.example.blocks[1].settings.content).toContain('Team notes');
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
     expect(schemas.FlowSurfaceAddBlockItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.allOf).toEqual([
+      { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
+    ]);
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );

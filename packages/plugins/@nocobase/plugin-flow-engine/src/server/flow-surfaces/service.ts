@@ -69,6 +69,11 @@ import {
   mergeFlowSurfaceDefaultBlockActions,
   type FlowSurfaceDefaultBlockActionDescriptor,
 } from './default-block-actions';
+import {
+  backfillFlowSurfaceDefaultFilterSetting,
+  backfillFlowSurfaceFilterActionDefaultFilter,
+  normalizeFlowSurfacePublicBlockDefaultFilter,
+} from './public-data-surface-default-filter';
 import type { FlowSurfacePlanOnlyActionName } from './planning/action-specs';
 import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
 import { collectFlowSurfaceCreatedKeys, collectPersistableFlowSurfaceCreatedKeys } from './planning/created-keys';
@@ -358,6 +363,7 @@ type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
 type FlowSurfaceDefaultActionSettings = Record<string, any>;
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
+const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
@@ -6097,6 +6103,26 @@ export class FlowSurfacesService {
     return normalizedSettings;
   }
 
+  private backfillBlockDefaultFilterIntoDefaultActionSettings(
+    defaultActionSettings: FlowSurfaceDefaultActionSettings | undefined,
+    blockDefaultFilter: any,
+  ) {
+    if (_.isUndefined(blockDefaultFilter)) {
+      return defaultActionSettings;
+    }
+    const nextFilterSettings = backfillFlowSurfaceDefaultFilterSetting(
+      defaultActionSettings?.filter,
+      blockDefaultFilter,
+    );
+    if (nextFilterSettings === defaultActionSettings?.filter) {
+      return defaultActionSettings;
+    }
+    return {
+      ...(defaultActionSettings || {}),
+      filter: nextFilterSettings,
+    };
+  }
+
   async addBlock(
     values: Record<string, any>,
     options: {
@@ -6106,13 +6132,20 @@ export class FlowSurfacesService {
       skipDefaultBlockActions?: boolean;
     } = {},
   ) {
-    const defaultActionSettings = this.normalizeDefaultActionSettings('addBlock', values.defaultActionSettings);
-    const templateRef = !_.isUndefined(values?.template)
-      ? this.normalizeFlowTemplateReference('addBlock', values.template, {
+    const templateRef = _.isUndefined(values?.template)
+      ? undefined
+      : this.normalizeFlowTemplateReference('addBlock', values.template, {
           allowUsage: true,
           expectedType: 'block',
-        })
-      : null;
+        });
+    const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('addBlock', values.defaultFilter, {
+      blockType: String(values?.type || '').trim() || undefined,
+      template: templateRef,
+    });
+    const defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
+      this.normalizeDefaultActionSettings('addBlock', values.defaultActionSettings),
+      blockDefaultFilter,
+    );
     if (templateRef && !_.isUndefined(values.defaultActionSettings)) {
       throwBadRequest(`flowSurfaces addBlock template import does not allow defaultActionSettings`);
     }
@@ -6657,6 +6690,24 @@ export class FlowSurfacesService {
       containerUse: container.ownerUse,
       context: 'addAction',
     });
+    const reusableAction = await this.resolveReusableSingletonAction({
+      parentUid: container.parentUid,
+      ownerUse: container.ownerUse,
+      actionUse: actionCatalogItem.use,
+      transaction: options.transaction,
+    });
+    if (reusableAction?.uid) {
+      await this.applyInlineNodeSettings('addAction', reusableAction.uid, inlineSettings, options);
+      const result = {
+        uid: reusableAction.uid,
+        parentUid: container.parentUid,
+        subKey: container.subKey,
+        scope: actionCatalogItem.scope,
+        ...(await this.collectComposeActionKeys(reusableAction.uid, options.transaction)),
+      };
+      await this.persistCreatedKeysForAction('addAction', values, result, options.transaction);
+      return result;
+    }
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
@@ -11465,6 +11516,26 @@ export class FlowSurfacesService {
     }
   }
 
+  private async resolveReusableSingletonAction(input: {
+    parentUid: string;
+    ownerUse?: string;
+    actionUse?: string;
+    transaction?: any;
+  }) {
+    if (!AUTO_SUBMIT_FORM_BLOCK_USES.has(input.ownerUse || '') || input.actionUse !== 'FormSubmitActionModel') {
+      return null;
+    }
+    const parentNode = await this.repository.findModelById(input.parentUid, {
+      transaction: input.transaction,
+      includeAsyncNode: true,
+    });
+    return (
+      _.castArray(parentNode?.subModels?.actions || []).find(
+        (action: any) => action?.use === 'FormSubmitActionModel' && action?.uid,
+      ) || null
+    );
+  }
+
   private normalizeComposeBlock(input: any, index: number, enabledPackages?: ReadonlySet<string>) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
@@ -11516,6 +11587,11 @@ export class FlowSurfacesService {
           },
         )
       : null;
+    const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('compose', input.defaultFilter, {
+      blockType: type,
+      template,
+      path: `block #${index + 1}`,
+    });
     const actions = _.castArray(input.actions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
@@ -11570,6 +11646,10 @@ export class FlowSurfacesService {
           `flowSurfaces compose block #${index + 1}`,
         ),
     });
+    const actionsWithDefaultFilter = backfillFlowSurfaceFilterActionDefaultFilter(
+      mergedActions.actions,
+      blockDefaultFilter,
+    );
     return {
       index: index + 1,
       key,
@@ -11579,7 +11659,7 @@ export class FlowSurfacesService {
       settings: _.isPlainObject(input.settings) ? input.settings : {},
       fields,
       ...(fieldsLayout ? { fieldsLayout } : {}),
-      actions: mergedActions.actions,
+      actions: actionsWithDefaultFilter,
       recordActions: mergedActions.recordActions,
       template,
     };

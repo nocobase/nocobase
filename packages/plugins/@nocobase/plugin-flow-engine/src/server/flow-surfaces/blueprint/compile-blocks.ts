@@ -15,6 +15,10 @@ import {
   type FlowSurfaceDefaultBlockActionDescriptor,
 } from '../default-block-actions';
 import {
+  backfillFlowSurfaceFilterActionDefaultFilter,
+  normalizeFlowSurfacePublicBlockDefaultFilter,
+} from '../public-data-surface-default-filter';
+import {
   FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
   attachFlowSurfaceApplyBlueprintPopupDefaults,
   buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
@@ -86,6 +90,7 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'fields',
   'fieldGroups',
   'fieldsLayout',
+  'defaultFilter',
   'actions',
   'recordActions',
   'script',
@@ -1097,7 +1102,13 @@ function compileBlocks(
     if (readOptionalString(block.title) && _.isUndefined(settings.title)) {
       settings.title = readOptionalString(block.title);
     }
+    const blockType = readOptionalString(block.type);
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
+    const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
+      blockType,
+      template,
+      path: blockContext,
+    });
     const fieldInputs = resolveBlockFieldInputs(block, blockContext);
     const fields = fieldInputs.map((field, fieldIndex) =>
       compileField(
@@ -1135,7 +1146,7 @@ function compileBlocks(
       recordActions: explicitRecordActions.length,
     };
     const mergedActions = mergeFlowSurfaceDefaultBlockActions({
-      blockType: readOptionalString(block.type),
+      blockType,
       template,
       actions: explicitActions,
       recordActions: explicitRecordActions,
@@ -1148,15 +1159,19 @@ function compileBlocks(
           popupDefaultsMetadata,
         ),
     });
+    const actionsWithDefaultFilter = backfillFlowSurfaceFilterActionDefaultFilter(
+      mergedActions.actions,
+      blockDefaultFilter,
+    );
     return buildDefinedPayload({
       key,
-      type: readOptionalString(block.type),
+      type: blockType,
       resource: buildBlockResource(block, blockContext),
       template,
       settings: Object.keys(settings).length ? settings : undefined,
       fields,
       fieldsLayout,
-      actions: mergedActions.actions,
+      actions: actionsWithDefaultFilter,
       recordActions: mergedActions.recordActions,
     });
   });
