@@ -23,7 +23,7 @@ export class NodeValidationError extends Error {
   }
 }
 
-function validateNode(context: Context, workflow: WorkflowModel, values: FlowNodeModel) {
+function validateNode(context: Context, workflow: WorkflowModel | null, values: FlowNodeModel) {
   const { type, config } = values;
   if (!type) {
     context.throw(400, 'Node type is required');
@@ -33,7 +33,7 @@ function validateNode(context: Context, workflow: WorkflowModel, values: FlowNod
   if (!instruction) {
     context.throw(400, `Node type "${type}" is not registered`);
   }
-  if (typeof instruction.isAvailable === 'function' && !instruction.isAvailable(workflow, values)) {
+  if (workflow && typeof instruction.isAvailable === 'function' && !instruction.isAvailable(workflow, values)) {
     context.throw(400, `Node type "${type}" is not available in the current workflow`);
   }
   if (config && typeof instruction.validateConfig === 'function') {
@@ -716,9 +716,8 @@ export async function update(context: Context, next) {
       context.throw(400, 'Nodes in executed workflow could not be reconfigured');
     }
 
-    const type = values.type ?? instance.type;
-    const config = values.config ?? instance.config;
-    validateNode(context, workflowPlugin, { type, config });
+    const merged = Object.assign({}, instance.get(), values);
+    validateNode(context, null, merged);
 
     return repository.update({
       filterByTk,
@@ -740,14 +739,11 @@ export async function test(context: Context, next) {
   const { type, config = {} } = values;
   const plugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
   const instruction = plugin.instructions.get(type);
-  if (!instruction) {
-    context.throw(400, `instruction "${type}" not registered`);
-  }
   if (typeof instruction.test !== 'function') {
     context.throw(400, `test method of instruction "${type}" not implemented`);
   }
 
-  validateNode(context, plugin, { type, config });
+  validateNode(context, null, values);
 
   try {
     context.body = await instruction.test(config);
