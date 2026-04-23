@@ -261,6 +261,7 @@ type InstallParsedFlags = {
   'db-database'?: string;
   'db-user'?: string;
   'db-password'?: string;
+  'no-intro'?: boolean;
 };
 
 /** Flags from `nb install` that influence `nocobase-v1 install` argv (subset for typing). */
@@ -415,10 +416,6 @@ export default class Install extends Command {
 
   /** Environment name only: run before {@link Install.prompts} (see `run`). */
   static envPrompts: PromptsCatalog = {
-    intro: {
-      type: 'intro',
-      title: 'Set Up NocoBase',
-    },
     env: {
       type: 'text',
       message: 'What would you like to call this app?',
@@ -1531,7 +1528,7 @@ export default class Install extends Command {
   private static buildDownloadArgvFromResults(
     results: Record<string, PromptValue>,
   ): string[] {
-    const argv = ['-y'];
+    const argv = ['-y', '--no-intro'];
     Install.pushDownloadArgIfValue(argv, '--source', results.source);
     Install.pushDownloadArgIfValue(argv, '--version', results.version);
     Install.pushDownloadArgIfValue(argv, '--output-dir', results.outputDir);
@@ -1882,6 +1879,7 @@ export default class Install extends Command {
       || 'oauth';
     const argv = [
       params.envName,
+      '--no-intro',
       '--scope',
       CONFIG_SCOPE,
       '--api-base-url',
@@ -2041,6 +2039,9 @@ export default class Install extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Install);
     const parsed = flags as unknown as InstallParsedFlags & DownloadParsedFlags;
+    if (!parsed['no-intro']) {
+      p.intro('Set Up NocoBase');
+    }
     const promptResults = await this.collectPromptResults(parsed, flags.yes);
     const {
       envName,

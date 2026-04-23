@@ -151,6 +151,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
       'download',
       [
         '-y',
+        '--no-intro',
         '--source',
         'npm',
         '--version',

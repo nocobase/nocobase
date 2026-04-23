@@ -148,10 +148,6 @@ When you choose an existing app, the env fields are collected inside the same in
   ];
 
   static prompts: PromptsCatalog = {
-    intro: {
-      type: 'intro',
-      title: 'Initialize the NocoBase AI setup environment',
-    },
     appName: {
       type: 'text',
       message: 'App name (also used as the CLI env name)',
@@ -331,17 +327,22 @@ When you choose an existing app, the env fields are collected inside the same in
       this.exit(1);
     }
 
-    if (flags.yes) {
+    const appName = String(presetValues.appName ?? '').trim();
+    if (useBrowserUi) {
+      p.intro('Set up your NocoBase AI workspace');
       p.log.info(
-        'Skipping prompts (--yes): using defaults, then running nb install.',
+        'A local setup form will open in your browser. Submit the form there to continue in this terminal.',
       );
     } else {
-      if (useBrowserUi) {
-        this.log('nb init — browser setup');
-        this.log('A local setup form should open in your browser. Submit it there to continue in this terminal.');
+      p.intro('Initialize the NocoBase AI setup environment');
+
+      if (flags.yes) {
+        p.log.info(
+          `Prompts skipped (--yes). NocoBase will be installed for env "${appName}" using the provided flags and safe defaults.`,
+        );
       } else if (!interactive) {
         p.log.warn(
-          'Non-interactive terminal: using defaults, then running nb install.',
+          'No interactive terminal detected. NocoBase will be installed using the provided flags and safe defaults.',
         );
       }
     }
@@ -702,6 +703,7 @@ When you choose an existing app, the env fields are collected inside the same in
 
   private buildEnvAddArgv(results: Record<string, string | number | boolean>): string[] {
     const argv = [String(results.appName ?? DEFAULT_INIT_APP_NAME)];
+    argv.push('--no-intro');
     argv.push('--scope', 'project');
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
@@ -717,7 +719,7 @@ When you choose an existing app, the env fields are collected inside the same in
     results: Record<string, string | number | boolean>,
     flags: { yes?: boolean; force?: boolean; build?: boolean },
   ): string[] {
-    const argv = ['-y'];
+    const argv = ['-y', '--no-intro'];
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();

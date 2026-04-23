@@ -282,6 +282,7 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
 
   assert.deepEqual(argv, [
     'demo',
+    '--no-intro',
     '--scope',
     'project',
     '--api-base-url',
@@ -351,6 +352,7 @@ test('install env add argv records when an env uses an external database', () =>
   });
 
   assert.equal(argv.includes('--no-builtin-db'), true);
+  assert.equal(argv.includes('--no-intro'), true);
   assert.equal(argv.includes('--builtin-db'), false);
 });
 

@@ -132,6 +132,7 @@ export type DownloadCommandResult = {
 export type DownloadParsedFlags = {
   yes: boolean;
   verbose: boolean;
+  'no-intro': boolean;
   source?: string;
   version?: string;
   replace: boolean;
@@ -176,6 +177,11 @@ export default class Download extends Command {
     }),
     verbose: Flags.boolean({
       description: 'Show detailed command output',
+      default: false,
+    }),
+    'no-intro': Flags.boolean({
+      hidden: true,
+      description: 'Skip command intro when invoked by another CLI command',
       default: false,
     }),
     source: Flags.string({
@@ -242,10 +248,6 @@ export default class Download extends Command {
   };
 
   static prompts: PromptsCatalog = {
-    intro: {
-      type: 'intro',
-      title: 'Get NocoBase',
-    },
     source: {
       type: 'select',
       message: 'How would you like to get NocoBase?',
@@ -870,6 +872,9 @@ export default class Download extends Command {
     const { flags } = await this.parse(Download);
     this._flags = flags as DownloadParsedFlags;
     setVerboseMode(Boolean(flags.verbose));
+    if (!flags['no-intro']) {
+      p.intro('Get NocoBase');
+    }
     const resolved = await this.resolveDownloadFlags(flags);
     const source = resolved.source as DownloadSource;
 

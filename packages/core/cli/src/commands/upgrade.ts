@@ -361,7 +361,7 @@ export default class Upgrade extends Command {
   };
 
   private static buildLocalDownloadArgv(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string[] {
-    const argv = ['-y', '--source', runtime.source, '--replace'];
+    const argv = ['-y', '--no-intro', '--source', runtime.source, '--replace'];
     const version = readEnvValue(runtime.env, 'downloadVersion');
     const outputDir = readEnvValue(runtime.env, 'appRootPath');
     const gitUrl = readEnvValue(runtime.env, 'gitUrl');
@@ -624,7 +624,7 @@ export default class Upgrade extends Command {
     const containerExists = await dockerContainerExists(runtime.containerName);
 
     if (!flags['skip-code-update']) {
-      const argv = ['-y', '--source', 'docker', '--replace', '--docker-registry', parseDockerImageRef(plan.imageRef).dockerRegistry, '--version', parseDockerImageRef(plan.imageRef).version];
+      const argv = ['-y', '--no-intro', '--source', 'docker', '--replace', '--docker-registry', parseDockerImageRef(plan.imageRef).dockerRegistry, '--version', parseDockerImageRef(plan.imageRef).version];
       const dockerPlatform = normalizeDockerPlatform(runtime.env.config.dockerPlatform);
       if (dockerPlatform) {
         argv.push('--docker-platform', dockerPlatform);

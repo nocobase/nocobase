@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   promptWarn: vi.fn(),
   promptStep: vi.fn(),
   promptError: vi.fn(),
+  promptIntro: vi.fn(),
   promptOutro: vi.fn(),
   promptCancel: vi.fn(),
 }));
@@ -58,6 +59,7 @@ vi.mock('../lib/run-npm.ts', () => ({
 }));
 
 vi.mock('@clack/prompts', () => ({
+  intro: mocks.promptIntro,
   log: {
     info: mocks.promptInfo,
     warn: mocks.promptWarn,
@@ -126,6 +128,7 @@ test('nb init continues from the browser UI result and runs env:add for an exist
       'env:add',
       [
         'staging',
+        '--no-intro',
         '--scope',
         'project',
         '--api-base-url',
@@ -205,6 +208,7 @@ test('nb init forwards download options to nb install for a new app flow', async
       'install',
       [
         '-y',
+        '--no-intro',
         '-e',
         'demoapp',
         '--lang',
@@ -298,7 +302,7 @@ test('nb init installs skills when --install-skills is provided', async () => {
   ]);
   assert.deepEqual(runCommand.mock.calls[0], [
     'env:add',
-    ['staging', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+    ['staging', '--no-intro', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);
 });
 
@@ -458,7 +462,7 @@ test('nb init --force allows reconfiguring an existing workspace env and warns b
 
   assert.deepEqual(runCommand.mock.calls[0], [
     'install',
-    ['-y', '-e', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
+    ['-y', '--no-intro', '-e', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
   ]);
   assert.equal(
     mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env')),
@@ -678,6 +682,6 @@ test('nb init disables skills install by default when the current workspace has 
   );
   assert.deepEqual(runCommand.mock.calls[0], [
     'env:add',
-    ['staging', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+    ['staging', '--no-intro', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);
 });

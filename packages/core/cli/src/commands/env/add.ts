@@ -24,6 +24,7 @@ type EnvScope = Exclude<CliHomeScope, 'auto'>;
 type EnvAddParsedFlags = {
   env?: string;
   verbose: boolean;
+  'no-intro': boolean;
   scope?: string;
   'default-api-base-url'?: string;
   'api-base-url'?: string;
@@ -109,6 +110,11 @@ export default class EnvAdd extends Command {
     }),
     verbose: Flags.boolean({
       description: 'Print detailed progress while writing config',
+      default: false,
+    }),
+    'no-intro': Flags.boolean({
+      hidden: true,
+      description: 'Skip command intro when invoked by another CLI command',
       default: false,
     }),
     scope: Flags.string({
@@ -233,10 +239,6 @@ export default class EnvAdd extends Command {
   };
 
   static prompts: PromptsCatalog = {
-    intro: {
-      type: 'intro',
-      title: 'Connect a NocoBase Environment',
-    },
     name: {
       type: 'text',
       message: 'What would you like to call this environment?',
@@ -347,6 +349,9 @@ export default class EnvAdd extends Command {
     const { args, flags } = await this.parse(EnvAdd);
     const parsedFlags = flags as EnvAddParsedFlags;
     setVerboseMode(parsedFlags.verbose);
+    if (!parsedFlags['no-intro']) {
+      p.intro('Connect a NocoBase Environment');
+    }
 
     const results = await runPromptCatalog(EnvAdd.prompts, {
       values: this.buildPromptValues(args.name, parsedFlags),

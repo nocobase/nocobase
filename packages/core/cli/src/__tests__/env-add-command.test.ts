@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   upsertEnv: vi.fn(),
   setVerboseMode: vi.fn(),
   printVerbose: vi.fn(),
+  intro: vi.fn(),
   outro: vi.fn(),
 }));
 
@@ -36,6 +37,7 @@ vi.mock('../lib/ui.js', () => ({
 }));
 
 vi.mock('@clack/prompts', () => ({
+  intro: mocks.intro,
   outro: mocks.outro,
 }));
 

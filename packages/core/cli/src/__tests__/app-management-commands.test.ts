@@ -567,6 +567,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
     'download',
     [
       '-y',
+      '--no-intro',
       '--source',
       'npm',
       '--replace',
@@ -727,6 +728,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
     'download',
     [
       '-y',
+      '--no-intro',
       '--source',
       'docker',
       '--replace',
