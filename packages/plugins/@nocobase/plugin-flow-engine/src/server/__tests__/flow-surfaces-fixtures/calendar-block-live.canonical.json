@@ -25,6 +25,42 @@
       }
     },
     "subModels": {
+      "actions": [
+        {
+          "alias": "node.FilterActionModel1",
+          "use": "FilterActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Filter\")}}"
+              }
+            }
+          }
+        },
+        {
+          "alias": "action.addNew1",
+          "use": "AddNewActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Add new\")}}",
+                "type": "primary"
+              }
+            }
+          }
+        },
+        {
+          "alias": "node.RefreshActionModel1",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Refresh\")}}"
+              }
+            }
+          }
+        }
+      ],
       "eventViewAction": [
         {
           "alias": "action.calendarEventView1",

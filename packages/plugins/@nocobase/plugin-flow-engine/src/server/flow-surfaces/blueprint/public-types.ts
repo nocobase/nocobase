@@ -173,6 +173,7 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'editForm'
   | 'details'
   | 'filterForm'
+  | 'calendar'
   | 'list'
   | 'gridCard'
   | 'markdown'

@@ -387,6 +387,8 @@ const DEFAULT_CALENDAR_DATE_TIME_FIELD_TYPES = [
   'createdAt',
   'updatedAt',
 ] as const;
+const CALENDAR_DEFAULT_VIEWS = new Set(['month', 'week', 'day']);
+const CALENDAR_WEEK_STARTS = new Set([0, 1]);
 const CALENDAR_POPUP_ACTION_KEYS = ['quickCreateAction', 'eventViewAction'] as const;
 type CalendarPopupActionKey = (typeof CALENDAR_POPUP_ACTION_KEYS)[number];
 const CANONICAL_BLOCK_HEADER_USES = new Set([
@@ -1263,7 +1265,11 @@ export class FlowSurfacesService {
       ? undefined
       : this.normalizeWriteTarget('catalog', input?.target, input);
     const resolved = target ? await this.locator.resolve(target, options) : null;
-    const node = resolved ? await this.loadResolvedNode(resolved, options.transaction) : null;
+    const node = resolved
+      ? await this.loadResolvedNode(resolved, options.transaction, {
+          persistCalendarPopupHosts: false,
+        })
+      : null;
     const popupProfile = target
       ? await this.resolvePopupBlockProfile(target.uid, resolved, node, options.transaction)
       : null;
@@ -2615,7 +2621,7 @@ export class FlowSurfacesService {
   private async resolveReactionRequest(
     actionName: string,
     targetInput: FlowSurfaceWriteTarget | undefined,
-    options: { transaction?: any } = {},
+    options: { transaction?: any; persistCalendarPopupHosts?: boolean } = {},
   ): Promise<{
     writeTarget: FlowSurfaceWriteTarget;
     resolved: FlowSurfaceResolvedTarget;
@@ -2626,7 +2632,9 @@ export class FlowSurfacesService {
       target: targetInput,
     });
     const resolved = await this.locator.resolve(writeTarget, options);
-    const rawNode = await this.loadResolvedNode(resolved, options.transaction);
+    const rawNode = await this.loadResolvedNode(resolved, options.transaction, {
+      persistCalendarPopupHosts: options.persistCalendarPopupHosts,
+    });
     const node = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode));
     const resolvedTarget = resolveReactionTarget({
       target: writeTarget,
@@ -2745,11 +2753,10 @@ export class FlowSurfacesService {
     options: { transaction?: any } = {},
   ): Promise<FlowSurfaceGetReactionMetaResult> {
     validateFlowSurfacePayloadShape('getReactionMeta', values, 'values');
-    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest(
-      'getReactionMeta',
-      values?.target,
-      options,
-    );
+    const { writeTarget, node, resolvedTarget } = await this.resolveReactionRequest('getReactionMeta', values?.target, {
+      ...options,
+      persistCalendarPopupHosts: false,
+    });
     const context = await this.context(
       {
         target: writeTarget,
@@ -3030,7 +3037,11 @@ export class FlowSurfacesService {
     const target = this.normalizeGetTarget(input);
     const resolved = await this.locator.resolve(target, options);
     const rawNode = await this.decorateTemplateReadbackTree(
-      this.normalizePopupTreeShape(await this.loadResolvedNode(resolved, options.transaction)),
+      this.normalizePopupTreeShape(
+        await this.loadResolvedNode(resolved, options.transaction, {
+          persistCalendarPopupHosts: false,
+        }),
+      ),
       options.transaction,
     );
     const publicNode = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode));
@@ -3119,7 +3130,11 @@ export class FlowSurfacesService {
         this.locator.resolve(target, resolveOptions),
       loadResolvedSurfaceTree: async (resolved: FlowSurfaceResolvedTarget, transaction?: any) =>
         this.decorateTemplateReadbackTree(
-          this.normalizePopupTreeShape(await this.loadResolvedNode(resolved, transaction)),
+          this.normalizePopupTreeShape(
+            await this.loadResolvedNode(resolved, transaction, {
+              persistCalendarPopupHosts: false,
+            }),
+          ),
           transaction,
         ),
       stripInternalSurfaceMetaFromNodeTree: (node: any) => this.stripInternalSurfaceMetaFromNodeTree(node),
@@ -3426,9 +3441,12 @@ export class FlowSurfacesService {
   private async loadTemplateListTargetContext(
     target: FlowSurfaceWriteTarget,
     transaction?: any,
+    options: { persistCalendarPopupHosts?: boolean } = {},
   ): Promise<FlowSurfaceTemplateListTargetContext> {
     const resolved = await this.locator.resolve(target, { transaction });
-    const node = await this.loadResolvedNode(resolved, transaction);
+    const node = await this.loadResolvedNode(resolved, transaction, {
+      persistCalendarPopupHosts: options.persistCalendarPopupHosts,
+    });
     const resourceContext = await this.locator.resolveCollectionContext(node.uid, transaction).catch(() => null);
     const fieldContainer = await this.surfaceContext.resolveFieldContainer(node.uid, transaction).catch(() => null);
     const fieldHostBlock =
@@ -3918,7 +3936,11 @@ export class FlowSurfacesService {
     const target = _.isUndefined(values?.target)
       ? undefined
       : this.normalizeWriteTarget('listTemplates', values?.target, values);
-    const targetContext = target ? await this.loadTemplateListTargetContext(target, options.transaction) : undefined;
+    const targetContext = target
+      ? await this.loadTemplateListTargetContext(target, options.transaction, {
+          persistCalendarPopupHosts: false,
+        })
+      : undefined;
     const popupActionContext =
       requestedType === 'popup'
         ? this.resolveTemplateListPopupActionContext({
@@ -4423,7 +4445,7 @@ export class FlowSurfacesService {
     const name = normalizeRequiredTemplateString('saveTemplate', values?.name, 'name');
     const description = normalizeRequiredTemplateString('saveTemplate', values?.description, 'description');
     const saveMode = normalizeTemplateSaveMode('saveTemplate', values?.saveMode);
-    const target = this.normalizeWriteTarget('saveTemplate', values?.target, values);
+    const target = await this.prepareWriteTarget('saveTemplate', values?.target, values, options);
     const sourceNode = await this.repository.findModelById(target.uid, {
       transaction: options.transaction,
       includeAsyncNode: true,
@@ -4700,7 +4722,7 @@ export class FlowSurfacesService {
   }
 
   async convertTemplateToCopy(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = this.normalizeWriteTarget('convertTemplateToCopy', values?.target, values);
+    const target = await this.prepareWriteTarget('convertTemplateToCopy', values?.target, values, options);
     const node = await this.repository.findModelById(target.uid, {
       transaction: options.transaction,
       includeAsyncNode: true,
@@ -4942,7 +4964,7 @@ export class FlowSurfacesService {
     } = {},
   ) {
     const popupTemplateAliasSession = options.popupTemplateAliasSession || this.createPopupTemplateAliasSession();
-    const target = this.normalizeWriteTarget('compose', values?.target, values);
+    const target = await this.prepareWriteTarget('compose', values?.target, values, options);
     const mode = this.assertComposeMode(values?.mode);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
@@ -5055,7 +5077,7 @@ export class FlowSurfacesService {
   }
 
   async configure(values: FlowSurfaceConfigureValues, options: { transaction?: any } = {}) {
-    const target = this.normalizeWriteTarget('configure', values?.target, values);
+    const target = await this.prepareWriteTarget('configure', values?.target, values, options);
     if (!_.isPlainObject(values.changes) || !Object.keys(values.changes).length) {
       throwBadRequest('flowSurfaces configure requires a non-empty changes object');
     }
@@ -6005,7 +6027,7 @@ export class FlowSurfacesService {
       );
     }
 
-    const target = this.normalizeWriteTarget('addBlock', values?.target, values);
+    const target = await this.prepareWriteTarget('addBlock', values?.target, values, options);
     await this.assertBlockTemplateCompatibility('addBlock', target, template, options.transaction);
     const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
       target,
@@ -6081,7 +6103,7 @@ export class FlowSurfacesService {
       transaction: options.transaction,
       expectedType: 'block',
     });
-    const target = this.normalizeWriteTarget('addField', values?.target, values);
+    const target = await this.prepareWriteTarget('addField', values?.target, values, options);
     const resolvedTarget = await this.locator.resolve(target, options);
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
     const result = await this.applyTemplateFieldsToBlock(
@@ -6199,7 +6221,7 @@ export class FlowSurfacesService {
       await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
       return result;
     }
-    const target = this.normalizeWriteTarget('addBlock', values?.target, values);
+    const target = await this.prepareWriteTarget('addBlock', values?.target, values, options);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
     const semanticResource = this.normalizeResourceInput(values.resource);
@@ -6383,7 +6405,7 @@ export class FlowSurfacesService {
       await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
       return result;
     }
-    const target = this.normalizeWriteTarget('addField', values?.target, values);
+    const target = await this.prepareWriteTarget('addField', values?.target, values, options);
     ensureNoRawDirectAddKeys('addField', values, [
       'wrapperProps',
       'fieldProps',
@@ -6714,7 +6736,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     } = {},
   ) {
-    const target = this.normalizeWriteTarget('addAction', values?.target, values);
+    const target = await this.prepareWriteTarget('addAction', values?.target, values, options);
     ensureNoDirectActionScopeKey('addAction', values);
     ensureNoRawDirectAddKeys('addAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addAction', values.settings);
@@ -6822,7 +6844,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     } = {},
   ) {
-    const target = this.normalizeWriteTarget('addRecordAction', values?.target, values);
+    const target = await this.prepareWriteTarget('addRecordAction', values?.target, values, options);
     ensureNoDirectActionScopeKey('addRecordAction', values);
     ensureNoRawDirectAddKeys('addRecordAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
@@ -9551,7 +9573,7 @@ export class FlowSurfacesService {
     } = {},
   ) {
     validateFlowSurfacePayloadShape('updateSettings', values, 'values');
-    const writeTarget = this.normalizeWriteTarget('updateSettings', values?.target, values);
+    const writeTarget = await this.prepareWriteTarget('updateSettings', values?.target, values, options);
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const normalizedValues = _.cloneDeep(values || {});
@@ -10260,7 +10282,7 @@ export class FlowSurfacesService {
   }
 
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const writeTarget = this.normalizeWriteTarget('setEventFlows', values?.target, values);
+    const writeTarget = await this.prepareWriteTarget('setEventFlows', values?.target, values, options);
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const contract = getNodeContract(current?.use);
@@ -10300,7 +10322,7 @@ export class FlowSurfacesService {
   }
 
   async setLayout(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = this.normalizeWriteTarget('setLayout', values?.target, values);
+    const target = await this.prepareWriteTarget('setLayout', values?.target, values, options);
     const resolved = await this.locator.resolve(target, options);
     const grid = await this.surfaceContext.resolveGridNode(resolved.uid, options.transaction);
     const contract = getNodeContract(grid?.use);
@@ -10426,7 +10448,7 @@ export class FlowSurfacesService {
   async apply(values: FlowSurfaceApplyValues, options: { transaction?: any } = {}) {
     this.assertApplyMode(values.mode);
     validateFlowSurfacePayloadShape('apply', values?.spec, 'spec');
-    const target = this.normalizeWriteTarget('apply', values?.target, values);
+    const target = await this.prepareWriteTarget('apply', values?.target, values, options);
     const spec = values.spec as FlowSurfaceApplySpec;
     const readback = await this.get(target, options);
     const compiled = compileApplySpec(target, readback.tree, spec);
@@ -10594,6 +10616,58 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} requires target.uid`);
     }
     return { uid };
+  }
+
+  private parseCalendarPopupActionTargetUid(
+    uid: string,
+  ): { calendarUid: string; actionKey: CalendarPopupActionKey } | null {
+    const normalizedUid = String(uid || '').trim();
+    if (!normalizedUid) {
+      return null;
+    }
+    for (const actionKey of CALENDAR_POPUP_ACTION_KEYS) {
+      const suffix = `-${actionKey}`;
+      if (normalizedUid.endsWith(suffix) && normalizedUid.length > suffix.length) {
+        return {
+          calendarUid: normalizedUid.slice(0, -suffix.length),
+          actionKey,
+        };
+      }
+    }
+    return null;
+  }
+
+  private async prepareWriteTarget(
+    actionName: string,
+    target: any,
+    values?: Record<string, any>,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceWriteTarget> {
+    const writeTarget = this.normalizeWriteTarget(actionName, target, values);
+    const parsedCalendarPopupTarget = this.parseCalendarPopupActionTargetUid(writeTarget.uid);
+    if (!parsedCalendarPopupTarget) {
+      return writeTarget;
+    }
+
+    const persistedTarget = await this.repository.findModelById(writeTarget.uid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (persistedTarget?.uid) {
+      return writeTarget;
+    }
+
+    const calendarNode = await this.repository
+      .findModelById(parsedCalendarPopupTarget.calendarUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+    if (calendarNode?.use === 'CalendarBlockModel') {
+      await this.ensureCalendarBlockPopupHosts(calendarNode, options.transaction);
+    }
+
+    return writeTarget;
   }
 
   private normalizeRootUidValue(actionName: string, values: Record<string, any>): string {
@@ -12236,6 +12310,16 @@ export class FlowSurfacesService {
     const allowedKeys = getConfigureOptionKeysForUse('CalendarBlockModel');
     const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
     assertSupportedSimpleChanges('calendar', changes, allowedKeys);
+    this.validateCalendarSettingValues('configure', {
+      defaultView: changes.defaultView,
+      quickCreateEvent: changes.quickCreateEvent,
+      showLunar: changes.showLunar,
+      weekStart: changes.weekStart,
+    });
+    const defaultView = hasOwnDefined(changes, 'defaultView') ? String(changes.defaultView).trim() : undefined;
+    const quickCreateEvent = hasOwnDefined(changes, 'quickCreateEvent') ? changes.quickCreateEvent : undefined;
+    const showLunar = hasOwnDefined(changes, 'showLunar') ? changes.showLunar : undefined;
+    const weekStart = hasOwnDefined(changes, 'weekStart') ? changes.weekStart : undefined;
 
     const currentResourceInit = this.getCalendarBlockResourceInit(current);
     const nextResourceInit = changes.resource ? normalizeSimpleResourceInit(changes.resource) : currentResourceInit;
@@ -12276,10 +12360,10 @@ export class FlowSurfacesService {
         target,
         props: buildDefinedPayload({
           fieldNames,
-          defaultView: changes.defaultView,
-          enableQuickCreateEvent: changes.quickCreateEvent,
-          showLunar: changes.showLunar,
-          weekStart: changes.weekStart,
+          defaultView,
+          enableQuickCreateEvent: quickCreateEvent,
+          showLunar,
+          weekStart,
           quickCreatePopupSettings,
           eventPopupSettings,
         }),
@@ -12316,16 +12400,12 @@ export class FlowSurfacesService {
                     : {}),
                   ...(hasOwnDefined(changes, 'startField') ? { startDateField: { start: fieldNames.start } } : {}),
                   ...(hasOwnDefined(changes, 'endField') ? { endDateField: { end: fieldNames.end || '' } } : {}),
-                  ...(hasOwnDefined(changes, 'defaultView')
-                    ? { defaultView: { defaultView: changes.defaultView } }
-                    : {}),
+                  ...(hasOwnDefined(changes, 'defaultView') ? { defaultView: { defaultView } } : {}),
                   ...(hasOwnDefined(changes, 'quickCreateEvent')
-                    ? { quickCreateEvent: { enableQuickCreateEvent: changes.quickCreateEvent !== false } }
+                    ? { quickCreateEvent: { enableQuickCreateEvent: quickCreateEvent !== false } }
                     : {}),
-                  ...(hasOwnDefined(changes, 'showLunar')
-                    ? { showLunar: { showLunar: changes.showLunar === true } }
-                    : {}),
-                  ...(hasOwnDefined(changes, 'weekStart') ? { weekStart: { weekStart: changes.weekStart } } : {}),
+                  ...(hasOwnDefined(changes, 'showLunar') ? { showLunar: { showLunar: showLunar === true } } : {}),
+                  ...(hasOwnDefined(changes, 'weekStart') ? { weekStart: { weekStart } } : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
                   ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: { value: changes.linkageRules } } : {}),
                 }),
@@ -15232,14 +15312,22 @@ export class FlowSurfacesService {
     }
 
     if (actionKey === 'quickCreateAction') {
-      if (nextParams.popupTemplateHasFilterByTk) {
+      const hasRecordScopedTemplate =
+        !!nextParams.popupTemplateHasFilterByTk ||
+        !!nextParams.popupTemplateHasSourceId ||
+        !_.isUndefined(nextParams.filterByTk) ||
+        !_.isUndefined(nextParams.sourceId) ||
+        !!String(nextParams.associationName || '').trim();
+      if (hasRecordScopedTemplate) {
         delete nextParams.popupTemplateUid;
         delete nextParams.popupTemplateContext;
         delete nextParams.popupTemplateHasFilterByTk;
         delete nextParams.popupTemplateHasSourceId;
         delete nextParams.uid;
       }
+      delete nextParams.associationName;
       delete nextParams.filterByTk;
+      delete nextParams.sourceId;
     }
 
     return nextParams;
@@ -15418,9 +15506,9 @@ export class FlowSurfacesService {
       return node;
     }
 
-    const current: any = node;
+    let current: any = node;
     if (current.use === 'CalendarBlockModel') {
-      return (await this.ensureCalendarBlockPopupHosts(current, transaction)) as T;
+      current = await this.ensureCalendarBlockPopupHosts(current, transaction);
     }
 
     for (const [subKey, value] of Object.entries(current.subModels || {})) {
@@ -15444,6 +15532,163 @@ export class FlowSurfacesService {
     }
 
     return current;
+  }
+
+  private projectCalendarBlockPopupHosts<T = any>(node: T): T {
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+
+    const current: any = node;
+    if (!current?.uid || current.use !== 'CalendarBlockModel') {
+      return node;
+    }
+
+    const resourceInit = this.getCalendarBlockResourceInit(current);
+    let nextSubModels = current.subModels;
+    let changed = false;
+
+    for (const actionKey of CALENDAR_POPUP_ACTION_KEYS) {
+      const existing = getSingleNodeSubModel(current.subModels?.[actionKey]);
+      const expectedUid = this.getCalendarPopupActionUid(current.uid, actionKey);
+      const expectedUse = this.getCalendarPopupActionUse(actionKey);
+      const openView = this.buildCalendarPopupOpenView({
+        blockNode: current,
+        actionKey,
+        resourceInit,
+      });
+      const currentOpenView = this.resolvePopupHostOpenView(existing);
+
+      if (existing?.uid === expectedUid && existing.use === expectedUse && _.isEqual(currentOpenView, openView)) {
+        continue;
+      }
+
+      const nextActionNode = {
+        ...(existing?.uid === expectedUid ? _.cloneDeep(existing) : {}),
+        uid: expectedUid,
+        use: expectedUse,
+        stepParams: _.merge({}, existing?.uid === expectedUid ? _.cloneDeep(existing.stepParams || {}) : {}, {
+          popupSettings: {
+            openView,
+          },
+        }),
+      };
+
+      if (!changed) {
+        nextSubModels = {
+          ...(current.subModels || {}),
+        };
+        changed = true;
+      }
+      nextSubModels[actionKey] = nextActionNode;
+    }
+
+    if (!changed) {
+      return node;
+    }
+
+    return {
+      ...current,
+      subModels: nextSubModels,
+    };
+  }
+
+  private projectCalendarBlockPopupHostsInTree<T = any>(node: T): T {
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+
+    let current: any = this.projectCalendarBlockPopupHosts(node);
+    let nextSubModels = current?.subModels;
+    let changed = current !== node;
+
+    if (!nextSubModels || typeof nextSubModels !== 'object') {
+      return current;
+    }
+
+    for (const [subKey, value] of Object.entries(nextSubModels)) {
+      if (Array.isArray(value)) {
+        const nextItems = [];
+        let itemsChanged = false;
+        for (const item of value) {
+          const nextItem = this.projectCalendarBlockPopupHostsInTree(item);
+          nextItems.push(nextItem);
+          itemsChanged = itemsChanged || nextItem !== item;
+        }
+        if (!itemsChanged) {
+          continue;
+        }
+        if (!changed) {
+          current = {
+            ...current,
+            subModels: {
+              ...nextSubModels,
+            },
+          };
+          nextSubModels = current.subModels;
+          changed = true;
+        }
+        nextSubModels[subKey] = nextItems;
+        continue;
+      }
+
+      const nextValue = this.projectCalendarBlockPopupHostsInTree(value);
+      if (nextValue === value) {
+        continue;
+      }
+      if (!changed) {
+        current = {
+          ...current,
+          subModels: {
+            ...nextSubModels,
+          },
+        };
+        nextSubModels = current.subModels;
+        changed = true;
+      }
+      nextSubModels[subKey] = nextValue;
+    }
+
+    return current;
+  }
+
+  private getCalendarSettingValue(node: any, propKey: string, stepParamsPath: string[]) {
+    if (_.has(node, ['props', propKey])) {
+      return _.get(node, ['props', propKey]);
+    }
+    return _.get(node, ['stepParams', ...stepParamsPath]);
+  }
+
+  private validateCalendarSettingValues(
+    actionName: string,
+    values: {
+      defaultView?: any;
+      quickCreateEvent?: any;
+      showLunar?: any;
+      weekStart?: any;
+    },
+  ) {
+    if (!_.isUndefined(values.defaultView)) {
+      const defaultView =
+        typeof values.defaultView === 'string' ? values.defaultView.trim() : String(values.defaultView || '').trim();
+      if (!CALENDAR_DEFAULT_VIEWS.has(defaultView)) {
+        throwBadRequest(`flowSurfaces ${actionName} calendar defaultView must be one of: month, week, day`);
+      }
+    }
+
+    if (!_.isUndefined(values.quickCreateEvent) && !_.isBoolean(values.quickCreateEvent)) {
+      throwBadRequest(`flowSurfaces ${actionName} calendar quickCreateEvent must be a boolean`);
+    }
+
+    if (!_.isUndefined(values.showLunar) && !_.isBoolean(values.showLunar)) {
+      throwBadRequest(`flowSurfaces ${actionName} calendar showLunar must be a boolean`);
+    }
+
+    if (!_.isUndefined(values.weekStart)) {
+      if (!Number.isInteger(values.weekStart) || !CALENDAR_WEEK_STARTS.has(values.weekStart)) {
+        throwBadRequest(`flowSurfaces ${actionName} calendar weekStart must be 0 or 1`);
+      }
+    }
   }
 
   private validateCalendarBlockState(actionName: string, node: any) {
@@ -15481,6 +15726,21 @@ export class FlowSurfacesService {
         kind,
       });
     }
+
+    this.validateCalendarSettingValues(actionName, {
+      defaultView: this.getCalendarSettingValue(node, 'defaultView', [
+        'calendarSettings',
+        'defaultView',
+        'defaultView',
+      ]),
+      quickCreateEvent: this.getCalendarSettingValue(node, 'enableQuickCreateEvent', [
+        'calendarSettings',
+        'quickCreateEvent',
+        'enableQuickCreateEvent',
+      ]),
+      showLunar: this.getCalendarSettingValue(node, 'showLunar', ['calendarSettings', 'showLunar', 'showLunar']),
+      weekStart: this.getCalendarSettingValue(node, 'weekStart', ['calendarSettings', 'weekStart', 'weekStart']),
+    });
   }
 
   private async resolveFieldDefinition(input: {
@@ -16263,7 +16523,11 @@ export class FlowSurfacesService {
     };
   }
 
-  private async loadResolvedNode(resolved: any, transaction?: any) {
+  private async loadResolvedNode(
+    resolved: any,
+    transaction?: any,
+    options: { persistCalendarPopupHosts?: boolean } = {},
+  ) {
     let node: any;
     if (resolved?.kind === 'page' && resolved?.pageRoute) {
       node = await this.routeSync.buildPageTree(resolved.pageRoute, transaction);
@@ -16273,6 +16537,9 @@ export class FlowSurfacesService {
       node = resolved.node;
     } else {
       node = await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true });
+    }
+    if (options.persistCalendarPopupHosts === false) {
+      return this.projectCalendarBlockPopupHostsInTree(node);
     }
     return this.ensureCalendarBlockPopupHostsInTree(node, transaction);
   }

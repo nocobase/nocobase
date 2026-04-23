@@ -2,6 +2,15 @@
   "block.calendar1": {
     "uid": "fcal9b1ock1"
   },
+  "node.FilterActionModel1": {
+    "uid": "fcal9b1ock1-filterAction"
+  },
+  "action.addNew1": {
+    "uid": "fcal9b1ock1-addNewAction"
+  },
+  "node.RefreshActionModel1": {
+    "uid": "fcal9b1ock1-refreshAction"
+  },
   "action.calendarEventView1": {
     "uid": "fcal9b1ock1-eventViewAction"
   },

@@ -472,6 +472,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
       'action-level value wins',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('calendar');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
+      'at least one concrete filter item',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
     );
@@ -483,6 +487,7 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.enum).toEqual([
       'table',
+      'calendar',
       'createForm',
       'editForm',
       'details',
@@ -613,6 +618,13 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintTableBlock?.defaultFilter?.items).toHaveLength(2);
     expect(applyBlueprintTableBlock?.actions?.[0]?.key).toBe('filterAction');
     expect(applyBlueprintTableBlock?.actions?.[0]?.settings?.defaultFilter?.items?.[0]?.value).toBe('active');
+    const applyBlueprintCalendarBlock = applyBlueprintRequest.examples?.calendarPage?.value?.tabs?.[0]?.blocks?.[0];
+    expect(applyBlueprintCalendarBlock?.type).toBe('calendar');
+    expect(applyBlueprintCalendarBlock?.collection).toBe('calendar_events');
+    expect(applyBlueprintCalendarBlock?.defaultFilter?.items).toHaveLength(2);
+    expect(applyBlueprintCalendarBlock?.actions).toEqual(
+      expect.arrayContaining(['filter', 'addNew', 'refresh', 'today', 'turnPages', 'title', 'selectView']),
+    );
     expect(applyBlueprintRequest.examples?.createPage?.value?.reaction?.items).toHaveLength(4);
     expect(applyBlueprintRequest.examples?.createPage?.value?.reaction?.items?.[0]?.type).toBe('setFieldValueRules');
     expect(applyBlueprintRequest.examples?.createPage?.value?.reaction?.items?.[0]?.target).toBe('main.employeeForm');

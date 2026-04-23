@@ -277,6 +277,53 @@ export const flowSurfaceExamples = {
       },
     ],
   },
+  applyBlueprintCalendar: {
+    version: '1',
+    mode: 'create',
+    navigation: {
+      item: {
+        title: 'Calendar',
+      },
+    },
+    page: {
+      title: 'Calendar',
+      documentTitle: 'Team calendar',
+    },
+    tabs: [
+      {
+        key: 'schedule',
+        title: 'Schedule',
+        blocks: [
+          {
+            key: 'eventsCalendar',
+            type: 'calendar',
+            collection: 'calendar_events',
+            defaultFilter: makePublicBlockDefaultFilter([
+              {
+                path: 'title',
+                operator: '$includes',
+                value: '',
+              },
+              {
+                path: 'status',
+                operator: '$eq',
+                value: 'planned',
+              },
+            ]),
+            settings: {
+              title: 'Team events',
+              titleField: 'title',
+              colorField: 'status',
+              startField: 'startsAt',
+              endField: 'endsAt',
+              defaultView: 'week',
+            },
+            actions: ['filter', 'addNew', 'refresh', 'today', 'turnPages', 'title', 'selectView'],
+          },
+        ],
+      },
+    ],
+  },
   applyApprovalBlueprintInitiator: {
     version: '1',
     surface: 'initiator',
