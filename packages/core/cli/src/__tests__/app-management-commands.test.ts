@@ -691,7 +691,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
       appPort: 13000,
       config: {
         dockerRegistry: 'nocobase/nocobase',
-        dockerPlatform: 'arm64',
+        dockerPlatform: 'linux/arm64',
         downloadVersion: 'alpha',
         storagePath: '/tmp/storage/local',
         appKey: 'app-key',
@@ -735,7 +735,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
       '--version',
       'alpha',
       '--docker-platform',
-      'arm64',
+      'linux/arm64',
     ],
   ]]);
   assert.deepEqual(mocks.stopDockerContainer.mock.calls, [[

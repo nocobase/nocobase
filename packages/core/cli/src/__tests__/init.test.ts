@@ -573,7 +573,7 @@ test('nb init preserves argument values that contain spaces when building instal
         source: 'docker',
         version: 'alpha',
         dockerRegistry: 'nocobase/nocobase',
-        dockerPlatform: 'arm64',
+        dockerPlatform: 'linux/arm64',
         builtinDb: true,
         dbDialect: 'postgres',
         dbDatabase: 'nocobase',
@@ -592,7 +592,7 @@ test('nb init preserves argument values that contain spaces when building instal
     assert.equal(argv[nicknameIndex + 1], 'Super Admin');
     assert.deepEqual(
       argv.slice(argv.indexOf('--docker-platform'), argv.indexOf('--docker-platform') + 2),
-      ['--docker-platform', 'arm64'],
+      ['--docker-platform', 'linux/arm64'],
     );
   } finally {
     process.argv = originalArgv;
