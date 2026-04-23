@@ -25,7 +25,7 @@ keywords: "日历区块, 日历视图, 事件管理, 会议安排, Calendar, Noc
 
 ## 区块配置项
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_43_PM.png)
+![](https://static-docs.nocobase.com/Calendar-04-23-2026_10_38_AM.png)
 
 ### 标题字段
 
@@ -45,7 +45,7 @@ keywords: "日历区块, 日历视图, 事件管理, 会议安排, Calendar, Noc
 
 点击日历中的空白日期区域，可快速弹出浮层创建事件。
 
-![](https://static-docs.nocobase.com/View-record-04-13-2026_03_27_PM.png)
+![](https://static-docs.nocobase.com/Add-new-04-23-2026_10_39_AM.png)
 
 点击已有事件时：
 - 当前事件会高亮显示
@@ -55,7 +55,7 @@ keywords: "日历区块, 日历视图, 事件管理, 会议安排, Calendar, Noc
 
 开启后，日历中将显示对应的农历信息。
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_28_PM.png)
+![](https://static-docs.nocobase.com/Calendar-04-23-2026_10_41_AM.png)
 
 ### 数据范围
 
@@ -83,7 +83,7 @@ keywords: "日历区块, 日历视图, 事件管理, 会议安排, Calendar, Noc
 2. 在日历区块配置中，将该字段设置为「颜色字段」；
 3. 在创建或编辑事件时选择颜色，即可在日历中生效。
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_31_PM.png)
+![](https://static-docs.nocobase.com/Calendar-04-23-2026_10_41_AM%20(1).png)
 
 ### 周起始日
 
@@ -93,7 +93,6 @@ keywords: "日历区块, 日历视图, 事件管理, 会议安排, Calendar, Noc
 
 可根据不同地区的使用习惯进行调整，使日历展示更符合实际需求。
 
-![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_31_PM%20(2).png)
 
 ## 配置操作
 

@@ -10,6 +10,7 @@
 import { DragOutlined } from '@ant-design/icons';
 import type { Modifier } from '@dnd-kit/core';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
+import type { Transform } from '@dnd-kit/utilities';
 import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FlowModel } from '../../models';
@@ -43,10 +44,10 @@ export const resolveOverlayAnchorTransform = ({
 }: {
   activeId: string | null;
   active: { id: string | number } | null | undefined;
-  transform: { x: number; y: number; scaleX?: number; scaleY?: number };
+  transform: Transform;
   activeNodeRect: { top: number; left: number } | null;
   dragAnchorPoint: ToolbarDragAnchorPoint | null;
-}) => {
+}): Transform => {
   if (!activeId || active?.id !== activeId || !dragAnchorPoint || !activeNodeRect) {
     return transform;
   }
@@ -311,13 +312,15 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
 
   const overlayAnchorModifier = useCallback<Modifier>(
     ({ active, activeNodeRect, transform }) => {
-      return resolveOverlayAnchorTransform({
+      const nextTransform: Transform = resolveOverlayAnchorTransform({
         activeId,
         active,
         transform,
         activeNodeRect,
         dragAnchorPoint,
       });
+
+      return nextTransform;
     },
     [activeId, dragAnchorPoint],
   );
