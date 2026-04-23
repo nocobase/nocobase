@@ -10,7 +10,7 @@
 import { Context, utils } from '@nocobase/actions';
 import { MultipleRelationRepository, Op, Repository } from '@nocobase/database';
 import WorkflowPlugin from '..';
-import type { WorkflowModel } from '../types';
+import type { FlowNodeModel, WorkflowModel } from '../types';
 
 export class NodeValidationError extends Error {
   status = 400;
@@ -23,17 +23,18 @@ export class NodeValidationError extends Error {
   }
 }
 
-function validateNode(
-  context: Context,
-  plugin: WorkflowPlugin,
-  { type, config }: { type?: string; config?: Record<string, any> },
-) {
+function validateNode(context: Context, workflow: WorkflowModel, values: FlowNodeModel) {
+  const { type, config } = values;
   if (!type) {
     context.throw(400, 'Node type is required');
   }
-  const instruction = plugin.instructions.get(type);
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+  const instruction = workflowPlugin.instructions.get(type);
   if (!instruction) {
     context.throw(400, `Node type "${type}" is not registered`);
+  }
+  if (typeof instruction.isAvailable === 'function' && !instruction.isAvailable(workflow, values)) {
+    context.throw(400, `Node type "${type}" is not available in the current workflow`);
   }
   if (config && typeof instruction.validateConfig === 'function') {
     const errors = instruction.validateConfig(config);
@@ -60,7 +61,7 @@ export async function create(context: Context, next) {
       context.throw(400, 'Node could not be created in executed workflow');
     }
 
-    validateNode(context, workflowPlugin, values);
+    validateNode(context, workflow, values);
 
     const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
     if (NODES_LIMIT) {
