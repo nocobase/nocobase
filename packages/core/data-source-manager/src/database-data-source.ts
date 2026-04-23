@@ -110,6 +110,7 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       ...fieldOptions,
       ...modelOptions,
     };
+    const dbSyncedKeys: Array<keyof FieldOptions> = ['allowNull'];
 
     const incomingPossibleTypes = Array.isArray(fieldOptions.possibleTypes)
       ? fieldOptions.possibleTypes
@@ -132,7 +133,10 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
     }
 
     for (const key of [...new Set([...Object.keys(modelOptions), ...Object.keys(fieldOptions)])]) {
-      if (modelOptions[key] === null && fieldOptions[key]) {
+      const shouldUseIncoming =
+        dbSyncedKeys.includes(key as keyof FieldOptions) ||
+        (modelOptions[key] === null && key in fieldOptions);
+      if (shouldUseIncoming) {
         newOptions[key] = fieldOptions[key];
       }
     }

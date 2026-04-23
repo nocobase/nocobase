@@ -94,42 +94,69 @@ export const errorInstruction = {
 
 ### 非同期ノード
 
-**ワークフロー**制御や非同期（時間のかかる）I/O操作が必要な場合、`run` メソッドは `status` が `JOB_STATUS.PENDING` のオブジェクトを返すことができます。これにより、実行者に待機（一時停止）を促し、外部の非同期操作が完了した後、**ワークフロー**エンジンに実行の継続を通知します。もし `run` 関数で一時停止のステータス値が返された場合、その指示は `resume` メソッドを実装する必要があります。そうしないと、**ワークフロー**の実行を再開できません。
+ノードがワークフローを継続する前に外部操作の完了を待つ必要がある場合（HTTPリクエスト、サードパーティの決済コールバック、その他の時間のかかる操作や即座に結果が返されない操作など）、まず `JOB_STATUS.PENDING` ステータスでタスクを保存して現在の実行を一時停止し、操作完了後に `resume` を通じて再開する必要があります。一時停止ロジックを使用する指示は必ず `resume` メソッドを実装する必要があります。そうしないと、ワークフローを再開できません。
+
+推奨される実装パターンは以下の通りです。
 
 ```ts
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
-export class PayInstruction extends Instruction {
-  async run(node, input, processor) {
-    // job could be create first via processor
-    const job = await processor.saveJob({
+export class AsyncInstruction extends Instruction {
+  async run(node: FlowNodeModel, prevJob, processor) {
+    // 1. Save the pending task and record its id
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
     });
 
-    const { workflow } = processor;
-    // do payment asynchronously
-    paymentService.pay(node.config, (result) => {
-      // notify processor to resume the job
-      return workflow.resume(job.id, result);
-    });
+    // 2. Explicitly call exit() to flush the task to the database and commit the transaction
+    await processor.exit();
 
-    // return created job instance
-    return job;
+    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      const result = await someAsyncOperation(node.config);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = result;
+    } catch (error) {
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = { message: error.message };
+    } finally {
+      // 4. Re-query the task from the database; do not use the cached in-memory object
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      job.set(jobDone);
+
+      // 5. Notify the workflow engine to resume execution, entering the resume flow
+      this.workflow.resume(job);
+    }
+    // 6. Return nothing (void); the executor will exit immediately
   }
 
-  resume(node, job, processor) {
-    // check payment status
-    job.set('status', job.result.status === 'ok' ? JOB_STATUS.RESOVLED : JOB_STATUS.REJECTED);
+  async resume(node: FlowNodeModel, job, processor) {
+    // The job already has its final status set in run(), just return it
     return job;
-  },
-};
+  }
+}
 ```
 
-`paymentService` は、ある支払いサービスを指します。サービスからのコールバックで、対応するタスクの実行**ワークフロー**の再開をトリガーし、現在の**ワークフロー**は一旦終了します。その後、**ワークフロー**エンジンが新しいプロセッサーを作成し、ノードの `resume` メソッドに渡すことで、以前に一時停止されたノードの実行を再開します。
+注意すべき重要な点がいくつかあります。
 
-:::info{title=ヒント}
-ここで言う「非同期操作」とは、JavaScriptの `async` 関数を指すものではありません。外部システムと連携する際に、即座に結果が返されない操作のことです。例えば、支払いサービスは結果を知るために別の通知を待つ必要があります。
-:::
+**なぜ保留中のタスクオブジェクトを返す代わりに `processor.exit()` を明示的に呼び出すのか？**  
+`return { status: PENDING }` は `run` 関数をすぐに終了させるため、その後のコードを実行することが不可能になります。`await processor.exit()` を呼び出すと、トランザクションをコミットしてデータベースコンテキストを終了するだけで、関数自体は引き続き実行されます。これにより、同じ関数本体内で時間のかかる操作を `await` し、完了時に `resume` を呼び出すことができます。`exit()` をスキップして返す前に長い操作を直接 `await` すると、データベーストランザクションを長時間オープンにしてロック競合を引き起こすだけでなく、操作完了後のトランザクションコミット時まであタスクレコードが永続化されません。
+
+**なぜ `saveJob` が返したオブジェクトを使用せずにタスクを再クエリするのか？**  
+`saveJob` が返すオブジェクトは、元のトランザクションに紐付けられたインメモリモデルインスタンスです。`processor.exit()` が呼び出された後、そのトランザクションはコミットされてクローズされています。このインスタンスを直接変更して `resume` を呼び出すと、ORMの状態異常（古いトランザクション参照、状態の不整合など）が発生します。`id` によってデータベースから再クエリすることで、どのトランザクションにも紐付けられていないクリーンなインスタンスを確保できます。
+
+**なぜ `run` 関数は何も返さない（`void`）のか？**  
+`processor.exit()` はすでに手動で呼び出されています。エグゼキューターが `void` を受け取ると、`exit(true)` を呼び出して冗長な処理なく即座に終了します。この時点で `IJob` を返すと、エグゼキューターが再度保存とコミットを試みてエラーが発生します。詳細は `run`/`resume` の戻り値の型セクションを参照してください。
+
+**外部コールバックが必要なシナリオの場合**（例：Webhookで通知される決済結果）、同じアプローチが適用されます。コールバックを登録する前に `processor.exit()` を呼び出して、外部システムがコールバックする前にタスクレコードがデータベースに存在することを確認します。コールバック内では、`id` でタスクを再クエリし、`this.workflow.resume(job)` を呼び出します。
+
+完全な実際の例については、[RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts)（HTTPリクエストノード。非同期ワークフローブランチでこのパターンを使用）を参照してください。
 
 ### ノードの結果ステータス
 
@@ -147,15 +174,61 @@ export class PayInstruction extends Instruction {
 
 その他の指示の戻りステータスについては、**ワークフロー**APIリファレンスセクションを参照してください。
 
-### 早期終了
+### `run`/`resume` の戻り値の型と実行器の動作
 
-特定の**ワークフロー**では、あるノード内で**ワークフロー**を直接終了させる必要がある場合があります。その場合、`null` を返すことで現在の**ワークフロー**を終了し、後続のノードは実行されません。
+`run` および `resume` メソッドの完全な戻り値型定義は以下の通りです。
 
-この状況は、**ワークフロー**制御タイプのノードでよく見られます。例えば、並列分岐ノード（[コード参照](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)）では、現在のノードの**ワークフロー**は終了しますが、子分岐ごとに新しい**ワークフロー**が開始され、実行が継続されます。
+```ts
+type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+```
 
-:::warn{title=注意}
-拡張ノードで分岐**ワークフロー**をスケジューリングすることは、ある程度の複雑さを伴います。そのため、慎重な処理と十分なテストが必要です。
+エグゼキューター（`Processor`）が指示を呼び出した後、戻り値の型に基づいて異なる処理ロジックを実行します。3つのケースがあります。
+
+#### 1. タスクオブジェクト `IJob` を返す
+
+これが最も一般的なケースです。必須の `status` フィールドとオプションの `result` フィールドを含むオブジェクトを返します。エグゼキューターはそれをノードのタスクレコードとして保存し、`status` 値に基づいてその後のフローを決定します。
+
+- `JOB_STATUS.RESOLVED`: ノードが正常に実行され、次のノードがある場合は継続し、なければワークフローが終了する
+- `JOB_STATUS.PENDING`: ノードが一時停止状態に入り、現在の実行コンテキストが停止して外部イベントが `resume` をトリガーするのを待つ
+- その他の失敗ステータス（`FAILED`、`ERROR` など）: 分岐の親ノードに伝播するか、ワークフロー全体を直接終了する
+
+このパスは完全なトランザクションコミットパスです — エグゼキューターはタスクレコードを保存し、データベースに書き込み、トランザクションをコミットします。
+
+例: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts)（分岐がない場合は `job` オブジェクトを直接返す。分岐がある場合の `void` ケースについては以下を参照）
+
+#### 2. `null` を返す
+
+`null` が返された場合、エグゼキューターは `processor.exit()`（引数なし）を呼び出します。その効果は、**現在保留中のタスクをデータベースにフラッシュしてトランザクションをコミットするが、全体の実行ステータスは更新しない**というものです。
+
+この使用法は、分岐制御ノードの `resume` メソッドでよく見られます。分岐が完了し、親ノードのタスクステータスを更新して保存する必要がある場合（例：「分岐Nが完了した」を記録する）、他の分岐はまだ実行中で、全体の実行は残りの分岐を待つために `STARTED` ステータスのまま維持する必要があります — `null` を返すことで、全体の実行ステータスに影響を与えることなく、現在の resume コンテキストを終了します。
+
+例: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
+
+- 行 [117](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L117): 並列ノードがすでに早期完了している（resolved/rejected）; 後続の分岐 resume を無視して直接 `null` を返す
+- 行 [135](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L135): 一部の分岐がまだ未完了（`PENDING`）; 現在の進行状況を保存して `null` を返し、他の分岐を待ち続ける
+
+#### 3. `void` を返す（return なし、つまり暗黙的な `undefined`）
+
+`void` が返された場合（関数に明示的な return 文がない、または実行パスが戻り値なしで終了する）、エグゼキューターは `processor.exit(true)` を呼び出します。その効果は、**データベース操作を一切行わず即座に戻る**というものです。
+
+このパターンは専ら**指示が実行スケジューリングを引き継いだシナリオ**のためのものです。指示が `processor.run()` を通じてサブワークフローを手動で開始し、サブワークフローの実行チェーンが完了時にデータベース書き込みとトランザクションコミットを処理します。エグゼキューターは再度処理すべきではありません。
+
+典型的な例:
+
+- [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): 分岐が存在する場合、`processor.run(branchNode, savedJob)` を手動で呼び出し、関数が終了して暗黙的に `void` を返す
+- [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): すべての分岐を反復して各々に `processor.run(branch, job)` を呼び出し、関数が終了して暗黙的に `void` を返す
+
+:::warn{title=ヒント}
+`void` を返す前に `processor.saveJob()` が呼び出されていた場合、それらのタスクレコードは現在のエグゼキューターによってデータベースに書き込まれません。それらはエグゼキューターのタスクリスト（メモリ内）に一時的に保存され、`processor.run()` によって開始されたサブ実行が完了したときにトリガーされる `exit()` によってデータベースにフラッシュされます。したがって、このパターンを使用する場合は、これらのレコードを永続化するために正常に完了するサブ実行パスが存在することを確認する必要があります。分岐ワークフローのスケジューリングにはある程度の複雑さがあります。慎重な設計と徹底的なテストが必要です。
 :::
+
+3つの戻り値の比較まとめ:
+
+| 戻り値 | エグゼキューターの動作 | 典型的なユースケース |
+|--------|-----------|------------|
+| `IJob` | タスクを保存し、`status` に基づいてフローを継続/終了/一時停止する | 結果とステータスを持つ通常のノード実行 |
+| `null` | 保留中のタスクをフラッシュしてトランザクションをコミットするが、実行ステータスは更新しない | 分岐がまだ待機中で、現在の実行コンテキストを一時的に終了する |
+| `void` | 即座に戻り、DBの操作は行わない | ノードがサブワークフローをスケジュールして後続の処理をサブワークフローに委ねる |
 
 ### 詳細
 
