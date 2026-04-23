@@ -62,34 +62,72 @@ When creating a new app, it can also install NocoBase AI coding skills
 
 ### Non-Interactive Setup
 
-When prompts are skipped, `--env <envName>` is required:
+When prompts are skipped, an app/env name is required:
 
 ```bash
-nb init --yes --env app1
+nb init --env app1 --yes
 ```
 
 Install with Docker:
 
 ```bash
-nb init --yes --env app1 --source docker --version alpha
+nb init --env app1 --yes --source docker --version alpha
 ```
 
 Install from npm:
 
 ```bash
-nb init --yes --env app1 --source npm --version alpha --app-port 13080
+nb init --env app1 --yes --source npm --version alpha --app-port 13080
 ```
 
 Install from Git source:
 
 ```bash
-nb init --yes --env app1 --source git --version alpha
+nb init --env app1 --yes --source git --version alpha
 ```
+
+For Git source installs, `--version alpha` resolves to the `develop` branch.
+
+Install from a Git branch:
+
+```bash
+nb init --env app1 --yes --source git --version fix/cli-v2
+```
+
+`--version` is the shared version input across sources:
+
+- npm: package version
+- Docker: image tag
+- Git: git ref such as a branch or tag
 
 By default, a new local app uses:
 
 - Source directory: `./<envName>/source/`
 - Storage directory: `./<envName>/storage/`
+
+### Resume an Interrupted Setup
+
+If `nb init` was interrupted after the env config had already been saved, you can continue the same setup:
+
+```bash
+nb init --env app1 --resume
+```
+
+The advanced low-level equivalent is:
+
+```bash
+nb install --env app1 --resume
+```
+
+`--resume` reuses the saved workspace env config for app, source, database, and env connection settings. In interactive mode, it only asks for any missing setup-only values.
+
+In non-interactive mode, pass these setup-only flags again because they are not saved in env config:
+
+- `--lang`
+- `--root-username`
+- `--root-email`
+- `--root-password`
+- `--root-nickname`
 
 ## Daily Commands
 
@@ -103,26 +141,29 @@ By default, a new local app uses:
 | `nb dev` | Run development mode for npm/Git source envs. |
 | `nb logs` | Show app logs for npm/Git or Docker envs. |
 | `nb ps` | Show runtime status for configured envs. |
+| `nb db` | Inspect or manage built-in database runtime status for local envs. |
 | `nb upgrade` | Refresh code/image and restart the selected app. |
 | `nb down` | Stop and remove local runtime containers for an env. |
 | `nb env` | Manage saved CLI env connections. |
 | `nb api` | Call NocoBase API resources from the CLI. |
 | `nb pm` | Manage plugins for the selected NocoBase env. |
 
-Most app-management commands accept `-e, --env` to select an env:
+Recommended style: use `--env` explicitly for app/runtime commands. `-e` is the short form:
+
+```bash
+nb start --env app1
+nb logs --env app1
+nb ps --env app1
+nb db ps --env app1
+```
+
+Equivalent shorthand examples:
 
 ```bash
 nb start -e app1
 nb logs -e app1
-nb ps -e app1
-```
-
-Some commands also accept the env name as the first argument:
-
-```bash
-nb logs app1
-nb ps app1
-nb down app1
+nb upgrade -e app1
+nb db start -e app1
 ```
 
 ## Runtime Types
@@ -132,10 +173,10 @@ nb down app1
 Docker envs are managed through saved Docker containers and images:
 
 ```bash
-nb init --yes --env app1 --source docker --version alpha
-nb start -e app1
-nb logs app1
-nb stop -e app1
+nb init --env app1 --yes --source docker --version alpha
+nb start --env app1
+nb logs --env app1
+nb stop --env app1
 ```
 
 Docker downloads support platform selection:
@@ -151,8 +192,8 @@ nb download --source docker --version alpha --docker-platform linux/arm64
 npm and Git envs use a local source directory and can run development mode:
 
 ```bash
-nb init --yes --env app1 --source git --version alpha
-nb dev -e app1
+nb init --env app1 --yes --source git --version alpha
+nb dev --env app1
 ```
 
 `nb dev` only supports npm/Git source envs. Docker envs can be inspected with
@@ -174,22 +215,40 @@ nb env add app1 --base-url http://localhost:13000/api
 Upgrade refreshes the saved source or image, then restarts the app:
 
 ```bash
-nb upgrade -e app1
+nb upgrade --env app1
 ```
 
 Use `--skip-code-update` or `-s` to restart with the saved local code or Docker
 image without downloading updates first:
 
 ```bash
-nb upgrade -e app1 -s
+nb upgrade --env app1 -s
 ```
+
+## Database Commands
+
+Use `nb db` to inspect or manage the built-in database runtime for a local env:
+
+```bash
+nb db ps
+nb db ps --env app1
+nb db start --env app1
+nb db stop --env app1
+nb db logs --env app1
+```
+
+Notes:
+
+- `nb db start` and `nb db stop` only work for envs created with the built-in database option enabled.
+- `nb db logs` only works for envs created with the built-in database option enabled.
+- `nb db ps` can also show `external` or `remote` status for envs that do not have a CLI-managed database container.
 
 ## Cleanup
 
 Bring down a local env:
 
 ```bash
-nb down app1
+nb down --env app1
 ```
 
 By default, `nb down` stops the app and removes app/database containers if they
@@ -198,9 +257,9 @@ exist. It keeps user data, source files, and CLI env config.
 Use explicit flags for destructive cleanup:
 
 ```bash
-nb down app1 --remove-data
-nb down app1 --remove-source
-nb down app1 --remove-env
+nb down --env app1 --remove-data
+nb down --env app1 --remove-source
+nb down --env app1 --remove-env
 ```
 
 - `--remove-data`: delete storage and managed database data. This requires confirmation unless `--yes` is used.

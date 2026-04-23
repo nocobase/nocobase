@@ -57,34 +57,72 @@ nb init --ui
 
 ### 非交互式初始化
 
-跳过交互提示时，必须提供 `--env <envName>`：
+跳过交互提示时，必须提供 app/env name：
 
 ```bash
-nb init --yes --env app1
+nb init --env app1 --yes
 ```
 
 使用 Docker 安装：
 
 ```bash
-nb init --yes --env app1 --source docker --version alpha
+nb init --env app1 --yes --source docker --version alpha
 ```
 
 使用 npm 安装：
 
 ```bash
-nb init --yes --env app1 --source npm --version alpha --app-port 13080
+nb init --env app1 --yes --source npm --version alpha --app-port 13080
 ```
 
 使用 Git 源码安装：
 
 ```bash
-nb init --yes --env app1 --source git --version alpha
+nb init --env app1 --yes --source git --version alpha
 ```
+
+对于 Git 源码安装，`--version alpha` 实际会解析为 `develop` 分支。
+
+使用 Git 分支安装：
+
+```bash
+nb init --env app1 --yes --source git --version fix/cli-v2
+```
+
+`--version` 是三种 source 共用的版本参数：
+
+- npm：包版本号
+- Docker：镜像 tag
+- Git：git ref，例如 branch 或 tag
 
 默认情况下，新建本地应用会使用以下目录：
 
 - 源码目录：`./<envName>/source/`
 - 存储目录：`./<envName>/storage/`
+
+### 恢复中断的初始化
+
+如果 `nb init` 在 env 配置已经保存之后中断了，可以继续上一次初始化流程：
+
+```bash
+nb init --env app1 --resume
+```
+
+对应的底层高级命令是：
+
+```bash
+nb install --env app1 --resume
+```
+
+`--resume` 会复用工作区里已保存的 env config，包括应用、source、数据库和 env 连接相关配置。在交互模式下，只会继续补齐缺失的初始化参数。
+
+在非交互模式下，需要重新传这些只用于初始化、不会保存到 env config 的参数：
+
+- `--lang`
+- `--root-username`
+- `--root-email`
+- `--root-password`
+- `--root-nickname`
 
 ## 常用命令
 
@@ -98,26 +136,29 @@ nb init --yes --env app1 --source git --version alpha
 | `nb dev` | 为 npm/Git 源码 env 启动开发模式。 |
 | `nb logs` | 查看 npm/Git 或 Docker env 的应用日志。 |
 | `nb ps` | 查看已配置 env 的运行状态。 |
+| `nb db` | 查看或管理本地 env 的内置数据库运行状态。 |
 | `nb upgrade` | 更新源码/镜像并重启选中的应用。 |
 | `nb down` | 停止并移除某个 env 的本地运行容器。 |
 | `nb env` | 管理已保存的 CLI env 连接。 |
 | `nb api` | 通过 CLI 调用 NocoBase API 资源。 |
 | `nb pm` | 管理选中 NocoBase env 的插件。 |
 
-大多数应用管理命令都支持通过 `-e, --env` 选择 env：
+推荐在应用和运行时相关命令里显式使用 `--env`；`-e` 是它的简写：
+
+```bash
+nb start --env app1
+nb logs --env app1
+nb ps --env app1
+nb db ps --env app1
+```
+
+等价的简写示例：
 
 ```bash
 nb start -e app1
 nb logs -e app1
-nb ps -e app1
-```
-
-部分命令也支持把 env name 作为第一个参数：
-
-```bash
-nb logs app1
-nb ps app1
-nb down app1
+nb upgrade -e app1
+nb db start -e app1
 ```
 
 ## 运行方式
@@ -127,10 +168,10 @@ nb down app1
 Docker env 会通过已保存的 Docker 容器和镜像进行管理：
 
 ```bash
-nb init --yes --env app1 --source docker --version alpha
-nb start -e app1
-nb logs app1
-nb stop -e app1
+nb init --env app1 --yes --source docker --version alpha
+nb start --env app1
+nb logs --env app1
+nb stop --env app1
 ```
 
 Docker 下载支持指定平台：
@@ -146,8 +187,8 @@ nb download --source docker --version alpha --docker-platform linux/arm64
 npm 和 Git env 会使用本地源码目录，并支持开发模式：
 
 ```bash
-nb init --yes --env app1 --source git --version alpha
-nb dev -e app1
+nb init --env app1 --yes --source git --version alpha
+nb dev --env app1
 ```
 
 `nb dev` 只支持 npm/Git 源码 env。Docker env 可以通过 `nb logs` 查看日志，remote env 只支持 API 和 env 相关操作。
@@ -167,21 +208,39 @@ nb env add app1 --base-url http://localhost:13000/api
 升级会更新已保存的源码或镜像，然后重启应用：
 
 ```bash
-nb upgrade -e app1
+nb upgrade --env app1
 ```
 
 如果只想使用当前已保存的本地源码或 Docker 镜像重启应用，可以使用 `--skip-code-update` 或 `-s`：
 
 ```bash
-nb upgrade -e app1 -s
+nb upgrade --env app1 -s
 ```
+
+## 数据库命令
+
+可以使用 `nb db` 查看或管理本地 env 的内置数据库运行状态：
+
+```bash
+nb db ps
+nb db ps --env app1
+nb db start --env app1
+nb db stop --env app1
+nb db logs --env app1
+```
+
+说明：
+
+- `nb db start` 和 `nb db stop` 只适用于启用了内置数据库的 env。
+- `nb db logs` 只适用于启用了内置数据库的 env。
+- 对于没有 CLI 托管数据库容器的 env，`nb db ps` 也会显示 `external` 或 `remote` 状态。
 
 ## 清理
 
 关闭并清理某个本地 env：
 
 ```bash
-nb down app1
+nb down --env app1
 ```
 
 默认情况下，`nb down` 会停止应用，并在存在时移除应用容器和数据库容器。它不会删除用户数据、源码文件和 CLI env 配置。
@@ -189,9 +248,9 @@ nb down app1
 如需执行破坏性清理，需要显式指定参数：
 
 ```bash
-nb down app1 --remove-data
-nb down app1 --remove-source
-nb down app1 --remove-env
+nb down --env app1 --remove-data
+nb down --env app1 --remove-source
+nb down --env app1 --remove-env
 ```
 
 - `--remove-data`：删除 storage 和托管数据库数据。除非使用 `--yes`，否则需要二次确认。

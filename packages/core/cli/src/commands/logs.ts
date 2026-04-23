@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command, Flags } from '@oclif/core';
+import { Command, Flags } from '@oclif/core';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -15,19 +15,6 @@ import {
 } from '../lib/app-runtime.js';
 import { run } from '../lib/run-npm.js';
 import { printInfo } from '../lib/ui.js';
-
-function resolveRequestedEnv(positionalEnv?: string, flagEnv?: string): string | undefined {
-  const fromArg = positionalEnv?.trim();
-  const fromFlag = flagEnv?.trim();
-
-  if (fromArg && fromFlag && fromArg !== fromFlag) {
-    throw new Error(
-      `Choose one env name for logs. You passed "${fromArg}" and --env "${fromFlag}".`,
-    );
-  }
-
-  return fromArg || fromFlag || undefined;
-}
 
 function formatLogsFailure(envName: string, message: string): string {
   return [
@@ -43,24 +30,15 @@ export default class Logs extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> app1',
-    '<%= config.bin %> <%= command.id %> -e app1',
-    '<%= config.bin %> <%= command.id %> app1 --tail 200',
-    '<%= config.bin %> <%= command.id %> app1 --no-follow',
+    '<%= config.bin %> <%= command.id %> --env app1',
+    '<%= config.bin %> <%= command.id %> --env app1 --tail 200',
+    '<%= config.bin %> <%= command.id %> --env app1 --no-follow',
   ];
-
-  static override args = {
-    envName: Args.string({
-      description: 'CLI env name (same as --env). Defaults to the current env when omitted',
-      required: false,
-    }),
-  };
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+      description: 'CLI env name to inspect logs for. Defaults to the current env when omitted',
     }),
     tail: Flags.integer({
       description: 'Number of recent log lines to show before following',
@@ -76,14 +54,8 @@ export default class Logs extends Command {
   };
 
   public async run(): Promise<void> {
-    const { args, flags } = await this.parse(Logs);
-    let requestedEnv: string | undefined;
-
-    try {
-      requestedEnv = resolveRequestedEnv(args.envName, flags.env);
-    } catch (error: unknown) {
-      this.error(error instanceof Error ? error.message : String(error));
-    }
+    const { flags } = await this.parse(Logs);
+    const requestedEnv = flags.env?.trim() || undefined;
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
     if (!runtime) {

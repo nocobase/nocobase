@@ -302,7 +302,7 @@ test('start foreground mode explains how to restart when the local app is alread
   await Start.prototype.run.call(command);
 
   assert.deepEqual(mocks.printInfo.mock.calls, [
-    ['NocoBase is already running for "local" at http://127.0.0.1:13000. Use `nb stop -e local` before starting it again in the foreground.'],
+    ['NocoBase is already running for "local" at http://127.0.0.1:13000. Use `nb stop --env local` before starting it again in the foreground.'],
   ]);
   assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
 });
@@ -567,42 +567,6 @@ test('stop shows product-style local failure guidance', async () => {
   ]);
 });
 
-test('logs reads local app logs by positional env name', async () => {
-  const { default: Logs } = await import('../commands/logs.js');
-  const runtime = {
-    kind: 'local',
-    envName: 'app1',
-    source: 'npm',
-    projectRoot: '/tmp/nocobase',
-    env: {
-      envVars: {},
-    },
-  };
-  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
-
-  const command = createCommandHarness({
-    args: {
-      envName: 'app1',
-    },
-    flags: {
-      tail: 200,
-      follow: true,
-    },
-  });
-
-  await Logs.prototype.run.call(command);
-
-  assert.deepEqual(mocks.resolveManagedAppRuntime.mock.calls, [['app1']]);
-  assert.deepEqual(mocks.printInfo.mock.calls, [
-    ['Showing logs for "app1" (press Ctrl+C to stop).'],
-  ]);
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls, [[
-    runtime,
-    ['pm2', 'logs', '--lines', '200'],
-    { stdio: 'inherit' },
-  ]]);
-});
-
 test('logs supports --env and --no-follow for local app logs', async () => {
   const { default: Logs } = await import('../commands/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -650,10 +614,8 @@ test('logs reads docker app logs', async () => {
   });
 
   const command = createCommandHarness({
-    args: {
-      envName: 'docker-local',
-    },
     flags: {
+      env: 'docker-local',
       tail: 100,
       follow: true,
     },
@@ -676,10 +638,9 @@ test('logs explains when the requested env does not exist', async () => {
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
-    args: {
-      envName: 'local53',
+    flags: {
+      env: 'local53',
     },
-    flags: {},
   });
 
   await assert.rejects(
@@ -698,34 +659,15 @@ test('logs explains remote envs do not have local runtime logs', async () => {
   });
 
   const command = createCommandHarness({
-    args: {
-      envName: 'remote',
+    flags: {
+      env: 'remote',
     },
-    flags: {},
   });
 
   await assert.rejects(
     () => Logs.prototype.run.call(command),
     /Can't show runtime logs for "remote" from this machine\..*only has an API connection/s,
   );
-});
-
-test('logs rejects conflicting positional and flag env names', async () => {
-  const { default: Logs } = await import('../commands/logs.js');
-  const command = createCommandHarness({
-    args: {
-      envName: 'app1',
-    },
-    flags: {
-      env: 'app2',
-    },
-  });
-
-  await assert.rejects(
-    () => Logs.prototype.run.call(command),
-    /Choose one env name for logs\. You passed "app1" and --env "app2"\./,
-  );
-  assert.equal(mocks.resolveManagedAppRuntime.mock.calls.length, 0);
 });
 
 test('ps lists all configured env runtime statuses', async () => {
@@ -810,7 +752,7 @@ test('ps lists all configured env runtime statuses', async () => {
   assert.match(String(command.log.mock.calls[0]?.[0] ?? ''), /Env\|Source\|App\|Database\|URL/);
 });
 
-test('ps supports a positional env name without listing all envs first', async () => {
+test('ps supports --env without listing all envs first', async () => {
   const { default: Ps } = await import('../commands/ps.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
@@ -829,10 +771,9 @@ test('ps supports a positional env name without listing all envs first', async (
   mocks.dockerContainerIsRunning.mockResolvedValue(false);
 
   const command = createCommandHarness({
-    args: {
-      envName: 'app1',
+    flags: {
+      env: 'app1',
     },
-    flags: {},
   });
 
   await Ps.prototype.run.call(command);
@@ -849,10 +790,9 @@ test('ps explains when the requested env does not exist', async () => {
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
-    args: {
-      envName: 'local53',
+    flags: {
+      env: 'local53',
     },
-    flags: {},
   });
 
   await assert.rejects(
@@ -861,22 +801,263 @@ test('ps explains when the requested env does not exist', async () => {
   );
 });
 
-test('ps rejects conflicting positional and flag env names', async () => {
-  const { default: Ps } = await import('../commands/ps.js');
-  const command = createCommandHarness({
-    args: {
-      envName: 'app1',
+test('db ps lists all configured database runtime statuses', async () => {
+  const { default: DbPs } = await import('../commands/db/ps.js');
+  mocks.listEnvs.mockResolvedValue({
+    currentEnv: 'local',
+    envs: {
+      docker: {},
+      local: {},
+      remote: {},
     },
+  });
+  mocks.resolveManagedAppRuntime.mockImplementation(async (envName: string) => {
+    if (envName === 'docker') {
+      return {
+        kind: 'docker',
+        envName: 'docker',
+        source: 'docker',
+        containerName: 'nb-demo-docker-app',
+        workspaceName: 'nb-demo',
+        env: {
+          config: {
+            source: 'docker',
+            builtinDb: true,
+            dbDialect: 'postgres',
+            dbHost: 'nb-demo-docker-postgres',
+            dbPort: 5432,
+          },
+        },
+      };
+    }
+    if (envName === 'local') {
+      return {
+        kind: 'local',
+        envName: 'local',
+        source: 'npm',
+        projectRoot: '/tmp/nocobase',
+        workspaceName: 'nb-demo',
+        env: {
+          config: {
+            source: 'npm',
+            builtinDb: false,
+            dbDialect: 'postgres',
+            dbHost: '127.0.0.1',
+            dbPort: 5432,
+          },
+        },
+      };
+    }
+    return {
+      kind: 'remote',
+      envName: 'remote',
+      source: undefined,
+      env: {
+        config: {
+          dbDialect: 'mysql',
+        },
+      },
+    };
+  });
+  mocks.dockerContainerIsRunning.mockResolvedValueOnce(true);
+
+  const command = createCommandHarness({
+    flags: {},
+  });
+
+  await DbPs.prototype.run.call(command);
+
+  assert.deepEqual(mocks.resolveManagedAppRuntime.mock.calls, [['docker'], ['local'], ['remote']]);
+  assert.deepEqual(mocks.buildDockerDbContainerName.mock.calls[0], ['docker', 'postgres', 'nb-demo']);
+  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[0], ['Env', 'Type', 'Dialect', 'Status', 'Address']);
+  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[1], [
+    ['docker', 'builtin', 'postgres', 'running', 'nb-demo-docker-postgres:5432'],
+    ['local', 'external', 'postgres', 'external', '127.0.0.1:5432'],
+    ['remote', 'remote', 'mysql', 'remote', ''],
+  ]);
+});
+
+test('db start routes built-in database envs to docker start', async () => {
+  const { default: DbStart } = await import('../commands/db/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        dbHost: '127.0.0.1',
+        dbPort: 5432,
+      },
+    },
+  });
+  mocks.buildDockerDbContainerName.mockReturnValue('nb-demo-app1-postgres');
+  mocks.startDockerContainer.mockResolvedValue('started');
+
+  const command = createCommandHarness({
     flags: {
-      env: 'app2',
+      env: 'app1',
+    },
+  });
+
+  await DbStart.prototype.run.call(command);
+
+  assert.deepEqual(mocks.startTask.mock.calls, [
+    ['Starting the built-in database for "app1"...'],
+  ]);
+  assert.deepEqual(mocks.startDockerContainer.mock.calls, [[
+    'nb-demo-app1-postgres',
+    { stdio: 'ignore' },
+  ]]);
+  assert.deepEqual(mocks.succeedTask.mock.calls, [
+    ['The built-in database is running for "app1" at 127.0.0.1:5432.'],
+  ]);
+});
+
+test('db stop routes built-in database envs to docker stop', async () => {
+  const { default: DbStop } = await import('../commands/db/stop.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'app1',
+    source: 'docker',
+    containerName: 'nb-demo-app1-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        dbHost: 'nb-demo-app1-postgres',
+        dbPort: 5432,
+      },
+    },
+  });
+  mocks.buildDockerDbContainerName.mockReturnValue('nb-demo-app1-postgres');
+  mocks.stopDockerContainer.mockResolvedValue('stopped');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+      verbose: true,
+    },
+  });
+
+  await DbStop.prototype.run.call(command);
+
+  assert.deepEqual(mocks.startTask.mock.calls, [
+    ['Stopping the built-in database for "app1"...'],
+  ]);
+  assert.deepEqual(mocks.stopDockerContainer.mock.calls, [[
+    'nb-demo-app1-postgres',
+    { stdio: 'inherit' },
+  ]]);
+  assert.deepEqual(mocks.succeedTask.mock.calls, [
+    ['The built-in database has stopped for "app1".'],
+  ]);
+});
+
+test('db logs routes built-in database envs to docker logs', async () => {
+  const { default: DbLogs } = await import('../commands/db/logs.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        dbHost: '127.0.0.1',
+        dbPort: 5432,
+      },
+    },
+  });
+  mocks.buildDockerDbContainerName.mockReturnValue('nb-demo-app1-postgres');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+      tail: 50,
+      follow: false,
+    },
+  });
+
+  await DbLogs.prototype.run.call(command);
+
+  assert.deepEqual(mocks.printInfo.mock.calls, [
+    ['Showing recent built-in database logs for "app1".'],
+  ]);
+  assert.deepEqual(mocks.run.mock.calls, [[
+    'docker',
+    ['logs', '--tail', '50', 'nb-demo-app1-postgres'],
+    {
+      errorName: 'docker logs',
+      stdio: 'inherit',
+    },
+  ]]);
+});
+
+test('db start explains when the env does not use a built-in database', async () => {
+  const { default: DbStart } = await import('../commands/db/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+        dbHost: '127.0.0.1',
+        dbPort: 5432,
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
     },
   });
 
   await assert.rejects(
-    () => Ps.prototype.run.call(command),
-    /Choose one env name for ps\. You passed "app1" and --env "app2"\./,
+    () => DbStart.prototype.run.call(command),
+    /does not use a CLI-managed built-in database.*recreate the env with the built-in database option enabled/s,
   );
-  assert.equal(mocks.resolveManagedAppRuntime.mock.calls.length, 0);
+  assert.equal(mocks.startDockerContainer.mock.calls.length, 0);
+});
+
+test('db logs explains when the env does not use a built-in database', async () => {
+  const { default: DbLogs } = await import('../commands/db/logs.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+        dbHost: '127.0.0.1',
+        dbPort: 5432,
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+    },
+  });
+
+  await assert.rejects(
+    () => DbLogs.prototype.run.call(command),
+    /does not use a CLI-managed built-in database.*read logs from here.*recreate the env with the built-in database option enabled/s,
+  );
+  assert.equal(mocks.run.mock.calls.length, 0);
 });
 
 test('down removes docker app and built-in database containers by default', async () => {
@@ -898,10 +1079,9 @@ test('down removes docker app and built-in database containers by default', asyn
   mocks.buildDockerDbContainerName.mockReturnValue('nb-demo-docker-local-postgres');
 
   const command = createCommandHarness({
-    args: {
-      envName: 'docker-local',
+    flags: {
+      env: 'docker-local',
     },
-    flags: {},
   });
 
   await Down.prototype.run.call(command);
@@ -991,10 +1171,8 @@ test('down confirms before removing user data', async () => {
   mocks.commandSucceeds.mockResolvedValue(false);
 
   const command = createCommandHarness({
-    args: {
-      envName: 'docker-local',
-    },
     flags: {
+      env: 'docker-local',
       'remove-data': true,
     },
   });
@@ -1029,10 +1207,8 @@ test('down can remove CLI env config when requested', async () => {
   mocks.commandSucceeds.mockResolvedValue(false);
 
   const command = createCommandHarness({
-    args: {
-      envName: 'docker-local',
-    },
     flags: {
+      env: 'docker-local',
       'remove-env': true,
     },
   });
@@ -1060,10 +1236,8 @@ test('down refuses to remove data without confirmation in non-interactive mode',
   mocks.isInteractiveTerminal.mockReturnValue(false);
 
   const command = createCommandHarness({
-    args: {
-      envName: 'docker-local',
-    },
     flags: {
+      env: 'docker-local',
       'remove-data': true,
     },
   });
@@ -1087,10 +1261,9 @@ test('down explains remote envs do not have local runtime resources', async () =
   });
 
   const command = createCommandHarness({
-    args: {
-      envName: 'remote',
+    flags: {
+      env: 'remote',
     },
-    flags: {},
   });
 
   await assert.rejects(
@@ -1579,7 +1752,7 @@ test('dev explains when the app is already running on the target port', async ()
 
   await assert.rejects(
     () => Dev.prototype.run.call(command),
-    /NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb stop -e dev.*dev port/s,
+    /NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb stop --env dev.*dev port/s,
   );
   assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
 });

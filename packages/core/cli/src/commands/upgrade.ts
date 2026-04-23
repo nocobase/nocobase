@@ -337,17 +337,16 @@ export default class Upgrade extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -e local',
-    '<%= config.bin %> <%= command.id %> -s',
-    '<%= config.bin %> <%= command.id %> --verbose',
-    '<%= config.bin %> <%= command.id %> -e local-docker -s',
+    '<%= config.bin %> <%= command.id %> --env local',
+    '<%= config.bin %> <%= command.id %> --env local -s',
+    '<%= config.bin %> <%= command.id %> --env local --verbose',
+    '<%= config.bin %> <%= command.id %> --env local-docker -s',
   ];
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+      description: 'CLI env name to upgrade. Defaults to the current env when omitted',
     }),
     'skip-code-update': Flags.boolean({
       char: 's',
@@ -714,11 +713,13 @@ export default class Upgrade extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Upgrade);
     const parsed = flags as UpgradeParsedFlags;
+    const requestedEnv = parsed.env?.trim() || undefined;
+
     const commandStdio = parsed.verbose ? 'inherit' : 'ignore';
-    const runtime = await resolveManagedAppRuntime(parsed.env);
+    const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
-      this.error(formatMissingManagedAppEnvMessage(parsed.env));
+      this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
     if (runtime.kind === 'remote') {

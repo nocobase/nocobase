@@ -38,16 +38,15 @@ export default class Stop extends Command {
     'Stop NocoBase for the selected env. Local npm/git installs stop the app process, and Docker installs stop the saved app container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -e local',
-    '<%= config.bin %> <%= command.id %> --verbose',
-    '<%= config.bin %> <%= command.id %> -e local-docker',
+    '<%= config.bin %> <%= command.id %> --env local',
+    '<%= config.bin %> <%= command.id %> --env local --verbose',
+    '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+      description: 'CLI env name to stop. Defaults to the current env when omitted',
     }),
     verbose: Flags.boolean({
       description: 'Show raw shutdown output from the underlying local or Docker command',
@@ -57,12 +56,13 @@ export default class Stop extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Stop);
+    const requestedEnv = flags.env?.trim() || undefined;
 
-    const runtime = await resolveManagedAppRuntime(flags.env);
+    const runtime = await resolveManagedAppRuntime(requestedEnv);
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
 
     if (!runtime) {
-      this.error(formatMissingManagedAppEnvMessage(flags.env));
+      this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
     if (runtime.kind === 'remote') {

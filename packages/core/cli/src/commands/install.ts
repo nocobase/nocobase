@@ -30,9 +30,10 @@ import {
   validateTcpPort,
   validateEnvKey,
 } from '../lib/prompt-validators.ts';
+import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { startTask, stopTask, updateTask } from '../lib/ui.js';
-import { ensureWorkspaceName } from '../lib/auth-store.js';
+import { ensureWorkspaceName, getEnv, type Env } from '../lib/auth-store.js';
 import Download, {
   DownloadParsedFlags,
   defaultDockerRegistryForLang,
@@ -243,6 +244,7 @@ async function commandOutput(
 /** Parsed `nb install` flags (oclif output shape). */
 type InstallParsedFlags = {
   yes: boolean;
+  resume: boolean;
   env?: string;
   lang?: string;
   force: boolean;
@@ -322,23 +324,38 @@ type InstallPromptResults = {
   envAddResults: Record<string, PromptValue>;
 };
 
+type ResumePresetValues = {
+  envPreset: PromptInitialValues;
+  appPreset: PromptInitialValues;
+  downloadPreset: PromptInitialValues;
+  dbPreset: PromptInitialValues;
+  envAddPreset: PromptInitialValues;
+};
+
 export default class Install extends Command {
   static override description =
-    'Install NocoBase: database, storage, admin user, and `nocobase-v1 install`. Optionally run `nb download` first; distribution and image details are configured on `nb download`, not here.';
+    'Install NocoBase: database, storage, admin user, and `nocobase-v1 install`. Optionally run `nb download` first; distribution and image details are configured on `nb download`, not here. Use `--resume` to continue an interrupted setup from the saved workspace env config.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -f',
-    '<%= config.bin %> <%= command.id %> -l zh-CN',
-    '<%= config.bin %> <%= command.id %> --root-username nocobase --root-email admin@nocobase.com --root-password admin123',
-    '<%= config.bin %> <%= command.id %> --root-nickname "Super Admin"',
-    '<%= config.bin %> <%= command.id %> --app-root-path=./myenv/source/ --storage-path=./myenv/storage/ -e myenv',
-    '<%= config.bin %> <%= command.id %> -y --env dev --app-root-path=./dev/source/',
-    '<%= config.bin %> <%= command.id %> -y --env dev --fetch-source --app-root-path=./dev/source/',
+    '<%= config.bin %> <%= command.id %> --env app1',
+    '<%= config.bin %> <%= command.id %> --env app1 --resume',
+    '<%= config.bin %> <%= command.id %> --env app1 -f',
+    '<%= config.bin %> <%= command.id %> --env app1 -l zh-CN',
+    '<%= config.bin %> <%= command.id %> --env app1 --root-username nocobase --root-email admin@nocobase.com --root-password admin123',
+    '<%= config.bin %> <%= command.id %> --env app1 --root-nickname "Super Admin"',
+    '<%= config.bin %> <%= command.id %> --env myenv --app-root-path=./myenv/source/ --storage-path=./myenv/storage/',
+    '<%= config.bin %> <%= command.id %> --env dev -y --app-root-path=./dev/source/',
+    '<%= config.bin %> <%= command.id %> --env dev -y --fetch-source --app-root-path=./dev/source/',
   ];
   static override flags = {
     yes: Flags.boolean({
       char: 'y',
       description: 'Skip interactive prompts; use flags and defaults only',
+      default: false,
+    }),
+    resume: Flags.boolean({
+      description:
+        'Resume a previous unfinished setup for this env using the saved workspace env config',
       default: false,
     }),
     env: Flags.string({
@@ -726,6 +743,143 @@ export default class Install extends Command {
       'rootPassword',
       'rootNickname',
     ]);
+  }
+
+  private static toOptionalPromptString(value: unknown): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    const text = String(value).trim();
+    return text || undefined;
+  }
+
+  private static buildResumePresetValues(
+    env: Pick<Env, 'name' | 'config'>,
+  ): ResumePresetValues {
+    const envName = String(env.name ?? '').trim();
+    const config = env.config ?? {};
+    const source = Install.toOptionalPromptString(config.source);
+    const appRootPath = Install.toOptionalPromptString(config.appRootPath);
+    const appPort = Install.toOptionalPromptString(config.appPort);
+    const storagePath = Install.toOptionalPromptString(config.storagePath);
+    const downloadVersion = Install.toOptionalPromptString(config.downloadVersion);
+    const dockerRegistry = Install.toOptionalPromptString(config.dockerRegistry);
+    const dockerPlatform = Install.toOptionalPromptString(config.dockerPlatform);
+    const gitUrl = Install.toOptionalPromptString(config.gitUrl);
+    const npmRegistry = Install.toOptionalPromptString(config.npmRegistry);
+    const dbDialect = Install.toOptionalPromptString(config.dbDialect);
+    const dbHost = Install.toOptionalPromptString(config.dbHost);
+    const dbPort = Install.toOptionalPromptString(config.dbPort);
+    const dbDatabase = Install.toOptionalPromptString(config.dbDatabase);
+    const dbUser = Install.toOptionalPromptString(config.dbUser);
+    const dbPassword = Install.toOptionalPromptString(config.dbPassword);
+    const auth = config.auth as { type?: string; accessToken?: string } | undefined;
+
+    const appPreset: PromptInitialValues = {
+      ...(appRootPath ? { appRootPath } : {}),
+      ...(appPort ? { appPort } : {}),
+      ...(storagePath ? { storagePath } : {}),
+      ...(
+        source
+          ? { fetchSource: true }
+          : appRootPath
+            ? { fetchSource: false }
+            : {}
+      ),
+    };
+
+    const downloadPreset: PromptInitialValues = {
+      ...(source ? { source } : {}),
+      ...(downloadVersion ? { version: downloadVersion } : {}),
+      ...(dockerRegistry ? { dockerRegistry } : {}),
+      ...(dockerPlatform ? { dockerPlatform } : {}),
+      ...(gitUrl ? { gitUrl } : {}),
+      ...(npmRegistry ? { npmRegistry } : {}),
+      ...(typeof config.devDependencies === 'boolean'
+        ? { devDependencies: config.devDependencies }
+        : {}),
+      ...(typeof config.build === 'boolean' ? { build: config.build } : {}),
+      ...(typeof config.buildDts === 'boolean' ? { buildDts: config.buildDts } : {}),
+    };
+
+    const dbPreset: PromptInitialValues = {
+      ...(typeof config.builtinDb === 'boolean' ? { builtinDb: config.builtinDb } : {}),
+      ...(dbDialect ? { dbDialect } : {}),
+      ...(dbHost ? { dbHost } : {}),
+      ...(dbPort ? { dbPort } : {}),
+      ...(dbDatabase ? { dbDatabase } : {}),
+      ...(dbUser ? { dbUser } : {}),
+      ...(dbPassword ? { dbPassword } : {}),
+    };
+
+    const envAddPreset: PromptInitialValues = {};
+    if (auth?.type === 'token') {
+      envAddPreset.authType = 'token';
+      if (Install.toOptionalPromptString(auth.accessToken)) {
+        envAddPreset.accessToken = String(auth.accessToken);
+      }
+    } else if (auth?.type === 'oauth') {
+      envAddPreset.authType = 'oauth';
+    }
+
+    return {
+      envPreset: {
+        ...(envName ? { env: envName } : {}),
+      },
+      appPreset,
+      downloadPreset,
+      dbPreset,
+      envAddPreset,
+    };
+  }
+
+  private static buildResumeMissingYesFlags(flags: InstallParsedFlags): string[] {
+    const missing: string[] = [];
+    if (!Install.toOptionalPromptString(flags.lang)) {
+      missing.push('--lang');
+    }
+    if (!Install.toOptionalPromptString(flags['root-username'])) {
+      missing.push('--root-username');
+    }
+    if (!Install.toOptionalPromptString(flags['root-email'])) {
+      missing.push('--root-email');
+    }
+    if (!Install.toOptionalPromptString(flags['root-password'])) {
+      missing.push('--root-password');
+    }
+    if (!Install.toOptionalPromptString(flags['root-nickname'])) {
+      missing.push('--root-nickname');
+    }
+    return missing;
+  }
+
+  private async resolveResumePresetValues(
+    parsed: InstallParsedFlags & DownloadParsedFlags,
+    yes: boolean,
+  ): Promise<ResumePresetValues | undefined> {
+    if (!parsed.resume) {
+      return undefined;
+    }
+
+    const env = await getEnv(parsed.env, { scope: CONFIG_SCOPE });
+    if (!env) {
+      throw new Error(formatMissingManagedAppEnvMessage(parsed.env));
+    }
+
+    if (yes) {
+      const missingFlags = Install.buildResumeMissingYesFlags(parsed);
+      if (missingFlags.length > 0) {
+        throw new Error(
+          [
+            `Cannot continue setup for "${env.name}" in non-interactive resume mode yet.`,
+            `These setup-only flags are not saved in the env config: ${missingFlags.join(', ')}`,
+            `Run \`nb install --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
+          ].join('\n'),
+        );
+      }
+    }
+
+    return Install.buildResumePresetValues(env);
   }
 
   static async resolveAvailableDefaultPort(
@@ -1955,7 +2109,11 @@ export default class Install extends Command {
     parsed: InstallParsedFlags & DownloadParsedFlags,
     yes: boolean,
   ): Promise<InstallPromptResults> {
-    const envPreset = Install.buildEnvPresetValuesFromFlags(parsed);
+    const resumePreset = await this.resolveResumePresetValues(parsed, yes);
+    const envPreset = {
+      ...(resumePreset?.envPreset ?? {}),
+      ...Install.buildEnvPresetValuesFromFlags(parsed),
+    };
     const envResults = await runPromptCatalog(Install.envPrompts, {
       initialValues: {
         env: DEFAULT_INSTALL_ENV_NAME,
@@ -1967,12 +2125,26 @@ export default class Install extends Command {
     const envName =
       String(envResults.env ?? '').trim() || DEFAULT_INSTALL_ENV_NAME;
 
-    const appPreset = Install.buildAppPresetValuesFromFlags(parsed);
+    const appPreset = {
+      ...(resumePreset?.appPreset ?? {}),
+      ...Install.buildAppPresetValuesFromFlags(parsed),
+    };
     const appCatalog = Install.buildAppPromptsCatalog(envName);
     const appResults = await runPromptCatalog(appCatalog, {
       initialValues: await Install.buildAppPromptInitialValues({
         envName,
-        flags: parsed,
+        flags: {
+          ...parsed,
+          'app-root-path':
+            parsed['app-root-path']
+            ?? Install.toOptionalPromptString(appPreset.appRootPath),
+          'app-port':
+            parsed['app-port']
+            ?? Install.toOptionalPromptString(appPreset.appPort),
+          'storage-path':
+            parsed['storage-path']
+            ?? Install.toOptionalPromptString(appPreset.storagePath),
+        },
       }),
       values: appPreset,
       yes,
@@ -1982,6 +2154,7 @@ export default class Install extends Command {
     if (Boolean(appResults.fetchSource)) {
       const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults, envName);
       downloadOpts.values = {
+        ...(resumePreset?.downloadPreset ?? {}),
         ...downloadOpts.values,
         ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, envName, yes),
       };
@@ -1989,12 +2162,20 @@ export default class Install extends Command {
       downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
     }
 
-    const dbPreset = Install.buildDbPresetValuesFromFlags(parsed);
+    const dbPreset = {
+      ...(resumePreset?.dbPreset ?? {}),
+      ...Install.buildDbPresetValuesFromFlags(parsed),
+    };
     const dbResults = await runPromptCatalog(Install.buildDbPromptsCatalog(downloadResults), {
       initialValues: {
         ...downloadResults,
         ...await Install.buildDbPromptInitialValues({
-          flags: parsed,
+          flags: {
+            ...parsed,
+            'db-port':
+              parsed['db-port']
+              ?? Install.toOptionalPromptString(dbPreset.dbPort),
+          },
           downloadResults,
           dbPreset,
         }),
@@ -2017,6 +2198,7 @@ export default class Install extends Command {
       values: {
         name: envName,
         scope: 'project',
+        ...(resumePreset?.envAddPreset ?? {}),
       },
       yes,
     });
@@ -2033,10 +2215,22 @@ export default class Install extends Command {
   }
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Install);
-    const parsed = flags as unknown as InstallParsedFlags & DownloadParsedFlags;
+    const parsedResult = await this.parse(Install);
+    const flags = parsedResult.flags;
+
+    const parsed = {
+      ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
+    } as InstallParsedFlags & DownloadParsedFlags;
     if (!parsed['no-intro']) {
       p.intro('Set Up NocoBase');
+    }
+    if (parsed.resume) {
+      const envLabel = Install.toOptionalPromptString(parsed.env);
+      p.log.step(
+        envLabel
+          ? `Resuming setup for env "${envLabel}" from the saved workspace config`
+          : 'Resuming setup from the saved workspace config',
+      );
     }
     const promptResults = await this.collectPromptResults(parsed, flags.yes);
     const {

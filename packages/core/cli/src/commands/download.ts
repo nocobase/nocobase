@@ -152,20 +152,21 @@ export default class Download extends Command {
   private preparationTaskActive = false;
 
   static override description =
-    'Scaffold or fetch NocoBase: npm (create-nocobase-app), docker (image pull), or git (shallow clone).';
+    'Scaffold or fetch NocoBase from npm, Docker, or Git. `--version` is the shared version input: package version for npm, image tag for Docker, and git ref for Git.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest --no-build',
-    '<%= config.bin %> <%= command.id %> --source npm --version latest',
-    '<%= config.bin %> <%= command.id %> --source npm --version latest --output-dir=./app',
-    '<%= config.bin %> <%= command.id %> --source docker --version latest --docker-registry=nocobase/nocobase --docker-platform=arm64',
-    '<%= config.bin %> <%= command.id %> -y --source docker -v latest --docker-save -o ./docker-images',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha --no-build',
+    '<%= config.bin %> <%= command.id %> --source npm --version alpha',
+    '<%= config.bin %> <%= command.id %> --source npm --version alpha --output-dir=./app',
+    '<%= config.bin %> <%= command.id %> --source docker --version alpha --docker-registry=nocobase/nocobase --docker-platform=linux/arm64',
+    '<%= config.bin %> <%= command.id %> -y --source docker --version alpha --docker-save -o ./docker-images',
     '<%= config.bin %> <%= command.id %> --source git --version alpha --git-url=git@github.com:nocobase/nocobase.git',
-    '<%= config.bin %> <%= command.id %> -y --source git --version latest --no-build',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest --build-dts',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest --npm-registry=https://registry.npmmirror.com',
+    '<%= config.bin %> <%= command.id %> --source git --version fix/cli-v2',
+    '<%= config.bin %> <%= command.id %> -y --source git --version fix/cli-v2 --no-build',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha --build-dts',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha --npm-registry=https://registry.npmmirror.com',
   ];
 
   static override flags = {
@@ -194,7 +195,7 @@ export default class Download extends Command {
     version: Flags.string({
       char: 'v',
       description:
-        'NocoBase version/tag/branch to download or pull (for example: alpha, beta, latest).',
+        'Shared version input. For npm this is the package version, for Docker the image tag, and for Git a git ref such as a branch name (for example: alpha, beta, latest, fix/cli-v2).',
     }),
     replace: Flags.boolean({
       char: 'r',
@@ -262,7 +263,7 @@ export default class Download extends Command {
     },
     version: {
       type: 'text',
-      message: 'Which version would you like to use?',
+      message: 'Which version would you like to use? You can enter a package version, Docker image tag, or Git ref such as a branch name.',
       placeholder: 'alpha',
       initialValue: 'alpha',
       yesInitialValue: 'alpha',
@@ -844,7 +845,11 @@ export default class Download extends Command {
     gitArgs.push('--branch', branch);
     gitArgs.push('--depth', '1', repoUrl, outputDir);
     this.finishPreparationTask();
-    p.log.step(`Cloning NocoBase from ${repoUrl} (${branch})`);
+    p.log.step(
+      branch === versionSpec
+        ? `Cloning NocoBase from ${repoUrl} (${branch})`
+        : `Cloning NocoBase from ${repoUrl} (${branch}, resolved from ${versionSpec})`,
+    );
     await this.runExternalCommand('git', gitArgs, {
       errorName: 'git clone',
       loadingMessage: 'Cloning the repository',

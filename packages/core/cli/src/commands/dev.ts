@@ -20,7 +20,7 @@ function formatUnsupportedRuntimeMessage(kind: 'docker' | 'remote', envName: str
     return [
       `Can't run dev mode for "${envName}".`,
       'This env is managed by Docker, but `nb dev` requires a local npm or Git source directory.',
-      `Use \`nb logs ${envName}\` to inspect the Docker app, or create a source-based env with \`nb init --env ${envName} --source git\`.`,
+      `Use \`nb logs --env ${envName}\` to inspect the Docker app, or create a source-based env with \`nb init --env ${envName} --source git\`.`,
     ].join('\n');
   }
 
@@ -66,19 +66,18 @@ export default class Dev extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -e app1',
-    '<%= config.bin %> <%= command.id %> -e app1 --db-sync',
-    '<%= config.bin %> <%= command.id %> -e app1 --port 12000',
-    '<%= config.bin %> <%= command.id %> -e app1 --client',
-    '<%= config.bin %> <%= command.id %> -e app1 --server',
-    '<%= config.bin %> <%= command.id %> -e app1 --inspect 9229',
+    '<%= config.bin %> <%= command.id %> --env app1',
+    '<%= config.bin %> <%= command.id %> --env app1 --db-sync',
+    '<%= config.bin %> <%= command.id %> --env app1 --port 12000',
+    '<%= config.bin %> <%= command.id %> --env app1 --client',
+    '<%= config.bin %> <%= command.id %> --env app1 --server',
+    '<%= config.bin %> <%= command.id %> --env app1 --inspect 9229',
   ];
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+      description: 'CLI env name for dev mode. Defaults to the current env when omitted',
       required: false,
     }),
     'db-sync': Flags.boolean({
@@ -109,10 +108,12 @@ export default class Dev extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Dev);
-    const runtime = await resolveManagedAppRuntime(flags.env);
+    const requestedEnv = flags.env?.trim() || undefined;
+
+    const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
-      this.error(formatMissingManagedAppEnvMessage(flags.env));
+      this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
     if (runtime.kind === 'docker' || runtime.kind === 'remote') {
@@ -129,8 +130,8 @@ export default class Dev extends Command {
         [
           `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
           flags.port
-            ? `Choose another dev port with --port, or stop the running app with \`nb stop -e ${runtime.envName}\` first.`
-            : `Run \`nb stop -e ${runtime.envName}\` before starting dev mode, or choose another dev port with --port.`,
+            ? `Choose another dev port with --port, or stop the running app with \`nb stop --env ${runtime.envName}\` first.`
+            : `Run \`nb stop --env ${runtime.envName}\` before starting dev mode, or choose another dev port with --port.`,
         ].join('\n'),
       );
     }

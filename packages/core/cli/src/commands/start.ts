@@ -88,21 +88,21 @@ export default class Start extends Command {
     'Start NocoBase for the selected env. Local npm/git installs run the app command, and Docker installs start the saved app container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -e local',
-    '<%= config.bin %> <%= command.id %> --quickstart',
-    '<%= config.bin %> <%= command.id %> --port 12000',
-    '<%= config.bin %> <%= command.id %> --daemon',
-    '<%= config.bin %> <%= command.id %> --no-daemon',
-    '<%= config.bin %> <%= command.id %> --instances 2',
-    '<%= config.bin %> <%= command.id %> --launch-mode pm2',
-    '<%= config.bin %> <%= command.id %> --verbose',
-    '<%= config.bin %> <%= command.id %> -e local-docker',
+    '<%= config.bin %> <%= command.id %> --env local',
+    '<%= config.bin %> <%= command.id %> --env local --quickstart',
+    '<%= config.bin %> <%= command.id %> --env local --port 12000',
+    '<%= config.bin %> <%= command.id %> --env local --daemon',
+    '<%= config.bin %> <%= command.id %> --env local --no-daemon',
+    '<%= config.bin %> <%= command.id %> --env local --instances 2',
+    '<%= config.bin %> <%= command.id %> --env local --launch-mode pm2',
+    '<%= config.bin %> <%= command.id %> --env local --verbose',
+    '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
+
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+      description: 'CLI env name to start. Defaults to the current env when omitted',
     }),
     quickstart: Flags.boolean({ description: 'Quickstart the application', required: false }),
     port: Flags.string({ description: 'Port (overrides appPort from env config when set)', char: 'p', required: false }),
@@ -123,13 +123,14 @@ export default class Start extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Start);
-    const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
+    const requestedEnv = flags.env?.trim() || undefined;
 
-    const runtime = await resolveManagedAppRuntime(flags.env);
+    const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
+    const runtime = await resolveManagedAppRuntime(requestedEnv);
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
 
     if (!runtime) {
-      this.error(formatMissingManagedAppEnvMessage(flags.env));
+      this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
     if (runtime.kind === 'remote') {
@@ -156,7 +157,7 @@ export default class Start extends Command {
           [
             `Can't apply ${unsupportedFlags.join(', ')} to "${runtime.envName}".`,
             'This env is managed by Docker, so those options are only available for local npm/git installs.',
-            `Run \`nb start -e ${runtime.envName}\` to start the saved container, or recreate the env if you need different runtime settings.`,
+            `Run \`nb start --env ${runtime.envName}\` to start the saved container, or recreate the env if you need different runtime settings.`,
           ].join('\n'),
         );
       }
@@ -212,7 +213,7 @@ export default class Start extends Command {
     if (await isAppAlreadyRunning(appUrl)) {
       if (flags.daemon === false) {
         printInfo(
-          `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}. Use \`nb stop -e ${runtime.envName}\` before starting it again in the foreground.`,
+          `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}. Use \`nb stop --env ${runtime.envName}\` before starting it again in the foreground.`,
         );
       } else {
         succeedTask(

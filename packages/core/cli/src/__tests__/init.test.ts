@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   runNpm: vi.fn(),
   getEnv: vi.fn(),
+  upsertEnv: vi.fn(),
   promptInfo: vi.fn(),
   promptWarn: vi.fn(),
   promptStep: vi.fn(),
@@ -26,6 +27,7 @@ const mocks = vi.hoisted(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.upsertEnv.mockResolvedValue(undefined);
 });
 
 vi.mock('../lib/prompt-web-ui.ts', () => ({
@@ -42,6 +44,12 @@ vi.mock('../lib/auth-store.ts', async (importOriginal) => {
         return impl(...args);
       }
       return actual.getEnv(...args);
+    },
+    upsertEnv: (...args: Parameters<typeof actual.upsertEnv>) => {
+      if (mocks.upsertEnv.mock.calls.length || mocks.upsertEnv.getMockImplementation()) {
+        return mocks.upsertEnv(...args);
+      }
+      return actual.upsertEnv(...args);
     },
   };
 });
@@ -203,13 +211,34 @@ test('nb init forwards download options to nb install for a new app flow', async
   await Init.prototype.run.call(command);
 
   assert.equal(mocks.runNpm.mock.calls.length, 0);
+  assert.deepEqual(mocks.upsertEnv.mock.calls, [[
+    'demoapp',
+    {
+      baseUrl: 'http://127.0.0.1:13080/api',
+      source: 'git',
+      downloadVersion: 'beta',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      npmRegistry: 'https://registry.npmmirror.com',
+      appRootPath: './apps/demoapp',
+      storagePath: './storage/demoapp',
+      appPort: '13080',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'demoapp',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    },
+    { scope: 'project' },
+  ]]);
   assert.deepEqual(runCommand.mock.calls, [
     [
       'install',
       [
         '-y',
         '--no-intro',
-        '-e',
+        '--env',
         'demoapp',
         '--lang',
         'en-US',
@@ -253,6 +282,105 @@ test('nb init forwards download options to nb install for a new app flow', async
         '--root-nickname',
         'Admin',
       ],
+    ],
+  ]);
+});
+
+test('nb init saves env config before install starts so failures still leave the env configured', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    appName: 'demoapp',
+    hasNocobase: 'no',
+    installSkills: false,
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    fetchSource: true,
+    source: 'docker',
+    version: 'alpha',
+    dockerRegistry: 'nocobase/nocobase',
+    dockerPlatform: 'linux/arm64',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    dbHost: 'demoapp-postgres',
+    dbPort: '5432',
+    dbDatabase: 'demoapp',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    rootUsername: 'admin',
+    rootEmail: 'admin@example.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async (commandName: string) => {
+    if (commandName === 'install') {
+      throw new Error('install failed');
+    }
+    return undefined;
+  });
+
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+      },
+    })),
+    config: { runCommand },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await assert.rejects(
+    () => Init.prototype.run.call(command),
+    /install failed/,
+  );
+
+  assert.equal(mocks.upsertEnv.mock.calls.length, 1);
+  assert.equal(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0], true);
+});
+
+test('nb init --resume delegates to nb install --resume for the selected env', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        resume: true,
+        yes: false,
+        ui: false,
+        'install-skills': false,
+        env: 'app1',
+      },
+    })),
+    config: { runCommand },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(`unexpected error: ${message}`);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
+  assert.deepEqual(runCommand.mock.calls, [
+    [
+      'install',
+      ['--no-intro', '--env', 'app1', '--resume'],
     ],
   ]);
 });
@@ -462,7 +590,7 @@ test('nb init --force allows reconfiguring an existing workspace env and warns b
 
   assert.deepEqual(runCommand.mock.calls[0], [
     'install',
-    ['-y', '--no-intro', '-e', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
+    ['-y', '--no-intro', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
   ]);
   assert.equal(
     mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env')),

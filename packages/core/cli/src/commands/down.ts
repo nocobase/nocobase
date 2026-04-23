@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command, Flags } from '@oclif/core';
+import { Command, Flags } from '@oclif/core';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -28,19 +28,6 @@ import {
   startTask,
   succeedTask,
 } from '../lib/ui.js';
-
-function resolveRequestedEnv(positionalEnv?: string, flagEnv?: string): string | undefined {
-  const fromArg = positionalEnv?.trim();
-  const fromFlag = flagEnv?.trim();
-
-  if (fromArg && fromFlag && fromArg !== fromFlag) {
-    throw new Error(
-      `Choose one env name for down. You passed "${fromArg}" and --env "${fromFlag}".`,
-    );
-  }
-
-  return fromArg || fromFlag || undefined;
-}
 
 function resolveConfiguredPath(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -125,24 +112,15 @@ export default class Down extends Command {
     'Stop NocoBase and remove local runtime containers for the selected env. Data, source files, and env config are kept unless explicitly requested.';
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> app1',
-    '<%= config.bin %> <%= command.id %> -e app1',
-    '<%= config.bin %> <%= command.id %> app1 --remove-data',
-    '<%= config.bin %> <%= command.id %> app1 --remove-source --remove-env',
+    '<%= config.bin %> <%= command.id %> --env app1',
+    '<%= config.bin %> <%= command.id %> --env app1 --remove-data',
+    '<%= config.bin %> <%= command.id %> --env app1 --remove-source --remove-env',
   ];
-
-  static override args = {
-    envName: Args.string({
-      description: 'CLI env name (same as --env). Defaults to the current env when omitted',
-      required: false,
-    }),
-  };
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb install`). Defaults to the current env when omitted',
+      description: 'CLI env name to bring down. Defaults to the current env when omitted',
     }),
     'remove-data': Flags.boolean({
       description: 'Delete storage and managed database data after confirmation',
@@ -168,14 +146,8 @@ export default class Down extends Command {
   };
 
   public async run(): Promise<void> {
-    const { args, flags } = await this.parse(Down);
-    let requestedEnv: string | undefined;
-
-    try {
-      requestedEnv = resolveRequestedEnv(args.envName, flags.env);
-    } catch (error: unknown) {
-      this.error(error instanceof Error ? error.message : String(error));
-    }
+    const { flags } = await this.parse(Down);
+    const requestedEnv = flags.env?.trim() || undefined;
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
     if (!runtime) {

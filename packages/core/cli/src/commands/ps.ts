@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command, Flags } from '@oclif/core';
+import { Command, Flags } from '@oclif/core';
 import {
   buildDockerDbContainerName,
   dockerContainerExists,
@@ -20,19 +20,6 @@ import { listEnvs } from '../lib/auth-store.js';
 import { renderTable } from '../lib/ui.js';
 
 type RuntimeStatus = 'running' | 'stopped' | 'missing' | 'remote' | 'external' | '-';
-
-function resolveRequestedEnv(positionalEnv?: string, flagEnv?: string): string | undefined {
-  const fromArg = positionalEnv?.trim();
-  const fromFlag = flagEnv?.trim();
-
-  if (fromArg && fromFlag && fromArg !== fromFlag) {
-    throw new Error(
-      `Choose one env name for ps. You passed "${fromArg}" and --env "${fromFlag}".`,
-    );
-  }
-
-  return fromArg || fromFlag || undefined;
-}
 
 function appUrl(runtime: ManagedAppRuntime): string {
   const port = String(runtime.env.config.appPort ?? '').trim();
@@ -112,33 +99,19 @@ export default class Ps extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> app1',
-    '<%= config.bin %> <%= command.id %> -e app1',
+    '<%= config.bin %> <%= command.id %> --env app1',
   ];
-
-  static override args = {
-    envName: Args.string({
-      description: 'CLI env name (same as --env). Defaults to all envs when omitted',
-      required: false,
-    }),
-  };
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name to inspect',
+      description: 'CLI env name to inspect. Omit to show all configured envs',
     }),
   };
 
   public async run(): Promise<void> {
-    const { args, flags } = await this.parse(Ps);
-    let requestedEnv: string | undefined;
-
-    try {
-      requestedEnv = resolveRequestedEnv(args.envName, flags.env);
-    } catch (error: unknown) {
-      this.error(error instanceof Error ? error.message : String(error));
-    }
+    const { flags } = await this.parse(Ps);
+    const requestedEnv = flags.env?.trim() || undefined;
 
     const envNames = requestedEnv
       ? [requestedEnv]

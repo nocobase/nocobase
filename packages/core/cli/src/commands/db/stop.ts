@@ -10,31 +10,31 @@
 import { Command, Flags } from '@oclif/core';
 import {
   formatMissingManagedAppEnvMessage,
-  startDockerContainer,
+  stopDockerContainer,
 } from '../../lib/app-runtime.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 import { formatUnmanagedDbMessage, resolveDbRuntime } from './shared.js';
 
-function formatDbStartFailure(envName: string, message: string): string {
+function formatDbStopFailure(envName: string, message: string): string {
   if (/does not exist/i.test(message)) {
     return [
-      `Can't start the database for "${envName}" yet.`,
+      `Can't stop the database for "${envName}" yet.`,
       'The saved built-in database container for this env could not be found on this machine.',
-      'Try reinstalling the env, or check whether the container was removed outside the CLI.',
+      'If it was removed manually, reinstall or reconnect the env before trying again.',
       `Details: ${message}`,
     ].join('\n');
   }
 
   return [
-    `Couldn't start the database for "${envName}".`,
+    `Couldn't stop the database for "${envName}".`,
     'Check that the built-in database runtime for this env is still available, then try again.',
     `Details: ${message}`,
   ].join('\n');
 }
 
-export default class DbStart extends Command {
+export default class DbStop extends Command {
   static override description =
-    'Start the built-in database container for the selected env.';
+    'Stop the built-in database container for the selected env.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -45,16 +45,16 @@ export default class DbStart extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name to start the built-in database for. Defaults to the current env when omitted',
+      description: 'CLI env name to stop the built-in database for. Defaults to the current env when omitted',
     }),
     verbose: Flags.boolean({
-      description: 'Show raw startup output from the underlying Docker command',
+      description: 'Show raw shutdown output from the underlying Docker command',
       default: false,
     }),
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(DbStart);
+    const { flags } = await this.parse(DbStop);
     const requestedEnv = flags.env?.trim() || undefined;
 
     const runtime = await resolveDbRuntime(requestedEnv);
@@ -63,23 +63,23 @@ export default class DbStart extends Command {
     }
 
     if (runtime.kind !== 'builtin') {
-      this.error(formatUnmanagedDbMessage('start', runtime));
+      this.error(formatUnmanagedDbMessage('stop', runtime));
     }
 
-    startTask(`Starting the built-in database for "${runtime.envName}"...`);
+    startTask(`Stopping the built-in database for "${runtime.envName}"...`);
     try {
-      const state = await startDockerContainer(runtime.containerName, {
+      const state = await stopDockerContainer(runtime.containerName, {
         stdio: flags.verbose ? 'inherit' : 'ignore',
       });
       succeedTask(
-        state === 'already-running'
-          ? `The built-in database is already running for "${runtime.envName}"${runtime.address ? ` at ${runtime.address}` : ''}.`
-          : `The built-in database is running for "${runtime.envName}"${runtime.address ? ` at ${runtime.address}` : ''}.`,
+        state === 'already-stopped'
+          ? `The built-in database is already stopped for "${runtime.envName}".`
+          : `The built-in database has stopped for "${runtime.envName}".`,
       );
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      failTask(`Failed to start the built-in database for "${runtime.envName}".`);
-      this.error(formatDbStartFailure(runtime.envName, message));
+      failTask(`Failed to stop the built-in database for "${runtime.envName}".`);
+      this.error(formatDbStopFailure(runtime.envName, message));
     }
   }
 }

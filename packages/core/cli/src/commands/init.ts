@@ -13,7 +13,7 @@ import pc from 'picocolors';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
-import { getEnv } from '../lib/auth-store.ts';
+import { getEnv, upsertEnv } from '../lib/auth-store.ts';
 import {
   type PromptBlock,
   type PromptCatalogValues,
@@ -37,6 +37,7 @@ import _ from 'lodash';
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
+const CONFIG_SCOPE = 'project' as const;
 
 function withExtraHidden(
   def: PromptBlock,
@@ -115,6 +116,13 @@ function formatInitValidationMessage(message: string): string {
   return message;
 }
 
+function formatResumeEnvRequiredMessage(): string {
+  return [
+    'Env name is required when resuming setup.',
+    'App name is also the CLI env name. Use `nb init --resume --env <envName>` to continue.',
+  ].join('\n');
+}
+
 export default class Init extends Command {
   static override summary =
     'Set up NocoBase so coding agents can connect and work with it';
@@ -127,6 +135,8 @@ export default class Init extends Command {
 
 It can also install NocoBase AI coding skills (\`nocobase/skills\`) so agents get the project-specific workflow guidance.
 
+If setup was interrupted earlier, use \`--resume\` with an existing env name to continue from the saved workspace config.
+
 Prompt modes:
 - Default: guided prompts in the terminal.
 - \`--ui\`: open the same setup flow in a local browser form.
@@ -137,11 +147,13 @@ Prompt modes:
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env app1',
+    '<%= config.bin %> <%= command.id %> --env app1 --ui',
     '<%= config.bin %> <%= command.id %> --ui',
-    '<%= config.bin %> <%= command.id %> --yes --env app1',
-    '<%= config.bin %> <%= command.id %> --yes --env app1 --source docker --version alpha',
-    '<%= config.bin %> <%= command.id %> --yes --env app1 --source npm --version latest --app-port 13080',
-    '<%= config.bin %> <%= command.id %> --yes --env app1 --source git --version alpha',
+    '<%= config.bin %> <%= command.id %> --env app1 --yes',
+    '<%= config.bin %> <%= command.id %> --env app1 --resume',
+    '<%= config.bin %> <%= command.id %> --env app1 --yes --source docker --version alpha',
+    '<%= config.bin %> <%= command.id %> --env app1 --yes --source npm --version alpha --app-port 13080',
+    '<%= config.bin %> <%= command.id %> --env app1 --yes --source git --version fix/cli-v2',
     '<%= config.bin %> <%= command.id %> --ui --ui-port 3000',
   ];
 
@@ -239,8 +251,12 @@ Prompt modes:
   static flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip prompts and create a new local NocoBase app. Requires --env.',
+      description: 'Skip prompts and create a new local NocoBase app. Requires an app/env name.',
       default: false,
+    }),
+    env: Flags.string({
+      char: 'e',
+      description: 'App name / CLI env name for this setup. Required with --yes and --resume',
     }),
     'install-skills': Flags.boolean({
       description: 'Install NocoBase AI coding skills (`nocobase/skills`) for this workspace',
@@ -261,28 +277,104 @@ Prompt modes:
       min: 0,
       max: 65535,
     }),
-    ..._.omit(Install.flags, ['yes']),
+    ..._.omit(Install.flags, ['yes', 'env']),
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Init);
+    const parsedResult = await this.parse(Init);
+    const flags = parsedResult.flags;
+    const normalizedFlags = { ...flags };
 
-    if (flags.ui && flags.yes) {
+    if (normalizedFlags.ui && normalizedFlags.yes) {
       this.error('--ui cannot be used with --yes.');
     }
 
+    if (normalizedFlags.ui && normalizedFlags.resume) {
+      this.error('--ui cannot be used with --resume.');
+    }
+
     if (
-      !flags.ui &&
-      (flags['ui-host'] !== undefined || flags['ui-port'] !== undefined)
+      !normalizedFlags.ui &&
+      (normalizedFlags['ui-host'] !== undefined || normalizedFlags['ui-port'] !== undefined)
     ) {
       this.error('--ui-host and --ui-port require --ui.');
     }
 
+    if (normalizedFlags.resume) {
+      const envName = String(normalizedFlags.env ?? '').trim();
+      if (!envName) {
+        p.log.error(formatResumeEnvRequiredMessage());
+        this.exit(1);
+      }
+
+      p.intro('Set Up NocoBase for Coding Agents');
+
+      if (Boolean(normalizedFlags['install-skills'])) {
+        try {
+          p.log.step('Installing NocoBase agent skills (npx -y skills add nocobase/skills)');
+          await run('npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y']);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          p.outro(pc.red(`Skills install failed: ${message}`));
+          this.error(message);
+        }
+      }
+
+      try {
+        p.log.step(`Resuming setup for env "${envName}" from the saved workspace config`);
+        await this.config.runCommand(
+          'install',
+          this.buildResumeInstallArgv(
+            normalizedFlags as {
+              yes?: boolean;
+              env?: string;
+              lang?: string;
+              force?: boolean;
+              replace?: boolean;
+              'app-root-path'?: string;
+              'app-port'?: string;
+              'storage-path'?: string;
+              'root-username'?: string;
+              'root-email'?: string;
+              'root-password'?: string;
+              'root-nickname'?: string;
+              'builtin-db'?: boolean;
+              'db-dialect'?: string;
+              'db-host'?: string;
+              'db-port'?: string;
+              'db-database'?: string;
+              'db-user'?: string;
+              'db-password'?: string;
+              'fetch-source'?: boolean;
+              source?: string;
+              version?: string;
+              'dev-dependencies'?: boolean;
+              build?: boolean;
+              'build-dts'?: boolean;
+              'output-dir'?: string;
+              'git-url'?: string;
+              'docker-registry'?: string;
+              'docker-platform'?: string;
+              'docker-save'?: boolean;
+              'npm-registry'?: string;
+            },
+          ),
+        );
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        p.outro(pc.red(message));
+        this.error(message);
+      }
+
+      p.outro('Workspace init finished.');
+      return;
+    }
+
     const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY);
-    const useBrowserUi = Boolean(flags.ui);
+    const useBrowserUi = Boolean(normalizedFlags.ui);
 
     let presetValues = this.buildPresetValuesFromFlags(
-      flags as {
+      normalizedFlags as {
         env?: string;
         lang?: string;
         force?: boolean;
@@ -317,7 +409,7 @@ Prompt modes:
       },
     );
 
-    if (flags.yes && !String(presetValues.appName ?? '').trim()) {
+    if (normalizedFlags.yes && !String(presetValues.appName ?? '').trim()) {
       const formatted = formatInitValidationMessage(
         'Non-interactive: "appName" is required; set initialValues.appName, yesInitialValues.appName, yesInitialValue on the block, or initialValue.',
       );
@@ -334,7 +426,7 @@ Prompt modes:
     } else {
       p.intro('Set Up NocoBase for Coding Agents');
 
-      if (flags.yes) {
+      if (normalizedFlags.yes) {
         p.log.info(
           `Prompts skipped (--yes). NocoBase will be installed for env "${appName}" using the provided flags and safe defaults.`,
         );
@@ -346,7 +438,7 @@ Prompt modes:
     }
 
     const dynamicInitialValues = await Init.buildDynamicInitialValuesForInstall(
-      flags as {
+      normalizedFlags as {
         'app-port'?: string;
         'db-port'?: string;
         yes?: boolean;
@@ -360,8 +452,8 @@ Prompt modes:
           ...dynamicInitialValues,
           ...presetValues,
         },
-        host: flags['ui-host']?.trim() || '127.0.0.1',
-        port: flags['ui-port'] ?? 0,
+        host: normalizedFlags['ui-host']?.trim() || '127.0.0.1',
+        port: normalizedFlags['ui-port'] ?? 0,
         pageTitle: 'Set Up NocoBase for Coding Agents',
         documentHeading: 'Set Up NocoBase for Coding Agents',
         documentHint:
@@ -380,7 +472,7 @@ Prompt modes:
     const results = await runPromptCatalog(Init.prompts, {
       initialValues: dynamicInitialValues,
       values: presetValues,
-      yes: flags.yes || useBrowserUi || !interactive,
+      yes: normalizedFlags.yes || useBrowserUi || !interactive,
       hooks: {
         onCancel: () => {
           p.cancel('Init cancelled.');
@@ -401,9 +493,9 @@ Prompt modes:
       ? await getEnv(String(results.appName ?? '').trim(), { scope: 'project' })
       : undefined;
 
-    if (existingEnv && Boolean(flags.force)) {
+    if (existingEnv && Boolean(normalizedFlags.force)) {
       p.log.warn(
-        `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} in this workspace because ${pc.bold('--force')} was set. The env config will be updated after install succeeds.`,
+        `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} in this workspace because ${pc.bold('--force')} was set. The env config will be updated before install starts, then refreshed again after install succeeds.`,
       );
     }
 
@@ -426,8 +518,10 @@ Prompt modes:
         p.log.step('Running nb env add');
         await this.config.runCommand('env:add', this.buildEnvAddArgv(results));
       } else {
+        p.log.step('Saving the local env config');
+        await this.persistManagedEnvConfig(results);
         p.log.step('Running nb install');
-        await this.config.runCommand('install', this.buildInstallArgv(results, flags));
+        await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -699,10 +793,56 @@ Prompt modes:
     return existsSync(path.resolve(process.cwd(), '.agents'));
   }
 
+  private async persistManagedEnvConfig(results: Record<string, string | number | boolean>): Promise<void> {
+    const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
+    const appPort = String(results.appPort ?? '').trim();
+    const source = String(results.source ?? '').trim();
+    const version = String(results.version ?? '').trim();
+    const dockerRegistry = String(results.dockerRegistry ?? '').trim();
+    const dockerPlatform = String(results.dockerPlatform ?? '').trim();
+    const gitUrl = String(results.gitUrl ?? '').trim();
+    const npmRegistry = String(results.npmRegistry ?? '').trim();
+    const appRootPath = String(results.appRootPath ?? '').trim();
+    const storagePath = String(results.storagePath ?? '').trim();
+    const dbDialect = String(results.dbDialect ?? '').trim();
+    const dbHost = String(results.dbHost ?? '').trim();
+    const dbPort = String(results.dbPort ?? '').trim();
+    const dbDatabase = String(results.dbDatabase ?? '').trim();
+    const dbUser = String(results.dbUser ?? '').trim();
+    const dbPassword = String(results.dbPassword ?? '');
+
+    await upsertEnv(
+      envName,
+      {
+        ...(appPort ? { baseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(source ? { source } : {}),
+        ...(version ? { downloadVersion: version } : {}),
+        ...(dockerRegistry ? { dockerRegistry } : {}),
+        ...(dockerPlatform ? { dockerPlatform } : {}),
+        ...(gitUrl ? { gitUrl } : {}),
+        ...(npmRegistry ? { npmRegistry } : {}),
+        ...(appRootPath ? { appRootPath } : {}),
+        ...(storagePath ? { storagePath } : {}),
+        ...(appPort ? { appPort } : {}),
+        ...(results.devDependencies !== undefined ? { devDependencies: Boolean(results.devDependencies) } : {}),
+        ...(results.build !== undefined ? { build: Boolean(results.build) } : {}),
+        ...(results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
+        ...(results.builtinDb !== undefined ? { builtinDb: Boolean(results.builtinDb) } : {}),
+        ...(dbDialect ? { dbDialect } : {}),
+        ...(dbHost ? { dbHost } : {}),
+        ...(dbPort ? { dbPort } : {}),
+        ...(dbDatabase ? { dbDatabase } : {}),
+        ...(dbUser ? { dbUser } : {}),
+        ...(dbPassword ? { dbPassword } : {}),
+      },
+      { scope: CONFIG_SCOPE },
+    );
+  }
+
   private buildEnvAddArgv(results: Record<string, string | number | boolean>): string[] {
     const argv = [String(results.appName ?? DEFAULT_INIT_APP_NAME)];
     argv.push('--no-intro');
-    argv.push('--scope', 'project');
+    argv.push('--scope', CONFIG_SCOPE);
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
 
@@ -716,13 +856,23 @@ Prompt modes:
   private buildInstallArgv(
     results: Record<string, string | number | boolean>,
     flags: { yes?: boolean; force?: boolean; build?: boolean },
+    options?: {
+      nonInteractive?: boolean;
+      resume?: boolean;
+    },
   ): string[] {
-    const argv = ['-y', '--no-intro'];
+    const argv = ['--no-intro'];
+    if (options?.nonInteractive ?? true) {
+      argv.unshift('-y');
+    }
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
 
-    argv.push('-e', envName);
+    argv.push('--env', envName);
+    if (options?.resume) {
+      argv.push('--resume');
+    }
 
     const lang = String(results.lang ?? '').trim();
     if (lang) {
@@ -867,5 +1017,48 @@ Prompt modes:
     }
 
     return argv;
+  }
+
+  private buildResumeInstallArgv(flags: {
+    yes?: boolean;
+    env?: string;
+    lang?: string;
+    force?: boolean;
+    replace?: boolean;
+    'app-root-path'?: string;
+    'app-port'?: string;
+    'storage-path'?: string;
+    'root-username'?: string;
+    'root-email'?: string;
+    'root-password'?: string;
+    'root-nickname'?: string;
+    'builtin-db'?: boolean;
+    'db-dialect'?: string;
+    'db-host'?: string;
+    'db-port'?: string;
+    'db-database'?: string;
+    'db-user'?: string;
+    'db-password'?: string;
+    'fetch-source'?: boolean;
+    source?: string;
+    version?: string;
+    'dev-dependencies'?: boolean;
+    build?: boolean;
+    'build-dts'?: boolean;
+    'output-dir'?: string;
+    'git-url'?: string;
+    'docker-registry'?: string;
+    'docker-platform'?: string;
+    'docker-save'?: boolean;
+    'npm-registry'?: string;
+  }): string[] {
+    return this.buildInstallArgv(
+      this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>,
+      flags,
+      {
+        nonInteractive: Boolean(flags.yes),
+        resume: true,
+      },
+    );
   }
 }
