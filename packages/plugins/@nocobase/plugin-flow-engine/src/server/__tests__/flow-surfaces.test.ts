@@ -1811,6 +1811,164 @@ describe('flowSurfaces resource', () => {
     expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
   });
 
+  it('should apply addBlock defaultActionSettings to auto-created filter actions', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Default filter addBlock page',
+      tabTitle: 'Default filter addBlock tab',
+    });
+    const defaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'username',
+          operator: '$includes',
+          value: '',
+        },
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '',
+        },
+      ],
+    };
+
+    const tableBlockUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'table',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+      {
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username', 'email'],
+            defaultFilter,
+          },
+        },
+      },
+    );
+
+    const tableReadback = await getSurface(rootAgent, {
+      uid: tableBlockUid,
+    });
+    const filterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['username', 'email']);
+    expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
+    expect(filterAction?.props?.filterValue).toEqual(defaultFilter);
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
+      'username',
+      'email',
+    ]);
+    expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+  });
+
+  it('should apply addBlocks item defaultActionSettings to auto-created filter actions', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Default filter addBlocks page',
+      tabTitle: 'Default filter addBlocks tab',
+    });
+    const tabReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    const tabGridUid = tabReadback.tree?.subModels?.grid?.uid;
+    expect(tabGridUid).toBeTruthy();
+    const defaultFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: '',
+        },
+      ],
+    };
+
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: tabGridUid,
+        },
+        blocks: [
+          {
+            key: 'usersTable',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultActionSettings: {
+              filter: {
+                filterableFieldNames: ['nickname'],
+                defaultFilter,
+              },
+            },
+          },
+          {
+            key: 'notes',
+            type: 'markdown',
+            settings: {
+              content: 'Notes',
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    expect(addBlocksData.successCount).toBe(2);
+    expect(addBlocksData.errorCount).toBe(0);
+
+    const tableBlockUid = addBlocksData.blocks.find((item: any) => item.key === 'usersTable')?.result?.uid;
+    const tableReadback = await getSurface(rootAgent, {
+      uid: tableBlockUid,
+    });
+    const filterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname']);
+    expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
+    expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+  });
+
+  it('should reject invalid addBlock defaultActionSettings payloads', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Default filter invalid page',
+      tabTitle: 'Default filter invalid tab',
+    });
+
+    const invalidKeyRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'markdown',
+        defaultActionSettings: {
+          refresh: {},
+        },
+      },
+    });
+    expect(invalidKeyRes.status).toBe(400);
+    expect(readErrorMessage(invalidKeyRes)).toContain("defaultActionSettings does not support 'refresh'");
+
+    const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'markdown',
+        defaultActionSettings: {
+          filter: 'username',
+        },
+      },
+    });
+    expect(invalidShapeRes.status).toBe(400);
+    expect(readErrorMessage(invalidShapeRes)).toContain('defaultActionSettings.filter must be an object');
+  });
+
   it('should normalize and validate filter action filter settings payloads', async () => {
     const page = await createPage(rootAgent, {
       title: 'Filter action configure page',
@@ -8176,7 +8334,13 @@ function getRouteBackedTabs(readback: any) {
   return _.castArray(readback?.tree?.subModels?.tabs || []);
 }
 
-async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
+async function addBlock(
+  rootAgent: any,
+  targetUid: string,
+  type: string,
+  resourceInit?: Record<string, any>,
+  extraValues: Record<string, any> = {},
+) {
   const normalizedResourceInit = resourceInit && Object.keys(resourceInit).length ? resourceInit : undefined;
   let normalizedTargetUid = targetUid;
   const targetReadback = await getSurface(rootAgent, {
@@ -8194,6 +8358,7 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
           },
           type,
           ...(normalizedResourceInit ? { resourceInit: normalizedResourceInit } : {}),
+          ...extraValues,
         },
       }),
     ),

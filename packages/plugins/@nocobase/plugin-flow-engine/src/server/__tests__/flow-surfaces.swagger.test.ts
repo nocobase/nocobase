@@ -1144,6 +1144,9 @@ describe('flowSurfaces swagger', () => {
     );
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
+    expect(
+      addBlockRequest.examples.tableDefaultFilters.value.defaultActionSettings.filter.filterableFieldNames,
+    ).toEqual(['username', 'email', 'status']);
     expect(addBlockRequest.examples.popupCurrentRecord.value.resource.binding).toBe('currentRecord');
     expect(addBlockRequest.examples.popupAssociatedRecords.value.resource).toMatchObject({
       binding: 'associatedRecords',
@@ -1164,6 +1167,16 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultActionSettings.$ref).toBe(
+      '#/components/schemas/FlowSurfaceDefaultActionSettings',
+    );
+    expect(schemas.FlowSurfaceDefaultActionSettings.properties.filter.$ref).toBe(
+      '#/components/schemas/FlowSurfaceDefaultFilterActionSettings',
+    );
+    expect(schemas.FlowSurfaceDefaultActionSettings.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceDefaultFilterActionSettings.properties.defaultFilter.$ref).toBe(
+      '#/components/schemas/FlowSurfaceFilterGroup',
+    );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.props).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockRequest.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockRequest.properties.stepParams).toBeUndefined();
@@ -1267,9 +1280,13 @@ describe('flowSurfaces swagger', () => {
     expect(addBlocksRequest.example.blocks[0].type).toBe('table');
     expect(addBlocksRequest.example.blocks[1].type).toBe('markdown');
     expect(addBlocksRequest.example.blocks[0].settings.pageSize).toBe(50);
+    expect(addBlocksRequest.example.blocks[0].defaultActionSettings.filter.defaultFilter.items).toHaveLength(3);
     expect(addBlocksRequest.example.blocks[1].settings.content).toContain('Team notes');
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
     expect(schemas.FlowSurfaceAddBlockItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultActionSettings.$ref).toBe(
+      '#/components/schemas/FlowSurfaceDefaultActionSettings',
+    );
     expect(schemas.FlowSurfaceAddBlockItem.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
     );

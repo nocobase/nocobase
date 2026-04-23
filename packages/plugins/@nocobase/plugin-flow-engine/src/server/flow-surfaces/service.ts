@@ -354,8 +354,10 @@ type FlowSurfacePopupSaveAsTemplate = {
 };
 
 type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
+type FlowSurfaceDefaultActionSettings = Record<string, Record<string, any>>;
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
+const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
   'FormBlockModel',
@@ -6045,6 +6047,28 @@ export class FlowSurfacesService {
     };
   }
 
+  private normalizeDefaultActionSettings(actionName: string, value: any): FlowSurfaceDefaultActionSettings | undefined {
+    if (_.isUndefined(value)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} defaultActionSettings must be an object`);
+    }
+
+    const result: FlowSurfaceDefaultActionSettings = {};
+    for (const [rawActionType, rawSettings] of Object.entries(value)) {
+      const actionType = String(rawActionType || '').trim();
+      if (!FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS.has(actionType)) {
+        throwBadRequest(`flowSurfaces ${actionName} defaultActionSettings does not support '${rawActionType}'`);
+      }
+      if (!_.isPlainObject(rawSettings)) {
+        throwBadRequest(`flowSurfaces ${actionName} defaultActionSettings.${actionType} must be an object`);
+      }
+      result[actionType] = _.cloneDeep(rawSettings) as Record<string, any>;
+    }
+    return result;
+  }
+
   async addBlock(
     values: Record<string, any>,
     options: {
@@ -6054,12 +6078,16 @@ export class FlowSurfacesService {
       skipDefaultBlockActions?: boolean;
     } = {},
   ) {
+    const defaultActionSettings = this.normalizeDefaultActionSettings('addBlock', values.defaultActionSettings);
     const templateRef = !_.isUndefined(values?.template)
       ? this.normalizeFlowTemplateReference('addBlock', values.template, {
           allowUsage: true,
           expectedType: 'block',
         })
       : null;
+    if (templateRef && !_.isUndefined(values.defaultActionSettings)) {
+      throwBadRequest(`flowSurfaces addBlock template import does not allow defaultActionSettings`);
+    }
     if (templateRef) {
       const result = await this.addBlockFromTemplate(values, templateRef, options);
       await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
@@ -6182,6 +6210,7 @@ export class FlowSurfacesService {
         {
           blockUid: created,
           blockType: String(catalogItem.key || values.type || '').trim(),
+          defaultActionSettings,
         },
         {
           ...options,
@@ -11380,6 +11409,7 @@ export class FlowSurfacesService {
     input: {
       blockUid: string;
       blockType?: string;
+      defaultActionSettings?: FlowSurfaceDefaultActionSettings;
     },
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
   ) {
@@ -11392,6 +11422,9 @@ export class FlowSurfacesService {
           uid: input.blockUid,
         },
         type: descriptor.type,
+        settings: input.defaultActionSettings?.[descriptor.type]
+          ? _.cloneDeep(input.defaultActionSettings[descriptor.type])
+          : undefined,
         popup: descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined,
       });
       if (descriptor.scope === 'actions') {

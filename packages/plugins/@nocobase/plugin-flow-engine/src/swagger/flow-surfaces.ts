@@ -785,7 +785,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Approval block keys are only exposed under approval grids and do not auto-create an approval root; bootstrap approval surfaces with `applyApprovalBlueprint` first.',
+      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. `defaultActionSettings.filter` applies public filter settings to an auto-created default filter action on table/list/gridCard blocks. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Approval block keys are only exposed under approval grids and do not auto-create an approval root; bootstrap approval surfaces with `applyApprovalBlueprint` first.',
     ),
     requestBody: {
       required: true,
@@ -808,6 +808,10 @@ const actionDocs: Record<string, any> = {
             jsBlock: {
               summary: 'Create a JS block directly under a page/tab/grid container',
               value: examples.addJsBlock,
+            },
+            tableDefaultFilters: {
+              summary: 'Create a table and configure the auto-created default filter action',
+              value: examples.addTableBlockWithDefaultFilters,
             },
           },
         },
@@ -953,7 +957,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple blocks sequentially under the same target. Each item may include `settings` or `template`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultActionSettings` or `template`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. `defaultActionSettings.filter` applies public filter settings to an auto-created default filter action on table/list/gridCard blocks. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1346,6 +1350,28 @@ const schemas = {
     required: ['logic', 'items'],
     additionalProperties: false,
     example: FILTER_GROUP_EXAMPLE,
+  },
+  FlowSurfaceDefaultFilterActionSettings: {
+    type: 'object',
+    properties: {
+      filterableFieldNames: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      defaultFilter: ref('FlowSurfaceFilterGroup'),
+    },
+    additionalProperties: true,
+  },
+  FlowSurfaceDefaultActionSettings: {
+    type: 'object',
+    description:
+      'Settings for auto-created default actions keyed by action type. Currently supports `filter` for table/list/gridCard default filter actions.',
+    properties: {
+      filter: ref('FlowSurfaceDefaultFilterActionSettings'),
+    },
+    additionalProperties: false,
   },
   FlowSurfaceEventCapabilities: {
     type: 'object',
@@ -4316,6 +4342,7 @@ const schemas = {
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
+      defaultActionSettings: ref('FlowSurfaceDefaultActionSettings'),
     },
     additionalProperties: false,
   },
@@ -4580,6 +4607,7 @@ const schemas = {
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
+      defaultActionSettings: ref('FlowSurfaceDefaultActionSettings'),
     },
     additionalProperties: false,
   },

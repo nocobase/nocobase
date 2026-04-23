@@ -966,6 +966,41 @@ export const flowSurfaceExamples = {
       binding: 'currentRecord',
     },
   },
+  addTableBlockWithDefaultFilters: {
+    target: {
+      uid: 'page-grid-uid',
+    },
+    type: 'table',
+    resourceInit: {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    },
+    defaultActionSettings: {
+      filter: {
+        filterableFieldNames: ['username', 'email', 'status'],
+        defaultFilter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'username',
+              operator: '$includes',
+              value: '',
+            },
+            {
+              path: 'email',
+              operator: '$includes',
+              value: '',
+            },
+            {
+              path: 'status',
+              operator: '$eq',
+              value: '',
+            },
+          ],
+        },
+      },
+    },
+  },
   addPopupAssociatedBlock: {
     target: {
       uid: 'association-popup-action-uid',
@@ -1285,6 +1320,31 @@ export const flowSurfaceExamples = {
         settings: {
           title: 'Users table',
           pageSize: 50,
+        },
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username', 'email', 'status'],
+            defaultFilter: {
+              logic: '$and',
+              items: [
+                {
+                  path: 'username',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'email',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'status',
+                  operator: '$eq',
+                  value: '',
+                },
+              ],
+            },
+          },
         },
       },
       {
