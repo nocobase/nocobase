@@ -88,6 +88,8 @@ export type SelectPromptBlock = {
   message: string;
   hidden?: PromptHiddenPredicate;
   options: SelectOptionDef[];
+  /** Web UI rendering style. Terminal still uses Clack select. */
+  variant?: 'select' | 'radio';
   /** Default option when merging defaults and for non-interactive fallback */
   initialValue?: string;
   /** Default when `yes: true` and the key is not in merged initial values; must be in `options`. */
@@ -100,6 +102,8 @@ export type PasswordPromptBlock = {
   type: 'password';
   message: string;
   hidden?: PromptHiddenPredicate;
+  /** Default when `initialValues` does not set this key. */
+  initialValue?: string;
   /** Default when `yes: true` and `initialValues` / `yesInitialValues` do not set this key. */
   yesInitialValue?: string;
   required?: boolean;
@@ -262,6 +266,21 @@ function mergedInteger(
   if (hasIvKey(iv, key)) {
     const v = iv[key];
     return typeof v === 'number' ? v : Number.parseInt(String(v), 10);
+  }
+  if (useYesInitial && def.yesInitialValue !== undefined) {
+    return def.yesInitialValue;
+  }
+  return def.initialValue;
+}
+
+function mergedPassword(
+  key: string,
+  def: PasswordPromptBlock,
+  iv: PromptInitialValues,
+  useYesInitial: boolean,
+): string | undefined {
+  if (hasIvKey(iv, key)) {
+    return String(iv[key] ?? '');
   }
   if (useYesInitial && def.yesInitialValue !== undefined) {
     return def.yesInitialValue;
@@ -646,15 +665,11 @@ export async function runPromptCatalog(
 
     if (def.type === 'password') {
       if (!interactive) {
-        const hasR = hasIvKey(resolveIv, key);
-        let merged: string | undefined = hasR ? String(resolveIv[key] ?? '') : undefined;
-        if (merged === undefined && useYesInitial && def.yesInitialValue !== undefined) {
-          merged = def.yesInitialValue;
-        }
+        const merged = mergedPassword(key, def, resolveIv, useYesInitial);
         if (merged === undefined) {
           if (def.required) {
             hooks.onMissingNonInteractive(
-              `Non-interactive: "${key}" is required; set initialValues.${key}, yesInitialValues.${key}, or yesInitialValue on the block.`,
+              `Non-interactive: "${key}" is required; set initialValues.${key}, yesInitialValues.${key}, or initialValue / yesInitialValue on the block.`,
             );
           }
           out[key] = '';
@@ -670,7 +685,7 @@ export async function runPromptCatalog(
         }
         if (def.required && isBlankText(merged)) {
           hooks.onMissingNonInteractive(
-            `Non-interactive: "${key}" is required; set a non-empty initialValues / yesInitialValues / yesInitialValue.`,
+            `Non-interactive: "${key}" is required; set a non-empty initialValues / yesInitialValues / initialValue / yesInitialValue.`,
           );
         }
         out[key] = merged;

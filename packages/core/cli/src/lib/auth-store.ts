@@ -36,6 +36,12 @@ export interface EnvConfigEntry {
   storagePath?: string;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
+  /** Application secret key (APP_KEY). */
+  appKey?: string;
+  /** Application timezone (TZ). */
+  timezone?: string;
+  /** Whether this env was created with a CLI-managed built-in database. */
+  builtinDb?: boolean;
   /** Optional DB hints for this env (aligns with NocoBase DB_* / .env usage). */
   dbHost?: string;
   dbDatabase?: string;
@@ -55,6 +61,8 @@ export interface EnvConfigEntry {
 }
 
 export interface AuthConfig {
+  /** Workspace-level name shared by all envs in this config. */
+  name?: string;
   currentEnv?: string;
   envs: Record<string, EnvConfigEntry>;
 }
@@ -80,8 +88,11 @@ function getConfigFile(options: AuthStoreOptions = {}) {
 export async function loadAuthConfig(options: AuthStoreOptions = {}): Promise<AuthConfig> {
   try {
     const content = await fs.readFile(getConfigFile(options), 'utf8');
-    const parsed = JSON.parse(content) as AuthConfig;
+    const parsed = JSON.parse(content) as AuthConfig & {
+      dockerResourcePrefix?: string;
+    };
     return {
+      name: parsed.name || parsed.dockerResourcePrefix,
       currentEnv: parsed.currentEnv || 'default',
       envs: parsed.envs || {},
     };
@@ -116,6 +127,22 @@ export async function setCurrentEnv(envName: string, options: AuthStoreOptions =
   }
   config.currentEnv = envName;
   await saveAuthConfig(config, options);
+}
+
+export async function ensureWorkspaceName(
+  defaultName: string,
+  options: AuthStoreOptions = {},
+): Promise<string> {
+  const config = await loadAuthConfig(options);
+  const existing = config.name?.trim();
+  if (existing) {
+    return existing;
+  }
+
+  const next = defaultName.trim();
+  config.name = next;
+  await saveAuthConfig(config, options);
+  return next;
 }
 
 export class Env {
@@ -171,6 +198,8 @@ export class Env {
       out[key] = String(value);
     };
     put('APP_PORT', this.appPort);
+    put('APP_KEY', this.config.appKey);
+    put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);
     put('DB_HOST', this.config.dbHost);
     put('DB_PORT', this.config.dbPort);

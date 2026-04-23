@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -26,6 +35,21 @@ async function withTempCliHome(run: () => Promise<void>) {
       process.env.NOCOBASE_CTL_HOME = previous;
     }
     await rm(tempHome, { recursive: true, force: true });
+  }
+}
+
+async function withOauthRetryDelay(delayMs: string, run: () => Promise<void>) {
+  const previous = process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS;
+  process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS = delayMs;
+
+  try {
+    await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS;
+    } else {
+      process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS = previous;
+    }
   }
 }
 
@@ -144,58 +168,131 @@ test('resolveAccessToken refreshes expired OAuth sessions', async () => {
   });
 });
 
-test('resolveAccessToken explains OAuth metadata network failures clearly', async () => {
-  await withTempCliHome(async () => {
-    await saveAuthConfig(
-      {
-        currentEnv: 'test',
-        envs: {
-          test: {
-            baseUrl: 'http://localhost:13000/api',
-            auth: {
-              type: 'oauth',
-              accessToken: 'expired-token',
-              refreshToken: 'refresh-token',
-              expiresAt: '2026-04-14T00:00:00.000Z',
-              issuer: 'http://localhost:13000/api',
-              clientId: 'client-1',
-              resource: 'http://localhost:13000/api/',
-              scope: 'openid api offline_access',
+test('resolveAccessToken retries transient OAuth metadata network failures', async () => {
+  await withOauthRetryDelay('0', async () => {
+    await withTempCliHome(async () => {
+      await saveAuthConfig(
+        {
+          currentEnv: 'test',
+          envs: {
+            test: {
+              baseUrl: 'http://localhost:13000/api',
+              auth: {
+                type: 'oauth',
+                accessToken: 'expired-token',
+                refreshToken: 'refresh-token',
+                expiresAt: '2026-04-14T00:00:00.000Z',
+                issuer: 'http://localhost:13000/api',
+                clientId: 'client-1',
+                resource: 'http://localhost:13000/api/',
+                scope: 'openid api offline_access',
+              },
             },
           },
         },
-      },
-      { scope: 'global' },
-    );
-
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = (async () => {
-      throw new TypeError('fetch failed');
-    }) as typeof fetch;
-
-    try {
-      await assert.rejects(
-        () =>
-          resolveAccessToken({
-            envName: 'test',
-            scope: 'global',
-          }),
-        (error: any) => {
-          assert.match(error.message, /Failed to load OAuth metadata\./);
-          assert.match(error.message, /Env: test/);
-          assert.match(error.message, /Base URL: http:\/\/localhost:13000\/api/);
-          assert.match(
-            error.message,
-            /Request URL: http:\/\/localhost:13000\/api\/\.well-known\/oauth-authorization-server/,
-          );
-          assert.match(error.message, /Network error: fetch failed/);
-          assert.match(error.message, /nb env auth test/);
-          assert.match(error.message, /nb env list/);
-          return true;
-        },
+        { scope: 'global' },
       );
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
+
+      const originalFetch = globalThis.fetch;
+      let metadataAttempts = 0;
+      globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+        if (url.endsWith('/.well-known/oauth-authorization-server')) {
+          metadataAttempts += 1;
+          if (metadataAttempts < 3) {
+            throw new TypeError('fetch failed');
+          }
+
+          return new Response(
+            JSON.stringify({
+              issuer: 'http://localhost:13000/api',
+              authorization_endpoint: 'http://localhost:13000/api/idpOAuth/authorize',
+              token_endpoint: 'http://localhost:13000/api/idpOAuth/token',
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        assert.equal(url, 'http://localhost:13000/api/idpOAuth/token');
+        assert.equal(init?.method, 'POST');
+        return new Response(
+          JSON.stringify({
+            access_token: 'fresh-token-after-retry',
+            refresh_token: 'refresh-token',
+            expires_in: 3600,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }) as typeof fetch;
+
+      try {
+        const token = await resolveAccessToken({
+          envName: 'test',
+          scope: 'global',
+        });
+        assert.equal(token, 'fresh-token-after-retry');
+        assert.equal(metadataAttempts, 3);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+  });
+});
+
+test('resolveAccessToken explains OAuth metadata network failures clearly', async () => {
+  await withOauthRetryDelay('0', async () => {
+    await withTempCliHome(async () => {
+      await saveAuthConfig(
+        {
+          currentEnv: 'test',
+          envs: {
+            test: {
+              baseUrl: 'http://localhost:13000/api',
+              auth: {
+                type: 'oauth',
+                accessToken: 'expired-token',
+                refreshToken: 'refresh-token',
+                expiresAt: '2026-04-14T00:00:00.000Z',
+                issuer: 'http://localhost:13000/api',
+                clientId: 'client-1',
+                resource: 'http://localhost:13000/api/',
+                scope: 'openid api offline_access',
+              },
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = (async () => {
+        throw new TypeError('fetch failed');
+      }) as typeof fetch;
+
+      try {
+        await assert.rejects(
+          () =>
+            resolveAccessToken({
+              envName: 'test',
+              scope: 'global',
+            }),
+          (error: any) => {
+            assert.match(error.message, /Failed to load OAuth metadata\./);
+            assert.match(error.message, /Env: test/);
+            assert.match(error.message, /Base URL: http:\/\/localhost:13000\/api/);
+            assert.match(
+              error.message,
+              /Request URL: http:\/\/localhost:13000\/api\/\.well-known\/oauth-authorization-server/,
+            );
+            assert.match(error.message, /Network error: fetch failed/);
+            assert.match(error.message, /nb env auth test/);
+            assert.match(error.message, /nb env list/);
+            return true;
+          },
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });

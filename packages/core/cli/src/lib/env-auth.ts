@@ -26,6 +26,8 @@ import { printInfo, printVerbose, printWarning, printWarningBlock, updateTask } 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const LOOPBACK_HOST = '127.0.0.1';
 const OAUTH_LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
+const OAUTH_FETCH_TIMEOUT_MS = 15_000;
+const OAUTH_FETCH_RETRY_DELAYS_MS = [500, 1_000, 2_000] as const;
 const DEFAULT_OAUTH_SCOPE = 'openid api offline_access';
 const DEFAULT_CLIENT_NAME = 'NocoBase CLI';
 
@@ -128,11 +130,120 @@ function formatOauthFetchFailure(prefix: string, options: { baseUrl?: string; ur
     .join('\n');
 }
 
-async function fetchOauthServerMetadata(baseUrl: string, options: { envName?: string } = {}) {
+function isRetryableOauthStatus(status: number) {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function getOauthFetchRetryDelays() {
+  const override = process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS;
+  if (override !== undefined) {
+    const delay = Number(override);
+    if (Number.isFinite(delay) && delay >= 0) {
+      return OAUTH_FETCH_RETRY_DELAYS_MS.map(() => delay);
+    }
+  }
+
+  return OAUTH_FETCH_RETRY_DELAYS_MS;
+}
+
+function formatOauthRetryMessage(options: {
+  operation: string;
+  attempt: number;
+  maxAttempts: number;
+  reason: string;
+}) {
+  return `${options.operation} failed (${options.reason}). Retrying ${options.attempt}/${options.maxAttempts}...`;
+}
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithOauthRetry(
+  url: string,
+  init: RequestInit | undefined,
+  options: {
+    operation: string;
+    timeoutMs?: number;
+    retryDelaysMs?: readonly number[];
+    onRetry?: (message: string) => void;
+  },
+) {
+  const retryDelaysMs = options.retryDelaysMs ?? getOauthFetchRetryDelays();
+  const maxAttempts = retryDelaysMs.length + 1;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, options.timeoutMs ?? OAUTH_FETCH_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+      });
+
+      if (!isRetryableOauthStatus(response.status) || attempt === maxAttempts) {
+        return response;
+      }
+
+      const reason = `HTTP ${response.status}`;
+      const message = formatOauthRetryMessage({
+        operation: options.operation,
+        attempt: attempt + 1,
+        maxAttempts,
+        reason,
+      });
+      printVerbose(message);
+      options.onRetry?.(message);
+      await sleep(retryDelaysMs[attempt - 1] ?? 0);
+    } catch (error: unknown) {
+      lastError = error;
+      const reason =
+        error instanceof Error && error.name === 'AbortError'
+          ? `request timed out after ${Math.ceil((options.timeoutMs ?? OAUTH_FETCH_TIMEOUT_MS) / 1000)}s`
+          : error instanceof Error
+            ? error.message
+            : String(error);
+
+      if (attempt === maxAttempts) {
+        throw new Error(reason);
+      }
+
+      const message = formatOauthRetryMessage({
+        operation: options.operation,
+        attempt: attempt + 1,
+        maxAttempts,
+        reason,
+      });
+      printVerbose(message);
+      options.onRetry?.(message);
+      await sleep(retryDelaysMs[attempt - 1] ?? 0);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastError;
+}
+
+async function fetchOauthServerMetadata(
+  baseUrl: string,
+  options: { envName?: string; onRetry?: (message: string) => void } = {},
+) {
   const metadataUrl = getOauthMetadataUrl(baseUrl);
   let response: Response;
   try {
-    response = await fetch(metadataUrl);
+    response = await fetchWithOauthRetry(
+      metadataUrl,
+      undefined,
+      {
+        operation: 'Loading OAuth metadata',
+        onRetry: options.onRetry,
+      },
+    );
   } catch (error: any) {
     throw new Error(
       formatOauthFetchFailure('Failed to load OAuth metadata.', {
@@ -162,27 +273,50 @@ async function fetchOauthServerMetadata(baseUrl: string, options: { envName?: st
   return data as OauthServerMetadata;
 }
 
-async function registerOauthClient(metadata: OauthServerMetadata, redirectUri: string) {
+async function registerOauthClient(
+  metadata: OauthServerMetadata,
+  redirectUri: string,
+  options: { envName?: string; baseUrl?: string } = {},
+) {
   if (!metadata.registration_endpoint) {
     throw new Error('OAuth server does not expose a dynamic client registration endpoint.');
   }
 
-  const response = await fetch(metadata.registration_endpoint, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      client_name: DEFAULT_CLIENT_NAME,
-      application_type: 'native',
-      token_endpoint_auth_method: 'none',
-      grant_types: ['authorization_code', 'refresh_token'],
-      response_types: ['code'],
-      scope: DEFAULT_OAUTH_SCOPE,
-      redirect_uris: [redirectUri],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithOauthRetry(
+      metadata.registration_endpoint,
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_name: DEFAULT_CLIENT_NAME,
+          application_type: 'native',
+          token_endpoint_auth_method: 'none',
+          grant_types: ['authorization_code', 'refresh_token'],
+          response_types: ['code'],
+          scope: DEFAULT_OAUTH_SCOPE,
+          redirect_uris: [redirectUri],
+        }),
+      },
+      {
+        operation: 'Registering OAuth client',
+        onRetry: (message) => updateTask(message),
+      },
+    );
+  } catch (error: any) {
+    throw new Error(
+      formatOauthFetchFailure('Failed to register OAuth client.', {
+        envName: options.envName,
+        baseUrl: options.baseUrl,
+        url: metadata.registration_endpoint,
+        rawMessage: error?.message,
+      }),
+    );
+  }
   const data = await parseJsonResponse(response);
 
   if (!response.ok) {
@@ -288,18 +422,28 @@ async function maybeOpenBrowser(url: string): Promise<{ opened: boolean; cleanup
         : [['xdg-open', target]];
 
   for (const [command, ...args] of candidates) {
-    try {
-      const child = spawn(command, args, {
-        detached: true,
-        stdio: 'ignore',
-      });
-      child.unref();
+    const opened = await new Promise<boolean>((resolve) => {
+      try {
+        const child = spawn(command, args, {
+          detached: true,
+          stdio: 'ignore',
+        });
+
+        child.once('error', () => resolve(false));
+        child.once('spawn', () => {
+          child.unref();
+          resolve(true);
+        });
+      } catch (_error) {
+        resolve(false);
+      }
+    });
+
+    if (opened) {
       return {
         opened: true,
         cleanup,
       };
-    } catch (_error) {
-      continue;
     }
   }
 
@@ -423,6 +567,8 @@ async function exchangeAuthorizationCode(options: {
   code: string;
   codeVerifier: string;
   resource: string;
+  envName?: string;
+  baseUrl?: string;
 }) {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
@@ -433,14 +579,33 @@ async function exchangeAuthorizationCode(options: {
     resource: options.resource,
   });
 
-  const response = await fetch(options.metadata.token_endpoint, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
+  let response: Response;
+  try {
+    response = await fetchWithOauthRetry(
+      options.metadata.token_endpoint,
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body,
+      },
+      {
+        operation: 'Exchanging OAuth authorization code',
+        onRetry: (message) => updateTask(message),
+      },
+    );
+  } catch (error: any) {
+    throw new Error(
+      formatOauthFetchFailure('Failed to exchange OAuth authorization code.', {
+        envName: options.envName,
+        baseUrl: options.baseUrl,
+        url: options.metadata.token_endpoint,
+        rawMessage: error?.message,
+      }),
+    );
+  }
   const data = await parseJsonResponse(response);
 
   if (!response.ok) {
@@ -473,14 +638,20 @@ async function refreshOauthAccessToken(options: {
     resource,
   });
 
-  const response = await fetch(metadata.token_endpoint, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/x-www-form-urlencoded',
+  const response = await fetchWithOauthRetry(
+    metadata.token_endpoint,
+    {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body,
     },
-    body,
-  }).catch((error: any) => {
+    {
+      operation: `Refreshing OAuth session for env "${options.envName}"`,
+    },
+  ).catch((error: any) => {
     throw new Error(
       formatOauthFetchFailure(`Failed to refresh OAuth session for env "${options.envName}".`, {
         envName: options.envName,
@@ -598,17 +769,23 @@ export async function authenticateEnvWithOauth(options: {
     throw new Error(
       [
         env
-          ? `Env "${envName}" is missing a base URL.`
-          : `Env "${envName}" is not configured. Run \`nb env add ${envName}\` first.`,
-        env ? 'Run `nb env add <name> --base-url <url>` first.' : '',
+          ? `Environment "${envName}" does not have an API base URL yet.`
+          : `Environment "${envName}" has not been set up yet.`,
+        env
+          ? `Run \`nb env add ${envName} --base-url <url>\` to finish setting it up.`
+          : `Run \`nb env add ${envName}\` first.`,
       ]
         .filter(Boolean)
         .join('\n'),
     );
   }
 
-  updateTask(`Loading OAuth metadata for env "${envName}"...`);
-  const metadata = await fetchOauthServerMetadata(baseUrl, { envName });
+  printVerbose(`Starting OAuth sign-in for env "${envName}" using ${baseUrl}`);
+  updateTask(`Checking sign-in settings for "${envName}"...`);
+  const metadata = await fetchOauthServerMetadata(baseUrl, {
+    envName,
+    onRetry: (message) => updateTask(message),
+  });
   const state = encodeBase64Url(crypto.randomBytes(16));
   const { codeVerifier, codeChallenge } = buildPkcePair();
   const callback = await createLoopbackServer(state);
@@ -616,8 +793,12 @@ export async function authenticateEnvWithOauth(options: {
   let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
 
   try {
-    updateTask(`Registering OAuth client for env "${envName}"...`);
-    const registration = await registerOauthClient(metadata, callback.redirectUri);
+    printVerbose(`OAuth callback listener ready at ${callback.redirectUri}`);
+    updateTask(`Preparing secure browser sign-in for "${envName}"...`);
+    const registration = await registerOauthClient(metadata, callback.redirectUri, {
+      envName,
+      baseUrl,
+    });
 
     const authorizationUrl = new URL(metadata.authorization_endpoint);
     authorizationUrl.searchParams.set('response_type', 'code');
@@ -630,18 +811,21 @@ export async function authenticateEnvWithOauth(options: {
     authorizationUrl.searchParams.set('code_challenge_method', 'S256');
     authorizationUrl.searchParams.set('resource', resource);
 
-    updateTask(`Waiting for OAuth login for env "${envName}"...`);
+    updateTask(`Waiting for you to finish signing in for "${envName}"...`);
     const browser = await maybeOpenBrowser(authorizationUrl.toString());
     cleanupBrowserOpenTarget = browser.cleanup;
     if (!browser.opened) {
-      printWarningBlock('Unable to open the browser automatically. Open this URL manually:');
+      printWarningBlock('We could not open your browser automatically. Open this URL to continue signing in:');
     } else {
-      printInfo('Complete the OAuth login in your browser.');
+      printInfo('Your browser should open shortly. Finish signing in there to continue.');
     }
     printInfo(authorizationUrl.toString());
 
     const code = await new Promise<string>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('OAuth login timed out.')), OAUTH_LOGIN_TIMEOUT_MS);
+      const timeout = setTimeout(
+        () => reject(new Error(`OAuth sign-in timed out after 5 minutes. Run \`nb env auth ${envName}\` to try again.`)),
+        OAUTH_LOGIN_TIMEOUT_MS,
+      );
       timeout.unref?.();
 
       callback.waitForCode().then(
@@ -656,7 +840,7 @@ export async function authenticateEnvWithOauth(options: {
       );
     });
 
-    updateTask(`Exchanging OAuth code for env "${envName}"...`);
+    updateTask(`Finishing sign-in for "${envName}"...`);
     const tokenResponse = await exchangeAuthorizationCode({
       metadata,
       clientId: registration.clientId,
@@ -664,11 +848,13 @@ export async function authenticateEnvWithOauth(options: {
       code,
       codeVerifier,
       resource,
+      envName,
+      baseUrl,
     });
 
     if (!tokenResponse.refresh_token) {
       printWarning(
-        'OAuth login succeeded but no refresh_token was returned. The server did not grant offline access for this client/session.',
+        'Sign-in succeeded, but no refresh token was returned. You may need to sign in again when this session expires.',
       );
     }
 

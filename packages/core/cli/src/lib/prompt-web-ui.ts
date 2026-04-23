@@ -24,8 +24,11 @@ import {
 const DEFAULT_SUBMIT = '/__pwc_ui_submit';
 const DEFAULT_REFLOW = '/__pwc_ui_reflow';
 const DEFAULT_VALIDATE_STEP = '/__pwc_ui_validate_step';
+const DEFAULT_VALIDATE_FIELD = '/__pwc_ui_validate_field';
 /** Form POST JSON meta field: current wizard step index when validating "Next" (not a prompt key). */
 export const PWC_FORM_META_STEP = '_pwcStep';
+/** Form POST JSON meta field: current field key when validating a single field. */
+export const PWC_FORM_META_FIELD = '_pwcField';
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
 const DEFAULT_HOST = '127.0.0.1';
 
@@ -104,7 +107,7 @@ function defaultValueForInput(
       return first ?? '';
     }
     case 'password':
-      return '';
+      return def.initialValue ?? '';
     case 'integer':
       return def.initialValue !== undefined && Number.isFinite(def.initialValue) ? def.initialValue : 0;
     default:
@@ -112,7 +115,7 @@ function defaultValueForInput(
   }
 }
 
-type ReflowState = { show: Record<string, boolean> };
+type ReflowState = { show: Record<string, boolean>; values: Record<string, PromptValue> };
 
 /**
  * Recomputes per-field visibility and the cumulative `out` used to evaluate `hidden` / `run`,
@@ -150,7 +153,7 @@ export function reflowWebFormState(
     }
     out[key] = val;
   }
-  return { show };
+  return { show, values: out };
 }
 
 /** `false` and `0` are valid; only `null` / `undefined` (or missing key) are treated as absent. */
@@ -338,6 +341,33 @@ const PWC_FORM_ITEM_EXPLAIN = '<div class="pwc-form-item-explain" data-pwc-expla
 /** Suffix slot for status icon (e.g. fail) — filled by client script. */
 const PWC_FORM_ITEM_SUFFIX = '<span class="pwc-form-item-suffix" data-pwc-suffix="1" aria-hidden="true"></span>';
 
+function renderPwcRadioOptions(
+  key: string,
+  def: Extract<PromptBlock, { type: 'select' }>,
+  defaults: PromptInitialValues,
+  hidden: boolean,
+): string {
+  return def.options
+    .map((o, index) => {
+      const val = typeof o === 'string' ? o : o.value;
+      const lab = typeof o === 'string' ? o : o.label ?? o.value;
+      const hint = typeof o === 'string' ? '' : o.hint ? `<div class="pwc-radio-option-hint">${escapeHtml(o.hint)}</div>` : '';
+      const checked = String(defaults[key] ?? '') === val ? ' checked' : '';
+      const required = def.required && index === 0 ? ' required' : '';
+      const disabled = hidden ? ' disabled' : '';
+      return (
+        `<label class="pwc-radio-option">` +
+        `<input class="pwc-radio-input" name="${escapeHtml(key)}" type="radio" value="${escapeHtml(String(val))}"${checked}${required}${disabled} />` +
+        `<span class="pwc-radio-option-body">` +
+        `<span class="pwc-radio-option-label">${escapeHtml(String(lab))}</span>` +
+        hint +
+        `</span>` +
+        `</label>`
+      );
+    })
+    .join('');
+}
+
 function renderPwcFieldRow(
   key: string,
   def: PromptBlock,
@@ -348,13 +378,15 @@ function renderPwcFieldRow(
     return '';
   }
   const labelText = 'message' in def ? def.message : key;
-  const display = show[key] === false ? 'none' : 'block';
+  const hidden = show[key] === false;
+  const display = hidden ? 'none' : 'block';
   const itemOpen = (extraClass: string) =>
     `<div class="pwc-form-item${extraClass ? ` ${extraClass}` : ''}" data-pwc-wrap="${escapeHtml(
       key,
     )}" data-pwc-field="${escapeHtml(key)}" style="display:${display}">`;
   if (def.type === 'text') {
     const req = def.required ? ' required' : '';
+    const disabled = hidden ? ' disabled' : '';
     const ph = def.placeholder ? ` placeholder="${escapeHtml(def.placeholder)}"` : '';
     const v = escapeHtml(String(defaults[key] ?? ''));
     return (
@@ -363,7 +395,7 @@ function renderPwcFieldRow(
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
       `<div class="pwc-input-affix-wrapper">` +
-      `<input class="pwc-form-input" name="${escapeHtml(key)}" type="text" value="${v}"${ph}${req} autocomplete="off" />` +
+      `<input class="pwc-form-input" name="${escapeHtml(key)}" type="text" value="${v}"${ph}${req}${disabled} autocomplete="off" />` +
       PWC_FORM_ITEM_SUFFIX +
       `</div></div>` +
       PWC_FORM_ITEM_EXPLAIN +
@@ -372,16 +404,31 @@ function renderPwcFieldRow(
   }
   if (def.type === 'boolean') {
     const checked = defaults[key] === true ? ' checked' : '';
+    const disabled = hidden ? ' disabled' : '';
     return (
       itemOpen('pwc-form-item--bool') +
       `<div class="pwc-bool-wrap"><label><input class="pwc-bool-input" name="${escapeHtml(
         key,
-      )}" type="checkbox" value="1"${checked} /> <span class="pwc-l">${escapeHtml(labelText)}</span></label></div>` +
+      )}" type="checkbox" value="1"${checked}${disabled} /> <span class="pwc-l">${escapeHtml(labelText)}</span></label></div>` +
       PWC_FORM_ITEM_EXPLAIN +
       `</div>`
     );
   }
   if (def.type === 'select') {
+    if (def.variant === 'radio') {
+      const opts = renderPwcRadioOptions(key, def, defaults, hidden);
+      return (
+        itemOpen('') +
+        `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
+        `<div class="pwc-form-item-control">` +
+        `<div class="pwc-form-item-control-input">` +
+        `<div class="pwc-radio-group" role="radiogroup" aria-label="${escapeHtml(labelText)}">` +
+        opts +
+        `</div></div>` +
+        PWC_FORM_ITEM_EXPLAIN +
+        `</div></div>`
+      );
+    }
     const opts = def.options
       .map((o) => {
         const val = typeof o === 'string' ? o : o.value;
@@ -390,13 +437,15 @@ function renderPwcFieldRow(
         return `<option value="${escapeHtml(String(val))}"${sel}>${escapeHtml(String(lab))}</option>`;
       })
       .join('');
+    const req = def.required ? ' required' : '';
+    const disabled = hidden ? ' disabled' : '';
     return (
       itemOpen('') +
       `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
       `<div class="pwc-input-affix-wrapper pwc-input-affix-wrapper--select">` +
-      `<select class="pwc-form-input" name="${escapeHtml(key)}">${opts}</select>` +
+      `<select class="pwc-form-input" name="${escapeHtml(key)}"${req}${disabled}>${opts}</select>` +
       PWC_FORM_ITEM_SUFFIX +
       `</div></div>` +
       PWC_FORM_ITEM_EXPLAIN +
@@ -405,6 +454,7 @@ function renderPwcFieldRow(
   }
   if (def.type === 'password') {
     const req = def.required ? ' required' : '';
+    const disabled = hidden ? ' disabled' : '';
     const v = escapeHtml(String(defaults[key] ?? ''));
     return (
       itemOpen('') +
@@ -412,7 +462,7 @@ function renderPwcFieldRow(
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
       `<div class="pwc-input-affix-wrapper">` +
-      `<input class="pwc-form-input" name="${escapeHtml(key)}" type="password" value="${v}"${req} autocomplete="new-password" />` +
+      `<input class="pwc-form-input" name="${escapeHtml(key)}" type="password" value="${v}"${req}${disabled} autocomplete="new-password" />` +
       PWC_FORM_ITEM_SUFFIX +
       `</div></div>` +
       PWC_FORM_ITEM_EXPLAIN +
@@ -422,6 +472,7 @@ function renderPwcFieldRow(
   if (def.type === 'integer') {
     const ph = def.placeholder ? ` placeholder="${escapeHtml(def.placeholder)}"` : '';
     const req = def.required ? ' required' : '';
+    const disabled = hidden ? ' disabled' : '';
     const v = String(defaults[key] ?? 0);
     return (
       itemOpen('') +
@@ -431,7 +482,7 @@ function renderPwcFieldRow(
       `<div class="pwc-input-affix-wrapper">` +
       `<input class="pwc-form-input" name="${escapeHtml(
         key,
-      )}" type="number" inputmode="numeric" step="1" value="${escapeHtml(v)}"${ph}${req} />` +
+      )}" type="number" inputmode="numeric" step="1" value="${escapeHtml(v)}"${ph}${req}${disabled} />` +
       PWC_FORM_ITEM_SUFFIX +
       `</div></div>` +
       PWC_FORM_ITEM_EXPLAIN +
@@ -445,6 +496,8 @@ function renderPwcFieldRow(
 const PWC_AD_CHECK_SVG = `<svg class="pwc-ad-icon-check-svg" viewBox="0 0 12 12" width="14" height="14" focusable="false" aria-hidden="true"><path fill="currentColor" d="M10.28 1.5L4.4 7.4 1.7 4.7 0.5 5.9l3.2 3.2 1.1 1.1L11.4 2.6z"/></svg>`;
 /** antd Alert `type="error"`-style leading icon (14px) — @see https://ant.design/components/alert */
 const PWC_AD_ALERT_ERROR_ICON_SVG = `<svg class="pwc-ad-alert__svg" viewBox="0 0 14 14" width="14" height="14" focusable="false" aria-hidden="true"><path fill="currentColor" d="M7 0.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13zm0 1.2a5.3 5.3 0 1 1 0 10.6A5.3 5.3 0 0 1 7 1.7zM6.4 3.4h1.2v3.6H6.4V3.4zm0 4.5h1.2v1.1H6.4V7.9z"/></svg>`;
+/** antd Alert `type="success"`-style leading icon (14px) — @see https://ant.design/components/alert */
+const PWC_AD_ALERT_SUCCESS_ICON_SVG = `<svg class="pwc-ad-alert__svg" viewBox="0 0 14 14" width="14" height="14" focusable="false" aria-hidden="true"><path fill="currentColor" d="M7 0.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13zm-1 8.45L3.65 6.1l-.85.85L6 10.15l5.2-5.2-.85-.85L6.5 7.95z"/></svg>`;
 /** Suffix “fail” icon (antd Form validation) — @see https://ant.design/components/form */
 const PWC_FORM_FAIL_ICON_SVG = `<svg class="pwc-form-fail__svg" viewBox="0 0 14 14" width="14" height="14" focusable="false" aria-hidden="true"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" d="M4.2 4.2l5.6 5.6M9.8 4.2l-5.6 5.6"/></svg>`;
 
@@ -457,6 +510,7 @@ function buildPwcAntdStyleStepsHeader(
   stepDefs: PwcWizardStepDef[],
   currentIndex: number,
   total: number,
+  visibleStepIndices: number[],
 ): string {
   const parts: string[] = [];
   for (let i = 0; i < total; i += 1) {
@@ -467,20 +521,24 @@ function buildPwcAntdStyleStepsHeader(
       rawDesc.length > 0
         ? `<div class="pwc-ad-steps-item-description">${escapeHtml(rawDesc)}</div>`
         : '';
-    const state = i < currentIndex ? 'finish' : i === currentIndex ? 'process' : 'wait';
-    const num = i + 1;
+    const visiblePos = visibleStepIndices.indexOf(i);
+    const currentVisiblePos = visibleStepIndices.indexOf(currentIndex);
+    const state = visiblePos < currentVisiblePos ? 'finish' : i === currentIndex ? 'process' : 'wait';
+    const num = visiblePos + 1;
+    const hiddenAttr = visiblePos === -1 ? ' hidden' : '';
     const iconHtml =
       state === 'finish'
         ? `<span class="pwc-ad-icon pwc-ad-icon--finish" aria-label="done">${PWC_AD_CHECK_SVG}</span>`
         : `<span class="pwc-ad-icon" aria-label="${num}"><span class="pwc-ad-icon-num">${num}</span></span>`;
     const ariaCurrent = state === 'process' ? 'step' : 'false';
-    const tailDone = i < currentIndex;
+    const nextVisible = visibleStepIndices.indexOf(i + 1) !== -1;
+    const tailDone = visiblePos !== -1 && currentVisiblePos !== -1 && visiblePos < currentVisiblePos;
     const tailHtml =
       i < total - 1
-        ? `<div class="pwc-ad-vert__tail" data-pwc-vtail="${i}" data-pwc-conn="${tailDone ? 'done' : 'todo'}" aria-hidden="true"></div>`
+        ? `<div class="pwc-ad-vert__tail" data-pwc-vtail="${i}" data-pwc-conn="${tailDone ? 'done' : 'todo'}" aria-hidden="true"${nextVisible && visiblePos !== -1 ? '' : ' hidden'}></div>`
         : '';
     parts.push(
-      `<li class="pwc-ad-steps-item pwc-ad-steps-item--${state}" data-pwc-step-idx="${i}" data-pwc-state="${state}" role="listitem" aria-current="${ariaCurrent}">` +
+      `<li class="pwc-ad-steps-item pwc-ad-steps-item--${state}" data-pwc-step-idx="${i}" data-pwc-state="${state}" role="listitem" aria-current="${ariaCurrent}"${hiddenAttr}>` +
         `<div class="pwc-ad-steps-item-row">` +
         `<div class="pwc-ad-vert">` +
         `<div class="pwc-ad-vert__icon" aria-hidden="true">${iconHtml}</div>` +
@@ -499,6 +557,28 @@ function buildPwcAntdStyleStepsHeader(
   );
 }
 
+function computeInitialVisibleStepIndices(
+  catalog: PromptsCatalog,
+  stepDefs: PwcWizardStepDef[],
+  show: Record<string, boolean>,
+): number[] {
+  const visible: number[] = [];
+  for (let i = 0; i < stepDefs.length; i += 1) {
+    if (i === 0) {
+      visible.push(i);
+      continue;
+    }
+    const hasVisibleField = stepDefs[i].keys.some((key) => {
+      const def = catalog[key];
+      return Boolean(def && isInputBlock(def) && show[key] !== false);
+    });
+    if (hasVisibleField) {
+      visible.push(i);
+    }
+  }
+  return visible.length > 0 ? visible : [0];
+}
+
 function buildPwcFormHtml(
   catalog: PromptsCatalog,
   defaults: PromptInitialValues,
@@ -511,13 +591,14 @@ function buildPwcFormHtml(
     return '';
   }
   const oneStep = stepDefs.length === 1;
+  const visibleStepIndices = computeInitialVisibleStepIndices(catalog, stepDefs, show);
   const out: string[] = [];
   if (!oneStep) {
     out.push('<div class="pwc-wizard pwc-wizard--with-sidebar" id="pwcWizard">');
     out.push(
       '<aside class="pwc-wizard-sidenav" id="pwcWizardSidenav" aria-label="Steps">',
     );
-    out.push(buildPwcAntdStyleStepsHeader(stepDefs, initialStepIndex, totalSteps));
+    out.push(buildPwcAntdStyleStepsHeader(stepDefs, initialStepIndex, totalSteps, visibleStepIndices));
     out.push('</aside><div class="pwc-wizard-main">');
   } else {
     out.push('<div class="pwc-wizard" id="pwcWizard">');
@@ -595,6 +676,12 @@ function openUrlInDefaultBrowser(url: string): void {
   }
 }
 
+function closePromptWebUiServer(server: Server, done: () => void): void {
+  server.close(done);
+  server.closeIdleConnections?.();
+  server.closeAllConnections?.();
+}
+
 /** One group of `runPromptCatalog` fields; all keys must be **unique** across the whole `stages` array. */
 export type RunPromptCatalogWebUIStage = {
   /**
@@ -629,6 +716,8 @@ export type RunPromptCatalogWebUIOptions = {
   values?: PromptInitialValues;
   pageTitle?: string;
   documentHeading?: string;
+  /** Optional hint shown under the document heading. */
+  documentHint?: string;
   /**
    * Path for POSTing the final form JSON. Default {@link DEFAULT_SUBMIT}.
    */
@@ -639,6 +728,11 @@ export type RunPromptCatalogWebUIOptions = {
    * Default {@link DEFAULT_VALIDATE_STEP} (only used when the UI has 2+ steps).
    */
   validateStepPath?: string;
+  /**
+   * POST path for single-field async validation: same JSON as submit plus {@link PWC_FORM_META_FIELD}.
+   * Default {@link DEFAULT_VALIDATE_FIELD}.
+   */
+  validateFieldPath?: string;
   host?: string;
   port?: number;
   timeoutMs?: number;
@@ -810,11 +904,15 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const pageTitle = options.pageTitle ?? 'Prompt catalog (local UI)';
   const h1 = options.documentHeading ?? 'Configure parameters (localhost only)';
+  const documentHint =
+    options.documentHint ??
+    'This server is only bound to the loopback interface. After submit, the CLI continues in the same terminal session.';
 
   const catalog = merged;
   const pwcStepDefs = computePwcWizardSteps(options, catalog);
   const pwcNSteps = Math.max(1, pwcStepDefs.length);
   const resolveValidateStepPath = options.validateStepPath ?? DEFAULT_VALIDATE_STEP;
+  const resolveValidateFieldPath = options.validateFieldPath ?? DEFAULT_VALIDATE_FIELD;
   let server: Server | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -825,7 +923,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         timeoutId = undefined;
       }
       if (server) {
-        server.close(() => reject(err));
+        closePromptWebUiServer(server, () => reject(err));
       } else {
         reject(err);
       }
@@ -844,6 +942,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       const wizardClientJson = JSON.stringify({ n: pwcNSteps, stepDefs: pwcStepDefs });
       const pwcValStepUrl =
         pwcNSteps > 1 ? JSON.stringify(base + resolveValidateStepPath) : 'null';
+      const pwcValFieldUrl = JSON.stringify(base + resolveValidateFieldPath);
       const pwcShellClass =
         options.stages && options.stages.length > 0
           ? 'pwc-shell pwc-shell--stages'
@@ -857,62 +956,61 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
   <title>${escapeHtml(pageTitle)}</title>
   <style>
     :root {
-      --pwc-bg: #eef1f6;
-      --pwc-bg-grad: radial-gradient(1200px 600px at 100% 0%, #e0e7ff 0%, transparent 45%),
-        radial-gradient(800px 400px at 0% 100%, #dbeafe 0%, transparent 50%);
+      --pwc-bg: #f5f5f5;
+      --pwc-bg-grad: radial-gradient(1200px 560px at 100% 0%, rgba(22, 119, 255, 0.08) 0%, transparent 46%),
+        radial-gradient(900px 420px at 0% 100%, rgba(114, 46, 209, 0.05) 0%, transparent 52%);
       --pwc-surface: #ffffff;
-      --pwc-surface-raise: #f8fafc;
-      --pwc-text: #0f172a;
-      --pwc-text-muted: #64748b;
-      --pwc-border: #e2e8f0;
-      --pwc-border-strong: #cbd5e1;
-      --pwc-accent: #4f46e5;
-      --pwc-accent-hover: #4338ca;
-      --pwc-focus: 0 0 0 3px color-mix(in srgb, #4f46e5 32%, transparent);
-      --pwc-radius: 14px;
+      --pwc-surface-raise: #fafafa;
+      --pwc-text: rgba(0, 0, 0, 0.88);
+      --pwc-text-muted: rgba(0, 0, 0, 0.45);
+      --pwc-border: #f0f0f0;
+      --pwc-border-strong: #d9d9d9;
+      --pwc-accent: #1677ff;
+      --pwc-accent-hover: #4096ff;
+      --pwc-focus: 0 0 0 2px rgba(5, 145, 255, 0.12);
+      --pwc-radius: 8px;
       --pwc-radius-sm: 8px;
-      --pwc-shadow: 0 4px 6px -1px color-mix(in srgb, #0f172a 6%, transparent),
-        0 10px 15px -3px color-mix(in srgb, #0f172a 8%, transparent);
+      --pwc-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
       --pwc-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --pwc-bg: #0c0f14;
-        --pwc-bg-grad: radial-gradient(900px 500px at 100% 0%, #1e1b4b 0%, transparent 50%),
-          radial-gradient(700px 400px at 0% 100%, #0c4a6e 0%, transparent 55%);
-        --pwc-surface: #141922;
-        --pwc-surface-raise: #1a1f2a;
-        --pwc-text: #f1f5f9;
-        --pwc-text-muted: #94a3b8;
-        --pwc-border: #2a3142;
-        --pwc-border-strong: #3d4a5f;
-        --pwc-accent: #818cf8;
-        --pwc-accent-hover: #a5b4fc;
-        --pwc-focus: 0 0 0 3px color-mix(in srgb, #818cf8 35%, transparent);
-        --pwc-shadow: 0 4px 6px -1px color-mix(in srgb, #000 45%, transparent),
-          0 12px 20px -4px color-mix(in srgb, #000 50%, transparent);
+        --pwc-bg: #141414;
+        --pwc-bg-grad: radial-gradient(920px 500px at 100% 0%, rgba(22, 119, 255, 0.12) 0%, transparent 48%),
+          radial-gradient(720px 360px at 0% 100%, rgba(114, 46, 209, 0.09) 0%, transparent 54%);
+        --pwc-surface: #1f1f1f;
+        --pwc-surface-raise: #262626;
+        --pwc-text: rgba(255, 255, 255, 0.85);
+        --pwc-text-muted: rgba(255, 255, 255, 0.45);
+        --pwc-border: #303030;
+        --pwc-border-strong: #434343;
+        --pwc-accent: #1668dc;
+        --pwc-accent-hover: #3c89e8;
+        --pwc-focus: 0 0 0 2px rgba(22, 104, 220, 0.2);
+        --pwc-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
       }
     }
     *, *::before, *::after { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      font-size: 0.9375rem;
-      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.5715;
       color: var(--pwc-text);
       background: var(--pwc-bg);
       background-image: var(--pwc-bg-grad);
     }
-    .pwc-shell { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 2.5rem; }
+    .pwc-shell { max-width: 48rem; margin: 0 auto; padding: 24px 20px 32px; }
     /* Wider when using the stages option (side Steps + main column) */
-    .pwc-shell--stages { max-width: 55rem; }
+    .pwc-shell--stages { max-width: 64rem; }
     .pwc-card {
       background: var(--pwc-surface);
       border: 1px solid var(--pwc-border);
       border-radius: var(--pwc-radius);
       box-shadow: var(--pwc-shadow);
-      padding: 1.5rem 1.35rem 1.35rem;
+      padding: 0;
+      overflow: hidden;
     }
     /* Sidebar: like antd layout — no extra card box, only a split line + air */
     .pwc-wizard--with-sidebar {
@@ -920,27 +1018,27 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       flex-direction: row;
       align-items: flex-start;
       width: 100%;
-      gap: 0 1.5rem;
+      gap: 0 24px;
     }
     .pwc-wizard-sidenav {
       flex: 0 0 auto;
-      width: 12.5rem;
-      min-width: 9rem;
-      max-width: 15rem;
-      padding: 0.15rem 1rem 0.25rem 0;
+      width: 16.5rem;
+      min-width: 12rem;
+      max-width: 19rem;
+      padding: 4px 16px 4px 0;
       background: transparent;
       border: none;
       border-radius: 0;
       border-right: 1px solid var(--pwc-ad-color-split);
       position: sticky;
-      top: 0.35rem;
+      top: 4px;
       align-self: flex-start;
       max-height: min(70vh, 30rem);
       overflow-y: auto;
     }
     .pwc-wizard-sidenav .pwc-ad-steps { margin: 0; padding: 0; }
     .pwc-wizard-sidenav .pwc-ad-steps--vertical { margin: 0; }
-    .pwc-wizard-sidenav .pwc-ad-steps--vertical .pwc-ad-steps-item { padding: 0 0 0.4rem; }
+    .pwc-wizard-sidenav .pwc-ad-steps--vertical .pwc-ad-steps-item { padding: 0 0 10px; }
     .pwc-wizard-sidenav .pwc-ad-vert { width: var(--pwc-ad-icon-size); min-width: var(--pwc-ad-icon-size); }
     .pwc-wizard-sidenav .pwc-ad-steps--vertical .pwc-ad-steps-item-title {
       -webkit-line-clamp: 2;
@@ -951,40 +1049,60 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       min-width: 0;
     }
     @media (max-width: 34rem) {
-      .pwc-wizard--with-sidebar { flex-direction: column; gap: 1rem; }
+      .pwc-shell { padding: 16px 14px 24px; }
+      .pwc-card { padding: 0; }
+      .pwc-wizard--with-sidebar { flex-direction: column; gap: 16px; }
       .pwc-wizard-sidenav {
         position: static;
         max-height: none;
         width: 100%;
         max-width: none;
-        padding: 0 0 0.75rem 0;
+        padding: 0 0 12px 0;
         border-right: none;
         border-bottom: 1px solid var(--pwc-ad-color-split);
       }
     }
-    .pwc-header h1 {
-      font-size: 1.2rem;
-      font-weight: 650;
-      letter-spacing: -0.02em;
-      line-height: 1.3;
-      margin: 0 0 0.4rem 0;
+    .pwc-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--pwc-border);
+      background: var(--pwc-surface);
     }
-    .pwc-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.6rem; }
-    .pwc-pill {
-      display: inline-block;
-      font-size: 0.6875rem;
+    .pwc-header h1 {
+      font-size: 30px;
       font-weight: 600;
-      letter-spacing: 0.04em;
+      letter-spacing: -0.02em;
+      line-height: 1.2666666667;
+      margin: 0 0 8px 0;
+    }
+    .pwc-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .pwc-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
       color: var(--pwc-accent);
       background: color-mix(in srgb, var(--pwc-accent) 12%, var(--pwc-surface));
       border: 1px solid color-mix(in srgb, var(--pwc-accent) 25%, var(--pwc-border));
-      padding: 0.2rem 0.45rem;
+      padding: 0 12px;
       border-radius: 999px;
     }
-    .hint { font-size: 0.8125rem; color: var(--pwc-text-muted); margin: 0; }
+    .hint { font-size: 14px; line-height: 1.5715; color: var(--pwc-text-muted); margin: 0; }
     .hint code { font-family: var(--pwc-mono); font-size: 0.8em; padding: 0.1em 0.3em; border-radius: 4px; background: var(--pwc-surface-raise); border: 1px solid var(--pwc-border); }
-    #pwcForm { margin-top: 1.05rem; }
+    #pwcForm {
+      margin-top: 0;
+      padding: 24px 24px 20px;
+    }
+    @media (max-width: 34rem) {
+      .pwc-header {
+        padding: 16px 16px 14px;
+      }
+      #pwcForm {
+        padding: 18px 16px 16px;
+      }
+    }
     .pwc-wizard { width: 100%; }
     /*
      * Steps visual alignment with Ant Design 5/6
@@ -1013,6 +1131,11 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       --pwc-ad-alert-error-border: #ffccc7;
       --pwc-ad-alert-error-text: rgba(0, 0, 0, 0.88);
       --pwc-ad-alert-error-icon: #ff4d4f;
+      /* antd Alert type=success (colorSuccessBg / colorSuccessBorder / colorSuccess) */
+      --pwc-ad-alert-success-bg: #f6ffed;
+      --pwc-ad-alert-success-border: #b7eb8f;
+      --pwc-ad-alert-success-text: rgba(0, 0, 0, 0.88);
+      --pwc-ad-alert-success-icon: #52c41a;
       /* antd Form validation (colorError) */
       --pwc-form-color-error: #ff4d4f;
     }
@@ -1033,50 +1156,64 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         --pwc-ad-alert-error-border: #58181c;
         --pwc-ad-alert-error-text: rgba(255, 255, 255, 0.85);
         --pwc-ad-alert-error-icon: #d32029;
+        --pwc-ad-alert-success-bg: #162312;
+        --pwc-ad-alert-success-border: #274916;
+        --pwc-ad-alert-success-text: rgba(255, 255, 255, 0.85);
+        --pwc-ad-alert-success-icon: #49aa19;
         --pwc-form-color-error: #d32029;
       }
     }
     /* antd Alert type=error — @see https://ant.design/components/alert */
-    .pwc-ad-status { margin: 0.75rem 0 0; min-height: 0; }
-    .pwc-ad-status--empty:empty { margin-top: 0.35rem; }
-    .pwc-ad-alert--error {
+    .pwc-ad-status { margin: 16px 0 0; min-height: 0; }
+    .pwc-ad-status--empty:empty { margin-top: 8px; }
+    .pwc-ad-alert {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
-      margin: 0.75rem 0 0;
-      padding: 8px 12px;
+      gap: 10px;
+      margin: 16px 0 0;
+      padding: 9px 12px;
       font-size: 14px;
       line-height: 1.5715;
-      color: var(--pwc-ad-alert-error-text);
-      background: var(--pwc-ad-alert-error-bg);
-      border: 1px solid var(--pwc-ad-alert-error-border);
       border-radius: 6px;
       box-sizing: border-box;
     }
-    .pwc-ad-alert--error .pwc-ad-alert__icon {
-      color: var(--pwc-ad-alert-error-icon);
+    .pwc-ad-alert--error {
+      color: var(--pwc-ad-alert-error-text);
+      background: var(--pwc-ad-alert-error-bg);
+      border: 1px solid var(--pwc-ad-alert-error-border);
+    }
+    .pwc-ad-alert--success {
+      color: var(--pwc-ad-alert-success-text);
+      background: var(--pwc-ad-alert-success-bg);
+      border: 1px solid var(--pwc-ad-alert-success-border);
+    }
+    .pwc-ad-alert .pwc-ad-alert__icon {
       display: inline-flex;
       line-height: 0;
       flex-shrink: 0;
-      margin-top: 2px;
+      margin-top: 1px;
     }
-    .pwc-ad-alert--error .pwc-ad-alert__inner { flex: 1; min-width: 0; }
-    .pwc-ad-alert--error .pwc-ad-alert__title {
+    .pwc-ad-alert--error .pwc-ad-alert__icon { color: var(--pwc-ad-alert-error-icon); }
+    .pwc-ad-alert--success .pwc-ad-alert__icon { color: var(--pwc-ad-alert-success-icon); }
+    .pwc-ad-alert .pwc-ad-alert__inner { flex: 1; min-width: 0; }
+    .pwc-ad-alert .pwc-ad-alert__title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--pwc-ad-alert-error-text);
-      margin: 0 0 2px 0;
+      margin: 0 0 4px 0;
     }
-    .pwc-ad-alert--error .pwc-ad-alert__desc {
+    .pwc-ad-alert--error .pwc-ad-alert__title { color: var(--pwc-ad-alert-error-text); }
+    .pwc-ad-alert--success .pwc-ad-alert__title { color: var(--pwc-ad-alert-success-text); }
+    .pwc-ad-alert .pwc-ad-alert__desc {
       font-size: 14px;
       font-weight: 400;
-      color: var(--pwc-ad-color-text-description);
       margin: 0;
     }
+    .pwc-ad-alert--error .pwc-ad-alert__desc { color: var(--pwc-ad-color-text-description); }
+    .pwc-ad-alert--success .pwc-ad-alert__desc { color: var(--pwc-ad-color-text-description); }
     .pwc-ad-hint--plain {
-      font-size: 0.8125rem;
+      font-size: 12px;
       color: var(--pwc-text-muted);
-      margin: 0.75rem 0 0;
+      margin: 16px 0 0;
     }
     .pwc-ad-steps { width: 100%; margin: 0; padding: 0; }
     .pwc-ad-steps--vertical { max-width: 100%; }
@@ -1085,11 +1222,11 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       gap: 0; align-items: stretch;
     }
     .pwc-ad-steps--vertical .pwc-ad-steps-item {
-      margin: 0; text-align: left; box-sizing: border-box; padding: 0 0 0.75rem;
+      margin: 0; text-align: left; box-sizing: border-box; padding: 0 0 12px;
     }
     .pwc-ad-steps--vertical .pwc-ad-steps-item:last-child { padding-bottom: 0; }
     .pwc-ad-steps--vertical .pwc-ad-steps-item-row {
-      display: flex; flex-direction: row; align-items: flex-start; gap: 0.75rem; width: 100%;
+      display: flex; flex-direction: row; align-items: flex-start; gap: 12px; width: 100%;
     }
     .pwc-ad-vert {
       display: flex; flex-direction: column; align-items: center; width: var(--pwc-ad-icon-size);
@@ -1097,7 +1234,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     .pwc-ad-vert__icon { width: var(--pwc-ad-icon-size); height: var(--pwc-ad-icon-size); flex-shrink: 0; line-height: 0; }
     .pwc-ad-vert__tail {
-      flex: 1 1 auto; width: 1px; min-height: 0.5rem; margin-top: 0.2rem; align-self: center;
+      flex: 1 1 auto; width: 1px; min-height: 8px; margin-top: 4px; align-self: center;
       background: var(--pwc-ad-color-split); border-radius: 0; transition: background 0.2s;
     }
     .pwc-ad-vert__tail[data-pwc-conn="done"] { background: var(--pwc-ad-color-primary); }
@@ -1155,7 +1292,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       font-size: 12px;
       line-height: 1.5;
       color: var(--pwc-ad-color-text-description);
-      margin: 2px 0 0 0;
+      margin: 4px 0 0 0;
       max-width: 100%;
       font-weight: 400;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
@@ -1167,12 +1304,12 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     .pwc-step[hidden] { display: none !important; }
     /* antd Form / Typography: section title */
     .pwc-step h2.pwc-step-title {
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 500;
       line-height: 1.4;
       letter-spacing: 0;
       color: var(--pwc-ad-color-text);
-      margin: 0 0 1.5rem 0;
+      margin: 0 0 24px 0;
     }
     @media (prefers-color-scheme: dark) {
       .pwc-step h2.pwc-step-title { color: var(--pwc-ad-color-text); }
@@ -1188,7 +1325,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     label { display: block; }
     .pwc-step [data-pwc-wrap] {
-      margin: 0 0 1.5rem 0;
+      margin: 0 0 24px 0;
       padding: 0;
       background: transparent;
       border: none;
@@ -1196,27 +1333,81 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     .pwc-step h2 + [data-pwc-wrap] { margin-top: 0; }
     .pwc-bool-wrap { padding: 0; }
-    .pwc-bool-wrap label { display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 0.55rem; }
+    .pwc-bool-wrap label { display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 10px; }
     .pwc-bool-wrap .pwc-l { display: inline; margin-bottom: 0; font-weight: 400; }
-    .pwc-bool-wrap input[type=checkbox] { margin: 0; flex-shrink: 0; width: 1.05rem; height: 1.05rem; accent-color: var(--pwc-ad-color-primary); border-radius: 4px; cursor: pointer; }
+    .pwc-bool-wrap input[type=checkbox] { margin: 0; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--pwc-ad-color-primary); border-radius: 4px; cursor: pointer; }
+    .pwc-radio-group { display: grid; gap: 12px; }
+    .pwc-radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--pwc-ad-color-border);
+      border-radius: 8px;
+      background: var(--pwc-ad-color-container);
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .pwc-radio-option:hover {
+      border-color: var(--pwc-ad-color-primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 8%, transparent);
+      background: color-mix(in srgb, var(--pwc-ad-color-primary) 2%, var(--pwc-ad-color-container));
+    }
+    .pwc-radio-input {
+      margin: 3px 0 0;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      accent-color: var(--pwc-ad-color-primary);
+      cursor: pointer;
+    }
+    .pwc-radio-option-body { min-width: 0; }
+    .pwc-radio-option-label {
+      display: block;
+      font-size: 14px;
+      line-height: 1.5715;
+      color: var(--pwc-ad-color-text);
+    }
+    .pwc-radio-option-hint {
+      margin-top: 2px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--pwc-ad-color-text-description);
+    }
+    .pwc-radio-input:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 20%, transparent);
+      border-radius: 999px;
+    }
+    .pwc-radio-option:has(.pwc-radio-input:checked) {
+      border-color: var(--pwc-ad-color-primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 12%, transparent);
+      background: color-mix(in srgb, var(--pwc-ad-color-primary) 5%, var(--pwc-ad-color-container));
+    }
+    .pwc-form-item-has-error .pwc-radio-option {
+      border-color: var(--pwc-form-color-error);
+    }
+    .pwc-form-item-has-error .pwc-radio-option:has(.pwc-radio-input:checked) {
+      background: color-mix(in srgb, var(--pwc-form-color-error) 5%, var(--pwc-ad-color-container));
+    }
     /* antd Form.Item: label + control + explain — @see https://ant.design/components/form */
-    .pwc-form-item { margin: 0 0 1.5rem 0; }
+    .pwc-form-item { margin: 0 0 24px 0; }
     .pwc-form-item-label { margin: 0; padding: 0; }
     .pwc-form-item-control { width: 100%; }
-    .pwc-form-item--bool { margin: 0 0 1.5rem 0; }
+    .pwc-form-item--bool { margin: 0 0 24px 0; }
     .pwc-form-item--bool .pwc-bool-wrap { margin: 0; }
     .pwc-input-affix-wrapper { position: relative; display: block; width: 100%; }
     .pwc-form-item-suffix:empty { display: none; }
     .pwc-form-item-suffix {
-      position: absolute; z-index: 1; right: 8px; top: 50%;
+      position: absolute; z-index: 1; right: 11px; top: 50%;
       transform: translateY(-50%);
       color: var(--pwc-form-color-error);
       display: flex; align-items: center; line-height: 0;
       pointer-events: none;
     }
-    .pwc-input-affix-wrapper .pwc-form-input { padding-right: 28px; }
-    .pwc-input-affix-wrapper--select .pwc-form-input { padding-right: 28px; }
-    .pwc-form-item-explain { font-size: 14px; line-height: 1.5715; margin-top: 2px; clear: both; }
+    .pwc-input-affix-wrapper .pwc-form-input { padding-right: 32px; }
+    .pwc-input-affix-wrapper--select .pwc-form-input { padding-right: 32px; }
+    .pwc-form-item-explain { font-size: 14px; line-height: 1.5715; margin-top: 4px; clear: both; }
     .pwc-form-item-explain[hidden] { display: none !important; }
     .pwc-form-item-explain:not([hidden]) { color: var(--pwc-form-color-error); }
     .pwc-form-item-has-error .pwc-form-input { border-color: var(--pwc-form-color-error) !important; }
@@ -1228,15 +1419,15 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     .pwc-form-item--bool.pwc-form-item-has-error .pwc-bool-wrap {
       display: inline-block; max-width: 100%;
-      padding: 4px 8px; border: 1px solid var(--pwc-form-color-error); border-radius: 6px; box-sizing: border-box;
+      padding: 6px 10px; border: 1px solid var(--pwc-form-color-error); border-radius: 6px; box-sizing: border-box;
     }
     .pwc-form-fail__svg { display: block; }
     /* antd Input: single border, 6px radius */
     input.pwc-form-input, select.pwc-form-input, textarea {
       width: 100%;
       margin-top: 0;
-      padding: 4px 11px;
-      min-height: 32px;
+      padding: 6px 11px;
+      min-height: 40px;
       font: inherit;
       font-size: 14px;
       line-height: 1.5715;
@@ -1244,7 +1435,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       background: var(--pwc-ad-color-container);
       border: 1px solid var(--pwc-ad-color-border);
       border-radius: 6px;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
     input.pwc-form-input:hover, select.pwc-form-input:hover, textarea:hover {
       border-color: var(--pwc-ad-color-primary);
@@ -1254,37 +1445,55 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       border-color: var(--pwc-ad-color-primary);
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 16%, transparent);
     }
+    input.pwc-form-input::placeholder, textarea::placeholder { color: var(--pwc-ad-color-text-description); }
+    input.pwc-form-input:disabled, select.pwc-form-input:disabled, textarea:disabled {
+      color: color-mix(in srgb, var(--pwc-ad-color-text) 55%, transparent);
+      background: var(--pwc-ad-color-fill-alter);
+      cursor: not-allowed;
+      border-color: var(--pwc-ad-color-border);
+      box-shadow: none;
+    }
     select { cursor: pointer; }
     .pwc-wizard-ctl {
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
-      gap: 0.5rem;
-      margin-top: 1.25rem;
+      gap: 8px;
+      margin-top: 28px;
       padding-top: 0;
     }
     .pwc-wizard-ctl .pwc-btn-pager {
-      min-height: 32px;
+      min-height: 40px;
       box-sizing: border-box;
     }
-    .pwc-wizard-ctl-spacer { flex: 1 1 auto; min-width: 0.5rem; }
+    .pwc-wizard-ctl-spacer { flex: 1 1 auto; min-width: 8px; }
     .pwc-wizard-ctl__submit {
       flex: 0 0 auto;
       width: auto !important;
-      min-width: 7rem;
+      min-width: 136px;
     }
     .pwc-btn-pager {
-      padding: 0.45rem 0.9rem;
+      padding: 4px 15px;
       font: inherit;
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: var(--pwc-text);
-      background: var(--pwc-surface-raise);
-      border: 1px solid var(--pwc-border-strong);
-      border-radius: 8px;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 1.5715;
+      color: var(--pwc-ad-color-text);
+      background: var(--pwc-ad-color-container);
+      border: 1px solid var(--pwc-ad-color-border);
+      border-radius: 6px;
       cursor: pointer;
+      transition: all 0.2s;
     }
-    .pwc-btn-pager:hover { background: var(--pwc-surface); }
+    .pwc-btn-pager:hover {
+      color: var(--pwc-ad-color-primary);
+      border-color: var(--pwc-ad-color-primary);
+      background: var(--pwc-ad-color-container);
+    }
+    .pwc-btn-pager:active {
+      color: var(--pwc-ad-color-primary-active);
+      border-color: var(--pwc-ad-color-primary-active);
+    }
     .pwc-btn-pager--primary {
       color: #fff;
       background: var(--pwc-ad-color-primary);
@@ -1309,7 +1518,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     .pwc-wizard-ctl .pwc-btn-submit,
     .pwc-wizard-ctl button.pwc-btn-submit {
       margin: 0;
-      height: 32px;
+      height: 40px;
       padding: 4px 15px;
       font: inherit;
       font-weight: 400;
@@ -1335,15 +1544,28 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       outline: none;
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 20%, transparent);
     }
+    .pwc-btn-pager[hidden], .pwc-btn-submit[hidden] { display: none !important; }
+    @media (max-width: 34rem) {
+      .pwc-wizard-ctl {
+        flex-wrap: wrap;
+      }
+      .pwc-wizard-ctl-spacer {
+        display: none;
+      }
+      .pwc-wizard-ctl .pwc-btn-pager,
+      .pwc-wizard-ctl .pwc-btn-submit {
+        flex: 1 1 100%;
+        width: 100% !important;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="${pwcShellClass}">
     <div class="pwc-card">
       <header class="pwc-header">
-        <div class="pwc-badges"><span class="pwc-pill">127.0.0.1 only</span></div>
         <h1>${escapeHtml(h1)}</h1>
-        <p class="hint">This server is only bound to the loopback interface. After submit, the CLI continues with the same <code>values</code> as <code>runPromptCatalog</code> presets.</p>
+        <p class="hint">${escapeHtml(documentHint)}</p>
       </header>
   <form id="pwcForm" autocomplete="off">
     ${formInner}
@@ -1355,15 +1577,22 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     var sub = ${JSON.stringify(base + submitPath)};
     var ref = ${JSON.stringify(base + reflowPath)};
     var pwcValStep = ${pwcValStepUrl};
+    var pwcValField = ${pwcValFieldUrl};
     var pwcStepMeta = ${JSON.stringify(PWC_FORM_META_STEP)};
+    var pwcFieldMeta = ${JSON.stringify(PWC_FORM_META_FIELD)};
     var s = document.getElementById('pwcStatus');
     var wcfg = ${wizardClientJson};
     var pwcN = wcfg && typeof wcfg.n === 'number' ? wcfg.n : 1;
     var pwcSteps = (wcfg && wcfg.stepDefs) || [];
     var pwcCur = 0;
+    var pwcVisibleSteps = [];
     var pwcAdCheck = ${JSON.stringify(PWC_AD_CHECK_SVG)};
     var pwcErrIcon = ${JSON.stringify(PWC_AD_ALERT_ERROR_ICON_SVG)};
+    var pwcOkIcon = ${JSON.stringify(PWC_AD_ALERT_SUCCESS_ICON_SVG)};
     var pwcFieldFail = ${JSON.stringify(PWC_FORM_FAIL_ICON_SVG)};
+    var pwcCloseTimer = null;
+    var pwcCloseProbeTimer = null;
+    var pwcFieldReqSeq = {};
     var form = document.getElementById('pwcForm');
     function pwcEsc(t) {
       return String(t == null ? '' : t)
@@ -1394,6 +1623,27 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         '<span class="pwc-ad-alert__icon" aria-hidden="true">' + pwcErrIcon + '</span>' +
         '<div class="pwc-ad-alert__inner"><div class="pwc-ad-alert__title">Error</div>' +
         '<div class="pwc-ad-alert__desc">' + pwcEsc(t) + '</div></div>';
+    }
+    function pwcSetStatusSuccess(message) {
+      if (!s) { return; }
+      var t = String(message == null ? '' : message);
+      s.className = 'pwc-ad-alert pwc-ad-alert--success';
+      s.setAttribute('role', 'status');
+      s.innerHTML =
+        '<span class="pwc-ad-alert__icon" aria-hidden="true">' + pwcOkIcon + '</span>' +
+        '<div class="pwc-ad-alert__inner"><div class="pwc-ad-alert__title">Success</div>' +
+        '<div class="pwc-ad-alert__desc">' + pwcEsc(t) + '</div></div>';
+    }
+    function pwcScheduleWindowClose() {
+      if (pwcCloseTimer != null) { clearTimeout(pwcCloseTimer); }
+      if (pwcCloseProbeTimer != null) { clearTimeout(pwcCloseProbeTimer); }
+      pwcCloseTimer = setTimeout(function () {
+        window.close();
+        pwcCloseProbeTimer = setTimeout(function () {
+          if (!s || document.visibilityState !== 'visible') { return; }
+          pwcSetStatusSuccess('Saved. Automatic close was blocked by the browser. You can close this tab now.');
+        }, 600);
+      }, 2000);
     }
     function pwcSetFieldError(key, message) {
       if (!form || !key) { return; }
@@ -1435,6 +1685,21 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       } catch (e) {}
       return { msg: msg, fk: fk };
     }
+    function pwcSetFieldDirty(key, dirty) {
+      if (!form || !key) { return; }
+      var wrap = form.querySelector('[data-pwc-field=\"' + String(key) + '\"]');
+      if (!wrap) { return; }
+      if (dirty) {
+        wrap.setAttribute('data-pwc-dirty', '1');
+      } else {
+        wrap.removeAttribute('data-pwc-dirty');
+      }
+    }
+    function pwcIsFieldDirty(key) {
+      if (!form || !key) { return false; }
+      var wrap = form.querySelector('[data-pwc-field=\"' + String(key) + '\"]');
+      return !!(wrap && wrap.getAttribute('data-pwc-dirty') === '1');
+    }
     function getControl(formEl, k) {
       if (!formEl || !formEl.elements) { return null; }
       var el = formEl.elements[k];
@@ -1442,20 +1707,60 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       if (typeof RadioNodeList !== 'undefined' && el instanceof RadioNodeList) { return el[0] || null; }
       return el;
     }
+    function setControlValue(formEl, k, rawVal) {
+      if (!formEl || !formEl.elements) { return; }
+      var el = formEl.elements[k];
+      if (el == null) { return; }
+      if (typeof RadioNodeList !== 'undefined' && el instanceof RadioNodeList) {
+        var want = rawVal == null ? '' : String(rawVal);
+        for (var i = 0; i < el.length; i++) {
+          if (el[i]) {
+            el[i].checked = el[i].value === want;
+          }
+        }
+        return;
+      }
+      if (el.type === 'checkbox') {
+        el.checked = Boolean(rawVal);
+        return;
+      }
+      el.value = rawVal == null ? '' : String(rawVal);
+    }
+    function getControlValue(formEl, k) {
+      if (!formEl || !formEl.elements) { return undefined; }
+      var el = formEl.elements[k];
+      if (el == null) { return undefined; }
+      if (typeof RadioNodeList !== 'undefined' && el instanceof RadioNodeList) {
+        for (var i = 0; i < el.length; i++) {
+          if (el[i] && el[i].checked) {
+            return el[i].value;
+          }
+        }
+        return el.value || undefined;
+      }
+      if (el.type === 'checkbox') {
+        return !!el.checked;
+      }
+      return el.value;
+    }
     function collect() {
       var o = {};
       if (!form || !form.elements) { return o; }
       var nodes = form.querySelectorAll('[data-pwc-wrap]');
       for (var i = 0; i < nodes.length; i++) {
         var w = nodes[i];
+        if (w.style.display === 'none') { continue; }
         var k = w.getAttribute('data-pwc-wrap');
         if (!k) { continue; }
         var inp = getControl(form, k);
         if (inp == null) { continue; }
+        var rawVal = getControlValue(form, k);
         if (inp.type === 'checkbox') {
           o[k] = !!inp.checked;
+        } else if (inp.type === 'radio') {
+          o[k] = rawVal;
         } else if (inp.type === 'number') {
-          var sv = (inp.value != null && String(inp.value) !== '') ? String(inp.value).trim() : '';
+          var sv = (rawVal != null && String(rawVal) !== '') ? String(rawVal).trim() : '';
           if (sv === '' || sv === '-' || sv === '+') {
             o[k] = 0;
           } else {
@@ -1463,7 +1768,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             o[k] = (typeof n0 === 'number' && !isNaN(n0)) ? n0 : 0;
           }
         } else {
-          o[k] = inp.value;
+          o[k] = rawVal;
         }
       }
       return o;
@@ -1473,24 +1778,134 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         .then(function (r) { return r.json(); })
         .then(function (d) {
           var sh = d.show || {};
+          var vals = d.values || {};
           if (!form) { return; }
           form.querySelectorAll('[data-pwc-wrap]').forEach(function (w) {
             var k = w.getAttribute('data-pwc-wrap');
-            if (k != null && sh[k] === false) { w.style.display = 'none'; }
-            else { w.style.display = 'block'; }
+            var wasHidden = w.style.display === 'none';
+            var hidden = k != null && sh[k] === false;
+            w.style.display = hidden ? 'none' : 'block';
+            var ctrls = w.querySelectorAll('input, select, textarea');
+            for (var i = 0; i < ctrls.length; i++) {
+              ctrls[i].disabled = hidden;
+            }
+            if (!hidden && wasHidden && k && !pwcIsFieldDirty(k) && Object.prototype.hasOwnProperty.call(vals, k)) {
+              setControlValue(form, k, vals[k]);
+            }
           });
+          pwcRefreshVisibleSteps();
         })
         .catch(function () {});
     }
     var t;
     function scheduleReflow() { clearTimeout(t); t = setTimeout(reflow, 120); }
+    function pwcStepHasVisibleFields(stepIndex) {
+      if (!form || !pwcSteps || stepIndex < 0 || stepIndex >= pwcSteps.length) {
+        return false;
+      }
+      var st = pwcSteps[stepIndex];
+      if (!st || !st.keys || st.keys.length === 0) {
+        return false;
+      }
+      for (var i = 0; i < st.keys.length; i++) {
+        var key = st.keys[i];
+        var wrap = form.querySelector('[data-pwc-wrap=\"' + String(key) + '\"]');
+        if (wrap && wrap.style.display !== 'none') {
+          return true;
+        }
+      }
+      return false;
+    }
+    function pwcRefreshVisibleSteps() {
+      var prevCur = pwcCur;
+      pwcVisibleSteps = [];
+      for (var i = 0; i < pwcN; i++) {
+        if (i === 0 || pwcStepHasVisibleFields(i)) {
+          pwcVisibleSteps.push(i);
+        }
+      }
+      if (pwcVisibleSteps.length === 0) {
+        pwcVisibleSteps = [0];
+      }
+      var items = document.querySelectorAll('.pwc-ad-steps-item[data-pwc-step-idx]');
+      for (var j = 0; j < items.length; j++) {
+        var li = items[j];
+        var idx = parseInt(li.getAttribute('data-pwc-step-idx') || '0', 10);
+        li.hidden = pwcVisibleSteps.indexOf(idx) === -1;
+      }
+      var sections = document.querySelectorAll('.pwc-step');
+      for (var k = 0; k < sections.length; k++) {
+        var el = sections[k];
+        var si = parseInt(el.getAttribute('data-pwc-step') || '0', 10);
+        if (pwcVisibleSteps.indexOf(si) === -1) {
+          el.setAttribute('hidden', '');
+          el.classList.remove('pwc-step--active');
+        }
+      }
+      if (pwcVisibleSteps.indexOf(pwcCur) === -1) {
+        pwcCur = pwcVisibleSteps[0];
+      }
+      pwcRenderCurrentStep(pwcCur, { preserveErrors: pwcCur === prevCur });
+    }
+    function pwcVisibleStepPosition(stepIndex) {
+      return pwcVisibleSteps.indexOf(stepIndex);
+    }
+    function pwcVisiblePrev(stepIndex) {
+      var pos = pwcVisibleStepPosition(stepIndex);
+      if (pos <= 0) {
+        return stepIndex;
+      }
+      return pwcVisibleSteps[pos - 1];
+    }
+    function pwcVisibleNext(stepIndex) {
+      var pos = pwcVisibleStepPosition(stepIndex);
+      if (pos === -1 || pos >= pwcVisibleSteps.length - 1) {
+        return stepIndex;
+      }
+      return pwcVisibleSteps[pos + 1];
+    }
+    function pwcRenderCurrentStep(n, opts) {
+      pwcCur = n;
+      if (pwcN <= 1) { return; }
+      if (!(opts && opts.preserveErrors)) {
+        pwcClearAllFieldErrors();
+      }
+      var sections = document.querySelectorAll('.pwc-step');
+      for (var i = 0; i < sections.length; i++) {
+        var el = sections[i];
+        var si = parseInt(el.getAttribute('data-pwc-step') || '0', 10);
+        if (pwcVisibleSteps.indexOf(si) === -1) {
+          el.setAttribute('hidden', '');
+          el.classList.remove('pwc-step--active');
+        } else if (si === n) {
+          el.removeAttribute('hidden');
+          el.classList.add('pwc-step--active');
+        } else {
+          el.setAttribute('hidden', '');
+          el.classList.remove('pwc-step--active');
+        }
+      }
+      pwcSyncAntStepsUI(n);
+      var b = document.getElementById('pwcBack');
+      var nx = document.getElementById('pwcNext');
+      var sm = document.getElementById('pwcFormSubmit');
+      var visiblePos = pwcVisibleStepPosition(n);
+      if (b) { b.hidden = visiblePos <= 0; }
+      if (nx) { nx.hidden = visiblePos >= pwcVisibleSteps.length - 1; }
+      if (sm) { sm.hidden = visiblePos < pwcVisibleSteps.length - 1; }
+    }
     function pwcSyncAntStepsUI(cur) {
       if (pwcN <= 1) { return; }
       var items = document.querySelectorAll('.pwc-ad-steps-item[data-pwc-step-idx]');
       for (var k = 0; k < items.length; k++) {
         var li = items[k];
         var i = parseInt(li.getAttribute('data-pwc-step-idx') || '0', 10);
-        var st = i < cur ? 'finish' : (i === cur ? 'process' : 'wait');
+        if (pwcVisibleSteps.indexOf(i) === -1) {
+          continue;
+        }
+        var curPos = pwcVisibleStepPosition(cur);
+        var itemPos = pwcVisibleStepPosition(i);
+        var st = itemPos < curPos ? 'finish' : (i === cur ? 'process' : 'wait');
         li.setAttribute('data-pwc-state', st);
         li.setAttribute('aria-current', st === 'process' ? 'step' : 'false');
         li.className = 'pwc-ad-steps-item pwc-ad-steps-item--' + st;
@@ -1499,7 +1914,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
           if (st === 'finish') {
             iconWrap.innerHTML = '<span class="pwc-ad-icon pwc-ad-icon--finish" aria-label="done">' + pwcAdCheck + '</span>';
           } else {
-            var num = i + 1;
+            var num = itemPos + 1;
             iconWrap.innerHTML = '<span class="pwc-ad-icon" aria-label="' + num + '"><span class="pwc-ad-icon-num">' + num + '</span></span>';
           }
         }
@@ -1508,28 +1923,19 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       for (var v = 0; v < vtails.length; v++) {
         var vt = vtails[v];
         var vi = parseInt(vt.getAttribute('data-pwc-vtail') || '0', 10);
-        vt.setAttribute('data-pwc-conn', vi < cur ? 'done' : 'todo');
+        if (pwcVisibleSteps.indexOf(vi) === -1 || pwcVisibleSteps.indexOf(vi + 1) === -1) {
+          vt.hidden = true;
+          continue;
+        }
+        vt.hidden = false;
+        vt.setAttribute('data-pwc-conn', pwcVisibleStepPosition(vi) < pwcVisibleStepPosition(cur) ? 'done' : 'todo');
       }
     }
     function pwcSetStep(n) {
-      pwcCur = n;
-      if (pwcN > 1) {
-        pwcClearAllFieldErrors();
-        var sections = document.querySelectorAll('.pwc-step');
-        for (var i = 0; i < sections.length; i++) {
-          var el = sections[i];
-          var si = parseInt(el.getAttribute('data-pwc-step') || '0', 10);
-          if (si === n) { el.removeAttribute('hidden'); el.classList.add('pwc-step--active'); }
-          else { el.setAttribute('hidden', ''); el.classList.remove('pwc-step--active'); }
-        }
-        pwcSyncAntStepsUI(n);
-        var b = document.getElementById('pwcBack');
-        var nx = document.getElementById('pwcNext');
-        var sm = document.getElementById('pwcFormSubmit');
-        if (b) { b.hidden = n <= 0; }
-        if (nx) { nx.hidden = n >= pwcN - 1; }
-        if (sm) { sm.hidden = n < pwcN - 1; }
+      if (pwcVisibleSteps.indexOf(n) === -1) {
+        return;
       }
+      pwcRenderCurrentStep(n, { preserveErrors: n === pwcCur });
       reflow();
     }
     function validateCurrentStep() {
@@ -1559,11 +1965,51 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       o[pwcStepMeta] = pwcCur;
       return o;
     }
+    function pwcFieldPayload(key) {
+      var o = collect();
+      o[pwcFieldMeta] = key;
+      return o;
+    }
+    function pwcValidateField(key) {
+      if (!form || !key || pwcValField == null) { return Promise.resolve(); }
+      var wrap = form.querySelector('[data-pwc-wrap=\"' + String(key) + '\"]');
+      if (!wrap || wrap.style.display === 'none') { return Promise.resolve(); }
+      var reqSeq = (pwcFieldReqSeq[key] || 0) + 1;
+      pwcFieldReqSeq[key] = reqSeq;
+      return fetch(pwcValField, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pwcFieldPayload(key))
+      })
+        .then(function (r) {
+          if (!r.ok) {
+            return r.text().then(function (x) {
+              var pe = pwcParseErrorBody(x);
+              var e = new Error(pe.msg || String(r.status));
+              e.pwcFieldKey = pe.fk;
+              throw e;
+            });
+          }
+          return r.json();
+        })
+        .then(function () {
+          if (pwcFieldReqSeq[key] !== reqSeq) { return; }
+          pwcSetFieldError(key, null);
+        })
+        .catch(function (err) {
+          if (pwcFieldReqSeq[key] !== reqSeq) { return; }
+          if (err && err.pwcFieldKey) {
+            pwcSetFieldError(err.pwcFieldKey, err.message || String(err));
+            return;
+          }
+          pwcSetStatusError(err && err.message ? err.message : err);
+        });
+    }
     function pwcTryAdvanceNext() {
-      if (pwcCur >= pwcN - 1) { return Promise.resolve(); }
+      if (pwcVisibleStepPosition(pwcCur) >= pwcVisibleSteps.length - 1) { return Promise.resolve(); }
       if (!validateCurrentStep()) { return Promise.resolve(); }
       if (pwcValStep == null) {
-        pwcSetStep(pwcCur + 1);
+        pwcSetStep(pwcVisibleNext(pwcCur));
         return Promise.resolve();
       }
       pwcSetStatusHint('Checking…');
@@ -1583,7 +2029,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
           }
           return r.json();
         })
-        .then(function () { pwcSetStatusEmpty(); pwcSetStep(pwcCur + 1); })
+        .then(function () { pwcSetStatusEmpty(); pwcSetStep(pwcVisibleNext(pwcCur)); })
         .catch(function (err) {
           if (err && err.pwcFieldKey) {
             pwcSetFieldError(err.pwcFieldKey, err.message || String(err));
@@ -1598,10 +2044,20 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     if (form) {
       function pwcOnFieldTouched(e) {
         var t = e.target;
-        if (t && t.name) { pwcSetFieldError(t.name, null); }
+        if (t && t.name) {
+          pwcSetFieldDirty(t.name, true);
+          pwcSetFieldError(t.name, null);
+        }
       }
       form.addEventListener('input', function (e) { pwcOnFieldTouched(e); scheduleReflow(); });
-      form.addEventListener('change', function (e) { pwcOnFieldTouched(e); scheduleReflow(); });
+      form.addEventListener('change', function (e) {
+        pwcOnFieldTouched(e);
+        scheduleReflow();
+        var t = e.target;
+        if (t && t.name) {
+          void pwcValidateField(t.name);
+        }
+      });
       form.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter' || pwcN <= 1) { return; }
         if (e.target && e.target.tagName === 'TEXTAREA') { return; }
@@ -1612,14 +2068,15 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       });
     }
     var pwcBack = document.getElementById('pwcBack');
-    if (pwcBack) { pwcBack.addEventListener('click', function () { if (pwcCur > 0) { pwcSetStep(pwcCur - 1); } }); }
+    if (pwcBack) { pwcBack.addEventListener('click', function () { if (pwcVisibleStepPosition(pwcCur) > 0) { pwcSetStep(pwcVisiblePrev(pwcCur)); } }); }
     var pwcNext = document.getElementById('pwcNext');
     if (pwcNext) { pwcNext.addEventListener('click', function () { void pwcTryAdvanceNext(); }); }
+    pwcRefreshVisibleSteps();
     if (form) { setTimeout(function () { reflow(); }, 0); }
     if (form) {
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (pwcN > 1 && pwcCur < pwcN - 1) { return; }
+        if (pwcN > 1 && pwcVisibleStepPosition(pwcCur) < pwcVisibleSteps.length - 1) { return; }
         pwcSetStatusHint('Sending…');
         pwcClearAllFieldErrors();
         fetch(sub, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collect()) })
@@ -1634,7 +2091,10 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             }
             return r.json();
           })
-          .then(function () { pwcSetStatusHint('Saved. You can close this tab.'); })
+          .then(function () {
+            pwcSetStatusSuccess('Saved. This tab will close automatically in 2 seconds.');
+            pwcScheduleWindowClose();
+          })
           .catch(function (err) {
             if (err && err.pwcFieldKey) {
               pwcSetFieldError(err.pwcFieldKey, err.message || String(err));
@@ -1677,12 +2137,12 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         req.on('end', () => {
           try {
             const raw = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
-            const show = reflowWebFormState(catalog, readFormFromClient(raw), userSeed).show;
+            const { show, values } = reflowWebFormState(catalog, readFormFromClient(raw), userSeed);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ show }));
+            res.end(JSON.stringify({ show, values }));
           } catch {
             res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ show: {} }));
+            res.end(JSON.stringify({ show: {}, values: {} }));
           }
         });
         return;
@@ -1737,6 +2197,45 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         return;
       }
 
+      if (req.method === 'POST' && req.url === resolveValidateFieldPath) {
+        const chunks: Buffer[] = [];
+        req.on('data', (c) => chunks.push(c as Buffer));
+        req.on('end', () => {
+          void (async () => {
+            try {
+              const raw = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+              const fieldKeyRaw = raw[PWC_FORM_META_FIELD];
+              const fieldKey =
+                typeof fieldKeyRaw === 'string' && fieldKeyRaw.trim().length > 0
+                  ? fieldKeyRaw.trim()
+                  : '';
+              if (!fieldKey || !Object.prototype.hasOwnProperty.call(catalog, fieldKey)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, error: 'Invalid or missing field key.' }));
+                return;
+              }
+              const { error } = await buildWebPresetFromBody(
+                catalog,
+                readFormFromClient(readFormFromClientStrippingPwcMeta(raw)),
+                userSeed,
+                { scopeKeys: new Set([fieldKey]) },
+              );
+              if (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, error, fieldKey }));
+                return;
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true }));
+            } catch {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: 'Invalid request' }));
+            }
+          })();
+        });
+        return;
+      }
+
       if (req.method === 'POST' && req.url === submitPath) {
         const chunks: Buffer[] = [];
         req.on('data', (c) => chunks.push(c as Buffer));
@@ -1759,12 +2258,17 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
                 return;
               }
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: true }));
-              if (timeoutId !== undefined) {
-                clearTimeout(timeoutId);
-                timeoutId = undefined;
-              }
-              server?.close(() => resolve(preset));
+              res.end(JSON.stringify({ ok: true }), () => {
+                if (timeoutId !== undefined) {
+                  clearTimeout(timeoutId);
+                  timeoutId = undefined;
+                }
+                if (server) {
+                  closePromptWebUiServer(server, () => resolve(preset));
+                  return;
+                }
+                resolve(preset);
+              });
             } catch (e) {
               res.writeHead(400, { 'Content-Type': 'text/plain' });
               res.end('Invalid request');

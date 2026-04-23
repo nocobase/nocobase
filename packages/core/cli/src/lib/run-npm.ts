@@ -10,10 +10,22 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
+function resolveCommandName(name: string): string {
+  if (process.platform !== 'win32' || path.extname(name) || name.includes(path.sep)) {
+    return name;
+  }
+
+  if (['npm', 'npx', 'pnpm', 'yarn'].includes(name)) {
+    return `${name}.cmd`;
+  }
+
+  return name;
+}
+
 export function run(
   name: string,
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string>; errorName?: string },
 ): Promise<void> {
   let cwd = options?.cwd ?? process.cwd();
   if (!path.isAbsolute(cwd)) {
@@ -21,9 +33,8 @@ export function run(
   }
   const label = options?.errorName ?? name;
   return new Promise((resolve, reject) => {
-    const child = spawn(name, [...args], {
-      stdio: 'inherit',
-      shell: true,
+    const child = spawn(resolveCommandName(name), [...args], {
+      stdio: options?.stdio ?? 'inherit',
       cwd,
       env: {
         ...process.env,
@@ -48,14 +59,14 @@ export function run(
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
 export function runNpm(
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
 ): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
 }
 
 export function runNocoBaseCommand(
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
 ): Promise<void> {
   let cwd = options?.cwd ?? process.cwd();
   if (!path.isAbsolute(cwd)) {
