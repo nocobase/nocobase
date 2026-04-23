@@ -37,6 +37,7 @@ import {
   getKanbanCollectionFieldOptions,
   getKanbanCollectionFields,
   getKanbanCollectionFilterTargetKey,
+  getKanbanCollectionTitleField,
   getKanbanFieldScopeKey,
   getKanbanGroupFieldSortScopeKeys,
   getKanbanGroupFieldCandidates,
@@ -199,11 +200,11 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     return groupFieldName ? this.collection?.getField?.(groupFieldName) : undefined;
   }
 
-  getInlineGroupOptions(field = this.getGroupField()) {
+  getInlineGroupOptions(field = this.getGroupField()): KanbanGroupOption[] {
     return getKanbanInlineGroupOptions(field, this.props.groupOptions || []);
   }
 
-  getConfiguredGroupOptions() {
+  getConfiguredGroupOptions(): KanbanGroupOption[] {
     const currentField = this.getGroupField();
     const selectedOptions = normalizeKanbanGroupOptions(this.props.groupOptions || []);
     const inlineOptions = this.getInlineGroupOptions(currentField);
@@ -211,11 +212,13 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     if (!selectedOptions.length || !inlineOptions.length) {
       return selectedOptions;
     }
-    const inlineOptionMap = new Map(inlineOptions.map((item) => [item.value, item]));
+    const inlineOptionMap = new Map<string, KanbanGroupOption>(
+      inlineOptions.map((item): [string, KanbanGroupOption] => [item.value, item]),
+    );
     return selectedOptions.map((item) => inlineOptionMap.get(item.value) || item);
   }
 
-  getGroupTitleFieldName(field = this.getGroupField()) {
+  getGroupTitleFieldName(field = this.getGroupField()): string | undefined {
     if (!field || !isAssociationGroupField(field)) {
       return undefined;
     }
@@ -227,10 +230,10 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       return savedFieldName;
     }
 
-    return targetCollection?.titleField || getKanbanCollectionFilterTargetKey(targetCollection);
+    return getKanbanCollectionTitleField(targetCollection);
   }
 
-  getGroupColorFieldName(field = this.getGroupField()) {
+  getGroupColorFieldName(field = this.getGroupField()): string | undefined {
     if (!field || !isAssociationGroupField(field)) {
       return undefined;
     }
@@ -245,7 +248,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     return undefined;
   }
 
-  getRelationOptionFieldCandidates(field = this.getGroupField()) {
+  getRelationOptionFieldCandidates(field = this.getGroupField()): Array<{ label: string; value: string }> {
     if (!field || !isAssociationGroupField(field)) {
       return [];
     }
@@ -260,7 +263,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       colorFieldName?: string;
       savedOptions?: Array<Partial<KanbanGroupOption>>;
     } = {},
-  ) {
+  ): Promise<KanbanGroupOption[]> {
     const targetCollection = field?.targetCollection;
     if (!targetCollection) {
       return [] as KanbanGroupOption[];

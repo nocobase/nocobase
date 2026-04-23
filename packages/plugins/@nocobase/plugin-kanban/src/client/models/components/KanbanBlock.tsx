@@ -210,7 +210,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         return;
       }
 
-      const configuredGroupOptions = model.getConfiguredGroupOptions();
+      const configuredGroupOptions: KanbanGroupOption[] = model.getConfiguredGroupOptions();
       if (!configuredGroupOptions.length) {
         setGroupOptions([]);
         return;
@@ -225,7 +225,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
       setGroupOptionsLoading(true);
       setGroupOptionsError(undefined);
       try {
-        const relationOptions = await model.loadRelationGroupOptions(groupField);
+        const relationOptions: KanbanGroupOption[] = await model.loadRelationGroupOptions(groupField);
         if (!cancelled) {
           const selectedValueKeys = new Set(configuredGroupOptions.map((item) => item.value));
           setGroupOptions(relationOptions.filter((item) => selectedValueKeys.has(item.value)));
