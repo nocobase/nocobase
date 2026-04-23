@@ -491,17 +491,6 @@ export function resolveAdminLayoutMenuDragMoveOptions(
     return;
   }
 
-  if (overRoute.type === NocoBaseDesktopRouteType.group && activeRoute.type !== NocoBaseDesktopRouteType.group) {
-    return {
-      sourceId: activeRoute.id,
-      targetScope: {
-        parentId: overRoute.id,
-      },
-      sortField: 'sort',
-      method: 'prepend',
-    };
-  }
-
   return {
     sourceId: activeRoute.id,
     targetId: overRoute.id,

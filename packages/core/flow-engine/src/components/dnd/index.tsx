@@ -24,9 +24,38 @@ export const TOOLBAR_DRAG_ACTIVITY_EVENT = 'nb-toolbar-drag-activity';
 const TOOLBAR_DRAG_ANCHOR_EVENT = 'nb-toolbar-drag-anchor';
 const MENU_SUBMENU_POPUP_SELECTOR = '.ant-menu-submenu-popup';
 
+type ToolbarDragAnchorPoint = {
+  x: number;
+  y: number;
+};
+
 type ToolbarDragAnchorDetail = {
   modelUid: string;
-  rect: { top: number; left: number; width: number; height: number } | null;
+  point: ToolbarDragAnchorPoint | null;
+};
+
+export const resolveOverlayAnchorTransform = ({
+  activeId,
+  active,
+  transform,
+  activeNodeRect,
+  dragAnchorPoint,
+}: {
+  activeId: string | null;
+  active: { id: string | number } | null | undefined;
+  transform: { x: number; y: number; scaleX?: number; scaleY?: number };
+  activeNodeRect: { top: number; left: number } | null;
+  dragAnchorPoint: ToolbarDragAnchorPoint | null;
+}) => {
+  if (!activeId || active?.id !== activeId || !dragAnchorPoint || !activeNodeRect) {
+    return transform;
+  }
+
+  return {
+    ...transform,
+    x: transform.x + dragAnchorPoint.x - activeNodeRect.left,
+    y: transform.y + dragAnchorPoint.y - activeNodeRect.top,
+  };
 };
 
 const resolveDraggableHostNode = (activatorNode: HTMLElement | null) => {
@@ -106,7 +135,7 @@ export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> =
   );
 
   const dispatchToolbarDragAnchor = useCallback(
-    (detail: Pick<ToolbarDragAnchorDetail, 'rect'>) => {
+    (detail: Pick<ToolbarDragAnchorDetail, 'point'>) => {
       const ownerDocument = dragHandlerRef.current?.ownerDocument;
       if (!ownerDocument) {
         return;
@@ -114,7 +143,7 @@ export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> =
 
       ownerDocument.dispatchEvent(
         new CustomEvent<ToolbarDragAnchorDetail>(TOOLBAR_DRAG_ANCHOR_EVENT, {
-          detail: { modelUid: model.uid, rect: detail.rect },
+          detail: { modelUid: model.uid, point: detail.point },
         }),
       );
     },
@@ -204,17 +233,11 @@ export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> =
           return;
         }
 
-        const hostNode = resolveDraggableHostNode(event.currentTarget);
-        const hostRect = hostNode?.getBoundingClientRect();
         dispatchToolbarDragAnchor({
-          rect: hostRect
-            ? {
-                top: hostRect.top,
-                left: hostRect.left,
-                width: hostRect.width,
-                height: hostRect.height,
-              }
-            : null,
+          point: {
+            x: event.clientX,
+            y: event.clientY,
+          },
         });
         isPointerPressActiveRef.current = true;
         syncToolbarDragActivity();
@@ -267,7 +290,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
   ...restProps
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [dragAnchorRect, setDragAnchorRect] = useState<ToolbarDragAnchorDetail['rect']>(null);
+  const [dragAnchorPoint, setDragAnchorPoint] = useState<ToolbarDragAnchorDetail['point']>(null);
   const flowEngine = useFlowEngine();
 
   useEffect(() => {
@@ -277,7 +300,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
 
     const handleToolbarDragAnchor = (event: Event) => {
       const customEvent = event as CustomEvent<ToolbarDragAnchorDetail>;
-      setDragAnchorRect(customEvent.detail?.rect || null);
+      setDragAnchorPoint(customEvent.detail?.point || null);
     };
 
     document.addEventListener(TOOLBAR_DRAG_ANCHOR_EVENT, handleToolbarDragAnchor as EventListener);
@@ -287,18 +310,16 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
   }, []);
 
   const overlayAnchorModifier = useCallback<Modifier>(
-    ({ active, activeNodeRect, overlayNodeRect, transform }) => {
-      if (!activeId || active?.id !== activeId || !dragAnchorRect || !activeNodeRect || !overlayNodeRect) {
-        return transform;
-      }
-
-      return {
-        ...transform,
-        x: transform.x + dragAnchorRect.left - activeNodeRect.left,
-        y: transform.y + dragAnchorRect.top - activeNodeRect.top,
-      };
+    ({ active, activeNodeRect, transform }) => {
+      return resolveOverlayAnchorTransform({
+        activeId,
+        active,
+        transform,
+        activeNodeRect,
+        dragAnchorPoint,
+      });
     },
-    [activeId, dragAnchorRect],
+    [activeId, dragAnchorPoint],
   );
 
   return (
@@ -309,7 +330,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
       }}
       onDragEnd={(event) => {
         setActiveId(null);
-        setDragAnchorRect(null);
+        setDragAnchorPoint(null);
         // 如果没有 onDragEnd 回调，则默认调用 flowEngine 的 moveModel 方法
         if (!onDragEnd) {
           if (event.over) {
@@ -322,7 +343,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
       }}
       onDragCancel={(event) => {
         setActiveId(null);
-        setDragAnchorRect(null);
+        setDragAnchorPoint(null);
         restProps.onDragCancel?.(event);
       }}
       {...restProps}

@@ -22,7 +22,6 @@
     "@nocobase/resourcer": "2.1.0-alpha.20",
     "@nocobase/utils": "2.1.0-alpha.20",
     "d3-dsv": "2",
-    "xlsx": "^0.18.5",
     "fast-glob": "^3.3.2",
     "flexsearch": "^0.8.2",
     "gray-matter": "^4.0.3",
@@ -30,7 +29,8 @@
     "mammoth": "^1.10.0",
     "officeparser": "^5.2.0",
     "pdf-parse": "^1.1.1",
-    "word-extractor": "^1.0.4"
+    "word-extractor": "^1.0.4",
+    "xlsx": "^0.18.5"
   },
   "repository": {
     "type": "git",
