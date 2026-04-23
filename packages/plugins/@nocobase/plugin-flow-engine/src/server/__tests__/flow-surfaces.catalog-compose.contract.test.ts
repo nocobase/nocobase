@@ -1273,6 +1273,91 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
+  it('should auto-inject submit into create and edit forms during compose without duplicating explicit submit', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose default submit page',
+      tabTitle: 'Compose default submit tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'createAuto',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['username'],
+          },
+          {
+            key: 'editWithJs',
+            type: 'editForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['nickname'],
+            actions: ['js'],
+          },
+          {
+            key: 'createExplicit',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['email'],
+            actions: ['submit', 'js'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const createAutoBlock = getComposeBlock(composed, 'createAuto');
+    const editWithJsBlock = getComposeBlock(composed, 'editWithJs');
+    const createExplicitBlock = getComposeBlock(composed, 'createExplicit');
+    expect(createAutoBlock.uid).toBeTruthy();
+    expect(editWithJsBlock.uid).toBeTruthy();
+    expect(createExplicitBlock.uid).toBeTruthy();
+
+    expect(_.castArray(createAutoBlock.actions || []).map((item: any) => item?.type)).toEqual(['submit']);
+    expect(_.castArray(editWithJsBlock.actions || []).map((item: any) => item?.type)).toEqual(['submit', 'js']);
+    expect(_.castArray(createExplicitBlock.actions || []).map((item: any) => item?.type)).toEqual(['submit', 'js']);
+
+    const createAutoReadback = await getSurface(rootAgent, {
+      uid: createAutoBlock.uid,
+    });
+    const editWithJsReadback = await getSurface(rootAgent, {
+      uid: editWithJsBlock.uid,
+    });
+    const createExplicitReadback = await getSurface(rootAgent, {
+      uid: createExplicitBlock.uid,
+    });
+
+    expect(_.castArray(createAutoReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FormSubmitActionModel',
+    ]);
+
+    const editWithJsUses = _.castArray(editWithJsReadback.tree.subModels?.actions || []).map((item: any) => item?.use);
+    expect(editWithJsUses[0]).toBe('FormSubmitActionModel');
+    expect(editWithJsUses.filter((item: any) => item === 'FormSubmitActionModel')).toHaveLength(1);
+    expect(editWithJsUses).toHaveLength(2);
+
+    const createExplicitUses = _.castArray(createExplicitReadback.tree.subModels?.actions || []).map(
+      (item: any) => item?.use,
+    );
+    expect(createExplicitUses[0]).toBe('FormSubmitActionModel');
+    expect(createExplicitUses.filter((item: any) => item === 'FormSubmitActionModel')).toHaveLength(1);
+    expect(createExplicitUses).toHaveLength(2);
+  });
+
   it('should compose a list block with item fields block actions and record actions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose list page',

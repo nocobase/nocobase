@@ -1936,6 +1936,61 @@ describe('flowSurfaces resource', () => {
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
   });
 
+  it('should auto-inject submit for form blocks created through addBlocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Default submit addBlocks page',
+      tabTitle: 'Default submit addBlocks tab',
+    });
+
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'createForm',
+            type: 'createForm',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+          },
+          {
+            key: 'editForm',
+            type: 'editForm',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    expect(addBlocksData.successCount).toBe(2);
+    expect(addBlocksData.errorCount).toBe(0);
+
+    const createFormUid = addBlocksData.blocks.find((item: any) => item.key === 'createForm')?.result?.uid;
+    const editFormUid = addBlocksData.blocks.find((item: any) => item.key === 'editForm')?.result?.uid;
+    expect(createFormUid).toBeTruthy();
+    expect(editFormUid).toBeTruthy();
+    const createFormReadback = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    const editFormReadback = await getSurface(rootAgent, {
+      uid: editFormUid,
+    });
+
+    expect(_.castArray(createFormReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FormSubmitActionModel',
+    ]);
+    expect(_.castArray(editFormReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FormSubmitActionModel',
+    ]);
+  });
+
   it('should reject invalid addBlock defaultActionSettings payloads only when a default filter action consumes them', async () => {
     const page = await createPage(rootAgent, {
       title: 'Default filter invalid page',
@@ -4332,7 +4387,6 @@ describe('flowSurfaces resource', () => {
     });
     const nicknameField = await addField(rootAgent, formUid, 'nickname');
     const statusField = await addField(rootAgent, formUid, 'status');
-    const submitAction = await addAction(rootAgent, formUid, 'submit');
 
     const gridUid = await getBlockGridUid(rootAgent, formUid);
     await rootAgent.resource('flowSurfaces').setLayout({
@@ -4365,7 +4419,7 @@ describe('flowSurfaces resource', () => {
     expect(_.castArray(readback.tree.subModels?.actions || []).map((item: any) => item.use)).toEqual([
       'FormSubmitActionModel',
     ]);
-    expect(_.castArray(readback.tree.subModels?.actions || [])[0]?.uid).toBe(submitAction.uid);
+    expect(_.castArray(readback.tree.subModels?.actions || [])[0]?.uid).toBeTruthy();
     expect(readback.tree.subModels?.grid?.props?.rows).toEqual({
       row1: [[nicknameField.wrapperUid], [statusField.wrapperUid]],
     });
@@ -4389,7 +4443,6 @@ describe('flowSurfaces resource', () => {
 
     const editField = await addField(rootAgent, editFormUid, 'nickname');
     const detailsField = await addField(rootAgent, detailsUid, 'department.title');
-    const editSubmit = await addAction(rootAgent, editFormUid, 'submit');
     const updateRecordAction = await addAction(rootAgent, detailsUid, 'updateRecord');
 
     await rootAgent.resource('flowSurfaces').setEventFlows({
@@ -4417,7 +4470,9 @@ describe('flowSurfaces resource', () => {
       uid: editFormUid,
     });
     expect(editReadback.tree.use).toBe('EditFormModel');
-    expect(_.castArray(editReadback.tree.subModels?.actions || [])[0]?.uid).toBe(editSubmit.uid);
+    expect(_.castArray(editReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FormSubmitActionModel',
+    ]);
     expect(_.castArray(editReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(editField.wrapperUid);
 
     const detailsReadback = await getSurface(rootAgent, {

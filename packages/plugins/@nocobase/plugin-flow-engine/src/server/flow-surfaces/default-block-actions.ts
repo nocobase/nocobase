@@ -59,6 +59,8 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
     },
     { type: 'refresh', scope: 'actions' },
   ],
+  createForm: [{ type: 'submit', scope: 'actions' }],
+  editForm: [{ type: 'submit', scope: 'actions' }],
   details: [
     {
       type: 'edit',

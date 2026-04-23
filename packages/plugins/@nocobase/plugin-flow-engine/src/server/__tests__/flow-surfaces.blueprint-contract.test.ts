@@ -52,6 +52,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   }
 
+  function readDirectFormFieldPaths(node: any) {
+    return _.castArray(node?.subModels?.grid?.subModels?.items || [])
+      .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+      .filter(Boolean);
+  }
+
   function readNodeActionUses(node: any) {
     return _.castArray(node?.subModels?.actions || []).map((item: any) => item?.use);
   }
@@ -2730,6 +2736,124 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'ViewActionModel',
       'EditActionModel',
     ]);
+  });
+
+  it('should auto-inject submit into applyBlueprint create and edit forms and keep it first', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint default submit page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'createAuto',
+                type: 'createForm',
+                collection: 'users',
+                fields: ['username'],
+              },
+              {
+                key: 'createExplicit',
+                type: 'createForm',
+                collection: 'users',
+                fields: ['nickname'],
+                actions: ['submit', 'js'],
+              },
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    type: 'view',
+                    title: 'View',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username'],
+                          actions: [
+                            {
+                              type: 'edit',
+                              title: 'Edit user',
+                              popup: {
+                                blocks: [
+                                  {
+                                    key: 'userEditForm',
+                                    type: 'editForm',
+                                    fields: ['username'],
+                                    actions: ['js'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const overviewBlocks = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items;
+    const createForms = _.castArray(overviewBlocks || []).filter((item: any) => item?.use === 'CreateFormModel');
+    expect(createForms).toHaveLength(2);
+    const [createAutoBlock, createExplicitBlock] = createForms;
+    expect(readDirectFormFieldPaths(createAutoBlock)).toEqual(['username']);
+    expect(readDirectFormFieldPaths(createExplicitBlock)).toEqual(['nickname']);
+    expect(createAutoBlock?.uid).toBeTruthy();
+    expect(createExplicitBlock?.uid).toBeTruthy();
+    const createAutoReadback = await getSurface(rootAgent, {
+      uid: createAutoBlock?.uid,
+    });
+    const createExplicitReadback = await getSurface(rootAgent, {
+      uid: createExplicitBlock?.uid,
+    });
+
+    expect(readNodeActionUses(createAutoReadback.tree)).toEqual(['FormSubmitActionModel']);
+    const createExplicitUses = readNodeActionUses(createExplicitReadback.tree);
+    expect(createExplicitUses[0]).toBe('FormSubmitActionModel');
+    expect(createExplicitUses.filter((item) => item === 'FormSubmitActionModel')).toHaveLength(1);
+    expect(createExplicitUses).toHaveLength(2);
+
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, {
+      uid: tableBlock?.uid,
+    });
+    const tableViewAction = collectDescendantNodes(tableReadback.tree, (item) => item?.use === 'ViewActionModel')[0];
+    expect(tableViewAction?.uid).toBeTruthy();
+    const { popupBlock: userDetailsBlock } = await readPrimaryPopupBlockFromAction(tableViewAction.uid);
+    const userDetailsReadback = await getSurface(rootAgent, {
+      uid: userDetailsBlock?.uid,
+    });
+    const userEditAction = _.castArray(userDetailsReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'EditActionModel',
+    );
+    expect(userEditAction?.uid).toBeTruthy();
+    const { popupBlock: userEditFormBlock } = await readPrimaryPopupBlockFromAction(userEditAction.uid);
+    const userEditFormUses = readNodeActionUses(userEditFormBlock);
+    expect(userEditFormUses[0]).toBe('FormSubmitActionModel');
+    expect(userEditFormUses.filter((item) => item === 'FormSubmitActionModel')).toHaveLength(1);
+    expect(userEditFormUses).toHaveLength(2);
   });
 
   it('should reject addChild written under actions in applyBlueprint', async () => {
