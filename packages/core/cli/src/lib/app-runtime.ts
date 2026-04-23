@@ -1,0 +1,181 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import path from 'node:path';
+import type { Env } from './auth-store.js';
+import { getEnv, loadAuthConfig } from './auth-store.js';
+import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from './run-npm.js';
+
+const DOCKER_APP_WORKDIR = '/app/nocobase';
+
+export type ManagedAppRuntime =
+  | {
+      kind: 'local';
+      env: Env;
+      envName: string;
+      source: 'npm' | 'git' | 'local';
+      projectRoot: string;
+    }
+  | {
+      kind: 'docker';
+      env: Env;
+      envName: string;
+      source: 'docker';
+      containerName: string;
+      workspaceName: string;
+    }
+  | {
+      kind: 'remote';
+      env: Env;
+      envName: string;
+      source?: string;
+    };
+
+function sanitizeDockerResourceName(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized || 'nocobase';
+}
+
+export function defaultWorkspaceName(cwd = process.cwd()): string {
+  return sanitizeDockerResourceName(`nb-${path.basename(cwd)}`);
+}
+
+export function buildDockerAppContainerName(envName: string, workspaceName?: string): string {
+  const workspace = workspaceName?.trim() || defaultWorkspaceName();
+  return sanitizeDockerResourceName(`${workspace}-${envName}-app`);
+}
+
+function normalizeEnvSource(env: Env): ManagedAppRuntime['source'] {
+  const source = String(env.config.source ?? '').trim();
+  if (source === 'docker' || source === 'npm' || source === 'git') {
+    return source;
+  }
+
+  if (env.config.appRootPath) {
+    return 'local';
+  }
+
+  return undefined;
+}
+
+export async function resolveManagedAppRuntime(envName?: string): Promise<ManagedAppRuntime | undefined> {
+  const config = await loadAuthConfig();
+  const env = await getEnv(envName, { config });
+  if (!env) {
+    return undefined;
+  }
+
+  const resolvedName = env.name || envName?.trim() || config.currentEnv || 'default';
+  const source = normalizeEnvSource(env);
+
+  if (source === 'docker') {
+    const workspaceName = config.name?.trim() || defaultWorkspaceName();
+    return {
+      kind: 'docker',
+      env,
+      envName: resolvedName,
+      source,
+      workspaceName,
+      containerName: buildDockerAppContainerName(resolvedName, workspaceName),
+    };
+  }
+
+  if (env.config.appRootPath) {
+    return {
+      kind: 'local',
+      env,
+      envName: resolvedName,
+      source: source === 'git' ? 'git' : source === 'npm' ? 'npm' : 'local',
+      projectRoot: env.appRootPath,
+    };
+  }
+
+  return {
+    kind: 'remote',
+    env,
+    envName: resolvedName,
+    source,
+  };
+}
+
+export async function runLocalNocoBaseCommand(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+  args: string[],
+): Promise<void> {
+  await runNocoBaseCommand(args, {
+    cwd: runtime.projectRoot,
+    env: runtime.env.envVars,
+  });
+}
+
+export async function dockerContainerExists(containerName: string): Promise<boolean> {
+  return await commandSucceeds('docker', ['container', 'inspect', containerName]);
+}
+
+export async function dockerContainerIsRunning(containerName: string): Promise<boolean> {
+  try {
+    const output = await commandOutput(
+      'docker',
+      ['inspect', '--format', '{{.State.Running}}', containerName],
+      { errorName: 'docker inspect' },
+    );
+    return output.trim() === 'true';
+  } catch (_error) {
+    return false;
+  }
+}
+
+export async function startDockerContainer(containerName: string): Promise<'started' | 'already-running'> {
+  const exists = await dockerContainerExists(containerName);
+  if (!exists) {
+    throw new Error(`Docker app container "${containerName}" does not exist.`);
+  }
+
+  if (await dockerContainerIsRunning(containerName)) {
+    return 'already-running';
+  }
+
+  await run('docker', ['start', containerName], {
+    errorName: 'docker start',
+  });
+  return 'started';
+}
+
+export async function stopDockerContainer(containerName: string): Promise<'stopped' | 'already-stopped'> {
+  const exists = await dockerContainerExists(containerName);
+  if (!exists) {
+    throw new Error(`Docker app container "${containerName}" does not exist.`);
+  }
+
+  if (!(await dockerContainerIsRunning(containerName))) {
+    return 'already-stopped';
+  }
+
+  await run('docker', ['stop', containerName], {
+    errorName: 'docker stop',
+  });
+  return 'stopped';
+}
+
+export async function runDockerNocoBaseCommand(containerName: string, args: string[]): Promise<void> {
+  await startDockerContainer(containerName);
+  await run(
+    'docker',
+    ['exec', '-w', DOCKER_APP_WORKDIR, containerName, 'yarn', 'nocobase', ...args],
+    {
+      errorName: 'docker exec',
+    },
+  );
+}

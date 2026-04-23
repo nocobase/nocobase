@@ -253,6 +253,9 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
       timeZone: 'Asia/Shanghai',
       storagePath: './storage/demo',
     },
+    downloadResults: {
+      source: 'git',
+    },
     dbResults: {
       builtinDb: true,
       dbDialect: 'postgres',
@@ -281,6 +284,8 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     '13080',
     '--storage-path',
     './storage/demo',
+    '--source',
+    'git',
     '--app-root-path',
     './apps/demo',
     '--app-key',
@@ -313,6 +318,7 @@ test('install env add argv records when an env uses an external database', () =>
       appPort: '13081',
       storagePath: './storage/external',
     },
+    downloadResults: {},
     dbResults: {
       builtinDb: false,
       dbDialect: 'postgres',

@@ -15,6 +15,7 @@ import { test } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import {
   buildOauthCompletionHtml,
+  buildOauthErrorHtml,
   buildOauthRedirectHtml,
   getOauthMetadataUrl,
   getOauthResource,
@@ -67,6 +68,10 @@ test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', (
   const url = 'https://example.com/oauth?scope=openid api&state="abc"&next=<script>alert(1)</script>';
   const html = buildOauthRedirectHtml(url);
 
+  assert.match(html, /<title>NocoBase OAuth Login<\/title>/);
+  assert.match(html, /Redirecting to sign-in/);
+  assert.match(html, /Continue to sign-in/);
+  assert.match(html, /Open manually/);
   assert.match(html, /scope=openid api&amp;state=&quot;abc&quot;&amp;next=&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.match(
     html,
@@ -80,9 +85,20 @@ test('buildOauthCompletionHtml renders a styled completion page with auto-close 
 
   assert.match(html, /<title>Authentication complete<\/title>/);
   assert.match(html, /NocoBase CLI/);
+  assert.match(html, /Authentication complete/);
   assert.match(html, /This page will try to close automatically in a moment\./);
   assert.match(html, /window\.close\(\)/);
   assert.match(html, /If this tab stays open, you can close it manually\./);
+});
+
+test('buildOauthErrorHtml renders a styled error page and escapes detail content', () => {
+  const html = buildOauthErrorHtml('Invalid state: <script>alert("xss")</script>');
+
+  assert.match(html, /<title>Authentication failed<\/title>/);
+  assert.match(html, /The OAuth sign-in flow could not be completed in this browser tab\./);
+  assert.match(html, /Invalid state: &lt;script&gt;alert\(&quot;xss&quot;\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>alert\("xss"\)<\/script>/);
+  assert.match(html, /Return to the terminal to review the error details and try again if needed\./);
 });
 
 test('isOauthAccessTokenExpired uses a refresh window', () => {

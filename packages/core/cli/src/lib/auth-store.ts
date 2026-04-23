@@ -32,6 +32,8 @@ export interface EnvConfigEntry {
   baseUrl?: string;
   apibaseUrl?: string;
   auth?: TokenAuthConfig | OauthAuthConfig;
+  /** How this env's app was installed or fetched. */
+  source?: string;
   appRootPath?: string;
   storagePath?: string;
   /** Application HTTP port (APP_PORT). */

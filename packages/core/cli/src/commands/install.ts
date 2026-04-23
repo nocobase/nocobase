@@ -1809,6 +1809,7 @@ export default class Install extends Command {
   private async saveInstalledEnv(params: {
     envName: string;
     appResults: Record<string, PromptValue>;
+    downloadResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
   }): Promise<void> {
@@ -1835,6 +1836,7 @@ export default class Install extends Command {
   private static buildEnvAddArgv(params: {
     envName: string;
     appResults: Record<string, PromptValue>;
+    downloadResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
   }): string[] {
@@ -1865,6 +1867,11 @@ export default class Install extends Command {
       storagePath,
     ];
 
+    Install.pushArgIfValue(
+      argv,
+      '--source',
+      downloadResultsValue(params.downloadResults, 'source'),
+    );
     Install.pushArgIfValue(argv, '--app-root-path', params.appResults.appRootPath);
     Install.pushArgIfValue(argv, '--app-key', params.appResults.appKey);
     Install.pushArgIfValue(argv, '--timezone', params.appResults.timeZone);
@@ -2051,6 +2058,7 @@ export default class Install extends Command {
     await this.saveInstalledEnv({
       envName,
       appResults,
+      downloadResults,
       dbResults,
       envAddResults,
     });

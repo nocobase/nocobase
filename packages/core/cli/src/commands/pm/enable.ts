@@ -8,8 +8,11 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getEnv } from '../../lib/auth-store.ts';
-import { runNocoBaseCommand } from '../../lib/run-npm.ts';
+import {
+  resolveManagedAppRuntime,
+  runDockerNocoBaseCommand,
+  runLocalNocoBaseCommand,
+} from '../../lib/app-runtime.js';
 
 export default class PmEnable extends Command {
   static override args = {
@@ -21,7 +24,7 @@ export default class PmEnable extends Command {
     }),
   };
 
-  static override description = 'Enable one or more plugins';
+  static override description = 'Enable one or more plugins in the selected env (npm/git runs locally, Docker runs inside the saved app container)';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> @nocobase/plugin-sample',
@@ -44,18 +47,25 @@ export default class PmEnable extends Command {
       this.error('Pass at least one plugin package name.');
     }
 
-    const env = await getEnv(flags.env);
+    const runtime = await resolveManagedAppRuntime(flags.env);
 
-    if (!env) {
+    if (!runtime) {
       this.error('Env is not configured');
     }
 
-    if (env.config.appRootPath) {
+    if (runtime.kind === 'local') {
       try {
-        await runNocoBaseCommand(['pm', 'enable', ...packages], {
-          cwd: env.appRootPath,
-          env: env.envVars,
-        });
+        await runLocalNocoBaseCommand(runtime, ['pm', 'enable', ...packages]);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.error(message);
+      }
+      return;
+    }
+
+    if (runtime.kind === 'docker') {
+      try {
+        await runDockerNocoBaseCommand(runtime.containerName, ['pm', 'enable', ...packages]);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         this.error(message);

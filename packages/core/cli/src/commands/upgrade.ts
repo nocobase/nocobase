@@ -8,16 +8,20 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { getEnv } from '../lib/auth-store.ts';
-import { runNocoBaseCommand } from '../lib/run-npm.ts';
+import {
+  resolveManagedAppRuntime,
+  runDockerNocoBaseCommand,
+  runLocalNocoBaseCommand,
+} from '../lib/app-runtime.js';
 
 export default class Upgrade extends Command {
   static override description =
-    'Run the legacy NocoBase upgrade (forwards to `nocobase-v1 upgrade` in the env’s local app root from CLI config)';
+    'Upgrade the selected local NocoBase app (npm/git runs `nocobase-v1 upgrade`; Docker runs the upgrade command inside the saved app container)';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -e local',
     '<%= config.bin %> <%= command.id %> --skip-code-update',
+    '<%= config.bin %> <%= command.id %> -e local-docker --skip-code-update',
   ];
   static override flags = {
     env: Flags.string({
@@ -31,15 +35,15 @@ export default class Upgrade extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Upgrade);
 
-    const env = await getEnv(flags.env);
+    const runtime = await resolveManagedAppRuntime(flags.env);
 
-    if (!env) {
+    if (!runtime) {
       this.error('Env is not configured');
     }
 
-    if (!env.config.appRootPath) {
+    if (runtime.kind === 'remote') {
       this.error(
-        `Env "${env.name}" is a remote (API-only) environment: no local app root is saved, so this command cannot run upgrade on your machine. Add appRootPath for a local checkout, or run upgrade on the server.`,
+        `Env "${runtime.envName}" is a remote (API-only) environment: no local app root or Docker app is saved, so this command cannot run upgrade on your machine. Add appRootPath for a local checkout, or run upgrade on the server.`,
       );
     }
 
@@ -48,7 +52,11 @@ export default class Upgrade extends Command {
       npmArgs.push('--skip-code-update');
     }
     try {
-      await runNocoBaseCommand(npmArgs, { cwd: env.appRootPath, env: env.envVars });
+      if (runtime.kind === 'docker') {
+        await runDockerNocoBaseCommand(runtime.containerName, npmArgs);
+      } else {
+        await runLocalNocoBaseCommand(runtime, npmArgs);
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

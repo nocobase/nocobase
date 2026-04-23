@@ -31,6 +31,7 @@ type EnvAddParsedFlags = {
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
+  source?: string;
   'app-root-path'?: string;
   'storage-path'?: string;
   'app-port'?: string;
@@ -46,6 +47,7 @@ type EnvAddParsedFlags = {
 };
 
 const ENV_RUNTIME_FLAG_MAP = {
+  source: 'source',
   'app-root-path': 'appRootPath',
   'storage-path': 'storagePath',
   'app-port': 'appPort',
@@ -123,6 +125,10 @@ export default class EnvAdd extends Command {
       aliases: ['token'],
       description:
         'API key or access token when using --auth-type token (prompted in a TTY when omitted)',
+    }),
+    source: Flags.string({
+      hidden: true,
+      description: 'Application source saved with this env',
     }),
     'app-root-path': Flags.string({
       hidden: true,

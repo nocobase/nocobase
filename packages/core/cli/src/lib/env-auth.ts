@@ -358,6 +358,10 @@ function escapeHtmlAttribute(value: string) {
     .replace(/>/g, '&gt;');
 }
 
+function escapeHtmlText(value: string) {
+  return escapeHtmlAttribute(value).replace(/\r?\n/g, '<br>');
+}
+
 function escapeScriptString(value: string) {
   return JSON.stringify(value).replace(/</g, '\\u003c');
 }
@@ -367,31 +371,45 @@ type BrowserOpenTarget = {
   cleanup?: () => Promise<void>;
 };
 
-export function buildOauthRedirectHtml(url: string) {
-  const escapedUrl = escapeHtmlAttribute(url);
+function buildOauthPage(options: {
+  title: string;
+  cardExtra?: string;
+  statusTone: 'success' | 'error' | 'info';
+  statusMark: string;
+  heading: string;
+  description: string;
+  tip?: string;
+  footer?: string;
+  detailHtml?: string;
+  actionsHtml?: string;
+  extraHeadHtml?: string;
+  extraScriptHtml?: string;
+}) {
+  const tone =
+    options.statusTone === 'success'
+      ? {
+          color: '#52c41a',
+          soft: '#f6ffed',
+          border: '#b7eb8f',
+        }
+      : options.statusTone === 'error'
+        ? {
+            color: '#ff4d4f',
+            soft: '#fff2f0',
+            border: '#ffccc7',
+          }
+        : {
+            color: '#1677ff',
+            soft: '#e6f4ff',
+            border: '#91caff',
+          };
 
   return `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=${escapedUrl}">
-  <title>NocoBase OAuth Login</title>
-</head>
-<body>
-  <script>window.location.replace(${escapeScriptString(url)});</script>
-  <p>Redirecting to the OAuth login page. If nothing happens, <a href="${escapedUrl}">continue manually</a>.</p>
-</body>
-</html>
-`;
-}
-
-export function buildOauthCompletionHtml() {
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Authentication complete</title>
+  <title>${escapeHtmlAttribute(options.title)}</title>
   <style>
     :root {
       --bg: #f5f5f5;
@@ -399,8 +417,9 @@ export function buildOauthCompletionHtml() {
       --panel-border: #f0f0f0;
       --text: rgba(0, 0, 0, 0.88);
       --muted: rgba(0, 0, 0, 0.45);
-      --success: #52c41a;
-      --success-soft: #f6ffed;
+      --status: ${tone.color};
+      --status-soft: ${tone.soft};
+      --status-border: ${tone.border};
       --primary: #1677ff;
       --shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
     }
@@ -454,9 +473,9 @@ export function buildOauthCompletionHtml() {
       display: grid;
       place-items: center;
       border-radius: 50%;
-      background: var(--success-soft);
-      border: 1px solid #b7eb8f;
-      color: var(--success);
+      background: var(--status-soft);
+      border: 1px solid var(--status-border);
+      color: var(--status);
       font-size: 30px;
       font-weight: 700;
     }
@@ -481,6 +500,44 @@ export function buildOauthCompletionHtml() {
       color: rgba(0, 0, 0, 0.65);
       font-size: 13px;
     }
+    .detail {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      color: rgba(0, 0, 0, 0.72);
+      font-size: 13px;
+      line-height: 1.7;
+      text-align: left;
+      word-break: break-word;
+    }
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .actions a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 148px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      border: 1px solid #1677ff;
+      background: #1677ff;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .actions a.secondary {
+      background: #fff;
+      color: #1677ff;
+    }
     .manual {
       min-height: 22px;
       margin-top: 14px;
@@ -496,23 +553,62 @@ export function buildOauthCompletionHtml() {
       text-align: center;
     }
   </style>
+  ${options.extraHeadHtml ?? ''}
 </head>
 <body>
   <main class="shell">
     <div class="card-head">
       <div class="card-title">NocoBase CLI</div>
-      <div class="card-extra">OAuth</div>
+      <div class="card-extra">${escapeHtmlText(options.cardExtra ?? 'OAuth')}</div>
     </div>
     <div class="card-body">
-      <div class="mark">✓</div>
-      <h1>Authentication complete</h1>
-      <p>Your sign-in finished successfully. You can return to the terminal and continue there.</p>
-      <p class="tip">This page will try to close automatically in a moment.</p>
+      <div class="mark">${escapeHtmlText(options.statusMark)}</div>
+      <h1>${escapeHtmlText(options.heading)}</h1>
+      <p>${escapeHtmlText(options.description)}</p>
+      ${options.tip ? `<p class="tip">${escapeHtmlText(options.tip)}</p>` : ''}
+      ${options.detailHtml ? `<div class="detail">${options.detailHtml}</div>` : ''}
+      ${options.actionsHtml ? `<div class="actions">${options.actionsHtml}</div>` : ''}
       <p id="manual" class="manual"></p>
     </div>
-    <div class="card-foot">You can close this page after returning to the terminal.</div>
+    <div class="card-foot">${escapeHtmlText(options.footer ?? 'You can close this page after returning to the terminal.')}</div>
   </main>
-  <script>
+  ${options.extraScriptHtml ?? ''}
+</body>
+</html>
+`;
+}
+
+export function buildOauthRedirectHtml(url: string) {
+  const escapedUrl = escapeHtmlAttribute(url);
+
+  return buildOauthPage({
+    title: 'NocoBase OAuth Login',
+    cardExtra: 'OAuth',
+    statusTone: 'info',
+    statusMark: '→',
+    heading: 'Redirecting to sign-in',
+    description: 'Your browser is opening the NocoBase login page so you can finish authentication.',
+    tip: 'If the redirect does not start automatically, continue manually using the button below.',
+    actionsHtml:
+      `<a href="${escapedUrl}">Continue to sign-in</a>` +
+      `<a class="secondary" href="${escapedUrl}">Open manually</a>`,
+    footer: 'After sign-in, this page will hand control back to the terminal.',
+    extraHeadHtml: `  <meta http-equiv="refresh" content="0; url=${escapedUrl}">`,
+    extraScriptHtml: `  <script>window.location.replace(${escapeScriptString(url)});</script>`,
+  });
+}
+
+export function buildOauthCompletionHtml() {
+  return buildOauthPage({
+    title: 'Authentication complete',
+    cardExtra: 'OAuth',
+    statusTone: 'success',
+    statusMark: '✓',
+    heading: 'Authentication complete',
+    description: 'Your sign-in finished successfully. You can return to the terminal and continue there.',
+    tip: 'This page will try to close automatically in a moment.',
+    footer: 'You can close this page after returning to the terminal.',
+    extraScriptHtml: `  <script>
     setTimeout(function () {
       window.close();
       setTimeout(function () {
@@ -522,10 +618,22 @@ export function buildOauthCompletionHtml() {
         }
       }, 400);
     }, 1000);
-  </script>
-</body>
-</html>
-`;
+  </script>`,
+  });
+}
+
+export function buildOauthErrorHtml(message: string, options?: { title?: string }) {
+  return buildOauthPage({
+    title: options?.title ?? 'Authentication failed',
+    cardExtra: 'OAuth',
+    statusTone: 'error',
+    statusMark: '!',
+    heading: options?.title ?? 'Authentication failed',
+    description: 'The OAuth sign-in flow could not be completed in this browser tab.',
+    detailHtml: escapeHtmlText(message),
+    tip: 'Return to the terminal to review the error details and try again if needed.',
+    footer: 'You can close this page and restart authentication from the CLI.',
+  });
 }
 
 async function createWindowsBrowserRedirectFile(url: string) {
@@ -614,21 +722,22 @@ async function createLoopbackServer(state: string) {
 
         if (receivedState !== state) {
           res.statusCode = 400;
-          res.end('<html><body><h1>Authentication failed</h1><p>Invalid state.</p></body></html>');
+          res.end(buildOauthErrorHtml('Invalid state.'));
+          rejectWaiter?.(new Error('OAuth authorization failed: invalid state.'));
           return;
         }
 
         if (error) {
           res.statusCode = 400;
-          res.end(`<html><body><h1>Authentication failed</h1><p>${errorDescription || error}</p></body></html>`);
-          reject(new Error(`OAuth authorization failed: ${errorDescription || error}`));
+          res.end(buildOauthErrorHtml(String(errorDescription || error)));
+          rejectWaiter?.(new Error(`OAuth authorization failed: ${errorDescription || error}`));
           return;
         }
 
         if (!code) {
           res.statusCode = 400;
-          res.end('<html><body><h1>Authentication failed</h1><p>Missing authorization code.</p></body></html>');
-          reject(new Error('OAuth authorization failed: missing authorization code.'));
+          res.end(buildOauthErrorHtml('Missing authorization code.'));
+          rejectWaiter?.(new Error('OAuth authorization failed: missing authorization code.'));
           return;
         }
 

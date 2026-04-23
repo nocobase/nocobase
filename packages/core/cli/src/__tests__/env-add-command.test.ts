@@ -60,6 +60,7 @@ test('env add saves builtinDb into env config when provided by install', async (
         'api-base-url': 'http://127.0.0.1:13000/api',
         'auth-type': 'token',
         'access-token': 'token-123',
+        source: 'docker',
         'app-key': 'app-key-123',
         timezone: 'Asia/Shanghai',
         'builtin-db': true,
@@ -76,6 +77,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     'local',
     {
       baseUrl: 'http://127.0.0.1:13000/api',
+      source: 'docker',
       appKey: 'app-key-123',
       timezone: 'Asia/Shanghai',
       builtinDb: true,
