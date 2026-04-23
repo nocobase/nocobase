@@ -87,6 +87,114 @@ describe('KanbanCardItemModel.cardSettings', () => {
     expect(syncCardViewAction).toHaveBeenCalledWith(masterBlock.subModels.cardViewAction);
   });
 
+  test('popup default params keep an explicitly cleared item template instead of falling back to parent template', async () => {
+    const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
+
+    await expect(
+      flow.steps.popup.defaultParams({
+        model: {
+          props: { popupTemplateUid: undefined },
+          parent: { props: { cardPopupTemplateUid: 'legacy-template' } },
+        },
+      } as any),
+    ).resolves.toMatchObject({
+      popupTemplateUid: undefined,
+    });
+  });
+
+  test('popup handler clears a stale card popup target uid when removing the popup template', async () => {
+    const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
+    const syncCardViewAction = vi.fn();
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+    const masterBlock = {
+      subModels: {
+        cardViewAction: { uid: 'card-view-action' },
+      },
+      ensureCardViewAction,
+      syncCardViewAction,
+      setProps: vi.fn(),
+    };
+    const masterItem = {
+      props: {
+        popupTemplateUid: 'tpl-card',
+        popupTargetUid: 'popup-card-1',
+      },
+      parent: masterBlock,
+      setProps: vi.fn(),
+    };
+
+    await flow.steps.popup.handler(
+      {
+        model: masterItem,
+      } as any,
+      {
+        mode: 'dialog',
+        size: 'large',
+        uid: 'popup-card-1',
+      },
+    );
+
+    expect(masterItem.setProps).toHaveBeenCalledWith({
+      openMode: 'dialog',
+      popupSize: 'large',
+      popupTemplateUid: undefined,
+      pageModelClass: undefined,
+      popupTargetUid: undefined,
+    });
+  });
+
+  test('popup beforeParamsSave clears stale card popup target uid on the actual settings save path', async () => {
+    const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
+    const syncCardViewAction = vi.fn();
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+    const masterBlock = {
+      subModels: {
+        cardViewAction: { uid: 'card-view-action' },
+      },
+      ensureCardViewAction,
+      syncCardViewAction,
+      setProps: vi.fn(),
+    };
+    const masterItem: any = {
+      props: {
+        popupTemplateUid: 'tpl-card',
+        popupTargetUid: 'popup-card-1',
+      },
+      stepParams: {
+        cardSettings: {
+          popup: {
+            popupTemplateUid: 'tpl-card',
+            uid: 'popup-card-1',
+          },
+        },
+      },
+      emitter: { emit: vi.fn() },
+      parent: masterBlock,
+      setProps: vi.fn(function (this: any, nextProps) {
+        Object.assign(this.props, nextProps);
+      }),
+      getAction: () => ({ beforeParamsSave: vi.fn().mockResolvedValue(undefined) }),
+    };
+
+    await flow.steps.popup.beforeParamsSave(
+      {
+        model: masterItem,
+      } as any,
+      {
+        mode: 'dialog',
+        size: 'large',
+        uid: 'popup-card-1',
+      },
+      {
+        popupTemplateUid: 'tpl-card',
+        uid: 'popup-card-1',
+      },
+    );
+
+    expect(masterItem.props.popupTargetUid).toBeUndefined();
+    expect(masterItem.stepParams.cardSettings.popup.uid).toBeUndefined();
+  });
+
   test('layout changes persist from card forks and propagate to details items', () => {
     const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
     const detailsItem = {

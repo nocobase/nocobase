@@ -96,6 +96,74 @@ const getKanbanCardItemProps = (model: KanbanBlockModel) => {
   };
 };
 
+const hasOwnModelProp = (props: Record<string, any>, key: string) => Object.prototype.hasOwnProperty.call(props, key);
+
+const replaceModelStepParams = (model: any, flowKey: string, stepKey: string, params: Record<string, any>) => {
+  if (!model) {
+    return;
+  }
+
+  model.stepParams = model.stepParams || {};
+  model.stepParams[flowKey] = model.stepParams[flowKey] || {};
+  model.stepParams[flowKey][stepKey] = { ...params };
+  model.emitter?.emit?.('onStepParamsChanged');
+};
+
+const resolveKanbanPopupTargetUid = ({
+  nextPopupTemplateUid,
+  nextPopupTargetUid,
+  currentPopupTemplateUid,
+  currentPopupTargetUid,
+}: {
+  nextPopupTemplateUid?: string;
+  nextPopupTargetUid?: string;
+  currentPopupTemplateUid?: string;
+  currentPopupTargetUid?: string;
+}) => {
+  return !nextPopupTemplateUid && currentPopupTemplateUid && nextPopupTargetUid === currentPopupTargetUid
+    ? undefined
+    : nextPopupTargetUid;
+};
+
+const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Record<string, any>) => {
+  const nextPopupTemplateUid = normalizeKanbanPopupTemplateUid(params.popupTemplateUid);
+  const nextPopupTargetUid = normalizeKanbanPopupTargetUid(params.uid);
+  const currentPopupTemplateUid =
+    typeof model.getPopupTemplateUid === 'function'
+      ? model.getPopupTemplateUid()
+      : normalizeKanbanPopupTemplateUid(model.props?.popupTemplateUid);
+  const currentPopupTargetUid =
+    typeof model.getPopupTargetUid === 'function'
+      ? model.getPopupTargetUid()
+      : normalizeKanbanPopupTargetUid(model.props?.popupTargetUid);
+  const resolvedPopupTargetUid = resolveKanbanPopupTargetUid({
+    nextPopupTemplateUid,
+    nextPopupTargetUid,
+    currentPopupTemplateUid,
+    currentPopupTargetUid,
+  });
+  const normalizedParams = {
+    ...params,
+    mode: normalizeKanbanCardOpenMode(params.mode),
+    size: normalizeKanbanPopupSize(params.size),
+    popupTemplateUid: nextPopupTemplateUid,
+    pageModelClass: params.pageModelClass || undefined,
+    uid: resolvedPopupTargetUid,
+  };
+
+  replaceModelStepParams(model, 'kanbanSettings', 'popup', normalizedParams);
+  model.setProps({
+    popupMode: normalizedParams.mode,
+    popupSize: normalizedParams.size,
+    popupTemplateUid: normalizedParams.popupTemplateUid,
+    popupPageModelClass: normalizedParams.pageModelClass,
+    popupTargetUid: normalizedParams.uid,
+  });
+
+  const action = await model.ensureQuickCreateAction();
+  await model.syncQuickCreateAction(action);
+};
+
 const applyKanbanDragSortingSettings = (model: KanbanBlockModel, params: Record<string, any>) => {
   const currentSettings = getKanbanSortingSettings(model);
   const dragSortBy = model.getCompatibleSortFieldName(params.dragSortBy ?? currentSettings.dragSortBy ?? undefined);
@@ -381,22 +449,28 @@ export class KanbanBlockModel extends CollectionBlockModel<{
   }
 
   getCardOpenMode() {
-    const itemOpenMode = getKanbanCardItemProps(this).openMode;
-    return normalizeKanbanCardOpenMode(itemOpenMode || this.props.cardOpenMode);
+    const itemProps = getKanbanCardItemProps(this);
+    const itemOpenMode = hasOwnModelProp(itemProps, 'openMode') ? itemProps.openMode : this.props.cardOpenMode;
+    return normalizeKanbanCardOpenMode(itemOpenMode);
   }
 
   getCardPopupSize() {
-    const itemPopupSize = getKanbanCardItemProps(this).popupSize;
-    return normalizeKanbanPopupSize(itemPopupSize || this.props.cardPopupSize);
+    const itemProps = getKanbanCardItemProps(this);
+    const itemPopupSize = hasOwnModelProp(itemProps, 'popupSize') ? itemProps.popupSize : this.props.cardPopupSize;
+    return normalizeKanbanPopupSize(itemPopupSize);
   }
 
   getCardPopupTemplateUid() {
-    const itemTemplateUid = getKanbanCardItemProps(this).popupTemplateUid;
-    return normalizeKanbanPopupTemplateUid(itemTemplateUid || this.props.cardPopupTemplateUid);
+    const itemProps = getKanbanCardItemProps(this);
+    const itemTemplateUid = hasOwnModelProp(itemProps, 'popupTemplateUid')
+      ? itemProps.popupTemplateUid
+      : this.props.cardPopupTemplateUid;
+    return normalizeKanbanPopupTemplateUid(itemTemplateUid);
   }
 
   getCardPopupPageModelClass() {
-    return getKanbanCardItemProps(this).pageModelClass || this.props.cardPopupPageModelClass;
+    const itemProps = getKanbanCardItemProps(this);
+    return hasOwnModelProp(itemProps, 'pageModelClass') ? itemProps.pageModelClass : this.props.cardPopupPageModelClass;
   }
 
   getQuickCreateEnabled() {
@@ -431,8 +505,11 @@ export class KanbanBlockModel extends CollectionBlockModel<{
   }
 
   getCardPopupTargetUid() {
-    const itemTargetUid = getKanbanCardItemProps(this).popupTargetUid;
-    const targetUid = normalizeKanbanPopupTargetUid(itemTargetUid || this.props.cardPopupTargetUid);
+    const itemProps = getKanbanCardItemProps(this);
+    const itemTargetUid = hasOwnModelProp(itemProps, 'popupTargetUid')
+      ? itemProps.popupTargetUid
+      : this.props.cardPopupTargetUid;
+    const targetUid = normalizeKanbanPopupTargetUid(itemTargetUid);
     const popupActionUid = typeof this.getPopupActionUid === 'function' ? this.getPopupActionUid() : undefined;
     if (!targetUid || targetUid === this.uid || (popupActionUid && targetUid === popupActionUid)) {
       return undefined;
@@ -583,10 +660,17 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     const nextPopupTemplateUid = normalizeKanbanPopupTemplateUid(options.popupTemplateUid);
     const nextUid = normalizeKanbanPopupTargetUid(options.uid);
     const selfUid = normalizeKanbanPopupTargetUid(action?.uid);
-    const sanitizedUid = nextUid && nextUid !== this.uid && nextUid !== selfUid ? nextUid : undefined;
-    const resolvedUid = sanitizedUid || selfUid;
-    const nextPageModelClass = options.pageModelClass || undefined;
     const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
+    const currentPopupTemplateUid = normalizeKanbanPopupTemplateUid(currentParams.popupTemplateUid);
+    const currentUid = normalizeKanbanPopupTargetUid(currentParams.uid);
+    let sanitizedUid = nextUid && nextUid !== this.uid && nextUid !== selfUid ? nextUid : undefined;
+
+    if (!nextPopupTemplateUid && currentPopupTemplateUid && sanitizedUid === currentUid) {
+      sanitizedUid = undefined;
+    }
+
+    const resolvedUid = sanitizedUid || (nextPopupTemplateUid ? currentUid || selfUid : selfUid);
+    const nextPageModelClass = options.pageModelClass || undefined;
 
     if (
       currentParams.mode === nextMode &&
@@ -599,25 +683,13 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     }
 
     const nextParams = {
-      ...currentParams,
+      ...(nextPopupTemplateUid ? currentParams : {}),
       mode: nextMode,
       size: nextSize,
       popupTemplateUid: nextPopupTemplateUid,
       uid: resolvedUid,
       pageModelClass: nextPageModelClass,
     };
-
-    if (!nextPopupTemplateUid) {
-      delete nextParams.popupTemplateUid;
-    }
-
-    if (!resolvedUid) {
-      delete nextParams.uid;
-    }
-
-    if (!nextPageModelClass) {
-      delete nextParams.pageModelClass;
-    }
 
     action.setStepParams('popupSettings', 'openView', nextParams);
 
@@ -1131,17 +1203,11 @@ KanbanBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const model = ctx.model as KanbanBlockModel;
-        model.setProps({
-          popupMode: normalizeKanbanCardOpenMode(params.mode),
-          popupSize: normalizeKanbanPopupSize(params.size),
-          popupTemplateUid: normalizeKanbanPopupTemplateUid(params.popupTemplateUid),
-          popupPageModelClass: params.pageModelClass || undefined,
-          popupTargetUid: normalizeKanbanPopupTargetUid(params.uid),
-        });
-
-        const action = await model.ensureQuickCreateAction();
-        await model.syncQuickCreateAction(action);
+        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params);
+      },
+      async beforeParamsSave(ctx, params, previousParams) {
+        await ctx.model?.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
+        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params);
       },
     },
     pageSize: {

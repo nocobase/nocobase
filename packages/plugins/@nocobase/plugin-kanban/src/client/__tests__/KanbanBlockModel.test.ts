@@ -271,6 +271,205 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
   });
 
+  test('syncPopupAction overwrites removed popup settings with undefined so stale template params do not survive merges', async () => {
+    const setStepParams = vi.fn();
+
+    await KanbanBlockModel.prototype.syncPopupAction.call(
+      {
+        context: { flowSettingsEnabled: false },
+      },
+      {
+        uid: 'kanban-quick-create-action',
+        getStepParams: () => ({
+          mode: 'drawer',
+          size: 'medium',
+          popupTemplateUid: 'template-1',
+          pageModelClass: 'PopupPageModel',
+        }),
+        setStepParams,
+      },
+      {
+        mode: 'drawer',
+        size: 'medium',
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      popupTemplateUid: undefined,
+      pageModelClass: undefined,
+      uid: 'kanban-quick-create-action',
+    });
+  });
+
+  test('syncPopupAction drops stale template-derived popup params after the template is cleared', async () => {
+    const setStepParams = vi.fn();
+
+    await KanbanBlockModel.prototype.syncPopupAction.call(
+      {
+        uid: 'kanban-block-1',
+        context: { flowSettingsEnabled: false },
+      },
+      {
+        uid: 'kanban-block-1-quick-create-action',
+        getStepParams: () => ({
+          mode: 'drawer',
+          size: 'medium',
+          popupTemplateUid: 'template-1',
+          uid: 'template-popup-1',
+          dataSourceKey: 'secondary',
+          collectionName: 'archived_tasks',
+          associationName: 'users.tasks',
+          popupTemplateContext: true,
+        }),
+        setStepParams,
+      },
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'template-popup-1',
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      popupTemplateUid: undefined,
+      pageModelClass: undefined,
+      uid: 'kanban-block-1-quick-create-action',
+    });
+  });
+
+  test('popup settings handler clears a stale popup target uid when removing the popup template', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.popup;
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+    const syncQuickCreateAction = vi.fn().mockResolvedValue(undefined);
+    const setProps = vi.fn();
+
+    await step.handler(
+      {
+        model: {
+          props: {
+            popupTemplateUid: 'template-1',
+            popupTargetUid: 'template-popup-1',
+          },
+          getPopupTemplateUid: () => 'template-1',
+          getPopupTargetUid: () => 'template-popup-1',
+          setProps,
+          ensureQuickCreateAction,
+          syncQuickCreateAction,
+        },
+      } as any,
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'template-popup-1',
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      popupMode: 'drawer',
+      popupSize: 'medium',
+      popupTemplateUid: undefined,
+      popupPageModelClass: undefined,
+      popupTargetUid: undefined,
+    });
+  });
+
+  test('popup settings beforeParamsSave clears stale popup target uid on the actual settings save path', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.popup;
+    const setProps = vi.fn(function (this: any, nextProps) {
+      Object.assign(this.props, nextProps);
+    });
+    const setStepParams = vi.fn();
+    const action = {
+      uid: 'quick-create-action',
+      getStepParams: () => ({
+        mode: 'drawer',
+        size: 'medium',
+        popupTemplateUid: 'template-1',
+        uid: 'template-popup-1',
+      }),
+      setStepParams,
+    };
+    const model: any = {
+      props: {
+        popupTemplateUid: 'template-1',
+        popupTargetUid: 'template-popup-1',
+      },
+      stepParams: {
+        kanbanSettings: {
+          popup: {
+            popupTemplateUid: 'template-1',
+            uid: 'template-popup-1',
+          },
+        },
+      },
+      context: { flowSettingsEnabled: false },
+      emitter: { emit: vi.fn() },
+      setProps,
+      getPopupTemplateUid() {
+        return this.props.popupTemplateUid;
+      },
+      getPopupTargetUid() {
+        return this.props.popupTargetUid;
+      },
+      getAction: () => ({ beforeParamsSave: vi.fn().mockResolvedValue(undefined) }),
+      ensureQuickCreateAction: vi.fn().mockResolvedValue(action),
+      syncQuickCreateAction: KanbanBlockModel.prototype.syncQuickCreateAction,
+      syncPopupAction: KanbanBlockModel.prototype.syncPopupAction,
+      getPopupMode: () => 'drawer',
+      getPopupSize: () => 'medium',
+      getPopupPageModelClass: () => undefined,
+      getQuickCreateActionUid: () => 'quick-create-action',
+      uid: 'kanban-block-1',
+    };
+
+    await step.beforeParamsSave(
+      {
+        model,
+      } as any,
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'template-popup-1',
+      },
+      {
+        popupTemplateUid: 'template-1',
+        uid: 'template-popup-1',
+      },
+    );
+
+    expect(model.props.popupTargetUid).toBeUndefined();
+    expect(model.stepParams.kanbanSettings.popup.uid).toBeUndefined();
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      popupTemplateUid: undefined,
+      pageModelClass: undefined,
+      uid: 'quick-create-action',
+    });
+  });
+
+  test('card popup getter treats an explicitly cleared item template as higher priority than legacy block props', () => {
+    expect(
+      KanbanBlockModel.prototype.getCardPopupTemplateUid.call({
+        subModels: {
+          item: {
+            props: { popupTemplateUid: undefined },
+            getProps: () => ({ popupTemplateUid: undefined }),
+          },
+        },
+        props: {
+          cardPopupTemplateUid: 'legacy-template',
+        },
+      }),
+    ).toBeUndefined();
+  });
+
   test('card popup settings sync pageModelClass back to the parent card-view action', async () => {
     const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
     const syncCardViewAction = vi.fn().mockResolvedValue(undefined);
@@ -388,17 +587,6 @@ describe('KanbanBlockModel.filterCollection', () => {
         getGroupField: () => ({ name: 'status' }),
       },
     } as any);
-
-    expect(inlineStyleMode).toMatchObject({
-      type: 'select',
-      key: 'styleVariant',
-      props: {
-        options: [
-          { label: lang('Classic'), value: 'default' },
-          { label: lang('Filled'), value: 'filled' },
-        ],
-      },
-    });
     expect(flow.steps.defaultSorting).toMatchObject({
       use: 'sortingRule',
       title: '{{t("Default sorting")}}',

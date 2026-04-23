@@ -544,4 +544,66 @@ describe('FlowsFloatContextMenu', () => {
       expect(parentOverlayAfterRestore?.className).toContain('nb-toolbar-visible');
     });
   });
+
+  it('treats forked models as distinct float menu instances even when they share the same uid', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    const masterModel = new FlowModel({ uid: 'forked-model', flowEngine: engine });
+    masterModel.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
+    masterModel.render = vi.fn(function (this: any) {
+      return <div data-testid={`content-${String(this.forkId || this.uid)}`}>{String(this.forkId || this.uid)}</div>;
+    });
+
+    const firstFork = masterModel.createFork({}, 'card-1') as FlowModel & { forkId?: string };
+    const secondFork = masterModel.createFork({}, 'card-2') as FlowModel & { forkId?: string };
+    const firstInstanceId = `forked-model::${String((firstFork as any).forkId)}`;
+    const secondInstanceId = `forked-model::${String((secondFork as any).forkId)}`;
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <>
+        <FlowsFloatContextMenu model={firstFork}>
+          <div data-testid="fork-host-1">first</div>
+        </FlowsFloatContextMenu>
+        <FlowsFloatContextMenu model={secondFork}>
+          <div data-testid="fork-host-2">second</div>
+        </FlowsFloatContextMenu>
+      </>,
+      { container: appContainer },
+    );
+
+    const firstHost = getHost(getByTestId('fork-host-1'));
+    const secondHost = getHost(getByTestId('fork-host-2'));
+    mockRect(firstHost, { top: 20, left: 20, width: 180, height: 72 });
+    mockRect(secondHost, { top: 120, left: 20, width: 180, height: 72 });
+
+    fireEvent.mouseEnter(firstHost);
+
+    const firstOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, firstInstanceId);
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(firstOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    fireEvent.mouseEnter(secondHost);
+
+    const secondOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, secondInstanceId);
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(secondOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    expect(firstOverlay.getAttribute('data-model-uid')).toBe(firstInstanceId);
+    expect(secondOverlay.getAttribute('data-model-uid')).toBe(secondInstanceId);
+  });
 });
