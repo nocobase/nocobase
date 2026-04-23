@@ -41,6 +41,9 @@ nb init
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `--yes`, `-y` | boolean | `false` | 跳过所有提示，使用默认配置（自动安装 Skills，全新安装 NocoBase） |
+| `--env`, `-e` | string | | 环境名称，非交互模式下必填 |
+| `--source` | string | | 来源：`docker`、`npm`、`git` |
+| `--version` | string | | 版本：dist-tag、镜像标签或分支 |
 | `--ui` | boolean | `false` | 打开浏览器可视化向导，不能和 `--yes` 同时使用 |
 | `--ui-host` | string | `0.0.0.0` | `--ui` 模式的绑定地址，需配合 `--ui` 使用 |
 | `--ui-port` | integer | `0` | `--ui` 模式的端口，`0` 表示系统自动分配，需配合 `--ui` 使用 |
@@ -109,6 +112,14 @@ nb download -s npm
 | `--build-dts` | boolean | `false` | npm / git：构建时是否生成 `.d.ts` 声明文件 |
 
 Git 模式的版本别名：`latest` → `main`，`beta` → `next`，`alpha` → `develop`。
+
+## nb env
+
+查看当前环境。
+
+```bash
+nb env
+```
 
 ## nb env add
 
@@ -222,7 +233,7 @@ nb build
 
 ## nb start
 
-启动 NocoBase 应用（生产模式）。
+启动 NocoBase 应用或 Docker 容器。
 
 ```bash
 nb start
@@ -240,7 +251,7 @@ nb start
 
 ## nb stop
 
-停止 NocoBase 应用。
+停止 NocoBase 应用或 Docker 容器。
 
 ```bash
 nb stop
@@ -251,9 +262,50 @@ nb stop
 | `--env`, `-e` | string | 环境名称，省略时使用当前环境 |
 | `--scope`, `-s` | string | 配置存储范围：`project` 或 `global` |
 
+## nb logs
+
+查看应用日志。
+
+```bash
+nb logs app1
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `[name]` | string | 环境名称，省略时使用当前环境 |
+| `--env`, `-e` | string | 环境名称（和位置参数二选一） |
+
+## nb ps
+
+查看环境运行状态。
+
+```bash
+nb ps
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `--env`, `-e` | string | 环境名称，省略时显示所有环境 |
+
+## nb down
+
+停止并移除本地运行容器。数据、源码和环境配置默认保留，可通过参数选择性删除。
+
+```bash
+nb down app1
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `[name]` | string | 环境名称 |
+| `--env`, `-e` | string | 环境名称（和位置参数二选一） |
+| `--remove-data` | boolean | 删除 storage 和数据库数据（需二次确认） |
+| `--remove-source` | boolean | 删除 npm/Git 源码目录 |
+| `--remove-env` | boolean | 删除 CLI 环境配置 |
+
 ## nb dev
 
-启动开发模式（支持热更新）。
+启动开发模式（支持热更新）。仅支持 npm/Git 来源的环境，Docker 环境请使用 `nb logs` 查看日志。
 
 ```bash
 nb dev
@@ -270,7 +322,7 @@ nb dev
 
 ## nb upgrade
 
-升级 NocoBase 应用。
+更新源码或镜像并重启 NocoBase 应用。
 
 ```bash
 nb upgrade
@@ -279,7 +331,7 @@ nb upgrade
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `--env`, `-e` | string | 环境名称 |
-| `--skip-code-update`, `-S` | boolean | 跳过代码更新，仅执行数据库迁移 |
+| `--skip-code-update`, `-s` | boolean | 跳过代码更新，仅重启 |
 
 ## nb pm list
 
