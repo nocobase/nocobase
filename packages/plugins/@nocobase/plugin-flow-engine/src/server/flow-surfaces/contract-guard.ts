@@ -8,17 +8,12 @@
  */
 
 import _ from 'lodash';
-import { transformFilter } from '@nocobase/utils';
 import { getNodeContract } from './catalog';
 import { throwBadRequest } from './errors';
+import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
 import type { FlowSurfaceDomainContract, FlowSurfaceDomainGroupContract, FlowSurfaceNodeDomain } from './types';
 
 const EMPTY_GRID_ITEM_UID = '__EMPTY__';
-const EMPTY_FILTER_GROUP = {
-  logic: '$and',
-  items: [],
-};
-const FILTER_GROUP_EXAMPLE = JSON.stringify(EMPTY_FILTER_GROUP);
 
 export class FlowSurfaceContractGuard {
   mergeDomainValue(
@@ -384,46 +379,11 @@ function normalizeFilterGroupValue(
   context: { domain: FlowSurfaceNodeDomain; groupKey?: string; use: string },
   path: string,
 ) {
-  if (value === null || (_.isPlainObject(value) && !Object.keys(value).length)) {
-    return _.cloneDeep(EMPTY_FILTER_GROUP);
-  }
-
-  try {
-    assertFilterGroupShape(value);
-    transformFilter(value);
-    return _.cloneDeep(value);
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    const domainPath = context.groupKey ? `${context.domain}.${context.groupKey}.${path}` : `${context.domain}.${path}`;
-    throwBadRequest(
-      `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup like ${FILTER_GROUP_EXAMPLE}: ${reason}`,
-    );
-  }
-}
-
-function assertFilterGroupShape(filter: any) {
-  if (!_.isPlainObject(filter)) {
-    throwBadRequest('Invalid filter: filter must be an object');
-  }
-  if (!('logic' in filter) || !('items' in filter)) {
-    throwBadRequest('Invalid filter: filter must have logic and items properties');
-  }
-  if (filter.logic !== '$and' && filter.logic !== '$or') {
-    throwBadRequest("Invalid filter: logic must be '$and' or '$or'");
-  }
-  if (!Array.isArray(filter.items)) {
-    throwBadRequest('Invalid filter: items must be an array');
-  }
-  filter.items.forEach((item) => {
-    if (_.isPlainObject(item) && 'logic' in item && 'items' in item) {
-      assertFilterGroupShape(item);
-      return;
-    }
-    if (_.isPlainObject(item) && typeof item.path === 'string' && typeof item.operator === 'string') {
-      return;
-    }
-    throwBadRequest('Invalid filter item type');
-  });
+  const domainPath = context.groupKey ? `${context.domain}.${context.groupKey}.${path}` : `${context.domain}.${path}`;
+  return normalizeFlowSurfaceFilterGroupValue(
+    value,
+    `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+  );
 }
 
 function isContractDefinedFlowGroup(groupContract: FlowSurfaceDomainGroupContract | undefined) {

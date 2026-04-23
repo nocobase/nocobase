@@ -9,7 +9,7 @@
 
 import { createHash } from 'crypto';
 import type { Plugin } from '@nocobase/server';
-import { transformFilter, transformSQL, uid } from '@nocobase/utils';
+import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import {
@@ -45,6 +45,7 @@ import {
   throwForbidden,
   throwInternalError,
 } from './errors';
+import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
 import { executeMutateOps } from './executor';
 import { assertNoFlowSurfaceLegacyRef } from './reference-guards';
 import {
@@ -358,11 +359,6 @@ type FlowSurfaceDefaultActionSettings = Record<string, any>;
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
-const FLOW_SURFACE_EMPTY_FILTER_GROUP = {
-  logic: '$and',
-  items: [],
-};
-const FLOW_SURFACE_FILTER_GROUP_EXAMPLE = JSON.stringify(FLOW_SURFACE_EMPTY_FILTER_GROUP);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
   'FormBlockModel',
@@ -6093,55 +6089,12 @@ export class FlowSurfacesService {
     }
 
     if (hasOwnDefined(normalizedSettings, 'defaultFilter')) {
-      normalizedSettings.defaultFilter = this.normalizeDefaultActionFilterGroup(
-        actionName,
+      normalizedSettings.defaultFilter = normalizeFlowSurfaceFilterGroupValue(
         normalizedSettings.defaultFilter,
+        `flowSurfaces ${actionName} defaultActionSettings.filter.defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
       );
     }
     return normalizedSettings;
-  }
-
-  private normalizeDefaultActionFilterGroup(actionName: string, value: any) {
-    const normalized =
-      value === null || (_.isPlainObject(value) && !Object.keys(value).length)
-        ? _.cloneDeep(FLOW_SURFACE_EMPTY_FILTER_GROUP)
-        : _.cloneDeep(value);
-
-    try {
-      this.assertDefaultActionFilterGroupShape(normalized);
-      transformFilter(normalized);
-      return normalized;
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      throwBadRequest(
-        `flowSurfaces ${actionName} defaultActionSettings.filter.defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}: ${reason}`,
-      );
-    }
-  }
-
-  private assertDefaultActionFilterGroupShape(filter: any) {
-    if (!_.isPlainObject(filter)) {
-      throwBadRequest('Invalid filter: filter must be an object');
-    }
-    if (!('logic' in filter) || !('items' in filter)) {
-      throwBadRequest('Invalid filter: filter must have logic and items properties');
-    }
-    if (filter.logic !== '$and' && filter.logic !== '$or') {
-      throwBadRequest("Invalid filter: logic must be '$and' or '$or'");
-    }
-    if (!Array.isArray(filter.items)) {
-      throwBadRequest('Invalid filter: items must be an array');
-    }
-    filter.items.forEach((item: any) => {
-      if (_.isPlainObject(item) && 'logic' in item && 'items' in item) {
-        this.assertDefaultActionFilterGroupShape(item);
-        return;
-      }
-      if (_.isPlainObject(item) && typeof item.path === 'string' && typeof item.operator === 'string') {
-        return;
-      }
-      throwBadRequest('Invalid filter item type');
-    });
   }
 
   async addBlock(

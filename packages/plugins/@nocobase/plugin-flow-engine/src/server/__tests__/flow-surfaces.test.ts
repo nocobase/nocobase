@@ -1811,7 +1811,7 @@ describe('flowSurfaces resource', () => {
     expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
   });
 
-  it('should apply addBlock defaultActionSettings to auto-created filter actions', async () => {
+  it('should apply addBlock defaultActionSettings to auto-created filter actions on data blocks', async () => {
     const page = await createPage(rootAgent, {
       title: 'Default filter addBlock page',
       tabTitle: 'Default filter addBlock tab',
@@ -1832,38 +1832,40 @@ describe('flowSurfaces resource', () => {
       ],
     };
 
-    const tableBlockUid = await addBlock(
-      rootAgent,
-      page.tabSchemaUid,
-      'table',
-      {
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      },
-      {
-        defaultActionSettings: {
-          filter: {
-            filterableFieldNames: ['username', 'email'],
-            defaultFilter,
+    for (const blockType of ['table', 'list', 'gridCard']) {
+      const blockUid = await addBlock(
+        rootAgent,
+        page.tabSchemaUid,
+        blockType,
+        {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        {
+          defaultActionSettings: {
+            filter: {
+              filterableFieldNames: ['username', 'email'],
+              defaultFilter,
+            },
           },
         },
-      },
-    );
+      );
 
-    const tableReadback = await getSurface(rootAgent, {
-      uid: tableBlockUid,
-    });
-    const filterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
-      (item: any) => item?.use === 'FilterActionModel',
-    );
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['username', 'email']);
-    expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
-    expect(filterAction?.props?.filterValue).toEqual(defaultFilter);
-    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
-      'username',
-      'email',
-    ]);
-    expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+      const readback = await getSurface(rootAgent, {
+        uid: blockUid,
+      });
+      const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
+        (item: any) => item?.use === 'FilterActionModel',
+      );
+      expect(filterAction?.props?.filterableFieldNames).toEqual(['username', 'email']);
+      expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
+      expect(filterAction?.props?.filterValue).toEqual(defaultFilter);
+      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
+        'username',
+        'email',
+      ]);
+      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
+    }
   });
 
   it('should apply addBlocks item defaultActionSettings to auto-created filter actions', async () => {
@@ -2092,6 +2094,52 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(emptyDefaultFilterRes.status).toBe(200);
+
+    const tabReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    const tabGridUid = tabReadback.tree?.subModels?.grid?.uid;
+    expect(tabGridUid).toBeTruthy();
+    const addBlocksInvalidFilterRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: tabGridUid,
+        },
+        blocks: [
+          {
+            key: 'badList',
+            type: 'list',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            defaultActionSettings: {
+              filter: {
+                filterableFieldNames: ['username'],
+                defaultFilter: {
+                  logic: '$bad',
+                  items: [],
+                },
+              },
+            },
+          },
+          {
+            key: 'notes',
+            type: 'markdown',
+            settings: {
+              content: 'Notes',
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksInvalidFilterRes.status).toBe(200);
+    const addBlocksInvalidFilterData = getData(addBlocksInvalidFilterRes);
+    expect(addBlocksInvalidFilterData.successCount).toBe(1);
+    expect(addBlocksInvalidFilterData.errorCount).toBe(1);
+    expect(addBlocksInvalidFilterData.blocks[0].ok).toBe(false);
+    expect(addBlocksInvalidFilterData.blocks[0].error.message).toContain("logic must be '$and' or '$or'");
+    expect(addBlocksInvalidFilterData.blocks[1].ok).toBe(true);
   });
 
   it('should normalize and validate filter action filter settings payloads', async () => {
