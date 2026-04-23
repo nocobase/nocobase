@@ -201,9 +201,9 @@ npx skills add nocobase/skills -y
 
 用自然语言描述需求，AI 帮你完成数据建模、页面搭建、工作流编排——从一句话到一整套业务系统。请参阅 [AI 搭建快速开始](../ai-builder/index.md)。
 
-### 继续 AI 开发
+### 继续 AI 开发插件
 
-如果你需要开发自定义插件，AI 同样能帮上忙——从脚手架生成到组件代码、业务逻辑，覆盖插件开发的完整流程。请参阅 [AI 开发](../ai-dev/index.md)。
+如果你需要开发自定义插件，AI 同样能帮上忙——从脚手架生成到组件代码、业务逻辑，覆盖插件开发的完整流程。请参阅 [AI 开发插件](../ai-dev/index.md)。
 
 ### 使用 AI 员工
 
@@ -211,13 +211,13 @@ npx skills add nocobase/skills -y
 
 ### 命令参考
 
-所有 `nb` 命令的完整参数说明请参阅 [CLI API 参考](/cn/api/cli/cli)。
+所有 `nb` 命令的完整参数说明请参阅 [CLI API 参考](../api/cli/cli)。
 
 ## 相关链接
 
 - [AI 搭建](../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
-- [AI 开发](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
+- [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
 - [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断
-- [CLI API 参考](/cn/api/cli/cli) — 所有命令的完整参数说明
-- [安装方式和版本对比](/cn/get-started/quickstart) — NocoBase 的不同安装方式和版本通道
+- [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
+- [安装方式和版本对比](./quickstart) — NocoBase 的不同安装方式和版本通道

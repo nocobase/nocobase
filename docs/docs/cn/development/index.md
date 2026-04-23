@@ -12,7 +12,7 @@ features:
         details: 学习如何创建、发布与维护自定义插件。
         link: /plugin-development
         showOnHome: true
-      - title: AI 开发
+      - title: AI 开发插件
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
         showOnHome: true

@@ -23,7 +23,7 @@ features:
       - title: 从零搭建整套业务系统
         details: 数据表、页面、仪表盘一步到位，支持 CRM、工单管理等场景。
         link: /ai-builder/dsl-reconciler
-      - title: AI 开发
+      - title: AI 开发插件
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
 

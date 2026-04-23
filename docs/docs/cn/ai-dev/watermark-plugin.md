@@ -22,8 +22,8 @@ keywords: "AI 开发,水印插件,NocoBase 插件,实战案例,AI 编程"
 
 :::tip 前置阅读
 
-- [NocoBase CLI](/cn/get-started/nocobase-cli) — 安装和启动 NocoBase
-- [AI 开发概述](./index.md) — 安装 Skills
+- [NocoBase CLI](../get-started/nocobase-cli) — 安装和启动 NocoBase
+- [AI 开发插件快速开始](./index.md) — 安装 Skills
 
 :::
 
@@ -142,7 +142,7 @@ yarn pm enable @my-project/plugin-watermark
 
 ## 相关链接
 
-- [AI 开发概述](./index.md) — 快速开始和能力总览
+- [AI 开发插件快速开始](./index.md) — 快速开始和能力总览
 - [支持的能力](./capabilities) — AI 能帮你做的所有事情，附提示词示例
-- [插件开发](/cn/plugin-development) — NocoBase 插件开发的完整指南
-- [NocoBase CLI](/cn/get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
+- [插件开发](../plugin-development/index.md) — NocoBase 插件开发的完整指南
+- [NocoBase CLI](../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具

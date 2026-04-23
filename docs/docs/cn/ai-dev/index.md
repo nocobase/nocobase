@@ -1,14 +1,14 @@
 ---
-title: "AI 开发快速开始"
+title: "AI 开发插件快速开始"
 description: "用 AI 辅助开发 NocoBase 插件，一句话描述需求，自动生成前后端代码、数据表、权限配置和国际化。"
 keywords: "AI 开发,AI Development,NocoBase AI,插件开发,AI 编程,Skills,快速开始"
 ---
 
-# AI 开发快速开始
+# AI 开发插件快速开始
 
-AI 开发是 NocoBase 提供的 AI 辅助插件开发能力——你可以用自然语言描述需求，AI 会自动生成完整的前后端代码，包括数据表、API、前端区块、权限和国际化。提供更加现代化、更加高效的插件开发体验。
+AI 开发插件是 NocoBase 提供的 AI 辅助插件开发能力——你可以用自然语言描述需求，AI 会自动生成完整的前后端代码，包括数据表、API、前端区块、权限和国际化。提供更加现代化、更加高效的插件开发体验。
 
-AI 插件开发的能力基于 [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill 实现。如果你已经通过 NocoBase CLI 初始化（`nb init`），这个 Skill 会自动安装。
+AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill 实现。如果你已经通过 NocoBase CLI 初始化（`nb init`），这个 Skill 会自动安装。
 
 ## 快速开始
 
@@ -42,7 +42,7 @@ nb init --ui
 
 ## 从一句话到一个完整插件
 
-安装完成后，你可以直接用自然语言告诉 AI 你想开发什么插件。下面是几个真实场景，感受一下 AI 开发的能力。
+安装完成后，你可以直接用自然语言告诉 AI 你想开发什么插件。下面是几个真实场景，感受一下 AI 开发插件的能力。
 
 ### 一句话开发水印插件
 
@@ -95,7 +95,7 @@ nb init --ui
 
 ## 相关链接
 
-- [实战：开发水印插件](./watermark-plugin) — 完整的 AI 开发实战案例，从一句话到可用插件
+- [实战：开发水印插件](./watermark-plugin) — 完整的 AI 开发插件实战案例，从一句话到可用插件
 - [支持的能力](./capabilities) — AI 能帮你做的所有事情，附提示词示例
 - [NocoBase CLI](../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
 - [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明

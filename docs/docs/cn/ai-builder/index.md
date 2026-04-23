@@ -119,5 +119,5 @@ npx skills add nocobase/skills -y
 
 - [NocoBase CLI](../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
 - [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
-- [AI 开发](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
+- [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [AI 员工](../ai-employees/index.md) — NocoBase 的智能体能力，支持在业务界面中协作和执行操作
