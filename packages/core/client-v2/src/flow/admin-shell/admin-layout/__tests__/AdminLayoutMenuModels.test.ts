@@ -337,6 +337,44 @@ describe('AdminLayoutModel menu items', () => {
     });
   });
 
+  it('should keep sub app page menu runtime target inside spa when basename does not include /v2/', () => {
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/apps/demo/',
+        router: {
+          getBasename: () => '/apps/demo',
+        },
+        components: {},
+        scopes: {},
+      },
+    });
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-sub-app-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Sub app page',
+          schemaUid: 'sub-app-page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    expect(
+      model.toProLayoutRoute({
+        designable: false,
+        isMobile: false,
+        t: (title) => title,
+      }),
+    ).toMatchObject({
+      _runtimePath: '/apps/demo/admin/sub-app-page-1',
+      _navigationMode: 'spa',
+      _isLegacy: false,
+    });
+  });
+
   it('should not guess runtime path when page schemaUid is missing', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const model = engine.createModel<AdminLayoutMenuItemModel>({

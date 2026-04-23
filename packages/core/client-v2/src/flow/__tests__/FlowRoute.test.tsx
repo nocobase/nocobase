@@ -345,6 +345,70 @@ describe('FlowRoute', () => {
     }
   });
 
+  it('should keep sub app page inside spa when basename does not include /v2/', async () => {
+    const originalLocation = window.location;
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        pathname: '/apps/demo/admin/test-page',
+        search: '?from=sub-app',
+        hash: '#panel',
+        replace,
+      },
+    });
+
+    try {
+      const engine = new FlowEngine();
+      engine.context.defineProperty('routeRepository', {
+        value: {
+          refreshAccessible: hookState.refresh,
+          isAccessibleLoaded: () => true,
+          ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+          getRouteBySchemaUid: vi.fn(() => ({ type: 'page', schemaUid: 'test-page' })),
+        },
+      });
+      engine.context.defineProperty('app', {
+        value: {
+          getPublicPath: () => '/apps/demo/',
+          router: {
+            getBasename: () => '/apps/demo',
+          },
+        },
+      });
+
+      const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+        engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+        {
+          registerRoutePage: vi.fn(),
+          updateRoutePage: vi.fn(),
+          unregisterRoutePage: vi.fn(),
+        },
+      );
+
+      render(
+        <FlowEngineProvider engine={engine}>
+          <MemoryRouter initialEntries={['/flow/test-page']}>
+            <Routes>
+              <Route path="/flow/:name" element={<FlowRoute />} />
+            </Routes>
+          </MemoryRouter>
+        </FlowEngineProvider>,
+      );
+
+      await waitFor(() => {
+        expect(adminLayoutModel.registerRoutePage).toHaveBeenCalled();
+      });
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
+  });
+
   it('should not redirect or loop when ensureAccessibleLoaded rejects', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();

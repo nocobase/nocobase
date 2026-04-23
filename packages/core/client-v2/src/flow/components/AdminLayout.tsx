@@ -79,7 +79,7 @@ const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ children }) 
             preserveLocationState: true,
           });
 
-          if (target.runtimePath) {
+          if (target.navigationMode === 'document' && target.runtimePath) {
             replaceTriggeredRef.current = true;
             window.location.replace(target.runtimePath);
             return;
