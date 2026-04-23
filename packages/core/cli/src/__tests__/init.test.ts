@@ -350,6 +350,7 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
       flags: {
         yes: true,
         ui: false,
+        env: 'local3',
         'app-port': '13000',
       },
     })),
@@ -371,6 +372,43 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
   );
   assert.equal(mocks.promptError.mock.calls.length, 1);
   assert.match(String(mocks.promptError.mock.calls[0]?.[0] ?? ''), /local3/);
+});
+
+test('nb init explains that --env is required when --yes skips prompts', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const runCommand = vi.fn(async () => undefined);
+
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        ui: false,
+      },
+    })),
+    config: {
+      runCommand,
+    },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await assert.rejects(
+    () => Init.prototype.run.call(command),
+    /App name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
+  );
+  assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
+  assert.equal(mocks.promptInfo.mock.calls.length, 0);
+  assert.equal(mocks.promptWarn.mock.calls.length, 0);
+  assert.equal(runCommand.mock.calls.length, 0);
+  assert.match(
+    String(mocks.promptError.mock.calls[0]?.[0] ?? ''),
+    /nb init --yes --env <envName>/,
+  );
 });
 
 test('nb init --force allows reconfiguring an existing workspace env and warns before install', async () => {

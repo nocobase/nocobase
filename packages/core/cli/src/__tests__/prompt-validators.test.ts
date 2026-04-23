@@ -115,6 +115,8 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   const envAddPrompt = EnvAdd.prompts.apiBaseUrl;
 
   assert.equal(appNamePrompt.type, 'text');
+  assert.equal(appNamePrompt.initialValue, undefined);
+  assert.equal(appNamePrompt.yesInitialValue, undefined);
   assert.equal(typeof appNamePrompt.validate, 'function');
   assert.match(await appNamePrompt.validate?.('local-dev', {}) ?? '', /letters and numbers only/i);
   assert.equal(initPrompt.type, 'text');

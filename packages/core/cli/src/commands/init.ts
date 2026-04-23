@@ -104,6 +104,17 @@ function highlightInitValidationMessage(message: string): string {
   );
 }
 
+function formatInitValidationMessage(message: string): string {
+  if (/"appName" is required/.test(message)) {
+    return [
+      'App name is required when prompts are skipped.',
+      'The app name is also the CLI env name. Use `nb init --yes --env <envName>` to continue.',
+    ].join('\n');
+  }
+
+  return message;
+}
+
 export default class Init extends Command {
   static override summary =
     'Initialize the NocoBase AI setup environment';
@@ -143,7 +154,7 @@ When you choose an existing app, the env fields are collected inside the same in
     },
     appName: {
       type: 'text',
-      message: 'App name',
+      message: 'App name (also used as the CLI env name)',
       placeholder: DEFAULT_INIT_APP_NAME,
       required: true,
       validate: validateInitAppName,
@@ -276,21 +287,6 @@ When you choose an existing app, the env fields are collected inside the same in
     const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY);
     const useBrowserUi = Boolean(flags.ui);
 
-    if (flags.yes) {
-      p.log.info(
-        'Skipping prompts (--yes): using defaults, then running nb install.',
-      );
-    } else {
-      if (useBrowserUi) {
-        this.log('nb init — browser setup');
-        this.log('A local setup form should open in your browser. Submit it there to continue in this terminal.');
-      } else if (!interactive) {
-        p.log.warn(
-          'Non-interactive terminal: using defaults, then running nb install.',
-        );
-      }
-    }
-
     let presetValues = this.buildPresetValuesFromFlags(
       flags as {
         env?: string;
@@ -326,6 +322,30 @@ When you choose an existing app, the env fields are collected inside the same in
         'install-skills'?: boolean;
       },
     );
+
+    if (flags.yes && !String(presetValues.appName ?? '').trim()) {
+      const formatted = formatInitValidationMessage(
+        'Non-interactive: "appName" is required; set initialValues.appName, yesInitialValues.appName, yesInitialValue on the block, or initialValue.',
+      );
+      p.log.error(highlightInitValidationMessage(formatted));
+      this.error(formatted);
+    }
+
+    if (flags.yes) {
+      p.log.info(
+        'Skipping prompts (--yes): using defaults, then running nb install.',
+      );
+    } else {
+      if (useBrowserUi) {
+        this.log('nb init — browser setup');
+        this.log('A local setup form should open in your browser. Submit it there to continue in this terminal.');
+      } else if (!interactive) {
+        p.log.warn(
+          'Non-interactive terminal: using defaults, then running nb install.',
+        );
+      }
+    }
+
     const dynamicInitialValues = await Init.buildDynamicInitialValuesForInstall(
       flags as {
         'app-port'?: string;
@@ -368,8 +388,9 @@ When you choose an existing app, the env fields are collected inside the same in
           this.exit(0);
         },
         onMissingNonInteractive: (message) => {
-          p.log.error(highlightInitValidationMessage(message));
-          this.error(message);
+          const formatted = formatInitValidationMessage(message);
+          p.log.error(highlightInitValidationMessage(formatted));
+          this.error(formatted);
         },
       },
       command: this,
