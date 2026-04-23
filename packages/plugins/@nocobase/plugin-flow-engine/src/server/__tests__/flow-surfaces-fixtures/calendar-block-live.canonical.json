@@ -1,0 +1,71 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "CalendarBlockModel"
+  },
+  "tree": {
+    "alias": "block.calendar1",
+    "use": "CalendarBlockModel",
+    "props": {
+      "fieldNames": {
+        "title": "name",
+        "start": "createdAt",
+        "end": "lastVisitAt"
+      },
+      "defaultView": "month",
+      "enableQuickCreateEvent": true,
+      "weekStart": 1
+    },
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      }
+    },
+    "subModels": {
+      "eventViewAction": [
+        {
+          "alias": "action.calendarEventView1",
+          "use": "CalendarEventViewActionModel",
+          "stepParams": {
+            "popupSettings": {
+              "openView": {
+                "mode": "drawer",
+                "size": "medium",
+                "pageModelClass": "ChildPageModel",
+                "collectionName": "pets",
+                "dataSourceKey": "main"
+              }
+            }
+          }
+        }
+      ],
+      "quickCreateAction": [
+        {
+          "alias": "action.calendarQuickCreate1",
+          "use": "CalendarQuickCreateActionModel",
+          "stepParams": {
+            "popupSettings": {
+              "openView": {
+                "mode": "drawer",
+                "size": "medium",
+                "pageModelClass": "ChildPageModel",
+                "collectionName": "pets",
+                "dataSourceKey": "main"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Calendar Blocks",
+    "icon": null,
+    "options": null
+  }
+}

@@ -84,6 +84,7 @@ export type FlowSurfaceDomainContract = {
   wildcard?: boolean;
   mergeStrategy: FlowSurfaceMergeStrategy;
   schema: Record<string, any>;
+  pathSchemas?: Record<string, Record<string, any>>;
   groups?: Record<string, FlowSurfaceDomainGroupContract>;
 };
 

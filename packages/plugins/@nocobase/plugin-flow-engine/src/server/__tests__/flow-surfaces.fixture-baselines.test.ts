@@ -50,7 +50,7 @@ describe('flowSurfaces formal block fixtures', () => {
       })),
     ).toEqual(
       FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => ({
-        key: entry.formalKey!,
+        key: entry.formalKey,
         fixtureCaptured: entry.fixtureCaptured,
         readbackParity: entry.readbackSupported ? 'implemented' : 'pending',
         createParity: entry.createSupported ? 'implemented' : 'pending',
@@ -62,7 +62,7 @@ describe('flowSurfaces formal block fixtures', () => {
     expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.map((entry) => entry.key).sort()).toEqual(
       [...FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS].sort(),
     );
-    expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).toHaveLength(12);
+    expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).toHaveLength(13);
     expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).not.toContain('map');
     expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).not.toContain('comments');
 
@@ -120,6 +120,38 @@ describe('flowSurfaces formal block fixtures', () => {
           ]);
           expect(getRowActionUses(tree)).toEqual(['ViewActionModel', 'EditActionModel', 'DeleteActionModel']);
           expect(getNestedPopupBlockUses(tree)).toEqual(['CreateFormModel', 'DetailsBlockModel', 'EditFormModel']);
+          break;
+        }
+        case 'calendar': {
+          expect(tree.stepParams?.resourceSettings?.init?.collectionName).toBe('pets');
+          expect(tree.props?.fieldNames).toMatchObject({
+            title: 'name',
+            start: 'createdAt',
+            end: 'lastVisitAt',
+          });
+          expect(tree.props?.defaultView).toBe('month');
+          expect(tree.props?.enableQuickCreateEvent).toBe(true);
+          expect(tree.props?.weekStart).toBe(1);
+          expect(getCalendarPopupHostUses(tree)).toEqual({
+            quickCreateAction: 'CalendarQuickCreateActionModel',
+            eventViewAction: 'CalendarEventViewActionModel',
+          });
+          expect(getCalendarPopupOpenViews(tree)).toEqual({
+            quickCreateAction: {
+              mode: 'drawer',
+              size: 'medium',
+              pageModelClass: 'ChildPageModel',
+              dataSourceKey: 'main',
+              collectionName: 'pets',
+            },
+            eventViewAction: {
+              mode: 'drawer',
+              size: 'medium',
+              pageModelClass: 'ChildPageModel',
+              dataSourceKey: 'main',
+              collectionName: 'pets',
+            },
+          });
           break;
         }
         case 'create-form': {
@@ -502,4 +534,18 @@ function getNestedPopupBlockUses(tree: any) {
 
 function getPopupBlockUse(action: any) {
   return action?.subModels?.page?.[0]?.subModels?.tabs?.[0]?.subModels?.grid?.[0]?.subModels?.items?.[0]?.use;
+}
+
+function getCalendarPopupHostUses(tree: any) {
+  return {
+    quickCreateAction: tree?.subModels?.quickCreateAction?.[0]?.use,
+    eventViewAction: tree?.subModels?.eventViewAction?.[0]?.use,
+  };
+}
+
+function getCalendarPopupOpenViews(tree: any) {
+  return {
+    quickCreateAction: tree?.subModels?.quickCreateAction?.[0]?.stepParams?.popupSettings?.openView,
+    eventViewAction: tree?.subModels?.eventViewAction?.[0]?.stepParams?.popupSettings?.openView,
+  };
 }

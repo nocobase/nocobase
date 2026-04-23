@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY } from './blueprint/defaults';
 
 export const FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY = '__flowSurfaceAutoSaveDefaultPopupTemplate';
 
@@ -58,6 +59,8 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
     },
     { type: 'refresh', scope: 'actions' },
   ],
+  createForm: [{ type: 'submit', scope: 'actions' }],
+  editForm: [{ type: 'submit', scope: 'actions' }],
   details: [
     {
       type: 'edit',
@@ -100,7 +103,11 @@ function shouldMergeDefaultPopup(popup: any) {
   if (!keys.length) {
     return true;
   }
-  return keys.every((key) => ['mode', 'size', 'title', 'defaultType', 'tryTemplate'].includes(key));
+  return keys.every((key) =>
+    ['mode', 'size', 'title', 'defaultType', 'tryTemplate', FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY].includes(
+      key,
+    ),
+  );
 }
 
 function mergeExplicitActionWithDescriptor<T extends { popup?: Record<string, any> }>(

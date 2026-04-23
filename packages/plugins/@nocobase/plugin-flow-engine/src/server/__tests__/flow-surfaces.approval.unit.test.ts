@@ -139,7 +139,7 @@ describe('flowSurfaces approval surface', () => {
     expect((applyForm.subModels?.actions as any[])?.[0]).toMatchObject({
       use: 'ApplyFormSubmitModel',
       props: {
-        title: 'Submit',
+        title: '{{t("Submit")}}',
         type: 'primary',
       },
     });

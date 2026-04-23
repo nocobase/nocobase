@@ -102,6 +102,8 @@ async function buildCreateParityReadback(rootAgent: any, key: FormalFlowSurfaceB
       return createStaticBlockParityReadback(rootAgent, 'jsBlock');
     case 'table':
       return createTableParityReadback(rootAgent);
+    case 'calendar':
+      return createCalendarParityReadback(rootAgent);
     case 'create-form':
       return createCreateFormParityReadback(rootAgent);
     case 'edit-form':
@@ -229,6 +231,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
 
       const addNewPopup = await readActionPopupState(rootAgent, addNew.uid);
       await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, 'Add Pet');
+      await normalizePopupFormSubmitAction(rootAgent, addNewPopup.popupBlockUid, 'Submit');
       await reorderBlockFields(rootAgent, addNewPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
       const viewPopup = await readActionPopupState(rootAgent, view.uid);
@@ -237,6 +240,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
 
       const editPopup = await readActionPopupState(rootAgent, edit.uid);
       await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, 'Edit Pet');
+      await normalizePopupFormSubmitAction(rootAgent, editPopup.popupBlockUid, 'Submit');
       await reorderBlockFields(rootAgent, editPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
       return getSurface(rootAgent, {
@@ -357,6 +361,7 @@ async function createTableParityReadback(rootAgent: any) {
 
   const addNewPopup = await readActionPopupState(rootAgent, addNew.uid);
   await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, 'Add Pet');
+  await normalizePopupFormSubmitAction(rootAgent, addNewPopup.popupBlockUid, 'Submit');
   await reorderBlockFields(rootAgent, addNewPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
   const viewPopup = await readActionPopupState(rootAgent, view.uid);
@@ -365,10 +370,31 @@ async function createTableParityReadback(rootAgent: any) {
 
   const editPopup = await readActionPopupState(rootAgent, edit.uid);
   await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, 'Edit Pet');
+  await normalizePopupFormSubmitAction(rootAgent, editPopup.popupBlockUid, 'Submit');
   await reorderBlockFields(rootAgent, editPopup.popupBlockUid, PET_FORM_FIELD_PATHS);
 
   return getSurface(rootAgent, {
     uid: table.uid,
+  });
+}
+
+async function createCalendarParityReadback(rootAgent: any) {
+  const page = await createPage(rootAgent, {
+    title: 'Create parity calendar page',
+    tabTitle: 'Create parity calendar tab',
+  });
+  const calendar = await createBlockData(rootAgent, {
+    target: {
+      uid: page.tabSchemaUid,
+    },
+    type: 'calendar',
+    resourceInit: {
+      dataSourceKey: 'main',
+      collectionName: 'pets',
+    },
+  });
+  return getSurface(rootAgent, {
+    uid: calendar.uid,
   });
 }
 
@@ -699,6 +725,22 @@ async function readActionPopupState(rootAgent: any, actionUid: string) {
     popupTabUid: popupTab.uid,
     popupBlockUid: popupBlock.uid,
   };
+}
+
+async function normalizePopupFormSubmitAction(rootAgent: any, popupBlockUid: string, title: string) {
+  const popupBlockReadback = await getSurface(rootAgent, {
+    uid: popupBlockUid,
+  });
+  const submit = _.castArray(popupBlockReadback.tree?.subModels?.actions || []).find(
+    (item: any) => item?.use === 'FormSubmitActionModel' && item?.uid,
+  );
+
+  if (!submit?.uid) {
+    return;
+  }
+
+  await clearActionGroup(rootAgent, submit.uid, 'submitSettings');
+  await configureSubmitAction(rootAgent, submit.uid, title);
 }
 
 async function reorderBlockFields(rootAgent: any, blockUid: string, desiredFieldPaths: string[]) {

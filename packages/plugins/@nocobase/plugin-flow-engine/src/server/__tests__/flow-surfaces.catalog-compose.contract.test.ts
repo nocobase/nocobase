@@ -328,6 +328,16 @@ describe('flowSurfaces catalog + compose contract', () => {
         collectionName: '',
       },
     });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
 
     const tableCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -410,6 +420,95 @@ describe('flowSurfaces catalog + compose contract', () => {
       },
     });
 
+    const calendarCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: calendar.uid,
+          },
+          expand: ['item.configureOptions'],
+        },
+      }),
+    );
+    expect(calendarCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining([
+        'today',
+        'turnPages',
+        'title',
+        'selectView',
+        'filter',
+        'addNew',
+        'popup',
+        'refresh',
+        'js',
+        'triggerWorkflow',
+      ]),
+    );
+    for (const disallowedKey of [
+      'expandCollapse',
+      'bulkDelete',
+      'bulkEdit',
+      'bulkUpdate',
+      'export',
+      'exportAttachments',
+      'import',
+      'link',
+      'upload',
+      'composeEmail',
+      'templatePrint',
+    ]) {
+      expect(calendarCatalog.actions.map((item: any) => item.key)).not.toContain(disallowedKey);
+    }
+    expect(calendarCatalog.recordActions || []).toEqual([]);
+    expect(calendarCatalog.node.configureOptions).toMatchObject({
+      titleField: {
+        type: 'string',
+      },
+      colorField: {
+        type: 'string',
+      },
+      startField: {
+        type: 'string',
+      },
+      endField: {
+        type: 'string',
+      },
+      defaultView: {
+        type: 'string',
+        enum: expect.arrayContaining(['month', 'week', 'day']),
+      },
+      quickCreatePopup: {
+        type: 'object',
+      },
+      eventPopup: {
+        type: 'object',
+      },
+    });
+    expect(calendarCatalog.actions.find((item: any) => item.key === 'today')?.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      position: {
+        enum: expect.arrayContaining(['left', 'right']),
+      },
+      linkageRules: {
+        type: 'array',
+      },
+    });
+    expect(calendarCatalog.actions.find((item: any) => item.key === 'turnPages')?.configureOptions).toEqual(
+      expect.objectContaining({
+        position: expect.objectContaining({
+          enum: expect.arrayContaining(['left', 'right']),
+        }),
+        linkageRules: expect.objectContaining({
+          type: 'array',
+        }),
+      }),
+    );
+    expect(
+      calendarCatalog.actions.find((item: any) => item.key === 'turnPages')?.configureOptions?.title,
+    ).toBeUndefined();
+
     const createFormCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
@@ -458,6 +557,551 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
     );
+  });
+
+  it('should create configure and validate flow-model calendar blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar contract page',
+      tabTitle: 'Calendar contract tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+
+    const calendarReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(calendarReadback.tree.use).toBe('CalendarBlockModel');
+    expect(calendarReadback.tree.props?.fieldNames).toMatchObject({
+      id: 'id',
+      title: 'title',
+      start: 'startsAt',
+      end: 'endsAt',
+    });
+    expect(calendarReadback.tree.props).toMatchObject({
+      defaultView: 'month',
+      enableQuickCreateEvent: true,
+      weekStart: 1,
+    });
+
+    const quickCreateAction = calendarReadback.tree.subModels?.quickCreateAction;
+    const eventViewAction = calendarReadback.tree.subModels?.eventViewAction;
+    expect(quickCreateAction).toMatchObject({
+      uid: `${calendar.uid}-quickCreateAction`,
+      use: 'CalendarQuickCreateActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            uid: `${calendar.uid}-quickCreateAction`,
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+            pageModelClass: 'ChildPageModel',
+          },
+        },
+      },
+    });
+    expect(eventViewAction).toMatchObject({
+      uid: `${calendar.uid}-eventViewAction`,
+      use: 'CalendarEventViewActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            uid: `${calendar.uid}-eventViewAction`,
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+            pageModelClass: 'ChildPageModel',
+          },
+        },
+      },
+    });
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        changes: {
+          title: 'Team calendar',
+          titleField: 'title',
+          colorField: 'status',
+          startField: 'startsAt',
+          endField: 'endsAt',
+          defaultView: 'week',
+          quickCreateEvent: false,
+          showLunar: true,
+          weekStart: 0,
+          dataScope: {
+            logic: '$and',
+            items: [
+              {
+                path: 'status',
+                operator: '$eq',
+                value: 'confirmed',
+              },
+            ],
+          },
+          quickCreatePopup: {
+            mode: 'dialog',
+            size: 'large',
+            filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+          },
+          eventPopup: {
+            mode: 'drawer',
+            size: 'small',
+          },
+        },
+      },
+    });
+    expect(configureRes.status).toBe(200);
+
+    const configured = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(configured.tree.props).toMatchObject({
+      fieldNames: {
+        id: 'id',
+        title: 'title',
+        start: 'startsAt',
+        end: 'endsAt',
+        colorFieldName: 'status',
+      },
+      defaultView: 'week',
+      enableQuickCreateEvent: false,
+      showLunar: true,
+      weekStart: 0,
+      quickCreatePopupSettings: {
+        mode: 'dialog',
+        size: 'large',
+      },
+      eventPopupSettings: {
+        mode: 'drawer',
+        size: 'small',
+      },
+    });
+    expect(configured.tree.stepParams?.calendarSettings).toMatchObject({
+      titleField: {
+        titleField: 'title',
+      },
+      colorField: {
+        colorFieldName: 'status',
+      },
+      startDateField: {
+        start: 'startsAt',
+      },
+      endDateField: {
+        end: 'endsAt',
+      },
+      defaultView: {
+        defaultView: 'week',
+      },
+      quickCreateEvent: {
+        enableQuickCreateEvent: false,
+      },
+      showLunar: {
+        showLunar: true,
+      },
+      weekStart: {
+        weekStart: 0,
+      },
+      dataScope: {
+        filter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'status',
+              operator: '$eq',
+              value: 'confirmed',
+            },
+          ],
+        },
+      },
+    });
+    expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: `${calendar.uid}-quickCreateAction`,
+      mode: 'dialog',
+      size: 'large',
+      dataSourceKey: 'main',
+      collectionName: 'calendar_events',
+    });
+    expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty(
+      'filterByTk',
+    );
+    expect(configured.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: `${calendar.uid}-eventViewAction`,
+      mode: 'drawer',
+      size: 'small',
+      dataSourceKey: 'main',
+      collectionName: 'calendar_events',
+    });
+
+    const invalidStartFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        changes: {
+          startField: 'title',
+        },
+      },
+    });
+    expect(invalidStartFieldRes.status).toBe(400);
+    expect(readErrorMessage(invalidStartFieldRes)).toContain(
+      `flowSurfaces configure calendar startField 'title' is not supported by CalendarBlockModel`,
+    );
+
+    const noDateCollectionName = `calendar_no_dates_${uid()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: noDateCollectionName,
+        title: 'Calendar no dates',
+        createdAt: false,
+        updatedAt: false,
+        timestamps: false,
+        fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      },
+    });
+    const invalidCollectionRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'calendar',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: noDateCollectionName,
+        },
+      },
+    });
+    expect(invalidCollectionRes.status).toBe(400);
+    expect(readErrorMessage(invalidCollectionRes)).toContain(`must contain at least one date field`);
+  });
+
+  it('should honor server-registered calendar title field interfaces when validating flow-model calendar bindings', async () => {
+    const calendarPlugin: any = app.pm.get('calendar');
+    const previousGetTitleFieldInterfaces = calendarPlugin?.getTitleFieldInterfaces;
+    const previousTitleFieldInterfaces = calendarPlugin?.titleFieldInterfaces;
+
+    try {
+      calendarPlugin.getTitleFieldInterfaces = () => ['input', 'select', 'phone', 'email', 'radioGroup', 'sequence'];
+
+      const sequenceCollectionName = `calendar_sequence_events_${uid()}`;
+      await rootAgent.resource('collections').create({
+        values: {
+          name: sequenceCollectionName,
+          title: 'Calendar sequence events',
+          createdAt: false,
+          updatedAt: false,
+          timestamps: false,
+          fields: [
+            {
+              name: 'eventCode',
+              type: 'string',
+              interface: 'sequence',
+            },
+            {
+              name: 'startsAt',
+              type: 'date',
+              interface: 'datetime',
+            },
+          ],
+        },
+      });
+
+      const page = await createPage(rootAgent, {
+        title: 'Calendar sequence page',
+        tabTitle: 'Calendar sequence tab',
+      });
+      const calendar = await addBlockData(rootAgent, {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'calendar',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: sequenceCollectionName,
+        },
+      });
+
+      const configureRes = await rootAgent.resource('flowSurfaces').configure({
+        values: {
+          target: {
+            uid: calendar.uid,
+          },
+          changes: {
+            titleField: 'eventCode',
+          },
+        },
+      });
+      expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+
+      const calendarReadback = await getSurface(rootAgent, {
+        uid: calendar.uid,
+      });
+      expect(calendarReadback.tree.props?.fieldNames?.title).toBe('eventCode');
+    } finally {
+      if (typeof previousGetTitleFieldInterfaces === 'function') {
+        calendarPlugin.getTitleFieldInterfaces = previousGetTitleFieldInterfaces;
+      } else {
+        delete calendarPlugin.getTitleFieldInterfaces;
+      }
+      if (typeof previousTitleFieldInterfaces !== 'undefined') {
+        calendarPlugin.titleFieldInterfaces = previousTitleFieldInterfaces;
+      } else {
+        delete calendarPlugin.titleFieldInterfaces;
+      }
+    }
+  });
+
+  it('should support calendar actions and reject unsupported table-only actions', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar action page',
+      tabTitle: 'Calendar action tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+
+    for (const actionType of ['today', 'turnPages', 'title', 'selectView', 'refresh', 'js', 'triggerWorkflow']) {
+      const response = await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: calendar.uid,
+          },
+          type: actionType,
+        },
+      });
+      expect(response.status, `${actionType}: ${readErrorMessage(response)}`).toBe(200);
+    }
+
+    const invalidTableOnlyAction = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        type: 'bulkDelete',
+      },
+    });
+    expect(invalidTableOnlyAction.status).toBe(400);
+    expect(readErrorMessage(invalidTableOnlyAction)).toContain(
+      `flowSurfaces addAction 'bulkDelete' is not allowed under 'CalendarBlockModel'`,
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(_.castArray(readback.tree.subModels?.actions || []).map((item: any) => item.use)).toEqual([
+      'CalendarTodayActionModel',
+      'CalendarNavActionModel',
+      'CalendarTitleActionModel',
+      'CalendarViewSelectActionModel',
+      'RefreshActionModel',
+      'JSCollectionActionModel',
+      'CollectionTriggerWorkflowActionModel',
+    ]);
+  });
+
+  it('should reject direct calendar main block fields fieldGroups and recordActions in compose', async () => {
+    const invalidCases = [
+      {
+        key: 'fields',
+        payload: {
+          fields: ['title'],
+        },
+        message: 'calendar does not support fields[] on the main block',
+      },
+      {
+        key: 'fieldGroups',
+        payload: {
+          fieldGroups: [
+            {
+              title: 'Event fields',
+              fields: ['title'],
+            },
+          ],
+        },
+        message: 'calendar does not support fieldGroups[] on the main block',
+      },
+      {
+        key: 'recordActions',
+        payload: {
+          recordActions: ['view'],
+        },
+        message: 'calendar does not support recordActions[] on the main block',
+      },
+    ];
+
+    for (const item of invalidCases) {
+      const page = await createPage(rootAgent, {
+        title: `Invalid calendar compose ${item.key}`,
+        tabTitle: `Invalid calendar compose ${item.key}`,
+      });
+      const composeRes = await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'calendar',
+              type: 'calendar',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'calendar_events',
+              },
+              ...item.payload,
+            },
+          ],
+        },
+      });
+      expect(composeRes.status).toBe(400);
+      expect(readErrorMessage(composeRes)).toContain(item.message);
+      expect(readErrorMessage(composeRes)).toMatch(/quick-create or event-view popup host|event-view popup host/);
+    }
+  });
+
+  it('should build event fields under calendar hidden quick-create and event-view popup hosts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar popup host page',
+      tabTitle: 'Calendar popup host tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+
+    const quickCreateForm = await addBlockData(rootAgent, {
+      target: {
+        uid: `${calendar.uid}-quickCreateAction`,
+      },
+      type: 'createForm',
+      resource: {
+        binding: 'currentCollection',
+      },
+    });
+    await addBlockData(rootAgent, {
+      target: {
+        uid: `${calendar.uid}-eventViewAction`,
+      },
+      type: 'details',
+      resource: {
+        binding: 'currentRecord',
+      },
+    });
+    const quickTitleField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: quickCreateForm.uid,
+          },
+          fieldPath: 'title',
+        },
+      }),
+    );
+    expect(quickTitleField.uid).toBeTruthy();
+
+    const calendarReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    const quickCreateBlock =
+      calendarReadback.tree.subModels?.quickCreateAction?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid
+        ?.subModels?.items?.[0];
+    const eventViewBlock =
+      calendarReadback.tree.subModels?.eventViewAction?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid
+        ?.subModels?.items?.[0];
+    expect(quickCreateBlock).toMatchObject({
+      use: 'CreateFormModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+          },
+        },
+      },
+    });
+    expect(eventViewBlock).toMatchObject({
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+            filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+          },
+        },
+      },
+    });
+  });
+
+  it('should allow filter forms to target calendar blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar filter target page',
+      tabTitle: 'Calendar filter target tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+    });
+    const filterForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'filterForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: '',
+      },
+    });
+    const filterField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: filterForm.uid,
+          },
+          fieldPath: 'title',
+          collectionName: 'calendar_events',
+          defaultTargetUid: calendar.uid,
+        },
+      }),
+    );
+    expect(filterField.uid).toBeTruthy();
+
+    const readback = await getSurface(rootAgent, {
+      uid: filterForm.uid,
+    });
+    const firstFilterItem = readback.tree.subModels?.grid?.subModels?.items?.[0];
+    expect(firstFilterItem?.stepParams?.filterFormItemSettings?.init).toMatchObject({
+      defaultTargetUid: calendar.uid,
+      filterField: {
+        name: 'title',
+      },
+    });
   });
 
   it('should only expose addChild in target-specific catalog when a table uses a tree collection with treeTable enabled', async () => {
@@ -1271,6 +1915,91 @@ describe('flowSurfaces catalog + compose contract', () => {
       row3: [24],
       row4: [24],
     });
+  });
+
+  it('should auto-inject submit into create and edit forms during compose without duplicating explicit submit', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose default submit page',
+      tabTitle: 'Compose default submit tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'createAuto',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['username'],
+          },
+          {
+            key: 'editWithJs',
+            type: 'editForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['nickname'],
+            actions: ['js'],
+          },
+          {
+            key: 'createExplicit',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: ['email'],
+            actions: ['submit', 'js'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const createAutoBlock = getComposeBlock(composed, 'createAuto');
+    const editWithJsBlock = getComposeBlock(composed, 'editWithJs');
+    const createExplicitBlock = getComposeBlock(composed, 'createExplicit');
+    expect(createAutoBlock.uid).toBeTruthy();
+    expect(editWithJsBlock.uid).toBeTruthy();
+    expect(createExplicitBlock.uid).toBeTruthy();
+
+    expect(_.castArray(createAutoBlock.actions || []).map((item: any) => item?.type)).toEqual(['submit']);
+    expect(_.castArray(editWithJsBlock.actions || []).map((item: any) => item?.type)).toEqual(['submit', 'js']);
+    expect(_.castArray(createExplicitBlock.actions || []).map((item: any) => item?.type)).toEqual(['submit', 'js']);
+
+    const createAutoReadback = await getSurface(rootAgent, {
+      uid: createAutoBlock.uid,
+    });
+    const editWithJsReadback = await getSurface(rootAgent, {
+      uid: editWithJsBlock.uid,
+    });
+    const createExplicitReadback = await getSurface(rootAgent, {
+      uid: createExplicitBlock.uid,
+    });
+
+    expect(_.castArray(createAutoReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FormSubmitActionModel',
+    ]);
+
+    const editWithJsUses = _.castArray(editWithJsReadback.tree.subModels?.actions || []).map((item: any) => item?.use);
+    expect(editWithJsUses[0]).toBe('FormSubmitActionModel');
+    expect(editWithJsUses.filter((item: any) => item === 'FormSubmitActionModel')).toHaveLength(1);
+    expect(editWithJsUses).toHaveLength(2);
+
+    const createExplicitUses = _.castArray(createExplicitReadback.tree.subModels?.actions || []).map(
+      (item: any) => item?.use,
+    );
+    expect(createExplicitUses[0]).toBe('FormSubmitActionModel');
+    expect(createExplicitUses.filter((item: any) => item === 'FormSubmitActionModel')).toHaveLength(1);
+    expect(createExplicitUses).toHaveLength(2);
   });
 
   it('should compose a list block with item fields block actions and record actions', async () => {
@@ -2330,7 +3059,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitAddNewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Create employee');
-    expect(implicitAddNewPopupTab?.props?.title).toBe('Add new');
+    expect(implicitAddNewPopupTab?.props?.title).toBe('{{t("Add new")}}');
     expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
     expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -2381,7 +3110,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitViewSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Inspect employee');
-    expect(implicitViewPopupTab?.props?.title).toBe('Details');
+    expect(implicitViewPopupTab?.props?.title).toBe('{{t("Details")}}');
     expect(implicitViewPopupBlock?.use).toBe('DetailsBlockModel');
     expect(implicitViewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
 
@@ -2395,7 +3124,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitEditSurface.tree.stepParams?.popupSettings?.openView?.title).toBe('Modify employee');
-    expect(implicitEditPopupTab?.props?.title).toBe('Edit');
+    expect(implicitEditPopupTab?.props?.title).toBe('{{t("Edit")}}');
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
     expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(

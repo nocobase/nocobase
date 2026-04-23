@@ -125,6 +125,36 @@ export type FlowSurfaceApplyBlueprintFieldGroupSpec = {
   fields: FlowSurfaceApplyBlueprintFieldSpec[];
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFieldGroupSpec = {
+  key?: string;
+  title: string;
+  fields: string[];
+};
+
+export type FlowSurfaceApplyBlueprintDefaultPopupName = {
+  name: string;
+  description: string;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultPopupActionMap = {
+  view?: FlowSurfaceApplyBlueprintDefaultPopupName;
+  addNew?: FlowSurfaceApplyBlueprintDefaultPopupName;
+  edit?: FlowSurfaceApplyBlueprintDefaultPopupName;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultPopups = FlowSurfaceApplyBlueprintDefaultPopupActionMap & {
+  associations?: Record<string, FlowSurfaceApplyBlueprintDefaultPopupActionMap>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultCollection = {
+  fieldGroups?: FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[];
+  popups?: FlowSurfaceApplyBlueprintDefaultPopups;
+};
+
+export type FlowSurfaceApplyBlueprintDefaults = {
+  collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
+};
+
 export type FlowSurfaceApplyBlueprintActionObjectSpec = {
   key?: string;
   type: string;
@@ -166,6 +196,7 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   fields?: FlowSurfaceApplyBlueprintFieldSpec[];
   fieldGroups?: FlowSurfaceApplyBlueprintFieldGroupSpec[];
   fieldsLayout?: FlowSurfaceApplyBlueprintLayout;
+  defaultFilter?: Record<string, any>;
   actions?: FlowSurfaceApplyBlueprintActionSpec[];
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
   script?: string;
@@ -191,6 +222,7 @@ export type FlowSurfaceApplyBlueprintDocument = {
   target?: FlowSurfaceApplyBlueprintTarget;
   navigation?: FlowSurfaceApplyBlueprintNavigation;
   page?: FlowSurfaceApplyBlueprintPage;
+  defaults?: FlowSurfaceApplyBlueprintDefaults;
   tabs: FlowSurfaceApplyBlueprintTabDocument[];
   assets: FlowSurfaceApplyBlueprintAssets;
   reaction?: FlowSurfaceApplyBlueprintReaction;

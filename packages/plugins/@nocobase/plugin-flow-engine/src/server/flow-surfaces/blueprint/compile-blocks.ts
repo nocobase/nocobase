@@ -14,12 +14,23 @@ import {
   mergeFlowSurfaceDefaultBlockActions,
   type FlowSurfaceDefaultBlockActionDescriptor,
 } from '../default-block-actions';
+import {
+  backfillFlowSurfaceFilterActionDefaultFilter,
+  normalizeFlowSurfacePublicBlockDefaultFilter,
+} from '../public-data-surface-default-filter';
+import {
+  FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
+  attachFlowSurfaceApplyBlueprintPopupDefaults,
+  buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+} from './defaults';
 import type { FlowSurfaceResourceBindingKey } from '../types';
 import type {
   FlowSurfaceApplyBlueprintActionSpec,
   FlowSurfaceApplyBlueprintAssets,
   FlowSurfaceApplyBlueprintBlockResource,
   FlowSurfaceApplyBlueprintBlockSpec,
+  FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDocument,
   FlowSurfaceApplyBlueprintFieldGroupSpec,
   FlowSurfaceApplyBlueprintFieldObjectSpec,
@@ -51,6 +62,7 @@ type FlowSurfaceCompiledPopup = {
 
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
+  'calendar',
   'createForm',
   'editForm',
   'details',
@@ -79,6 +91,7 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'fields',
   'fieldGroups',
   'fieldsLayout',
+  'defaultFilter',
   'actions',
   'recordActions',
   'script',
@@ -147,6 +160,7 @@ const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'updateRecord',
   'duplicate',
 ]);
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES = new Set(['addNew', 'view', 'edit']);
 const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
 const APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR =
   "type 'addChild' must be authored under recordActions and is only valid when the live target catalog.recordActions exposes it for a tree collection table with treeTable enabled";
@@ -165,6 +179,27 @@ function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, contex
     return;
   }
   throwBadRequest(`${context}.fieldsLayout is only supported on createForm, editForm, details or filterForm`);
+}
+
+function assertApplyBlueprintCalendarMainContent(block: Record<string, any>, context: string) {
+  if (readOptionalString(block.type) !== 'calendar') {
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fields')) {
+    throwBadRequest(
+      `${context}.fields is not supported on calendar main blocks; add event fields under the quick-create or event-view popup host instead`,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fieldGroups')) {
+    throwBadRequest(
+      `${context}.fieldGroups is not supported on calendar main blocks; add grouped fields under the quick-create or event-view popup host instead`,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
+    throwBadRequest(
+      `${context}.recordActions is not supported on calendar main blocks; configure event actions inside the event-view popup host instead`,
+    );
+  }
 }
 
 function assertApplyBlueprintBlockType(type: string | undefined, context: string) {
@@ -770,11 +805,29 @@ function buildCompiledFieldKeyMap(
   return fieldKeysByLocalKey;
 }
 
+function shouldAttachDefaultPopupMetadata(
+  popup: FlowSurfaceApplyBlueprintPopup | undefined,
+  itemType?: string,
+  options: { autoRelationField?: boolean } = {},
+) {
+  return (
+    !_.isUndefined(popup) || options.autoRelationField || APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(itemType || '')
+  );
+}
+
+function attachCompiledPopupDefaults(
+  popup: Record<string, any> | undefined,
+  metadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+) {
+  return attachFlowSurfaceApplyBlueprintPopupDefaults(popup, metadata);
+}
+
 function compilePopup(
   popup: FlowSurfaceApplyBlueprintPopup | undefined,
   scopePrefix: string,
   assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
+  defaults?: FlowSurfaceApplyBlueprintDefaults,
   options: {
     ownerActionType?: string;
   } = {},
@@ -815,9 +868,6 @@ function compilePopup(
   if (saveAsTemplate && template) {
     throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
   }
-  if (saveAsTemplate && !_.isUndefined(tryTemplate)) {
-    throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.tryTemplate`);
-  }
   if (template) {
     return {
       popup: {
@@ -831,7 +881,7 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
-  if (saveAsTemplate && !popupBlocks.length) {
+  if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true) {
     throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
   }
   const compiledBlocks = popupBlocks.length
@@ -840,6 +890,7 @@ function compilePopup(
         scopePrefix,
         assets,
         `${context}.blocks`,
+        defaults,
         collectReferencedBlockKeys(popup.layout, `${context}.layout`),
       )
     : { blocks: [], blockKeysByLocalKey: new Map<string, string>() };
@@ -888,6 +939,8 @@ function compileField(
   assets: FlowSurfaceApplyBlueprintAssets,
   localBlockKeys: Map<string, string>,
   context: string,
+  popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  defaults?: FlowSurfaceApplyBlueprintDefaults,
 ) {
   if (typeof input === 'string') {
     const fieldPath = assertNonEmptyString(input, `${context}[${index}]`);
@@ -895,6 +948,9 @@ function compileField(
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, fieldPath), `${context}[${index}]`),
       fieldPath,
       __autoPopupForRelationField: true,
+      ...(popupDefaultsMetadata
+        ? { [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: _.cloneDeep(popupDefaultsMetadata) }
+        : {}),
     };
   }
   if (!_.isPlainObject(input)) {
@@ -919,8 +975,11 @@ function compileField(
   if (readOptionalString(input.label) && _.isUndefined(settings.label)) {
     settings.label = readOptionalString(input.label);
   }
-  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`);
+  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults);
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
+  const popup = shouldAttachDefaultPopupMetadata(input.popup, undefined)
+    ? attachCompiledPopupDefaults(popupResult.popup, popupDefaultsMetadata)
+    : popupResult.popup;
   return buildDefinedPayload({
     key,
     fieldPath,
@@ -929,7 +988,7 @@ function compileField(
     type: syntheticType,
     target: resolveTargetBlockKey(input.target, localBlockKeys, `${context}[${index}].target`),
     settings: Object.keys(settings).length ? settings : undefined,
-    popup: popupResult.popup,
+    popup,
   });
 }
 
@@ -939,12 +998,17 @@ function compileAction(
   scopePrefix: string,
   assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
+  popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  defaults?: FlowSurfaceApplyBlueprintDefaults,
 ) {
   if (typeof input === 'string') {
     const type = assertNonEmptyString(input, `${context}[${index}]`);
     return {
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, `${type}_${index + 1}`), `${context}[${index}]`),
       type,
+      ...(APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(type)
+        ? { popup: attachCompiledPopupDefaults(undefined, popupDefaultsMetadata) }
+        : {}),
     };
   }
   if (!_.isPlainObject(input)) {
@@ -958,15 +1022,18 @@ function compileAction(
   if (readOptionalString(input.title) && _.isUndefined(settings.title)) {
     settings.title = readOptionalString(input.title);
   }
-  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, {
+  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
     ownerActionType: type,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
+  const popup = shouldAttachDefaultPopupMetadata(input.popup, type)
+    ? attachCompiledPopupDefaults(popupResult.popup, popupDefaultsMetadata)
+    : popupResult.popup;
   return buildDefinedPayload({
     key,
     type,
     settings: Object.keys(settings).length ? settings : undefined,
-    popup: popupResult.popup,
+    popup,
   });
 }
 
@@ -975,14 +1042,19 @@ function compileInjectedDefaultAction(
   scopePrefix: string,
   context: string,
   index: number,
+  popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 ) {
+  const descriptorPopup = descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined;
+  const popup = shouldAttachDefaultPopupMetadata(descriptorPopup, descriptor.type)
+    ? attachCompiledPopupDefaults(descriptorPopup, popupDefaultsMetadata)
+    : undefined;
   return buildDefinedPayload({
     key: normalizeFlowSurfaceComposeKey(
       buildScopedKey(scopePrefix, `${descriptor.type}_default_${index + 1}`),
       `${context}[${index}]`,
     ),
     type: descriptor.type,
-    popup: descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined,
+    popup,
   });
 }
 
@@ -991,16 +1063,19 @@ function compileBlocks(
   scopePrefix: string,
   assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
+  defaults?: FlowSurfaceApplyBlueprintDefaults,
   requiredExplicitBlockKeys: Set<string> = new Set(),
 ): FlowSurfaceCompiledBlocks {
   const blockKeysByLocalKey = new Map<string, string>();
   const referencedBlockKeys = new Set<string>(requiredExplicitBlockKeys);
   const rawBlocks = _.castArray(input || []);
+  const popupDefaultsMetadata = buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata(defaults);
 
   rawBlocks.forEach((block, index) => {
     if (!_.isPlainObject(block)) {
       throwBadRequest(`${context}[${index}] must be an object`);
     }
+    assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
     fields.forEach((field: any, fieldIndex: number) => {
       if (typeof field?.target !== 'string' || !field.target.trim()) {
@@ -1020,6 +1095,7 @@ function compileBlocks(
     assertApplyBlueprintFieldsLayoutHost(block, `${context}[${index}]`);
     assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
     assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
+    assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     const explicitKey = readString(block.key);
     const fallback = block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`;
     const localKey = normalizeBlueprintLocalKey(block.key, fallback, `${context}[${index}].key`);
@@ -1050,10 +1126,25 @@ function compileBlocks(
     if (readOptionalString(block.title) && _.isUndefined(settings.title)) {
       settings.title = readOptionalString(block.title);
     }
+    const blockType = readOptionalString(block.type);
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
+    const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
+      blockType,
+      template,
+      path: blockContext,
+    });
     const fieldInputs = resolveBlockFieldInputs(block, blockContext);
     const fields = fieldInputs.map((field, fieldIndex) =>
-      compileField(field, fieldIndex, key, assets, blockKeysByLocalKey, `${blockContext}.fields`),
+      compileField(
+        field,
+        fieldIndex,
+        key,
+        assets,
+        blockKeysByLocalKey,
+        `${blockContext}.fields`,
+        popupDefaultsMetadata,
+        defaults,
+      ),
     );
     const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
       ? compileScopedLayout(
@@ -1069,17 +1160,17 @@ function compileBlocks(
       : buildAutoCompiledFieldsLayout(fields, readOptionalString(block.type));
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
     const explicitActions = actions.map((action, actionIndex) =>
-      compileAction(action, actionIndex, key, assets, `${blockContext}.actions`),
+      compileAction(action, actionIndex, key, assets, `${blockContext}.actions`, popupDefaultsMetadata, defaults),
     );
     const explicitRecordActions = recordActions.map((action, actionIndex) =>
-      compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`),
+      compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`, popupDefaultsMetadata, defaults),
     );
     const injectedActionIndexes = {
       actions: explicitActions.length,
       recordActions: explicitRecordActions.length,
     };
     const mergedActions = mergeFlowSurfaceDefaultBlockActions({
-      blockType: readOptionalString(block.type),
+      blockType,
       template,
       actions: explicitActions,
       recordActions: explicitRecordActions,
@@ -1089,18 +1180,23 @@ function compileBlocks(
           key,
           `${blockContext}.${descriptor.scope}`,
           injectedActionIndexes[descriptor.scope]++,
+          popupDefaultsMetadata,
         ),
     });
+    const actionsWithDefaultFilter = backfillFlowSurfaceFilterActionDefaultFilter(
+      mergedActions.actions,
+      blockDefaultFilter,
+    );
     return buildDefinedPayload({
       key,
-      type: readOptionalString(block.type),
+      type: blockType,
       resource: buildBlockResource(block, blockContext),
       template,
       settings: Object.keys(settings).length ? settings : undefined,
-      fields,
-      fieldsLayout,
-      actions: mergedActions.actions,
-      recordActions: mergedActions.recordActions,
+      fields: blockType === 'calendar' ? undefined : fields,
+      fieldsLayout: blockType === 'calendar' ? undefined : fieldsLayout,
+      actions: actionsWithDefaultFilter,
+      recordActions: blockType === 'calendar' ? undefined : mergedActions.recordActions,
     });
   });
 
@@ -1126,6 +1222,7 @@ export function compileTabComposeValues(
     tab.key,
     document.assets,
     blocksPath,
+    document.defaults,
     collectReferencedBlockKeys(tab.layout, layoutPath),
   );
   const layout = compileLayout(
