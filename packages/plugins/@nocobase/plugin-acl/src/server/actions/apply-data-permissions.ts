@@ -111,6 +111,11 @@ async function normalizeAction(options: {
     });
   }
 
+  // If no scope binding provided, default to null (all records)
+  if (scopeId === undefined) {
+    scopeId = null;
+  }
+
   const normalized = {
     name,
     fields: normalizeFields(options.action.fields),

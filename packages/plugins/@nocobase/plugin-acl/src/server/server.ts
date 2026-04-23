@@ -204,7 +204,6 @@ export class PluginACLServer extends Plugin {
       'roles.dataSourceResources:update',
       guardRolesDataSourceResourcesUpdate,
     );
-
     this.app.resourcer.registerActionHandler(`users:setDefaultRole`, setDefaultRole);
 
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {

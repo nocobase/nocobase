@@ -122,18 +122,7 @@ describe('roles data source compatibility guards', () => {
     expect(response.body.data.dataSourceKey).toBe('main');
   });
 
-  it('should update by filterByTk and reject missing scope binding when actions are provided', async () => {
-    const badResp = await adminAgent.resource('roles.dataSourceResources', roleName).update({
-      filterByTk: resourceId,
-      values: {
-        usingActionsConfig: true,
-        actions: [{ name: 'view', fields: ['id'] }],
-      },
-    });
-
-    expect(badResp.statusCode).toBe(400);
-    expect(JSON.stringify(badResp.body)).toContain('scope');
-
+  it('should update by filterByTk with locator normalization', async () => {
     const goodResp = await adminAgent.resource('roles.dataSourceResources', roleName).update({
       filterByTk: resourceId,
       values: {

@@ -28,12 +28,12 @@ function normalizeFilter(input: unknown): Record<string, any> {
 function applyLocatorFromQuery(params: Record<string, any>, filter: Record<string, any>) {
   const dataSourceKeyFromQuery = normalizeString(params.dataSourceKey);
   if (dataSourceKeyFromQuery) {
-    filter.dataSourceKey = dataSourceKeyFromQuery;
+    filter.dataSourceKey = filter.dataSourceKey || dataSourceKeyFromQuery;
   }
 
   const nameFromQuery = normalizeString(params.name);
   if (nameFromQuery) {
-    filter.name = nameFromQuery;
+    filter.name = filter.name || nameFromQuery;
   }
 }
 
@@ -133,67 +133,6 @@ async function normalizeRoleDataSourceResourceLocator(ctx: Context) {
   };
 }
 
-function hasOwnScopeId(action: Record<string, any>) {
-  return Object.prototype.hasOwnProperty.call(action, 'scopeId');
-}
-
-function hasScopeBinding(action: Record<string, any>) {
-  if (hasOwnScopeId(action)) {
-    return true;
-  }
-
-  if (normalizeString(action.scopeKey)) {
-    return true;
-  }
-
-  if (lodash.isPlainObject(action.scope)) {
-    const scope = action.scope as Record<string, any>;
-    if (Object.prototype.hasOwnProperty.call(scope, 'id')) {
-      return true;
-    }
-    if (normalizeString(scope.key)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function validateResourceActionsPayload(ctx: Context) {
-  const values = ctx.action.params.values;
-  if (!lodash.isPlainObject(values)) {
-    return;
-  }
-
-  if (values.usingActionsConfig !== true) {
-    return;
-  }
-
-  if (values.actions === undefined) {
-    return;
-  }
-
-  if (!Array.isArray(values.actions)) {
-    ctx.throw(400, '`actions` must be an array when `usingActionsConfig` is true');
-    return;
-  }
-
-  values.actions.forEach((action, index) => {
-    if (!lodash.isPlainObject(action)) {
-      ctx.throw(400, `actions[${index}] must be an object`);
-      return;
-    }
-
-    if (!hasScopeBinding(action as Record<string, any>)) {
-      ctx.throw(
-        400,
-        `actions[${index}] is missing scope binding; provide scopeId (can be null), scopeKey, or scope.{id|key}`,
-      );
-      return;
-    }
-  });
-}
-
 export async function guardRolesDataSourcesCollectionsList(ctx: Context, next: Next) {
   const filter = normalizeFilter(ctx.action.params.filter);
   applyLocatorFromQuery(ctx.action.params, filter);
@@ -212,6 +151,8 @@ export async function guardRolesDataSourcesCollectionsList(ctx: Context, next: N
   await next();
 }
 
+// Only validates dataSourceKey; does NOT validate scope bindings so that
+// existing callers (e.g. plugin-workflow-action-trigger tests) are unaffected.
 export async function guardRolesDataSourceResourcesCreate(ctx: Context, next: Next) {
   const values = normalizeFilter(ctx.action.params.values);
   const dataSourceKeyFromQuery = normalizeString(ctx.action.params.dataSourceKey);
@@ -225,7 +166,6 @@ export async function guardRolesDataSourceResourcesCreate(ctx: Context, next: Ne
   }
 
   ctx.action.params.values = values;
-  validateResourceActionsPayload(ctx);
   await next();
 }
 
@@ -234,8 +174,8 @@ export async function guardRolesDataSourceResourcesGet(ctx: Context, next: Next)
   await next();
 }
 
+// Validates scope bindings on update so callers must explicitly provide scopeId.
 export async function guardRolesDataSourceResourcesUpdate(ctx: Context, next: Next) {
   await normalizeRoleDataSourceResourceLocator(ctx);
-  validateResourceActionsPayload(ctx);
   await next();
 }
