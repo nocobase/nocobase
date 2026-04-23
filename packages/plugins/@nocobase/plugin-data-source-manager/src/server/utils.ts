@@ -11,14 +11,20 @@ import { DataSourceModel } from './models/data-source';
 import { Application } from '@nocobase/server';
 import PluginDataSourceManagerServer from './plugin';
 
+const nullableOverrideConfig: Record<string, string[]> = {
+  sort: ['scopeKey'],
+};
+
 export function mergeOptions(fieldOptions, modelOptions) {
   const newOptions = {
     ...fieldOptions,
     ...modelOptions,
   };
+  const fieldType = modelOptions.type || fieldOptions.type;
+  const nullableOverrideKeys = nullableOverrideConfig[fieldType] || [];
 
   for (const key of Object.keys(modelOptions)) {
-    if (modelOptions[key] === null && fieldOptions[key]) {
+    if (modelOptions[key] === null && fieldOptions[key] && !nullableOverrideKeys.includes(key)) {
       newOptions[key] = fieldOptions[key];
     }
   }
