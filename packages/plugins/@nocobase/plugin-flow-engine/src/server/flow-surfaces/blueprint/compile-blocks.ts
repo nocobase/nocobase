@@ -15,6 +15,7 @@ import {
   type FlowSurfaceDefaultBlockActionDescriptor,
 } from '../default-block-actions';
 import {
+  assertFlowSurfaceConcreteDefaultFilterItem,
   backfillFlowSurfaceFilterActionDefaultFilter,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from '../public-data-surface-default-filter';
@@ -1151,6 +1152,11 @@ function compileBlocks(
       template,
       path: blockContext,
     });
+    if (!_.isUndefined(blockDefaultFilter)) {
+      assertFlowSurfaceConcreteDefaultFilterItem('applyBlueprint', blockDefaultFilter, {
+        path: blockContext,
+      });
+    }
     const fieldInputs = resolveBlockFieldInputs(block, blockContext);
     const fields = fieldInputs.map((field, fieldIndex) =>
       compileField(

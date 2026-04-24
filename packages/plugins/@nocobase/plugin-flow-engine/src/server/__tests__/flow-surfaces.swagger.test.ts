@@ -473,6 +473,7 @@ describe('flowSurfaces swagger', () => {
       'action-level value wins',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('calendar');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('kanban');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
       'at least one concrete filter item',
     );
@@ -488,6 +489,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.enum).toEqual([
       'table',
       'calendar',
+      'kanban',
       'createForm',
       'editForm',
       'details',
@@ -870,6 +872,7 @@ describe('flowSurfaces swagger', () => {
       '`select / subForm / bulkEditForm` scene',
     );
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain('block-level `defaultFilter`');
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain('compatibility-tolerant');
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
     expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.key).toBe('filter');
     const filterTableBlock = composeRequest.examples.filterTable.value.blocks[1];
@@ -924,6 +927,15 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
+      'compatibility-tolerant',
+    );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
+      'action-level value wins',
+    );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).not.toContain(
+      'at least one concrete filter item',
+    );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.actions.description).toContain('Block-level actions');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
@@ -1179,6 +1191,7 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
       'defaultActionSettings.filter.defaultFilter',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain('`kanban`');
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
     expect(
@@ -1322,6 +1335,7 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain(
       'defaultActionSettings.filter.defaultFilter',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain('`kanban`');
     expect(addBlocksRequest.example.blocks).toHaveLength(2);
     expect(addBlocksRequest.example.blocks[0].type).toBe('table');
     expect(addBlocksRequest.example.blocks[1].type).toBe('markdown');

@@ -576,6 +576,63 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   });
 
+  it('should reject empty block-level defaultFilter groups in applyBlueprint data blocks', async () => {
+    for (const block of [
+      {
+        key: 'employeesTable',
+        type: 'table',
+        collection: 'employees',
+        defaultFilter: {},
+        fields: ['nickname'],
+      },
+      {
+        key: 'eventsCalendar',
+        type: 'calendar',
+        collection: 'calendar_events',
+        defaultFilter: null,
+      },
+      {
+        key: 'tasksKanban',
+        type: 'kanban',
+        collection: 'tasks',
+        defaultFilter: {
+          logic: '$and',
+          items: [],
+        },
+        fields: ['title'],
+      },
+    ]) {
+      const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          mode: 'create',
+          navigation: {
+            item: {
+              title: `Empty default filter ${block.key}`,
+            },
+          },
+          page: {
+            title: `Empty default filter ${block.key}`,
+          },
+          tabs: [
+            {
+              title: 'Overview',
+              blocks: [block],
+              layout: {
+                rows: [[block.key]],
+              },
+            },
+          ],
+        },
+      });
+
+      expect(executeRes.status).toBe(400);
+      const message = readErrorMessage(executeRes);
+      expect(message).toContain('must include at least one concrete filter item');
+      expect(message).toContain('flowSurfaces applyBlueprint tabs[0].blocks[0].defaultFilter');
+      expect(message).not.toContain('flowSurfaces applyBlueprint flowSurfaces applyBlueprint');
+    }
+  });
+
   it('should auto-complete bare relation fields in applyBlueprint with non-empty view popups', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
