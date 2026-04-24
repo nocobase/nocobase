@@ -165,11 +165,14 @@ function getFlowSurfaceWritePayloadMessage(actionName: FlowSurfacesActionName) {
   return `flowSurfaces ${actionName} ${noun} must be an object`;
 }
 
-function isFlowSurfaceWriteBodyParserShapeError(error: any) {
+type JsonBodyParserSyntaxError = SyntaxError & { status?: number };
+
+function isFlowSurfaceWriteBodyParserShapeError(error: unknown) {
+  const parserError = error as JsonBodyParserSyntaxError;
   return (
     error instanceof SyntaxError &&
-    error?.status === 400 &&
-    error?.message === 'invalid JSON, only supports object and array'
+    parserError.status === 400 &&
+    parserError.message === 'invalid JSON, only supports object and array'
   );
 }
 
