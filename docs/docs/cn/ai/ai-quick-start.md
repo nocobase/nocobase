@@ -41,7 +41,7 @@ cd my-nocobase
 
 ## Step 4：运行 nb init --ui
 
-在第三步创建或者选择的工作目录里运行：
+在第三步创建或者选择的工作目录里运行这个命令（该命令默认有 30 分钟超时时间，请不要中途打断，以及不要重复运行）：
 
 ```bash
 nb init --ui
@@ -53,6 +53,7 @@ nb init --ui
 
 注意：
 
+- `nb init --ui` 这个命令超时时间 30 分钟，运行中不能打断。如果用户在 30 分钟内没有完成浏览器里的配置，CLI 会自动退出。这个命令退出前，请不要重复运行。
 - 如果沙箱里 URL 打不开时先提示提权，拒绝后把 URL给用户
 - 用户自己填写浏览器里的安装表单，agent 只负责提示和引导
 - 等待用户在浏览器中完成所有配置。请不要自行帮用户操作和填写任何信息，因为用户可能需要根据自己的环境和需求做出选择。
@@ -60,30 +61,17 @@ nb init --ui
 ## Step 5：校验结果
 
 ```bash
-nb env list
+nb ps
 ```
 
-确认输出中有已配置的环境，且标记了当前环境（`*`）。
+确认输出中有已配置的环境，以及运行状态。然后提醒用户可以打开正在运行的 NocoBase 实例 URL，用配置的账号、密码登录。
 
-如果用户选择了全新安装，确认应用可访问：访问 `http://localhost:<port>`，默认端口 13000。默认登录账号 `admin@nocobase.com`，密码 `admin123`。
 
 ## Step 6：完成
 
-告诉用户安装已完成。
+告诉用户安装已完成。如果用户是使用图形化界面的 AI Agent（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。这些都需要告知用户。
 
-检查项目目录下 `.agent/skills` 是否包含 nocobase 相关的 Skills。如果没有，询问用户是否安装 NocoBase Skills（方便后续让 AI Agent 操作 NocoBase CLI）。如果用户选择安装，在第三步的工作目录里执行：
-
-```bash
-npx skills add nocobase/skills -y
-```
-
-如果用户选择不安装，跳过即可，但是需要提醒用户，如果不安装 Skills 可能会导致后续 AI Agent 操作 NocoBase 受限。
-
-安装了 Skills 的情况下，提示用户需要在第三步的工作目录里重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等），这样 Skills 安装才会生效。
-如果用户是使用图形化界面的 AI Agent（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。这些都需要告知用户。
-
-
-`nb` 的所有命令和参数说明请参阅 [CLI API 参考](../api/cli/cli)。
+`nb` 的所有命令和参数说明请参阅 [NocoBase CLI 参考](../api/cli/cli)。
 
 ## 相关链接
 
@@ -91,5 +79,5 @@ npx skills add nocobase/skills -y
 - [AI 搭建快速开始](../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [安全与审计](../ai-builder/security) — 认证方式、权限控制和操作审计
-- [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
+- [NocoBase CLI 参考](../api/cli/cli) — 所有命令的完整参数说明
 - [NocoBase Skills](https://github.com/nocobase/skills) — AI Agent 领域知识包源码

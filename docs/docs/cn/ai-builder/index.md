@@ -115,20 +115,14 @@ AI 先输出设计方案，确认后一次性搭建完成：
 
 :::tip 提示
 
-如果你已经按照上面的快速开始步骤安装了 NocoBase CLI，`nb init` 过程中会自动安装 Skills，通常不需要手动安装。
+NocoBase CLI 在初始化过程中（`nb init`）会自动安装 Skills，不需要手动安装。
 
 :::
-
-如果需要手动安装所有 Skills：
-
-```bash
-npx skills add nocobase/skills -y
-```
 
 ## 相关链接
 
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
-- [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
+- [NocoBase CLI 参考](../api/cli/cli) — 所有命令的完整参数说明
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [安全与审计](./security) — 鉴权方式、权限控制和操作审计
 - [AI 员工](../ai-employees/index.md) — NocoBase 的智能体能力，支持在业务界面中协作和执行操作

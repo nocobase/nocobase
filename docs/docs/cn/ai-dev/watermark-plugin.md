@@ -29,9 +29,8 @@ keywords: "AI 开发,水印插件,NocoBase 插件,实战案例,AI 编程"
 
 确保你已经：
 
-1. 有一个跑起来的 NocoBase 开发环境
-2. 安装了 NocoBase Skills（`npx skills add nocobase/skills -y`）
-3. 打开了支持 AI Agent 的编辑器（比如 Claude Code、Codex、Cursor 等）
+1. 有一个跑起来的 NocoBase 开发环境（NocoBase CLI 初始化时会自动安装 NocoBase Skills）
+2. 打开了支持 AI Agent 的编辑器（比如 Claude Code、Codex、Cursor 等）
 
 :::warning 注意
 

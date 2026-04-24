@@ -12,7 +12,7 @@ sidebar: false
 现在，NocoBase 全面支持 AI Agent 协同——你可以用自然语言完成数据建模、页面搭建、工作流编排、权限配置，甚至开发自定义插件。无论你使用 Claude Code、Codex、Cursor 还是其他 AI 工具，都可以通过以下两个基础组件与 NocoBase 协同工作：
 
 - **[NocoBase CLI](../api/cli/cli)**——命令行工具（`nb` 命令），负责安装、管理和连接 NocoBase 应用。AI Agent 通过 CLI 执行创建数据表、搭建页面、管理环境等实际操作。
-- **[NocoBase Skills](https://github.com/nocobase/skills)**——领域知识包，让 AI Agent 理解 NocoBase 的配置体系和开发规范。涵盖数据建模、界面配置、工作流管理、权限配置、插件开发等能力域。NocoBase CLI 在初始化过程中（`nb init`）会自动引导安装 Skills，不需要手动安装。
+- **[NocoBase Skills](https://github.com/nocobase/skills)**——领域知识包，让 AI Agent 理解 NocoBase 的配置体系和开发规范。涵盖数据建模、界面配置、工作流管理、权限配置、插件开发等能力域。NocoBase CLI 在初始化过程中（`nb init`）会自动安装 Skills，不需要手动安装。
 
 安装 CLI 并完成初始化后，AI Agent 就能直接操作你的 NocoBase 应用。
 
@@ -70,7 +70,7 @@ nb init --ui
 
 浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：
 
-1. **开始配置** — 设置应用名称（同时作为 CLI 环境名），选择是全新安装还是连接已有应用，勾选是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）
+1. **开始配置** — 设置应用名称（同时作为 CLI 环境名），选择是全新安装还是连接已有应用
 2. **创建应用** — 选择安装方式（Docker / npm / Git）、设置端口等基础配置
 3. **下载应用文件** — 选择来源和版本，下载 NocoBase 源码或镜像
 4. **配置数据库** — 使用内置数据库或配置外部数据库（PostgreSQL、MySQL、MariaDB）
@@ -86,13 +86,7 @@ nb init --ui
 
 #### 第四步：(可选) AI Agent 接入 NocoBase
 
-如果你此时想要 AI Agent 参与操作 NocoBase， 需要确保已经在 CLI 初始化的工作目录里安装了 NocoBase Skills（如果你在第一步的配置里勾选了安装 Skills，则 CLI 会自动帮你安装好）。如果没有安装，可以在 CLI 初始化的目录里执行：
-
-```bash
-npx skills add nocobase/skills -y
-```
-
-然后
+如果你想让 AI Agent 参与操作 NocoBase，你只需要：
 
 1. 进入 CLI 已经初始化的工作目录（如 `my-nocobase`）
 2. 在这个目录下新开或者重启 AI Agent 的会话（如果是桌面端 GUI 的 AI Agent 工具，则需要将 CLI 初始化的目录添加为工作目录），然后就可以让 AI Agent 开始操作 NocoBase 了。
@@ -138,7 +132,7 @@ cd my-nocobase && codex
 
 ### NocoBase CLI 命令参考
 
-如果你已经有 NocoBase 应用在运行，或者已经初始化成功过，想要继续开发、调试或者管理应用，所有 `nb` 命令的完整参数说明请参阅 [CLI 命令参考](../api/cli/cli)。
+如果你已经有 NocoBase 应用在运行，或者已经初始化成功过，想要继续开发、调试或者管理应用，所有 `nb` 命令的完整参数说明请参阅 [NocoBase CLI 命令参考](../api/cli/cli)。
 
 ## 相关链接
 
@@ -146,5 +140,5 @@ cd my-nocobase && codex
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
 - [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断
-- [CLI 命令参考](../api/cli/cli) — 所有命令的完整参数说明
+- [NocoBase CLI 命令参考](../api/cli/cli) — 所有命令的完整参数说明
 - [安装方式和版本对比](../get-started/quickstart) — NocoBase 的不同安装方式和版本通道
