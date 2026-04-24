@@ -14,6 +14,13 @@ import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
+import { applyDataPermissions } from './actions/apply-data-permissions';
+import {
+  guardRolesDataSourceResourcesCreate,
+  guardRolesDataSourceResourcesGet,
+  guardRolesDataSourceResourcesUpdate,
+  guardRolesDataSourcesCollectionsList,
+} from './actions/data-source-compat';
 import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
 import { setDefaultRole } from './actions/user-setDefaultRole';
@@ -181,9 +188,22 @@ export class PluginACLServer extends Plugin {
     this.app.resourcer.define(roleCollectionsResource);
 
     this.app.resourcer.registerActionHandler('roles:setSystemRoleMode', setSystemRoleMode);
+    this.app.resourcer.registerActionHandler('roles:applyDataPermissions', applyDataPermissions);
 
     this.app.resourcer.registerActionHandler('roles:check', checkAction);
-
+    this.app.resourcer.registerPreActionHandler(
+      'roles.dataSourcesCollections:list',
+      guardRolesDataSourcesCollectionsList,
+    );
+    this.app.resourcer.registerPreActionHandler(
+      'roles.dataSourceResources:create',
+      guardRolesDataSourceResourcesCreate,
+    );
+    this.app.resourcer.registerPreActionHandler('roles.dataSourceResources:get', guardRolesDataSourceResourcesGet);
+    this.app.resourcer.registerPreActionHandler(
+      'roles.dataSourceResources:update',
+      guardRolesDataSourceResourcesUpdate,
+    );
     this.app.resourcer.registerActionHandler(`users:setDefaultRole`, setDefaultRole);
 
     this.db.on('users.afterCreateWithAssociations', async (model, options) => {

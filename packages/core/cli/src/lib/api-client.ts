@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { promises as fs } from 'node:fs';
 import { resolveServerRequestTarget } from './env-auth.js';
 
@@ -39,6 +48,19 @@ export interface RawRequestOptions {
   query?: Record<string, any>;
   headers?: Record<string, any>;
   body?: unknown;
+}
+
+function stripUtf8Bom(text: string) {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+function parseJsonInput(raw: string, flagName: string) {
+  const content = stripUtf8Bom(raw);
+  try {
+    return JSON.parse(content);
+  } catch (error: any) {
+    throw new Error(`Invalid JSON for --${flagName}: ${error?.message ?? 'parse failed'}`);
+  }
 }
 
 function normalizeBaseUrl(baseUrl: string) {
@@ -112,6 +134,34 @@ function listProvidedBodyFlags(flags: Record<string, any>, parameters: RequestPa
     .map((parameter) => `--${parameter.flagName}`);
 }
 
+function parseBodyFieldValue(rawValue: any, parameter: RequestParameter) {
+  if (rawValue === undefined) {
+    return undefined;
+  }
+
+  if (parameter.isArray && !parameter.jsonEncoded) {
+    return Array.isArray(rawValue) ? rawValue : rawValue ? [rawValue] : undefined;
+  }
+
+  if (parameter.jsonEncoded || parameter.type === 'object' || parameter.type === 'array') {
+    if (typeof rawValue !== 'string') {
+      return rawValue;
+    }
+
+    const parsed = parseJsonInput(rawValue, parameter.flagName);
+    if (parameter.type === 'array' && !Array.isArray(parsed)) {
+      throw new Error(`--${parameter.flagName} must be a JSON array`);
+    }
+    if (parameter.type === 'object' && (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object')) {
+      throw new Error(`--${parameter.flagName} must be a JSON object`);
+    }
+
+    return parsed;
+  }
+
+  return parseScalarValue(rawValue, parameter.type);
+}
+
 export async function parseBody(flags: Record<string, any>, operation: RequestOperation) {
   const inlineBody = flags.body as string | undefined;
   const bodyFile = flags['body-file'] as string | undefined;
@@ -127,11 +177,11 @@ export async function parseBody(flags: Record<string, any>, operation: RequestOp
   }
 
   if (inlineBody) {
-    return JSON.parse(inlineBody);
+    return parseJsonInput(inlineBody, 'body');
   }
 
   if (bodyFile) {
-    return fs.readFile(bodyFile as string, 'utf8').then((content: string) => JSON.parse(content));
+    return fs.readFile(bodyFile as string, 'utf8').then((content: string) => parseJsonInput(content, 'body-file'));
   }
 
   if (!bodyParameters.length) {
@@ -142,9 +192,7 @@ export async function parseBody(flags: Record<string, any>, operation: RequestOp
 
   for (const parameter of bodyParameters) {
     const rawValue = flags[parameter.flagName];
-    const value = parameter.isArray && !parameter.jsonEncoded
-      ? (Array.isArray(rawValue) ? rawValue : rawValue ? [rawValue] : undefined)
-      : parseScalarValue(rawValue, parameter.type);
+    const value = parseBodyFieldValue(rawValue, parameter);
 
     if (parameter.required && (value === undefined || value === '')) {
       throw new Error(`Missing required body field --${parameter.flagName}`);

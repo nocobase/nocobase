@@ -10,20 +10,36 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
+function resolveCommandName(name: string): string {
+  if (process.platform !== 'win32' || path.extname(name) || name.includes(path.sep)) {
+    return name;
+  }
+
+  if (['npm', 'npx', 'pnpm', 'yarn'].includes(name)) {
+    return `${name}.cmd`;
+  }
+
+  return name;
+}
+
+function resolveCwd(cwd?: string): string {
+  const next = cwd ?? process.cwd();
+  if (path.isAbsolute(next)) {
+    return next;
+  }
+  return path.resolve(process.cwd(), next);
+}
+
 export function run(
   name: string,
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string>; errorName?: string },
 ): Promise<void> {
-  let cwd = options?.cwd ?? process.cwd();
-  if (!path.isAbsolute(cwd)) {
-    cwd = path.resolve(process.cwd(), cwd);
-  }
+  const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   return new Promise((resolve, reject) => {
-    const child = spawn(name, [...args], {
-      stdio: 'inherit',
-      shell: true,
+    const child = spawn(resolveCommandName(name), [...args], {
+      stdio: options?.stdio ?? 'inherit',
       cwd,
       env: {
         ...process.env,
@@ -45,17 +61,80 @@ export function run(
   });
 }
 
+export function commandSucceeds(
+  name: string,
+  args: string[],
+  options?: { cwd?: string; env?: Record<string, string> },
+): Promise<boolean> {
+  const cwd = resolveCwd(options?.cwd);
+  return new Promise((resolve) => {
+    const child = spawn(resolveCommandName(name), [...args], {
+      cwd,
+      env: {
+        ...process.env,
+        ...options?.env,
+      },
+      stdio: 'ignore',
+    });
+
+    child.once('error', () => resolve(false));
+    child.once('close', (code) => resolve(code === 0));
+  });
+}
+
+export function commandOutput(
+  name: string,
+  args: string[],
+  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
+): Promise<string> {
+  const cwd = resolveCwd(options?.cwd);
+  const label = options?.errorName ?? name;
+  return new Promise((resolve, reject) => {
+    const child = spawn(resolveCommandName(name), [...args], {
+      cwd,
+      env: {
+        ...process.env,
+        ...options?.env,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.once('error', reject);
+    child.once('close', (code, signal) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+        return;
+      }
+      if (signal) {
+        reject(new Error(`${label} exited due to signal ${signal}`));
+        return;
+      }
+      const details = stderr.trim() || stdout.trim();
+      reject(new Error(details ? `${label} exited with code ${code}: ${details}` : `${label} exited with code ${code}`));
+    });
+  });
+}
+
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
 export function runNpm(
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
 ): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
 }
 
 export function runNocoBaseCommand(
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
 ): Promise<void> {
   let cwd = options?.cwd ?? process.cwd();
   if (!path.isAbsolute(cwd)) {

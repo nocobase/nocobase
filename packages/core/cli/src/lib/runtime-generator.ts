@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createHash } from 'node:crypto';
 import { loadBuildConfig } from './build-config.js';
 import type { GeneratedOperation, GeneratedParameter } from './generated-command.js';
@@ -214,7 +223,11 @@ function formatFlagExample(parameter: GeneratedParameter) {
     return `--${parameter.flagName}`;
   }
 
-  if (parameter.type === 'object') {
+  if (parameter.type === 'object' || parameter.jsonEncoded) {
+    if (parameter.type === 'array' || parameter.isArray) {
+      return `--${parameter.flagName} '[]'`;
+    }
+
     return `--${parameter.flagName} '{\"key\":\"value\"}'`;
   }
 

@@ -1,9 +1,26 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'vitest';
-import { getEnv, saveAuthConfig, setEnvOauthSession, updateEnvConnection, upsertEnv } from '../lib/auth-store.js';
+import {
+  ensureWorkspaceName,
+  getEnv,
+  loadAuthConfig,
+  saveAuthConfig,
+  setEnvOauthSession,
+  updateEnvConnection,
+  upsertEnv,
+} from '../lib/auth-store.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NOCOBASE_CTL_HOME;
@@ -50,6 +67,35 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
     const env = await getEnv('test', { scope: 'global' });
     assert.equal(env?.auth?.accessToken, 'new-token');
     assert.equal(env?.runtime, undefined);
+  });
+});
+
+test('ensureWorkspaceName stores one workspace-level name outside env entries', async () => {
+  await withTempCliHome(async () => {
+    const first = await ensureWorkspaceName('nb-workspace', { scope: 'global' });
+    const second = await ensureWorkspaceName('nb-other', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    assert.equal(first, 'nb-workspace');
+    assert.equal(second, 'nb-workspace');
+    assert.equal(config.name, 'nb-workspace');
+    assert.deepEqual(config.envs, {});
+  });
+});
+
+test('loadAuthConfig maps the legacy dockerResourcePrefix field to workspace name', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        dockerResourcePrefix: 'nb-legacy',
+        currentEnv: 'default',
+        envs: {},
+      } as Parameters<typeof saveAuthConfig>[0] & { dockerResourcePrefix: string },
+      { scope: 'global' },
+    );
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    assert.equal(config.name, 'nb-legacy');
   });
 });
 

@@ -13,7 +13,7 @@ import { Transactionable } from '@nocobase/database';
 import type Plugin from '../Plugin';
 import type Processor from '../Processor';
 
-import type { FlowNodeModel } from '../types';
+import type { FlowNodeModel, WorkflowModel } from '../types';
 
 export interface IJob {
   status: number;
@@ -42,6 +42,7 @@ export type InstructionInterface = {
     options: Transactionable & { origin?: FlowNodeModel },
   ) => object | Promise<object>;
   validateConfig?: (config: Record<string, any>) => Record<string, string> | null;
+  isAvailable?: (workflow: WorkflowModel, node: FlowNodeModel) => boolean;
   test?: (config: Record<string, any>) => IJob | Promise<IJob>;
 };
 
