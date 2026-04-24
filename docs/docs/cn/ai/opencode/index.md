@@ -78,7 +78,7 @@ OpenCode 通过以下方式与 NocoBase 协同工作：
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@beta
 mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```

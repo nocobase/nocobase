@@ -96,7 +96,7 @@ Help me install NocoBase CLI: https://docs.nocobase.com/en/ai/ai-quick-start.md
 ### Manual Installation
 
 ```bash
-npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@beta
 mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```

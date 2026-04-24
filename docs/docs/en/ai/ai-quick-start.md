@@ -23,7 +23,7 @@ Confirm the user has the following dependencies installed:
 ## Step 2: Install CLI
 
 ```bash
-npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@beta
 ```
 
 Run `nb --version` to confirm successful installation.

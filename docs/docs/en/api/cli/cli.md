@@ -16,7 +16,7 @@ The CLI supports two common initialization approaches:
 ## Installation
 
 ```bash
-npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@beta
 ```
 
 All commands support `nb <command> --help` to view the full parameter description. For a detailed installation guide, see [Quick Start](../../ai/quick-start.md).

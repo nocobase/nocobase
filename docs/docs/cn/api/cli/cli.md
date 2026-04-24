@@ -16,7 +16,7 @@ CLI 支持两种常见的初始化方式：
 ## 安装
 
 ```bash
-npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@beta
 ```
 
 所有命令都支持 `nb <command> --help` 查看完整参数说明。详细安装流程请参阅[快速开始](../../ai/quick-start.md)。

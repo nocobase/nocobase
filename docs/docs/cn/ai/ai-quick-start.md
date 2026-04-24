@@ -23,7 +23,7 @@ sidebar: false
 ## Step 2：安装 CLI
 
 ```bash
-npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@beta
 ```
 
 运行 `nb --version` 确认安装成功。
