@@ -11,6 +11,7 @@ import { throwBadRequest } from './errors';
 import {
   getCollectionFields,
   getCollectionName,
+  getFieldInterface,
   getFieldName,
   resolveFieldFromCollection,
   resolveFieldTargetCollection,
@@ -19,13 +20,12 @@ import {
 export type FlowSurfaceResolvedAssociationTitleField = {
   field: any;
   fieldName: string;
-  source: 'explicit' | 'firstTitleable';
+  source: 'explicit' | 'firstTitleable' | 'relationFieldLabel';
   targetCollection?: any;
 };
 
 const FALLBACK_TITLE_USABLE_INTERFACES = new Set([
   'attachmentURL',
-  'createdAt',
   'date',
   'datetime',
   'datetimeNoTz',
@@ -47,11 +47,13 @@ const FALLBACK_TITLE_USABLE_INTERFACES = new Set([
   'textarea',
   'time',
   'unixTimestamp',
-  'updatedAt',
   'url',
   'uuid',
   'vditor',
 ]);
+
+const LAST_RESORT_TITLE_FIELD_NAMES = new Set(['createdAt', 'updatedAt']);
+const LAST_RESORT_TITLE_FIELD_INTERFACES = new Set(['createdAt', 'updatedAt']);
 
 export function isTitleableCollectionField(field: any) {
   const configured = field?.titleable ?? field?.titleUsable ?? field?.options?.titleable ?? field?.options?.titleUsable;
@@ -83,6 +85,30 @@ export function isTitleableCollectionField(field: any) {
 export function getExplicitCollectionTitleFieldName(collection: any) {
   const explicit = collection?.options?.titleField;
   return typeof explicit === 'string' ? explicit.trim() || undefined : undefined;
+}
+
+function normalizeTitleFieldName(value: any) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized || undefined;
+}
+
+function getAssociationConfiguredLabelFieldName(field: any) {
+  return (
+    normalizeTitleFieldName(field?.uiSchema?.['x-component-props']?.fieldNames?.label) ||
+    normalizeTitleFieldName(field?.options?.uiSchema?.['x-component-props']?.fieldNames?.label)
+  );
+}
+
+function isLastResortTitleField(field: any) {
+  const fieldName = getFieldName(field);
+  if (fieldName && LAST_RESORT_TITLE_FIELD_NAMES.has(fieldName)) {
+    return true;
+  }
+  const fieldInterface = getFieldInterface(field);
+  return !!(fieldInterface && LAST_RESORT_TITLE_FIELD_INTERFACES.has(fieldInterface));
 }
 
 export function assertCollectionTitleFieldExists(collection: any, fieldName: string) {
@@ -124,9 +150,14 @@ export function resolveCollectionSafeTitleField(collection: any): FlowSurfaceRes
     return null;
   }
 
+  const preferredTitleableField =
+    getCollectionFields(collection).find(
+      (field) => !!getFieldName(field) && isTitleableCollectionField(field) && !isLastResortTitleField(field),
+    ) || firstTitleableField;
+
   return {
-    field: firstTitleableField,
-    fieldName: getFieldName(firstTitleableField),
+    field: preferredTitleableField,
+    fieldName: getFieldName(preferredTitleableField),
     source: 'firstTitleable',
     targetCollection: collection,
   };
@@ -148,6 +179,18 @@ export function resolveAssociationSafeTitleField(
   const targetCollection = resolveAssociationTitleFieldTargetCollection(field, dataSourceKey, getCollection);
   if (!targetCollection) {
     return null;
+  }
+  const configuredLabelFieldName = getAssociationConfiguredLabelFieldName(field);
+  if (configuredLabelFieldName) {
+    const configuredLabelField = resolveFieldFromCollection(targetCollection, configuredLabelFieldName);
+    if (configuredLabelField) {
+      return {
+        field: configuredLabelField,
+        fieldName: configuredLabelFieldName,
+        source: 'relationFieldLabel',
+        targetCollection,
+      };
+    }
   }
   const resolved = resolveCollectionSafeTitleField(targetCollection);
   if (!resolved) {
