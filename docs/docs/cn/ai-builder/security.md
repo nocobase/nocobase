@@ -12,7 +12,7 @@ keywords: 'AI 搭建,安全,权限,认证,Token,OAuth,操作记录,审计'
 
 :::
 
-当用户通过 [NocoBase CLI](/get-started/nocobase-cli) 使用 AI Agent 操作 NocoBase 时，需要重点关注认证、权限控制和审计追溯，以确保操作边界清晰、过程可追踪。
+当用户通过 [NocoBase CLI](../ai/quick-start.md) 使用 AI Agent 操作 NocoBase 时，需要重点关注认证、权限控制和审计追溯，以确保操作边界清晰、过程可追踪。
 
 ## 认证
 

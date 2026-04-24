@@ -18,13 +18,12 @@ sidebar: false
 
 ## 什么是 NocoBase CLI
 
-NocoBase CLI（`nb` 命令）是一个用于在本地初始化、连接和管理 NocoBase 应用的命令行工具，支持让 AI Agent 连接并使用 NocoBase。
+NocoBase CLI（`nb`）是用于在本地工作区初始化、连接和管理 NocoBase 应用的命令行工具。它可以帮你准备 NocoBase 应用、保存 CLI env 配置，并提供启动、停止、查看日志、升级和清理等日常管理命令，让 AI Agent 可以连接并使用 NocoBase。
 
-核心能力：
+CLI 支持两种常见的初始化方式：
 
-- **初始化与安装** — 一条命令完成 NocoBase 的下载、安装和启动
-- **环境管理** — 同时管理本地开发、测试、生产等多个 NocoBase 环境
-- **AI Agent 集成** — 通过 Skills 让 AI Agent 理解并操作 NocoBase
+- 连接已有的 NocoBase 应用，让 AI Agent 直接使用。
+- 通过 Docker、npm 或 Git 安装一个新的 NocoBase 应用，并保存为 CLI env。
 
 ## 前置条件
 
@@ -48,7 +47,7 @@ NocoBase CLI（`nb` 命令）是一个用于在本地初始化、连接和管理
 你也可以把下方提示词复制给 AI 助手（Claude Code、Codex、Cursor、Trae 等），让它自动完成安装和配置：
 
 ```
-帮我安装 NocoBase CLI：https://docs.nocobase.com/cn/ai/ai-quick-start.md
+帮我安装 NocoBase CLI：https://pr-9098.v2.docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 :::

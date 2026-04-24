@@ -19,7 +19,7 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），即可自动完成安装和配置：
 
 ```
-帮我安装 NocoBase CLI：https://docs.nocobase.com/cn/ai/ai-quick-start.md
+帮我安装 NocoBase CLI：https://pr-9098.v2.docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 ### 手动安装
