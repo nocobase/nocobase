@@ -72,7 +72,7 @@ OpenClaw 通过以下方式与 NocoBase 协同工作：
 将下方提示词复制给 OpenClaw，它会自动完成 NocoBase CLI 安装、初始化和环境配置：
 
 ```
-帮我安装 NocoBase CLI：https://pr-9098.v2.docs.nocobase.com/cn/ai/ai-quick-start.md
+帮我安装 NocoBase CLI：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 ### 手动安装
