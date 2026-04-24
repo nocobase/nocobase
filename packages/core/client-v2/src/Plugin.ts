@@ -59,7 +59,7 @@ export class Plugin<T extends PluginOptions<any> = PluginOptions, TApp extends B
     return this.app.router;
   }
 
-  get pluginSettingsManager(): TApp['pluginSettingsManager'] {
+  get pluginSettingsManager() {
     return this.app.pluginSettingsManager;
   }
 
