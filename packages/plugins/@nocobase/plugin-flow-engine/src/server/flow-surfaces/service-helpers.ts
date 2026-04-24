@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { getSharedFieldDefaultBindingUse } from './core-field-default-bindings';
 
 const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE = 1;
 const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE = 50;
@@ -172,42 +173,7 @@ export function getFieldFilterable(field: any) {
 }
 
 export function inferAssociationLeafDisplayFieldUse(fieldInterface?: string) {
-  const normalized = String(fieldInterface || '').trim();
-  const map: Record<string, string> = {
-    richText: 'DisplayHtmlFieldModel',
-    number: 'DisplayNumberFieldModel',
-    integer: 'DisplayNumberFieldModel',
-    id: 'DisplayNumberFieldModel',
-    snowflakeId: 'DisplayNumberFieldModel',
-    json: 'DisplayJSONFieldModel',
-    select: 'DisplayTextFieldModel',
-    multipleSelect: 'DisplayTextFieldModel',
-    radioGroup: 'DisplayTextFieldModel',
-    checkboxGroup: 'DisplayTextFieldModel',
-    collection: 'DisplayTextFieldModel',
-    tableoid: 'DisplayTextFieldModel',
-    icon: 'DisplayIconFieldModel',
-    checkbox: 'DisplayCheckboxFieldModel',
-    password: 'DisplayPasswordFieldModel',
-    percent: 'DisplayPercentFieldModel',
-    date: 'DisplayDateTimeFieldModel',
-    datetimeNoTz: 'DisplayDateTimeFieldModel',
-    createdAt: 'DisplayDateTimeFieldModel',
-    datetime: 'DisplayDateTimeFieldModel',
-    updatedAt: 'DisplayDateTimeFieldModel',
-    unixTimestamp: 'DisplayDateTimeFieldModel',
-    formula: 'DisplayDateTimeFieldModel',
-    input: 'DisplayTextFieldModel',
-    email: 'DisplayTextFieldModel',
-    phone: 'DisplayTextFieldModel',
-    uuid: 'DisplayTextFieldModel',
-    textarea: 'DisplayTextFieldModel',
-    nanoid: 'DisplayTextFieldModel',
-    url: 'DisplayURLFieldModel',
-    color: 'DisplayColorFieldModel',
-    time: 'DisplayTimeFieldModel',
-  };
-  return map[normalized];
+  return getSharedFieldDefaultBindingUse('display', fieldInterface);
 }
 
 export function inferFieldMenuEditableFieldUse(fieldInterface?: string) {
@@ -215,41 +181,7 @@ export function inferFieldMenuEditableFieldUse(fieldInterface?: string) {
   if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(normalized)) {
     return 'RecordSelectFieldModel';
   }
-
-  const map: Record<string, string> = {
-    json: 'JsonFieldModel',
-    textarea: 'TextareaFieldModel',
-    icon: 'IconFieldModel',
-    radioGroup: 'SelectFieldModel',
-    color: 'ColorFieldModel',
-    select: 'SelectFieldModel',
-    multipleSelect: 'SelectFieldModel',
-    checkboxGroup: 'SelectFieldModel',
-    checkbox: 'CheckboxFieldModel',
-    password: 'PasswordFieldModel',
-    number: 'NumberFieldModel',
-    integer: 'NumberFieldModel',
-    id: 'NumberFieldModel',
-    snowflakeId: 'NumberFieldModel',
-    percent: 'PercentFieldModel',
-    datetimeNoTz: 'DateTimeNoTzFieldModel',
-    date: 'DateOnlyFieldModel',
-    datetime: 'DateTimeTzFieldModel',
-    createdAt: 'DateTimeTzFieldModel',
-    updatedAt: 'DateTimeTzFieldModel',
-    unixTimestamp: 'DateTimeTzFieldModel',
-    time: 'TimeFieldModel',
-    collection: 'CollectionSelectorFieldModel',
-    tableoid: 'CollectionSelectorFieldModel',
-    richText: 'RichTextFieldModel',
-    input: 'InputFieldModel',
-    email: 'InputFieldModel',
-    phone: 'InputFieldModel',
-    uuid: 'InputFieldModel',
-    url: 'InputFieldModel',
-    nanoid: 'InputFieldModel',
-  };
-  return map[normalized];
+  return getSharedFieldDefaultBindingUse('editable', normalized);
 }
 
 export function isAssociationField(field: any) {

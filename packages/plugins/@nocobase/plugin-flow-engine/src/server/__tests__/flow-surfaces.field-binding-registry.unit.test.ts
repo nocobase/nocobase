@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { resolveSupportedFieldCapability } from '../flow-surfaces/catalog';
+import { getSupportedFieldComponentUseSet, resolveSupportedFieldCapability } from '../flow-surfaces/catalog';
 
 describe('flowSurfaces field binding registry', () => {
   it('should prefer file-manager attachment bindings over titleField fallback models', () => {
@@ -116,5 +116,139 @@ describe('flowSurfaces field binding registry', () => {
         enabledPackages,
       }).fieldUse,
     ).toBe('NumberFieldModel');
+  });
+
+  it('should keep core fallback field bindings aligned with the frontend defaults and allowed use sets', () => {
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'TableBlockModel',
+        field: {
+          interface: 'select',
+          type: 'string',
+        },
+      }),
+    ).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'DisplayEnumFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'DetailsBlockModel',
+        field: {
+          interface: 'tableoid',
+          type: 'virtual',
+        },
+      }),
+    ).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplayEnumFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'CreateFormModel',
+        field: {
+          interface: 'radioGroup',
+          type: 'string',
+        },
+      }),
+    ).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'RadioGroupFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'EditFormModel',
+        field: {
+          interface: 'checkboxGroup',
+          type: 'array',
+        },
+      }),
+    ).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'CheckboxGroupFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'EditFormModel',
+        field: {
+          interface: 'collection',
+          type: 'string',
+        },
+      }),
+    ).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'CollectionSelectorFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: {
+          interface: 'select',
+          type: 'string',
+        },
+      }),
+    ).toMatchObject({
+      use: 'FilterFormItemModel',
+      fieldUse: 'SelectFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: {
+          interface: 'checkbox',
+          type: 'boolean',
+        },
+      }),
+    ).toMatchObject({
+      use: 'FilterFormItemModel',
+      fieldUse: 'SelectFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: {
+          interface: 'number',
+          type: 'integer',
+        },
+      }),
+    ).toMatchObject({
+      use: 'FilterFormItemModel',
+      fieldUse: 'NumberFieldModel',
+    });
+
+    expect(
+      getSupportedFieldComponentUseSet({
+        containerUse: 'CreateFormModel',
+        field: {
+          interface: 'radioGroup',
+          type: 'string',
+        },
+      }),
+    ).toEqual(expect.any(Set));
+    expect(
+      getSupportedFieldComponentUseSet({
+        containerUse: 'CreateFormModel',
+        field: {
+          interface: 'radioGroup',
+          type: 'string',
+        },
+      })?.has('RadioGroupFieldModel'),
+    ).toBe(true);
+    expect(
+      getSupportedFieldComponentUseSet({
+        containerUse: 'CreateFormModel',
+        field: {
+          interface: 'checkboxGroup',
+          type: 'array',
+        },
+      })?.has('CheckboxGroupFieldModel'),
+    ).toBe(true);
   });
 });

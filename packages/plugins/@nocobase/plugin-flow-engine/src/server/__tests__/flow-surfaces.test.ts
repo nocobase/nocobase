@@ -4259,7 +4259,7 @@ describe('flowSurfaces resource', () => {
     });
   });
 
-  it('should accept SelectFieldModel mode in field props writes and preserve checkboxGroup defaults', async () => {
+  it('should preserve checkboxGroup defaults with the dedicated checkbox-group field model', async () => {
     const collectionName = `select_field_mode_${Date.now()}`;
     const checkboxGroupFieldPath = 'preferenceTags';
     await rootAgent.resource('collections').create({
@@ -4303,11 +4303,7 @@ describe('flowSurfaces resource', () => {
     const initialReadback = await getSurface(rootAgent, {
       uid: checkboxGroupField.fieldUid,
     });
-    expect(initialReadback.tree.use).toBe('SelectFieldModel');
-    expect(initialReadback.tree.props).toMatchObject({
-      allowClear: true,
-      mode: 'tags',
-    });
+    expect(initialReadback.tree.use).toBe('CheckboxGroupFieldModel');
 
     const updateFieldMode = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -4315,8 +4311,7 @@ describe('flowSurfaces resource', () => {
           uid: checkboxGroupField.fieldUid,
         },
         props: {
-          allowClear: false,
-          mode: 'tags',
+          disabled: true,
         },
       },
     });
@@ -4326,8 +4321,7 @@ describe('flowSurfaces resource', () => {
       uid: checkboxGroupField.fieldUid,
     });
     expect(updatedReadback.tree.props).toMatchObject({
-      allowClear: false,
-      mode: 'tags',
+      disabled: true,
     });
   });
 
