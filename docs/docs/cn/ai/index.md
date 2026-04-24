@@ -11,7 +11,7 @@ features:
       - title: 快速开始
         details: 安装 NocoBase CLI 并配置 AI Skills，为 AI 搭建、使用和开发 NocoBase 做好准备。
         link: /ai/quick-start
-      - title: AI 搭建快速开始
+      - title: AI 搭建
         details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder
       - title: AI 员工
