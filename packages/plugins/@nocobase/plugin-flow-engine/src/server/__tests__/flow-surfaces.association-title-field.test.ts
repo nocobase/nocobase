@@ -96,6 +96,19 @@ describe('flowSurfaces association title field helpers', () => {
     });
   });
 
+  it('should prefer a non-audit titleable field before createdAt/updatedAt fallback fields', () => {
+    const collection = createCollection('funds', [
+      createField('createdAt', { interface: 'createdAt' }),
+      createField('updatedAt', { interface: 'updatedAt' }),
+      createField('name', { interface: 'input', titleable: true }),
+    ]);
+
+    expect(resolveCollectionSafeTitleField(collection)).toMatchObject({
+      fieldName: 'name',
+      source: 'firstTitleable',
+    });
+  });
+
   it('should resolve association target titleField from explicit collection config or first titleable fallback', () => {
     const employees = createCollection('employees', [createField('nickname', { interface: 'input', titleable: true })]);
     const skills = createCollection('skills', [createField('label', { interface: 'input', titleable: true })], {
@@ -132,6 +145,90 @@ describe('flowSurfaces association title field helpers', () => {
     ).toMatchObject({
       fieldName: 'label',
       source: 'explicit',
+    });
+  });
+
+  it('should prefer relation field uiSchema fieldNames.label over collection-level fallback candidates', () => {
+    const funds = createCollection('funds', [
+      createField('createdAt', { interface: 'createdAt' }),
+      createField('name', { interface: 'input', titleable: true }),
+      createField('fundCode', { interface: 'input', titleable: true }),
+    ]);
+    const collections = new Map([['funds', funds]]);
+    const fundField = createField('fund', {
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'funds',
+      uiSchema: {
+        'x-component-props': {
+          fieldNames: {
+            label: 'name',
+          },
+        },
+      },
+    });
+
+    expect(
+      resolveAssociationSafeTitleField(fundField, 'main', (_dataSourceKey, collectionName) =>
+        collections.get(collectionName),
+      ),
+    ).toMatchObject({
+      fieldName: 'name',
+      source: 'relationFieldLabel',
+    });
+  });
+
+  it('should keep collection explicit titleField fallback when relation field label is absent', () => {
+    const roles = createCollection(
+      'roles',
+      [createField('name', { interface: 'input', titleable: true }), createField('slug', { interface: 'input' })],
+      {
+        titleField: 'name',
+      },
+    );
+    const collections = new Map([['roles', roles]]);
+    const roleField = createField('role', {
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'roles',
+    });
+
+    expect(
+      resolveAssociationSafeTitleField(roleField, 'main', (_dataSourceKey, collectionName) =>
+        collections.get(collectionName),
+      ),
+    ).toMatchObject({
+      fieldName: 'name',
+      source: 'explicit',
+    });
+  });
+
+  it('should ignore an invalid relation field label and fall back to collection-safe resolution', () => {
+    const funds = createCollection('funds', [
+      createField('createdAt', { interface: 'createdAt' }),
+      createField('shortName', { interface: 'input', titleable: true }),
+    ]);
+    const collections = new Map([['funds', funds]]);
+    const fundField = createField('fund', {
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'funds',
+      uiSchema: {
+        'x-component-props': {
+          fieldNames: {
+            label: 'missingField',
+          },
+        },
+      },
+    });
+
+    expect(
+      resolveAssociationSafeTitleField(fundField, 'main', (_dataSourceKey, collectionName) =>
+        collections.get(collectionName),
+      ),
+    ).toMatchObject({
+      fieldName: 'shortName',
+      source: 'firstTitleable',
     });
   });
 
