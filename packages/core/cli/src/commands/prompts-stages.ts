@@ -13,6 +13,11 @@ import {
   type PromptsCatalog,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
+import {
+  applyCliLocale,
+  CLI_LOCALE_FLAG_DESCRIPTION,
+  CLI_LOCALE_FLAG_OPTIONS,
+} from '../lib/cli-locale.ts';
 import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
 import PromptsTest from './prompts-test.ts';
 
@@ -83,6 +88,10 @@ export default class PromptsStages extends Command {
         'Accept defaults only in the terminal (no Clack after submit); same semantics as `prompts-test` when used with the submitted or default preset.',
       default: false,
     }),
+    locale: Flags.string({
+      description: CLI_LOCALE_FLAG_DESCRIPTION,
+      options: CLI_LOCALE_FLAG_OPTIONS,
+    }),
     file: Flags.string({
       char: 'f',
       description: 'Merged into initialValues.file (default for the text prompt when set)',
@@ -113,6 +122,7 @@ export default class PromptsStages extends Command {
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(PromptsStages);
+    applyCliLocale(flags.locale);
 
     let presetValues = this.buildPresetValuesFromParsed(args, flags);
 
@@ -145,6 +155,7 @@ export default class PromptsStages extends Command {
   private buildPresetValuesFromParsed(
     args: { file?: string },
     flags: {
+      locale?: string;
       file?: string;
       text?: string;
       boolean?: boolean;

@@ -88,7 +88,11 @@ export const useChatMessageActions = () => {
           continue;
         }
         FlowUtils.walkthrough(model, (subModel) => {
-          if (subModel instanceof UploadFieldModel && subModel.props?.value?.length) {
+          if (
+            subModel instanceof UploadFieldModel &&
+            subModel.props?.value?.length &&
+            typeof subModel.props.value !== 'string'
+          ) {
             addAttachments(subModel.props.value.map((it) => ({ ...it, status: 'done' })));
           }
         });

@@ -10,6 +10,7 @@
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 import type { PromptValue } from './prompt-catalog.ts';
+import { translateCli } from './cli-locale.ts';
 
 const API_BASE_URL_EXAMPLE = 'http://localhost:13000/api';
 const ENV_KEY_PATTERN = /^[A-Za-z0-9]+$/;
@@ -25,11 +26,11 @@ export function validateApiBaseUrl(value: PromptValue): string | undefined {
   try {
     url = new URL(raw);
   } catch {
-    return `Enter a valid URL, for example ${API_BASE_URL_EXAMPLE}.`;
+    return translateCli('validators.apiBaseUrl.invalid', { example: API_BASE_URL_EXAMPLE });
   }
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    return `URL must start with http:// or https://, for example ${API_BASE_URL_EXAMPLE}.`;
+    return translateCli('validators.apiBaseUrl.invalidProtocol', { example: API_BASE_URL_EXAMPLE });
   }
 
   return undefined;
@@ -42,7 +43,7 @@ export function validateEnvKey(value: PromptValue): string | undefined {
   }
 
   if (!ENV_KEY_PATTERN.test(raw)) {
-    return 'Use letters and numbers only.';
+    return translateCli('validators.envKey.invalid');
   }
 
   return undefined;
@@ -73,7 +74,7 @@ export function validateTcpPort(value: PromptValue): string | undefined {
 
   const port = parseTcpPort(raw);
   if (port === undefined) {
-    return `Enter a valid TCP port between 1 and 65535, for example ${TCP_PORT_EXAMPLE}.`;
+    return translateCli('validators.tcpPort.invalid', { example: TCP_PORT_EXAMPLE });
   }
 
   return undefined;
@@ -171,7 +172,7 @@ async function allocateAvailableTcpPort(): Promise<string> {
 
       if (!port) {
         server.close(() => {
-          reject(new Error('Failed to allocate an available TCP port.'));
+          reject(new Error(translateCli('validators.tcpPort.allocateFailed')));
         });
         return;
       }
@@ -197,7 +198,7 @@ export async function findAvailableTcpPort(): Promise<string> {
     }
   }
 
-  throw new Error('Failed to allocate an available TCP port that is not already published by Docker.');
+  throw new Error(translateCli('validators.tcpPort.allocateNotDockerPublished'));
 }
 
 export async function validateAvailableTcpPort(value: PromptValue): Promise<string | undefined> {
@@ -214,12 +215,12 @@ export async function validateAvailableTcpPort(value: PromptValue): Promise<stri
 
   const available = await canListenOnTcpPort(port);
   if (!available) {
-    return `Port ${port} is already in use. Choose another port.`;
+    return translateCli('validators.tcpPort.alreadyInUse', { port });
   }
 
   const dockerPorts = await getDockerPublishedTcpPorts();
   if (dockerPorts.has(port)) {
-    return `Port ${port} is already in use by a Docker container. Choose another port.`;
+    return translateCli('validators.tcpPort.alreadyInUseByDocker', { port });
   }
 
   return undefined;

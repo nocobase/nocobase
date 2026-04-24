@@ -606,7 +606,7 @@ export function buildOauthCompletionHtml() {
     statusMark: '✓',
     heading: 'Authentication complete',
     description: 'Your sign-in finished successfully. You can return to the terminal and continue there.',
-    tip: 'This page will try to close automatically in a moment.',
+    tip: 'This page will close automatically in 10 seconds.',
     footer: 'You can close this page after returning to the terminal.',
     extraScriptHtml: `  <script>
     setTimeout(function () {
@@ -617,7 +617,7 @@ export function buildOauthCompletionHtml() {
           el.textContent = 'If this tab stays open, you can close it manually.';
         }
       }, 400);
-    }, 1000);
+    }, 10000);
   </script>`,
   });
 }

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
-import { afterEach, test, vi } from 'vitest';
+import { afterEach, test, vi, expect } from 'vitest';
 import Install from '../commands/install.js';
 
 const mocks = vi.hoisted(() => ({
@@ -67,17 +66,14 @@ test('waitForAppHealthCheck resolves after /api/__health_check returns ok', asyn
     fetchImpl: fetchImpl as unknown as typeof fetch,
   });
 
-  assert.equal(fetchImpl.mock.calls.length, 1);
-  assert.equal(fetchImpl.mock.calls[0][0], 'http://127.0.0.1:13000/api/__health_check');
-  assert.equal(fetchImpl.mock.calls[0][1].method, 'GET');
-  assert.ok(fetchImpl.mock.calls[0][1].signal);
-  assert.equal(mocks.startTask.mock.calls.length, 1);
-  assert.equal(mocks.updateTask.mock.calls.length, 0);
-  assert.equal(mocks.stopTask.mock.calls.length, 1);
-  assert.equal(
-    mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('/api/__health_check')),
-    true,
-  );
+  expect(fetchImpl.mock.calls.length).toBe(1);
+  expect(fetchImpl.mock.calls[0][0]).toBe('http://127.0.0.1:13000/api/__health_check');
+  expect(fetchImpl.mock.calls[0][1].method).toBe('GET');
+  expect(fetchImpl.mock.calls[0][1].signal).toBeTruthy();
+  expect(mocks.startTask.mock.calls.length).toBe(1);
+  expect(mocks.updateTask.mock.calls.length).toBe(0);
+  expect(mocks.stopTask.mock.calls.length).toBe(1);
+  expect(mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('/api/__health_check'))).toBe(true);
 });
 
 test('waitForAppHealthCheck throws when /api/__health_check never returns ok', async () => {
@@ -87,8 +83,7 @@ test('waitForAppHealthCheck throws when /api/__health_check never returns ok', a
       text: async () => 'starting',
     }));
 
-  await assert.rejects(
-    (
+  await expect((
       Install.prototype as unknown as {
         waitForAppHealthCheck: (
           apiBaseUrl: string,
@@ -107,22 +102,11 @@ test('waitForAppHealthCheck throws when /api/__health_check never returns ok', a
       requestTimeoutMs: 1,
       fetchImpl: fetchImpl as unknown as typeof fetch,
       containerName: 'test-app',
-    }),
-    /__health_check.*respond with `ok`.*docker logs test-app/i,
-  );
+    })).rejects.toThrow(/__health_check.*respond with `ok`.*docker logs test-app/i);
 
-  assert.equal(
-    mocks.startTask.mock.calls.some((call) => String(call[0]).includes('/api/__health_check')),
-    true,
-  );
-  assert.equal(
-    mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('Still starting')),
-    true,
-  );
-  assert.equal(
-    mocks.stopTask.mock.calls.length > 0,
-    true,
-  );
+  expect(mocks.startTask.mock.calls.some((call) => String(call[0]).includes('/api/__health_check'))).toBe(true);
+  expect(mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('Still starting'))).toBe(true);
+  expect(mocks.stopTask.mock.calls.length > 0).toBe(true);
 });
 
 test('waitForAppHealthCheck keeps polling while the app is still booting', async () => {
@@ -161,14 +145,8 @@ test('waitForAppHealthCheck keeps polling while the app is still booting', async
     fetchImpl: fetchImpl as unknown as typeof fetch,
   });
 
-  assert.equal(fetchImpl.mock.calls.length, 3);
-  assert.equal(
-    mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('connection refused')),
-    true,
-  );
-  assert.equal(
-    mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('HTTP 503')),
-    true,
-  );
-  assert.equal(mocks.stopTask.mock.calls.length, 1);
+  expect(fetchImpl.mock.calls.length).toBe(3);
+  expect(mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('connection refused'))).toBe(true);
+  expect(mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('HTTP 503'))).toBe(true);
+  expect(mocks.stopTask.mock.calls.length).toBe(1);
 });

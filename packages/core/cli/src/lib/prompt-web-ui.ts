@@ -10,6 +10,13 @@
 import { spawn } from 'node:child_process';
 import { createServer, type Server } from 'node:http';
 import {
+  createCliTranslate,
+  resolveCliLocale,
+  resolveLocalizedText,
+  type CliLocale,
+  type LocalizedText,
+} from './cli-locale.ts';
+import {
   isPromptBlockSkipped,
   type PromptBlock,
   type PromptCatalogValues,
@@ -31,6 +38,14 @@ export const PWC_FORM_META_STEP = '_pwcStep';
 export const PWC_FORM_META_FIELD = '_pwcField';
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
 const DEFAULT_HOST = '127.0.0.1';
+
+function resolveUiText(
+  text: LocalizedText | undefined,
+  locale: CliLocale,
+  fallback = '',
+): string {
+  return resolveLocalizedText(text, { locale, fallback });
+}
 
 function hasValueKey(iv: PromptInitialValues, key: string): boolean {
   return (
@@ -207,6 +222,7 @@ export type BuildWebPresetFromBodyOptions = {
    * Omit for full submit.
    */
   scopeKeys?: Set<string> | null;
+  locale?: string;
 };
 
 /**
@@ -220,6 +236,8 @@ export async function buildWebPresetFromBody(
   userSeed: PromptInitialValues = {},
   buildOpts: BuildWebPresetFromBodyOptions = {},
 ): Promise<{ preset: PromptInitialValues; error?: string; fieldKey?: string }> {
+  const locale = resolveCliLocale(buildOpts.locale);
+  const t = createCliTranslate(locale);
   const scope = buildOpts.scopeKeys ?? null;
   const inScope = (k: string) => scope === null || scope.has(k);
   const preset: Record<string, PromptValue> = {};
@@ -245,18 +263,18 @@ export async function buildWebPresetFromBody(
       val = defaultValueForInput(key, def, preset);
     }
     if (def.type === 'text' && def.required && val === '' && inScope(key)) {
-      return { preset: {}, error: `Field "${key}" is required.`, fieldKey: key };
+      return { preset: {}, error: t('promptCatalog.web.fieldRequired', { key }), fieldKey: key };
     }
     if (def.type === 'password' && def.required && val === '' && inScope(key)) {
-      return { preset: {}, error: `Field "${key}" is required.`, fieldKey: key };
+      return { preset: {}, error: t('promptCatalog.web.fieldRequired', { key }), fieldKey: key };
     }
     if (def.type === 'integer' && def.required && inScope(key)) {
-      const t = String(raw[key] ?? '').trim();
-      if (t === '') {
-        return { preset: {}, error: `Field "${key}" is required.`, fieldKey: key };
+      const trimmed = String(raw[key] ?? '').trim();
+      if (trimmed === '') {
+        return { preset: {}, error: t('promptCatalog.web.fieldRequired', { key }), fieldKey: key };
       }
-      if (!/^-?\d+$/.test(t)) {
-        return { preset: {}, error: `Field "${key}" must be an integer.`, fieldKey: key };
+      if (!/^-?\d+$/.test(trimmed)) {
+        return { preset: {}, error: t('promptCatalog.web.fieldMustBeInteger', { key }), fieldKey: key };
       }
     }
     preset[key] = val;
@@ -287,7 +305,9 @@ type PwcWizardStepDef = { title: string; description?: string; keys: string[] };
 function computePwcWizardSteps(
   options: RunPromptCatalogWebUIOptions,
   merged: PromptsCatalog,
+  locale: CliLocale,
 ): PwcWizardStepDef[] {
+  const t = createCliTranslate(locale);
   if (options.stages && options.stages.length > 0) {
     if (options.stages.length === 1) {
       const st0 = options.stages[0];
@@ -297,12 +317,12 @@ function computePwcWizardSteps(
           allKeys.push(key);
         }
       }
-      const t = st0.sectionTitle?.trim();
-      const d = st0.sectionDescription?.trim();
+      const title = resolveUiText(st0.sectionTitle, locale).trim();
+      const description = resolveUiText(st0.sectionDescription, locale).trim();
       return [
         {
-          title: t && t.length > 0 ? t : 'Form',
-          ...(d && d.length > 0 ? { description: d } : {}),
+          title: title && title.length > 0 ? title : t('promptCatalog.web.defaultFormTitle'),
+          ...(description && description.length > 0 ? { description } : {}),
           keys: allKeys,
         },
       ];
@@ -314,11 +334,11 @@ function computePwcWizardSteps(
           keys.push(key);
         }
       }
-      const t = st.sectionTitle?.trim();
-      const d = st.sectionDescription?.trim();
+      const title = resolveUiText(st.sectionTitle, locale).trim();
+      const description = resolveUiText(st.sectionDescription, locale).trim();
       return {
-        title: t && t.length > 0 ? t : `Step ${i + 1}`,
-        ...(d && d.length > 0 ? { description: d } : {}),
+        title: title && title.length > 0 ? title : t('promptCatalog.web.defaultStepTitle', { index: i + 1 }),
+        ...(description && description.length > 0 ? { description } : {}),
         keys,
       };
     });
@@ -333,7 +353,7 @@ function computePwcWizardSteps(
     return [];
   }
   /* Single `catalog` (no `stages`): one page, no side Steps nav — use `stages` for multi-page UI. */
-  return [{ title: 'Form', keys: allKeys }];
+  return [{ title: t('promptCatalog.web.defaultFormTitle'), keys: allKeys }];
 }
 
 /** antd Form.Item-style explain line (per-field error / help). */
@@ -346,12 +366,17 @@ function renderPwcRadioOptions(
   def: Extract<PromptBlock, { type: 'select' }>,
   defaults: PromptInitialValues,
   hidden: boolean,
+  locale: CliLocale,
 ): string {
   return def.options
     .map((o, index) => {
       const val = typeof o === 'string' ? o : o.value;
-      const lab = typeof o === 'string' ? o : o.label ?? o.value;
-      const hint = typeof o === 'string' ? '' : o.hint ? `<div class="pwc-radio-option-hint">${escapeHtml(o.hint)}</div>` : '';
+      const lab = typeof o === 'string' ? o : resolveUiText(o.label, locale, o.value);
+      const hint = typeof o === 'string'
+        ? ''
+        : o.hint
+          ? `<div class="pwc-radio-option-hint">${escapeHtml(resolveUiText(o.hint, locale))}</div>`
+          : '';
       const checked = String(defaults[key] ?? '') === val ? ' checked' : '';
       const required = def.required && index === 0 ? ' required' : '';
       const disabled = hidden ? ' disabled' : '';
@@ -373,11 +398,12 @@ function renderPwcFieldRow(
   def: PromptBlock,
   defaults: PromptInitialValues,
   show: Record<string, boolean>,
+  locale: CliLocale,
 ): string {
   if (!isInputBlock(def)) {
     return '';
   }
-  const labelText = 'message' in def ? def.message : key;
+  const labelText = 'message' in def ? resolveUiText(def.message, locale, key) : key;
   const hidden = show[key] === false;
   const display = hidden ? 'none' : 'block';
   const itemOpen = (extraClass: string) =>
@@ -387,7 +413,7 @@ function renderPwcFieldRow(
   if (def.type === 'text') {
     const req = def.required ? ' required' : '';
     const disabled = hidden ? ' disabled' : '';
-    const ph = def.placeholder ? ` placeholder="${escapeHtml(def.placeholder)}"` : '';
+    const ph = def.placeholder ? ` placeholder="${escapeHtml(resolveUiText(def.placeholder, locale))}"` : '';
     const v = escapeHtml(String(defaults[key] ?? ''));
     return (
       itemOpen('') +
@@ -416,7 +442,7 @@ function renderPwcFieldRow(
   }
   if (def.type === 'select') {
     if (def.variant === 'radio') {
-      const opts = renderPwcRadioOptions(key, def, defaults, hidden);
+      const opts = renderPwcRadioOptions(key, def, defaults, hidden, locale);
       return (
         itemOpen('') +
         `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
@@ -432,7 +458,7 @@ function renderPwcFieldRow(
     const opts = def.options
       .map((o) => {
         const val = typeof o === 'string' ? o : o.value;
-        const lab = typeof o === 'string' ? o : o.label ?? o.value;
+        const lab = typeof o === 'string' ? o : resolveUiText(o.label, locale, o.value);
         const sel = String(defaults[key] ?? '') === val ? ' selected' : '';
         return `<option value="${escapeHtml(String(val))}"${sel}>${escapeHtml(String(lab))}</option>`;
       })
@@ -470,7 +496,7 @@ function renderPwcFieldRow(
     );
   }
   if (def.type === 'integer') {
-    const ph = def.placeholder ? ` placeholder="${escapeHtml(def.placeholder)}"` : '';
+    const ph = def.placeholder ? ` placeholder="${escapeHtml(resolveUiText(def.placeholder, locale))}"` : '';
     const req = def.required ? ' required' : '';
     const disabled = hidden ? ' disabled' : '';
     const v = String(defaults[key] ?? 0);
@@ -511,6 +537,10 @@ function buildPwcAntdStyleStepsHeader(
   currentIndex: number,
   total: number,
   visibleStepIndices: number[],
+  uiText: {
+    stepsAriaLabel: string;
+    doneAriaLabel: string;
+  },
 ): string {
   const parts: string[] = [];
   for (let i = 0; i < total; i += 1) {
@@ -528,7 +558,7 @@ function buildPwcAntdStyleStepsHeader(
     const hiddenAttr = visiblePos === -1 ? ' hidden' : '';
     const iconHtml =
       state === 'finish'
-        ? `<span class="pwc-ad-icon pwc-ad-icon--finish" aria-label="done">${PWC_AD_CHECK_SVG}</span>`
+        ? `<span class="pwc-ad-icon pwc-ad-icon--finish" aria-label="${escapeHtml(uiText.doneAriaLabel)}">${PWC_AD_CHECK_SVG}</span>`
         : `<span class="pwc-ad-icon" aria-label="${num}"><span class="pwc-ad-icon-num">${num}</span></span>`;
     const ariaCurrent = state === 'process' ? 'step' : 'false';
     const nextVisible = visibleStepIndices.indexOf(i + 1) !== -1;
@@ -552,7 +582,7 @@ function buildPwcAntdStyleStepsHeader(
     );
   }
   return (
-    `<nav class="pwc-ad-steps pwc-ad-steps--vertical" id="pwcAntSteps" aria-label="Form steps" style="--pwc-ad-n:${total}">` +
+    `<nav class="pwc-ad-steps pwc-ad-steps--vertical" id="pwcAntSteps" aria-label="${escapeHtml(uiText.stepsAriaLabel)}" style="--pwc-ad-n:${total}">` +
     `<ol class="pwc-ad-steps-list pwc-ad-steps-list--vertical">${parts.join('')}</ol></nav>`
   );
 }
@@ -586,6 +616,17 @@ function buildPwcFormHtml(
   stepDefs: PwcWizardStepDef[],
   initialStepIndex: number,
   totalSteps: number,
+  locale: CliLocale,
+  uiText: {
+    stepsSidebarAriaLabel: string;
+    stepNavigationAriaLabel: string;
+    submitAriaLabel: string;
+    back: string;
+    next: string;
+    submit: string;
+    stepsAriaLabel: string;
+    doneAriaLabel: string;
+  },
 ): string {
   if (stepDefs.length === 0) {
     return '';
@@ -596,9 +637,9 @@ function buildPwcFormHtml(
   if (!oneStep) {
     out.push('<div class="pwc-wizard pwc-wizard--with-sidebar" id="pwcWizard">');
     out.push(
-      '<aside class="pwc-wizard-sidenav" id="pwcWizardSidenav" aria-label="Steps">',
+      `<aside class="pwc-wizard-sidenav" id="pwcWizardSidenav" aria-label="${escapeHtml(uiText.stepsSidebarAriaLabel)}">`,
     );
-    out.push(buildPwcAntdStyleStepsHeader(stepDefs, initialStepIndex, totalSteps, visibleStepIndices));
+    out.push(buildPwcAntdStyleStepsHeader(stepDefs, initialStepIndex, totalSteps, visibleStepIndices, uiText));
     out.push('</aside><div class="pwc-wizard-main">');
   } else {
     out.push('<div class="pwc-wizard" id="pwcWizard">');
@@ -616,25 +657,25 @@ function buildPwcFormHtml(
     for (const key of sd.keys) {
       const def = catalog[key];
       if (def) {
-        out.push(renderPwcFieldRow(key, def, defaults, show));
+        out.push(renderPwcFieldRow(key, def, defaults, show, locale));
       }
     }
     out.push('</section>');
   }
   if (!oneStep) {
     out.push(
-      `<div class="pwc-wizard-ctl" id="pwcWizardCtl" role="group" aria-label="Step navigation and submit">` +
-        `<button type="button" class="pwc-btn-pager" id="pwcBack" ${initialStepIndex === 0 ? 'hidden' : ''}>Back</button>` +
+      `<div class="pwc-wizard-ctl" id="pwcWizardCtl" role="group" aria-label="${escapeHtml(uiText.stepNavigationAriaLabel)}">` +
+        `<button type="button" class="pwc-btn-pager" id="pwcBack" ${initialStepIndex === 0 ? 'hidden' : ''}>${escapeHtml(uiText.back)}</button>` +
         `<div class="pwc-wizard-ctl-spacer" aria-hidden="true"></div>` +
-        `<button type="button" class="pwc-btn-pager pwc-btn-pager--primary" id="pwcNext" ${initialStepIndex >= totalSteps - 1 ? 'hidden' : ''}>Next</button>` +
-        `<button type="submit" class="pwc-btn-submit pwc-wizard-ctl__submit" id="pwcFormSubmit" ${initialStepIndex < totalSteps - 1 ? 'hidden' : ''}>Submit &amp; continue in terminal</button>` +
+        `<button type="button" class="pwc-btn-pager pwc-btn-pager--primary" id="pwcNext" ${initialStepIndex >= totalSteps - 1 ? 'hidden' : ''}>${escapeHtml(uiText.next)}</button>` +
+        `<button type="submit" class="pwc-btn-submit pwc-wizard-ctl__submit" id="pwcFormSubmit" ${initialStepIndex < totalSteps - 1 ? 'hidden' : ''}>${escapeHtml(uiText.submit)}</button>` +
         `</div>`,
     );
   } else {
     out.push(
-      `<div class="pwc-wizard-ctl" id="pwcWizardCtl" role="group" aria-label="Submit">` +
+      `<div class="pwc-wizard-ctl" id="pwcWizardCtl" role="group" aria-label="${escapeHtml(uiText.submitAriaLabel)}">` +
         `<div class="pwc-wizard-ctl-spacer" aria-hidden="true"></div>` +
-        `<button type="submit" class="pwc-btn-submit pwc-wizard-ctl__submit" id="pwcFormSubmit">Submit &amp; continue in terminal</button>` +
+        `<button type="submit" class="pwc-btn-submit pwc-wizard-ctl__submit" id="pwcFormSubmit">${escapeHtml(uiText.submit)}</button>` +
         `</div>`,
     );
   }
@@ -688,11 +729,11 @@ export type RunPromptCatalogWebUIStage = {
    * Optional group heading, inserted before the first **input** field of this `catalog` (ignores
    * `intro` / `outro` / `run` in that catalog, like the form renderer does).
    */
-  sectionTitle?: string;
+  sectionTitle?: LocalizedText;
   /**
    * Optional sub-line under the step title in the **Steps** nav (like antd `subTitle` / description).
    */
-  sectionDescription?: string;
+  sectionDescription?: LocalizedText;
   /**
    * Preset merged in order: first global {@link RunPromptCatalogWebUIOptions.values}, then
    * `stages[0].values`, `stages[1].values`, … (later keys override).
@@ -714,10 +755,10 @@ export type RunPromptCatalogWebUIOptions = {
   stages?: RunPromptCatalogWebUIStage[];
   /** Merged on top of catalog block defaults to prefill the form (CLI `values` / flags). */
   values?: PromptInitialValues;
-  pageTitle?: string;
-  documentHeading?: string;
+  pageTitle?: LocalizedText;
+  documentHeading?: LocalizedText;
   /** Optional hint shown under the document heading. */
-  documentHint?: string;
+  documentHint?: LocalizedText;
   /**
    * Path for POSTing the final form JSON. Default {@link DEFAULT_SUBMIT}.
    */
@@ -742,6 +783,7 @@ export type RunPromptCatalogWebUIOptions = {
    */
   onServerStart?: (args: { host: string; port: number; url: string }) => void;
   onOpenBrowserError?: (url: string, error: unknown) => void;
+  locale?: string;
 };
 
 /**
@@ -770,7 +812,7 @@ export function mergeWebUICatalogsFromStages(stages: RunPromptCatalogWebUIStage[
   const used = new Set<string>();
 
   for (const stage of stages) {
-    const title = stage.sectionTitle?.trim();
+    const title = typeof stage.sectionTitle === 'string' ? stage.sectionTitle.trim() : '';
     let needTitle = Boolean(title);
     for (const [key, def] of Object.entries(stage.catalog)) {
       if (isInputBlock(def) && needTitle && title) {
@@ -888,6 +930,8 @@ export function runPromptCatalogWebUI(
 }
 
 function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promise<PromptInitialValues> {
+  const locale = resolveCliLocale(options.locale);
+  const t = createCliTranslate(locale);
   const { merged } = resolveMergedCatalog(options);
   const userSeed = mergeValueSeedsFromOptions(options);
   const formDefaults = buildWebFormValuesFromCatalog(merged, userSeed);
@@ -902,17 +946,35 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
   const reflowPath = options.reflowPath ?? DEFAULT_REFLOW;
   const host = options.host ?? DEFAULT_HOST;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const pageTitle = options.pageTitle ?? 'Prompt catalog (local UI)';
-  const h1 = options.documentHeading ?? 'Configure parameters (localhost only)';
-  const documentHint =
-    options.documentHint ??
-    'This server is only bound to the loopback interface. After submit, the CLI continues in the same terminal session.';
+  const pageTitle = resolveUiText(options.pageTitle, locale, t('promptCatalog.web.pageTitle'));
+  const h1 = resolveUiText(options.documentHeading, locale, t('promptCatalog.web.documentHeading'));
+  const documentHint = resolveUiText(options.documentHint, locale, t('promptCatalog.web.documentHint'));
 
   const catalog = merged;
-  const pwcStepDefs = computePwcWizardSteps(options, catalog);
+  const pwcStepDefs = computePwcWizardSteps(options, catalog, locale);
   const pwcNSteps = Math.max(1, pwcStepDefs.length);
   const resolveValidateStepPath = options.validateStepPath ?? DEFAULT_VALIDATE_STEP;
   const resolveValidateFieldPath = options.validateFieldPath ?? DEFAULT_VALIDATE_FIELD;
+  const uiText = {
+    stepsAriaLabel: t('promptCatalog.web.stepsAriaLabel'),
+    stepsSidebarAriaLabel: t('promptCatalog.web.stepsSidebarAriaLabel'),
+    stepNavigationAriaLabel: t('promptCatalog.web.stepNavigationAriaLabel'),
+    submitAriaLabel: t('promptCatalog.web.submitAriaLabel'),
+    back: t('promptCatalog.web.back'),
+    next: t('promptCatalog.web.next'),
+    submit: t('promptCatalog.web.submit'),
+    checking: t('promptCatalog.web.checking'),
+    sending: t('promptCatalog.web.sending'),
+    successTitle: t('promptCatalog.web.successTitle'),
+    errorTitle: t('promptCatalog.web.errorTitle'),
+    savedAndClosing: t('promptCatalog.web.savedAndClosing'),
+    savedCloseBlocked: t('promptCatalog.web.savedCloseBlocked'),
+    invalidValue: t('promptCatalog.web.invalidValue'),
+    invalidRequest: t('promptCatalog.web.invalidRequest'),
+    invalidStep: t('promptCatalog.web.invalidStep'),
+    invalidField: t('promptCatalog.web.invalidField'),
+    doneAriaLabel: 'done',
+  };
   let server: Server | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -938,17 +1000,20 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         pwcStepDefs,
         0,
         pwcNSteps,
+        locale,
+        uiText,
       );
       const wizardClientJson = JSON.stringify({ n: pwcNSteps, stepDefs: pwcStepDefs });
       const pwcValStepUrl =
         pwcNSteps > 1 ? JSON.stringify(base + resolveValidateStepPath) : 'null';
       const pwcValFieldUrl = JSON.stringify(base + resolveValidateFieldPath);
+      const uiTextJson = JSON.stringify(uiText);
       const pwcShellClass =
         options.stages && options.stages.length > 0
           ? 'pwc-shell pwc-shell--stages'
           : 'pwc-shell';
       const page = `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(locale)}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -1582,6 +1647,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     var pwcFieldMeta = ${JSON.stringify(PWC_FORM_META_FIELD)};
     var s = document.getElementById('pwcStatus');
     var wcfg = ${wizardClientJson};
+    var uiText = ${uiTextJson};
     var pwcN = wcfg && typeof wcfg.n === 'number' ? wcfg.n : 1;
     var pwcSteps = (wcfg && wcfg.stepDefs) || [];
     var pwcCur = 0;
@@ -1621,7 +1687,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       s.setAttribute('role', 'alert');
       s.innerHTML =
         '<span class="pwc-ad-alert__icon" aria-hidden="true">' + pwcErrIcon + '</span>' +
-        '<div class="pwc-ad-alert__inner"><div class="pwc-ad-alert__title">Error</div>' +
+        '<div class="pwc-ad-alert__inner"><div class="pwc-ad-alert__title">' + pwcEsc(uiText.errorTitle) + '</div>' +
         '<div class="pwc-ad-alert__desc">' + pwcEsc(t) + '</div></div>';
     }
     function pwcSetStatusSuccess(message) {
@@ -1631,7 +1697,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       s.setAttribute('role', 'status');
       s.innerHTML =
         '<span class="pwc-ad-alert__icon" aria-hidden="true">' + pwcOkIcon + '</span>' +
-        '<div class="pwc-ad-alert__inner"><div class="pwc-ad-alert__title">Success</div>' +
+        '<div class="pwc-ad-alert__inner"><div class="pwc-ad-alert__title">' + pwcEsc(uiText.successTitle) + '</div>' +
         '<div class="pwc-ad-alert__desc">' + pwcEsc(t) + '</div></div>';
     }
     function pwcScheduleWindowClose() {
@@ -1641,9 +1707,9 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         window.close();
         pwcCloseProbeTimer = setTimeout(function () {
           if (!s || document.visibilityState !== 'visible') { return; }
-          pwcSetStatusSuccess('Saved. Automatic close was blocked by the browser. You can close this tab now.');
+          pwcSetStatusSuccess(uiText.savedCloseBlocked);
         }, 600);
-      }, 2000);
+      }, 5000);
     }
     function pwcSetFieldError(key, message) {
       if (!form || !key) { return; }
@@ -1955,8 +2021,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
         var inp = getControl(form, k);
         if (inp == null) { continue; }
         if (typeof inp.checkValidity === 'function' && !inp.checkValidity()) {
-          var vm = (typeof inp.validationMessage === 'string' && inp.validationMessage) ? inp.validationMessage : 'Invalid value';
-          pwcSetFieldError(k, vm);
+            var vm = (typeof inp.validationMessage === 'string' && inp.validationMessage) ? inp.validationMessage : uiText.invalidValue;
+            pwcSetFieldError(k, vm);
           if (typeof inp.focus === 'function') { inp.focus(); }
           return false;
         }
@@ -2014,7 +2080,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       if (pwcValStep == null) {
         return reflow().then(function () { pwcSetStep(pwcVisibleNext(pwcCur)); });
       }
-      pwcSetStatusHint('Checking…');
+      pwcSetStatusHint(uiText.checking);
       return fetch(pwcValStep, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2082,7 +2148,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (pwcN > 1 && pwcVisibleStepPosition(pwcCur) < pwcVisibleSteps.length - 1) { return; }
-        pwcSetStatusHint('Sending…');
+        pwcSetStatusHint(uiText.sending);
         pwcClearAllFieldErrors();
         fetch(sub, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collect()) })
           .then(function (r) {
@@ -2097,7 +2163,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             return r.json();
           })
           .then(function () {
-            pwcSetStatusSuccess('Saved. This tab will close automatically in 2 seconds.');
+            pwcSetStatusSuccess(uiText.savedAndClosing);
             pwcScheduleWindowClose();
           })
           .catch(function (err) {
@@ -2173,14 +2239,14 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
                     : NaN;
               if (!Number.isInteger(step) || step < 0 || step >= pwcStepDefs.length) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, error: 'Invalid or missing wizard step.' }));
+                res.end(JSON.stringify({ ok: false, error: t('promptCatalog.web.invalidStep') }));
                 return;
               }
               const { error, fieldKey } = await buildWebPresetFromBody(
                 catalog,
                 readFormFromClient(readFormFromClientStrippingPwcMeta(raw)),
                 userSeed,
-                { scopeKeys: new Set(pwcStepDefs[step].keys) },
+                { scopeKeys: new Set(pwcStepDefs[step].keys), locale },
               );
               if (error) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -2195,7 +2261,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
               res.end(JSON.stringify({ ok: true }));
             } catch {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: 'Invalid request' }));
+              res.end(JSON.stringify({ ok: false, error: t('promptCatalog.web.invalidRequest') }));
             }
           })();
         });
@@ -2216,14 +2282,14 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
                   : '';
               if (!fieldKey || !Object.prototype.hasOwnProperty.call(catalog, fieldKey)) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, error: 'Invalid or missing field key.' }));
+                res.end(JSON.stringify({ ok: false, error: t('promptCatalog.web.invalidField') }));
                 return;
               }
               const { error } = await buildWebPresetFromBody(
                 catalog,
                 readFormFromClient(readFormFromClientStrippingPwcMeta(raw)),
                 userSeed,
-                { scopeKeys: new Set([fieldKey]) },
+                { scopeKeys: new Set([fieldKey]), locale },
               );
               if (error) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -2234,7 +2300,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
               res.end(JSON.stringify({ ok: true }));
             } catch {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: 'Invalid request' }));
+              res.end(JSON.stringify({ ok: false, error: t('promptCatalog.web.invalidRequest') }));
             }
           })();
         });
@@ -2252,6 +2318,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
                 catalog,
                 readFormFromClient(raw),
                 userSeed,
+                { locale },
               );
               if (error) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -2276,7 +2343,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
               });
             } catch (e) {
               res.writeHead(400, { 'Content-Type': 'text/plain' });
-              res.end('Invalid request');
+              res.end(t('promptCatalog.web.invalidRequest'));
             }
           })();
         });

@@ -42,6 +42,23 @@ export const INTERFACE_ALIASES: Record<string, string> = {
   o2o: 'obo',
 };
 
+export const CHOICE_COLOR_OPTIONS = [
+  'red',
+  'magenta',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+  'default',
+];
+
+const CHOICE_COLOR_OPTION_SET = new Set(CHOICE_COLOR_OPTIONS);
+
 export const PLUGIN_REQUIREMENTS: Record<string, { runtimeName: string; packageName: string; capability: string }> = {
   file: {
     runtimeName: 'file-manager',
@@ -136,6 +153,32 @@ export function normalizeChoiceEnum(enumValues: any[] = []) {
       label: String(item),
       value: item,
     };
+  });
+}
+
+export function validateChoiceEnumColors(enumValues: any[] = [], fieldName = '(unknown)') {
+  const allowedColors = CHOICE_COLOR_OPTIONS.join(', ');
+
+  enumValues.forEach((item, index) => {
+    if (!_.isPlainObject(item)) {
+      throw new Error(
+        `Field ${fieldName} enum item #${
+          index + 1
+        } must be an object with value, label, and color; string shorthand is not allowed`,
+      );
+    }
+
+    const optionName = item.value ?? item.label ?? `#${index + 1}`;
+
+    if (!item.color) {
+      throw new Error(`Field ${fieldName} enum item ${optionName} requires color`);
+    }
+
+    if (!CHOICE_COLOR_OPTION_SET.has(item.color)) {
+      throw new Error(
+        `Field ${fieldName} enum item ${optionName} color ${item.color} is invalid. Allowed colors: ${allowedColors}`,
+      );
+    }
   });
 }
 

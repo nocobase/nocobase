@@ -9,6 +9,13 @@
 
 import * as p from '@clack/prompts';
 import { exit, stdin as stdinStream, stdout as stdoutStream } from 'node:process';
+import {
+  createCliTranslate,
+  resolveCliLocale,
+  resolveLocalizedText,
+  type CliLocale,
+  type LocalizedText,
+} from './cli-locale.ts';
 
 export type PromptValue = string | number | boolean;
 
@@ -33,36 +40,48 @@ export type PromptHiddenPredicate = (values: PromptCatalogValues) => boolean;
 export type PromptWhenPredicate = (values: PromptCatalogValues) => boolean;
 
 /** Select value, or value plus Clack `label` / `hint`. */
-export type SelectOptionDef = string | { value: string; label?: string; hint?: string };
+export type SelectOptionDef = string | { value: string; label?: LocalizedText; hint?: LocalizedText };
 
 export function selectOptionValues(options: SelectOptionDef[]): string[] {
   return options.map((o) => (typeof o === 'string' ? o : o.value));
 }
 
-function clackSelectOptions(options: SelectOptionDef[]) {
+function resolvePromptText(
+  text: LocalizedText | undefined,
+  locale: CliLocale,
+  fallback = '',
+): string {
+  return resolveLocalizedText(text, { locale, fallback });
+}
+
+function clackSelectOptions(options: SelectOptionDef[], locale: CliLocale) {
   return options.map((o) =>
     typeof o === 'string'
       ? { value: o, label: o }
-      : { value: o.value, label: o.label ?? o.value, ...(o.hint !== undefined ? { hint: o.hint } : {}) },
+      : {
+        value: o.value,
+        label: resolvePromptText(o.label, locale, o.value),
+        ...(o.hint !== undefined ? { hint: resolvePromptText(o.hint, locale) } : {}),
+      },
   );
 }
 
 export type IntroPromptBlock = {
   type: 'intro';
-  title: string;
+  title: LocalizedText;
   hidden?: PromptHiddenPredicate;
 };
 export type OutroPromptBlock = {
   type: 'outro';
-  message: string;
+  message: LocalizedText;
   hidden?: PromptHiddenPredicate;
 };
 export type TextPromptBlock = {
   type: 'text';
-  message: string;
+  message: LocalizedText;
   hidden?: PromptHiddenPredicate;
   /** Shown when the line is empty (Clack `text` placeholder). */
-  placeholder?: string;
+  placeholder?: LocalizedText;
   /**
    * Default line when **`initialValues`** does not set this key. If a function, it receives
    * **`values` collected so far** (same order as the catalog); use for fields that depend on earlier answers.
@@ -77,7 +96,7 @@ export type TextPromptBlock = {
 };
 export type BooleanPromptBlock = {
   type: 'boolean';
-  message: string;
+  message: LocalizedText;
   hidden?: PromptHiddenPredicate;
   initialValue?: boolean;
   yesInitialValue?: boolean;
@@ -85,7 +104,7 @@ export type BooleanPromptBlock = {
 };
 export type SelectPromptBlock = {
   type: 'select';
-  message: string;
+  message: LocalizedText;
   hidden?: PromptHiddenPredicate;
   options: SelectOptionDef[];
   /** Web UI rendering style. Terminal still uses Clack select. */
@@ -100,7 +119,7 @@ export type SelectPromptBlock = {
 };
 export type PasswordPromptBlock = {
   type: 'password';
-  message: string;
+  message: LocalizedText;
   hidden?: PromptHiddenPredicate;
   /** Default when `initialValues` does not set this key. */
   initialValue?: string;
@@ -111,10 +130,10 @@ export type PasswordPromptBlock = {
 };
 export type IntegerPromptBlock = {
   type: 'integer';
-  message: string;
+  message: LocalizedText;
   hidden?: PromptHiddenPredicate;
   /** Shown when the line is empty (integer prompt uses Clack `text` under the hood). */
-  placeholder?: string;
+  placeholder?: LocalizedText;
   initialValue?: number;
   yesInitialValue?: number;
   /** When true, a number must be provided (non-empty interactive input or preset). */
@@ -180,10 +199,12 @@ export type RunPromptCatalogOptions = {
   hooks?: Partial<RunPromptCatalogHooks>;
   /** Passed as the second argument to each **`type: 'run'`** `run(values, command)` (e.g. oclif command `this`). */
   command?: unknown;
+  /** Preferred prompt locale. Defaults to auto-detecting the CLI locale. */
+  locale?: string;
 };
 
-function defaultOnCancel(): never {
-  p.cancel('Cancelled.');
+function defaultOnCancel(locale: string | undefined): never {
+  p.cancel(createCliTranslate(locale)('promptCatalog.common.cancelled'));
   exit(0);
 }
 
@@ -332,7 +353,9 @@ function tryApplyPreset(
   preset: PromptInitialValues,
   out: Record<string, PromptValue>,
   hooks: RunPromptCatalogHooks,
+  locale: CliLocale,
 ): boolean {
+  const t = createCliTranslate(locale);
   if (!hasIvKey(preset, key)) {
     return false;
   }
@@ -347,7 +370,7 @@ function tryApplyPreset(
       const s = String(raw ?? '');
       if (def.required && isBlankText(s)) {
         hooks.onMissingNonInteractive(
-          `"${key}" is required; set a non-empty values.${key} or omit it to prompt.`,
+          t('promptCatalog.preset.required', { key }),
         );
       }
       out[key] = s;
@@ -362,7 +385,7 @@ function tryApplyPreset(
       const s = String(raw ?? '');
       if (!valueList.includes(s)) {
         hooks.onMissingNonInteractive(
-          `Invalid values.${key}: "${s}". Expected one of: ${valueList.join(', ')}`,
+          t('promptCatalog.preset.invalidSelect', { key, value: s, options: valueList.join(', ') }),
         );
       }
       out[key] = s;
@@ -372,7 +395,7 @@ function tryApplyPreset(
       const s = String(raw ?? '');
       if (def.required && isBlankText(s)) {
         hooks.onMissingNonInteractive(
-          `"${key}" is required; set a non-empty values.${key} or omit it to prompt.`,
+          t('promptCatalog.preset.required', { key }),
         );
       }
       out[key] = s;
@@ -387,14 +410,14 @@ function tryApplyPreset(
       if (s === '') {
         if (def.required) {
           hooks.onMissingNonInteractive(
-            `"${key}" is required; set values.${key} or omit it to prompt.`,
+            t('promptCatalog.preset.required', { key }),
           );
         }
         out[key] = def.initialValue ?? 0;
         return true;
       }
       if (!/^-?\d+$/.test(s)) {
-        hooks.onMissingNonInteractive(`Invalid values.${key}: must be an integer.`);
+        hooks.onMissingNonInteractive(t('promptCatalog.preset.invalidInteger', { key }));
       }
       out[key] = Number.parseInt(s, 10);
       return true;
@@ -424,12 +447,14 @@ export async function runPromptCatalog(
   catalog: PromptsCatalog,
   options: RunPromptCatalogOptions = {},
 ): Promise<Record<string, PromptValue>> {
+  const locale = resolveCliLocale(options.locale);
+  const t = createCliTranslate(locale);
   const promptIv = options.initialValues ?? {};
   const yesIv = options.yesInitialValues ?? {};
   const resolveIv: PromptInitialValues = options.yes ? { ...promptIv, ...yesIv } : promptIv;
   const useYesInitial = Boolean(options.yes);
   const hooks: RunPromptCatalogHooks = {
-    onCancel: options.hooks?.onCancel ?? defaultOnCancel,
+    onCancel: options.hooks?.onCancel ?? (() => defaultOnCancel(locale)),
     onMissingNonInteractive: options.hooks?.onMissingNonInteractive ?? defaultOnMissingNonInteractive,
   };
   const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY && !options.yes);
@@ -438,7 +463,7 @@ export async function runPromptCatalog(
 
   for (const [key, def] of Object.entries(catalog)) {
     // Apply `values` presets before `hidden` / `when` so CLI/env fixes still win without UI.
-    if (tryApplyPreset(key, def, preset, out, hooks)) {
+    if (tryApplyPreset(key, def, preset, out, hooks, locale)) {
       const errV = await runPromptFieldValidate(
         def,
         out[key] as PromptValue,
@@ -455,12 +480,12 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'intro') {
-      p.intro(def.title);
+      p.intro(resolvePromptText(def.title, locale));
       continue;
     }
 
     if (def.type === 'outro') {
-      p.outro(def.message);
+      p.outro(resolvePromptText(def.message, locale));
       continue;
     }
 
@@ -470,11 +495,15 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'text') {
+      const message = resolvePromptText(def.message, locale, key);
+      const placeholder = def.placeholder !== undefined
+        ? resolvePromptText(def.placeholder, locale)
+        : undefined;
       if (!interactive) {
         const merged = mergedText(key, def, resolveIv, useYesInitial, out);
         if (def.required && isBlankText(merged)) {
           hooks.onMissingNonInteractive(
-            `Non-interactive: "${key}" is required; set initialValues.${key}, yesInitialValues.${key}, yesInitialValue on the block, or initialValue.`,
+            t('promptCatalog.nonInteractive.textRequired', { key }),
           );
         }
         out[key] = merged;
@@ -493,16 +522,16 @@ export async function runPromptCatalog(
         let last = merged;
         for (;;) {
           const raw = await p.text({
-            message: def.message,
+            message,
             initialValue: last,
-            ...(def.placeholder !== undefined ? { placeholder: def.placeholder } : {}),
+            ...(placeholder !== undefined ? { placeholder } : {}),
           });
           if (p.isCancel(raw)) {
             hooks.onCancel();
           }
           const s = typeof raw === 'string' ? raw : last;
           if (def.required && isBlankText(s)) {
-            p.log.error('Required');
+            p.log.error(t('promptCatalog.common.required'));
             last = s;
             continue;
           }
@@ -522,10 +551,10 @@ export async function runPromptCatalog(
         continue;
       }
       const raw = await p.text({
-        message: def.message,
+        message,
         initialValue: merged,
-        ...(def.placeholder !== undefined ? { placeholder: def.placeholder } : {}),
-        validate: def.required ? (value) => (isBlankText(value) ? 'Required' : undefined) : undefined,
+        ...(placeholder !== undefined ? { placeholder } : {}),
+        validate: def.required ? (value) => (isBlankText(value) ? t('promptCatalog.common.required') : undefined) : undefined,
       });
       if (p.isCancel(raw)) {
         hooks.onCancel();
@@ -535,6 +564,7 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'boolean') {
+      const message = resolvePromptText(def.message, locale, key);
       if (!interactive) {
         const b = mergedBoolean(key, def, resolveIv, useYesInitial);
         out[key] = b;
@@ -552,7 +582,7 @@ export async function runPromptCatalog(
       if (def.validate) {
         for (;;) {
           const raw = await p.confirm({
-            message: def.message,
+            message,
             initialValue: merged,
           });
           if (p.isCancel(raw)) {
@@ -574,7 +604,7 @@ export async function runPromptCatalog(
         continue;
       }
       const raw = await p.confirm({
-        message: def.message,
+        message,
         initialValue: merged,
       });
       if (p.isCancel(raw)) {
@@ -585,9 +615,10 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'select') {
+      const message = resolvePromptText(def.message, locale, key);
       const valueList = selectOptionValues(def.options);
       if (def.required && def.options.length === 0) {
-        hooks.onMissingNonInteractive(`Select "${key}" is required but has no options.`);
+        hooks.onMissingNonInteractive(t('promptCatalog.nonInteractive.selectRequiredNoOptions', { key }));
       }
       if (!interactive) {
         const merged = mergedSelect(key, def, resolveIv, useYesInitial);
@@ -600,8 +631,8 @@ export async function runPromptCatalog(
                 : undefined;
           hooks.onMissingNonInteractive(
             bad !== undefined
-              ? `Invalid value for ${key}: ${bad}. Expected one of: ${valueList.join(', ')}`
-              : `Non-interactive: set initialValues.${key}, yesInitialValues.${key}, or select.initialValue / yesInitialValue / options on the catalog block.`,
+              ? t('promptCatalog.nonInteractive.selectInvalidValue', { key, value: bad, options: valueList.join(', ') })
+              : t('promptCatalog.nonInteractive.selectMissingDefault', { key }),
           );
         }
         out[key] = merged as string;
@@ -622,15 +653,15 @@ export async function runPromptCatalog(
         valueList[0];
       if (uiInitial === undefined || !valueList.includes(uiInitial)) {
         const hint = def.required
-          ? `Select "${key}" is required; set initialValues.${key} or select.initialValue / options on the catalog block.`
-          : `Select "${key}" has no valid default; set initialValues.${key} or options on the catalog block.`;
+          ? t('promptCatalog.nonInteractive.selectRequiredInteractive', { key })
+          : t('promptCatalog.nonInteractive.selectMissingInteractiveDefault', { key });
         hooks.onMissingNonInteractive(hint);
       }
       if (def.validate) {
         for (;;) {
           const raw = await p.select<string>({
-            message: def.message,
-            options: clackSelectOptions(def.options),
+            message,
+            options: clackSelectOptions(def.options, locale),
             initialValue: uiInitial,
           });
           if (p.isCancel(raw)) {
@@ -652,8 +683,8 @@ export async function runPromptCatalog(
         continue;
       }
       const raw = await p.select<string>({
-        message: def.message,
-        options: clackSelectOptions(def.options),
+        message,
+        options: clackSelectOptions(def.options, locale),
         initialValue: uiInitial,
       });
       if (p.isCancel(raw)) {
@@ -664,12 +695,13 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'password') {
+      const message = resolvePromptText(def.message, locale, key);
       if (!interactive) {
         const merged = mergedPassword(key, def, resolveIv, useYesInitial);
         if (merged === undefined) {
           if (def.required) {
             hooks.onMissingNonInteractive(
-              `Non-interactive: "${key}" is required; set initialValues.${key}, yesInitialValues.${key}, or initialValue / yesInitialValue on the block.`,
+              t('promptCatalog.nonInteractive.passwordRequired', { key }),
             );
           }
           out[key] = '';
@@ -685,7 +717,7 @@ export async function runPromptCatalog(
         }
         if (def.required && isBlankText(merged)) {
           hooks.onMissingNonInteractive(
-            `Non-interactive: "${key}" is required; set a non-empty initialValues / yesInitialValues / initialValue / yesInitialValue.`,
+            t('promptCatalog.nonInteractive.passwordRequiredNonEmpty', { key }),
           );
         }
         out[key] = merged;
@@ -702,15 +734,15 @@ export async function runPromptCatalog(
       if (def.validate) {
         for (;;) {
           const raw = await p.password({
-            message: def.message,
-            validate: def.required ? (value) => (isBlankText(value) ? 'Required' : undefined) : undefined,
+            message,
+            validate: def.required ? (value) => (isBlankText(value) ? t('promptCatalog.common.required') : undefined) : undefined,
           });
           if (p.isCancel(raw)) {
             hooks.onCancel();
           }
           const s = typeof raw === 'string' ? raw : '';
           if (def.required && isBlankText(s)) {
-            p.log.error('Required');
+            p.log.error(t('promptCatalog.common.required'));
             continue;
           }
           const errP = await runPromptFieldValidate(
@@ -728,8 +760,8 @@ export async function runPromptCatalog(
         continue;
       }
       const raw = await p.password({
-        message: def.message,
-        validate: def.required ? (value) => (isBlankText(value) ? 'Required' : undefined) : undefined,
+        message,
+        validate: def.required ? (value) => (isBlankText(value) ? t('promptCatalog.common.required') : undefined) : undefined,
       });
       if (p.isCancel(raw)) {
         hooks.onCancel();
@@ -739,12 +771,16 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'integer') {
+      const message = resolvePromptText(def.message, locale, key);
+      const placeholder = def.placeholder !== undefined
+        ? resolvePromptText(def.placeholder, locale)
+        : undefined;
       if (!interactive) {
         const merged = mergedInteger(key, def, resolveIv, useYesInitial);
         if (merged === undefined) {
           if (def.required) {
             hooks.onMissingNonInteractive(
-              `Non-interactive: "${key}" is required; set initialValues.${key}, yesInitialValues.${key}, or initialValue / yesInitialValue on the block.`,
+              t('promptCatalog.nonInteractive.integerRequired', { key }),
             );
           }
           const z = def.initialValue ?? 0;
@@ -776,16 +812,16 @@ export async function runPromptCatalog(
         let last = lineDefault;
         for (;;) {
           const raw = await p.text({
-            message: def.message,
+            message,
             initialValue: last,
-            ...(def.placeholder !== undefined ? { placeholder: def.placeholder } : {}),
+            ...(placeholder !== undefined ? { placeholder } : {}),
             validate: (value) => {
-              const t = value.trim();
-              if (t === '') {
-                return def.required ? 'Required' : undefined;
+              const trimmed = value.trim();
+              if (trimmed === '') {
+                return def.required ? t('promptCatalog.common.required') : undefined;
               }
-              if (!/^-?\d+$/.test(t)) {
-                return 'Must be an integer';
+              if (!/^-?\d+$/.test(trimmed)) {
+                return t('promptCatalog.common.mustBeInteger');
               }
               return undefined;
             },
@@ -825,16 +861,16 @@ export async function runPromptCatalog(
         continue;
       }
       const raw = await p.text({
-        message: def.message,
+        message,
         initialValue: lineDefault,
-        ...(def.placeholder !== undefined ? { placeholder: def.placeholder } : {}),
+        ...(placeholder !== undefined ? { placeholder } : {}),
         validate: (value) => {
-          const t = value.trim();
-          if (t === '') {
-            return def.required ? 'Required' : undefined;
+          const trimmed = value.trim();
+          if (trimmed === '') {
+            return def.required ? t('promptCatalog.common.required') : undefined;
           }
-          if (!/^-?\d+$/.test(t)) {
-            return 'Must be an integer';
+          if (!/^-?\d+$/.test(trimmed)) {
+            return t('promptCatalog.common.mustBeInteger');
           }
           return undefined;
         },

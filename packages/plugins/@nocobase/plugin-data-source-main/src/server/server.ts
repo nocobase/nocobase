@@ -474,6 +474,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.registerErrorHandler();
     registerDataSourceMainMcpPostProcessors(this.ai.mcpToolsManager);
+    this.app.auditManager.registerActions(['collections:apply', 'fields:apply']);
 
     this.app.resourceManager.use(async function mergeReverseFieldWhenSaveCollectionField(ctx, next) {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {

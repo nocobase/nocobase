@@ -10,6 +10,9 @@
 import { promises as fs } from 'node:fs';
 import { resolveServerRequestTarget } from './env-auth.js';
 
+const CLI_REQUEST_SOURCE_HEADER = 'x-request-source';
+const CLI_REQUEST_SOURCE_VALUE = 'cli';
+
 export interface RequestParameter {
   name: string;
   flagName: string;
@@ -220,6 +223,7 @@ export async function executeApiRequest(options: RequestOptions) {
   const { baseUrl, token } = await resolveServerRequestTarget(options);
 
   const headers = new Headers();
+  headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }
@@ -291,6 +295,7 @@ export async function executeRawApiRequest(options: RawRequestOptions) {
   const { baseUrl, token } = await resolveServerRequestTarget(options);
 
   const headers = new Headers();
+  headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }
