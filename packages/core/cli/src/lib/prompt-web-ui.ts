@@ -114,12 +114,17 @@ function defaultValueForInput(
     case 'boolean':
       return def.initialValue !== undefined ? Boolean(def.initialValue) : true;
     case 'select': {
-      const first = selectOptionValues(def.options)[0];
+      const first = def.options
+        .find((o) => typeof o === 'string' || o.disabled !== true);
+      const firstValue = typeof first === 'string' ? first : first?.value;
       const i = def.initialValue;
-      if (i !== undefined && selectOptionValues(def.options).includes(i)) {
+      const enabledValues = def.options
+        .filter((o) => typeof o === 'string' || o.disabled !== true)
+        .map((o) => (typeof o === 'string' ? o : o.value));
+      if (i !== undefined && enabledValues.includes(i)) {
         return i;
       }
-      return first ?? '';
+      return firstValue ?? '';
     }
     case 'password':
       return def.initialValue ?? '';
@@ -192,7 +197,9 @@ function normalizeWebRawForBlock(def: PromptBlock, raw: unknown, key: string): P
     }
     case 'select': {
       const s = String(raw ?? '');
-      const list = selectOptionValues(def.options);
+      const list = def.options
+        .filter((o) => typeof o === 'string' || o.disabled !== true)
+        .map((o) => (typeof o === 'string' ? o : o.value));
       if (list.includes(s)) {
         return s;
       }
@@ -377,12 +384,16 @@ function renderPwcRadioOptions(
         : o.hint
           ? `<div class="pwc-radio-option-hint">${escapeHtml(resolveUiText(o.hint, locale))}</div>`
           : '';
+      const optionDisabled = typeof o !== 'string' && o.disabled === true;
       const checked = String(defaults[key] ?? '') === val ? ' checked' : '';
       const required = def.required && index === 0 ? ' required' : '';
-      const disabled = hidden ? ' disabled' : '';
+      const disabled = hidden || optionDisabled ? ' disabled' : '';
+      const optionClass = optionDisabled ? 'pwc-radio-option pwc-radio-option--disabled' : 'pwc-radio-option';
+      const ariaDisabled = optionDisabled ? ' aria-disabled="true"' : '';
+      const staticDisabled = optionDisabled ? ' data-pwc-static-disabled="1"' : '';
       return (
-        `<label class="pwc-radio-option">` +
-        `<input class="pwc-radio-input" name="${escapeHtml(key)}" type="radio" value="${escapeHtml(String(val))}"${checked}${required}${disabled} />` +
+        `<label class="${optionClass}"${ariaDisabled}>` +
+        `<input class="pwc-radio-input" name="${escapeHtml(key)}" type="radio" value="${escapeHtml(String(val))}"${checked}${required}${disabled}${staticDisabled} />` +
         `<span class="pwc-radio-option-body">` +
         `<span class="pwc-radio-option-label">${escapeHtml(String(lab))}</span>` +
         hint +
@@ -460,7 +471,8 @@ function renderPwcFieldRow(
         const val = typeof o === 'string' ? o : o.value;
         const lab = typeof o === 'string' ? o : resolveUiText(o.label, locale, o.value);
         const sel = String(defaults[key] ?? '') === val ? ' selected' : '';
-        return `<option value="${escapeHtml(String(val))}"${sel}>${escapeHtml(String(lab))}</option>`;
+        const disabledOpt = typeof o !== 'string' && o.disabled === true ? ' disabled' : '';
+        return `<option value="${escapeHtml(String(val))}"${sel}${disabledOpt}>${escapeHtml(String(lab))}</option>`;
       })
       .join('');
     const req = def.required ? ' required' : '';
@@ -1418,6 +1430,15 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 8%, transparent);
       background: color-mix(in srgb, var(--pwc-ad-color-primary) 2%, var(--pwc-ad-color-container));
     }
+    .pwc-radio-option--disabled {
+      cursor: not-allowed;
+      background: var(--pwc-ad-color-fill-alter);
+    }
+    .pwc-radio-option--disabled:hover {
+      border-color: var(--pwc-ad-color-border);
+      box-shadow: none;
+      background: var(--pwc-ad-color-fill-alter);
+    }
     .pwc-radio-input {
       margin: 3px 0 0;
       width: 16px;
@@ -1426,6 +1447,9 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       accent-color: var(--pwc-ad-color-primary);
       cursor: pointer;
     }
+    .pwc-radio-option--disabled .pwc-radio-input {
+      cursor: not-allowed;
+    }
     .pwc-radio-option-body { min-width: 0; }
     .pwc-radio-option-label {
       display: block;
@@ -1433,11 +1457,17 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       line-height: 1.5715;
       color: var(--pwc-ad-color-text);
     }
+    .pwc-radio-option--disabled .pwc-radio-option-label {
+      color: color-mix(in srgb, var(--pwc-ad-color-text) 55%, transparent);
+    }
     .pwc-radio-option-hint {
       margin-top: 2px;
       font-size: 12px;
       line-height: 1.5;
       color: var(--pwc-ad-color-text-description);
+    }
+    .pwc-radio-option--disabled .pwc-radio-option-hint {
+      color: color-mix(in srgb, var(--pwc-ad-color-text-description) 70%, transparent);
     }
     .pwc-radio-input:focus-visible {
       outline: none;
@@ -1448,6 +1478,11 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       border-color: var(--pwc-ad-color-primary);
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 12%, transparent);
       background: color-mix(in srgb, var(--pwc-ad-color-primary) 5%, var(--pwc-ad-color-container));
+    }
+    .pwc-radio-option--disabled:has(.pwc-radio-input:checked) {
+      border-color: var(--pwc-ad-color-border);
+      box-shadow: none;
+      background: var(--pwc-ad-color-fill-alter);
     }
     .pwc-form-item-has-error .pwc-radio-option {
       border-color: var(--pwc-form-color-error);
@@ -1856,7 +1891,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             w.style.display = hidden ? 'none' : 'block';
             var ctrls = w.querySelectorAll('input, select, textarea');
             for (var i = 0; i < ctrls.length; i++) {
-              ctrls[i].disabled = hidden;
+              ctrls[i].disabled = hidden || ctrls[i].getAttribute('data-pwc-static-disabled') === '1';
             }
             if (!hidden && k && !pwcIsFieldDirty(k) && Object.prototype.hasOwnProperty.call(vals, k)) {
               setControlValue(form, k, vals[k]);

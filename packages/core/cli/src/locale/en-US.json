@@ -135,13 +135,27 @@
       "prompts": {
         "source": {
           "message": "How would you like to get NocoBase?",
-          "npmLabel": "npm package",
-          "gitLabel": "Git repository",
-          "dockerLabel": "Docker image"
+          "dockerLabel": "Docker install (Recommended)",
+          "dockerHint": "Best for no-code and low-maintenance setups. You can upgrade later by pulling a newer image and restarting the app.",
+          "npmLabel": "create-nocobase-app install",
+          "npmHint": "Best when you want an app project with business code kept separate from the NocoBase framework, while still supporting low-code development.",
+          "gitLabel": "Git source install",
+          "gitHint": "Best when you want to try the latest unreleased changes, contribute code, or debug and modify NocoBase source directly. This option is more developer-oriented."
         },
         "version": {
-          "message": "Which version would you like to use? You can enter a package version, Docker image tag, or Git ref such as a branch name.",
-          "placeholder": "alpha"
+          "message": "Which version would you like to use?",
+          "latestLabel": "latest",
+          "latestHint": "Stable release. Best for production use and the most predictable experience. Currently unavailable.",
+          "betaLabel": "beta",
+          "betaHint": "Preview release. Good for trying upcoming features before general release.",
+          "alphaLabel": "alpha",
+          "alphaHint": "Development release. Includes the newest changes, but may be incomplete or unstable.",
+          "otherLabel": "Other",
+          "otherHint": "Enter another package version, Docker tag, or Git ref manually, such as a branch name."
+        },
+        "otherVersion": {
+          "message": "Enter the version, Docker tag, or Git ref you want to use.",
+          "placeholder": "For example: fix/cli-v2"
         },
         "dockerRegistry": {
           "message": "Which Docker registry would you like to use? The image tag is set separately in Version.",

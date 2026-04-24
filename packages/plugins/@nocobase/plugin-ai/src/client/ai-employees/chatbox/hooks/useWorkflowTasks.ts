@@ -13,6 +13,14 @@ import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { WorkflowTask, WorkflowTaskDetail } from '../conversations/common';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useChatBoxStore } from '../stores/chat-box';
+import { JOB_STATUS } from '@nocobase/plugin-workflow/client';
+
+const aiWorkflowTaskStatusMap: Record<number, string[]> = {
+  [JOB_STATUS.PENDING]: ['processing', 'pending_acceptance', 'pending_approval'],
+  [JOB_STATUS.RESOLVED]: ['approved'],
+  [JOB_STATUS.REJECTED]: ['rejected'],
+  [JOB_STATUS.ABORTED]: ['aborted'],
+};
 
 export const useWorkflowTasks = () => {
   const api = useAPIClient();
@@ -23,15 +31,17 @@ export const useWorkflowTasks = () => {
   const unreadCount = useWorkflowTasksStore.use.unreadCount();
   const loading = useWorkflowTasksStore.use.loading();
   const keyword = useWorkflowTasksStore.use.keyword();
+  const selectedJobStatus = useWorkflowTasksStore.use.selectedJobStatus();
 
   const setWorkflowTasks = useWorkflowTasksStore.use.setWorkflowTasks();
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
   const setUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
   const setLoading = useWorkflowTasksStore.use.setLoading();
   const setKeyword = useWorkflowTasksStore.use.setKeyword();
+  const setSelectedJobStatus = useWorkflowTasksStore.use.setSelectedJobStatus();
 
   const workflowTasksService = useRequest<{ data: WorkflowTask[]; meta?: { page?: number; totalPage?: number } }>(
-    async (page = 1, search = '') => {
+    async (page = 1, search = '', jobStatus?: number) => {
       const filter: any = {};
       if (search) {
         filter.$or = [
@@ -39,6 +49,12 @@ export const useWorkflowTasks = () => {
           { nodeTitle: { $includes: search } },
           { status: { $includes: search } },
         ];
+      }
+      const taskStatuses = typeof jobStatus === 'number' ? aiWorkflowTaskStatusMap[jobStatus] : undefined;
+      if (taskStatuses?.length) {
+        filter.status = {
+          $in: taskStatuses,
+        };
       }
 
       try {
@@ -89,15 +105,23 @@ export const useWorkflowTasks = () => {
   const runSearch = useCallback(
     (nextKeyword = '') => {
       setKeyword(nextKeyword);
-      workflowTasksService.run(1, nextKeyword);
+      workflowTasksService.run(1, nextKeyword, selectedJobStatus);
     },
-    [setKeyword, workflowTasksService],
+    [selectedJobStatus, setKeyword, workflowTasksService],
   );
 
   const refresh = useCallback(() => {
-    workflowTasksService.run(1, keyword || '');
+    workflowTasksService.run(1, keyword || '', selectedJobStatus);
     unreadWorkflowTaskCountService.run();
-  }, [keyword, unreadWorkflowTaskCountService, workflowTasksService]);
+  }, [keyword, selectedJobStatus, unreadWorkflowTaskCountService, workflowTasksService]);
+
+  const runJobStatusFilter = useCallback(
+    (nextJobStatus?: number) => {
+      setSelectedJobStatus(nextJobStatus);
+      workflowTasksService.run(1, keyword || '', nextJobStatus);
+    },
+    [keyword, setSelectedJobStatus, workflowTasksService],
+  );
 
   const workflowTasksServiceRef = useRef(workflowTasksService);
   workflowTasksServiceRef.current = workflowTasksService;
@@ -110,8 +134,8 @@ export const useWorkflowTasks = () => {
       return;
     }
 
-    await currentWorkflowTasksService.runAsync(meta?.page ? meta.page + 1 : 1, keyword || '');
-  }, [keyword]);
+    await currentWorkflowTasksService.runAsync(meta?.page ? meta.page + 1 : 1, keyword || '', selectedJobStatus);
+  }, [keyword, selectedJobStatus]);
 
   const { ref: lastWorkflowTaskRef } = useLoadMoreObserver({ loadMore: loadMoreWorkflowTasks });
   const hasMore =
@@ -160,7 +184,9 @@ export const useWorkflowTasks = () => {
     loading,
     workflowTasks,
     unreadCount,
+    selectedJobStatus,
     runSearch,
+    runJobStatusFilter,
     refresh,
     hasMore,
     loadMoreWorkflowTasks,
@@ -170,5 +196,6 @@ export const useWorkflowTasks = () => {
     updateReadonly,
     currentWorkflowTask,
     setCurrentWorkflowTask,
+    setSelectedJobStatus,
   };
 };

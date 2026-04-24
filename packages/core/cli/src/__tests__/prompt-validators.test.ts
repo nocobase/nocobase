@@ -310,7 +310,7 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(rootNicknamePrompt.required).toBe(true);
 });
 
-test('docker image defaults follow app language', () => {
+test('docker registry defaults follow CLI locale', () => {
   const dockerRegistryPrompt = Download.prompts.dockerRegistry;
   const dockerPlatformPrompt = Download.prompts.dockerPlatform;
 
@@ -318,8 +318,12 @@ test('docker image defaults follow app language', () => {
   expect(defaultDockerRegistryForLang('en-US')).toBe('nocobase/nocobase');
 
   expect(dockerRegistryPrompt.type).toBe('text');
+  process.env.NB_LOCALE = 'zh-CN';
+  expect(dockerRegistryPrompt.initialValue?.({ lang: 'en-US' })).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
   expect(dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' })).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
-  expect(dockerRegistryPrompt.initialValue?.({ lang: 'en-US' })).toBe('nocobase/nocobase');
+  expect(dockerRegistryPrompt.initialValue?.({})).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+  process.env.NB_LOCALE = 'en-US';
+  expect(dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' })).toBe('nocobase/nocobase');
 
   expect(dockerPlatformPrompt.type).toBe('select');
   expect(dockerPlatformPrompt.initialValue).toBe('auto');
@@ -328,7 +332,55 @@ test('docker image defaults follow app language', () => {
   expect(dockerPlatformPrompt.hidden?.({ source: 'npm' })).toBe(true);
 });
 
-test('install download prompt options pass app language into docker image defaults', () => {
+test('docker registry placeholder follows locale copy', () => {
+  const dockerRegistryPrompt = Download.prompts.dockerRegistry;
+
+  expect(resolveLocalizedText(dockerRegistryPrompt.placeholder, { locale: 'en-US' })).toBe(
+    'nocobase/nocobase',
+  );
+  expect(resolveLocalizedText(dockerRegistryPrompt.placeholder, { locale: 'zh-CN' })).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+  );
+});
+
+test('version prompt uses presets and reveals otherVersion when needed', () => {
+  const versionPrompt = Download.prompts.version;
+  const otherVersionPrompt = Download.prompts.otherVersion;
+
+  expect(versionPrompt.type).toBe('select');
+  expect(versionPrompt.variant).toBe('radio');
+  expect(versionPrompt.initialValue).toBe('beta');
+  expect(versionPrompt.yesInitialValue).toBe('beta');
+  expect(
+    versionPrompt.options[0] && typeof versionPrompt.options[0] !== 'string'
+      ? versionPrompt.options[0].disabled
+      : undefined,
+  ).toBe(true);
+  expect(resolveLocalizedText(versionPrompt.options?.[0] && typeof versionPrompt.options[0] !== 'string' ? versionPrompt.options[0].hint : undefined, { locale: 'zh-CN' })).toContain('稳定版');
+  expect(resolveLocalizedText(versionPrompt.options?.[1] && typeof versionPrompt.options[1] !== 'string' ? versionPrompt.options[1].hint : undefined, { locale: 'zh-CN' })).toContain('测试版');
+  expect(resolveLocalizedText(versionPrompt.options?.[2] && typeof versionPrompt.options[2] !== 'string' ? versionPrompt.options[2].hint : undefined, { locale: 'zh-CN' })).toContain('开发版');
+  expect(otherVersionPrompt.type).toBe('text');
+  expect(otherVersionPrompt.hidden?.({ version: 'alpha' })).toBe(true);
+  expect(otherVersionPrompt.hidden?.({ version: 'other' })).toBe(false);
+});
+
+test('builtin database image defaults follow NB_LOCALE', async () => {
+  process.env.NB_LOCALE = 'zh-CN';
+  const { default: InstallWithZhLocale } = await import('../commands/install.js');
+  const builtinDbImagePrompt = InstallWithZhLocale.dbPrompts.builtinDbImage;
+
+  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'postgres' })).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
+  );
+  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'mysql' })).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8',
+  );
+  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'mariadb' })).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11',
+  );
+});
+
+test('install download prompt options follow CLI locale for docker registry defaults', () => {
   const installStatics = (
     Install as unknown as {
       buildDownloadPromptOptionsForInstall: (
@@ -347,28 +399,30 @@ test('install download prompt options pass app language into docker image defaul
     }
   );
 
+  process.env.NB_LOCALE = 'zh-CN';
   const zhOptions = installStatics.buildDownloadPromptOptionsForInstall(
     {
-      lang: 'zh-CN',
+      lang: 'en-US',
       appRootPath: './apps/zh-demo',
     },
     'zh-demo',
   );
-  expect(zhOptions.initialValues.lang).toBe('zh-CN');
+  expect(zhOptions.initialValues.lang).toBe('en-US');
   expect(zhOptions.initialValues.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
   expect(zhOptions.initialValues.outputDir).toBe('./apps/zh-demo');
-  expect(zhOptions.values.lang).toBe('zh-CN');
+  expect(zhOptions.values.lang).toBe('en-US');
 
+  process.env.NB_LOCALE = 'en-US';
   const enOptions = installStatics.buildDownloadPromptOptionsForInstall(
     {
-      lang: 'en-US',
+      lang: 'zh-CN',
       appRootPath: './apps/en-demo',
     },
     'en-demo',
   );
-  expect(enOptions.initialValues.lang).toBe('en-US');
+  expect(enOptions.initialValues.lang).toBe('zh-CN');
   expect(enOptions.initialValues.dockerRegistry).toBe('nocobase/nocobase');
-  expect(enOptions.values.lang).toBe('en-US');
+  expect(enOptions.values.lang).toBe('zh-CN');
 
   const originalArgv = process.argv;
   process.argv = ['node', 'nb', 'install', '--yes'];

@@ -341,6 +341,115 @@ test('reflow returns default values for fields that become visible later', async
   }
 });
 
+test('web UI renders disabled radio options for unavailable version presets', async () => {
+  const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
+  const { default: Download } = await import('../commands/download.js');
+
+  let uiUrl = '';
+  const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+
+  try {
+    const webUiPromise = runPromptCatalogWebUI({
+      catalog: Download.prompts,
+      host: '127.0.0.1',
+      timeoutMs: 5_000,
+      onServerStart: ({ url }) => {
+        uiUrl = url;
+      },
+      onOpenBrowserError: () => {
+        // noop in tests
+      },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const startedAt = Date.now();
+      const timer = setInterval(() => {
+        if (uiUrl) {
+          clearInterval(timer);
+          resolve();
+          return;
+        }
+        if (Date.now() - startedAt > 1_000) {
+          clearInterval(timer);
+          reject(new Error('Timed out waiting for the local web UI server to start.'));
+        }
+      }, 10);
+    });
+
+    const page = await requestWithAgent(uiUrl, { agent });
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toMatch(/name="version" type="radio" value="latest"[^>]*disabled/);
+    expect(page.body).toMatch(/name="version" type="radio" value="latest"[^>]*data-pwc-static-disabled="1"/);
+
+    const reflowUrl = new URL('/__pwc_ui_reflow', uiUrl).toString();
+    const reflow = await requestWithAgent(reflowUrl, {
+      method: 'POST',
+      agent,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'docker',
+      }),
+    });
+    expect(reflow.statusCode).toBe(200);
+
+    const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
+    await requestWithAgent(submitUrl, {
+      method: 'POST',
+      agent,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'docker',
+        version: 'beta',
+        dockerRegistry: 'nocobase/nocobase',
+      }),
+    });
+
+    await Promise.race([
+      webUiPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Web UI promise did not resolve after disabled-option test submit.')), 750),
+      ),
+    ]);
+  } finally {
+    agent.destroy();
+  }
+});
+
+test('reflow reveals otherVersion and recomputes outputDir from the final version', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Download } = await import('../commands/download.js');
+
+  const presetState = reflowWebFormState(Download.prompts, {
+    source: 'git',
+  });
+  expect(presetState.show.otherVersion).toBe(false);
+  expect(presetState.values.version).toBe('beta');
+  expect(presetState.values.outputDir).toBe('./nocobase-beta');
+
+  const otherState = reflowWebFormState(Download.prompts, {
+    source: 'git',
+    version: 'other',
+    otherVersion: 'fix/cli-v2',
+  });
+  expect(otherState.show.otherVersion).toBe(true);
+  expect(otherState.values.otherVersion).toBe('fix/cli-v2');
+  expect(otherState.values.outputDir).toBe('./nocobase-fix-cli-v2');
+});
+
+test('init reflow reveals otherVersion when version is set to other', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    fetchSource: true,
+    source: 'docker',
+    version: 'other',
+  });
+
+  expect(state.show.otherVersion).toBe(true);
+});
+
 test('reflow recomputes init app paths from the current app name', async () => {
   const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
   const { default: Init } = await import('../commands/init.js');
@@ -397,6 +506,41 @@ test('reflow recomputes the built-in database image from the current database di
 
   expect(kingbase.values.builtinDbImage).toBe(
     'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+  );
+});
+
+test('reflow uses locale-aware built-in database images when NB_LOCALE is zh-CN', async () => {
+  process.env.NB_LOCALE = 'zh-CN';
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    fetchSource: true,
+    dbDialect: 'postgres',
+    builtinDb: true,
+  });
+
+  expect(state.values.builtinDbImage).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
+  );
+});
+
+test('reflow uses CLI locale-aware docker registry defaults even when app language is en-US', async () => {
+  process.env.NB_LOCALE = 'zh-CN';
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    lang: 'en-US',
+    fetchSource: true,
+    source: 'docker',
+    version: 'alpha',
+  });
+
+  expect(state.values.dockerRegistry).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
   );
 });
 

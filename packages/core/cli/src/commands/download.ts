@@ -13,6 +13,7 @@ import * as p from '@clack/prompts';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
 import {
+  type PromptCatalogValues,
   type PromptInitialValues,
   type PromptsCatalog,
   type PromptValue,
@@ -23,6 +24,7 @@ import {
   CLI_LOCALE_FLAG_DESCRIPTION,
   CLI_LOCALE_FLAG_OPTIONS,
   localeText,
+  resolveCliLocale,
   translateCli,
 } from '../lib/cli-locale.ts';
 import { run } from '../lib/run-npm.ts';
@@ -30,9 +32,11 @@ import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '.
 
 type DownloadSource = 'docker' | 'npm' | 'git';
 type DockerPlatform = 'auto' | 'linux/amd64' | 'linux/arm64';
+type DownloadVersionPreset = 'latest' | 'beta' | 'alpha' | 'other';
 const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DEFAULT_DOCKER_REGISTRY_ZH_CN = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase';
 const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
+const DEFAULT_DOWNLOAD_VERSION: DownloadVersionPreset = 'beta';
 const downloadText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.download.${key}`, values);
 const downloadTranslatedText = (
@@ -56,9 +60,13 @@ async function pathExists(target: string): Promise<boolean> {
 }
 
 export function defaultDockerRegistryForLang(lang: unknown): string {
-  return String(lang ?? '').trim() === 'zh-CN'
+  return resolveCliLocale(String(lang ?? '').trim() || undefined) === 'zh-CN'
     ? DEFAULT_DOCKER_REGISTRY_ZH_CN
     : DEFAULT_DOCKER_REGISTRY;
+}
+
+function defaultDockerRegistryForPromptValues(_values: PromptCatalogValues): string {
+  return defaultDockerRegistryForLang(process.env.NB_LOCALE);
 }
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
@@ -209,6 +217,31 @@ export type DownloadParsedFlags = {
   'npm-registry'?: string;
 };
 
+function normalizeVersionPreset(value: unknown): DownloadVersionPreset {
+  const text = String(value ?? '').trim();
+  if (text === 'latest' || text === 'beta' || text === 'alpha') {
+    return text;
+  }
+  return 'other';
+}
+
+function versionPresetForValue(value: unknown): DownloadVersionPreset {
+  return normalizeVersionPreset(value);
+}
+
+function otherVersionValue(value: unknown): string {
+  const text = String(value ?? '').trim();
+  return normalizeVersionPreset(text) === 'other' ? text : '';
+}
+
+function resolveVersionFromResults(results: Record<string, PromptValue>, fallback?: string): string {
+  const preset = normalizeVersionPreset(results.version ?? fallback);
+  if (preset === 'other') {
+    return String(results.otherVersion ?? fallback ?? '').trim();
+  }
+  return preset;
+}
+
 export default class Download extends Command {
   private _flags?: DownloadParsedFlags;
   private preparationTaskActive = false;
@@ -317,30 +350,72 @@ export default class Download extends Command {
   static prompts: PromptsCatalog = {
     source: {
       type: 'select',
+      variant: 'radio',
       message: downloadText('prompts.source.message'),
       options: [
-        { value: 'npm', label: downloadText('prompts.source.npmLabel') },
-        { value: 'git', label: downloadText('prompts.source.gitLabel') },
-        { value: 'docker', label: downloadText('prompts.source.dockerLabel') },
+        {
+          value: 'docker',
+          label: downloadText('prompts.source.dockerLabel'),
+          hint: downloadText('prompts.source.dockerHint'),
+        },
+        {
+          value: 'npm',
+          label: downloadText('prompts.source.npmLabel'),
+          hint: downloadText('prompts.source.npmHint'),
+        },
+        {
+          value: 'git',
+          label: downloadText('prompts.source.gitLabel'),
+          hint: downloadText('prompts.source.gitHint'),
+        },
       ],
       yesInitialValue: 'docker',
       initialValue: 'docker',
       required: true,
     },
     version: {
-      type: 'text',
+      type: 'select',
+      variant: 'radio',
       message: downloadText('prompts.version.message'),
-      placeholder: downloadText('prompts.version.placeholder'),
-      initialValue: 'alpha',
-      yesInitialValue: 'alpha',
+      options: [
+        {
+          value: 'latest',
+          label: downloadText('prompts.version.latestLabel'),
+          hint: downloadText('prompts.version.latestHint'),
+          disabled: true,
+        },
+        {
+          value: 'beta',
+          label: downloadText('prompts.version.betaLabel'),
+          hint: downloadText('prompts.version.betaHint'),
+        },
+        {
+          value: 'alpha',
+          label: downloadText('prompts.version.alphaLabel'),
+          hint: downloadText('prompts.version.alphaHint'),
+        },
+        {
+          value: 'other',
+          label: downloadText('prompts.version.otherLabel'),
+          hint: downloadText('prompts.version.otherHint'),
+        },
+      ],
+      initialValue: DEFAULT_DOWNLOAD_VERSION,
+      yesInitialValue: DEFAULT_DOWNLOAD_VERSION,
       required: true,
+    },
+    otherVersion: {
+      type: 'text',
+      message: downloadText('prompts.otherVersion.message'),
+      placeholder: downloadText('prompts.otherVersion.placeholder'),
+      required: true,
+      hidden: (values) => normalizeVersionPreset(values.version) !== 'other',
     },
     dockerRegistry: {
       type: 'text',
       message: downloadText('prompts.dockerRegistry.message'),
       placeholder: downloadText('prompts.dockerRegistry.placeholder'),
-      initialValue: (values) => defaultDockerRegistryForLang(values.lang),
-      yesInitialValue: DEFAULT_DOCKER_REGISTRY,
+      initialValue: defaultDockerRegistryForPromptValues,
       required: true,
       hidden: (values) => values.source !== 'docker',
     },
@@ -380,8 +455,13 @@ export default class Download extends Command {
       type: 'text',
       message: downloadText('prompts.outputDir.message'),
       placeholder: downloadText('prompts.outputDir.placeholder'),
-      initialValue: (values) =>
-        defaultOutputDirForVersion(String(values.version ?? 'latest').trim() || 'latest'),
+      initialValue: (values) => {
+        const version = resolveVersionFromResults(
+          values as Record<string, PromptValue>,
+          DEFAULT_DOWNLOAD_VERSION,
+        ) || DEFAULT_DOWNLOAD_VERSION;
+        return defaultOutputDirForVersion(version);
+      },
       required: true,
       hidden: (values) => {
         const s = values.source;
@@ -463,7 +543,7 @@ export default class Download extends Command {
   }
 
   private dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): string {
-    const image = flags['docker-registry'] ?? DEFAULT_DOCKER_REGISTRY;
+    const image = String(flags['docker-registry'] ?? '').trim() || defaultDockerRegistryForLang(process.env.NB_LOCALE);
     const tag = flags.version ?? 'latest';
     const safeBase = `${image.replace(/[/:]/g, '-')}-${tag.replace(/[/\\]/g, '-')}`;
     return path.join(outputAbs, `${safeBase}.tar`);
@@ -478,6 +558,9 @@ export default class Download extends Command {
     preset: PromptInitialValues,
   ): PromptInitialValues {
     const initialValues: PromptInitialValues = {};
+    const localeDefaultDockerRegistry = defaultDockerRegistryForLang(
+      flags.locale ?? process.env.NB_LOCALE,
+    );
 
     const source = flags.source?.trim();
     if (source) {
@@ -485,7 +568,9 @@ export default class Download extends Command {
     }
 
     if (flags.version !== undefined) {
-      initialValues.version = flags.version.trim() || 'latest';
+      const version = flags.version.trim() || 'latest';
+      initialValues.version = versionPresetForValue(version);
+      initialValues.otherVersion = otherVersionValue(version);
     }
 
     initialValues.replace = flags.replace;
@@ -503,6 +588,8 @@ export default class Download extends Command {
 
     if (flags['docker-registry'] !== undefined) {
       initialValues.dockerRegistry = String(flags['docker-registry'] ?? '').trim();
+    } else {
+      initialValues.dockerRegistry = localeDefaultDockerRegistry;
     }
 
     initialValues.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
@@ -536,7 +623,11 @@ export default class Download extends Command {
     }
 
     if (flags.version !== undefined) {
-      preset.version = String(flags.version).trim() || 'latest';
+      const version = String(flags.version).trim() || 'latest';
+      preset.version = versionPresetForValue(version);
+      if (normalizeVersionPreset(version) === 'other') {
+        preset.otherVersion = version;
+      }
     }
 
     if (flags['docker-registry'] !== undefined) {
@@ -610,7 +701,7 @@ export default class Download extends Command {
     flags: DownloadParsedFlags,
   ): DownloadResolvedFlags {
     const source = String(results.source) as DownloadSource;
-    const version = String(results.version ?? '').trim() || 'latest';
+    const version = resolveVersionFromResults(results, flags.version) || 'latest';
 
     const devDependencies = source === 'npm' ? Boolean(results.devDependencies) : undefined;
 
@@ -632,9 +723,13 @@ export default class Download extends Command {
         : flags['git-url']?.trim() || undefined;
 
     const dockerRegistry =
-      results.dockerRegistry !== undefined
-        ? String(results.dockerRegistry).trim() || undefined
-        : flags['docker-registry']?.trim() || undefined;
+      source === 'docker'
+        ? (
+            results.dockerRegistry !== undefined
+              ? String(results.dockerRegistry).trim() || undefined
+              : flags['docker-registry']?.trim() || defaultDockerRegistryForLang(flags.locale ?? process.env.NB_LOCALE)
+          )
+        : undefined;
 
     const dockerPlatform =
       source === 'docker'
@@ -703,10 +798,15 @@ export default class Download extends Command {
     });
 
     const source = String(results.source ?? '').trim() as DownloadSource | '';
+    const version = resolveVersionFromResults(results, flags.version);
     if (!source || !['docker', 'npm', 'git'].includes(source)) {
       this.error(
         'Download source is required. Choose npm, git, or docker.',
       );
+    }
+
+    if (!version) {
+      this.error('Version is required. Choose alpha, beta, latest, or enter another version.');
     }
 
     if (flags['docker-save'] && source !== 'docker') {
@@ -826,7 +926,7 @@ export default class Download extends Command {
   }
 
   async downloadFromDocker(flags: DownloadResolvedFlags): Promise<void> {
-    const image = flags['docker-registry'] ?? DEFAULT_DOCKER_REGISTRY;
+    const image = String(flags['docker-registry'] ?? '').trim() || defaultDockerRegistryForLang(process.env.NB_LOCALE);
     const tag = flags.version ?? 'latest';
     const imageRef = `${image}:${tag}`;
     const platform = dockerPlatformArg(flags['docker-platform']);

@@ -135,17 +135,31 @@
       "prompts": {
         "source": {
           "message": "你想通过哪种方式获取 NocoBase？",
-          "npmLabel": "npm 包",
-          "gitLabel": "Git 仓库",
-          "dockerLabel": "Docker 镜像"
+          "dockerLabel": "Docker 安装（推荐）",
+          "dockerHint": "适合无代码或低维护成本场景。后续升级时，拉取新镜像并重启应用即可。",
+          "npmLabel": "create-nocobase-app 安装",
+          "npmHint": "适合希望将业务代码与 NocoBase 框架保持独立的场景，同时仍然支持低代码开发。",
+          "gitLabel": "Git 源码安装",
+          "gitHint": "适合体验最新未发布版本、参与贡献，或直接修改和调试 NocoBase 源码。这个方式更偏向开发者使用。"
         },
         "version": {
-          "message": "你想使用哪个版本？这里可以填写 npm 版本号、Docker tag，或 Git ref（例如分支名）。",
-          "placeholder": "alpha"
+          "message": "你想使用哪个版本？",
+          "latestLabel": "latest",
+          "latestHint": "稳定版。适合生产环境和希望获得稳定体验的场景。当前暂不可用。",
+          "betaLabel": "beta",
+          "betaHint": "测试版。包含即将发布的新功能，适合提前体验和反馈。",
+          "alphaLabel": "alpha",
+          "alphaHint": "开发版。功能更新最快，但可能不完整或不稳定。",
+          "otherLabel": "其他",
+          "otherHint": "手动填写其他版本号、Docker tag 或 Git ref，例如分支名。"
+        },
+        "otherVersion": {
+          "message": "请输入你想使用的版本号、Docker tag 或 Git ref。",
+          "placeholder": "例如：fix/cli-v2"
         },
         "dockerRegistry": {
           "message": "你想使用哪个 Docker registry？镜像 tag 请单独在 Version 中填写。",
-          "placeholder": "nocobase/nocobase"
+          "placeholder": "registry.cn-shanghai.aliyuncs.com/nocobase/nocobase"
         },
         "dockerPlatform": {
           "message": "要使用哪个 Docker 镜像平台？",

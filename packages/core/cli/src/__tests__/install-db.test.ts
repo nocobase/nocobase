@@ -9,9 +9,23 @@
 
 import net from 'node:net';
 import path from 'node:path';
-import { test, expect } from 'vitest';
+import { afterEach, beforeEach, test, expect } from 'vitest';
 import Install from '../commands/install.js';
 import { validateAvailableTcpPort } from '../lib/prompt-validators.js';
+
+const originalNbLocale = process.env.NB_LOCALE;
+
+beforeEach(() => {
+  process.env.NB_LOCALE = 'en-US';
+});
+
+afterEach(() => {
+  if (originalNbLocale === undefined) {
+    delete process.env.NB_LOCALE;
+    return;
+  }
+  process.env.NB_LOCALE = originalNbLocale;
+});
 
 type InstallStatics = {
   buildBuiltinDbPlan: (params: {
@@ -154,6 +168,35 @@ test('builtin postgres db plan can use the workspace name from config', () => {
 
   expect(plan.networkName).toBe('nb-shared-workspace');
   expect(plan.containerName).toBe('nb-shared-workspace-demo-postgres');
+});
+
+test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN', () => {
+  process.env.NB_LOCALE = 'zh-CN';
+  const installStatics = Install as unknown as InstallStatics;
+
+  const postgresPlan = installStatics.buildBuiltinDbPlan({
+    envName: 'demo',
+    storagePath: './storage/demo',
+    source: 'npm',
+    dbDialect: 'postgres',
+  });
+  expect(postgresPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
+
+  const mysqlPlan = installStatics.buildBuiltinDbPlan({
+    envName: 'demo',
+    storagePath: './storage/demo',
+    source: 'npm',
+    dbDialect: 'mysql',
+  });
+  expect(mysqlPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8');
+
+  const mariadbPlan = installStatics.buildBuiltinDbPlan({
+    envName: 'demo',
+    storagePath: './storage/demo',
+    source: 'npm',
+    dbDialect: 'mariadb',
+  });
+  expect(mariadbPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11');
 });
 
 test('builtin db plan does not publish host port for docker source and uses container host', () => {

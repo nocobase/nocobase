@@ -455,3 +455,73 @@ test('download preserves raw failures in verbose mode', async () => {
 
   await expect(command.run()).rejects.toThrow('yarn install exited with code 1');
 });
+
+test('downloadFromDocker uses the locale-aware default registry when docker-registry is not set', async () => {
+  await useTempCwd();
+  process.env.NB_LOCALE = 'zh-CN';
+  mocks.run.mockResolvedValue(undefined);
+  const { command } = createCommand();
+  const flags: DownloadResolvedFlags = {
+    source: 'docker',
+    version: 'alpha',
+    replace: false,
+    build: true,
+    'build-dts': false,
+    'docker-save': false,
+  };
+
+  await command.downloadFromDocker(flags);
+
+  expect(mocks.run.mock.calls[0]?.[1]).toEqual([
+    'pull',
+    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha',
+  ]);
+});
+
+test('download resolves otherVersion into the final version value', async () => {
+  const { command } = createCommand();
+  const resolved = (
+    command as Download & {
+      mapCatalogResultsToResolved: (
+        results: Record<string, string | boolean | number>,
+        flags: Record<string, unknown>,
+      ) => DownloadResolvedFlags;
+    }
+  ).mapCatalogResultsToResolved(
+    {
+      source: 'git',
+      version: 'other',
+      otherVersion: 'fix/cli-v2',
+      build: true,
+      buildDts: false,
+    },
+    {
+      build: true,
+      'build-dts': false,
+      replace: false,
+      'dev-dependencies': false,
+      'docker-save': false,
+    },
+  );
+
+  expect(resolved.version).toBe('fix/cli-v2');
+});
+
+test('download preserves custom --version values through prompt presets', () => {
+  const { command } = createCommand();
+  const preset = (
+    command as Download & {
+      buildPresetValuesFromFlags: (flags: Record<string, unknown>) => Record<string, unknown>;
+    }
+  ).buildPresetValuesFromFlags({
+    version: 'fix/cli-v2',
+    build: true,
+    'build-dts': false,
+    replace: false,
+    'dev-dependencies': false,
+    'docker-save': false,
+  });
+
+  expect(preset.version).toBe('other');
+  expect(preset.otherVersion).toBe('fix/cli-v2');
+});

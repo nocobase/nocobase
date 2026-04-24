@@ -1,38 +1,15 @@
 {
   "name": "@nocobase/client-v2",
-  "version": "2.1.0-alpha.22",
+  "version": "2.1.0-beta.17",
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./es/index.d.ts",
-      "import": "./es/index.mjs",
-      "require": "./lib/index.js"
-    },
-    "./flow-compat": {
-      "types": "./es/flow-compat/index.d.ts",
-      "import": "./es/flow-compat/index.mjs",
-      "require": "./lib/flow-compat/index.js"
-    },
-    "./package.json": "./package.json"
-  },
   "dependencies": {
-    "@ant-design/icons": "^5.6.1",
-    "@emotion/css": "^11.7.1",
-    "@formily/antd-v5": "1.2.3",
-    "@formily/react": "^2.2.27",
-    "@formily/shared": "^2.2.27",
-    "@nocobase/flow-engine": "2.1.0-alpha.22",
-    "@nocobase/sdk": "2.1.0-alpha.22",
-    "@nocobase/shared": "2.1.0-alpha.22",
-    "antd": "5.24.2",
-    "classnames": "^2.3.1",
-    "dayjs": "^1.11.10",
+    "@nocobase/flow-engine": "2.1.0-beta.17",
+    "@nocobase/sdk": "2.1.0-beta.17",
+    "@nocobase/shared": "2.1.0-beta.17",
     "i18next": "^22.4.9",
-    "lodash": "4.17.21",
-    "react-i18next": "^11.15.1",
     "react-router-dom": "^6.30.1"
   }
 }

@@ -76,6 +76,14 @@ function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
 }
 
+function resolveInitDownloadVersion(results: Record<string, string | number | boolean>): string {
+  const preset = String(results.version ?? '').trim();
+  if (preset === 'other') {
+    return String(results.otherVersion ?? '').trim();
+  }
+  return preset;
+}
+
 function shouldAllowExistingInitEnv(): boolean {
   return argvHasToken(process.argv.slice(2), ['--force', '-f']);
 }
@@ -223,6 +231,7 @@ Prompt modes:
     fetchSource: newInstallOnly(Install.appPrompts.fetchSource),
     source: downloadInNewInstallOnly(Download.prompts.source),
     version: downloadInNewInstallOnly(Download.prompts.version),
+    otherVersion: downloadInNewInstallOnly(Download.prompts.otherVersion),
     dockerRegistry: downloadInNewInstallOnly(Download.prompts.dockerRegistry),
     dockerPlatform: downloadInNewInstallOnly(Download.prompts.dockerPlatform),
     dockerSave: downloadInNewInstallOnly(Download.prompts.dockerSave),
@@ -641,6 +650,7 @@ Prompt modes:
         catalog: {
           source: c.source,
           version: c.version,
+          otherVersion: c.otherVersion,
           dockerRegistry: c.dockerRegistry,
           dockerPlatform: c.dockerPlatform,
           dockerSave: c.dockerSave,
@@ -823,7 +833,7 @@ Prompt modes:
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const appPort = String(results.appPort ?? '').trim();
     const source = String(results.source ?? '').trim();
-    const version = String(results.version ?? '').trim();
+    const version = resolveInitDownloadVersion(results);
     const dockerRegistry = String(results.dockerRegistry ?? '').trim();
     const dockerPlatform = String(results.dockerPlatform ?? '').trim();
     const gitUrl = String(results.gitUrl ?? '').trim();
@@ -937,7 +947,7 @@ Prompt modes:
         argv.push('--source', source);
       }
 
-      const version = String(results.version ?? '').trim();
+      const version = resolveInitDownloadVersion(results);
       if (version) {
         argv.push('--version', version);
       }

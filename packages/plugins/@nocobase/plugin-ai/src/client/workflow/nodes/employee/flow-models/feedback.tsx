@@ -10,11 +10,22 @@
 import React from 'react';
 import { css, SchemaComponent } from '@nocobase/client';
 import { FlowModel, tExpr } from '@nocobase/flow-engine';
+import { Tooltip } from 'antd';
 import { StructuredOutput } from '../components/structured-output';
 import { AssigneesSelect, AssigneesAddition } from '../components/assigness';
 import { namespace } from '../../../../locale';
 
 export class AIEmployeeTaskFeedbackModel extends FlowModel {
+  onInit(options) {
+    super.onInit(options);
+    this.context.defineMethod('t', (key, options) => {
+      return this.context.i18n.t(key, {
+        ...options,
+        ns: namespace,
+      });
+    });
+  }
+
   public render() {
     return (
       <SchemaComponent
@@ -27,20 +38,44 @@ export class AIEmployeeTaskFeedbackModel extends FlowModel {
               'x-component': StructuredOutput,
             },
             requiresApproval: {
-              title: tExpr('Requires approval', { ns: namespace }),
+              title: tExpr('Approval & Notice', { ns: namespace }),
               type: 'string',
               default: 'no_required',
               'x-decorator': 'FormItem',
               'x-decorator-props': {
-                tooltip: tExpr('Whether user approval is required before the task outputs the final result', {
-                  ns: namespace,
-                }),
+                tooltip: tExpr(
+                  'Configure whether task output should be sent to specified users for notification, carbon copy, or approval',
+                  {
+                    ns: namespace,
+                  },
+                ),
               },
               'x-component': 'Radio.Group',
               enum: [
-                { label: tExpr('No required', { ns: namespace }), value: 'no_required' },
-                { label: tExpr('AI decision', { ns: namespace }), value: 'ai_decision' },
-                { label: tExpr('Human decision', { ns: namespace }), value: 'human_decision' },
+                {
+                  label: (
+                    <Tooltip title={this.context.t('Do not initiate approval')}>
+                      <span>{this.context.t('No required')}</span>
+                    </Tooltip>
+                  ),
+                  value: 'no_required',
+                },
+                {
+                  label: (
+                    <Tooltip title={this.context.t('Initiate approval when needed')}>
+                      <span>{this.context.t('AI decision')}</span>
+                    </Tooltip>
+                  ),
+                  value: 'ai_decision',
+                },
+                {
+                  label: (
+                    <Tooltip title={this.context.t('Always initiate approval')}>
+                      <span>{this.context.t('Human decision')}</span>
+                    </Tooltip>
+                  ),
+                  value: 'human_decision',
+                },
               ],
             },
             assignees: {

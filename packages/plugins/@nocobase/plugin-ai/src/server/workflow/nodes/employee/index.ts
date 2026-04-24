@@ -189,6 +189,19 @@ Do not send another normal assistant response without invoking it.
         status: JOB_STATUS.ERROR,
         result: e.message,
       });
+      const aiWorkflowTask = await this.workflow.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          jobId: id,
+        },
+      });
+      if (aiWorkflowTask) {
+        await this.workflow.db.getRepository('aiWorkflowTasks').update({
+          values: { status: 'aborted' },
+          filter: {
+            id: aiWorkflowTask.id,
+          },
+        });
+      }
       await this.workflow.resume(job);
     }
   }

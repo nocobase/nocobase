@@ -457,6 +457,45 @@ test('nb init saves env config before install starts so failures still leave the
   expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
 });
 
+test('nb init forwards otherVersion as the final --version value to nb install', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+        options?: { nonInteractive?: boolean; resume?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      appName: 'demoapp',
+      lang: 'en-US',
+      appRootPath: './apps/demoapp',
+      storagePath: './storage/demoapp',
+      fetchSource: true,
+      source: 'git',
+      version: 'other',
+      otherVersion: 'fix/cli-v2',
+      outputDir: './apps/demoapp',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+    },
+    {
+      yes: true,
+      force: false,
+      build: true,
+      verbose: false,
+    },
+  );
+
+  expect(argv).toContain('--version');
+  expect(argv[argv.indexOf('--version') + 1]).toBe('fix/cli-v2');
+});
+
 test('nb init --resume delegates to nb install --resume for the selected env', async () => {
   const { default: Init } = await import('../commands/init.js');
 

@@ -39,8 +39,8 @@ export type PromptHiddenPredicate = (values: PromptCatalogValues) => boolean;
 /** For **`type: 'run'`** only: when true, **`run`** executes. If omitted, the block always runs. */
 export type PromptWhenPredicate = (values: PromptCatalogValues) => boolean;
 
-/** Select value, or value plus Clack `label` / `hint`. */
-export type SelectOptionDef = string | { value: string; label?: LocalizedText; hint?: LocalizedText };
+/** Select value, or value plus Clack `label` / `hint` / `disabled`. */
+export type SelectOptionDef = string | { value: string; label?: LocalizedText; hint?: LocalizedText; disabled?: boolean };
 
 export function selectOptionValues(options: SelectOptionDef[]): string[] {
   return options.map((o) => (typeof o === 'string' ? o : o.value));
@@ -62,8 +62,15 @@ function clackSelectOptions(options: SelectOptionDef[], locale: CliLocale) {
         value: o.value,
         label: resolvePromptText(o.label, locale, o.value),
         ...(o.hint !== undefined ? { hint: resolvePromptText(o.hint, locale) } : {}),
+        ...(o.disabled !== undefined ? { disabled: o.disabled } : {}),
       },
   );
+}
+
+function enabledSelectOptionValues(options: SelectOptionDef[]): string[] {
+  return options
+    .filter((o) => typeof o === 'string' || o.disabled !== true)
+    .map((o) => (typeof o === 'string' ? o : o.value));
 }
 
 export type IntroPromptBlock = {
@@ -261,21 +268,22 @@ function mergedSelect(
   useYesInitial: boolean,
 ): string | undefined {
   const valueList = selectOptionValues(def.options);
+  const enabledValueList = enabledSelectOptionValues(def.options);
   if (hasIvKey(iv, key)) {
     const s = String(iv[key]);
-    if (valueList.includes(s)) {
+    if (enabledValueList.includes(s)) {
       return s;
     }
     return undefined;
   }
-  if (useYesInitial && def.yesInitialValue !== undefined && valueList.includes(def.yesInitialValue)) {
+  if (useYesInitial && def.yesInitialValue !== undefined && enabledValueList.includes(def.yesInitialValue)) {
     return def.yesInitialValue;
   }
   const d = def.initialValue;
-  if (d !== undefined && valueList.includes(d)) {
+  if (d !== undefined && enabledValueList.includes(d)) {
     return d;
   }
-  return valueList[0];
+  return enabledValueList[0];
 }
 
 function mergedInteger(
