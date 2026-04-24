@@ -8,7 +8,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildFlowSurfaceDefaultActionPopupBlocks } from '../flow-surfaces/default-action-popup';
+import {
+  buildFlowSurfaceDefaultActionPopupBlocks,
+  pickFlowSurfaceDefaultActionPopupFieldGroups,
+  resolveFlowSurfaceDefaultActionPopupTabTitle,
+} from '../flow-surfaces/default-action-popup';
 
 function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionModel') {
   const [block] = buildFlowSurfaceDefaultActionPopupBlocks(actionUse, ['name']);
@@ -18,12 +22,61 @@ function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionMo
 describe('flowSurfaces default action popup', () => {
   it('should use a primary Submit button for add-new and edit popup forms', () => {
     expect(readSubmitActionSettings('AddNewActionModel')).toMatchObject({
-      title: 'Submit',
+      title: '{{t("Submit")}}',
       type: 'primary',
     });
     expect(readSubmitActionSettings('EditActionModel')).toMatchObject({
-      title: 'Submit',
+      title: '{{t("Submit")}}',
       type: 'primary',
     });
+  });
+
+  it('should keep default popup tab titles translatable and compatible with legacy plain button titles', () => {
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel')).toBe('{{t("Details")}}');
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel', '{{t("View")}}')).toBe('{{t("Details")}}');
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel', 'View')).toBe('{{t("Details")}}');
+    expect(resolveFlowSurfaceDefaultActionPopupTabTitle('ViewActionModel', 'Inspect employee')).toBe(
+      'Inspect employee',
+    );
+  });
+
+  it('should keep each default field group field only once', () => {
+    const groups = pickFlowSurfaceDefaultActionPopupFieldGroups(
+      [
+        { fieldPath: 'title', field: { name: 'title', interface: 'input' } },
+        { fieldPath: 'createdAt', field: { name: 'createdAt', interface: 'createdAt' } },
+        { fieldPath: 'updatedAt', field: { name: 'updatedAt', interface: 'updatedAt' } },
+      ],
+      [
+        {
+          key: 'main',
+          title: 'Main',
+          fields: ['title', 'createdAt', 'createdAt'],
+        },
+        {
+          key: 'audit',
+          title: 'Audit',
+          fields: ['createdAt', 'updatedAt'],
+        },
+        {
+          key: 'empty',
+          title: 'Empty',
+          fields: ['createdAt'],
+        },
+      ],
+    );
+
+    expect(groups).toEqual([
+      {
+        key: 'main',
+        title: 'Main',
+        fields: ['title', 'createdAt'],
+      },
+      {
+        key: 'audit',
+        title: 'Audit',
+        fields: ['updatedAt'],
+      },
+    ]);
   });
 });

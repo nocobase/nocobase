@@ -19,6 +19,8 @@ export type AdminRouteRuntimeTarget = {
   isLegacy: boolean;
 };
 
+const V2_PUBLIC_PATH_SUFFIX = '/v2/';
+
 type LocationLike = {
   pathname: string;
   search?: string;
@@ -56,6 +58,16 @@ function normalizeRootRelativePath(pathname: string) {
 function normalizePublicPath(value = '/') {
   const normalized = normalizeRootRelativePath(value || '/');
   return normalized.endsWith('/') ? normalized : `${normalized}/`;
+}
+
+/**
+ * 判断当前应用是否运行在需要兼容跳回 v1 的 `/v2/` 路径下。
+ *
+ * @param {ResolveAdminRouteRuntimeTargetOptions['app']} app 当前应用实例
+ * @returns {boolean} 是否启用 v2 到 v1 的经典页跳转
+ */
+function shouldUseLegacyDocumentNavigation(app: ResolveAdminRouteRuntimeTargetOptions['app']) {
+  return normalizePublicPath(app.getPublicPath()).endsWith(V2_PUBLIC_PATH_SUFFIX);
 }
 
 export function toRouterNavigationPath(pathname: string, basename?: string) {
@@ -160,6 +172,17 @@ function resolvePageRuntimeTarget(options: ResolveAdminRouteRuntimeTargetOptions
   if (route.type === NocoBaseDesktopRouteType.flowPage) {
     return {
       runtimePath: getV2AdminPath(app, route.schemaUid),
+      navigationMode: 'spa' as const,
+      isLegacy: false,
+    };
+  }
+
+  if (!shouldUseLegacyDocumentNavigation(app)) {
+    return {
+      runtimePath:
+        preserveLocationState && location
+          ? appendLocationState(getV2AdminPath(app, route.schemaUid), location)
+          : getV2AdminPath(app, route.schemaUid),
       navigationMode: 'spa' as const,
       isLegacy: false,
     };

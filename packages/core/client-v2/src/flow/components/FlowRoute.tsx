@@ -134,7 +134,7 @@ const FlowRoute = () => {
           preserveLocationState: true,
         });
 
-        if (target.runtimePath && !replaceTriggeredRef.current) {
+        if (target.navigationMode === 'document' && target.runtimePath && !replaceTriggeredRef.current) {
           replaceTriggeredRef.current = true;
           window.location.replace(target.runtimePath);
           return;

@@ -148,7 +148,7 @@ export function buildApprovalActionDefaults(use: string): ApprovalActionDefaults
     case 'ApplyFormSubmitModel':
       return {
         props: {
-          title: 'Submit',
+          title: '{{t("Submit")}}',
           type: 'primary',
           htmlType: 'submit',
         },
@@ -156,7 +156,7 @@ export function buildApprovalActionDefaults(use: string): ApprovalActionDefaults
     case 'ApplyFormSaveDraftModel':
       return {
         props: {
-          title: 'Save draft',
+          title: '{{t("Save draft", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'default',
           htmlType: 'submit',
         },
@@ -164,7 +164,7 @@ export function buildApprovalActionDefaults(use: string): ApprovalActionDefaults
     case 'ApplyFormWithdrawModel':
       return {
         props: {
-          title: 'Withdraw',
+          title: '{{t("Withdraw", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'default',
           htmlType: 'submit',
         },
@@ -172,14 +172,14 @@ export function buildApprovalActionDefaults(use: string): ApprovalActionDefaults
     case 'ProcessFormApproveModel':
       return {
         props: {
-          title: 'Approve',
+          title: '{{t("Approve", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'primary',
         },
       };
     case 'ProcessFormRejectModel':
       return {
         props: {
-          title: 'Reject',
+          title: '{{t("Reject", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'default',
           danger: true,
         },
@@ -187,21 +187,21 @@ export function buildApprovalActionDefaults(use: string): ApprovalActionDefaults
     case 'ProcessFormReturnModel':
       return {
         props: {
-          title: 'Return',
+          title: '{{t("Return", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'default',
         },
       };
     case 'ProcessFormDelegateModel':
       return {
         props: {
-          title: 'Delegate',
+          title: '{{t("Delegate", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'default',
         },
       };
     case 'ProcessFormAddAssigneeModel':
       return {
         props: {
-          title: 'Add assignee',
+          title: '{{t("Add assignee", { ns: "@nocobase/plugin-workflow-approval" })}}',
           type: 'default',
         },
       };

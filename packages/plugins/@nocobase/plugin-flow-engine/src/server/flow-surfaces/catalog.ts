@@ -36,6 +36,7 @@ import {
   ACTION_PANEL_ACTION_CONTAINER_USES,
   assertActionScopeMatchesContainer,
   assertKnownActionContainerUse,
+  CALENDAR_BLOCK_ACTION_CONTAINER_USES,
   COLLECTION_BLOCK_ACTION_CONTAINER_USES,
   DETAILS_ACTION_CONTAINER_USES,
   FILTER_FORM_ACTION_CONTAINER_USES,
@@ -154,6 +155,15 @@ const FILTER_FORM_ITEM_ALLOWED_PATHS = [
   'initialValue.defaultValue',
 ];
 const ACTION_PROP_KEYS = ['title', 'tooltip', 'icon', 'type', 'htmlType', 'position', 'danger', 'color'];
+const FILTER_ACTION_PROP_KEYS = [...ACTION_PROP_KEYS, 'filterableFieldNames', 'defaultFilterValue', 'filterValue'];
+const FILTER_ACTION_PROP_PATH_SCHEMAS = {
+  filterableFieldNames: {
+    type: 'array',
+    items: STRING_SCHEMA,
+  },
+  defaultFilterValue: FILTER_GROUP_SCHEMA,
+  filterValue: FILTER_GROUP_SCHEMA,
+};
 const ACTION_BUTTON_SETTINGS_GROUP = {
   allowedPaths: [
     'general.title',
@@ -290,6 +300,35 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     linkageRules: ARRAY_SCHEMA,
   },
 };
+const CALENDAR_SETTINGS_GROUP = {
+  allowedPaths: [
+    'titleField.titleField',
+    'colorField.colorFieldName',
+    'startDateField.start',
+    'endDateField.end',
+    'defaultView.defaultView',
+    'quickCreateEvent.enableQuickCreateEvent',
+    'showLunar.showLunar',
+    'weekStart.weekStart',
+    'dataScope.filter',
+    'linkageRules.value',
+  ],
+  clearable: true,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['dataScope', 'linkageRules'],
+  pathSchemas: {
+    'titleField.titleField': STRING_SCHEMA,
+    'colorField.colorFieldName': STRING_SCHEMA,
+    'startDateField.start': STRING_SCHEMA,
+    'endDateField.end': STRING_SCHEMA,
+    'defaultView.defaultView': STRING_SCHEMA,
+    'quickCreateEvent.enableQuickCreateEvent': BOOLEAN_SCHEMA,
+    'showLunar.showLunar': BOOLEAN_SCHEMA,
+    'weekStart.weekStart': NUMBER_SCHEMA,
+    'dataScope.filter': FILTER_GROUP_SCHEMA,
+    'linkageRules.value': ARRAY_SCHEMA,
+  },
+};
 const TABLE_SETTINGS_GROUP = {
   allowedPaths: [
     'quickEdit.editable',
@@ -414,13 +453,15 @@ const KNOWN_FIELD_NODE_USES = new Set<string>([
 function keyedDomain(
   allowedKeys: string[],
   mergeStrategy: FlowSurfaceDomainContract['mergeStrategy'] = 'deep',
+  pathSchemas?: Record<string, Record<string, any>>,
 ): FlowSurfaceDomainContract {
   return {
     allowedKeys,
     mergeStrategy,
+    pathSchemas,
     schema: {
       type: 'object',
-      properties: Object.fromEntries(allowedKeys.map((key) => [key, ANY_VALUE_SCHEMA])),
+      properties: Object.fromEntries(allowedKeys.map((key) => [key, pathSchemas?.[key] || ANY_VALUE_SCHEMA])),
       additionalProperties: false,
     },
   };
@@ -527,6 +568,7 @@ function buildSettingsSchema(contract: FlowSurfaceNodeContract) {
         'x-allowedKeys': definition?.allowedKeys || [],
         'x-wildcard': !!definition?.wildcard,
         'x-mergeStrategy': definition?.mergeStrategy || 'deep',
+        'x-pathSchemas': definition?.pathSchemas,
         'x-groups': definition?.groups
           ? Object.fromEntries(
               Object.entries(definition.groups).map(([groupKey, group]) => [
@@ -866,6 +908,31 @@ const FILTER_FORM_BLOCK_CONTRACT = createContract({
 FILTER_FORM_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   formFilterBlockModelSettings: FILTER_FORM_BLOCK_SETTINGS_GROUP,
+});
+
+const CALENDAR_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: [
+    'fieldNames',
+    'defaultView',
+    'enableQuickCreateEvent',
+    'showLunar',
+    'weekStart',
+    'quickCreatePopupSettings',
+    'eventPopupSettings',
+  ],
+  decoratorProps: ['height', 'heightMode'],
+  stepParams: ['resourceSettings', 'calendarSettings', 'cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+CALENDAR_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: RESOURCE_SETTINGS_GROUP,
+  calendarSettings: CALENDAR_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
 const LIST_BLOCK_CONTRACT = createContract({
@@ -1345,6 +1412,7 @@ const FIELD_NODE_CONTRACT = createContract({
     'icon',
     'titleField',
     'clickToOpen',
+    'mode',
     'autoSize',
     'allowMultiple',
     'multiple',
@@ -1564,6 +1632,29 @@ const POPUP_ACTION_CONTRACT = createContract({
 });
 POPUP_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  popupSettings: {
+    allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['openView'],
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
+  },
+});
+
+const CALENDAR_POPUP_ACTION_CONTRACT = createContract({
+  editableDomains: ['stepParams'],
+  stepParams: ['popupSettings'],
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    popupSettings: {
+      stepKeys: ['openView'],
+    },
+  },
+});
+CALENDAR_POPUP_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   popupSettings: {
     allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
     clearable: true,
@@ -1828,6 +1919,70 @@ const SIMPLE_ACTION_CONTRACT = createContract({
 });
 SIMPLE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+});
+
+const CALENDAR_READONLY_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: ['position'],
+  stepParams: ['buttonSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['linkageRules'],
+    },
+  },
+});
+CALENDAR_READONLY_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: {
+    allowedPaths: ['linkageRules'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['linkageRules'],
+    pathSchemas: {
+      linkageRules: ARRAY_SCHEMA,
+    },
+  },
+});
+
+const FILTER_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: FILTER_ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'filterSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    filterSettings: {
+      stepKeys: ['filterableFieldNames', 'defaultFilter'],
+    },
+  },
+});
+FILTER_ACTION_CONTRACT.domains.props = keyedDomain(FILTER_ACTION_PROP_KEYS, 'deep', FILTER_ACTION_PROP_PATH_SCHEMAS);
+FILTER_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  filterSettings: {
+    allowedPaths: ['filterableFieldNames.filterableFieldNames', 'defaultFilter.defaultFilter'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['filterableFieldNames', 'defaultFilter'],
+    pathSchemas: {
+      'filterableFieldNames.filterableFieldNames': {
+        type: 'array',
+        items: STRING_SCHEMA,
+      },
+      'defaultFilter.defaultFilter': FILTER_GROUP_SCHEMA,
+    },
+  },
 });
 
 const FILTER_FORM_COLLAPSE_ACTION_CONTRACT = createContract({
@@ -2174,6 +2329,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['TriggerBlockGridModel', GRID_NODE_CONTRACT],
   ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
+  ['CalendarBlockModel', CALENDAR_BLOCK_CONTRACT],
   ['CreateFormModel', CREATE_FORM_BLOCK_CONTRACT],
   ['EditFormModel', EDIT_FORM_BLOCK_CONTRACT],
   ['FormBlockModel', FORM_BLOCK_CONTRACT],
@@ -2212,6 +2368,8 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ViewActionModel', POPUP_ACTION_CONTRACT],
   ['EditActionModel', POPUP_ACTION_CONTRACT],
   ['PopupCollectionActionModel', POPUP_ACTION_CONTRACT],
+  ['CalendarQuickCreateActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
+  ['CalendarEventViewActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
   ['AddChildActionModel', POPUP_ACTION_CONTRACT],
   ['DeleteActionModel', DELETE_ACTION_CONTRACT],
   ['BulkDeleteActionModel', DELETE_ACTION_CONTRACT],
@@ -2223,7 +2381,11 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormSubmitActionModel', FILTER_FORM_SUBMIT_ACTION_CONTRACT],
   ['FilterFormResetActionModel', SIMPLE_ACTION_CONTRACT],
   ['FilterFormCollapseActionModel', FILTER_FORM_COLLAPSE_ACTION_CONTRACT],
-  ['FilterActionModel', SIMPLE_ACTION_CONTRACT],
+  ['CalendarTodayActionModel', SIMPLE_ACTION_CONTRACT],
+  ['CalendarNavActionModel', CALENDAR_READONLY_ACTION_CONTRACT],
+  ['CalendarTitleActionModel', CALENDAR_READONLY_ACTION_CONTRACT],
+  ['CalendarViewSelectActionModel', CALENDAR_READONLY_ACTION_CONTRACT],
+  ['FilterActionModel', FILTER_ACTION_CONTRACT],
   ['RefreshActionModel', SIMPLE_ACTION_CONTRACT],
   ['LinkActionModel', SIMPLE_ACTION_CONTRACT],
   ['ExpandCollapseActionModel', SIMPLE_ACTION_CONTRACT],
@@ -2769,6 +2931,7 @@ export function getAvailableActionCatalogItems(
 
 const COLLECTION_RESOURCE_REQUIRED = new Set([
   'TableBlockModel',
+  'CalendarBlockModel',
   'CreateFormModel',
   'EditFormModel',
   'FormBlockModel',
@@ -2891,6 +3054,46 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     use: 'RefreshActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'today',
+    label: 'Today',
+    scope: 'block',
+    scene: 'collection',
+    use: 'CalendarTodayActionModel',
+    ownerPlugin: '@nocobase/plugin-calendar',
+    allowedContainerUses: CALENDAR_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'turnPages',
+    label: 'Turn pages',
+    scope: 'block',
+    scene: 'collection',
+    use: 'CalendarNavActionModel',
+    ownerPlugin: '@nocobase/plugin-calendar',
+    allowedContainerUses: CALENDAR_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'title',
+    label: 'Title',
+    scope: 'block',
+    scene: 'collection',
+    use: 'CalendarTitleActionModel',
+    ownerPlugin: '@nocobase/plugin-calendar',
+    allowedContainerUses: CALENDAR_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'selectView',
+    label: 'Select view',
+    scope: 'block',
+    scene: 'collection',
+    use: 'CalendarViewSelectActionModel',
+    ownerPlugin: '@nocobase/plugin-calendar',
+    allowedContainerUses: CALENDAR_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {

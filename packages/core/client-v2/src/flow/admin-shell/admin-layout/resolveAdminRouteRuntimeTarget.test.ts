@@ -54,6 +54,29 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     });
   });
 
+  it('should keep page inside spa when current runtime is not under /v2/', () => {
+    const subApp = {
+      getPublicPath: () => '/apps/demo/',
+      router: {
+        getBasename: () => '/apps/demo',
+      },
+    } as any;
+
+    expect(
+      resolveAdminRouteRuntimeTarget({
+        app: subApp,
+        route: {
+          type: NocoBaseDesktopRouteType.page,
+          schemaUid: 'legacy-page-1',
+        },
+      }),
+    ).toEqual({
+      runtimePath: '/apps/demo/admin/legacy-page-1',
+      navigationMode: 'spa',
+      isLegacy: false,
+    });
+  });
+
   it('should preserve current search and hash for direct legacy correction', () => {
     expect(
       resolveAdminRouteRuntimeTarget({

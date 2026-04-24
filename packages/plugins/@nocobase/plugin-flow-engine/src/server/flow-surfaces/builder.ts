@@ -97,6 +97,13 @@ const JS_ITEM_DEFAULT_CODE = [
 ].join('\n');
 
 const JS_COLUMN_DEFAULT_CODE = `ctx.render('<span class="nb-js-column">JS column</span>');`;
+const CALENDAR_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
+const CALENDAR_EVENT_VIEW_ACTION_KEY = 'eventViewAction';
+const CALENDAR_READONLY_ACTION_MODEL_USES = new Set([
+  'CalendarNavActionModel',
+  'CalendarTitleActionModel',
+  'CalendarViewSelectActionModel',
+]);
 
 const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   JSCollectionActionModel: [
@@ -273,6 +280,7 @@ export function buildBlockTree(options: {
   }
 
   const model: FlowSurfaceNodeSpec = {
+    ...(use === 'CalendarBlockModel' ? { uid: uid() } : {}),
     use,
     ...(typeof approvalBlockDefaults?.async === 'boolean' ? { async: approvalBlockDefaults.async } : {}),
     props: _.merge(
@@ -368,9 +376,80 @@ export function buildBlockTree(options: {
         },
       },
     };
+  } else if (use === 'CalendarBlockModel') {
+    const blockUid = model.uid || uid();
+    model.uid = blockUid;
+    model.subModels = {
+      [CALENDAR_QUICK_CREATE_ACTION_KEY]: buildCalendarPopupActionNode({
+        actionKey: CALENDAR_QUICK_CREATE_ACTION_KEY,
+        blockUid,
+        resourceInit: normalizedResourceInit,
+        popupSettings: model.props?.quickCreatePopupSettings,
+      }),
+      [CALENDAR_EVENT_VIEW_ACTION_KEY]: buildCalendarPopupActionNode({
+        actionKey: CALENDAR_EVENT_VIEW_ACTION_KEY,
+        blockUid,
+        resourceInit: normalizedResourceInit,
+        popupSettings: model.props?.eventPopupSettings,
+      }),
+    };
   }
 
   return assignClientKeysToUids(model, {});
+}
+
+function buildCalendarPopupActionNode(options: {
+  actionKey: typeof CALENDAR_QUICK_CREATE_ACTION_KEY | typeof CALENDAR_EVENT_VIEW_ACTION_KEY;
+  blockUid: string;
+  resourceInit?: Record<string, any>;
+  popupSettings?: Record<string, any>;
+}) {
+  const actionUid = `${options.blockUid}-${options.actionKey}`;
+  return {
+    uid: actionUid,
+    use:
+      options.actionKey === CALENDAR_QUICK_CREATE_ACTION_KEY
+        ? 'CalendarQuickCreateActionModel'
+        : 'CalendarEventViewActionModel',
+    stepParams: {
+      popupSettings: {
+        openView: buildCalendarPopupOpenView({
+          actionUid,
+          resourceInit: options.resourceInit,
+          popupSettings: options.popupSettings,
+        }),
+      },
+    },
+  };
+}
+
+function buildCalendarPopupOpenView(options: {
+  actionUid: string;
+  resourceInit?: Record<string, any>;
+  popupSettings?: Record<string, any>;
+}) {
+  const defaults = _.pickBy(
+    {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      uid: options.actionUid,
+      collectionName: options.resourceInit?.collectionName,
+      dataSourceKey: options.resourceInit?.dataSourceKey || (options.resourceInit?.collectionName ? 'main' : undefined),
+    },
+    (value) => !_.isUndefined(value),
+  );
+  const current = _.cloneDeep(options.popupSettings || {});
+  return _.pickBy(
+    {
+      ...defaults,
+      ...current,
+      uid: current.uid || defaults.uid,
+      collectionName: current.collectionName || defaults.collectionName,
+      dataSourceKey: current.dataSourceKey || defaults.dataSourceKey,
+    },
+    (value) => !_.isUndefined(value),
+  );
 }
 
 export function buildPopupPageTree(options: {
@@ -387,7 +466,7 @@ export function buildPopupPageTree(options: {
   const gridUid = options.gridUid || uid();
   const displayTitle = options.displayTitle === true;
   const enableTabs = options.enableTabs !== false;
-  const tabTitle = options.tabTitle || 'Details';
+  const tabTitle = options.tabTitle || '{{t("Details")}}';
 
   return {
     uid: pageUid,
@@ -622,17 +701,24 @@ function buildActionDefaults(options: {
   resourceInit?: Record<string, any>;
 }): FlowSurfaceNodeDefaults {
   const approvalDefaults = buildApprovalActionDefaults(options.use);
+  const readonlyCalendarAction = CALENDAR_READONLY_ACTION_MODEL_USES.has(options.use);
   const props = _.merge(
     {},
     inferActionDefaultProps(options.use, options.catalogItem.scope),
     approvalDefaults?.props || {},
   );
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
-  const stepParams: Record<string, any> = _.merge({}, _.cloneDeep(approvalDefaults?.stepParams || {}), {
-    buttonSettings: {
-      general: pickButtonGeneralProps(normalizedProps),
-    },
-  });
+  const stepParams: Record<string, any> = _.merge(
+    {},
+    _.cloneDeep(approvalDefaults?.stepParams || {}),
+    readonlyCalendarAction
+      ? {}
+      : {
+          buttonSettings: {
+            general: pickButtonGeneralProps(normalizedProps),
+          },
+        },
+  );
   const subModels: Record<string, any> = _.cloneDeep(approvalDefaults?.subModels || {});
 
   if (approvalDefaults) {
@@ -672,8 +758,8 @@ function buildActionDefaults(options: {
     stepParams.deleteSettings = {
       confirm: {
         enable: true,
-        title: 'Delete record',
-        content: 'Are you sure you want to delete it?',
+        title: '{{t("Delete record")}}',
+        content: '{{t("Are you sure you want to delete it?")}}',
       },
     };
   }
@@ -682,8 +768,8 @@ function buildActionDefaults(options: {
     stepParams.submitSettings = {
       confirm: {
         enable: false,
-        title: 'Submit record',
-        content: 'Are you sure you want to save it?',
+        title: '{{t("Submit record")}}',
+        content: '{{t("Are you sure you want to save it?")}}',
       },
     };
   }
@@ -692,11 +778,8 @@ function buildActionDefaults(options: {
     stepParams.assignSettings = {
       confirm: {
         enable: false,
-        title: options.use === 'BulkUpdateActionModel' ? 'Perform the Bulk update' : 'Perform the Update record',
-        content:
-          options.use === 'BulkUpdateActionModel'
-            ? 'Are you sure you want to perform the Bulk update action?'
-            : 'Are you sure you want to perform the Update record action?',
+        title: options.use === 'BulkUpdateActionModel' ? '{{t("Bulk update")}}' : '{{t("Perform the Update record")}}',
+        content: '{{t("Are you sure you want to perform the Update record action?")}}',
       },
       assignFieldValues: {
         assignedValues: {},
@@ -753,156 +836,162 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
   const map: Record<string, Record<string, any>> = {
     AddNewActionModel: {
       type: 'primary',
-      title: 'Add new',
+      title: '{{t("Add new")}}',
       icon: 'PlusOutlined',
     },
     ViewActionModel: {
       type: 'link',
-      title: 'View',
+      title: '{{t("View")}}',
       icon: 'EyeOutlined',
     },
     EditActionModel: {
-      title: 'Edit',
+      title: '{{t("Edit")}}',
       icon: 'EditOutlined',
     },
     PopupCollectionActionModel: {
-      title: 'Popup',
+      title: '{{t("Popup")}}',
       icon: 'ExportOutlined',
     },
     DeleteActionModel: {
       type: 'link',
-      title: 'Delete',
+      title: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
     },
     UpdateRecordActionModel: {
       type: 'link',
-      title: 'Update record',
+      title: '{{t("Update record")}}',
       icon: 'EditOutlined',
     },
     BulkUpdateActionModel: {
-      title: 'Bulk update',
+      title: '{{t("Bulk update")}}',
       icon: 'EditOutlined',
     },
     FilterActionModel: {
-      title: 'Filter',
+      title: '{{t("Filter")}}',
       icon: 'FilterOutlined',
     },
     RefreshActionModel: {
-      title: 'Refresh',
+      title: '{{t("Refresh")}}',
       icon: 'ReloadOutlined',
     },
     ExpandCollapseActionModel: {
-      title: 'Expand/Collapse',
       icon: 'DownOutlined',
     },
     BulkDeleteActionModel: {
-      title: 'Delete',
+      title: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
     },
     BulkEditActionModel: {
-      title: 'Bulk edit',
+      title: '{{t("Bulk edit")}}',
       icon: 'EditOutlined',
     },
     ExportActionModel: {
-      title: 'Export',
+      title: '{{t("Export")}}',
       icon: 'DownloadOutlined',
     },
     ExportAttachmentActionModel: {
-      title: 'Export attachments',
+      title: '{{t("Export attachments")}}',
       icon: 'DownloadOutlined',
     },
     ImportActionModel: {
-      title: 'Import',
+      title: '{{t("Import")}}',
       icon: 'UploadOutlined',
     },
     LinkActionModel: {
       type: 'link',
-      title: 'Link',
+      title: '{{t("Link")}}',
     },
     UploadActionModel: {
-      title: 'Upload',
+      title: '{{t("Upload")}}',
       icon: 'UploadOutlined',
     },
     DuplicateActionModel: {
       type: 'link',
-      title: 'Duplicate',
+      title: '{{t("Duplicate")}}',
       icon: 'CopyOutlined',
     },
     AddChildActionModel: {
       type: 'link',
-      title: 'Add child',
+      title: '{{t("Add child")}}',
       icon: 'PlusOutlined',
     },
     TemplatePrintCollectionActionModel: {
-      title: 'Template print',
+      title: '{{t("Template print", { ns: "@nocobase/plugin-action-template-print" })}}',
       icon: 'PrinterOutlined',
     },
     TemplatePrintRecordActionModel: {
       type: 'link',
-      title: 'Template print',
+      title: '{{t("Template print", { ns: "@nocobase/plugin-action-template-print" })}}',
       icon: 'PrinterOutlined',
     },
     CollectionTriggerWorkflowActionModel: {
-      title: 'Trigger workflow',
+      title: '{{t("Trigger workflow", { ns: "@nocobase/plugin-workflow-custom-action-trigger" })}}',
       icon: 'PlayCircleOutlined',
     },
     RecordTriggerWorkflowActionModel: {
       type: 'link',
-      title: 'Trigger workflow',
+      title: '{{t("Trigger workflow", { ns: "@nocobase/plugin-workflow-custom-action-trigger" })}}',
       icon: 'PlayCircleOutlined',
     },
     FormTriggerWorkflowActionModel: {
-      title: 'Trigger workflow',
+      title: '{{t("Trigger workflow", { ns: "@nocobase/plugin-workflow-custom-action-trigger" })}}',
       icon: 'PlayCircleOutlined',
     },
     WorkbenchTriggerWorkflowActionModel: {
-      title: 'Trigger workflow',
+      title: '{{t("Trigger global workflow", { ns: "@nocobase/plugin-workflow-custom-action-trigger" })}}',
       icon: 'PlayCircleOutlined',
     },
     MailSendActionModel: {
-      title: 'Compose email',
+      title: '{{t("Compose email", { ns: ["@nocobase/plugin-email-manager", "client"] })}}',
       icon: 'MailOutlined',
     },
     FormSubmitActionModel: {
-      title: 'Submit',
+      title: '{{t("Submit")}}',
       type: 'primary',
       htmlType: 'submit',
     },
     FilterFormSubmitActionModel: {
-      title: 'Filter',
+      title: '{{t("Filter")}}',
       type: 'primary',
     },
     FilterFormResetActionModel: {
-      title: 'Reset',
+      title: '{{t("Reset")}}',
     },
     FilterFormCollapseActionModel: {
       type: 'link',
-      title: 'Collapse button',
+      title: '{{t("Collapse button")}}',
     },
+    CalendarTodayActionModel: {
+      type: 'default',
+      title: '{{t("Today", { ns: "calendar" })}}',
+    },
+    CalendarNavActionModel: {},
+    CalendarTitleActionModel: {},
+    CalendarViewSelectActionModel: {},
     JSCollectionActionModel: {
-      title: 'JS action',
+      title: '{{t("JS action")}}',
       icon: 'JavaScriptOutlined',
     },
     JSRecordActionModel: {
       type: 'link',
-      title: 'JS action',
+      title: '{{t("JS action")}}',
       icon: 'JavaScriptOutlined',
     },
     JSFormActionModel: {
-      title: 'JS action',
+      title: '{{t("JS action")}}',
       icon: 'JavaScriptOutlined',
     },
     JSItemActionModel: {
-      title: 'JS item',
+      title: '{{t("JS item")}}',
       icon: 'JavaScriptOutlined',
     },
     FilterFormJSActionModel: {
-      title: 'JS action',
+      title: '{{t("JS action")}}',
       icon: 'JavaScriptOutlined',
     },
     JSActionModel: {
       type: 'default',
-      title: 'JS action',
+      title: '{{t("JS action")}}',
       icon: 'JavaScriptOutlined',
     },
   };
@@ -960,6 +1049,18 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
       },
     };
   }
+  if (use === 'CalendarBlockModel') {
+    return {
+      props: {
+        fieldNames: {
+          id: 'id',
+        },
+        defaultView: 'month',
+        enableQuickCreateEvent: true,
+        weekStart: 1,
+      },
+    };
+  }
   return {};
 }
 
@@ -980,12 +1081,12 @@ function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
     case 'JSColumnModel':
       return {
         props: {
-          title: 'JS column',
+          title: '{{t("JS column")}}',
         },
         stepParams: {
           tableColumnSettings: {
             title: {
-              title: 'JS column',
+              title: '{{t("JS column")}}',
             },
           },
           jsSettings: buildRunJsStepParams(JS_COLUMN_DEFAULT_CODE),
@@ -1000,7 +1101,7 @@ function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
     case 'DividerItemModel':
       return {
         props: {
-          label: 'Divider',
+          label: '{{t("Divider")}}',
           orientation: 'left',
         },
       };
@@ -1013,9 +1114,9 @@ function humanizeActionTitle(use: string) {
   const normalized = String(use || '')
     .replace(/ActionModel$/, '')
     .replace(/(Collection|Record|Form|Workbench)$/, '');
-  return (
+  const title =
     _.startCase(normalized)
       .replace(/\bJs\b/g, 'JS')
-      .trim() || 'Action'
-  );
+      .trim() || 'Action';
+  return `{{t(${JSON.stringify(title)})}}`;
 }

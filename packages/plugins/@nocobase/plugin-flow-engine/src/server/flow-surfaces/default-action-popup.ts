@@ -42,10 +42,23 @@ export type FlowSurfaceDefaultActionPopupFieldCandidate = {
   fieldPath?: string;
 };
 
+export type FlowSurfaceDefaultActionPopupFieldGroupCandidate = {
+  key?: string;
+  title: string;
+  fields: string[];
+};
+
 type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
   excludeAuditTimestampFields?: boolean;
   excludeAssociationFields?: boolean;
 };
+
+type FlowSurfaceDefaultActionPopupFieldsInput =
+  | string[]
+  | {
+      fieldPaths?: string[];
+      fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[];
+    };
 
 const DEFAULT_ACTION_POPUP_SYSTEM_FIELD_NAMES = new Set(['id', 'createdBy', 'createdById', 'updatedBy', 'updatedById']);
 
@@ -66,8 +79,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
   {
     type: 'addNew',
     use: 'AddNewActionModel',
-    defaultButtonTitle: 'Add new',
-    defaultPopupTabTitle: 'Add new',
+    defaultButtonTitle: '{{t("Add new")}}',
+    defaultPopupTabTitle: '{{t("Add new")}}',
     blockKey: 'defaultCreateForm',
     blockType: 'createForm',
     blockUse: 'CreateFormModel',
@@ -81,7 +94,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       key: 'defaultSubmit',
       type: 'submit',
       settings: {
-        title: 'Submit',
+        title: '{{t("Submit")}}',
         type: 'primary',
         confirm: false,
       },
@@ -90,8 +103,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
   {
     type: 'view',
     use: 'ViewActionModel',
-    defaultButtonTitle: 'View',
-    defaultPopupTabTitle: 'Details',
+    defaultButtonTitle: '{{t("View")}}',
+    defaultPopupTabTitle: '{{t("Details")}}',
     blockKey: 'defaultDetails',
     blockType: 'details',
     blockUse: 'DetailsBlockModel',
@@ -109,8 +122,8 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
   {
     type: 'edit',
     use: 'EditActionModel',
-    defaultButtonTitle: 'Edit',
-    defaultPopupTabTitle: 'Edit',
+    defaultButtonTitle: '{{t("Edit")}}',
+    defaultPopupTabTitle: '{{t("Edit")}}',
     blockKey: 'defaultEditForm',
     blockType: 'editForm',
     blockUse: 'EditFormModel',
@@ -128,7 +141,7 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIGS: FlowSurfaceDefaultActionPopupCo
       key: 'defaultSubmit',
       type: 'submit',
       settings: {
-        title: 'Submit',
+        title: '{{t("Submit")}}',
         type: 'primary',
         confirm: false,
       },
@@ -150,6 +163,12 @@ const FLOW_SURFACE_DEFAULT_ACTION_POPUP_CONFIG_BY_USE = FLOW_SURFACE_DEFAULT_ACT
   },
   {} as Record<FlowSurfaceDefaultActionPopupUse, FlowSurfaceDefaultActionPopupConfig>,
 );
+
+const FLOW_SURFACE_DEFAULT_ACTION_POPUP_LEGACY_BUTTON_TITLES: Record<FlowSurfaceDefaultActionPopupUse, string> = {
+  AddNewActionModel: 'Add new',
+  ViewActionModel: 'View',
+  EditActionModel: 'Edit',
+};
 
 export function isFlowSurfaceDefaultActionPopupType(type?: string): type is FlowSurfaceDefaultActionPopupType {
   return FLOW_SURFACE_DEFAULT_ACTION_POPUP_TYPES.has(String(type || '').trim() as FlowSurfaceDefaultActionPopupType);
@@ -173,7 +192,13 @@ export function resolveFlowSurfaceDefaultActionPopupTabTitle(use?: string, curre
     return undefined;
   }
   const normalizedTitle = String(currentTitle || '').trim();
-  if (normalizedTitle && normalizedTitle !== actionConfig.defaultButtonTitle) {
+  const legacyDefaultButtonTitle =
+    FLOW_SURFACE_DEFAULT_ACTION_POPUP_LEGACY_BUTTON_TITLES[actionConfig.use as FlowSurfaceDefaultActionPopupUse];
+  if (
+    normalizedTitle &&
+    normalizedTitle !== actionConfig.defaultButtonTitle &&
+    normalizedTitle !== legacyDefaultButtonTitle
+  ) {
     return normalizedTitle;
   }
   return actionConfig.defaultPopupTabTitle;
@@ -251,6 +276,15 @@ export function pickFlowSurfaceDefaultActionPopupFieldPaths(
   candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
   options: FlowSurfaceDefaultActionPopupFieldFilterOptions = {},
 ) {
+  return filterFlowSurfaceDefaultActionPopupFieldCandidates(candidates, options)
+    .map((candidate) => String(candidate?.fieldPath || '').trim())
+    .filter(Boolean);
+}
+
+function filterFlowSurfaceDefaultActionPopupFieldCandidates(
+  candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
+  options: FlowSurfaceDefaultActionPopupFieldFilterOptions = {},
+) {
   const associationForeignKeys = collectFlowSurfaceDefaultActionPopupAssociationForeignKeys(candidates);
   const preferredCandidates = candidates.filter(
     (candidate) =>
@@ -269,14 +303,75 @@ export function pickFlowSurfaceDefaultActionPopupFieldPaths(
       !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys),
   );
   const baseCandidates = preferredCandidates.length ? preferredCandidates : fallbackCandidates;
-  return baseCandidates.map((candidate) => String(candidate?.fieldPath || '').trim()).filter(Boolean);
+  return baseCandidates.filter((candidate) => String(candidate?.fieldPath || '').trim());
 }
 
-export function buildFlowSurfaceDefaultActionPopupBlocks(use: string | undefined, fieldPaths: string[]) {
+export function pickFlowSurfaceDefaultActionPopupFieldGroups(
+  candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
+  fieldGroups: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] | undefined,
+  options: FlowSurfaceDefaultActionPopupFieldFilterOptions = {},
+) {
+  const allowedFieldPaths = new Set(
+    filterFlowSurfaceDefaultActionPopupFieldCandidates(candidates, options).map((candidate) =>
+      String(candidate?.fieldPath || '').trim(),
+    ),
+  );
+  const usedFieldPaths = new Set<string>();
+  return _.castArray(fieldGroups || []).flatMap((group) => {
+    const title = String(group?.title || '').trim();
+    if (!title) {
+      return [];
+    }
+    const fields = _.castArray(group?.fields || [])
+      .map((field) => String(field || '').trim())
+      .filter((field) => {
+        if (!field || !allowedFieldPaths.has(field) || usedFieldPaths.has(field)) {
+          return false;
+        }
+        usedFieldPaths.add(field);
+        return true;
+      });
+    if (!fields.length) {
+      return [];
+    }
+    return [
+      _.pickBy(
+        {
+          key: String(group?.key || '').trim() || undefined,
+          title,
+          fields,
+        },
+        (value) => !_.isUndefined(value),
+      ) as FlowSurfaceDefaultActionPopupFieldGroupCandidate,
+    ];
+  });
+}
+
+function normalizeDefaultActionPopupFieldsInput(input: FlowSurfaceDefaultActionPopupFieldsInput) {
+  if (Array.isArray(input)) {
+    return {
+      fieldPaths: input,
+      fieldGroups: [],
+    };
+  }
+  return {
+    fieldPaths: _.castArray(input?.fieldPaths || [])
+      .map((field) => String(field || '').trim())
+      .filter(Boolean),
+    fieldGroups: _.castArray(input?.fieldGroups || []).filter((group) => _.isPlainObject(group)),
+  };
+}
+
+export function buildFlowSurfaceDefaultActionPopupBlocks(
+  use: string | undefined,
+  fieldsInput: FlowSurfaceDefaultActionPopupFieldsInput,
+) {
   const actionConfig = getFlowSurfaceDefaultActionPopupConfigByUse(use);
   if (!actionConfig) {
     return [];
   }
+  const { fieldPaths, fieldGroups } = normalizeDefaultActionPopupFieldsInput(fieldsInput);
+  const hasFieldGroups = !!fieldGroups.length;
   return [
     _.pickBy(
       {
@@ -286,7 +381,8 @@ export function buildFlowSurfaceDefaultActionPopupBlocks(use: string | undefined
           binding: actionConfig.resourceBinding,
         },
         settings: _.cloneDeep(actionConfig.blockSettings),
-        fields: fieldPaths,
+        fields: hasFieldGroups ? undefined : fieldPaths,
+        fieldGroups: hasFieldGroups ? fieldGroups : undefined,
         actions: actionConfig.submitAction ? [_.cloneDeep(actionConfig.submitAction)] : undefined,
       },
       (value) => !_.isUndefined(value),

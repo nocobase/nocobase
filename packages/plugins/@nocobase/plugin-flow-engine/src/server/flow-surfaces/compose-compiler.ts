@@ -8,6 +8,10 @@
  */
 
 import { throwBadRequest } from './errors';
+import {
+  FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
+  type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+} from './blueprint/defaults';
 import type { FlowSurfaceComposeMode } from './types';
 
 export type FlowSurfaceComposeObject = Record<string, unknown>;
@@ -34,6 +38,7 @@ export type FlowSurfaceComposeNormalizedFieldSpec = {
   settings?: FlowSurfaceComposeObject;
   popup?: FlowSurfaceComposeObject;
   __autoPopupForRelationField?: boolean;
+  [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
 };
 
 export type FlowSurfaceComposeNormalizedActionSpec = {
@@ -240,6 +245,11 @@ function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedF
     ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
     ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
     ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
+    ...(fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
+      ? {
+          [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY],
+        }
+      : {}),
   };
 }
 

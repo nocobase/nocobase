@@ -6,6 +6,28 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+const makePublicBlockDefaultFilter = (
+  items = [
+    {
+      path: 'username',
+      operator: '$includes',
+      value: '',
+    },
+    {
+      path: 'email',
+      operator: '$includes',
+      value: '',
+    },
+    {
+      path: 'status',
+      operator: '$eq',
+      value: '',
+    },
+  ],
+) => ({
+  logic: '$and',
+  items,
+});
 
 export const flowSurfaceExamples = {
   catalog: {
@@ -91,8 +113,33 @@ export const flowSurfaceExamples = {
             key: 'employeesTable',
             type: 'table',
             collection: 'employees',
+            defaultFilter: makePublicBlockDefaultFilter([
+              {
+                path: 'nickname',
+                operator: '$includes',
+                value: '',
+              },
+              {
+                path: 'status',
+                operator: '$eq',
+                value: '',
+              },
+            ]),
             fields: ['nickname', 'status', 'total'],
             actions: [
+              {
+                key: 'filterAction',
+                type: 'filter',
+                settings: {
+                  defaultFilter: makePublicBlockDefaultFilter([
+                    {
+                      path: 'status',
+                      operator: '$eq',
+                      value: 'active',
+                    },
+                  ]),
+                },
+              },
               {
                 key: 'refreshAction',
                 type: 'refresh',
@@ -451,8 +498,26 @@ export const flowSurfaceExamples = {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
+        defaultFilter: makePublicBlockDefaultFilter(),
         fields: ['username', 'nickname', { fieldPath: 'roles.title' }],
-        actions: ['filter', 'addNew', 'refresh', 'bulkDelete', 'link'],
+        actions: [
+          {
+            type: 'filter',
+            settings: {
+              defaultFilter: makePublicBlockDefaultFilter([
+                {
+                  path: 'status',
+                  operator: '$eq',
+                  value: 'active',
+                },
+              ]),
+            },
+          },
+          'addNew',
+          'refresh',
+          'bulkDelete',
+          'link',
+        ],
         recordActions: [
           'view',
           'edit',
@@ -539,6 +604,13 @@ export const flowSurfaceExamples = {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        defaultFilter: makePublicBlockDefaultFilter([
+          {
+            path: 'nickname',
+            operator: '$includes',
+            value: '',
+          },
+        ]),
         fields: [
           'nickname',
           {
@@ -587,6 +659,13 @@ export const flowSurfaceExamples = {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        defaultFilter: makePublicBlockDefaultFilter([
+          {
+            path: 'nickname',
+            operator: '$includes',
+            value: '',
+          },
+        ]),
         fields: [
           'nickname',
           {
@@ -966,6 +1045,48 @@ export const flowSurfaceExamples = {
       binding: 'currentRecord',
     },
   },
+  addTableBlockWithDefaultFilters: {
+    target: {
+      uid: 'page-grid-uid',
+    },
+    type: 'table',
+    defaultFilter: makePublicBlockDefaultFilter([
+      {
+        path: 'username',
+        operator: '$includes',
+        value: 'staff',
+      },
+    ]),
+    resourceInit: {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    },
+    defaultActionSettings: {
+      filter: {
+        filterableFieldNames: ['username', 'email', 'status'],
+        defaultFilter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'username',
+              operator: '$includes',
+              value: '',
+            },
+            {
+              path: 'email',
+              operator: '$includes',
+              value: '',
+            },
+            {
+              path: 'status',
+              operator: '$eq',
+              value: '',
+            },
+          ],
+        },
+      },
+    },
+  },
   addPopupAssociatedBlock: {
     target: {
       uid: 'association-popup-action-uid',
@@ -1278,6 +1399,13 @@ export const flowSurfaceExamples = {
       {
         key: 'usersTable',
         type: 'table',
+        defaultFilter: makePublicBlockDefaultFilter([
+          {
+            path: 'username',
+            operator: '$includes',
+            value: 'staff',
+          },
+        ]),
         resourceInit: {
           dataSourceKey: 'main',
           collectionName: 'users',
@@ -1285,6 +1413,31 @@ export const flowSurfaceExamples = {
         settings: {
           title: 'Users table',
           pageSize: 50,
+        },
+        defaultActionSettings: {
+          filter: {
+            filterableFieldNames: ['username', 'email', 'status'],
+            defaultFilter: {
+              logic: '$and',
+              items: [
+                {
+                  path: 'username',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'email',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'status',
+                  operator: '$eq',
+                  value: '',
+                },
+              ],
+            },
+          },
         },
       },
       {

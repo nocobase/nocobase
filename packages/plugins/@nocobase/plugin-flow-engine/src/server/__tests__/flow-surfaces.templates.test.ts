@@ -42,6 +42,47 @@ describe('flowSurfaces templates', () => {
   let app: MockServer;
   let rootAgent: any;
 
+  async function createPopupTestCollection(name: string) {
+    await rootAgent.resource('collections').create({
+      values: {
+        name,
+        title: name,
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [name]: ['name', 'code', 'label'],
+    });
+  }
+
+  async function findPopupTemplateByName(name: string) {
+    const listed = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: name,
+        },
+      }),
+    );
+    return listed.rows.find((row: any) => row.name === name);
+  }
+
+  async function expectPopupTemplateReference(targetUid: string, templateUid: string) {
+    const surface = await getSurface(rootAgent, { uid: targetUid });
+    expect(surface.tree.popup?.template).toMatchObject({
+      uid: templateUid,
+      mode: 'reference',
+    });
+    expect(surface.tree.popup?.pageUid).toBeUndefined();
+    expect(surface.tree.popup?.tabUid).toBeUndefined();
+    expect(surface.tree.popup?.gridUid).toBeUndefined();
+    return surface;
+  }
+
   beforeAll(async () => {
     app = await createFlowSurfacesMockServer({
       plugins: FLOW_SURFACES_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
@@ -1912,6 +1953,425 @@ describe('flowSurfaces templates', () => {
     await expectSavedPopupTemplateReference(composeRecordActionTemplateName, composedViewAction.uid);
   });
 
+  it('should support combining popup.tryTemplate with popup.saveAsTemplate across create-time popup writes', async () => {
+    const unique = Date.now();
+    const fieldBaseCollection = `popup_try_save_field_base_${unique}`;
+    const fieldMissCollection = `popup_try_save_field_miss_${unique}`;
+    const actionBaseCollection = `popup_try_save_action_base_${unique}`;
+    const actionMissCollection = `popup_try_save_action_miss_${unique}`;
+    const recordBaseCollection = `popup_try_save_record_base_${unique}`;
+    const recordMissCollection = `popup_try_save_record_miss_${unique}`;
+
+    await createPopupTestCollection(fieldBaseCollection);
+    await createPopupTestCollection(fieldMissCollection);
+    await createPopupTestCollection(actionBaseCollection);
+    await createPopupTestCollection(actionMissCollection);
+    await createPopupTestCollection(recordBaseCollection);
+    await createPopupTestCollection(recordMissCollection);
+
+    const page = await createPage(rootAgent, {
+      title: `Popup try+save template page ${unique}`,
+      tabTitle: 'Popup try+save template tab',
+    });
+    const fieldBaseDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: fieldBaseCollection,
+      },
+    });
+    const fieldMissDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: fieldMissCollection,
+      },
+    });
+    const actionBaseTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: actionBaseCollection,
+      },
+    });
+    const actionMissTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: actionMissCollection,
+      },
+    });
+    const recordBaseTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: recordBaseCollection,
+      },
+    });
+    const recordMissTable = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: recordMissCollection,
+      },
+    });
+
+    const fieldNoBlocksRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: { uid: fieldBaseDetails.uid },
+        fieldPath: 'name',
+        popup: {
+          tryTemplate: true,
+          saveAsTemplate: {
+            name: `Popup try+save field no blocks ${unique}`,
+            description: 'Combined mode must require local blocks after a tryTemplate miss.',
+          },
+        },
+      },
+    });
+    expect(fieldNoBlocksRes.status).toBe(400);
+    expect(readErrorMessage(fieldNoBlocksRes)).toContain('popup.saveAsTemplate requires explicit local popup.blocks');
+
+    const sourceField = await addFieldData(rootAgent, {
+      target: { uid: fieldBaseDetails.uid },
+      fieldPath: 'name',
+      popup: {
+        blocks: [
+          {
+            key: 'fieldHitSourcePopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name'],
+          },
+        ],
+      },
+    });
+    const sourceFieldTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceField.fieldUid || sourceField.uid },
+      name: `Popup try+save field source ${unique}`,
+      description: 'Existing popup template for combined tryTemplate + saveAsTemplate hit coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const fieldHitIgnoredTemplateName = `Popup try+save field hit ignored ${unique}`;
+    const fieldHit = await addFieldData(rootAgent, {
+      target: { uid: fieldBaseDetails.uid },
+      fieldPath: 'code',
+      popup: {
+        tryTemplate: true,
+        saveAsTemplate: {
+          name: fieldHitIgnoredTemplateName,
+          description: 'Ignored on tryTemplate hit.',
+        },
+      },
+    });
+    await expectPopupTemplateReference(fieldHit.fieldUid || fieldHit.uid, sourceFieldTemplate.uid);
+    expect(await findPopupTemplateByName(fieldHitIgnoredTemplateName)).toBeUndefined();
+
+    const fieldMissTemplateName = `Popup try+save field miss ${unique}`;
+    const fieldMiss = await addFieldData(rootAgent, {
+      target: { uid: fieldMissDetails.uid },
+      fieldPath: 'name',
+      popup: {
+        tryTemplate: true,
+        blocks: [
+          {
+            key: 'fieldMissPopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name'],
+          },
+        ],
+        saveAsTemplate: {
+          name: fieldMissTemplateName,
+          description: 'Saved after tryTemplate miss fallback for addField.',
+        },
+      },
+    });
+    const fieldMissTemplate = await findPopupTemplateByName(fieldMissTemplateName);
+    expect(fieldMissTemplate?.uid).toBeTruthy();
+    await expectPopupTemplateReference(fieldMiss.fieldUid || fieldMiss.uid, fieldMissTemplate.uid);
+
+    const actionNoBlocksRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: { uid: actionBaseTable.uid },
+        type: 'popup',
+        popup: {
+          tryTemplate: true,
+          saveAsTemplate: {
+            name: `Popup try+save action no blocks ${unique}`,
+            description: 'Combined mode must require local blocks after a tryTemplate miss.',
+          },
+        },
+      },
+    });
+    expect(actionNoBlocksRes.status).toBe(400);
+    expect(readErrorMessage(actionNoBlocksRes)).toContain('popup.saveAsTemplate requires explicit local popup.blocks');
+
+    const sourceAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: actionBaseTable.uid },
+          type: 'popup',
+          popup: {
+            blocks: [
+              {
+                key: 'actionHitSourcePopup',
+                type: 'table',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const sourceActionTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceAction.uid },
+      name: `Popup try+save action source ${unique}`,
+      description: 'Existing popup template for combined tryTemplate + saveAsTemplate action hit coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const actionHitIgnoredTemplateName = `Popup try+save action hit ignored ${unique}`;
+    const actionHit = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: actionBaseTable.uid },
+          type: 'popup',
+          popup: {
+            tryTemplate: true,
+            saveAsTemplate: {
+              name: actionHitIgnoredTemplateName,
+              description: 'Ignored on tryTemplate hit.',
+            },
+          },
+        },
+      }),
+    );
+    await expectPopupTemplateReference(actionHit.uid, sourceActionTemplate.uid);
+    expect(await findPopupTemplateByName(actionHitIgnoredTemplateName)).toBeUndefined();
+
+    const actionMissTemplateName = `Popup try+save action miss ${unique}`;
+    const actionMiss = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: actionMissTable.uid },
+          type: 'popup',
+          popup: {
+            tryTemplate: true,
+            blocks: [
+              {
+                key: 'actionMissPopup',
+                type: 'table',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['name'],
+              },
+            ],
+            saveAsTemplate: {
+              name: actionMissTemplateName,
+              description: 'Saved after tryTemplate miss fallback for addAction.',
+            },
+          },
+        },
+      }),
+    );
+    const actionMissTemplate = await findPopupTemplateByName(actionMissTemplateName);
+    expect(actionMissTemplate?.uid).toBeTruthy();
+    await expectPopupTemplateReference(actionMiss.uid, actionMissTemplate.uid);
+
+    const recordNoBlocksRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: recordBaseTable.uid },
+        type: 'view',
+        popup: {
+          tryTemplate: true,
+          saveAsTemplate: {
+            name: `Popup try+save record no blocks ${unique}`,
+            description: 'Combined mode must require local blocks after a tryTemplate miss.',
+          },
+        },
+      },
+    });
+    expect(recordNoBlocksRes.status).toBe(400);
+    expect(readErrorMessage(recordNoBlocksRes)).toContain('popup.saveAsTemplate requires explicit local popup.blocks');
+
+    const sourceRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: recordBaseTable.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'recordHitSourcePopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const sourceRecordTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceRecordAction.uid },
+      name: `Popup try+save record source ${unique}`,
+      description: 'Existing popup template for combined tryTemplate + saveAsTemplate record hit coverage.',
+      saveMode: 'duplicate',
+    });
+
+    const recordHitIgnoredTemplateName = `Popup try+save record hit ignored ${unique}`;
+    const recordHit = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: recordBaseTable.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: true,
+            saveAsTemplate: {
+              name: recordHitIgnoredTemplateName,
+              description: 'Ignored on tryTemplate hit.',
+            },
+          },
+        },
+      }),
+    );
+    await expectPopupTemplateReference(recordHit.uid, sourceRecordTemplate.uid);
+    expect(await findPopupTemplateByName(recordHitIgnoredTemplateName)).toBeUndefined();
+
+    const recordMissTemplateName = `Popup try+save record miss ${unique}`;
+    const recordMiss = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: recordMissTable.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: true,
+            blocks: [
+              {
+                key: 'recordMissPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+            saveAsTemplate: {
+              name: recordMissTemplateName,
+              description: 'Saved after tryTemplate miss fallback for addRecordAction.',
+            },
+          },
+        },
+      }),
+    );
+    const recordMissTemplate = await findPopupTemplateByName(recordMissTemplateName);
+    expect(recordMissTemplate?.uid).toBeTruthy();
+    await expectPopupTemplateReference(recordMiss.uid, recordMissTemplate.uid);
+
+    const addFieldsHitIgnoredTemplateName = `Popup try+save addFields hit ignored ${unique}`;
+    const addFieldsHitRes = getData(
+      await rootAgent.resource('flowSurfaces').addFields({
+        values: {
+          target: { uid: fieldBaseDetails.uid },
+          fields: [
+            {
+              key: 'batchHitField',
+              fieldPath: 'label',
+              popup: {
+                tryTemplate: true,
+                saveAsTemplate: {
+                  name: addFieldsHitIgnoredTemplateName,
+                  description: 'Ignored on tryTemplate hit through addFields.',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addFieldsHitRes.successCount).toBe(1);
+    await expectPopupTemplateReference(
+      addFieldsHitRes.fields[0].result.fieldUid || addFieldsHitRes.fields[0].result.uid,
+      sourceFieldTemplate.uid,
+    );
+    expect(await findPopupTemplateByName(addFieldsHitIgnoredTemplateName)).toBeUndefined();
+
+    const addActionsHitIgnoredTemplateName = `Popup try+save addActions hit ignored ${unique}`;
+    const addActionsHitRes = getData(
+      await rootAgent.resource('flowSurfaces').addActions({
+        values: {
+          target: { uid: actionBaseTable.uid },
+          actions: [
+            {
+              key: 'batchHitAction',
+              type: 'popup',
+              popup: {
+                tryTemplate: true,
+                saveAsTemplate: {
+                  name: addActionsHitIgnoredTemplateName,
+                  description: 'Ignored on tryTemplate hit through addActions.',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addActionsHitRes.successCount).toBe(1);
+    await expectPopupTemplateReference(addActionsHitRes.actions[0].result.uid, sourceActionTemplate.uid);
+    expect(await findPopupTemplateByName(addActionsHitIgnoredTemplateName)).toBeUndefined();
+
+    const addRecordActionsHitIgnoredTemplateName = `Popup try+save addRecordActions hit ignored ${unique}`;
+    const addRecordActionsHitRes = getData(
+      await rootAgent.resource('flowSurfaces').addRecordActions({
+        values: {
+          target: { uid: recordBaseTable.uid },
+          recordActions: [
+            {
+              key: 'batchHitRecordAction',
+              type: 'view',
+              popup: {
+                tryTemplate: true,
+                saveAsTemplate: {
+                  name: addRecordActionsHitIgnoredTemplateName,
+                  description: 'Ignored on tryTemplate hit through addRecordActions.',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(addRecordActionsHitRes.successCount).toBe(1);
+    await expectPopupTemplateReference(addRecordActionsHitRes.recordActions[0].result.uid, sourceRecordTemplate.uid);
+    expect(await findPopupTemplateByName(addRecordActionsHitIgnoredTemplateName)).toBeUndefined();
+
+    await expectTemplateUsage(rootAgent, sourceFieldTemplate.uid, 2);
+    await expectTemplateUsage(rootAgent, sourceActionTemplate.uid, 2);
+    await expectTemplateUsage(rootAgent, sourceRecordTemplate.uid, 2);
+    await expectTemplateUsage(rootAgent, fieldMissTemplate.uid, 1);
+    await expectTemplateUsage(rootAgent, actionMissTemplate.uid, 1);
+    await expectTemplateUsage(rootAgent, recordMissTemplate.uid, 1);
+  });
+
   it('should reuse popup templates created earlier in the same compose call via popup.template.local', async () => {
     const unique = Date.now();
     const fieldTemplateName = `Compose popup local field ${unique}`;
@@ -2072,6 +2532,161 @@ describe('flowSurfaces templates', () => {
 
     await expectTemplateUsage(rootAgent, fieldTemplate.uid, 3);
     await expectTemplateUsage(rootAgent, nestedTemplate.uid, 2);
+  });
+
+  it('should let popup.template.local reuse the final bound template uid from combined tryTemplate + saveAsTemplate producers in compose', async () => {
+    const unique = Date.now();
+    const hitCollection = `popup_compose_hit_${unique}`;
+    const missCollection = `popup_compose_miss_${unique}`;
+    await createPopupTestCollection(hitCollection);
+    await createPopupTestCollection(missCollection);
+
+    const page = await createPage(rootAgent, {
+      title: `Compose combined popup alias page ${unique}`,
+      tabTitle: 'Compose combined popup alias tab',
+    });
+
+    const sourceDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: hitCollection,
+      },
+    });
+    const sourceField = await addFieldData(rootAgent, {
+      target: { uid: sourceDetails.uid },
+      fieldPath: 'name',
+      popup: {
+        blocks: [
+          {
+            key: 'composeCombinedHitSourcePopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name'],
+          },
+        ],
+      },
+    });
+    const sourceTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceField.fieldUid || sourceField.uid },
+      name: `Compose combined popup hit source ${unique}`,
+      description: 'Existing template reused through a combined compose producer.',
+      saveMode: 'duplicate',
+    });
+
+    const hitIgnoredTemplateName = `Compose combined popup hit ignored ${unique}`;
+    const composeHitRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'hitDetails',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: hitCollection,
+              },
+              fields: [
+                {
+                  key: 'hitProducer',
+                  fieldPath: 'code',
+                  popup: {
+                    tryTemplate: true,
+                    saveAsTemplate: {
+                      name: hitIgnoredTemplateName,
+                      description: 'Ignored on tryTemplate hit inside compose.',
+                      local: 'composeHitAlias',
+                    },
+                  },
+                },
+                {
+                  key: 'hitConsumer',
+                  fieldPath: 'label',
+                  popup: {
+                    template: {
+                      local: 'composeHitAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    const hitDetails = composeHitRes.blocks.find((item: any) => item.key === 'hitDetails');
+    const hitProducer = hitDetails.fields.find((item: any) => item.key === 'hitProducer');
+    const hitConsumer = hitDetails.fields.find((item: any) => item.key === 'hitConsumer');
+    await expectPopupTemplateReference(hitProducer.fieldUid || hitProducer.uid, sourceTemplate.uid);
+    await expectPopupTemplateReference(hitConsumer.fieldUid || hitConsumer.uid, sourceTemplate.uid);
+    expect(await findPopupTemplateByName(hitIgnoredTemplateName)).toBeUndefined();
+    await expectTemplateUsage(rootAgent, sourceTemplate.uid, 2);
+
+    const missTemplateName = `Compose combined popup miss ${unique}`;
+    const composeMissRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'missDetails',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: missCollection,
+              },
+              fields: [
+                {
+                  key: 'missProducer',
+                  fieldPath: 'name',
+                  popup: {
+                    tryTemplate: true,
+                    blocks: [
+                      {
+                        key: 'composeCombinedMissPopup',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: missTemplateName,
+                      description: 'Saved after tryTemplate miss inside compose.',
+                      local: 'composeMissAlias',
+                    },
+                  },
+                },
+                {
+                  key: 'missConsumer',
+                  fieldPath: 'code',
+                  popup: {
+                    template: {
+                      local: 'composeMissAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    const missTemplate = await findPopupTemplateByName(missTemplateName);
+    expect(missTemplate?.uid).toBeTruthy();
+    const missDetails = composeMissRes.blocks.find((item: any) => item.key === 'missDetails');
+    const missProducer = missDetails.fields.find((item: any) => item.key === 'missProducer');
+    const missConsumer = missDetails.fields.find((item: any) => item.key === 'missConsumer');
+    await expectPopupTemplateReference(missProducer.fieldUid || missProducer.uid, missTemplate.uid);
+    await expectPopupTemplateReference(missConsumer.fieldUid || missConsumer.uid, missTemplate.uid);
+    await expectTemplateUsage(rootAgent, missTemplate.uid, 2);
   });
 
   it('should reject invalid compose popup local template alias usage and direct add local aliases', async () => {
@@ -2554,34 +3169,6 @@ describe('flowSurfaces templates', () => {
     expect(templateConflictRes.status).toBe(400);
     expect(readErrorMessage(templateConflictRes)).toContain(
       'popup.saveAsTemplate cannot be combined with popup.template',
-    );
-
-    const tryTemplateConflictRes = await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: { uid: detailsBlock.uid },
-        fieldPath: 'nickname',
-        popup: {
-          tryTemplate: true,
-          blocks: [
-            {
-              key: 'tryTemplateConflictPopup',
-              type: 'details',
-              resource: {
-                binding: 'currentRecord',
-              },
-              fields: ['nickname'],
-            },
-          ],
-          saveAsTemplate: {
-            name: `Popup saveAsTemplate tryTemplate conflict ${unique}`,
-            description: 'Should reject tryTemplate conflict.',
-          },
-        },
-      },
-    });
-    expect(tryTemplateConflictRes.status).toBe(400);
-    expect(readErrorMessage(tryTemplateConflictRes)).toContain(
-      'popup.saveAsTemplate cannot be combined with popup.tryTemplate',
     );
 
     const missingLocalPopupRes = await rootAgent.resource('flowSurfaces').addRecordAction({

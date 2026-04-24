@@ -14,6 +14,7 @@ import { FlowSurfaceBadRequestError } from './errors';
 const ACTION_SCOPE_SET = new Set<FlowSurfaceActionScope>(['block', 'record', 'form', 'filterForm', 'actionPanel']);
 
 export const TABLE_BLOCK_ACTION_CONTAINER_USES = ['TableBlockModel'];
+export const CALENDAR_BLOCK_ACTION_CONTAINER_USES = ['CalendarBlockModel'];
 export const TABLE_ROW_ACTION_CONTAINER_USES = ['TableActionsColumnModel'];
 export const LIST_BLOCK_ACTION_CONTAINER_USES = ['ListBlockModel', 'GridCardBlockModel'];
 export const LIST_RECORD_ACTION_CONTAINER_USES = ['ListItemModel', 'GridCardItemModel'];
@@ -24,6 +25,7 @@ export const ACTION_PANEL_ACTION_CONTAINER_USES = ['ActionPanelBlockModel'];
 
 export const COLLECTION_BLOCK_ACTION_CONTAINER_USES = [
   ...TABLE_BLOCK_ACTION_CONTAINER_USES,
+  ...CALENDAR_BLOCK_ACTION_CONTAINER_USES,
   ...LIST_BLOCK_ACTION_CONTAINER_USES,
 ];
 export const RECORD_ACTION_CONTAINER_USES = [

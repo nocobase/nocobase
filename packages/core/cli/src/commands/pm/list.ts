@@ -8,13 +8,23 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { getEnv } from '../../lib/auth-store.ts';
-import { runNocoBaseCommand } from '../../lib/run-npm.ts';
+import {
+  formatMissingManagedAppEnvMessage,
+  resolveManagedAppRuntime,
+  runDockerNocoBaseCommand,
+  runLocalNocoBaseCommand,
+} from '../../lib/app-runtime.js';
 
 export default class PmList extends Command {
   static override args = {};
-  static override summary = 'List all plugins';
-  static override examples = ['<%= config.bin %> <%= command.id %>', '<%= config.bin %> <%= command.id %> -e local'];
+  static override summary = 'List plugins for the selected env';
+  static override description =
+    'List installed plugins in the selected env (npm/git runs locally, Docker runs inside the saved app container, remote envs fall back to the API)';
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> -e local',
+    '<%= config.bin %> <%= command.id %> -e local-docker',
+  ];
   static override flags = {
     env: Flags.string({
       char: 'e',
@@ -26,22 +36,32 @@ export default class PmList extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(PmList);
 
-    const env = await getEnv(flags.env);
+    const runtime = await resolveManagedAppRuntime(flags.env);
 
-    if (!env) {
-      this.error('Env is not configured');
+    if (!runtime) {
+      this.error(formatMissingManagedAppEnvMessage(flags.env));
     }
 
-    if (env.config.appRootPath) {
+    if (runtime.kind === 'local') {
       try {
-        await runNocoBaseCommand(['pm', 'list'], { cwd: env.appRootPath, env: env.envVars });
+        await runLocalNocoBaseCommand(runtime, ['pm', 'list']);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         this.error(message);
       }
       return;
-    } else {
-      await this.config.runCommand('api:pm:list', ['--mode=summary']);
     }
+
+    if (runtime.kind === 'docker') {
+      try {
+        await runDockerNocoBaseCommand(runtime.containerName, ['pm', 'list']);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.error(message);
+      }
+      return;
+    }
+
+    await this.config.runCommand('api:pm:list', ['--mode=summary']);
   }
 }

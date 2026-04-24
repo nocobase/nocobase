@@ -9,12 +9,20 @@
 
 import { PluginManager } from '@nocobase/server';
 import { mockServer, MockServer, type MockServerOptions } from '@nocobase/test';
+import mariadb from 'mariadb';
+import mysql from 'mysql2/promise';
 import qs from 'qs';
 import { FLOW_SURFACES_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGIN_INSTALLS } from './flow-surfaces.test-plugins';
 
 type FlowSurfacesMockServerOptions = MockServerOptions & {
   enabledPluginAliases?: readonly string[];
   knownPluginAliases?: readonly string[];
+};
+
+type FlowSurfacesDatabaseIsolation = {
+  database?: MockServerOptions['database'];
+  shouldCleanDbOnDestroy?: boolean;
+  cleanup?: () => Promise<void>;
 };
 
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
@@ -54,15 +62,15 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
 
   let lastError: any;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const isolatedDatabaseOptions = createFlowSurfacesIsolatedDatabaseOptions(database, attempt);
+    const isolation = await createFlowSurfacesDatabaseIsolation(database, attempt);
     const app = mockServer({
       registerActions: true,
       acl: true,
       plugins,
-      database: isolatedDatabaseOptions,
+      database: isolation.database,
       ...restOptions,
     });
-    if (isolatedDatabaseOptions?.schema) {
+    if (isolation.shouldCleanDbOnDestroy || isolation.cleanup) {
       const originalDestroy = app.destroy.bind(app);
       app.destroy = async (destroyOptions: any = {}) => {
         try {
@@ -70,7 +78,11 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
         } catch (error) {
           // ignore teardown cleanup errors and continue destroying the app instance
         }
-        await originalDestroy(destroyOptions);
+        try {
+          await originalDestroy(destroyOptions);
+        } finally {
+          await isolation.cleanup?.().catch(() => undefined);
+        }
       };
     }
     try {
@@ -235,28 +247,126 @@ function isRetriableFlowSurfacesBootstrapError(error: any) {
   );
 }
 
-function createFlowSurfacesIsolatedDatabaseOptions(
+async function createFlowSurfacesDatabaseIsolation(
   database: MockServerOptions['database'] | undefined,
   attempt: number,
-) {
-  if (!shouldUseFlowSurfacesIsolatedSchema(database)) {
-    return database;
+): Promise<FlowSurfacesDatabaseIsolation> {
+  const dialect = getFlowSurfacesDatabaseDialect(database);
+  if (shouldUseFlowSurfacesIsolatedSchema(database, dialect)) {
+    return {
+      database: {
+        ...(database || {}),
+        schema: buildFlowSurfacesSchemaName(attempt),
+      },
+      shouldCleanDbOnDestroy: true,
+    };
   }
 
+  if (!shouldUseFlowSurfacesIsolatedMySqlDatabase(dialect)) {
+    return { database };
+  }
+
+  const databaseName = buildFlowSurfacesMySqlDatabaseName(attempt);
+  await createFlowSurfacesMySqlDatabase(database, databaseName, dialect);
+
   return {
-    ...(database || {}),
-    schema: buildFlowSurfacesSchemaName(attempt),
+    database: {
+      ...(database || {}),
+      database: databaseName,
+      dialect,
+      username: getFlowSurfacesMySqlAdminUser(),
+      password: getFlowSurfacesMySqlAdminPassword(database),
+    },
+    shouldCleanDbOnDestroy: true,
+    cleanup: () => dropFlowSurfacesMySqlDatabase(database, databaseName, dialect),
   };
 }
 
-function shouldUseFlowSurfacesIsolatedSchema(database: MockServerOptions['database'] | undefined) {
-  const dialect = String(database?.dialect || process.env.DB_DIALECT || '').toLowerCase();
+function getFlowSurfacesDatabaseDialect(database: MockServerOptions['database'] | undefined) {
+  return String(database?.dialect || process.env.DB_DIALECT || '').toLowerCase();
+}
+
+function shouldUseFlowSurfacesIsolatedSchema(database: MockServerOptions['database'] | undefined, dialect: string) {
   return dialect === 'postgres' && !database?.schema;
+}
+
+function shouldUseFlowSurfacesIsolatedMySqlDatabase(dialect: string) {
+  return dialect === 'mysql' || dialect === 'mariadb';
 }
 
 function buildFlowSurfacesSchemaName(attempt: number) {
   const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   return `fs_${process.pid}_${attempt}_${nonce}`.replace(/[^a-z0-9_]/gi, '_').slice(0, 63);
+}
+
+function buildFlowSurfacesMySqlDatabaseName(attempt: number) {
+  const prefix = process.env.DB_TEST_PREFIX || '';
+  return `${prefix}${buildFlowSurfacesSchemaName(attempt)}`.slice(0, 64);
+}
+
+async function createFlowSurfacesMySqlDatabase(
+  database: MockServerOptions['database'] | undefined,
+  databaseName: string,
+  dialect: string,
+) {
+  try {
+    await withFlowSurfacesMySqlConnection(database, dialect, async (connection) => {
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${assertFlowSurfacesMySqlIdentifier(databaseName)}\``);
+    });
+  } catch (error: any) {
+    throw new Error(
+      `Failed to create isolated ${dialect} database '${databaseName}' for flow-surfaces tests. ` +
+        `Ensure the test MySQL user can create and access isolated databases. ${error?.message || error}`,
+    );
+  }
+}
+
+async function dropFlowSurfacesMySqlDatabase(
+  database: MockServerOptions['database'] | undefined,
+  databaseName: string,
+  dialect: string,
+) {
+  await withFlowSurfacesMySqlConnection(database, dialect, async (connection) => {
+    await connection.query(`DROP DATABASE IF EXISTS \`${assertFlowSurfacesMySqlIdentifier(databaseName)}\``);
+  });
+}
+
+async function withFlowSurfacesMySqlConnection(
+  database: MockServerOptions['database'] | undefined,
+  dialect: string,
+  fn: (connection: any) => Promise<void>,
+) {
+  const connectionOptions = {
+    host: String(database?.host || process.env.DB_HOST || '127.0.0.1'),
+    port: Number(database?.port || process.env.DB_PORT || 3306),
+    user: getFlowSurfacesMySqlAdminUser(),
+    password: getFlowSurfacesMySqlAdminPassword(database),
+  };
+  const connection =
+    dialect === 'mariadb'
+      ? await mariadb.createConnection(connectionOptions)
+      : await mysql.createConnection(connectionOptions);
+
+  try {
+    await fn(connection);
+  } finally {
+    await (connection.end?.() ?? connection.close?.());
+  }
+}
+
+function getFlowSurfacesMySqlAdminUser() {
+  return 'root';
+}
+
+function getFlowSurfacesMySqlAdminPassword(database: MockServerOptions['database'] | undefined) {
+  return String(database?.password || process.env.DB_PASSWORD || '');
+}
+
+function assertFlowSurfacesMySqlIdentifier(identifier: string) {
+  if (!/^[a-zA-Z0-9_]+$/.test(identifier)) {
+    throw new Error(`Invalid isolated MySQL database identifier: ${identifier}`);
+  }
+  return identifier;
 }
 
 async function findFlowSurfacesRootUser(app: MockServer) {

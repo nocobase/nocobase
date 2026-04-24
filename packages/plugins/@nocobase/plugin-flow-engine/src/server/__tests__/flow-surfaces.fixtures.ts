@@ -102,6 +102,8 @@ export function projectFormalBlockCreateParityTree(formalKey: FormalFlowSurfaceB
     switch (formalKey) {
       case 'table':
         return projectTableBlock(tree);
+      case 'calendar':
+        return projectCalendarBlock(tree);
       case 'create-form':
         return projectCreateFormBlock(tree);
       case 'edit-form':
@@ -133,6 +135,8 @@ export function extractCreateParityFixtureExpectation(formalKey: FormalFlowSurfa
     switch (formalKey) {
       case 'table':
         return extractFixtureTableBlock(tree);
+      case 'calendar':
+        return extractFixtureCalendarBlock(tree);
       case 'create-form':
         return extractFixtureCreateFormBlock(tree);
       case 'edit-form':
@@ -458,6 +462,83 @@ function projectTableBlock(node: any) {
   });
 }
 
+function projectCalendarBlock(node: any) {
+  const quickCreateAction = firstChild(node?.subModels?.quickCreateAction);
+  const eventViewAction = firstChild(node?.subModels?.eventViewAction);
+  const actions = toArray(node?.subModels?.actions)
+    .map((item) => {
+      if (
+        [
+          'CalendarTodayActionModel',
+          'CalendarNavActionModel',
+          'CalendarTitleActionModel',
+          'CalendarViewSelectActionModel',
+          'FilterActionModel',
+          'AddNewActionModel',
+          'PopupCollectionActionModel',
+          'RefreshActionModel',
+          'JSCollectionActionModel',
+          'TriggerWorkflowActionModel',
+        ].includes(item?.use)
+      ) {
+        return projectSimpleAction(item);
+      }
+      return undefined;
+    })
+    .filter(Boolean);
+
+  return compactObject({
+    alias: node?.alias,
+    use: node?.use,
+    props: normalizeValue(node?.props),
+    decoratorProps: normalizeValue(node?.decoratorProps),
+    stepParams: normalizeValue(node?.stepParams),
+    flowRegistry: normalizeValue(node?.flowRegistry),
+    subModels: compactObject({
+      actions: actions.length ? actions : undefined,
+      quickCreateAction: quickCreateAction ? [projectCalendarPopupAction(quickCreateAction)] : undefined,
+      eventViewAction: eventViewAction ? [projectCalendarPopupAction(eventViewAction)] : undefined,
+    }),
+  });
+}
+
+function projectCalendarPopupAction(node: any) {
+  const popupPage = firstChild(node?.subModels?.page);
+  return compactObject({
+    alias: node?.alias,
+    use: node?.use,
+    stepParams: compactObject({
+      popupSettings: projectCalendarPopupSettings(node),
+    }),
+    subModels: compactObject({
+      page: popupPage ? [projectPopupPage(popupPage)] : undefined,
+    }),
+  });
+}
+
+function projectCalendarPopupSettings(node: any) {
+  const openView = node?.stepParams?.popupSettings?.openView || {};
+  return compactObject({
+    openView: compactObject(
+      _.pick(openView, [
+        'mode',
+        'size',
+        'pageModelClass',
+        'dataSourceKey',
+        'collectionName',
+        'associationName',
+        'filterByTk',
+        'sourceId',
+        'title',
+        'popupTemplateUid',
+        'popupTemplateContext',
+        'popupTemplateHasFilterByTk',
+        'popupTemplateHasSourceId',
+      ]),
+    ),
+  });
+}
+
 function projectAddNewTableAction(node: any) {
   const popupPage = firstChild(node?.subModels?.page);
   return compactObject({
@@ -774,6 +855,83 @@ function extractFixtureTableBlock(node: any) {
       actions,
       columns,
     }),
+  });
+}
+
+function extractFixtureCalendarBlock(node: any) {
+  const quickCreateAction = firstChild(node?.subModels?.quickCreateAction);
+  const eventViewAction = firstChild(node?.subModels?.eventViewAction);
+  const actions = toArray(node?.subModels?.actions)
+    .map((item) => {
+      if (
+        [
+          'CalendarTodayActionModel',
+          'CalendarNavActionModel',
+          'CalendarTitleActionModel',
+          'CalendarViewSelectActionModel',
+          'FilterActionModel',
+          'AddNewActionModel',
+          'PopupCollectionActionModel',
+          'RefreshActionModel',
+          'JSCollectionActionModel',
+          'TriggerWorkflowActionModel',
+        ].includes(item?.use)
+      ) {
+        return extractFixtureSimpleAction(item);
+      }
+      return undefined;
+    })
+    .filter(Boolean);
+
+  return compactObject({
+    alias: node?.alias,
+    use: node?.use,
+    props: normalizeValue(node?.props),
+    decoratorProps: normalizeValue(node?.decoratorProps),
+    stepParams: normalizeValue(node?.stepParams),
+    flowRegistry: normalizeValue(node?.flowRegistry),
+    subModels: compactObject({
+      actions: actions.length ? actions : undefined,
+      quickCreateAction: quickCreateAction ? [extractFixtureCalendarPopupAction(quickCreateAction)] : undefined,
+      eventViewAction: eventViewAction ? [extractFixtureCalendarPopupAction(eventViewAction)] : undefined,
+    }),
+  });
+}
+
+function extractFixtureCalendarPopupAction(node: any) {
+  const popupPage = firstChild(node?.subModels?.page);
+  return compactObject({
+    alias: node?.alias,
+    use: node?.use,
+    stepParams: compactObject({
+      popupSettings: extractFixtureCalendarPopupSettings(node),
+    }),
+    subModels: compactObject({
+      page: popupPage ? [extractFixturePopupPage(popupPage)] : undefined,
+    }),
+  });
+}
+
+function extractFixtureCalendarPopupSettings(node: any) {
+  const openView = node?.stepParams?.popupSettings?.openView || {};
+  return compactObject({
+    openView: compactObject(
+      _.pick(openView, [
+        'mode',
+        'size',
+        'pageModelClass',
+        'dataSourceKey',
+        'collectionName',
+        'associationName',
+        'filterByTk',
+        'sourceId',
+        'title',
+        'popupTemplateUid',
+        'popupTemplateContext',
+        'popupTemplateHasFilterByTk',
+        'popupTemplateHasSourceId',
+      ]),
+    ),
   });
 }
 
@@ -1521,6 +1679,7 @@ const WRAPPER_USES = new Set(['FormItemModel', 'DetailsItemModel', 'FilterFormIt
 const BLOCK_USE_ALIAS: Record<string, string> = {
   JSBlockModel: 'jsBlock',
   TableBlockModel: 'table',
+  CalendarBlockModel: 'calendar',
   CreateFormModel: 'createForm',
   EditFormModel: 'editForm',
   FormBlockModel: 'form',
@@ -1540,6 +1699,12 @@ const ACTION_USE_ALIAS: Record<string, string> = {
   ViewActionModel: 'view',
   EditActionModel: 'edit',
   PopupCollectionActionModel: 'popup',
+  CalendarQuickCreateActionModel: 'calendarQuickCreate',
+  CalendarEventViewActionModel: 'calendarEventView',
+  CalendarTodayActionModel: 'calendarToday',
+  CalendarNavActionModel: 'calendarNav',
+  CalendarTitleActionModel: 'calendarTitle',
+  CalendarViewSelectActionModel: 'calendarViewSelect',
   DeleteActionModel: 'delete',
   UpdateRecordActionModel: 'updateRecord',
   FormSubmitActionModel: 'submit',

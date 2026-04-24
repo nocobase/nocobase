@@ -21,8 +21,7 @@ import { diskFilenameGetter } from '../utils';
 const DEFAULT_BASE_URL = '/storage/uploads';
 
 export function getDocumentRoot(storage): string {
-  const storageRoot = resolveStorageRoot();
-  const raw = storage?.options?.documentRoot ?? process.env.LOCAL_STORAGE_DEST ?? storagePathJoin('uploads');
+  const raw = storagePathJoin('uploads');
 
   if (path.isAbsolute(raw)) {
     return raw;
@@ -32,7 +31,7 @@ export function getDocumentRoot(storage): string {
 }
 
 export function resolveSafePath(documentRoot: string, filePath?: string, filename?: string) {
-  const root = path.resolve(documentRoot);
+  const root = storagePathJoin('uploads');
   const target = path.resolve(root, filePath || '', filename || '');
   const relative = path.relative(root, target);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {

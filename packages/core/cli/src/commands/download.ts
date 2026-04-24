@@ -12,86 +12,52 @@ import { Command, Flags } from '@oclif/core';
 import * as p from '@clack/prompts';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
+import {
+  type PromptInitialValues,
+  type PromptsCatalog,
+  type PromptValue,
+  runPromptCatalog,
+} from '../lib/prompt-catalog.ts';
 import { run } from '../lib/run-npm.ts';
+import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '../lib/ui.js';
 
 type DownloadSource = 'docker' | 'npm' | 'git';
+type DockerPlatform = 'auto' | 'linux/amd64' | 'linux/arm64';
+const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
+const DEFAULT_DOCKER_REGISTRY_ZH_CN = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase';
+const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
 
-/** Allowed `--docker-platform` values (passed to `docker pull --platform`). */
-const DOCKER_PLATFORMS = ['linux/amd64', 'linux/arm64'] as const;
-export type DockerPlatform = (typeof DOCKER_PLATFORMS)[number];
-
-function isDockerPlatform(value: string): value is DockerPlatform {
-  return (DOCKER_PLATFORMS as readonly string[]).includes(value);
+function defaultOutputDirForVersion(versionTag: string): string {
+  const safe = versionTag.replace(/[/\\]/g, '-');
+  return `./nocobase-${safe}`;
 }
 
-/**
- * Detect explicit `--build` / `--no-build` on `nb download` so interactive prompts
- * use them as the confirm initial value when set before prompts run.
- */
-function explicitBuildFromArgv(argv: string[]): boolean | undefined {
-  const hasNoBuild = argv.includes('--no-build');
-  const hasBuild = argv.includes('--build');
-  if (hasNoBuild && hasBuild) {
-    return undefined;
-  }
-  if (hasNoBuild) {
+async function pathExists(target: string): Promise<boolean> {
+  try {
+    await fsp.access(target);
+    return true;
+  } catch {
     return false;
   }
-  if (hasBuild) {
-    return true;
-  }
-  return undefined;
 }
 
-/**
- * Explicit `--build-dts` / `--no-build-dts` before interactive prompts.
- * `true` = emit `.d.ts` (do not pass `--no-dts` to `nb build`).
- */
-function explicitBuildDtsFromArgv(argv: string[]): boolean | undefined {
-  const hasNoBuildDts = argv.includes('--no-build-dts');
-  const hasBuildDts = argv.includes('--build-dts');
-  if (hasNoBuildDts && hasBuildDts) {
-    return undefined;
-  }
-  if (hasNoBuildDts) {
-    return false;
-  }
-  if (hasBuildDts) {
-    return true;
-  }
-  return undefined;
+export function defaultDockerRegistryForLang(lang: unknown): string {
+  return String(lang ?? '').trim() === 'zh-CN'
+    ? DEFAULT_DOCKER_REGISTRY_ZH_CN
+    : DEFAULT_DOCKER_REGISTRY;
 }
 
-/** Explicit `--docker-save` / `--no-docker-save` for interactive defaults (docker only). */
-function explicitDockerSaveFromArgv(argv: string[]): boolean | undefined {
-  const hasNo = argv.includes('--no-docker-save');
-  const hasYes = argv.includes('--docker-save');
-  if (hasNo && hasYes) {
-    return undefined;
-  }
-  if (hasNo) {
-    return false;
-  }
-  if (hasYes) {
-    return true;
-  }
-  return undefined;
+function argvHasToken(argv: string[], tokens: string[]): boolean {
+  return tokens.some((t) => argv.includes(t));
 }
 
-/** Explicit `--dev-dependencies` / `--no-dev-dependencies` / `-D` (npm only) for interactive defaults. */
-function explicitDevDependenciesFromArgv(argv: string[]): boolean | undefined {
-  const hasNo = argv.includes('--no-dev-dependencies');
-  const hasYes = argv.includes('--dev-dependencies') || argv.includes('-D');
-  if (hasNo && hasYes) {
-    return undefined;
-  }
-  if (hasNo) {
-    return false;
-  }
-  if (hasYes) {
-    return true;
-  }
-  return undefined;
+function gitRefForVersion(versionSpec: string): string {
+  const versionToRef: Record<string, string> = {
+    latest: 'main',
+    beta: 'next',
+    alpha: 'develop',
+  };
+  return versionToRef[versionSpec] || versionSpec;
 }
 
 /** `build-dts` only applies when `build` is true and source is npm/git. */
@@ -101,6 +67,38 @@ function normalizeBuildDts(source: DownloadSource, build: boolean, wantDts: bool
   }
   return Boolean(build && wantDts);
 }
+
+function downloadSourceLabel(source: DownloadSource): string {
+  switch (source) {
+    case 'docker':
+      return 'Docker image';
+    case 'npm':
+      return 'npm package';
+    case 'git':
+      return 'Git repository';
+    default:
+      return source;
+  }
+}
+
+function normalizeDockerPlatform(value: unknown): DockerPlatform {
+  const text = String(value ?? '').trim();
+  if (text === 'linux/amd64' || text === 'linux/arm64') {
+    return text;
+  }
+  return DEFAULT_DOCKER_PLATFORM;
+}
+
+function dockerPlatformArg(value: unknown): string | undefined {
+  const platform = normalizeDockerPlatform(value);
+  if (platform === 'auto') {
+    return undefined;
+  }
+  return platform;
+}
+
+const EXTERNAL_COMMAND_LOADING_DELAY_MS = 8_000;
+const EXTERNAL_COMMAND_LOADING_UPDATE_MS = 15_000;
 
 /** Final download options after CLI parse, defaults, and interactive prompts. */
 export type DownloadResolvedFlags = Record<string, unknown> & {
@@ -116,7 +114,7 @@ export type DownloadResolvedFlags = Record<string, unknown> & {
   'output-dir'?: string;
   'git-url'?: string;
   'docker-registry'?: string;
-  /** docker only: `docker pull --platform` (`linux/amd64` or `linux/arm64`); npm/git omit this key */
+  /** docker only: platform for `docker pull`; "auto" omits --platform. */
   'docker-platform'?: DockerPlatform;
   /** docker only: after `docker pull`, run `docker save` into `--output-dir`; npm/git omit this key */
   'docker-save'?: boolean;
@@ -131,395 +129,521 @@ export type DownloadCommandResult = {
   projectRoot?: string;
 };
 
+export type DownloadParsedFlags = {
+  yes: boolean;
+  verbose: boolean;
+  'no-intro': boolean;
+  source?: string;
+  version?: string;
+  replace: boolean;
+  'dev-dependencies': boolean;
+  build: boolean;
+  'build-dts': boolean;
+  'output-dir'?: string;
+  'git-url'?: string;
+  'docker-registry'?: string;
+  'docker-platform'?: string;
+  'docker-save': boolean;
+  'npm-registry'?: string;
+};
+
 export default class Download extends Command {
+  private _flags?: DownloadParsedFlags;
+  private preparationTaskActive = false;
+
   static override description =
-    'Scaffold or fetch NocoBase: npm (create-nocobase-app), docker (image pull), or git (shallow clone).';
+    'Scaffold or fetch NocoBase from npm, Docker, or Git. `--version` is the shared version input: package version for npm, image tag for Docker, and git ref for Git.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest --no-build',
-    '<%= config.bin %> <%= command.id %> --source npm --version latest',
-    '<%= config.bin %> <%= command.id %> --source npm --version latest --output-dir=./app',
-    '<%= config.bin %> <%= command.id %> --source docker --version latest --docker-registry=nocobase/nocobase',
-    '<%= config.bin %> <%= command.id %> -y --source docker -v latest --docker-platform=linux/amd64',
-    '<%= config.bin %> <%= command.id %> -y --source docker -v latest --docker-save -o ./docker-images',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha --no-build',
+    '<%= config.bin %> <%= command.id %> --source npm --version alpha',
+    '<%= config.bin %> <%= command.id %> --source npm --version alpha --output-dir=./app',
+    '<%= config.bin %> <%= command.id %> --source docker --version alpha --docker-registry=nocobase/nocobase --docker-platform=linux/arm64',
+    '<%= config.bin %> <%= command.id %> -y --source docker --version alpha --docker-save -o ./docker-images',
     '<%= config.bin %> <%= command.id %> --source git --version alpha --git-url=git@github.com:nocobase/nocobase.git',
-    '<%= config.bin %> <%= command.id %> -y --source git --version latest --no-build',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest --build-dts',
-    '<%= config.bin %> <%= command.id %> -y --source npm --version latest --npm-registry=https://registry.npmmirror.com',
+    '<%= config.bin %> <%= command.id %> --source git --version fix/cli-v2',
+    '<%= config.bin %> <%= command.id %> -y --source git --version fix/cli-v2 --no-build',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha --build-dts',
+    '<%= config.bin %> <%= command.id %> -y --source npm --version alpha --npm-registry=https://registry.npmmirror.com',
   ];
 
   static override flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip interactive prompts; use flags only (non-TTY implies -y)',
+      description:
+        'Use defaults and skip interactive prompts.',
+      default: false,
+    }),
+    verbose: Flags.boolean({
+      description: 'Show detailed command output',
+      default: false,
+    }),
+    'no-intro': Flags.boolean({
+      hidden: true,
+      description: 'Skip command intro when invoked by another CLI command',
       default: false,
     }),
     source: Flags.string({
       char: 's',
       description:
-        'Distribution: npm runs create-nocobase-app, docker runs docker pull, git clones the repository',
+        'How to get NocoBase: Docker image, npm package, or Git repository.',
       options: ['docker', 'npm', 'git'],
       required: false,
     }),
     version: Flags.string({
       char: 'v',
       description:
-        'npm: dist-tag or version for create-nocobase-app; docker: image tag; git: branch or tag (latest→main, beta→next, alpha→develop); default: latest',
+        'Shared version input. For npm this is the package version, for Docker the image tag, and for Git a git ref such as a branch name (for example: alpha, beta, latest, fix/cli-v2).',
     }),
     replace: Flags.boolean({
       char: 'r',
       description:
-        'npm/git: delete the target project directory if it exists, then scaffold or clone again; docker: ignored',
+        'Replace the target directory if it already exists.',
       default: false,
     }),
     'dev-dependencies': Flags.boolean({
       char: 'D',
       allowNo: true,
       description:
-        'npm only: install devDependencies in create-nocobase-app and run a non-production `yarn install`; git/docker ignore this flag',
+        'Install development dependencies for npm/git source installs.',
       default: false,
     }),
     'output-dir': Flags.string({
       char: 'o',
       description:
-        'npm/git: project directory (relative to cwd); default ./nocobase-<version> from --version. docker: with `--docker-save`, directory for the saved `.tar` (same default when omitted)',
+        'Download target directory, or Docker tarball directory when --docker-save is enabled.',
     }),
     'git-url': Flags.string({
-      description:
-        'git: remote URL to clone (default: https://github.com/nocobase/nocobase.git)',
+      description: 'Git repository URL to clone when --source git is used.',
     }),
     'docker-registry': Flags.string({
-      description:
-        'docker: image reference without tag (default: nocobase/nocobase); use -v for the tag, e.g. ghcr.io/nocobase/nocobase',
+      description: 'Docker image repository to pull when --source docker is used.',
     }),
     'docker-platform': Flags.string({
-      description:
-        'docker: `docker pull --platform` — linux/amd64 or linux/arm64 only; omit for the host default. npm/git ignored.',
-      options: [...DOCKER_PLATFORMS],
+      description: 'Docker image platform to pull; use auto to let Docker choose.',
+      options: ['auto', 'linux/amd64', 'linux/arm64'],
     }),
     'docker-save': Flags.boolean({
       allowNo: true,
       description:
-        'docker only: after pull, run `docker save` and write a `.tar` under `--output-dir` (default ./nocobase-<version>). npm/git ignored.',
+        'Also save the pulled Docker image as a tarball.',
       default: false,
     }),
     'npm-registry': Flags.string({
       description:
-        'npm/git: optional npm registry URL (`npm_config_registry` for npx/yarn). Omit or pass empty to use defaults. Docker: ignored.',
+        'npm registry for npm/git downloads and dependency installation.',
     }),
     'build': Flags.boolean({
       allowNo: true,
       description:
-        'npm/git: run `nb build` after `yarn install` (same as `nb build --cwd <dir>`); docker: ignored. Default on; use `--no-build` to skip. npm: ignored when `--no-dev-dependencies` (production install cannot run the build).',
+        'Build npm/git source after dependencies are installed.',
       default: true,
     }),
     'build-dts': Flags.boolean({
       description:
-        'npm/git: when running `nb build`, emit TypeScript declaration files (omit `nb build --no-dts`). Default off (faster); use `--build-dts` to emit `.d.ts`. Only with `--build` (ignored with `--no-build`). Interactive: asked only if you enable build. Docker: ignored.',
+        'Generate TypeScript declaration files during the npm/git build.',
       default: false,
     }),
   };
+
+  static prompts: PromptsCatalog = {
+    source: {
+      type: 'select',
+      message: 'How would you like to get NocoBase?',
+      options: [
+        { value: 'npm', label: 'NPM package' },
+        { value: 'git', label: 'Git repository' },
+        { value: 'docker', label: 'Docker image' },
+      ],
+      yesInitialValue: 'docker',
+      initialValue: 'docker',
+      required: true,
+    },
+    version: {
+      type: 'text',
+      message: 'Which version would you like to use? You can enter a package version, Docker image tag, or Git ref such as a branch name.',
+      placeholder: 'alpha',
+      initialValue: 'alpha',
+      yesInitialValue: 'alpha',
+      required: true,
+    },
+    dockerRegistry: {
+      type: 'text',
+      message: 'Which Docker image would you like to use?',
+      placeholder: DEFAULT_DOCKER_REGISTRY,
+      initialValue: (values) => defaultDockerRegistryForLang(values.lang),
+      yesInitialValue: DEFAULT_DOCKER_REGISTRY,
+      required: true,
+      hidden: (values) => values.source !== 'docker',
+    },
+    dockerPlatform: {
+      type: 'select',
+      message: 'Which Docker image platform should be used?',
+      options: [
+        { value: 'auto', label: 'Auto', hint: 'Use Docker default for this machine' },
+        { value: 'linux/amd64', label: 'linux/amd64' },
+        { value: 'linux/arm64', label: 'linux/arm64' },
+      ],
+      initialValue: DEFAULT_DOCKER_PLATFORM,
+      yesInitialValue: DEFAULT_DOCKER_PLATFORM,
+      required: true,
+      hidden: (values) => values.source !== 'docker',
+    },
+    dockerSave: {
+      type: 'boolean',
+      message: 'Save the Docker image as a tar file',
+      initialValue: false,
+      hidden: (values) => values.source !== 'docker',
+    },
+    gitUrl: {
+      type: 'text',
+      message: 'Git repository URL',
+      placeholder: 'https://github.com/nocobase/nocobase.git',
+      initialValue: 'https://github.com/nocobase/nocobase.git',
+      yesInitialValue: 'https://github.com/nocobase/nocobase.git',
+      required: true,
+      hidden: (values) => values.source !== 'git',
+    },
+    outputDir: {
+      type: 'text',
+      message: 'Download location',
+      placeholder: 'e.g. ./nocobase-latest',
+      initialValue: (values) =>
+        defaultOutputDirForVersion(String(values.version ?? 'latest').trim() || 'latest'),
+      required: true,
+      hidden: (values) => {
+        const s = values.source;
+        if (s === 'npm' || s === 'git') {
+          return false;
+        }
+        if (s === 'docker') {
+          return !values.dockerSave;
+        }
+        return true;
+      },
+    },
+    npmRegistry: {
+      type: 'text',
+      message: 'NPM registry URL (optional)',
+      placeholder: 'Leave empty to use the default registry',
+      initialValue: '',
+      hidden: (values) => values.source !== 'npm' && values.source !== 'git',
+    },
+    replace: {
+      type: 'boolean',
+      message: 'Clear the app directory if it already contains files',
+      initialValue: false,
+      hidden: (values) => Download.hideOutputDirAndReplaceSteps(values),
+    },
+    devDependencies: {
+      type: 'boolean',
+      message: 'Install development dependencies (npm only)',
+      initialValue: false,
+      hidden: (values) => values.source !== 'npm',
+    },
+    build: {
+      type: 'boolean',
+      message: 'Build the app after download',
+      initialValue: true,
+      yesInitialValue: true,
+      hidden: () => true,
+    },
+    buildDts: {
+      type: 'boolean',
+      message: 'Generate TypeScript declaration files',
+      initialValue: false,
+      hidden: (values) => values.source !== 'git',
+    },
+  };
+
+  /** When true, `outputDir` / `replace` prompts are skipped (same condition for both). */
+  private static hideOutputDirAndReplaceSteps(values: Record<string, unknown>): boolean {
+    const s = values.source;
+    if (s === 'npm' || s === 'git') {
+      return false;
+    }
+    if (s === 'docker') {
+      return !values.dockerSave;
+    }
+    return true;
+  }
 
   resolveOutputDir(flags: DownloadResolvedFlags): string {
     const explicit = flags['output-dir'];
     if (explicit) {
       return explicit;
     }
-    const tag = flags.version || 'latest';
-    const safe = tag.replace(/[/\\]/g, '-');
-    return `./nocobase-${safe}`;
+    return defaultOutputDirForVersion(flags.version || 'latest');
   }
 
-  private defaultOutputDir(versionTag: string): string {
-    const safe = versionTag.replace(/[/\\]/g, '-');
-    return `./nocobase-${safe}`;
+  private async ensureOutputDirAvailable(outputDir: string, replace: boolean): Promise<string> {
+    const outputAbs = path.resolve(process.cwd(), outputDir);
+    if (replace) {
+      await fsp.rm(outputAbs, { recursive: true, force: true });
+      return outputAbs;
+    }
+    if (await pathExists(outputAbs)) {
+      this.error(
+        `Download target already exists: ${outputDir}. Use --replace to remove it before continuing.`,
+      );
+    }
+    return outputAbs;
+  }
+
+  private dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): string {
+    const image = flags['docker-registry'] ?? DEFAULT_DOCKER_REGISTRY;
+    const tag = flags.version ?? 'latest';
+    const safeBase = `${image.replace(/[/:]/g, '-')}-${tag.replace(/[/\\]/g, '-')}`;
+    return path.join(outputAbs, `${safeBase}.tar`);
   }
 
   /**
-   * When stdin/stdout are TTY and not `-y`, prompt for any missing download options.
+   * Defaults for prompts only. Keys present in **`preset`** are omitted so `runPromptCatalog` uses
+   * **`values`** (preset) alone for those steps — no duplicate prefill for skipped prompts.
    */
-  private async resolveDownloadFlags(flags: {
-    yes: boolean;
-    source?: string;
-    version?: string;
-    replace: boolean;
-    'dev-dependencies': boolean;
-    'build': boolean;
-    'build-dts': boolean;
-    'output-dir'?: string;
-    'git-url'?: string;
-    'docker-registry'?: string;
-    'docker-platform'?: string;
-    'docker-save'?: boolean;
-    'npm-registry'?: string;
-  }): Promise<DownloadResolvedFlags> {
-    const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY && !flags.yes);
+  private buildInitialValuesFromParsed(
+    flags: DownloadParsedFlags,
+    preset: PromptInitialValues,
+  ): PromptInitialValues {
+    const initialValues: PromptInitialValues = {};
 
-    let source = flags.source?.trim() as DownloadSource | '' | undefined;
-    if (source === '') {
-      source = undefined;
-    }
-    let version = flags.version?.trim() || undefined;
-    let replace = flags.replace;
-    let devDependencies = flags['dev-dependencies'];
-    let build = flags['build'];
-    let buildDts = flags['build-dts'];
-    let outputDir = flags['output-dir']?.trim() || undefined;
-    if (outputDir === '') {
-      outputDir = undefined;
-    }
-    let gitUrl = flags['git-url']?.trim() || undefined;
-    if (gitUrl === '') {
-      gitUrl = undefined;
-    }
-    let dockerRegistry = flags['docker-registry']?.trim() || undefined;
-    if (dockerRegistry === '') {
-      dockerRegistry = undefined;
-    }
-    const dockerPlatformRaw = flags['docker-platform'];
-    let dockerPlatform: DockerPlatform | undefined;
-    if (typeof dockerPlatformRaw === 'string') {
-      const t = dockerPlatformRaw.trim();
-      if (t) {
-        if (!isDockerPlatform(t)) {
-          this.error(
-            `--docker-platform must be ${DOCKER_PLATFORMS.join(' or ')} (or omit for the default platform).`,
-          );
-        }
-        dockerPlatform = t;
-      }
-    }
-    const npmRegistryRaw = flags['npm-registry'];
-    let npmRegistry =
-      typeof npmRegistryRaw === 'string' ? (npmRegistryRaw.trim() || undefined) : undefined;
-    let dockerSave = flags['docker-save'] ?? false;
-
-    if (!interactive) {
-      if (!source) {
-        this.error(
-          'Distribution is required (--source npm|git|docker). Use a terminal for interactive setup, or pass -s/--source.',
-        );
-      }
-      if (dockerSave && source !== 'docker') {
-        this.error('--docker-save can only be used with --source docker.');
-      }
-      const v = version || 'latest';
-      const effectiveBuild = source === 'npm' && !devDependencies ? false : build;
-      return {
-        source,
-        version: v,
-        replace,
-        ...(source === 'npm' ? { 'dev-dependencies': devDependencies } : {}),
-        'build': effectiveBuild,
-        'build-dts': normalizeBuildDts(source as DownloadSource, effectiveBuild, flags['build-dts']),
-        'output-dir': outputDir,
-        'git-url': gitUrl,
-        'docker-registry': dockerRegistry,
-        ...(source === 'docker' && dockerPlatform ? { 'docker-platform': dockerPlatform } : {}),
-        ...(source === 'docker' ? { 'docker-save': dockerSave } : {}),
-        ...(npmRegistry ? { 'npm-registry': npmRegistry } : {}),
-      } as DownloadResolvedFlags;
+    const source = flags.source?.trim();
+    if (source) {
+      initialValues.source = source;
     }
 
-    p.intro('nb download');
-
-    if (!source) {
-      const src = await p.select<DownloadSource>({
-        message: 'How do you want to get NocoBase?',
-        options: [
-          { value: 'npm', label: 'npm — create-nocobase-app' },
-          { value: 'git', label: 'git — shallow clone' },
-          { value: 'docker', label: 'docker — pull image' },
-        ],
-        initialValue: 'npm',
-      });
-      if (p.isCancel(src)) {
-        p.cancel('Download cancelled.');
-        this.exit(0);
-      }
-      source = src;
+    if (flags.version !== undefined) {
+      initialValues.version = flags.version.trim() || 'latest';
     }
 
-    if (version === undefined) {
-      const verAns = await p.text({
-        message: 'Version / dist-tag / image tag / branch alias (-v)',
-        placeholder: 'latest',
-        initialValue: 'latest',
-      });
-      if (p.isCancel(verAns)) {
-        p.cancel('Download cancelled.');
-        this.exit(0);
-      }
-      version = (verAns as string).trim() || 'latest';
+    initialValues.replace = flags.replace;
+    initialValues.devDependencies = flags['dev-dependencies'];
+    initialValues.build = flags.build;
+    initialValues.buildDts = flags['build-dts'];
+
+    if (flags['output-dir'] !== undefined) {
+      initialValues.outputDir = flags['output-dir']?.trim() ?? '';
     }
 
-    const versionResolved = version || 'latest';
-
-    if (source === 'docker') {
-      if (dockerRegistry === undefined) {
-        const reg = await p.text({
-          message: 'Docker image without tag (--docker-registry)',
-          placeholder: 'nocobase/nocobase',
-          initialValue: 'nocobase/nocobase',
-        });
-        if (p.isCancel(reg)) {
-          p.cancel('Download cancelled.');
-          this.exit(0);
-        }
-        dockerRegistry = (reg as string).trim() || 'nocobase/nocobase';
-      }
-      if (dockerPlatform === undefined) {
-        const platAns = await p.select({
-          message: 'Docker platform for `docker pull --platform` (--docker-platform)',
-          options: [
-            { value: '', label: 'Default (host platform)' },
-            { value: 'linux/amd64', label: 'linux/amd64' },
-            { value: 'linux/arm64', label: 'linux/arm64' },
-          ],
-          initialValue: '',
-        });
-        if (p.isCancel(platAns)) {
-          p.cancel('Download cancelled.');
-          this.exit(0);
-        }
-        const pStr = typeof platAns === 'string' ? platAns : '';
-        dockerPlatform = pStr && isDockerPlatform(pStr) ? pStr : undefined;
-      }
-      const explicitSave = explicitDockerSaveFromArgv(process.argv.slice(2));
-      const saveAns = await p.confirm({
-        message:
-          'After pull, save the image as a tarball under `--output-dir`? (--docker-save / --no-docker-save)',
-        initialValue: explicitSave !== undefined ? explicitSave : dockerSave,
-      });
-      if (p.isCancel(saveAns)) {
-        p.cancel('Download cancelled.');
-        this.exit(0);
-      }
-      dockerSave = saveAns;
+    if (flags['git-url'] !== undefined) {
+      initialValues.gitUrl = flags['git-url']?.trim() ?? '';
     }
 
-    if (source === 'git') {
-      if (gitUrl === undefined) {
-        const urlAns = await p.text({
-          message: 'Git remote URL (--git-url)',
-          placeholder: 'https://github.com/nocobase/nocobase.git',
-          initialValue: 'https://github.com/nocobase/nocobase.git',
-        });
-        if (p.isCancel(urlAns)) {
-          p.cancel('Download cancelled.');
-          this.exit(0);
-        }
-        gitUrl = (urlAns as string).trim() || 'https://github.com/nocobase/nocobase.git';
+    if (flags['docker-registry'] !== undefined) {
+      initialValues.dockerRegistry = String(flags['docker-registry'] ?? '').trim();
+    }
+
+    initialValues.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
+
+    initialValues.dockerSave = flags['docker-save'];
+
+    if (flags['npm-registry'] !== undefined) {
+      initialValues.npmRegistry =
+        typeof flags['npm-registry'] === 'string' ? flags['npm-registry'] : '';
+    }
+
+    for (const key of Object.keys(preset)) {
+      if (Object.prototype.hasOwnProperty.call(initialValues, key)) {
+        delete initialValues[key];
       }
     }
 
-    if (source === 'npm' || source === 'git' || (source === 'docker' && dockerSave)) {
-      if (outputDir === undefined) {
-        const initialOut = this.defaultOutputDir(versionResolved);
-        const outAns = await p.text({
-          message:
-            source === 'docker'
-              ? 'Directory for the saved image tarball, relative to cwd (-o)'
-              : 'Output directory relative to cwd (-o)',
-          placeholder: initialOut,
-          initialValue: initialOut,
-        });
-        if (p.isCancel(outAns)) {
-          p.cancel('Download cancelled.');
-          this.exit(0);
-        }
-        outputDir = (outAns as string).trim() || initialOut;
-      }
+    return initialValues;
+  }
 
-      const replaceAns = await p.confirm({
-        message: 'Delete existing output directory if present, then retry? (--replace)',
-        initialValue: replace,
-      });
-      if (p.isCancel(replaceAns)) {
-        p.cancel('Download cancelled.');
-        this.exit(0);
-      }
-      replace = replaceAns;
+  /**
+   * Preset `values` for `runPromptCatalog`: any key here skips that prompt and fixes the result.
+   * Keys not listed are resolved interactively (TTY) or from catalog defaults / `initialValues` (non-TTY / `-y`).
+   */
+  private buildPresetValuesFromFlags(flags: DownloadParsedFlags): PromptInitialValues {
+    const preset: PromptInitialValues = {};
+    const argv = process.argv.slice(2);
+
+    if (flags.source !== undefined && String(flags.source).trim() !== '') {
+      preset.source = String(flags.source).trim();
     }
 
+    if (flags.version !== undefined) {
+      preset.version = String(flags.version).trim() || 'latest';
+    }
+
+    if (flags['docker-registry'] !== undefined) {
+      const v = String(flags['docker-registry'] ?? '').trim();
+      if (v) {
+        preset.dockerRegistry = v;
+      }
+    }
+
+    if (argvHasToken(argv, ['--docker-platform'])) {
+      preset.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
+    }
+
+    if (flags['output-dir'] !== undefined) {
+      const v = flags['output-dir']?.trim();
+      if (v) {
+        preset.outputDir = v;
+      }
+    }
+
+    if (flags['git-url'] !== undefined) {
+      const v = flags['git-url']?.trim();
+      if (v) {
+        preset.gitUrl = v;
+      }
+    }
+
+    if (flags['npm-registry'] !== undefined) {
+      preset.npmRegistry = typeof flags['npm-registry'] === 'string' ? flags['npm-registry'] : '';
+    }
+
+    if (argvHasToken(argv, ['--replace', '-r'])) {
+      preset.replace = flags.replace;
+    }
+
+    if (argvHasToken(argv, ['--dev-dependencies', '--no-dev-dependencies', '-D'])) {
+      preset.devDependencies = flags['dev-dependencies'];
+    }
+
+    if (argvHasToken(argv, ['--docker-save', '--no-docker-save'])) {
+      preset.dockerSave = flags['docker-save'];
+    }
+
+    if (argvHasToken(argv, ['--build', '--no-build'])) {
+      preset.build = flags.build;
+    }
+
+    if (argvHasToken(argv, ['--build-dts', '--no-build-dts'])) {
+      preset.buildDts = flags['build-dts'];
+    }
+
+    return preset;
+  }
+
+  private resolveEffectiveBuild(
+    source: DownloadSource,
+    results: Record<string, PromptValue>,
+    flags: DownloadParsedFlags,
+  ): boolean {
+    if (source === 'npm' && !Boolean(results.devDependencies)) {
+      return false;
+    }
     if (source === 'npm' || source === 'git') {
-      const regAns = await p.text({
-        message:
-          'npm registry URL for npx / yarn (`npm_config_registry`; optional — leave empty for defaults) (--npm-registry)',
-        placeholder: '(empty = default registry)',
-        initialValue: npmRegistry ?? '',
-      });
-      if (p.isCancel(regAns)) {
-        p.cancel('Download cancelled.');
-        this.exit(0);
-      }
-      npmRegistry = String(regAns ?? '').trim() || undefined;
+      return results.build !== undefined ? Boolean(results.build) : flags.build;
     }
+    return flags.build;
+  }
 
-    if (source === 'npm') {
-      const argvSlice = process.argv.slice(2);
-      const explicitDev = explicitDevDependenciesFromArgv(argvSlice);
-      const devAns = await p.confirm({
-        message:
-          'Install devDependencies and run a non-production yarn install? (npm only; -D / --dev-dependencies / --no-dev-dependencies)',
-        initialValue: explicitDev !== undefined ? explicitDev : devDependencies,
-      });
-      if (p.isCancel(devAns)) {
-        p.cancel('Download cancelled.');
-        this.exit(0);
-      }
-      devDependencies = devAns;
-    }
+  private mapCatalogResultsToResolved(
+    results: Record<string, PromptValue>,
+    flags: DownloadParsedFlags,
+  ): DownloadResolvedFlags {
+    const source = String(results.source) as DownloadSource;
+    const version = String(results.version ?? '').trim() || 'latest';
 
-    if (source === 'npm' || source === 'git') {
-      if (source === 'npm' && !devDependencies) {
-        build = false;
-        buildDts = false;
-      } else {
-        const explicitBuild = explicitBuildFromArgv(process.argv.slice(2));
-        const buildAns = await p.confirm({
-          message: 'Run `nb build` after install? (--build / --no-build)',
-          initialValue: explicitBuild !== undefined ? explicitBuild : true,
-        });
-        if (p.isCancel(buildAns)) {
-          p.cancel('Download cancelled.');
-          this.exit(0);
-        }
-        build = buildAns;
+    const devDependencies = source === 'npm' ? Boolean(results.devDependencies) : undefined;
 
-        if (build) {
-          const explicitDts = explicitBuildDtsFromArgv(process.argv.slice(2));
-          const dtsAns = await p.confirm({
-            message: 'Emit TypeScript declaration files during `nb build`? (--build-dts / --no-build-dts)',
-            initialValue: explicitDts !== undefined ? explicitDts : buildDts,
-          });
-          if (p.isCancel(dtsAns)) {
-            p.cancel('Download cancelled.');
-            this.exit(0);
-          }
-          buildDts = dtsAns;
-        } else {
-          buildDts = false;
-        }
-      }
-    }
+    const effectiveBuild = this.resolveEffectiveBuild(source, results, flags);
+    const buildDtsWant =
+      results.buildDts !== undefined ? Boolean(results.buildDts) : flags['build-dts'];
+
+    const outputDir =
+      results.outputDir !== undefined
+        ? String(results.outputDir).trim() || undefined
+        : flags['output-dir']?.trim() || undefined;
+
+    const replace =
+      results.replace !== undefined ? Boolean(results.replace) : flags.replace;
+
+    const gitUrl =
+      results.gitUrl !== undefined
+        ? String(results.gitUrl).trim() || undefined
+        : flags['git-url']?.trim() || undefined;
+
+    const dockerRegistry =
+      results.dockerRegistry !== undefined
+        ? String(results.dockerRegistry).trim() || undefined
+        : flags['docker-registry']?.trim() || undefined;
+
+    const dockerPlatform =
+      source === 'docker'
+        ? normalizeDockerPlatform(
+          results.dockerPlatform !== undefined
+            ? results.dockerPlatform
+            : flags['docker-platform'],
+        )
+        : undefined;
+
+    const dockerSave =
+      source === 'docker'
+        ? results.dockerSave !== undefined
+          ? Boolean(results.dockerSave)
+          : flags['docker-save']
+        : false;
+
+    const npmRegistryRaw =
+      results.npmRegistry !== undefined
+        ? String(results.npmRegistry)
+        : flags['npm-registry'] ?? '';
+    const npmRegistry = npmRegistryRaw.trim() || undefined;
 
     return {
       source,
-      version: versionResolved,
+      version,
       replace,
-      ...(source === 'npm' ? { 'dev-dependencies': devDependencies } : {}),
-      'build': build,
-      'build-dts': normalizeBuildDts(source, build, buildDts),
+      ...(source === 'npm' ? { 'dev-dependencies': devDependencies! } : {}),
+      'build': effectiveBuild,
+      'build-dts': normalizeBuildDts(source, effectiveBuild, buildDtsWant),
       'output-dir': outputDir,
       'git-url': gitUrl,
       'docker-registry': dockerRegistry,
-      ...(source === 'docker' && dockerPlatform ? { 'docker-platform': dockerPlatform } : {}),
+      ...(source === 'docker' ? { 'docker-platform': dockerPlatform } : {}),
       ...(source === 'docker' ? { 'docker-save': dockerSave } : {}),
       ...(npmRegistry ? { 'npm-registry': npmRegistry } : {}),
     } as DownloadResolvedFlags;
+  }
+
+  private async resolveDownloadFlags(flags: DownloadParsedFlags): Promise<DownloadResolvedFlags> {
+    const nonInteractive = !stdinStream.isTTY || !stdoutStream.isTTY || flags.yes;
+
+    if (nonInteractive && !flags.source?.trim()) {
+      this.error(
+        'Download source is required in non-interactive mode. Use --source npm, --source git, or --source docker.',
+      );
+    }
+
+    const presetValues = this.buildPresetValuesFromFlags(flags);
+    const initialValues = this.buildInitialValuesFromParsed(flags, presetValues);
+
+    const results = await runPromptCatalog(Download.prompts, {
+      initialValues,
+      values: presetValues,
+      yes: flags.yes,
+      command: this,
+      hooks: {
+        onCancel: () => {
+          p.cancel('Download cancelled.');
+          this.exit(0);
+        },
+        onMissingNonInteractive: (message: string) => {
+          this.error(message);
+        },
+      },
+    });
+
+    const source = String(results.source ?? '').trim() as DownloadSource | '';
+    if (!source || !['docker', 'npm', 'git'].includes(source)) {
+      this.error(
+        'Download source is required. Choose npm, git, or docker.',
+      );
+    }
+
+    if (flags['docker-save'] && source !== 'docker') {
+      this.error('--docker-save is only available when --source docker is selected.');
+    }
+
+    return this.mapCatalogResultsToResolved(results, flags);
   }
 
   private npmRegistryUrl(flags: DownloadResolvedFlags): string | undefined {
@@ -527,13 +651,93 @@ export default class Download extends Command {
     return url || undefined;
   }
 
-  /** Env for `npx` and `yarn` — both respect `npm_config_registry`. */
   private npmRegistryEnv(flags: DownloadResolvedFlags): Record<string, string> | undefined {
     const url = this.npmRegistryUrl(flags);
     if (!url) {
       return undefined;
     }
     return { npm_config_registry: url };
+  }
+
+  private isVerbose(): boolean {
+    const flags = this._flags as Partial<DownloadParsedFlags> | undefined;
+    return Boolean(flags?.verbose);
+  }
+
+  private commandStdio(): 'inherit' | 'ignore' {
+    return this.isVerbose() ? 'inherit' : 'ignore';
+  }
+
+  private formatCommandForLog(name: string, args: string[], cwd?: string): string {
+    const quotedArgs = args.map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg));
+    const commandLine = [name, ...quotedArgs].join(' ');
+    return cwd ? `${commandLine} (cwd: ${cwd})` : commandLine;
+  }
+
+  private async runExternalCommand(
+    name: string,
+    args: string[],
+    options?: {
+      cwd?: string;
+      env?: Record<string, string>;
+      errorName?: string;
+      loadingMessage?: string;
+    },
+  ): Promise<void> {
+    const cwd = options?.cwd;
+    printVerbose(`Running command: ${this.formatCommandForLog(name, args, cwd)}`);
+    let loadingStarted = false;
+    let loadingTimer: ReturnType<typeof setTimeout> | undefined;
+    let updateTimer: ReturnType<typeof setInterval> | undefined;
+    let elapsedSeconds = 0;
+
+    if (!this.isVerbose() && options?.loadingMessage) {
+      loadingTimer = setTimeout(() => {
+        loadingStarted = true;
+        elapsedSeconds = Math.floor(EXTERNAL_COMMAND_LOADING_DELAY_MS / 1000);
+        startTask(`${options.loadingMessage}. Please wait...`);
+        updateTimer = setInterval(() => {
+          elapsedSeconds += Math.floor(EXTERNAL_COMMAND_LOADING_UPDATE_MS / 1000);
+          updateTask(`${options.loadingMessage}. Still working... (${elapsedSeconds}s elapsed)`);
+        }, EXTERNAL_COMMAND_LOADING_UPDATE_MS);
+      }, EXTERNAL_COMMAND_LOADING_DELAY_MS);
+    }
+
+    try {
+      await run(name, args, {
+        ...options,
+        stdio: this.commandStdio(),
+      });
+    } finally {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+      }
+      if (updateTimer) {
+        clearInterval(updateTimer);
+      }
+      if (loadingStarted) {
+        stopTask();
+      }
+    }
+  }
+
+  private startPreparationTask(message: string): void {
+    if (this.isVerbose()) {
+      p.log.step(message);
+      return;
+    }
+
+    this.preparationTaskActive = true;
+    startTask(message);
+  }
+
+  private finishPreparationTask(): void {
+    if (!this.preparationTaskActive) {
+      return;
+    }
+
+    this.preparationTaskActive = false;
+    stopTask();
   }
 
   private runOptionsWithCwd(cwd: string, registryEnv: Record<string, string> | undefined) {
@@ -543,7 +747,6 @@ export default class Download extends Command {
     return { cwd };
   }
 
-  /** Args for `nb build` after download (cwd + `--no-dts` unless emitting `.d.ts`). */
   private buildCommandArgv(projectRoot: string, flags: DownloadResolvedFlags): string[] {
     const argv = ['--cwd', projectRoot];
     if (!flags['build-dts']) {
@@ -553,59 +756,82 @@ export default class Download extends Command {
   }
 
   async downloadFromDocker(flags: DownloadResolvedFlags): Promise<void> {
-    const image = flags['docker-registry'] ?? 'nocobase/nocobase';
+    const image = flags['docker-registry'] ?? DEFAULT_DOCKER_REGISTRY;
     const tag = flags.version ?? 'latest';
     const imageRef = `${image}:${tag}`;
-    const platform = flags['docker-platform'];
+    const platform = dockerPlatformArg(flags['docker-platform']);
     const pullArgs = ['pull'];
     if (platform) {
       pullArgs.push('--platform', platform);
     }
     pullArgs.push(imageRef);
-    await run('docker', pullArgs);
+    this.finishPreparationTask();
+    p.log.step(`Pulling Docker image ${imageRef}`);
+    await this.runExternalCommand('docker', pullArgs, {
+      errorName: 'docker pull',
+      loadingMessage: 'Pulling the Docker image',
+    });
+    p.log.info(`Docker image is ready: ${imageRef}`);
 
     if (!flags['docker-save']) {
       return;
     }
 
     const outputDir = this.resolveOutputDir(flags);
-    const outAbs = path.resolve(process.cwd(), outputDir);
+    const outAbs = flags.replace
+      ? path.resolve(process.cwd(), outputDir)
+      : await this.ensureOutputDirAvailable(outputDir, false);
     if (flags.replace) {
       await fsp.rm(outAbs, { recursive: true, force: true });
     }
     await fsp.mkdir(outAbs, { recursive: true });
-    const safeBase = `${image.replace(/[/:]/g, '-')}-${tag.replace(/[/\\]/g, '-')}`;
-    const tarPath = path.join(outAbs, `${safeBase}.tar`);
-    this.log(`Saving ${imageRef} to ${tarPath}`);
-    await run('docker', ['save', '-o', tarPath, imageRef]);
+    const tarPath = this.dockerTarPath(flags, outAbs);
+    p.log.step(`Saving Docker image tarball to ${tarPath}`);
+    await this.runExternalCommand('docker', ['save', '-o', tarPath, imageRef], {
+      errorName: 'docker save',
+      loadingMessage: 'Saving the Docker image tarball',
+    });
+    p.log.info(`Docker image tarball saved: ${tarPath}`);
   }
 
   async downloadFromNpm(flags: DownloadResolvedFlags): Promise<string> {
     const versionSpec = flags.version || 'latest';
     const outputDir = this.resolveOutputDir(flags);
     const projectRoot = path.resolve(process.cwd(), outputDir);
-    /** create-nocobase-app scaffolds at `join(cwd, name)`; run npx with `cwd = parentDir` so nested `output-dir` is correct */
+    await this.ensureOutputDirAvailable(outputDir, flags.replace);
     const parentDir = path.dirname(projectRoot);
     const appName = path.basename(projectRoot);
     const npxArgs = ['-y', `create-nocobase-app@${versionSpec}`, appName];
     if (!flags['dev-dependencies']) {
       npxArgs.push('--skip-dev-dependencies');
     }
-    if (flags.replace) {
-      await fsp.rm(projectRoot, { recursive: true, force: true });
-    }
     await fsp.mkdir(parentDir, { recursive: true });
     const registryEnv = this.npmRegistryEnv(flags);
-    this.log(`Running npx create-nocobase-app@${versionSpec} (app: ${appName}, cwd: ${parentDir})`);
-    await run('npx', npxArgs, { ...this.runOptionsWithCwd(parentDir, registryEnv) });
+    this.finishPreparationTask();
+    p.log.step(`Creating NocoBase app "${appName}" from npm`);
+    await this.runExternalCommand('npx', npxArgs, {
+      ...this.runOptionsWithCwd(parentDir, registryEnv),
+      errorName: 'npx create-nocobase-app',
+      loadingMessage: 'Creating the app scaffold',
+    });
     const installArgs = ['install'];
     if (!flags['dev-dependencies']) {
       installArgs.push('--production');
     }
-    await run('yarn', installArgs, this.runOptionsWithCwd(projectRoot, registryEnv));
+    p.log.step(`Installing dependencies in ${projectRoot}`);
+    await this.runExternalCommand('yarn', installArgs, {
+      ...this.runOptionsWithCwd(projectRoot, registryEnv),
+      errorName: 'yarn install',
+      loadingMessage: 'Installing dependencies',
+    });
     if (flags.build && flags['dev-dependencies']) {
-      await this.config.runCommand('build', this.buildCommandArgv(projectRoot, flags));
+      p.log.step(`Building app in ${projectRoot}`);
+      await this.config.runCommand('build', [
+        ...this.buildCommandArgv(projectRoot, flags),
+        ...(this.isVerbose() ? ['--verbose'] : []),
+      ]);
     }
+    p.log.info(`NocoBase app is ready at ${projectRoot}`);
     return projectRoot;
   }
 
@@ -613,56 +839,79 @@ export default class Download extends Command {
     const repoUrl = flags['git-url'] ?? 'https://github.com/nocobase/nocobase.git';
     const versionSpec = flags.version || 'latest';
     const outputDir = this.resolveOutputDir(flags);
-    const versionToRef = {
-      'latest': 'main',
-      'beta': 'next',
-      'alpha': 'develop',
-    };
-    if (flags.replace) {
-      await fsp.rm(path.resolve(process.cwd(), outputDir), { recursive: true, force: true });
-    }
-    const branch = versionToRef[versionSpec] || versionSpec;
+    await this.ensureOutputDirAvailable(outputDir, flags.replace);
+    const branch = gitRefForVersion(versionSpec);
     const gitArgs = ['clone'];
     gitArgs.push('--branch', branch);
     gitArgs.push('--depth', '1', repoUrl, outputDir);
-    await run('git', gitArgs);
+    this.finishPreparationTask();
+    p.log.step(
+      branch === versionSpec
+        ? `Cloning NocoBase from ${repoUrl} (${branch})`
+        : `Cloning NocoBase from ${repoUrl} (${branch}, resolved from ${versionSpec})`,
+    );
+    await this.runExternalCommand('git', gitArgs, {
+      errorName: 'git clone',
+      loadingMessage: 'Cloning the repository',
+    });
     const projectRoot = path.resolve(process.cwd(), outputDir);
     const registryEnv = this.npmRegistryEnv(flags);
-    await run('yarn', ['install'], this.runOptionsWithCwd(projectRoot, registryEnv));
+    p.log.step(`Installing dependencies in ${projectRoot}`);
+    await this.runExternalCommand('yarn', ['install'], {
+      ...this.runOptionsWithCwd(projectRoot, registryEnv),
+      errorName: 'yarn install',
+      loadingMessage: 'Installing dependencies',
+    });
     if (flags.build) {
-      await this.config.runCommand('build', this.buildCommandArgv(projectRoot, flags));
+      p.log.step(`Building app in ${projectRoot}`);
+      await this.config.runCommand('build', [
+        ...this.buildCommandArgv(projectRoot, flags),
+        ...(this.isVerbose() ? ['--verbose'] : []),
+      ]);
     }
+    p.log.info(`NocoBase app is ready at ${projectRoot}`);
     return projectRoot;
   }
 
-  /**
-   * @returns Final resolved flags and, for npm/git, the absolute project directory.
-   */
   async download(): Promise<DownloadCommandResult> {
     const { flags } = await this.parse(Download);
+    this._flags = flags as DownloadParsedFlags;
+    setVerboseMode(Boolean(flags.verbose));
+    if (!flags['no-intro']) {
+      p.intro('Get NocoBase');
+    }
     const resolved = await this.resolveDownloadFlags(flags);
+    const source = resolved.source as DownloadSource;
 
-    switch (resolved.source) {
-      case 'npm': {
-        const projectRoot = await this.downloadFromNpm(resolved);
-        return { resolved, projectRoot };
+    this.startPreparationTask(`Preparing download from ${downloadSourceLabel(source)}`);
+
+    try {
+      switch (source) {
+        case 'npm': {
+          const projectRoot = await this.downloadFromNpm(resolved);
+          return { resolved, projectRoot };
+        }
+        case 'docker': {
+          await this.downloadFromDocker(resolved);
+          return { resolved, projectRoot: undefined };
+        }
+        case 'git': {
+          const projectRoot = await this.downloadFromGit(resolved);
+          return { resolved, projectRoot };
+        }
+        default:
+          this.error(`Unsupported download source: ${resolved.source}`);
       }
-      case 'docker': {
-        await this.downloadFromDocker(resolved);
-        return { resolved, projectRoot: undefined };
-      }
-      case 'git': {
-        const projectRoot = await this.downloadFromGit(resolved);
-        return { resolved, projectRoot };
-      }
-      default:
-        this.error(`Invalid --source: ${resolved.source}`);
+    } finally {
+      this.finishPreparationTask();
     }
   }
 
   public async run(): Promise<DownloadCommandResult> {
     try {
-      return await this.download();
+      const result = await this.download();
+      p.outro(`Download completed via ${downloadSourceLabel(result.resolved.source as DownloadSource)}.`);
+      return result;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);

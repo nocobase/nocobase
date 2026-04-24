@@ -13,6 +13,12 @@ import { FLOW_SURFACE_REACTION_DUPLICATE_SLOT } from '../reaction/errors';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
 import type {
   FlowSurfaceApplyBlueprintAssets,
+  FlowSurfaceApplyBlueprintDefaultCollection,
+  FlowSurfaceApplyBlueprintDefaultFieldGroupSpec,
+  FlowSurfaceApplyBlueprintDefaultPopupActionMap,
+  FlowSurfaceApplyBlueprintDefaultPopupName,
+  FlowSurfaceApplyBlueprintDefaultPopups,
+  FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDocument,
   FlowSurfaceApplyBlueprintReaction,
 } from './public-types';
@@ -37,9 +43,15 @@ const APPLY_BLUEPRINT_REACTION_TYPES = [
   'setActionLinkageRules',
 ] as const;
 const APPLY_BLUEPRINT_REACTION_TYPE_SET = new Set<string>(APPLY_BLUEPRINT_REACTION_TYPES);
+const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups'];
+const APPLY_BLUEPRINT_DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
+const APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTIONS = ['view', 'addNew', 'edit'] as const;
 
 function assertSupportedApplyBlueprintTopLevelKeys(input: Record<string, any>) {
-  const allowedKeys = ['version', 'mode', 'target', 'navigation', 'page', 'assets', 'tabs', 'reaction'];
+  const allowedKeys = ['version', 'mode', 'target', 'navigation', 'page', 'defaults', 'assets', 'tabs', 'reaction'];
   const unsupportedKeys = Object.keys(input).filter((key) => !allowedKeys.includes(key));
   if (!unsupportedKeys.length) {
     return;
@@ -156,6 +168,133 @@ function normalizeNavigation(input: any) {
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
+function normalizeDefaultFieldGroups(
+  input: any,
+  context: string,
+): FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[] | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  if (!Array.isArray(input) || !input.length) {
+    throwBadRequest(`${context} must be a non-empty array`);
+  }
+  return input.map((group: any, groupIndex: number) => {
+    const groupContext = `${context}[${groupIndex}]`;
+    assertPlainObject(group, groupContext);
+    assertOnlyAllowedKeys(group, groupContext, APPLY_BLUEPRINT_DEFAULT_FIELD_GROUP_ALLOWED_KEYS);
+    if (!Array.isArray(group.fields) || !group.fields.length) {
+      throwBadRequest(`${groupContext}.fields must be a non-empty array`);
+    }
+    return buildDefinedPayload({
+      key: readOptionalString(group.key),
+      title: assertNonEmptyString(group.title, `${groupContext}.title`),
+      fields: group.fields.map((field: any, fieldIndex: number) =>
+        assertNonEmptyString(field, `${groupContext}.fields[${fieldIndex}]`),
+      ),
+    }) as FlowSurfaceApplyBlueprintDefaultFieldGroupSpec;
+  });
+}
+
+function normalizeDefaultPopupName(input: any, context: string): FlowSurfaceApplyBlueprintDefaultPopupName | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS);
+  return {
+    name: assertNonEmptyString(input.name, `${context}.name`),
+    description: assertNonEmptyString(input.description, `${context}.description`),
+  };
+}
+
+function normalizeDefaultPopupActionMap(
+  input: any,
+  context: string,
+  allowedKeys: readonly string[],
+): FlowSurfaceApplyBlueprintDefaultPopupActionMap | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, [...allowedKeys]);
+  const normalized = buildDefinedPayload(
+    Object.fromEntries(
+      APPLY_BLUEPRINT_DEFAULT_POPUP_ACTIONS.map((action) => [
+        action,
+        normalizeDefaultPopupName(input[action], `${context}.${action}`),
+      ]),
+    ),
+  ) as FlowSurfaceApplyBlueprintDefaultPopupActionMap;
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeDefaultPopups(input: any, context: string): FlowSurfaceApplyBlueprintDefaultPopups | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  const actionMap = normalizeDefaultPopupActionMap(input, context, APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS);
+  const associationsInput = input.associations;
+  const associations = _.isUndefined(associationsInput)
+    ? undefined
+    : (() => {
+        assertPlainObject(associationsInput, `${context}.associations`);
+        return Object.fromEntries(
+          Object.entries(associationsInput).flatMap(([field, value]) => {
+            const associationField = assertNonEmptyString(field, `${context}.associations key`);
+            const normalizedValue = normalizeDefaultPopupActionMap(
+              value,
+              `${context}.associations.${associationField}`,
+              APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS,
+            );
+            return normalizedValue ? [[associationField, normalizedValue]] : [];
+          }),
+        );
+      })();
+  const normalized = buildDefinedPayload({
+    ...actionMap,
+    associations: associations && Object.keys(associations).length ? associations : undefined,
+  }) as FlowSurfaceApplyBlueprintDefaultPopups;
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeDefaultCollection(input: any, context: string): FlowSurfaceApplyBlueprintDefaultCollection {
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS);
+  return buildDefinedPayload({
+    fieldGroups: normalizeDefaultFieldGroups(input.fieldGroups, `${context}.fieldGroups`),
+    popups: normalizeDefaultPopups(input.popups, `${context}.popups`),
+  }) as FlowSurfaceApplyBlueprintDefaultCollection;
+}
+
+function normalizeDefaults(input: any): FlowSurfaceApplyBlueprintDefaults | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, 'flowSurfaces applyBlueprint defaults');
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint defaults', ['collections']);
+  if (_.isUndefined(input.collections)) {
+    return {};
+  }
+  assertPlainObject(input.collections, 'flowSurfaces applyBlueprint defaults.collections');
+  return {
+    collections: Object.fromEntries(
+      Object.entries(input.collections).map(([collectionName, collectionDefaults]) => {
+        const normalizedCollectionName = assertNonEmptyString(
+          collectionName,
+          'flowSurfaces applyBlueprint defaults.collections key',
+        );
+        return [
+          normalizedCollectionName,
+          normalizeDefaultCollection(
+            collectionDefaults,
+            `flowSurfaces applyBlueprint defaults.collections.${normalizedCollectionName}`,
+          ),
+        ];
+      }),
+    ),
+  };
+}
+
 function normalizeTabs(input: any[]): FlowSurfaceApplyBlueprintDocument['tabs'] {
   const seenTabKeys = new Set<string>();
   return input.map((tab: any, index: number) => {
@@ -265,6 +404,7 @@ export function prepareFlowSurfaceApplyBlueprintDocument(
 
   const page = normalizePage(input.page);
   const navigation = normalizeNavigation(input.navigation);
+  const defaults = normalizeDefaults(input.defaults);
 
   if (mode === 'create' && !_.isUndefined(input.target)) {
     throwBadRequest(`flowSurfaces applyBlueprint create mode does not accept target`);
@@ -308,6 +448,7 @@ export function prepareFlowSurfaceApplyBlueprintDocument(
     ...(target ? { target } : {}),
     ...(navigation ? { navigation } : {}),
     ...(page ? { page } : {}),
+    ...(defaults ? { defaults } : {}),
     tabs,
     assets,
     ...(reaction ? { reaction } : {}),

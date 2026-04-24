@@ -69,7 +69,6 @@ function getClientGlobalFiles(lane: PluginClientLane) {
   return ['src/**', '!src/server/**', ...excludedClientDirs, ...globExcludeFiles];
 }
 
-
 const external = [
   // nocobase
   '@nocobase/ai',
@@ -176,7 +175,6 @@ const external = [
   '@langchain/classic',
   '@langchain/langgraph',
   '@langchain/langgraph-checkpoint',
-  '@langchain/community',
   '@langchain/openai',
   '@langchain/anthropic',
   '@langchain/google-genai',

@@ -31,6 +31,7 @@ import {
 import type { FlowSurfaceWriteTarget } from './types';
 const FILTER_TARGET_BLOCK_USES = new Set([
   'TableBlockModel',
+  'CalendarBlockModel',
   'DetailsBlockModel',
   'ListBlockModel',
   'GridCardBlockModel',
@@ -361,7 +362,7 @@ export class FlowSurfaceContextResolver {
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
     if (
-      ['TableBlockModel', 'TableActionsColumnModel'].includes(node?.use) ||
+      ['TableBlockModel', 'CalendarBlockModel', 'TableActionsColumnModel'].includes(node?.use) ||
       node?.use === 'ActionPanelBlockModel' ||
       LIST_LIKE_BLOCK_USES.has(node?.use) ||
       LIST_LIKE_ITEM_USES.has(node?.use)

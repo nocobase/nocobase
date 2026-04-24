@@ -33,6 +33,7 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'block-markdown',
   'block-iframe',
   'block-workbench',
+  'calendar',
   'map',
   'data-visualization',
   'comments',

@@ -14,16 +14,18 @@ import { authenticateEnvWithOauth } from '../../lib/env-auth.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 
 export default class EnvAuth extends Command {
-  static override summary = 'Authenticate an environment with OAuth';
+  static override summary = 'Sign in to a saved NocoBase environment with OAuth';
 
   static override examples = [
+    '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> prod',
+    '<%= config.bin %> <%= command.id %> --scope global',
   ];
 
   static override args = {
     name: Args.string({
       description: 'Environment name (omit to use the current env)',
-      required: true,
+      required: false,
     }),
   };
 
@@ -49,22 +51,21 @@ export default class EnvAuth extends Command {
     const nameFlag = flags.env?.trim() || undefined;
     if (nameArg && nameFlag && nameArg !== nameFlag) {
       this.error(
-        `Environment name was given both as the argument ("${nameArg}") and as --env ("${nameFlag}"); use only one.`,
+        `Environment name was provided both as the argument ("${nameArg}") and as --env ("${nameFlag}"). Please use only one.`,
       );
     }
-    const envName = nameArg || nameFlag || undefined;
-    const envLabel = envName ?? (await getCurrentEnvName({ scope }));
+    const envName = nameArg || nameFlag || (await getCurrentEnvName({ scope }));
 
-    startTask(`Authenticating env: ${envLabel}${scope ? ` (${formatCliHomeScope(scope)})` : ''}`);
+    startTask(`Starting browser sign-in for "${envName}"${scope ? ` (${formatCliHomeScope(scope)} scope)` : ''}...`);
 
     try {
       await authenticateEnvWithOauth({
         envName,
         scope,
       });
-      succeedTask(`Authenticated env "${envLabel}" with OAuth${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
+      succeedTask(`Signed in to "${envName}"${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
     } catch (error) {
-      failTask(`Failed to authenticate env "${envLabel}".`);
+      failTask(`Sign-in failed for "${envName}"${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
       throw error;
     }
   }

@@ -220,6 +220,27 @@ const LIST_OPTIONS: FlowSurfaceConfigureOptions = {
   layout: stringOption('List layout', { example: 'vertical' }),
 };
 
+const CALENDAR_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  titleField: stringOption('Calendar event title field', { example: 'title' }),
+  colorField: stringOption('Calendar event color field', { example: 'status' }),
+  startField: stringOption('Calendar event start field', { example: 'startAt' }),
+  endField: stringOption('Calendar event end field', { example: 'endAt' }),
+  defaultView: stringOption('Default calendar view', { enum: ['month', 'week', 'day'], example: 'month' }),
+  quickCreateEvent: booleanOption('Whether slot quick-create is enabled', { example: true }),
+  showLunar: booleanOption('Whether lunar labels are displayed', { example: false }),
+  weekStart: numberOption('Week start day. Use 1 for Monday or 0 for Sunday.', { example: 1 }),
+  dataScope: FILTER_GROUP,
+  linkageRules: arrayOption(
+    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setBlockLinkageRules` instead of guessing this configure key directly.',
+    { example: [] },
+  ),
+  quickCreatePopup: OPEN_VIEW,
+  eventPopup: OPEN_VIEW,
+};
+
 const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
@@ -526,6 +547,13 @@ const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   ),
 };
 
+const FILTER_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
+  filterableFieldNames: arrayOption('Allowed filter field name list', {
+    example: ['username', 'email', 'roles'],
+  }),
+  defaultFilter: FILTER_GROUP,
+};
+
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
@@ -573,10 +601,15 @@ const ACTION_EMAIL_OPTIONS: FlowSurfaceConfigureOptions = {
   defaultSelectAllRecords: booleanOption('Whether all records are selected by default', { example: false }),
 };
 
+const CALENDAR_ACTION_POSITION_OPTIONS: FlowSurfaceConfigureOptions = {
+  position: stringOption('Position', { enum: ['left', 'right'], example: 'left' }),
+};
+
 const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
   'assignRules',
   'confirm',
   'dataScope',
+  'defaultFilter',
   'defaultValues',
   'initialValue',
   'linkageRules',
@@ -632,6 +665,12 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
   const merged = (...extra: FlowSurfaceConfigureOptions[]) => mergeOptions(...base, ...extra);
 
   switch (normalized) {
+    case 'CalendarTodayActionModel':
+      return merged(CALENDAR_ACTION_POSITION_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'CalendarNavActionModel':
+    case 'CalendarTitleActionModel':
+    case 'CalendarViewSelectActionModel':
+      return mergeOptions(CALENDAR_ACTION_POSITION_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'AddNewActionModel':
     case 'ViewActionModel':
     case 'EditActionModel':
@@ -674,11 +713,12 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'FormTriggerWorkflowActionModel':
     case 'WorkbenchTriggerWorkflowActionModel':
     case 'RefreshActionModel':
-    case 'FilterActionModel':
     case 'ExpandCollapseActionModel':
     case 'FilterFormSubmitActionModel':
     case 'FilterFormResetActionModel':
       return merged(ACTION_LINKAGE_OPTIONS);
+    case 'FilterActionModel':
+      return merged(FILTER_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'ApplyFormSubmitModel':
     case 'ApplyFormSaveDraftModel':
       return merged(ACTION_CONFIRM_OPTIONS, APPROVAL_ASSIGN_ACTION_OPTIONS, ACTION_LINKAGE_OPTIONS);
@@ -735,6 +775,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'TableBlockModel':
       options = cloneOptions(TABLE_OPTIONS);
+      break;
+    case 'CalendarBlockModel':
+      options = cloneOptions(CALENDAR_OPTIONS);
       break;
     case 'FormBlockModel':
     case 'CreateFormModel':

@@ -70,6 +70,18 @@ const FIXTURE_SAMPLES: Record<FormalFlowSurfaceBlockKey, FlowSurfaceFixtureManif
       sourceKind: 'frontend-live-db',
     },
   ],
+  calendar: [
+    {
+      name: 'calendar-block-live',
+      modelUid: 'fcal9b1ock1',
+      pageRouteId: 355813771010048,
+      sampleKind: 'representative',
+      captureStatus: 'captured',
+      sourceKind: 'frontend-live-db',
+      notes:
+        'Captured as a flow-model CalendarBlockModel baseline with deterministic quick-create and event-view popup hosts.',
+    },
+  ],
   'create-form': [
     {
       name: 'create-form-block-live',
@@ -204,7 +216,7 @@ const FIXTURE_SAMPLES: Record<FormalFlowSurfaceBlockKey, FlowSurfaceFixtureManif
 
 export const FORMAL_FLOW_SURFACE_BLOCK_FIXTURE_MANIFEST: FlowSurfaceFixtureManifestEntry[] =
   FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) => ({
-    key: entry.formalKey!,
+    key: entry.formalKey,
     label: entry.label,
     ownerPlugin: entry.ownerPlugin,
     modelUse: entry.modelUse,
@@ -212,15 +224,16 @@ export const FORMAL_FLOW_SURFACE_BLOCK_FIXTURE_MANIFEST: FlowSurfaceFixtureManif
     fixtureCaptured: entry.fixtureCaptured,
     readbackParity: entry.readbackSupported ? 'implemented' : 'pending',
     createParity: entry.createSupported ? 'implemented' : 'pending',
-    fixtures: FIXTURE_SAMPLES[entry.formalKey!] || [],
+    fixtures: FIXTURE_SAMPLES[entry.formalKey] || [],
   }));
 
 export const FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS = FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter(
   (entry) => entry.createSupported,
-).map((entry) => entry.formalKey!) as readonly FormalFlowSurfaceBlockKey[];
+).map((entry) => entry.formalKey) as readonly FormalFlowSurfaceBlockKey[];
 
 export const FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS: readonly FormalFlowSurfaceBlockKey[] = [
   'table',
+  'calendar',
   'create-form',
   'edit-form',
   'details',
