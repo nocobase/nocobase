@@ -95,6 +95,43 @@
       }
     },
     "download": {
+      "failures": {
+        "dependencyInstall": {
+          "title": "本地 NocoBase 应用还没有准备完成。",
+          "body": "下载已经完成，但依赖安装没有成功结束。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整安装日志。"
+        },
+        "gitClone": {
+          "title": "无法通过 Git 下载 NocoBase。",
+          "body": "CLI 没有成功克隆你选择的 NocoBase 仓库。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整克隆日志。"
+        },
+        "dockerPull": {
+          "title": "无法下载 Docker 镜像。",
+          "body": "CLI 没有成功拉取你选择的 NocoBase 镜像。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整 Docker pull 日志。"
+        },
+        "dockerSave": {
+          "title": "Docker 镜像已经拉取完成，但导出 tar 文件失败了。",
+          "body": "CLI 没有成功将镜像导出到目标 tar 包路径。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整 Docker save 日志。"
+        },
+        "scaffold": {
+          "title": "无法创建本地 NocoBase 应用骨架。",
+          "body": "CLI 没有成功生成初始应用文件。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整 scaffold 日志。"
+        },
+        "build": {
+          "title": "本地 NocoBase 应用已经下载完成，但构建步骤失败了。",
+          "body": "CLI 没有成功完成已下载源码的构建。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整构建日志。"
+        },
+        "generic": {
+          "title": "无法完成 NocoBase 下载。",
+          "body": "CLI 在准备下载内容时遇到了未预期的命令失败。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整命令日志。"
+        }
+      },
       "prompts": {
         "source": {
           "message": "你想通过哪种方式获取 NocoBase？",

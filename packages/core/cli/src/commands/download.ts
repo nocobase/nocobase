@@ -23,6 +23,7 @@ import {
   CLI_LOCALE_FLAG_DESCRIPTION,
   CLI_LOCALE_FLAG_OPTIONS,
   localeText,
+  translateCli,
 } from '../lib/cli-locale.ts';
 import { run } from '../lib/run-npm.ts';
 import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '../lib/ui.js';
@@ -34,6 +35,11 @@ const DEFAULT_DOCKER_REGISTRY_ZH_CN = 'registry.cn-shanghai.aliyuncs.com/nocobas
 const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
 const downloadText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.download.${key}`, values);
+const downloadTranslatedText = (
+  key: string,
+  values?: Record<string, unknown>,
+  fallback?: string,
+) => translateCli(`commands.download.${key}`, values, { fallback });
 
 function defaultOutputDirForVersion(versionTag: string): string {
   const safe = versionTag.replace(/[/\\]/g, '-');
@@ -103,6 +109,53 @@ function dockerPlatformArg(value: unknown): string | undefined {
     return undefined;
   }
   return platform;
+}
+
+function formatDownloadStageFailure(
+  stage: 'dependencyInstall' | 'gitClone' | 'dockerPull' | 'dockerSave' | 'scaffold' | 'build' | 'generic',
+): string {
+  return [
+    downloadTranslatedText(`failures.${stage}.title`),
+    downloadTranslatedText(`failures.${stage}.body`),
+    downloadTranslatedText(`failures.${stage}.hint`),
+  ].join('\n');
+}
+
+function formatDownloadFailure(message: string, verbose: boolean): string {
+  if (verbose) {
+    return message;
+  }
+
+  const lower = message.toLowerCase();
+  if (lower.includes('yarn install')) {
+    return formatDownloadStageFailure('dependencyInstall');
+  }
+
+  if (lower.includes('git clone')) {
+    return formatDownloadStageFailure('gitClone');
+  }
+
+  if (lower.includes('docker pull')) {
+    return formatDownloadStageFailure('dockerPull');
+  }
+
+  if (lower.includes('docker save')) {
+    return formatDownloadStageFailure('dockerSave');
+  }
+
+  if (lower.includes('create-nocobase-app') || lower.includes('npx create-nocobase-app')) {
+    return formatDownloadStageFailure('scaffold');
+  }
+
+  if (lower.includes('nocobase command')) {
+    return formatDownloadStageFailure('build');
+  }
+
+  if (lower.includes('exited with code') || lower.includes('exited due to signal')) {
+    return formatDownloadStageFailure('generic');
+  }
+
+  return message;
 }
 
 const EXTERNAL_COMMAND_LOADING_DELAY_MS = 8_000;
@@ -932,7 +985,7 @@ export default class Download extends Command {
       return result;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.error(message);
+      this.error(formatDownloadFailure(message, this.isVerbose()));
     }
   }
 }

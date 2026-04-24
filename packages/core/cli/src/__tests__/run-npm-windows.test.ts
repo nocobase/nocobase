@@ -11,8 +11,8 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 const spawnMock = vi.hoisted(() => vi.fn());
 
-vi.mock('node:child_process', () => ({
-  spawn: spawnMock,
+vi.mock('cross-spawn', () => ({
+  default: spawnMock,
 }));
 
 function successfulChild() {
@@ -31,7 +31,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-test('run uses a shell for Windows .cmd package manager shims', async () => {
+test('run uses cross-spawn to safely execute Windows package manager shims', async () => {
   vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
   spawnMock.mockReturnValue(successfulChild());
 
@@ -40,14 +40,14 @@ test('run uses a shell for Windows .cmd package manager shims', async () => {
 
   expect(spawnMock).toHaveBeenCalledTimes(1);
   const [command, args, options] = spawnMock.mock.calls[0] ?? [];
-  expect(command).toBe('yarn.cmd');
+  expect(command).toBe('yarn');
   expect(args).toEqual(['install']);
   expect(String(options?.cwd ?? '')).toContain('C:\\work\\app');
   expect(options).toMatchObject({
     stdio: 'ignore',
-    shell: true,
     windowsHide: true,
   });
+  expect(options).not.toHaveProperty('shell');
 });
 
 test('run keeps non-shim commands off the shell on Windows', async () => {
@@ -64,7 +64,7 @@ test('run keeps non-shim commands off the shell on Windows', async () => {
   expect(String(options?.cwd ?? '')).toContain('C:\\work\\app');
   expect(options).toMatchObject({
     stdio: 'ignore',
-    shell: false,
     windowsHide: true,
   });
+  expect(options).not.toHaveProperty('shell');
 });

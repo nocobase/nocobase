@@ -7,18 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { spawn } from 'node:child_process';
 import path from 'node:path';
+import spawn from 'cross-spawn';
 
 function resolveCommandName(name: string): string {
-  if (process.platform !== 'win32' || path.extname(name) || name.includes(path.sep)) {
-    return name;
-  }
-
-  if (['npm', 'npx', 'pnpm', 'yarn'].includes(name)) {
-    return `${name}.cmd`;
-  }
-
   return name;
 }
 
@@ -28,15 +20,6 @@ function resolveCwd(cwd?: string): string {
     return next;
   }
   return path.resolve(process.cwd(), next);
-}
-
-function shouldUseWindowsShell(command: string): boolean {
-  if (process.platform !== 'win32') {
-    return false;
-  }
-
-  const ext = path.extname(command).toLowerCase();
-  return ext === '.cmd' || ext === '.bat';
 }
 
 export function run(
@@ -55,7 +38,6 @@ export function run(
         ...process.env,
         ...options?.env,
       },
-      shell: shouldUseWindowsShell(command),
       windowsHide: process.platform === 'win32',
     });
     child.once('error', reject);
@@ -88,7 +70,6 @@ export function commandSucceeds(
         ...options?.env,
       },
       stdio: 'ignore',
-      shell: shouldUseWindowsShell(command),
       windowsHide: process.platform === 'win32',
     });
 
@@ -113,7 +94,6 @@ export function commandOutput(
         ...options?.env,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: shouldUseWindowsShell(command),
       windowsHide: process.platform === 'win32',
     });
     let stdout = '';

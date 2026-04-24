@@ -95,6 +95,43 @@
       }
     },
     "download": {
+      "failures": {
+        "dependencyInstall": {
+          "title": "Couldn't finish preparing the local NocoBase app.",
+          "body": "The download completed, but dependency installation did not finish successfully.",
+          "hint": "Run the same command again with `--verbose` to see the full install logs."
+        },
+        "gitClone": {
+          "title": "Couldn't download NocoBase from Git.",
+          "body": "The CLI was not able to clone the selected NocoBase repository.",
+          "hint": "Run the same command again with `--verbose` to see the full clone logs."
+        },
+        "dockerPull": {
+          "title": "Couldn't download the Docker image.",
+          "body": "The CLI was not able to pull the selected NocoBase image.",
+          "hint": "Run the same command again with `--verbose` to see the full Docker pull logs."
+        },
+        "dockerSave": {
+          "title": "The Docker image was pulled, but saving the tar file failed.",
+          "body": "The CLI could not finish exporting the image to the target tarball path.",
+          "hint": "Run the same command again with `--verbose` to see the full Docker save logs."
+        },
+        "scaffold": {
+          "title": "Couldn't create the local NocoBase app scaffold.",
+          "body": "The CLI was not able to finish generating the initial app files.",
+          "hint": "Run the same command again with `--verbose` to see the full scaffold logs."
+        },
+        "build": {
+          "title": "The local NocoBase app was downloaded, but the build step failed.",
+          "body": "The CLI could not finish building the downloaded source code.",
+          "hint": "Run the same command again with `--verbose` to see the full build logs."
+        },
+        "generic": {
+          "title": "Couldn't finish downloading NocoBase.",
+          "body": "The CLI hit an unexpected command failure while preparing the download.",
+          "hint": "Run the same command again with `--verbose` to see the full command logs."
+        }
+      },
       "prompts": {
         "source": {
           "message": "How would you like to get NocoBase?",
