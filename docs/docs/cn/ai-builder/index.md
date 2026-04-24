@@ -25,7 +25,7 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你可以用自然语
 ```bash
 npm install -g @nocobase/cli@alpha
 mkdir my-nocobase && cd my-nocobase
-nb init --ui --locale=zh-CN
+nb init --ui
 ```
 
 浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。详细步骤请参阅[快速开始](../ai/quick-start.md)。

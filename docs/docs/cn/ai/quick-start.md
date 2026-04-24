@@ -71,7 +71,7 @@ cd my-nocobase
 ### 第三步：初始化
 
 ```bash
-nb init --ui --locale=zh-CN
+nb init --ui
 ```
 
 浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：

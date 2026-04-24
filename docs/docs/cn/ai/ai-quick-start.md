@@ -35,10 +35,10 @@ mkdir my-nocobase
 cd my-nocobase
 ```
 
-## Step 4：运行 nb init --ui --locale=zh-CN
+## Step 4：运行 nb init --ui
 
 ```bash
-nb init --ui --locale=zh-CN
+nb init --ui
 ```
 
 ![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
