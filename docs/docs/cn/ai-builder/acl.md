@@ -16,65 +16,66 @@ keywords: "AI 搭建,权限配置,ACL,角色,权限,用户绑定,风险评估"
 
 权限配置 Skill 用于通过自然语言管理 NocoBase 的角色、权限策略、用户绑定和 ACL 风险评估——你描述业务目标，它来选择命令和参数。
 
-使用前需要确保 [NocoBase CLI](../get-started/nocobase-cli.md) 环境已就绪。
-
 
 ## 能力范围
 
-- 创建角色并设置初始权限基线
+- 创建新角色
 - 切换全局角色模式（独立模式 / 联合模式）
-- 给数据表配置动作权限和数据范围
-- 批量绑定或解绑用户与角色的关系
+- 批量给数据表配置动作权限和数据范围
+- 解绑用户与角色的关系
 - 输出角色级、用户级、系统级风险评估报告
 
 ## 提示词示例
 
-### 场景 A：创建角色
+### 场景 A：批量绑定用户
+:::tip 前置条件
+当前环境存在一个 Member 角色和多个用户
+:::
 
 ```
-帮我创建一个 sales 角色
+帮我给这几个新用户绑定 Member 角色 James 、Emma 、Michael 
 ```
 
-创建后会自动带上默认的只读基线权限，然后引导你做后续权限配置。
+![批量绑定用户](https://static-docs.nocobase.com/20260422202343.png)
 
-![创建角色](https://static-docs.nocobase.com/20260417152303.png)
-
-### 场景 B：配置系统权限
-
+### 场景 B：批量配置页面权限
+:::tip 前置条件
+当前环境存在一个 Member 角色和多个页面
+:::
 ```
-给 sales 角色配置插件管理权限
-```
-
-![配置系统权限](https://static-docs.nocobase.com/20260417152433.png)
-
-### 场景 C：配置数据源权限
-
-```
-给 sales 角色配置客户管理表的查看和编辑权限
+帮我给 Member 角色配置这几个页面的权限 Product、Order、Stock
 ```
 
-![配置数据源权限](https://static-docs.nocobase.com/20260417152620.png)
+![批量配置页面权限](https://static-docs.nocobase.com/20260422202949.png)
 
-### 场景 D：配置页面权限
-
-```
-给 sales 角色配置商品管理页面的权限
-```
-
-![配置页面权限](https://static-docs.nocobase.com/20260417152705.png)
-
-### 场景 E：给用户绑定角色
+### 场景 C：批量配置多数据表权限
+:::tip 前置条件
+当前环境存在一个 Member 角色和多个数据表
+:::
 
 ```
-给 sales 角色绑定张三
+给 Member 角色添加这几个数据表的独立只读权限，order、product、stock
 ```
 
-![给用户绑定角色](https://static-docs.nocobase.com/20260417152813.png)
+![批量配置数据表独立权限](https://static-docs.nocobase.com/20260422205341.png)
 
-### 场景 F：风险评估
+![批量配置数据表独立权限2](https://static-docs.nocobase.com/20260422205430.png)
+
+### 场景 D：多角色多数据表权限配置
+:::tip 前置条件
+当前环境存在多个角色和多个数据表
+:::
 
 ```
-评估一下 admin 角色的权限风险
+给 Member、Sales 角色添加这几个数据表独立读写权限，order、product、stock
+```
+
+![多角色多数据表配置](https://static-docs.nocobase.com/20260422213524.png)
+
+### 场景 E：风险评估
+
+```
+评估一下 Member  角色的权限风险
 ```
 
 会输出风险评分、影响范围说明和改进建议。
