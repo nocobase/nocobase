@@ -55,6 +55,7 @@ import {
   normalizeFieldContainerKind,
   shouldUseAssociationTitleTextDisplay,
 } from './field-semantics';
+import { inferSharedFieldDefaultBindingUse } from './core-field-default-bindings';
 import { getRegisteredFieldUses, resolveRegisteredFieldBinding } from './field-binding-registry';
 import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
@@ -439,7 +440,9 @@ const EDITABLE_FIELD_USE_SET = new Set([
   'JsonFieldModel',
   'TextareaFieldModel',
   'IconFieldModel',
+  'RadioGroupFieldModel',
   'SelectFieldModel',
+  'CheckboxGroupFieldModel',
   'ColorFieldModel',
   'CheckboxFieldModel',
   'PasswordFieldModel',
@@ -2636,114 +2639,21 @@ function inferEditableFieldUse(fieldInterface: string) {
   if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(fieldInterface)) {
     return 'RecordSelectFieldModel';
   }
-  const map = {
-    json: 'JsonFieldModel',
-    textarea: 'TextareaFieldModel',
-    icon: 'IconFieldModel',
-    radioGroup: 'SelectFieldModel',
-    color: 'ColorFieldModel',
-    select: 'SelectFieldModel',
-    multipleSelect: 'SelectFieldModel',
-    checkboxGroup: 'SelectFieldModel',
-    checkbox: 'CheckboxFieldModel',
-    password: 'PasswordFieldModel',
-    number: 'NumberFieldModel',
-    integer: 'NumberFieldModel',
-    id: 'NumberFieldModel',
-    snowflakeId: 'NumberFieldModel',
-    percent: 'PercentFieldModel',
-    datetimeNoTz: 'DateTimeNoTzFieldModel',
-    date: 'DateOnlyFieldModel',
-    datetime: 'DateTimeTzFieldModel',
-    createdAt: 'DateTimeTzFieldModel',
-    updatedAt: 'DateTimeTzFieldModel',
-    unixTimestamp: 'DateTimeTzFieldModel',
-    time: 'TimeFieldModel',
-    collection: 'CollectionSelectorFieldModel',
-    tableoid: 'CollectionSelectorFieldModel',
-    richText: 'RichTextFieldModel',
-    input: 'InputFieldModel',
-    email: 'InputFieldModel',
-    phone: 'InputFieldModel',
-    uuid: 'InputFieldModel',
-    url: 'InputFieldModel',
-    nanoid: 'InputFieldModel',
-  };
-  return map[fieldInterface] || 'InputFieldModel';
+  return inferSharedFieldDefaultBindingUse('editable', fieldInterface);
 }
 
 function inferDisplayFieldUse(fieldInterface: string) {
   if (['m2m', 'o2m', 'mbm'].includes(fieldInterface)) {
     return 'DisplaySubTableFieldModel';
   }
-  const map = {
-    richText: 'DisplayHtmlFieldModel',
-    number: 'DisplayNumberFieldModel',
-    integer: 'DisplayNumberFieldModel',
-    id: 'DisplayNumberFieldModel',
-    snowflakeId: 'DisplayNumberFieldModel',
-    json: 'DisplayJSONFieldModel',
-    // Real frontend saved fixtures still read back these enum-like displays as text fields.
-    select: 'DisplayTextFieldModel',
-    multipleSelect: 'DisplayTextFieldModel',
-    radioGroup: 'DisplayTextFieldModel',
-    checkboxGroup: 'DisplayTextFieldModel',
-    collection: 'DisplayTextFieldModel',
-    tableoid: 'DisplayTextFieldModel',
-    icon: 'DisplayIconFieldModel',
-    checkbox: 'DisplayCheckboxFieldModel',
-    password: 'DisplayPasswordFieldModel',
-    percent: 'DisplayPercentFieldModel',
-    date: 'DisplayDateTimeFieldModel',
-    datetimeNoTz: 'DisplayDateTimeFieldModel',
-    createdAt: 'DisplayDateTimeFieldModel',
-    datetime: 'DisplayDateTimeFieldModel',
-    updatedAt: 'DisplayDateTimeFieldModel',
-    unixTimestamp: 'DisplayDateTimeFieldModel',
-    formula: 'DisplayDateTimeFieldModel',
-    input: 'DisplayTextFieldModel',
-    email: 'DisplayTextFieldModel',
-    phone: 'DisplayTextFieldModel',
-    uuid: 'DisplayTextFieldModel',
-    textarea: 'DisplayTextFieldModel',
-    nanoid: 'DisplayTextFieldModel',
-    url: 'DisplayURLFieldModel',
-    color: 'DisplayColorFieldModel',
-    time: 'DisplayTimeFieldModel',
-  };
-  return map[fieldInterface] || 'DisplayTextFieldModel';
+  return inferSharedFieldDefaultBindingUse('display', fieldInterface);
 }
 
 function inferFilterFieldUse(fieldInterface: string) {
   if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(fieldInterface)) {
     return 'FilterFormRecordSelectFieldModel';
   }
-  const map = {
-    date: 'DateOnlyFilterFieldModel',
-    datetimeNoTz: 'DateTimeNoTzFilterFieldModel',
-    createdAt: 'DateTimeTzFilterFieldModel',
-    datetime: 'DateTimeTzFilterFieldModel',
-    updatedAt: 'DateTimeTzFilterFieldModel',
-    unixTimestamp: 'DateTimeTzFilterFieldModel',
-    select: 'SelectFieldModel',
-    multipleSelect: 'SelectFieldModel',
-    radioGroup: 'SelectFieldModel',
-    checkboxGroup: 'SelectFieldModel',
-    checkbox: 'SelectFieldModel',
-    number: 'NumberFieldModel',
-    integer: 'NumberFieldModel',
-    id: 'NumberFieldModel',
-    snowflakeId: 'NumberFieldModel',
-    time: 'TimeFieldModel',
-    percent: 'PercentFieldModel',
-    input: 'InputFieldModel',
-    email: 'InputFieldModel',
-    phone: 'InputFieldModel',
-    uuid: 'InputFieldModel',
-    url: 'InputFieldModel',
-    nanoid: 'InputFieldModel',
-  };
-  return map[fieldInterface] || 'InputFieldModel';
+  return inferSharedFieldDefaultBindingUse('filter', fieldInterface);
 }
 
 function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: ReadonlySet<string>) {
@@ -2973,16 +2883,16 @@ export function resolveSupportedFieldCapability(input: {
     );
   }
 
-  const inferredFieldUse =
-    requestedRenderer === 'js'
-      ? inferJsFieldUseByContainer(input.containerUse)
-      : input.field
-        ? inferFieldUseByContainer(input.containerUse, input.field, {
-            enabledPackages: input.enabledPackages,
-            dataSourceKey: input.dataSourceKey,
-            getCollection: input.getCollection,
-          })
-        : undefined;
+  let inferredFieldUse;
+  if (requestedRenderer === 'js') {
+    inferredFieldUse = inferJsFieldUseByContainer(input.containerUse);
+  } else if (input.field) {
+    inferredFieldUse = inferFieldUseByContainer(input.containerUse, input.field, {
+      enabledPackages: input.enabledPackages,
+      dataSourceKey: input.dataSourceKey,
+      getCollection: input.getCollection,
+    });
+  }
   const fieldUse = input.requestedFieldUse || inferredFieldUse;
   if (!fieldUse) {
     if (input.allowUnresolvedFieldUse) {
