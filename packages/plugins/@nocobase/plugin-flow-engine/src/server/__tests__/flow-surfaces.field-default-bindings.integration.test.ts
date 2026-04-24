@@ -217,7 +217,7 @@ function getData(response: any) {
 
 async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServer, suffix: string) {
   const collectionName = `field_default_bindings_${suffix}_${Date.now()}`;
-  await rootAgent.resource('collections').apply({
+  const applyResponse = await rootAgent.resource('collections').apply({
     values: {
       name: collectionName,
       template: 'general',
@@ -231,8 +231,8 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
           type: 'string',
           interface: 'select',
           enum: [
-            { label: 'Draft', value: 'draft' },
-            { label: 'Published', value: 'published' },
+            { label: 'Draft', value: 'draft', color: 'gold' },
+            { label: 'Published', value: 'published', color: 'green' },
           ],
         },
         {
@@ -240,8 +240,8 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
           type: 'string',
           interface: 'radioGroup',
           enum: [
-            { label: 'Backlog', value: 'backlog' },
-            { label: 'Ready', value: 'ready' },
+            { label: 'Backlog', value: 'backlog', color: 'blue' },
+            { label: 'Ready', value: 'ready', color: 'green' },
           ],
         },
         {
@@ -249,8 +249,8 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
           type: 'array',
           interface: 'checkboxGroup',
           enum: [
-            { label: 'Urgent', value: 'urgent' },
-            { label: 'External', value: 'external' },
+            { label: 'Urgent', value: 'urgent', color: 'red' },
+            { label: 'External', value: 'external', color: 'purple' },
           ],
         },
         {
@@ -269,6 +269,7 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
       ],
     },
   });
+  expect(applyResponse.status).toBe(200);
 
   await waitForFixtureCollectionsReady(app.db as any, {
     [collectionName]: ['title', 'status', 'stage', 'tags', 'enabled', 'rank'],
