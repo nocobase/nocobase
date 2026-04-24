@@ -15,7 +15,12 @@ import {
   FLOW_SURFACES_READ_ACTION_NAMES,
   type FlowSurfacesActionName,
 } from './constants';
-import { FlowSurfaceForbiddenError, normalizeFlowSurfaceError, throwBadRequest } from './errors';
+import {
+  FlowSurfaceBadRequestError,
+  FlowSurfaceForbiddenError,
+  normalizeFlowSurfaceError,
+  throwBadRequest,
+} from './errors';
 import { FlowSurfacesService } from './service';
 
 const FLOW_ENGINE_LOCALE_NAMESPACE = 'flow-engine';
@@ -39,7 +44,12 @@ const FLOW_SURFACE_LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = 
 };
 
 function getValues(ctx: any) {
-  return ctx.action?.params?.values ?? ctx.action?.params ?? {};
+  const values = ctx.action?.params?.values ?? ctx.action?.params ?? {};
+  const actionName = ctx.action?.actionName as FlowSurfacesActionName | undefined;
+  if (isInvalidFlowSurfaceWritePayload(values) && actionName && !FLOW_SURFACE_ACTION_DEFINITIONS[actionName]?.read) {
+    throw new FlowSurfaceBadRequestError(getFlowSurfaceWritePayloadMessage(actionName));
+  }
+  return values;
 }
 
 function isImplicitEmptyValuesBag(value: any) {
@@ -117,6 +127,65 @@ function writeFlowSurfaceErrorResponse(ctx: any, error: unknown) {
   ctx.type = 'application/json';
   ctx.status = normalized.status;
   ctx.body = normalized.toResponseBody();
+}
+
+function isFlowSurfaceWriteActionName(value: string): value is FlowSurfacesActionName {
+  return Object.prototype.hasOwnProperty.call(FLOW_SURFACE_ACTION_DEFINITIONS, value);
+}
+
+function getFlowSurfaceRequestActionName(ctx: any): FlowSurfacesActionName | undefined {
+  const actionName = String(ctx.action?.actionName || '').trim();
+  if (isFlowSurfaceWriteActionName(actionName)) {
+    return actionName;
+  }
+
+  const path = String(ctx.path || ctx.request?.path || '').trim();
+  const match = path.match(/(?:^|\/)flowSurfaces:([^/?#]+)$/);
+  const rawActionName = String(match?.[1] || '').trim();
+  return isFlowSurfaceWriteActionName(rawActionName) ? rawActionName : undefined;
+}
+
+function isFlowSurfaceWriteRequest(ctx: any) {
+  if (String(ctx.request?.method || '').toUpperCase() !== 'POST') {
+    return false;
+  }
+  const actionName = getFlowSurfaceRequestActionName(ctx);
+  return !!actionName && FLOW_SURFACE_ACTION_DEFINITIONS[actionName].read === false;
+}
+
+function isInvalidFlowSurfaceWritePayload(value: unknown) {
+  if (!value || typeof value !== 'object') {
+    return true;
+  }
+  return Array.isArray(value);
+}
+
+function getFlowSurfaceWritePayloadMessage(actionName: FlowSurfacesActionName) {
+  const noun = actionName === 'applyBlueprint' || actionName === 'applyApprovalBlueprint' ? 'payload' : 'values';
+  return `flowSurfaces ${actionName} ${noun} must be an object`;
+}
+
+function isFlowSurfaceWriteBodyParserShapeError(error: any) {
+  return (
+    error instanceof SyntaxError &&
+    error?.status === 400 &&
+    error?.message === 'invalid JSON, only supports object and array'
+  );
+}
+
+async function runFlowSurfaceWriteBodyParserErrorWrapper(ctx: any, next: () => Promise<any>) {
+  try {
+    await next();
+  } catch (error) {
+    if (!isFlowSurfaceWriteRequest(ctx) || !isFlowSurfaceWriteBodyParserShapeError(error)) {
+      throw error;
+    }
+    const actionName = getFlowSurfaceRequestActionName(ctx);
+    if (!actionName) {
+      throw error;
+    }
+    writeFlowSurfaceErrorResponse(ctx, new FlowSurfaceBadRequestError(getFlowSurfaceWritePayloadMessage(actionName)));
+  }
 }
 
 function isAclPermissionDeniedForFlowSurfaces(ctx: any, error: any) {
@@ -246,6 +315,10 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     tag: 'flow-surfaces-acl-errors',
     after: 'allow-manager',
     before: 'core',
+  });
+  plugin.app.use(runFlowSurfaceWriteBodyParserErrorWrapper, {
+    tag: 'flow-surfaces-write-body-errors',
+    before: 'bodyParser',
   });
 
   plugin.app.resourceManager.define({
