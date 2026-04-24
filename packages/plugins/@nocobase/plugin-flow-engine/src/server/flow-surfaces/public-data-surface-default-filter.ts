@@ -37,7 +37,7 @@ export function normalizeFlowSurfacePublicBlockDefaultFilter(
     return undefined;
   }
 
-  const fieldPath = options.path ? `${options.path}.defaultFilter` : 'defaultFilter';
+  const fieldPath = buildFlowSurfaceDefaultFilterFieldPath(actionName, options.path);
   if (!isFlowSurfacePublicDataSurfaceBlockType(options.blockType) || !_.isUndefined(options.template)) {
     throwBadRequest(
       `flowSurfaces ${actionName} ${fieldPath} is only supported on direct ${FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL} blocks`,
@@ -48,12 +48,32 @@ export function normalizeFlowSurfacePublicBlockDefaultFilter(
     defaultFilter,
     `flowSurfaces ${actionName} ${fieldPath} expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
   );
-  if (!hasConcreteFlowSurfaceFilterItem(normalized)) {
+  return normalized;
+}
+
+export function assertFlowSurfaceConcreteDefaultFilterItem(
+  actionName: string,
+  defaultFilter: any,
+  options: {
+    path?: string;
+  } = {},
+) {
+  const fieldPath = buildFlowSurfaceDefaultFilterFieldPath(actionName, options.path);
+  if (!hasConcreteFlowSurfaceFilterItem(defaultFilter)) {
     throwBadRequest(
       `flowSurfaces ${actionName} ${fieldPath} must include at least one concrete filter item; empty defaultFilter groups such as {}, null, or { logic, items: [] } are not allowed`,
     );
   }
-  return normalized;
+}
+
+function buildFlowSurfaceDefaultFilterFieldPath(actionName: string, path?: string) {
+  if (!path) {
+    return 'defaultFilter';
+  }
+
+  const prefix = `flowSurfaces ${actionName} `;
+  const normalizedPath = path.startsWith(prefix) ? path.slice(prefix.length) : path;
+  return normalizedPath.endsWith('.defaultFilter') ? normalizedPath : `${normalizedPath}.defaultFilter`;
 }
 
 function hasConcreteFlowSurfaceFilterItem(filter: any): boolean {
