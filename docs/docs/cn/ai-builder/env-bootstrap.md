@@ -113,4 +113,4 @@ nb start
 ## 相关链接
 
 - [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
-- [NocoBase CLI](../get-started/nocobase-cli.md) — 安装和管理 NocoBase 的命令行工具
+- [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具

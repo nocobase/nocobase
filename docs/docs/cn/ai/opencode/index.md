@@ -57,7 +57,7 @@ OpenCode 通过以下方式与 NocoBase 协同工作：
 
 - 已安装 OpenCode（[安装指南](https://opencode.ai/docs/)）
 - Node.js 22（用于运行 NocoBase CLI 和 Skills）
-- 如果已有 NocoBase 实例，需要版本 >= 2.1.0-alpha.21
+- 如果已有 NocoBase 实例，需要版本 >= 2.1.0-alpha.22
 
 ## 快速开始
 
@@ -66,7 +66,7 @@ OpenCode 通过以下方式与 NocoBase 协同工作：
 将下方提示词复制给 OpenCode，它会自动完成 NocoBase CLI 安装、初始化和环境配置：
 
 ```
-安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/get-started/nocobase-cli.md
+安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 ### 手动安装
@@ -109,7 +109,7 @@ nb env list
 
 ## 相关链接
 
-- [NocoBase CLI](../../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
+- [NocoBase CLI](../quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [NocoBase Skills](../../ai-builder/index.md#nocobase-skills) — 可安装到 AI Agent 中的领域知识包
 - [AI 搭建快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [OpenCode 官方文档](https://opencode.ai/docs/) — OpenCode 完整使用指南

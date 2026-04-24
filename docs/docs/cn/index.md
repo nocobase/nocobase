@@ -33,9 +33,9 @@ features:
   - title: AI
     details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。
     items:
-      - title: NocoBase CLI
-        details: NocoBase 的命令行工具，安装即就绪——内置 AI Skills，让你的 AI 助手直接上手操作 NocoBase。
-        link: /get-started/nocobase-cli
+      - title: 快速开始
+        details: 安装 NocoBase CLI 并配置 AI Skills，为 AI 搭建、使用和开发 NocoBase 做好准备。
+        link: /ai/quick-start
       - title: AI 搭建
         details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder

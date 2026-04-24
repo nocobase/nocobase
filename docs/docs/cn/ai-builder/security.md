@@ -226,7 +226,7 @@ storage/logs/<appName>/request_YYYY-MM-DD.log
 - [AI 搭建快速开始](./index.md) — 安装和环境准备
 - [环境管理](./env-bootstrap) — 环境检查、添加环境和故障诊断
 - [权限配置](./acl.md) — 配置角色、权限策略和风险评估
-- [NocoBase CLI](../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
+- [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [NocoBase 安全指南](../security/guide.md) — 更全面的安全配置建议
 - [NocoBase 服务端日志](../log-and-monitor/logger/index.md) — 请求日志目录和字段说明
 - [审计日志](../security/audit-logger/index.md) — 审计记录字段和使用说明

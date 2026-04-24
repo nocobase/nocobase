@@ -12,14 +12,14 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 ## 快速开始
 
-如果你已经安装过 [NocoBase CLI](../get-started/nocobase-cli)，可以跳过这一步。
+如果你已经安装过 [NocoBase CLI](../ai/quick-start.md)，可以跳过这一步。
 
 ### 一键 AI 安装
 
 将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），即可自动完成安装和配置：
 
 ```
-安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/get-started/nocobase-cli.md
+安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 ### 手动安装
@@ -97,7 +97,7 @@ nb init --ui
 
 - [实战：开发水印插件](./watermark-plugin) — 完整的 AI 开发插件实战案例，从一句话到可用插件
 - [支持的能力](./capabilities) — AI 能帮你做的所有事情，附提示词示例
-- [NocoBase CLI](../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
+- [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
 - [插件开发](../plugin-development/index.md) — NocoBase 插件开发的完整指南
 - [AI 搭建快速开始](../ai-builder/index.md) — 用 AI 搭建 NocoBase 应用（无需写代码）

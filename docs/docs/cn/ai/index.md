@@ -5,6 +5,22 @@ title: 'NocoBase AI'
 description: 'NocoBase 的 AI 能力体系：AI 搭建与开发、AI 员工、AI Agent 对接、AI 工具与资源。'
 keywords: 'NocoBase AI,AI 搭建,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
 features:
+  - title: 开始
+    details: 安装 CLI、连接应用、开始搭建——一切从这里出发。
+    items:
+      - title: 快速开始
+        details: 安装 NocoBase CLI 并配置 AI Skills，为 AI 搭建、使用和开发 NocoBase 做好准备。
+        link: /ai/quick-start
+      - title: AI 搭建快速开始
+        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+        link: /ai-builder
+      - title: AI 员工
+        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
+        link: /ai-employees
+      - title: AI 开发插件
+        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
+        link: /ai-dev
+
   - title: AI 搭建与开发
     details: 用 AI 构建 NocoBase 应用和插件——从自然语言描述到可用的系统或插件代码。
     items:
@@ -76,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: NocoBase 的命令行工具，安装即就绪——内置 AI Skills，让你的 AI 助手直接上手操作 NocoBase。
-        link: /get-started/nocobase-cli
+        link: /ai/quick-start
       - title: NocoBase Skills
         details: 可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的能力和规范。
         link: /ai-builder#nocobase-skills

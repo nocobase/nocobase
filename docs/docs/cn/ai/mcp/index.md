@@ -44,7 +44,7 @@ x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users
 
 该请求头支持传完整包名，未带 scope 时会自动补成 `@nocobase/`。
 
-默认不加载通用工具以外的其他包接口，更推荐使用 [Nocobase CLI](/get-started/nocobase-cli) 的方式来操作其他系统功能。
+默认不加载通用工具以外的其他包接口，更推荐使用 [NocoBase CLI](../quick-start.md) 的方式来操作其他系统功能。
 
 常用包说明：
 

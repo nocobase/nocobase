@@ -10,14 +10,14 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你可以用自然语
 
 ## 快速开始
 
-如果你已经安装过 [NocoBase CLI](../get-started/nocobase-cli)，可以跳过这一步。
+如果你已经安装过 [NocoBase CLI](../ai/quick-start.md)，可以跳过这一步。
 
 ### 一键 AI 安装
 
 将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），即可自动完成安装和配置：
 
 ```
-安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/get-started/nocobase-cli.md
+安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 ### 手动安装
@@ -127,7 +127,7 @@ npx skills add nocobase/skills -y
 
 ## 相关链接
 
-- [NocoBase CLI](../get-started/nocobase-cli) — 安装和管理 NocoBase 的命令行工具
+- [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [安全与审计](./security) — 鉴权方式、权限控制和操作审计
