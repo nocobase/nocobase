@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { afterEach, beforeEach, test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
@@ -65,5 +64,5 @@ test('validateAvailableTcpPort treats Docker-published host ports as occupied', 
   const { validateAvailableTcpPort } = await import('../lib/prompt-validators.js');
   const error = await validateAvailableTcpPort('13000');
 
-  assert.match(error ?? '', /already in use by a docker container/i);
+  expect(error ?? '').toMatch(/already in use by a docker container/i);
 });

@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import net from 'node:net';
 import path from 'node:path';
-import { test } from 'vitest';
+import { test, expect } from 'vitest';
 import Install from '../commands/install.js';
 import { validateAvailableTcpPort } from '../lib/prompt-validators.js';
 
@@ -95,17 +94,14 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
 
   const prefix = `nb-${path.basename(process.cwd()).toLowerCase()}`;
   const containerName = `${prefix}-demo-postgres`;
-  assert.equal(plan.networkName, prefix);
-  assert.equal(plan.containerName, containerName);
-  assert.equal(plan.dbHost, '127.0.0.1');
-  assert.equal(plan.dbPort, '5433');
-  assert.equal(plan.image, 'postgres:16');
-  assert.equal(plan.builtinDbImage, 'postgres:16');
-  assert.equal(
-    plan.dataDir,
-    path.resolve('./storage/demo', 'db', 'postgres'),
-  );
-  assert.deepEqual(plan.args, [
+  expect(plan.networkName).toBe(prefix);
+  expect(plan.containerName).toBe(containerName);
+  expect(plan.dbHost).toBe('127.0.0.1');
+  expect(plan.dbPort).toBe('5433');
+  expect(plan.image).toBe('postgres:16');
+  expect(plan.builtinDbImage).toBe('postgres:16');
+  expect(plan.dataDir).toBe(path.resolve('./storage/demo', 'db', 'postgres'));
+  expect(plan.args).toEqual([
     'run',
     '-d',
     '--name',
@@ -141,9 +137,9 @@ test('builtin postgres db plan uses a custom built-in database image when provid
     builtinDbImage: 'registry.example.com/postgres:16',
   });
 
-  assert.equal(plan.image, 'registry.example.com/postgres:16');
-  assert.equal(plan.builtinDbImage, 'registry.example.com/postgres:16');
-  assert.equal(plan.args.includes('registry.example.com/postgres:16'), true);
+  expect(plan.image).toBe('registry.example.com/postgres:16');
+  expect(plan.builtinDbImage).toBe('registry.example.com/postgres:16');
+  expect(plan.args.includes('registry.example.com/postgres:16')).toBe(true);
 });
 
 test('builtin postgres db plan can use the workspace name from config', () => {
@@ -156,8 +152,8 @@ test('builtin postgres db plan can use the workspace name from config', () => {
     dbDialect: 'postgres',
   });
 
-  assert.equal(plan.networkName, 'nb-shared-workspace');
-  assert.equal(plan.containerName, 'nb-shared-workspace-demo-postgres');
+  expect(plan.networkName).toBe('nb-shared-workspace');
+  expect(plan.containerName).toBe('nb-shared-workspace-demo-postgres');
 });
 
 test('builtin db plan does not publish host port for docker source and uses container host', () => {
@@ -174,11 +170,8 @@ test('builtin db plan does not publish host port for docker source and uses cont
     dbPassword: 'nocobase',
   });
 
-  assert.equal(
-    plan.dbHost,
-    `nb-${path.basename(process.cwd()).toLowerCase()}-dockerapp-postgres`,
-  );
-  assert.equal(plan.args.includes('-p'), false);
+  expect(plan.dbHost).toBe(`nb-${path.basename(process.cwd()).toLowerCase()}-dockerapp-postgres`);
+  expect(plan.args.includes('-p')).toBe(false);
 });
 
 test('builtin mysql db plan publishes the selected db port', () => {
@@ -195,12 +188,12 @@ test('builtin mysql db plan publishes the selected db port', () => {
     dbPassword: 'nb_pass',
   });
 
-  assert.equal(plan.image, 'mysql:8');
-  assert.equal(plan.args.includes('-p'), true);
-  assert.equal(plan.args.includes('3307:3306'), true);
-  assert.equal(plan.args.includes('MYSQL_USER=nb_user'), true);
-  assert.equal(plan.args.includes('MYSQL_DATABASE=nb_mysql'), true);
-  assert.equal(plan.args.includes('MYSQL_PASSWORD=nb_pass'), true);
+  expect(plan.image).toBe('mysql:8');
+  expect(plan.args.includes('-p')).toBe(true);
+  expect(plan.args.includes('3307:3306')).toBe(true);
+  expect(plan.args.includes('MYSQL_USER=nb_user')).toBe(true);
+  expect(plan.args.includes('MYSQL_DATABASE=nb_mysql')).toBe(true);
+  expect(plan.args.includes('MYSQL_PASSWORD=nb_pass')).toBe(true);
 });
 
 test('builtin kingbase db plan uses the default kingbase image and runtime options', () => {
@@ -217,22 +210,16 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
     dbPassword: 'nocobase',
   });
 
-  assert.equal(
-    plan.image,
-    'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
-  );
-  assert.equal(plan.builtinDbImage, plan.image);
-  assert.equal(plan.args.includes('--platform'), true);
-  assert.equal(plan.args.includes('linux/amd64'), true);
-  assert.equal(plan.args.includes('--privileged'), true);
-  assert.equal(plan.args.includes('ENABLE_CI=no'), true);
-  assert.equal(plan.args.includes('DB_MODE=pg'), true);
-  assert.equal(plan.args.includes('NEED_START=yes'), true);
-  assert.equal(plan.args.includes('54321:54321'), true);
-  assert.equal(
-    plan.args.includes(`${path.resolve('./storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`),
-    true,
-  );
+  expect(plan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86');
+  expect(plan.builtinDbImage).toBe(plan.image);
+  expect(plan.args.includes('--platform')).toBe(true);
+  expect(plan.args.includes('linux/amd64')).toBe(true);
+  expect(plan.args.includes('--privileged')).toBe(true);
+  expect(plan.args.includes('ENABLE_CI=no')).toBe(true);
+  expect(plan.args.includes('DB_MODE=pg')).toBe(true);
+  expect(plan.args.includes('NEED_START=yes')).toBe(true);
+  expect(plan.args.includes('54321:54321')).toBe(true);
+  expect(plan.args.includes(`${path.resolve('./storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
 });
 
 test('docker app plan wires app, db, network, port, and image settings', () => {
@@ -267,33 +254,33 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
     },
   });
 
-  assert.equal(plan.source, 'docker');
-  assert.equal(plan.networkName, prefix);
-  assert.equal(plan.containerName, `${prefix}-demo-app`);
-  assert.equal(plan.imageRef, 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
-  assert.equal(plan.appPort, '13000');
-  assert.equal(plan.storagePath, path.resolve('./storage/demo'));
-  assert.equal(plan.appKey.length, 64);
-  assert.equal(typeof plan.timeZone, 'string');
-  assert.equal(plan.timeZone.length > 0, true);
-  assert.equal(plan.args.includes('--platform'), false);
-  assert.equal(plan.args.includes('--network'), true);
-  assert.equal(plan.args.includes(prefix), true);
-  assert.equal(plan.args.includes('13000:80'), true);
-  assert.equal(plan.args.includes('--port'), false);
-  assert.equal(plan.args.includes('INIT_APP_LANG=zh-CN'), true);
-  assert.equal(plan.args.includes('INIT_ROOT_USERNAME=nocobase'), true);
-  assert.equal(plan.args.includes('INIT_ROOT_EMAIL=admin@nocobase.com'), true);
-  assert.equal(plan.args.includes('INIT_ROOT_PASSWORD=admin123'), true);
-  assert.equal(plan.args.includes('INIT_ROOT_NICKNAME=Super Admin'), true);
-  assert.equal(plan.args.includes(`APP_KEY=${plan.appKey}`), true);
-  assert.equal(plan.args.includes(`TZ=${plan.timeZone}`), true);
-  assert.equal(plan.args.includes('DB_DIALECT=postgres'), true);
-  assert.equal(plan.args.includes(`DB_HOST=${prefix}-demo-postgres`), true);
-  assert.equal(plan.args.includes('DB_PORT=5432'), true);
-  assert.equal(plan.args.includes('DB_DATABASE=nocobase'), true);
-  assert.equal(plan.args.includes('DB_USER=nocobase'), true);
-  assert.equal(plan.args.includes('DB_PASSWORD=nocobase'), true);
+  expect(plan.source).toBe('docker');
+  expect(plan.networkName).toBe(prefix);
+  expect(plan.containerName).toBe(`${prefix}-demo-app`);
+  expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
+  expect(plan.appPort).toBe('13000');
+  expect(plan.storagePath).toBe(path.resolve('./storage/demo'));
+  expect(plan.appKey.length).toBe(64);
+  expect(typeof plan.timeZone).toBe('string');
+  expect(plan.timeZone.length > 0).toBe(true);
+  expect(plan.args.includes('--platform')).toBe(false);
+  expect(plan.args.includes('--network')).toBe(true);
+  expect(plan.args.includes(prefix)).toBe(true);
+  expect(plan.args.includes('13000:80')).toBe(true);
+  expect(plan.args.includes('--port')).toBe(false);
+  expect(plan.args.includes('INIT_APP_LANG=zh-CN')).toBe(true);
+  expect(plan.args.includes('INIT_ROOT_USERNAME=nocobase')).toBe(true);
+  expect(plan.args.includes('INIT_ROOT_EMAIL=admin@nocobase.com')).toBe(true);
+  expect(plan.args.includes('INIT_ROOT_PASSWORD=admin123')).toBe(true);
+  expect(plan.args.includes('INIT_ROOT_NICKNAME=Super Admin')).toBe(true);
+  expect(plan.args.includes(`APP_KEY=${plan.appKey}`)).toBe(true);
+  expect(plan.args.includes(`TZ=${plan.timeZone}`)).toBe(true);
+  expect(plan.args.includes('DB_DIALECT=postgres')).toBe(true);
+  expect(plan.args.includes(`DB_HOST=${prefix}-demo-postgres`)).toBe(true);
+  expect(plan.args.includes('DB_PORT=5432')).toBe(true);
+  expect(plan.args.includes('DB_DATABASE=nocobase')).toBe(true);
+  expect(plan.args.includes('DB_USER=nocobase')).toBe(true);
+  expect(plan.args.includes('DB_PASSWORD=nocobase')).toBe(true);
 });
 
 test('install env add argv forwards endpoint, auth, app, storage, and db settings', () => {
@@ -332,7 +319,7 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     },
   });
 
-  assert.deepEqual(argv, [
+  expect(argv).toEqual([
     'demo',
     '--no-intro',
     '--scope',
@@ -405,9 +392,9 @@ test('install env add argv records when an env uses an external database', () =>
     },
   });
 
-  assert.equal(argv.includes('--no-builtin-db'), true);
-  assert.equal(argv.includes('--no-intro'), true);
-  assert.equal(argv.includes('--builtin-db'), false);
+  expect(argv.includes('--no-builtin-db')).toBe(true);
+  expect(argv.includes('--no-intro')).toBe(true);
+  expect(argv.includes('--builtin-db')).toBe(false);
 });
 
 test('install env add argv records docker download settings for later upgrades', () => {
@@ -441,14 +428,14 @@ test('install env add argv records docker download settings for later upgrades',
     },
   });
 
-  assert.equal(argv.includes('--source'), true);
-  assert.equal(argv.includes('docker'), true);
-  assert.equal(argv.includes('--download-version'), true);
-  assert.equal(argv.includes('alpha'), true);
-  assert.equal(argv.includes('--docker-registry'), true);
-  assert.equal(argv.includes('nocobase/nocobase'), true);
-  assert.equal(argv.includes('--docker-platform'), true);
-  assert.equal(argv.includes('linux/amd64'), true);
+  expect(argv.includes('--source')).toBe(true);
+  expect(argv.includes('docker')).toBe(true);
+  expect(argv.includes('--download-version')).toBe(true);
+  expect(argv.includes('alpha')).toBe(true);
+  expect(argv.includes('--docker-registry')).toBe(true);
+  expect(argv.includes('nocobase/nocobase')).toBe(true);
+  expect(argv.includes('--docker-platform')).toBe(true);
+  expect(argv.includes('linux/amd64')).toBe(true);
 });
 
 test('install resolves an available app port default when the preferred port is busy', async () => {
@@ -461,14 +448,14 @@ test('install resolves an available app port default when the preferred port is 
   });
 
   const address = server.address();
-  assert.ok(address && typeof address === 'object');
+  expect(address && typeof address === 'object').toBeTruthy();
 
   const busyPort = String(address.port);
 
   try {
     const appPort = await installStatics.resolveAvailableDefaultPort(busyPort);
-    assert.notEqual(appPort, busyPort);
-    assert.equal(await validateAvailableTcpPort(appPort), undefined);
+    expect(appPort).not.toBe(busyPort);
+    expect(await validateAvailableTcpPort(appPort)).toBe(undefined);
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => {
@@ -489,14 +476,14 @@ test('install seeds app port initial values unless the user provided --app-port'
     envName: 'demo',
     flags: {},
   });
-  assert.equal(initialValues.appRootPath, './demo/source/');
-  assert.equal(initialValues.storagePath, './demo/storage/');
-  assert.equal(typeof initialValues.appPort, 'string');
-  assert.equal(await validateAvailableTcpPort(String(initialValues.appPort)), undefined);
-  assert.deepEqual(await installStatics.buildAppPromptInitialValues({
+  expect(initialValues.appRootPath).toBe('./demo/source/');
+  expect(initialValues.storagePath).toBe('./demo/storage/');
+  expect(typeof initialValues.appPort).toBe('string');
+  expect(await validateAvailableTcpPort(String(initialValues.appPort))).toBe(undefined);
+  expect(await installStatics.buildAppPromptInitialValues({
     envName: 'demo',
     flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
-  }), {});
+  })).toEqual({});
 });
 
 test('install seeds built-in database host port for npm/git sources when the default port is busy', async () => {
@@ -523,8 +510,8 @@ test('install seeds built-in database host port for npm/git sources when the def
         dbDialect: 'kingbase',
       },
     });
-    assert.notEqual(initialValues.dbPort, '54321');
-    assert.equal(await validateAvailableTcpPort(String(initialValues.dbPort)), undefined);
+    expect(initialValues.dbPort).not.toBe('54321');
+    expect(await validateAvailableTcpPort(String(initialValues.dbPort))).toBe(undefined);
   } finally {
     if (serverStarted) {
       await new Promise<void>((resolve, reject) => {
@@ -543,8 +530,7 @@ test('install seeds built-in database host port for npm/git sources when the def
 test('install does not seed built-in database host port for docker source or explicit --db-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
 
-  assert.deepEqual(
-    await installStatics.buildDbPromptInitialValues({
+  expect(await installStatics.buildDbPromptInitialValues({
       flags: {},
       downloadResults: {
         source: 'docker',
@@ -553,11 +539,8 @@ test('install does not seed built-in database host port for docker source or exp
         builtinDb: true,
         dbDialect: 'postgres',
       },
-    }),
-    {},
-  );
-  assert.deepEqual(
-    await installStatics.buildDbPromptInitialValues({
+    })).toEqual({});
+  expect(await installStatics.buildDbPromptInitialValues({
       flags: {
         'db-port': '15432',
       },
@@ -568,7 +551,5 @@ test('install does not seed built-in database host port for docker source or exp
         builtinDb: true,
         dbDialect: 'postgres',
       },
-    }),
-    {},
-  );
+    })).toEqual({});
 });

@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import Download, { defaultDockerRegistryForLang } from '../commands/download.js';
 import Init from '../commands/init.js';
 import EnvAdd from '../commands/env/add.js';
@@ -55,31 +54,22 @@ afterEach(() => {
 });
 
 test('validateApiBaseUrl accepts http and https URLs', () => {
-  assert.equal(validateApiBaseUrl('http://localhost:13000/api'), undefined);
-  assert.equal(validateApiBaseUrl('https://demo.example.com/api'), undefined);
+  expect(validateApiBaseUrl('http://localhost:13000/api')).toBe(undefined);
+  expect(validateApiBaseUrl('https://demo.example.com/api')).toBe(undefined);
 });
 
 test('validateApiBaseUrl rejects malformed URLs and unsupported schemes', () => {
-  assert.match(
-    validateApiBaseUrl('not a url') ?? '',
-    /Enter a valid URL/,
-  );
-  assert.match(
-    validateApiBaseUrl('ftp://example.com/api') ?? '',
-    /URL must start with http:\/\/ or https:\/\//,
-  );
+  expect(validateApiBaseUrl('not a url') ?? '').toMatch(/Enter a valid URL/);
+  expect(validateApiBaseUrl('ftp://example.com/api') ?? '').toMatch(/URL must start with http:\/\/ or https:\/\//);
 });
 
 test('validateEnvKey allows only letters and numbers', () => {
-  assert.equal(validateEnvKey('local01'), undefined);
-  assert.match(validateEnvKey('local-dev') ?? '', /letters and numbers only/i);
+  expect(validateEnvKey('local01')).toBe(undefined);
+  expect(validateEnvKey('local-dev') ?? '').toMatch(/letters and numbers only/i);
 });
 
 test('validateAvailableTcpPort rejects invalid and occupied ports', async () => {
-  assert.match(
-    await validateAvailableTcpPort('abc') ?? '',
-    /valid TCP port/i,
-  );
+  expect(await validateAvailableTcpPort('abc') ?? '').toMatch(/valid TCP port/i);
 
   const server = net.createServer();
   await new Promise<void>((resolve, reject) => {
@@ -88,11 +78,8 @@ test('validateAvailableTcpPort rejects invalid and occupied ports', async () => 
   });
 
   const address = server.address();
-  assert.ok(address && typeof address === 'object');
-  assert.match(
-    await validateAvailableTcpPort(String(address.port)) ?? '',
-    /already in use/i,
-  );
+  expect(address && typeof address === 'object').toBeTruthy();
+  expect(await validateAvailableTcpPort(String(address.port)) ?? '').toMatch(/already in use/i);
 
   await new Promise<void>((resolve, reject) => {
     server.close((error) => {
@@ -107,21 +94,15 @@ test('validateAvailableTcpPort rejects invalid and occupied ports', async () => 
 
 test('findAvailableTcpPort returns a free TCP port', async () => {
   const port = await findAvailableTcpPort();
-  assert.equal(typeof port, 'string');
-  assert.match(port, /^\d+$/);
-  assert.equal(await validateAvailableTcpPort(port), undefined);
+  expect(typeof port).toBe('string');
+  expect(port).toMatch(/^\d+$/);
+  expect(await validateAvailableTcpPort(port)).toBe(undefined);
 });
 
 test('validateTcpPort rejects invalid ports and accepts valid ones', () => {
-  assert.match(
-    validateTcpPort('abc') ?? '',
-    /valid TCP port/i,
-  );
-  assert.match(
-    validateTcpPort('70000') ?? '',
-    /valid TCP port/i,
-  );
-  assert.equal(validateTcpPort('5432'), undefined);
+  expect(validateTcpPort('abc') ?? '').toMatch(/valid TCP port/i);
+  expect(validateTcpPort('70000') ?? '').toMatch(/valid TCP port/i);
+  expect(validateTcpPort('5432')).toBe(undefined);
 });
 
 test('init and env add prompts validate apiBaseUrl', async () => {
@@ -129,17 +110,17 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   const initPrompt = Init.prompts.apiBaseUrl;
   const envAddPrompt = EnvAdd.prompts.apiBaseUrl;
 
-  assert.equal(appNamePrompt.type, 'text');
-  assert.equal(appNamePrompt.initialValue, undefined);
-  assert.equal(appNamePrompt.yesInitialValue, undefined);
-  assert.equal(typeof appNamePrompt.validate, 'function');
-  assert.match(await appNamePrompt.validate?.('local-dev', {}) ?? '', /letters and numbers only/i);
-  assert.equal(initPrompt.type, 'text');
-  assert.equal(envAddPrompt.type, 'text');
-  assert.equal(typeof initPrompt.validate, 'function');
-  assert.equal(typeof envAddPrompt.validate, 'function');
-  assert.match(initPrompt.validate?.('not-a-url', {}) ?? '', /Enter a valid URL/);
-  assert.match(envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '', /http:\/\/ or https:\/\//);
+  expect(appNamePrompt.type).toBe('text');
+  expect(appNamePrompt.initialValue).toBe(undefined);
+  expect(appNamePrompt.yesInitialValue).toBe(undefined);
+  expect(typeof appNamePrompt.validate).toBe('function');
+  expect(await appNamePrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+  expect(initPrompt.type).toBe('text');
+  expect(envAddPrompt.type).toBe('text');
+  expect(typeof initPrompt.validate).toBe('function');
+  expect(typeof envAddPrompt.validate).toBe('function');
+  expect(initPrompt.validate?.('not-a-url', {}) ?? '').toMatch(/Enter a valid URL/);
+  expect(envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '').toMatch(/http:\/\/ or https:\/\//);
 });
 
 test('init appName validates workspace env name uniqueness', async () => {
@@ -157,9 +138,9 @@ test('init appName validates workspace env name uniqueness', async () => {
     );
 
     const appNamePrompt = Init.prompts.appName;
-    assert.equal(appNamePrompt.type, 'text');
-    assert.match(await appNamePrompt.validate?.('local', {}) ?? '', /already exists/i);
-    assert.equal(await appNamePrompt.validate?.('newapp', {}), undefined);
+    expect(appNamePrompt.type).toBe('text');
+    expect(await appNamePrompt.validate?.('local', {}) ?? '').toMatch(/already exists/i);
+    expect(await appNamePrompt.validate?.('newapp', {})).toBe(undefined);
   });
 });
 
@@ -178,11 +159,11 @@ test('init appName allows reusing a workspace env name when --force is set', asy
     );
 
     const appNamePrompt = Init.prompts.appName;
-    assert.equal(appNamePrompt.type, 'text');
+    expect(appNamePrompt.type).toBe('text');
     const originalArgv = process.argv;
     process.argv = ['node', 'nb', 'init', '--force'];
     try {
-      assert.equal(await appNamePrompt.validate?.('local', {}), undefined);
+      expect(await appNamePrompt.validate?.('local', {})).toBe(undefined);
     } finally {
       process.argv = originalArgv;
     }
@@ -203,8 +184,7 @@ test('init --yes --env validates workspace env name uniqueness through preset va
       { scope: 'project' },
     );
 
-    await assert.rejects(
-      () =>
+    await expect((() =>
         runPromptCatalog(
           {
             appName: Init.prompts.appName,
@@ -220,9 +200,7 @@ test('init --yes --env validates workspace env name uniqueness through preset va
               },
             },
           },
-        ),
-      /already exists in this workspace/i,
-    );
+        ))()).rejects.toThrow(/already exists in this workspace/i);
   });
 });
 
@@ -242,119 +220,112 @@ test('install prompts expose the expected defaults and validators', () => {
   const rootPasswordPrompt = Install.rootUserPrompts.rootPassword;
   const rootNicknamePrompt = Install.rootUserPrompts.rootNickname;
 
-  assert.equal(envPrompt.type, 'text');
-  assert.equal(envPrompt.initialValue, undefined);
-  assert.equal(envPrompt.yesInitialValue, undefined);
-  assert.equal(typeof envPrompt.validate, 'function');
-  assert.match(envPrompt.validate?.('local-dev', {}) ?? '', /letters and numbers only/i);
+  expect(envPrompt.type).toBe('text');
+  expect(envPrompt.initialValue).toBe(undefined);
+  expect(envPrompt.yesInitialValue).toBe(undefined);
+  expect(typeof envPrompt.validate).toBe('function');
+  expect(envPrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
 
-  assert.equal(appPortPrompt.type, 'text');
-  assert.equal(appPortPrompt.initialValue, undefined);
-  assert.equal(appPortPrompt.yesInitialValue, undefined);
-  assert.equal(typeof appPortPrompt.validate, 'function');
+  expect(appPortPrompt.type).toBe('text');
+  expect(appPortPrompt.initialValue).toBe(undefined);
+  expect(appPortPrompt.yesInitialValue).toBe(undefined);
+  expect(typeof appPortPrompt.validate).toBe('function');
 
-  assert.equal(builtinDbPrompt.type, 'boolean');
-  assert.equal(builtinDbPrompt.initialValue, true);
-  assert.equal(builtinDbPrompt.yesInitialValue, true);
-  assert.equal(builtinDbPrompt.validate?.(true, { dbDialect: 'kingbase' }), undefined);
+  expect(builtinDbPrompt.type).toBe('boolean');
+  expect(builtinDbPrompt.initialValue).toBe(true);
+  expect(builtinDbPrompt.yesInitialValue).toBe(true);
+  expect(builtinDbPrompt.validate?.(true, { dbDialect: 'kingbase' })).toBe(undefined);
 
-  assert.equal(dbDialectPrompt.type, 'select');
-  assert.equal(dbDialectPrompt.initialValue, 'postgres');
-  assert.equal(dbDialectPrompt.yesInitialValue, 'postgres');
+  expect(dbDialectPrompt.type).toBe('select');
+  expect(dbDialectPrompt.initialValue).toBe('postgres');
+  expect(dbDialectPrompt.yesInitialValue).toBe('postgres');
 
-  assert.equal(dbHostPrompt.type, 'text');
-  assert.equal(typeof dbHostPrompt.initialValue, 'function');
-  assert.equal(dbHostPrompt.initialValue({ builtinDb: false }), '127.0.0.1');
-  assert.equal(dbHostPrompt.initialValue({ builtinDb: true }), 'postgres');
-  assert.equal(dbHostPrompt.yesInitialValue, 'postgres');
-  assert.equal(typeof dbHostPrompt.hidden, 'function');
-  assert.equal(dbHostPrompt.hidden?.({ builtinDb: true }), true);
-  assert.equal(dbHostPrompt.hidden?.({ builtinDb: false }), false);
+  expect(dbHostPrompt.type).toBe('text');
+  expect(typeof dbHostPrompt.initialValue).toBe('function');
+  expect(dbHostPrompt.initialValue({ builtinDb: false })).toBe('127.0.0.1');
+  expect(dbHostPrompt.initialValue({ builtinDb: true })).toBe('postgres');
+  expect(dbHostPrompt.yesInitialValue).toBe('postgres');
+  expect(typeof dbHostPrompt.hidden).toBe('function');
+  expect(dbHostPrompt.hidden?.({ builtinDb: true })).toBe(true);
+  expect(dbHostPrompt.hidden?.({ builtinDb: false })).toBe(false);
 
-  assert.equal(builtinDbImagePrompt.type, 'text');
-  assert.equal(typeof builtinDbImagePrompt.initialValue, 'function');
-  assert.equal(builtinDbImagePrompt.initialValue({ dbDialect: 'postgres' }), 'postgres:16');
-  assert.equal(builtinDbImagePrompt.initialValue({ dbDialect: 'mysql' }), 'mysql:8');
-  assert.equal(builtinDbImagePrompt.initialValue({ dbDialect: 'mariadb' }), 'mariadb:11');
-  assert.equal(
-    builtinDbImagePrompt.initialValue({ dbDialect: 'kingbase' }),
+  expect(builtinDbImagePrompt.type).toBe('text');
+  expect(typeof builtinDbImagePrompt.initialValue).toBe('function');
+  expect(builtinDbImagePrompt.initialValue({ dbDialect: 'postgres' })).toBe('postgres:16');
+  expect(builtinDbImagePrompt.initialValue({ dbDialect: 'mysql' })).toBe('mysql:8');
+  expect(builtinDbImagePrompt.initialValue({ dbDialect: 'mariadb' })).toBe('mariadb:11');
+  expect(builtinDbImagePrompt.initialValue({ dbDialect: 'kingbase' })).toBe(
     'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
   );
-  assert.equal(builtinDbImagePrompt.hidden?.({ builtinDb: false, dbDialect: 'postgres' }), true);
-  assert.equal(builtinDbImagePrompt.hidden?.({ builtinDb: true, dbDialect: 'postgres' }), false);
-  assert.equal(builtinDbImagePrompt.hidden?.({ builtinDb: true, dbDialect: 'kingbase' }), false);
+  expect(builtinDbImagePrompt.hidden?.({ builtinDb: false, dbDialect: 'postgres' })).toBe(true);
+  expect(builtinDbImagePrompt.hidden?.({ builtinDb: true, dbDialect: 'postgres' })).toBe(false);
+  expect(builtinDbImagePrompt.hidden?.({ builtinDb: true, dbDialect: 'kingbase' })).toBe(false);
 
-  assert.equal(dbPortPrompt.type, 'text');
-  assert.equal(typeof dbPortPrompt.initialValue, 'function');
-  assert.equal(typeof dbPortPrompt.validate, 'function');
-  assert.equal(dbPortPrompt.initialValue({ dbDialect: 'postgres' }), '5432');
-  assert.equal(dbPortPrompt.initialValue({ dbDialect: 'mysql' }), '3306');
-  assert.equal(dbPortPrompt.initialValue({ dbDialect: 'mariadb' }), '3306');
-  assert.equal(dbPortPrompt.initialValue({ dbDialect: 'kingbase' }), '54321');
-  assert.equal(dbPortPrompt.yesInitialValue, undefined);
-  assert.equal(dbPortPrompt.hidden?.({ builtinDb: true, source: 'docker' }), true);
-  assert.equal(dbPortPrompt.hidden?.({ builtinDb: true, source: 'npm' }), false);
-  assert.equal(dbPortPrompt.hidden?.({ builtinDb: true, source: 'git' }), false);
-  assert.equal(dbPortPrompt.hidden?.({ builtinDb: false }), false);
+  expect(dbPortPrompt.type).toBe('text');
+  expect(typeof dbPortPrompt.initialValue).toBe('function');
+  expect(typeof dbPortPrompt.validate).toBe('function');
+  expect(dbPortPrompt.initialValue({ dbDialect: 'postgres' })).toBe('5432');
+  expect(dbPortPrompt.initialValue({ dbDialect: 'mysql' })).toBe('3306');
+  expect(dbPortPrompt.initialValue({ dbDialect: 'mariadb' })).toBe('3306');
+  expect(dbPortPrompt.initialValue({ dbDialect: 'kingbase' })).toBe('54321');
+  expect(dbPortPrompt.yesInitialValue).toBe(undefined);
+  expect(dbPortPrompt.hidden?.({ builtinDb: true, source: 'docker' })).toBe(true);
+  expect(dbPortPrompt.hidden?.({ builtinDb: true, source: 'npm' })).toBe(false);
+  expect(dbPortPrompt.hidden?.({ builtinDb: true, source: 'git' })).toBe(false);
+  expect(dbPortPrompt.hidden?.({ builtinDb: false })).toBe(false);
 
-  assert.equal(dbDatabasePrompt.type, 'text');
-  assert.equal(typeof dbDatabasePrompt.initialValue, 'function');
-  assert.equal(dbDatabasePrompt.initialValue({ dbDialect: 'postgres' }), 'nocobase');
-  assert.equal(dbDatabasePrompt.initialValue({ dbDialect: 'kingbase' }), 'kingbase');
-  assert.equal(dbDatabasePrompt.yesInitialValue, undefined);
+  expect(dbDatabasePrompt.type).toBe('text');
+  expect(typeof dbDatabasePrompt.initialValue).toBe('function');
+  expect(dbDatabasePrompt.initialValue({ dbDialect: 'postgres' })).toBe('nocobase');
+  expect(dbDatabasePrompt.initialValue({ dbDialect: 'kingbase' })).toBe('kingbase');
+  expect(dbDatabasePrompt.yesInitialValue).toBe(undefined);
 
-  assert.equal(dbUserPrompt.type, 'text');
-  assert.equal(dbUserPrompt.initialValue, 'nocobase');
-  assert.equal(dbUserPrompt.yesInitialValue, 'nocobase');
+  expect(dbUserPrompt.type).toBe('text');
+  expect(dbUserPrompt.initialValue).toBe('nocobase');
+  expect(dbUserPrompt.yesInitialValue).toBe('nocobase');
 
-  assert.equal(dbPasswordPrompt.type, 'password');
-  assert.equal(dbPasswordPrompt.initialValue, 'nocobase');
-  assert.equal(dbPasswordPrompt.yesInitialValue, 'nocobase');
+  expect(dbPasswordPrompt.type).toBe('password');
+  expect(dbPasswordPrompt.initialValue).toBe('nocobase');
+  expect(dbPasswordPrompt.yesInitialValue).toBe('nocobase');
 
-  assert.equal(rootUsernamePrompt.type, 'text');
-  assert.equal(rootUsernamePrompt.initialValue, undefined);
-  assert.equal(rootUsernamePrompt.yesInitialValue, 'nocobase');
-  assert.equal(rootUsernamePrompt.required, true);
+  expect(rootUsernamePrompt.type).toBe('text');
+  expect(rootUsernamePrompt.initialValue).toBe(undefined);
+  expect(rootUsernamePrompt.yesInitialValue).toBe('nocobase');
+  expect(rootUsernamePrompt.required).toBe(true);
 
-  assert.equal(rootEmailPrompt.type, 'text');
-  assert.equal(rootEmailPrompt.initialValue, undefined);
-  assert.equal(rootEmailPrompt.yesInitialValue, 'admin@nocobase.com');
-  assert.equal(rootEmailPrompt.required, true);
+  expect(rootEmailPrompt.type).toBe('text');
+  expect(rootEmailPrompt.initialValue).toBe(undefined);
+  expect(rootEmailPrompt.yesInitialValue).toBe('admin@nocobase.com');
+  expect(rootEmailPrompt.required).toBe(true);
 
-  assert.equal(rootPasswordPrompt.type, 'password');
-  assert.equal(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' }), 'Choose the initial admin password');
-  assert.equal(rootPasswordPrompt.initialValue, undefined);
-  assert.equal(rootPasswordPrompt.yesInitialValue, 'admin123');
-  assert.equal(rootPasswordPrompt.required, true);
+  expect(rootPasswordPrompt.type).toBe('password');
+  expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe('Choose the initial admin password');
+  expect(rootPasswordPrompt.initialValue).toBe(undefined);
+  expect(rootPasswordPrompt.yesInitialValue).toBe('admin123');
+  expect(rootPasswordPrompt.required).toBe(true);
 
-  assert.equal(rootNicknamePrompt.type, 'text');
-  assert.equal(rootNicknamePrompt.initialValue, undefined);
-  assert.equal(rootNicknamePrompt.yesInitialValue, 'Super Admin');
-  assert.equal(rootNicknamePrompt.required, true);
+  expect(rootNicknamePrompt.type).toBe('text');
+  expect(rootNicknamePrompt.initialValue).toBe(undefined);
+  expect(rootNicknamePrompt.yesInitialValue).toBe('Super Admin');
+  expect(rootNicknamePrompt.required).toBe(true);
 });
 
 test('docker image defaults follow app language', () => {
   const dockerRegistryPrompt = Download.prompts.dockerRegistry;
   const dockerPlatformPrompt = Download.prompts.dockerPlatform;
 
-  assert.equal(defaultDockerRegistryForLang('zh-CN'), 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
-  assert.equal(defaultDockerRegistryForLang('en-US'), 'nocobase/nocobase');
+  expect(defaultDockerRegistryForLang('zh-CN')).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+  expect(defaultDockerRegistryForLang('en-US')).toBe('nocobase/nocobase');
 
-  assert.equal(dockerRegistryPrompt.type, 'text');
-  assert.equal(
-    dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' }),
-    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
-  );
-  assert.equal(
-    dockerRegistryPrompt.initialValue?.({ lang: 'en-US' }),
-    'nocobase/nocobase',
-  );
+  expect(dockerRegistryPrompt.type).toBe('text');
+  expect(dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' })).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+  expect(dockerRegistryPrompt.initialValue?.({ lang: 'en-US' })).toBe('nocobase/nocobase');
 
-  assert.equal(dockerPlatformPrompt.type, 'select');
-  assert.equal(dockerPlatformPrompt.initialValue, 'auto');
-  assert.equal(dockerPlatformPrompt.yesInitialValue, 'auto');
-  assert.equal(dockerPlatformPrompt.hidden?.({ source: 'docker' }), false);
-  assert.equal(dockerPlatformPrompt.hidden?.({ source: 'npm' }), true);
+  expect(dockerPlatformPrompt.type).toBe('select');
+  expect(dockerPlatformPrompt.initialValue).toBe('auto');
+  expect(dockerPlatformPrompt.yesInitialValue).toBe('auto');
+  expect(dockerPlatformPrompt.hidden?.({ source: 'docker' })).toBe(false);
+  expect(dockerPlatformPrompt.hidden?.({ source: 'npm' })).toBe(true);
 });
 
 test('install download prompt options pass app language into docker image defaults', () => {
@@ -383,13 +354,10 @@ test('install download prompt options pass app language into docker image defaul
     },
     'zh-demo',
   );
-  assert.equal(zhOptions.initialValues.lang, 'zh-CN');
-  assert.equal(
-    zhOptions.initialValues.dockerRegistry,
-    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
-  );
-  assert.equal(zhOptions.initialValues.outputDir, './apps/zh-demo');
-  assert.equal(zhOptions.values.lang, 'zh-CN');
+  expect(zhOptions.initialValues.lang).toBe('zh-CN');
+  expect(zhOptions.initialValues.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+  expect(zhOptions.initialValues.outputDir).toBe('./apps/zh-demo');
+  expect(zhOptions.values.lang).toBe('zh-CN');
 
   const enOptions = installStatics.buildDownloadPromptOptionsForInstall(
     {
@@ -398,9 +366,9 @@ test('install download prompt options pass app language into docker image defaul
     },
     'en-demo',
   );
-  assert.equal(enOptions.initialValues.lang, 'en-US');
-  assert.equal(enOptions.initialValues.dockerRegistry, 'nocobase/nocobase');
-  assert.equal(enOptions.values.lang, 'en-US');
+  expect(enOptions.initialValues.lang).toBe('en-US');
+  expect(enOptions.initialValues.dockerRegistry).toBe('nocobase/nocobase');
+  expect(enOptions.values.lang).toBe('en-US');
 
   const originalArgv = process.argv;
   process.argv = ['node', 'nb', 'install', '--yes'];
@@ -423,10 +391,10 @@ test('install download prompt options pass app language into docker image defaul
       true,
     );
 
-    assert.equal(preset.lang, 'en-US');
-    assert.equal(preset.source, 'docker');
-    assert.equal(preset.version, 'alpha');
-    assert.equal(preset.outputDir, './apps/en-demo');
+    expect(preset.lang).toBe('en-US');
+    expect(preset.source).toBe('docker');
+    expect(preset.version).toBe('alpha');
+    expect(preset.outputDir).toBe('./apps/en-demo');
   } finally {
     process.argv = originalArgv;
   }

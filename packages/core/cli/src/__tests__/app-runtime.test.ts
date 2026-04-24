@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { test } from 'vitest';
+import { test, expect } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import { buildDockerAppContainerName, resolveManagedAppRuntime } from '../lib/app-runtime.js';
 
@@ -33,10 +32,7 @@ async function withTempCliHome(run: () => Promise<void>) {
 }
 
 test('buildDockerAppContainerName keeps workspace-scoped naming consistent', () => {
-  assert.equal(
-    buildDockerAppContainerName('Local_01', 'NB Demo Workspace'),
-    'nb-demo-workspace-local_01-app',
-  );
+  expect(buildDockerAppContainerName('Local_01', 'NB Demo Workspace')).toBe('nb-demo-workspace-local_01-app');
 });
 
 test('resolveManagedAppRuntime detects local, docker, and remote envs', async () => {
@@ -64,21 +60,21 @@ test('resolveManagedAppRuntime detects local, docker, and remote envs', async ()
     );
 
     const dockerRuntime = await resolveManagedAppRuntime('docker-env');
-    assert.deepEqual(dockerRuntime && { kind: dockerRuntime.kind, source: dockerRuntime.source }, {
+    expect(dockerRuntime && { kind: dockerRuntime.kind, source: dockerRuntime.source }).toEqual({
       kind: 'docker',
       source: 'docker',
     });
-    assert.equal(dockerRuntime?.kind === 'docker' ? dockerRuntime.containerName : '', 'nb-demo-docker-env-app');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.containerName : '').toBe('nb-demo-docker-env-app');
 
     const localRuntime = await resolveManagedAppRuntime('git-env');
-    assert.deepEqual(localRuntime && { kind: localRuntime.kind, source: localRuntime.source }, {
+    expect(localRuntime && { kind: localRuntime.kind, source: localRuntime.source }).toEqual({
       kind: 'local',
       source: 'git',
     });
-    assert.match(localRuntime?.kind === 'local' ? localRuntime.projectRoot : '', /apps\/git-env$/);
+    expect(localRuntime?.kind === 'local' ? localRuntime.projectRoot : '').toMatch(/apps\/git-env$/);
 
     const remoteRuntime = await resolveManagedAppRuntime('remote');
-    assert.deepEqual(remoteRuntime && { kind: remoteRuntime.kind, source: remoteRuntime.source }, {
+    expect(remoteRuntime && { kind: remoteRuntime.kind, source: remoteRuntime.source }).toEqual({
       kind: 'remote',
       source: undefined,
     });

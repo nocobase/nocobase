@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
-import { beforeEach, test, vi } from 'vitest';
+import { beforeEach, test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
@@ -116,33 +115,33 @@ test('install --resume reuses the saved workspace env config for prompt values',
     'builtin-db': false,
   }, false);
 
-  assert.equal(mocks.getEnv.mock.calls.length, 1);
-  assert.deepEqual(mocks.getEnv.mock.calls[0], [
+  expect(mocks.getEnv.mock.calls.length).toBe(1);
+  expect(mocks.getEnv.mock.calls[0]).toEqual([
     'app1',
     { scope: 'project' },
   ]);
-  assert.equal(result.envName, 'app1');
-  assert.equal(result.appResults.appRootPath, './app1/source/');
-  assert.equal(result.appResults.appPort, '13080');
-  assert.equal(result.appResults.storagePath, './app1/storage/');
-  assert.equal(result.appResults.fetchSource, true);
-  assert.equal(result.downloadResults.source, 'docker');
-  assert.equal(result.downloadResults.version, 'alpha');
-  assert.equal(result.downloadResults.dockerRegistry, 'nocobase/nocobase');
-  assert.equal(result.downloadResults.dockerPlatform, 'linux/arm64');
-  assert.equal(result.downloadResults.build, false);
-  assert.equal(result.downloadResults.buildDts, true);
-  assert.equal(result.dbResults.builtinDb, true);
-  assert.equal(result.dbResults.dbDialect, 'postgres');
-  assert.equal(result.dbResults.builtinDbImage, 'registry.example.com/postgres:16');
-  assert.equal(result.dbResults.dbHost, 'app1-postgres');
-  assert.equal(result.dbResults.dbPort, '5432');
-  assert.equal(result.dbResults.dbDatabase, 'nocobase');
-  assert.equal(result.dbResults.dbUser, 'nocobase');
-  assert.equal(result.dbResults.dbPassword, 'secret');
-  assert.equal(result.envAddResults.authType, 'token');
-  assert.equal(result.envAddResults.accessToken, 'resume-token');
-  assert.equal(result.envAddResults.apiBaseUrl, 'http://127.0.0.1:13080/api');
+  expect(result.envName).toBe('app1');
+  expect(result.appResults.appRootPath).toBe('./app1/source/');
+  expect(result.appResults.appPort).toBe('13080');
+  expect(result.appResults.storagePath).toBe('./app1/storage/');
+  expect(result.appResults.fetchSource).toBe(true);
+  expect(result.downloadResults.source).toBe('docker');
+  expect(result.downloadResults.version).toBe('alpha');
+  expect(result.downloadResults.dockerRegistry).toBe('nocobase/nocobase');
+  expect(result.downloadResults.dockerPlatform).toBe('linux/arm64');
+  expect(result.downloadResults.build).toBe(false);
+  expect(result.downloadResults.buildDts).toBe(true);
+  expect(result.dbResults.builtinDb).toBe(true);
+  expect(result.dbResults.dbDialect).toBe('postgres');
+  expect(result.dbResults.builtinDbImage).toBe('registry.example.com/postgres:16');
+  expect(result.dbResults.dbHost).toBe('app1-postgres');
+  expect(result.dbResults.dbPort).toBe('5432');
+  expect(result.dbResults.dbDatabase).toBe('nocobase');
+  expect(result.dbResults.dbUser).toBe('nocobase');
+  expect(result.dbResults.dbPassword).toBe('secret');
+  expect(result.envAddResults.authType).toBe('token');
+  expect(result.envAddResults.accessToken).toBe('resume-token');
+  expect(result.envAddResults.apiBaseUrl).toBe('http://127.0.0.1:13080/api');
 });
 
 test('install --resume fails with a clear message when the env is missing', async () => {
@@ -151,8 +150,7 @@ test('install --resume fails with a clear message when the env is missing', asyn
   mocks.getEnv.mockResolvedValue(undefined);
 
   const command = Object.create(Install.prototype);
-  await assert.rejects(
-    () =>
+  await expect((() =>
       (
         Install.prototype as unknown as {
           collectPromptResults: (
@@ -167,11 +165,9 @@ test('install --resume fails with a clear message when the env is missing', asyn
         force: false,
         'fetch-source': false,
         'builtin-db': false,
-      }, false),
-    /Env "missing" is not configured in this workspace\./,
-  );
+      }, false))()).rejects.toThrow(/Env "missing" is not configured in this workspace\./);
 
-  assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
+  expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
 });
 
 test('install --resume --yes requires setup-only flags that are not saved in env config', async () => {
@@ -188,8 +184,7 @@ test('install --resume --yes requires setup-only flags that are not saved in env
   });
 
   const command = Object.create(Install.prototype);
-  await assert.rejects(
-    () =>
+  await expect((() =>
       (
         Install.prototype as unknown as {
           collectPromptResults: (
@@ -204,9 +199,7 @@ test('install --resume --yes requires setup-only flags that are not saved in env
         force: false,
         'fetch-source': false,
         'builtin-db': false,
-      }, true),
-    /These setup-only flags are not saved in the env config: --lang, --root-username, --root-email, --root-password, --root-nickname/,
-  );
+      }, true))()).rejects.toThrow(/These setup-only flags are not saved in the env config: --lang, --root-username, --root-email, --root-password, --root-nickname/);
 
-  assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
+  expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
 });

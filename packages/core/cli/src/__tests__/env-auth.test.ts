@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { test } from 'vitest';
+import { test, expect } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import {
   buildOauthCompletionHtml,
@@ -56,76 +55,64 @@ async function withOauthRetryDelay(delayMs: string, run: () => Promise<void>) {
 }
 
 test('OAuth helpers derive metadata and resource URLs from base URL', () => {
-  assert.equal(
-    getOauthMetadataUrl('http://localhost:13000/api/'),
-    'http://localhost:13000/api/.well-known/oauth-authorization-server',
-  );
-  assert.equal(getOauthResource('http://localhost:13000/api/'), 'http://localhost:13000/api/');
-  assert.equal(getOauthResource('https://demo.example.com/custom/api'), 'https://demo.example.com/custom/api/');
+  expect(getOauthMetadataUrl('http://localhost:13000/api/')).toBe('http://localhost:13000/api/.well-known/oauth-authorization-server');
+  expect(getOauthResource('http://localhost:13000/api/')).toBe('http://localhost:13000/api/');
+  expect(getOauthResource('https://demo.example.com/custom/api')).toBe('https://demo.example.com/custom/api/');
 });
 
 test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', () => {
   const url = 'https://example.com/oauth?scope=openid api&state="abc"&next=<script>alert(1)</script>';
   const html = buildOauthRedirectHtml(url);
 
-  assert.match(html, /<title>NocoBase OAuth Login<\/title>/);
-  assert.match(html, /Redirecting to sign-in/);
-  assert.match(html, /Continue to sign-in/);
-  assert.match(html, /Open manually/);
-  assert.match(html, /scope=openid api&amp;state=&quot;abc&quot;&amp;next=&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  assert.match(
-    html,
-    /window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/,
-  );
-  assert.doesNotMatch(html, /href="[^"]*&state="/);
+  expect(html).toMatch(/<title>NocoBase OAuth Login<\/title>/);
+  expect(html).toMatch(/Redirecting to sign-in/);
+  expect(html).toMatch(/Continue to sign-in/);
+  expect(html).toMatch(/Open manually/);
+  expect(html).toMatch(/scope=openid api&amp;state=&quot;abc&quot;&amp;next=&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  expect(html).toMatch(/window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/);
+  expect(html).not.toMatch(/href="[^"]*&state="/);
 });
 
 test('buildOauthCompletionHtml renders a styled completion page with auto-close guidance', () => {
   const html = buildOauthCompletionHtml();
 
-  assert.match(html, /<title>Authentication complete<\/title>/);
-  assert.match(html, /NocoBase CLI/);
-  assert.match(html, /Authentication complete/);
-  assert.match(html, /This page will close automatically in 10 seconds\./);
-  assert.match(html, /window\.close\(\)/);
-  assert.match(html, /}, 10000\);/);
-  assert.match(html, /If this tab stays open, you can close it manually\./);
+  expect(html).toMatch(/<title>Authentication complete<\/title>/);
+  expect(html).toMatch(/NocoBase CLI/);
+  expect(html).toMatch(/Authentication complete/);
+  expect(html).toMatch(/This page will close automatically in 10 seconds\./);
+  expect(html).toMatch(/window\.close\(\)/);
+  expect(html).toMatch(/}, 10000\);/);
+  expect(html).toMatch(/If this tab stays open, you can close it manually\./);
 });
 
 test('buildOauthErrorHtml renders a styled error page and escapes detail content', () => {
   const html = buildOauthErrorHtml('Invalid state: <script>alert("xss")</script>');
 
-  assert.match(html, /<title>Authentication failed<\/title>/);
-  assert.match(html, /The OAuth sign-in flow could not be completed in this browser tab\./);
-  assert.match(html, /Invalid state: &lt;script&gt;alert\(&quot;xss&quot;\)&lt;\/script&gt;/);
-  assert.doesNotMatch(html, /<script>alert\("xss"\)<\/script>/);
-  assert.match(html, /Return to the terminal to review the error details and try again if needed\./);
+  expect(html).toMatch(/<title>Authentication failed<\/title>/);
+  expect(html).toMatch(/The OAuth sign-in flow could not be completed in this browser tab\./);
+  expect(html).toMatch(/Invalid state: &lt;script&gt;alert\(&quot;xss&quot;\)&lt;\/script&gt;/);
+  expect(html).not.toMatch(/<script>alert\("xss"\)<\/script>/);
+  expect(html).toMatch(/Return to the terminal to review the error details and try again if needed\./);
 });
 
 test('isOauthAccessTokenExpired uses a refresh window', () => {
   const now = Date.parse('2026-04-15T00:00:00.000Z');
-  assert.equal(
-    isOauthAccessTokenExpired(
+  expect(isOauthAccessTokenExpired(
       {
         type: 'oauth',
         accessToken: 'token',
         expiresAt: '2026-04-15T00:00:30.000Z',
       },
       now,
-    ),
-    true,
-  );
-  assert.equal(
-    isOauthAccessTokenExpired(
+    )).toBe(true);
+  expect(isOauthAccessTokenExpired(
       {
         type: 'oauth',
         accessToken: 'token',
         expiresAt: '2026-04-15T00:05:00.000Z',
       },
       now,
-    ),
-    false,
-  );
+    )).toBe(false);
 });
 
 test('resolveAccessToken refreshes expired OAuth sessions', async () => {
@@ -166,12 +153,12 @@ test('resolveAccessToken refreshes expired OAuth sessions', async () => {
         );
       }
 
-      assert.equal(url, 'http://localhost:13000/api/idpOAuth/token');
+      expect(url).toBe('http://localhost:13000/api/idpOAuth/token');
       const body = init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(String(init?.body ?? ''));
-      assert.equal(body.get('grant_type'), 'refresh_token');
-      assert.equal(body.get('client_id'), 'client-1');
-      assert.equal(body.get('refresh_token'), 'refresh-token');
-      assert.equal(body.get('resource'), 'http://localhost:13000/api/');
+      expect(body.get('grant_type')).toBe('refresh_token');
+      expect(body.get('client_id')).toBe('client-1');
+      expect(body.get('refresh_token')).toBe('refresh-token');
+      expect(body.get('resource')).toBe('http://localhost:13000/api/');
 
       return new Response(
         JSON.stringify({
@@ -189,7 +176,7 @@ test('resolveAccessToken refreshes expired OAuth sessions', async () => {
         envName: 'test',
         scope: 'global',
       });
-      assert.equal(token, 'fresh-token');
+      expect(token).toBe('fresh-token');
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -241,8 +228,8 @@ test('resolveAccessToken retries transient OAuth metadata network failures', asy
           );
         }
 
-        assert.equal(url, 'http://localhost:13000/api/idpOAuth/token');
-        assert.equal(init?.method, 'POST');
+        expect(url).toBe('http://localhost:13000/api/idpOAuth/token');
+        expect(init?.method).toBe('POST');
         return new Response(
           JSON.stringify({
             access_token: 'fresh-token-after-retry',
@@ -258,8 +245,8 @@ test('resolveAccessToken retries transient OAuth metadata network failures', asy
           envName: 'test',
           scope: 'global',
         });
-        assert.equal(token, 'fresh-token-after-retry');
-        assert.equal(metadataAttempts, 3);
+        expect(token).toBe('fresh-token-after-retry');
+        expect(metadataAttempts).toBe(3);
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -298,26 +285,25 @@ test('resolveAccessToken explains OAuth metadata network failures clearly', asyn
       }) as typeof fetch;
 
       try {
-        await assert.rejects(
-          () =>
-            resolveAccessToken({
-              envName: 'test',
-              scope: 'global',
-            }),
-          (error: any) => {
-            assert.match(error.message, /Failed to load OAuth metadata\./);
-            assert.match(error.message, /Env: test/);
-            assert.match(error.message, /Base URL: http:\/\/localhost:13000\/api/);
-            assert.match(
-              error.message,
-              /Request URL: http:\/\/localhost:13000\/api\/\.well-known\/oauth-authorization-server/,
-            );
-            assert.match(error.message, /Network error: fetch failed/);
-            assert.match(error.message, /nb env auth test/);
-            assert.match(error.message, /nb env list/);
-            return true;
-          },
-        );
+        try {
+          await resolveAccessToken({
+            envName: 'test',
+            scope: 'global',
+          });
+        } catch (error: any) {
+          expect(error.message).toMatch(/Failed to load OAuth metadata\./);
+          expect(error.message).toMatch(/Env: test/);
+          expect(error.message).toMatch(/Base URL: http:\/\/localhost:13000\/api/);
+          expect(error.message).toMatch(
+            /Request URL: http:\/\/localhost:13000\/api\/\.well-known\/oauth-authorization-server/,
+          );
+          expect(error.message).toMatch(/Network error: fetch failed/);
+          expect(error.message).toMatch(/nb env auth test/);
+          expect(error.message).toMatch(/nb env list/);
+          return;
+        }
+
+        throw new Error('Expected resolveAccessToken to reject');
       } finally {
         globalThis.fetch = originalFetch;
       }

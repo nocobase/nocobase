@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
-import { test, vi } from 'vitest';
+import { test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
@@ -82,7 +81,7 @@ test('env add saves builtinDb into env config when provided by install', async (
 
   await EnvAdd.prototype.run.call(command);
 
-  assert.deepEqual(mocks.upsertEnv.mock.calls[0], [
+  expect(mocks.upsertEnv.mock.calls[0]).toEqual([
     'local',
     {
       baseUrl: 'http://127.0.0.1:13000/api',
@@ -101,7 +100,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     },
     { scope: 'project' },
   ]);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(runCommand.mock.calls).toEqual([
     ['env:update', ['local']],
   ]);
 });
