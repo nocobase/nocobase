@@ -23,6 +23,7 @@ import {
   type TextPromptBlock,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
+import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import {
   type RunPromptCatalogWebUIStage,
   runPromptCatalogWebUI,
@@ -38,6 +39,9 @@ const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const CONFIG_SCOPE = 'project' as const;
+
+const initText = (key: string, values?: Record<string, unknown>) =>
+  localeText(`commands.init.${key}`, values);
 
 function withExtraHidden(
   def: PromptBlock,
@@ -92,7 +96,7 @@ async function validateInitAppName(value: PromptValue): Promise<string | undefin
     if (shouldAllowExistingInitEnv()) {
       return undefined;
     }
-    return `Env "${envName}" already exists in this workspace. Choose another app name.`;
+    return translateCli('commands.init.validation.envExists', { envName });
   }
 
   return undefined;
@@ -106,21 +110,35 @@ function highlightInitValidationMessage(message: string): string {
 }
 
 function formatInitValidationMessage(message: string): string {
-  if (/"appName" is required/.test(message)) {
-    return [
-      'App name is required when prompts are skipped.',
-      'The app name is also the CLI env name. Use `nb init --yes --env <envName>` to continue.',
-    ].join('\n');
-  }
-
   return message;
 }
 
 function formatResumeEnvRequiredMessage(): string {
   return [
-    'Env name is required when resuming setup.',
-    'App name is also the CLI env name. Use `nb init --resume --env <envName>` to continue.',
+    translateCli('commands.init.messages.resumeEnvRequired'),
+    translateCli('commands.init.messages.resumeEnvHelp'),
   ].join('\n');
+}
+
+function formatSkippedAppNameRequiredMessage(): string {
+  return [
+    translateCli('commands.init.messages.appNameRequiredWhenSkipped'),
+    translateCli('commands.init.messages.appNameEnvHelp'),
+  ].join('\n');
+}
+
+function initTitle(): string {
+  return translateCli('commands.init.messages.title');
+}
+
+function logInitUiReady(command: { log: (message: string) => void }, url: string) {
+  p.log.step(translateCli('commands.init.messages.uiReady'));
+  p.log.info(translateCli('commands.init.messages.uiReadyHelp'));
+  command.log(`URL: ${url}`);
+}
+
+function logInitUiBrowserOpenFallback() {
+  p.log.warn(translateCli('commands.init.messages.uiOpenBrowserFallback'));
 }
 
 export default class Init extends Command {
@@ -160,23 +178,23 @@ Prompt modes:
   static prompts: PromptsCatalog = {
     appName: {
       type: 'text',
-      message: 'App name (also used as the CLI env name)',
-      placeholder: DEFAULT_INIT_APP_NAME,
+      message: initText('prompts.appName.message'),
+      placeholder: initText('prompts.appName.placeholder'),
       required: true,
       validate: validateInitAppName,
     },
     hasNocobase: {
       type: 'select',
       variant: 'radio',
-      message: 'Do you already have a NocoBase application?',
+      message: initText('prompts.hasNocobase.message'),
       options: [
         {
           value: 'no',
-          label: "I don't have a NocoBase application yet",
+          label: initText('prompts.hasNocobase.noLabel'),
         },
         {
           value: 'yes',
-          label: 'I already have a NocoBase application',
+          label: initText('prompts.hasNocobase.yesLabel'),
         },
       ],
       initialValue: 'no',
@@ -185,14 +203,14 @@ Prompt modes:
     },
     installSkills: {
       type: 'boolean',
-      message: 'Install NocoBase AI coding skills (nocobase/skills)?',
+      message: initText('prompts.installSkills.message'),
       initialValue: true,
       yesInitialValue: true,
     },
     apiBaseUrl: existingAppOnly({
       type: 'text',
-      message: 'API base URL',
-      placeholder: DEFAULT_INIT_API_BASE_URL,
+      message: initText('prompts.apiBaseUrl.message'),
+      placeholder: initText('prompts.apiBaseUrl.placeholder'),
       required: true,
       validate: validateApiBaseUrl,
     }),
@@ -235,8 +253,9 @@ Prompt modes:
     devDependencies: downloadInNewInstallOnly(Download.prompts.devDependencies),
     build: downloadInNewInstallOnly(Download.prompts.build),
     buildDts: downloadInNewInstallOnly(Download.prompts.buildDts),
-    builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
     dbDialect: newInstallOnly(Install.dbPrompts.dbDialect),
+    builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
+    builtinDbImage: newInstallOnly(Install.dbPrompts.builtinDbImage),
     dbHost: newInstallOnly(Install.dbPrompts.dbHost),
     dbPort: newInstallOnly(Install.dbPrompts.dbPort),
     dbDatabase: newInstallOnly(Install.dbPrompts.dbDatabase),
@@ -251,12 +270,12 @@ Prompt modes:
   static flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip prompts and create a new local NocoBase app. Requires an app/env name.',
+      description: 'Skip prompts and create a new local NocoBase app. Requires an env name.',
       default: false,
     }),
     env: Flags.string({
       char: 'e',
-      description: 'App name / CLI env name for this setup. Required with --yes and --resume',
+      description: 'Env name for this setup. Required with --yes and --resume',
     }),
     'install-skills': Flags.boolean({
       description: 'Install NocoBase AI coding skills (`nocobase/skills`) for this workspace',
@@ -282,6 +301,7 @@ Prompt modes:
 
   public async run(): Promise<void> {
     const parsedResult = await this.parse(Init);
+    applyCliLocale((parsedResult.flags as { locale?: string }).locale);
     const flags = parsedResult.flags;
     const normalizedFlags = { ...flags };
 
@@ -307,7 +327,7 @@ Prompt modes:
         this.exit(1);
       }
 
-      p.intro('Set Up NocoBase for Coding Agents');
+      p.intro(initTitle());
 
       if (Boolean(normalizedFlags['install-skills'])) {
         try {
@@ -340,6 +360,7 @@ Prompt modes:
               'root-nickname'?: string;
               'builtin-db'?: boolean;
               'db-dialect'?: string;
+              'builtin-db-image'?: string;
               'db-host'?: string;
               'db-port'?: string;
               'db-database'?: string;
@@ -388,6 +409,7 @@ Prompt modes:
         'root-nickname'?: string;
         'builtin-db'?: boolean;
         'db-dialect'?: string;
+        'builtin-db-image'?: string;
         'db-host'?: string;
         'db-port'?: string;
         'db-database'?: string;
@@ -410,21 +432,17 @@ Prompt modes:
     );
 
     if (normalizedFlags.yes && !String(presetValues.appName ?? '').trim()) {
-      const formatted = formatInitValidationMessage(
-        'Non-interactive: "appName" is required; set initialValues.appName, yesInitialValues.appName, yesInitialValue on the block, or initialValue.',
-      );
+      const formatted = formatSkippedAppNameRequiredMessage();
       p.log.error(highlightInitValidationMessage(formatted));
       this.exit(1);
     }
 
     const appName = String(presetValues.appName ?? '').trim();
     if (useBrowserUi) {
-      p.intro('Set Up NocoBase for Coding Agents');
-      p.log.info(
-        'A local setup form will open in your browser. Submit the form there to continue in this terminal.',
-      );
+      p.intro(initTitle());
+      p.log.info(translateCli('commands.init.messages.uiOpening'));
     } else {
-      p.intro('Set Up NocoBase for Coding Agents');
+      p.intro(initTitle());
 
       if (normalizedFlags.yes) {
         p.log.info(
@@ -454,17 +472,14 @@ Prompt modes:
         },
         host: normalizedFlags['ui-host']?.trim() || '127.0.0.1',
         port: normalizedFlags['ui-port'] ?? 0,
-        pageTitle: 'Set Up NocoBase for Coding Agents',
-        documentHeading: 'Set Up NocoBase for Coding Agents',
-        documentHint:
-          'Connect an existing NocoBase app or install a new one, then save it as an agent-ready CLI environment.',
-        onServerStart: ({ host, port, url }) => {
-          this.log(
-            `Local setup form ready at ${url} (listening on ${host}:${port}). Submit it in your browser to continue here.`,
-          );
+        pageTitle: initText('webUi.pageTitle'),
+        documentHeading: initText('webUi.documentHeading'),
+        documentHint: initText('webUi.documentHint'),
+        onServerStart: ({ url }) => {
+          logInitUiReady(this, url);
         },
-        onOpenBrowserError: (url, err) => {
-          this.log(`Open this URL in your browser to continue setup: ${url} (${err instanceof Error ? err.message : String(err)})`);
+        onOpenBrowserError: (_url, _err) => {
+          logInitUiBrowserOpenFallback();
         },
       });
     }
@@ -552,6 +567,7 @@ Prompt modes:
           'app-root-path': flags['app-root-path'] ?? '',
           'storage-path': flags['storage-path'] ?? '',
         },
+        warnOnPortFallback: false,
       });
       if (appInitialValues.appPort !== undefined) {
         out.appPort = appInitialValues.appPort;
@@ -571,6 +587,7 @@ Prompt modes:
       flags,
       downloadResults: downloadSeed as Record<string, PromptValue>,
       dbPreset: presetValues,
+      warnOnPortFallback: false,
     });
     for (const [key, value] of Object.entries(dbInitial)) {
       if (!Object.prototype.hasOwnProperty.call(presetValues, key)) {
@@ -586,8 +603,8 @@ Prompt modes:
 
     return [
       {
-        sectionTitle: 'Getting started',
-        sectionDescription: 'Pick your setup path.',
+        sectionTitle: initText('webUi.gettingStarted.title'),
+        sectionDescription: initText('webUi.gettingStarted.description'),
         catalog: {
           appName: c.appName,
           hasNocobase: c.hasNocobase,
@@ -595,8 +612,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Connect an existing app',
-        sectionDescription: 'Add your app connection.',
+        sectionTitle: initText('webUi.connectExistingApp.title'),
+        sectionDescription: initText('webUi.connectExistingApp.description'),
         catalog: {
           apiBaseUrl: c.apiBaseUrl,
           authType: c.authType,
@@ -604,8 +621,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Create a new app',
-        sectionDescription: 'Set project basics.',
+        sectionTitle: initText('webUi.createNewApp.title'),
+        sectionDescription: initText('webUi.createNewApp.description'),
         catalog: {
           lang: c.lang,
           appRootPath: c.appRootPath,
@@ -615,8 +632,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Download app files',
-        sectionDescription: 'Choose source and options.',
+        sectionTitle: initText('webUi.downloadAppFiles.title'),
+        sectionDescription: initText('webUi.downloadAppFiles.description'),
         catalog: {
           source: c.source,
           version: c.version,
@@ -633,11 +650,12 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Configure the database',
-        sectionDescription: 'Use built-in or custom.',
+        sectionTitle: initText('webUi.configureDatabase.title'),
+        sectionDescription: initText('webUi.configureDatabase.description'),
         catalog: {
-          builtinDb: c.builtinDb,
           dbDialect: c.dbDialect,
+          builtinDb: c.builtinDb,
+          builtinDbImage: c.builtinDbImage,
           dbHost: c.dbHost,
           dbPort: c.dbPort,
           dbDatabase: c.dbDatabase,
@@ -646,8 +664,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Create an admin account',
-        sectionDescription: 'Set up the first admin.',
+        sectionTitle: initText('webUi.createAdminAccount.title'),
+        sectionDescription: initText('webUi.createAdminAccount.description'),
         catalog: {
           rootUsername: c.rootUsername,
           rootEmail: c.rootEmail,
@@ -670,6 +688,7 @@ Prompt modes:
     'root-nickname'?: string;
     'builtin-db'?: boolean;
     'db-dialect'?: string;
+    'builtin-db-image'?: string;
     'db-host'?: string;
     'db-port'?: string;
     'db-database'?: string;
@@ -722,6 +741,9 @@ Prompt modes:
     }
     if (flags['db-dialect'] !== undefined && String(flags['db-dialect']).trim() !== '') {
       preset.dbDialect = String(flags['db-dialect']).trim();
+    }
+    if (flags['builtin-db-image'] !== undefined && String(flags['builtin-db-image']).trim() !== '') {
+      preset.builtinDbImage = String(flags['builtin-db-image']).trim();
     }
     if (flags['db-host'] !== undefined && String(flags['db-host']).trim() !== '') {
       preset.dbHost = String(flags['db-host']).trim();
@@ -805,6 +827,7 @@ Prompt modes:
     const appRootPath = String(results.appRootPath ?? '').trim();
     const storagePath = String(results.storagePath ?? '').trim();
     const dbDialect = String(results.dbDialect ?? '').trim();
+    const builtinDbImage = String(results.builtinDbImage ?? '').trim();
     const dbHost = String(results.dbHost ?? '').trim();
     const dbPort = String(results.dbPort ?? '').trim();
     const dbDatabase = String(results.dbDatabase ?? '').trim();
@@ -829,6 +852,7 @@ Prompt modes:
         ...(results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
         ...(results.builtinDb !== undefined ? { builtinDb: Boolean(results.builtinDb) } : {}),
         ...(dbDialect ? { dbDialect } : {}),
+        ...(builtinDbImage || results.builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
         ...(dbHost ? { dbHost } : {}),
         ...(dbPort ? { dbPort } : {}),
         ...(dbDatabase ? { dbDatabase } : {}),
@@ -964,6 +988,11 @@ Prompt modes:
       argv.push('--db-dialect', dbDialect);
     }
 
+    const builtinDbImage = String(results.builtinDbImage ?? '').trim();
+    if (builtinDb && builtinDbImage) {
+      argv.push('--builtin-db-image', builtinDbImage);
+    }
+
     const dbHost = String(results.dbHost ?? '').trim();
     if (dbHost) {
       argv.push('--db-host', dbHost);
@@ -1034,6 +1063,7 @@ Prompt modes:
     'root-nickname'?: string;
     'builtin-db'?: boolean;
     'db-dialect'?: string;
+    'builtin-db-image'?: string;
     'db-host'?: string;
     'db-port'?: string;
     'db-database'?: string;

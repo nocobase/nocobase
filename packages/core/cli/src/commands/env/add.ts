@@ -16,6 +16,12 @@ import {
   type PromptInitialValues,
   type PromptsCatalog,
 } from '../../lib/prompt-catalog.js';
+import {
+  applyCliLocale,
+  CLI_LOCALE_FLAG_DESCRIPTION,
+  CLI_LOCALE_FLAG_OPTIONS,
+  localeText,
+} from '../../lib/cli-locale.js';
 import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import { printVerbose, setVerboseMode } from '../../lib/ui.js';
 import * as p from '@clack/prompts';
@@ -24,6 +30,7 @@ type EnvScope = Exclude<CliHomeScope, 'auto'>;
 type EnvAddParsedFlags = {
   env?: string;
   verbose: boolean;
+  locale?: string;
   'no-intro': boolean;
   scope?: string;
   'default-api-base-url'?: string;
@@ -48,6 +55,7 @@ type EnvAddParsedFlags = {
   timezone?: string;
   'builtin-db'?: boolean;
   'db-dialect'?: string;
+  'builtin-db-image'?: string;
   'db-host'?: string;
   'db-port'?: string;
   'db-database'?: string;
@@ -68,6 +76,7 @@ const ENV_RUNTIME_FLAG_MAP = {
   'app-key': 'appKey',
   timezone: 'timezone',
   'db-dialect': 'dbDialect',
+  'builtin-db-image': 'builtinDbImage',
   'db-host': 'dbHost',
   'db-port': 'dbPort',
   'db-database': 'dbDatabase',
@@ -81,6 +90,9 @@ const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
   build: 'build',
   'build-dts': 'buildDts',
 } as const;
+
+const envAddText = (key: string, values?: Record<string, unknown>) =>
+  localeText(`commands.envAdd.${key}`, values);
 
 export default class EnvAdd extends Command {
   static override summary =
@@ -111,6 +123,10 @@ export default class EnvAdd extends Command {
     verbose: Flags.boolean({
       description: 'Print detailed progress while writing config',
       default: false,
+    }),
+    locale: Flags.string({
+      description: CLI_LOCALE_FLAG_DESCRIPTION,
+      options: CLI_LOCALE_FLAG_OPTIONS,
     }),
     'no-intro': Flags.boolean({
       hidden: true,
@@ -216,6 +232,10 @@ export default class EnvAdd extends Command {
       hidden: true,
       description: 'Database dialect saved with this env',
     }),
+    'builtin-db-image': Flags.string({
+      hidden: true,
+      description: 'Built-in database image saved with this env',
+    }),
     'db-host': Flags.string({
       hidden: true,
       description: 'Database host saved with this env',
@@ -241,41 +261,53 @@ export default class EnvAdd extends Command {
   static prompts: PromptsCatalog = {
     name: {
       type: 'text',
-      message: 'What would you like to call this environment?',
-      placeholder: 'default',
+      message: envAddText('prompts.name.message'),
+      placeholder: envAddText('prompts.name.placeholder'),
       required: true,
     },
     scope: {
       type: 'select',
-      message: 'Where should this connection be saved?',
+      message: envAddText('prompts.scope.message'),
       options: [
-        { value: 'project', label: 'Project', hint: '.nocobase in this repo' },
-        { value: 'global', label: 'Global', hint: 'user-level config' },
+        {
+          value: 'project',
+          label: envAddText('prompts.scope.projectLabel'),
+          hint: envAddText('prompts.scope.projectHint'),
+        },
+        {
+          value: 'global',
+          label: envAddText('prompts.scope.globalLabel'),
+          hint: envAddText('prompts.scope.globalHint'),
+        },
       ],
       initialValue: 'project',
       required: true,
     },
     apiBaseUrl: {
       type: 'text',
-      message: 'What is the API base URL?',
-      placeholder: 'http://localhost:13000/api',
+      message: envAddText('prompts.apiBaseUrl.message'),
+      placeholder: envAddText('prompts.apiBaseUrl.placeholder'),
       required: true,
       validate: validateApiBaseUrl,
     },
     authType: {
       type: 'select',
-      message: 'How would you like to sign in?',
+      message: envAddText('prompts.authType.message'),
       options: [
-        { value: 'oauth', label: 'OAuth (browser login)', hint: 'runs nb env auth after save' },
-        { value: 'token', label: 'API token / API key' },
+        {
+          value: 'oauth',
+          label: envAddText('prompts.authType.oauthLabel'),
+          hint: envAddText('prompts.authType.oauthHint'),
+        },
+        { value: 'token', label: envAddText('prompts.authType.tokenLabel') },
       ],
       initialValue: 'oauth',
       required: true,
     },
     accessToken: {
       type: 'text',
-      message: 'Enter an API token or API key',
-      placeholder: 'Enter your API token / API key',
+      message: envAddText('prompts.accessToken.message'),
+      placeholder: envAddText('prompts.accessToken.placeholder'),
       required: true,
       hidden: (values) => values.authType !== 'token',
     },
@@ -319,8 +351,8 @@ export default class EnvAdd extends Command {
   private buildEnvConfig(
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
-  ): Record<string, string | boolean> {
-    const envConfig: Record<string, string | boolean> = {
+  ): Record<string, string | boolean | undefined> {
+    const envConfig: Record<string, string | boolean | undefined> = {
       baseUrl: String(results.apiBaseUrl ?? ''),
     };
 
@@ -338,6 +370,10 @@ export default class EnvAdd extends Command {
       }
     }
 
+    if (flags['builtin-db'] === false) {
+      envConfig.builtinDbImage = undefined;
+    }
+
     if (results.authType === 'token' && results.accessToken != null) {
       envConfig.accessToken = String(results.accessToken);
     }
@@ -348,6 +384,7 @@ export default class EnvAdd extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvAdd);
     const parsedFlags = flags as EnvAddParsedFlags;
+    applyCliLocale(parsedFlags.locale);
     setVerboseMode(parsedFlags.verbose);
     if (!parsedFlags['no-intro']) {
       p.intro('Connect a NocoBase Environment');

@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import http from 'node:http';
 import net from 'node:net';
-import { afterEach, test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>();
@@ -40,6 +39,20 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 afterEach(() => {
   vi.clearAllMocks();
+});
+
+const originalNbLocale = process.env.NB_LOCALE;
+
+beforeEach(() => {
+  process.env.NB_LOCALE = 'en-US';
+});
+
+afterEach(() => {
+  if (originalNbLocale === undefined) {
+    delete process.env.NB_LOCALE;
+    return;
+  }
+  process.env.NB_LOCALE = originalNbLocale;
 });
 
 function requestWithAgent(
@@ -87,7 +100,7 @@ async function allocateLocalTcpPort(): Promise<string> {
   });
 
   const address = server.address();
-  assert.ok(address && typeof address === 'object');
+  expect(address && typeof address === 'object').toBeTruthy();
 
   const port = String(address.port);
   await new Promise<void>((resolve, reject) => {
@@ -146,8 +159,9 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
     });
 
     const page = await requestWithAgent(uiUrl, { agent });
-    assert.equal(page.statusCode, 200);
-    assert.match(page.body, /Submit &amp; continue in terminal/);
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toMatch(/Submit &amp; continue in terminal/);
+    expect(page.body).toMatch(/Saved\. This tab will close automatically in 5 seconds\./);
 
     const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
     const submit = await requestWithAgent(submitUrl, {
@@ -156,7 +170,7 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ projectName: 'demo-app' }),
     });
-    assert.equal(submit.statusCode, 200);
+    expect(submit.statusCode).toBe(200);
 
     const resolved = await Promise.race([
       webUiPromise,
@@ -168,7 +182,7 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
       ),
     ]);
 
-    assert.deepEqual(resolved, { projectName: 'demo-app' });
+    expect(resolved).toEqual({ projectName: 'demo-app' });
   } finally {
     agent.destroy();
   }
@@ -210,15 +224,9 @@ test('hidden required fields are rendered disabled so browser validation does no
     });
 
     const page = await requestWithAgent(uiUrl, { agent });
-    assert.equal(page.statusCode, 200);
-    assert.match(
-      page.body,
-      /data-pwc-wrap="accessToken"[^>]*style="display:none"/,
-    );
-    assert.match(
-      page.body,
-      /name="accessToken" type="text"[^>]*required[^>]*disabled/,
-    );
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toMatch(/data-pwc-wrap="accessToken"[^>]*style="display:none"/);
+    expect(page.body).toMatch(/name="accessToken" type="text"[^>]*required[^>]*disabled/);
 
     const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
     const submit = await requestWithAgent(submitUrl, {
@@ -232,7 +240,7 @@ test('hidden required fields are rendered disabled so browser validation does no
         authType: 'oauth',
       }),
     });
-    assert.equal(submit.statusCode, 200);
+    expect(submit.statusCode).toBe(200);
 
     const resolved = await Promise.race([
       webUiPromise,
@@ -244,7 +252,7 @@ test('hidden required fields are rendered disabled so browser validation does no
       ),
     ]);
 
-    assert.deepEqual(resolved, {
+    expect(resolved).toEqual({
       name: 'local',
       scope: 'project',
       apiBaseUrl: 'http://localhost:13000/api',
@@ -300,15 +308,15 @@ test('reflow returns default values for fields that become visible later', async
         version: 'latest',
       }),
     });
-    assert.equal(reflow.statusCode, 200);
+    expect(reflow.statusCode).toBe(200);
     const payload = JSON.parse(reflow.body) as {
       show?: Record<string, boolean>;
       values?: Record<string, string | boolean | number>;
     };
-    assert.equal(payload.show?.build, false);
-    assert.equal(payload.values?.build, undefined);
-    assert.equal(payload.show?.buildDts, true);
-    assert.equal(payload.values?.buildDts, false);
+    expect(payload.show?.build).toBe(false);
+    expect(payload.values?.build).toBe(undefined);
+    expect(payload.show?.buildDts).toBe(true);
+    expect(payload.values?.buildDts).toBe(false);
 
     const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
     await requestWithAgent(submitUrl, {
@@ -341,10 +349,55 @@ test('reflow recomputes init app paths from the current app name', async () => {
     appName: 'demoapp',
   });
 
-  assert.equal(state.show.appRootPath, true);
-  assert.equal(state.show.storagePath, true);
-  assert.equal(state.values.appRootPath, './demoapp/source/');
-  assert.equal(state.values.storagePath, './demoapp/storage/');
+  expect(state.show.appRootPath).toBe(true);
+  expect(state.show.storagePath).toBe(true);
+  expect(state.values.appRootPath).toBe('./demoapp/source/');
+  expect(state.values.storagePath).toBe('./demoapp/storage/');
+});
+
+test('reflow recomputes the built-in database image from the current database dialect until the field is edited', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const initial = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    fetchSource: true,
+    dbDialect: 'mysql',
+    builtinDb: true,
+  });
+
+  expect(initial.show.builtinDbImage).toBe(true);
+  expect(initial.values.builtinDbImage).toBe('mysql:8');
+
+  const updated = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    fetchSource: true,
+    dbDialect: 'mariadb',
+    builtinDb: true,
+  });
+
+  expect(updated.values.builtinDbImage).toBe('mariadb:11');
+
+  const customized = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    fetchSource: true,
+    dbDialect: 'mariadb',
+    builtinDb: true,
+    builtinDbImage: 'registry.example.com/custom-mariadb:11',
+  });
+
+  expect(customized.values.builtinDbImage).toBe('registry.example.com/custom-mariadb:11');
+
+  const kingbase = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    fetchSource: true,
+    dbDialect: 'kingbase',
+    builtinDb: true,
+  });
+
+  expect(kingbase.values.builtinDbImage).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+  );
 });
 
 test('validate_field returns a field error for an occupied app port in web UI mode', async () => {
@@ -362,7 +415,7 @@ test('validate_field returns a field error for an occupied app port in web UI mo
 
   try {
     const busyAddress = busyServer.address();
-    assert.ok(busyAddress && typeof busyAddress === 'object');
+    expect(busyAddress && typeof busyAddress === 'object').toBeTruthy();
 
     const webUiPromise = runPromptCatalogWebUI({
       catalog: {
@@ -404,9 +457,9 @@ test('validate_field returns a field error for an occupied app port in web UI mo
       }),
     });
 
-    assert.equal(validateField.statusCode, 400);
-    assert.match(validateField.body, /fieldKey\":\"appPort\"/);
-    assert.match(validateField.body, /already in use/i);
+    expect(validateField.statusCode).toBe(400);
+    expect(validateField.body).toMatch(/fieldKey\":\"appPort\"/);
+    expect(validateField.body).toMatch(/already in use/i);
 
     const freePort = await allocateLocalTcpPort();
     const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();

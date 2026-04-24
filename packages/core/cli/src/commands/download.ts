@@ -18,6 +18,12 @@ import {
   type PromptValue,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
+import {
+  applyCliLocale,
+  CLI_LOCALE_FLAG_DESCRIPTION,
+  CLI_LOCALE_FLAG_OPTIONS,
+  localeText,
+} from '../lib/cli-locale.ts';
 import { run } from '../lib/run-npm.ts';
 import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '../lib/ui.js';
 
@@ -26,6 +32,8 @@ type DockerPlatform = 'auto' | 'linux/amd64' | 'linux/arm64';
 const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DEFAULT_DOCKER_REGISTRY_ZH_CN = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase';
 const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
+const downloadText = (key: string, values?: Record<string, unknown>) =>
+  localeText(`commands.download.${key}`, values);
 
 function defaultOutputDirForVersion(versionTag: string): string {
   const safe = versionTag.replace(/[/\\]/g, '-');
@@ -132,6 +140,7 @@ export type DownloadCommandResult = {
 export type DownloadParsedFlags = {
   yes: boolean;
   verbose: boolean;
+  locale?: string;
   'no-intro': boolean;
   source?: string;
   version?: string;
@@ -180,6 +189,10 @@ export default class Download extends Command {
       description: 'Show detailed command output',
       default: false,
     }),
+    locale: Flags.string({
+      description: CLI_LOCALE_FLAG_DESCRIPTION,
+      options: CLI_LOCALE_FLAG_OPTIONS,
+    }),
     'no-intro': Flags.boolean({
       hidden: true,
       description: 'Skip command intro when invoked by another CLI command',
@@ -219,7 +232,7 @@ export default class Download extends Command {
       description: 'Git repository URL to clone when --source git is used.',
     }),
     'docker-registry': Flags.string({
-      description: 'Docker image repository to pull when --source docker is used.',
+      description: 'Docker registry to pull when --source docker is used; combine it with --version as the image tag.',
     }),
     'docker-platform': Flags.string({
       description: 'Docker image platform to pull; use auto to let Docker choose.',
@@ -251,11 +264,11 @@ export default class Download extends Command {
   static prompts: PromptsCatalog = {
     source: {
       type: 'select',
-      message: 'How would you like to get NocoBase?',
+      message: downloadText('prompts.source.message'),
       options: [
-        { value: 'npm', label: 'NPM package' },
-        { value: 'git', label: 'Git repository' },
-        { value: 'docker', label: 'Docker image' },
+        { value: 'npm', label: downloadText('prompts.source.npmLabel') },
+        { value: 'git', label: downloadText('prompts.source.gitLabel') },
+        { value: 'docker', label: downloadText('prompts.source.dockerLabel') },
       ],
       yesInitialValue: 'docker',
       initialValue: 'docker',
@@ -263,16 +276,16 @@ export default class Download extends Command {
     },
     version: {
       type: 'text',
-      message: 'Which version would you like to use? You can enter a package version, Docker image tag, or Git ref such as a branch name.',
-      placeholder: 'alpha',
+      message: downloadText('prompts.version.message'),
+      placeholder: downloadText('prompts.version.placeholder'),
       initialValue: 'alpha',
       yesInitialValue: 'alpha',
       required: true,
     },
     dockerRegistry: {
       type: 'text',
-      message: 'Which Docker image would you like to use?',
-      placeholder: DEFAULT_DOCKER_REGISTRY,
+      message: downloadText('prompts.dockerRegistry.message'),
+      placeholder: downloadText('prompts.dockerRegistry.placeholder'),
       initialValue: (values) => defaultDockerRegistryForLang(values.lang),
       yesInitialValue: DEFAULT_DOCKER_REGISTRY,
       required: true,
@@ -280,9 +293,13 @@ export default class Download extends Command {
     },
     dockerPlatform: {
       type: 'select',
-      message: 'Which Docker image platform should be used?',
+      message: downloadText('prompts.dockerPlatform.message'),
       options: [
-        { value: 'auto', label: 'Auto', hint: 'Use Docker default for this machine' },
+        {
+          value: 'auto',
+          label: downloadText('prompts.dockerPlatform.autoLabel'),
+          hint: downloadText('prompts.dockerPlatform.autoHint'),
+        },
         { value: 'linux/amd64', label: 'linux/amd64' },
         { value: 'linux/arm64', label: 'linux/arm64' },
       ],
@@ -293,14 +310,14 @@ export default class Download extends Command {
     },
     dockerSave: {
       type: 'boolean',
-      message: 'Save the Docker image as a tar file',
+      message: downloadText('prompts.dockerSave.message'),
       initialValue: false,
       hidden: (values) => values.source !== 'docker',
     },
     gitUrl: {
       type: 'text',
-      message: 'Git repository URL',
-      placeholder: 'https://github.com/nocobase/nocobase.git',
+      message: downloadText('prompts.gitUrl.message'),
+      placeholder: downloadText('prompts.gitUrl.placeholder'),
       initialValue: 'https://github.com/nocobase/nocobase.git',
       yesInitialValue: 'https://github.com/nocobase/nocobase.git',
       required: true,
@@ -308,8 +325,8 @@ export default class Download extends Command {
     },
     outputDir: {
       type: 'text',
-      message: 'Download location',
-      placeholder: 'e.g. ./nocobase-latest',
+      message: downloadText('prompts.outputDir.message'),
+      placeholder: downloadText('prompts.outputDir.placeholder'),
       initialValue: (values) =>
         defaultOutputDirForVersion(String(values.version ?? 'latest').trim() || 'latest'),
       required: true,
@@ -326,33 +343,33 @@ export default class Download extends Command {
     },
     npmRegistry: {
       type: 'text',
-      message: 'NPM registry URL (optional)',
-      placeholder: 'Leave empty to use the default registry',
+      message: downloadText('prompts.npmRegistry.message'),
+      placeholder: downloadText('prompts.npmRegistry.placeholder'),
       initialValue: '',
       hidden: (values) => values.source !== 'npm' && values.source !== 'git',
     },
     replace: {
       type: 'boolean',
-      message: 'Clear the app directory if it already contains files',
+      message: downloadText('prompts.replace.message'),
       initialValue: false,
       hidden: (values) => Download.hideOutputDirAndReplaceSteps(values),
     },
     devDependencies: {
       type: 'boolean',
-      message: 'Install development dependencies (npm only)',
+      message: downloadText('prompts.devDependencies.message'),
       initialValue: false,
       hidden: (values) => values.source !== 'npm',
     },
     build: {
       type: 'boolean',
-      message: 'Build the app after download',
+      message: downloadText('prompts.build.message'),
       initialValue: true,
       yesInitialValue: true,
       hidden: () => true,
     },
     buildDts: {
       type: 'boolean',
-      message: 'Generate TypeScript declaration files',
+      message: downloadText('prompts.buildDts.message'),
       initialValue: false,
       hidden: (values) => values.source !== 'git',
     },
@@ -876,6 +893,7 @@ export default class Download extends Command {
   async download(): Promise<DownloadCommandResult> {
     const { flags } = await this.parse(Download);
     this._flags = flags as DownloadParsedFlags;
+    applyCliLocale(this._flags.locale);
     setVerboseMode(Boolean(flags.verbose));
     if (!flags['no-intro']) {
       p.intro('Get NocoBase');

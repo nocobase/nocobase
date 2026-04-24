@@ -11,6 +11,22 @@ import Joi, { AnySchema } from 'joi';
 import { ValidationOptions } from '../fields';
 import _ from 'lodash';
 
+function getFractionLength(value: string) {
+  const normalized = value.trim().replace(/,/g, '');
+  if (!normalized || /e/i.test(normalized)) {
+    return 0;
+  }
+
+  const unsignedValue = normalized.startsWith('+') || normalized.startsWith('-') ? normalized.slice(1) : normalized;
+  const dotIndex = unsignedValue.indexOf('.');
+
+  if (dotIndex < 0) {
+    return 0;
+  }
+
+  return unsignedValue.slice(dotIndex + 1).length;
+}
+
 export function buildJoiSchema(validation: ValidationOptions, options: { label?: string; value: string }): AnySchema {
   const { type, rules } = validation;
   const { label, value } = options;
@@ -34,8 +50,24 @@ export function buildJoiSchema(validation: ValidationOptions, options: { label?:
     rules.forEach((rule) => {
       const args = _.cloneDeep(rule.args);
       if (rule.name === 'precision') {
-        // Keep precision validation strict even when convert is enabled at validate-time.
-        schema = schema.strict();
+        const limit = Number(args?.limit);
+        schema = schema.custom((currentValue, helpers) => {
+          if (Number.isNaN(limit)) {
+            return currentValue;
+          }
+
+          const originalValue = helpers.original;
+          if (originalValue === null || originalValue === undefined || originalValue === '') {
+            return currentValue;
+          }
+
+          if (getFractionLength(String(originalValue)) > limit) {
+            return helpers.error('number.precision', { limit });
+          }
+
+          return currentValue;
+        });
+        return;
       }
       if (!_.isEmpty(args)) {
         if (rule.name === 'pattern' && !_.isRegExp(args.regex)) {

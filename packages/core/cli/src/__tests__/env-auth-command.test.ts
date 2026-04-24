@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
-import { test, vi } from 'vitest';
+import { test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
@@ -49,15 +48,15 @@ test('env auth falls back to the current env and uses product-style task message
 
   await EnvAuth.prototype.run.call(command);
 
-  assert.deepEqual(mocks.getCurrentEnvName.mock.calls, [[{ scope: undefined }]]);
-  assert.deepEqual(mocks.authenticateEnvWithOauth.mock.calls, [[{ envName: 'staging', scope: undefined }]]);
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.getCurrentEnvName.mock.calls).toEqual([[{ scope: undefined }]]);
+  expect(mocks.authenticateEnvWithOauth.mock.calls).toEqual([[{ envName: 'staging', scope: undefined }]]);
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Starting browser sign-in for "staging"...'],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['Signed in to "staging".'],
   ]);
-  assert.equal(mocks.failTask.mock.calls.length, 0);
+  expect(mocks.failTask.mock.calls.length).toBe(0);
 });
 
 test('env auth rejects conflicting environment names from arg and --env', async () => {
@@ -73,8 +72,5 @@ test('env auth rejects conflicting environment names from arg and --env', async 
     },
   });
 
-  await assert.rejects(
-    () => EnvAuth.prototype.run.call(command),
-    /Please use only one/,
-  );
+  await expect((() => EnvAuth.prototype.run.call(command))()).rejects.toThrow(/Please use only one/);
 });
