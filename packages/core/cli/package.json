@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-alpha.21",
+  "version": "2.1.0-alpha.22",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
