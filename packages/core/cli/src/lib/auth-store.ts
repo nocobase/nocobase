@@ -60,6 +60,8 @@ export interface EnvConfigEntry {
   timezone?: string;
   /** Whether this env was created with a CLI-managed built-in database. */
   builtinDb?: boolean;
+  /** Docker image used for the CLI-managed built-in database container. */
+  builtinDbImage?: string;
   /** Optional DB hints for this env (aligns with NocoBase DB_* / .env usage). */
   dbHost?: string;
   dbDatabase?: string;

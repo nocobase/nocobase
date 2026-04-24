@@ -21,6 +21,7 @@ type InstallStatics = {
     storagePath: string;
     source?: string;
     dbDialect?: string;
+    builtinDbImage?: string;
     dbHost?: string;
     dbPort?: string;
     dbDatabase?: string;
@@ -33,6 +34,7 @@ type InstallStatics = {
     dbDatabase: string;
     dbUser: string;
     dbPassword: string;
+    builtinDbImage?: string;
     networkName: string;
     containerName: string;
     dataDir: string;
@@ -61,6 +63,7 @@ type InstallStatics = {
   buildEnvAddArgv: (params: {
     envName: string;
     appResults: Record<string, unknown>;
+    downloadResults: Record<string, unknown>;
     dbResults: Record<string, unknown>;
     envAddResults: Record<string, unknown>;
   }) => string[];
@@ -97,6 +100,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
   assert.equal(plan.dbHost, '127.0.0.1');
   assert.equal(plan.dbPort, '5433');
   assert.equal(plan.image, 'postgres:16');
+  assert.equal(plan.builtinDbImage, 'postgres:16');
   assert.equal(
     plan.dataDir,
     path.resolve('./storage/demo', 'db', 'postgres'),
@@ -125,6 +129,21 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-c',
     'wal_level=logical',
   ]);
+});
+
+test('builtin postgres db plan uses a custom built-in database image when provided', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const plan = installStatics.buildBuiltinDbPlan({
+    envName: 'demo',
+    storagePath: './storage/demo',
+    source: 'npm',
+    dbDialect: 'postgres',
+    builtinDbImage: 'registry.example.com/postgres:16',
+  });
+
+  assert.equal(plan.image, 'registry.example.com/postgres:16');
+  assert.equal(plan.builtinDbImage, 'registry.example.com/postgres:16');
+  assert.equal(plan.args.includes('registry.example.com/postgres:16'), true);
 });
 
 test('builtin postgres db plan can use the workspace name from config', () => {
@@ -184,6 +203,38 @@ test('builtin mysql db plan publishes the selected db port', () => {
   assert.equal(plan.args.includes('MYSQL_PASSWORD=nb_pass'), true);
 });
 
+test('builtin kingbase db plan uses the default kingbase image and runtime options', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const plan = installStatics.buildBuiltinDbPlan({
+    envName: 'kingapp',
+    storagePath: './storage/kingapp',
+    source: 'git',
+    dbDialect: 'kingbase',
+    dbHost: '127.0.0.1',
+    dbPort: '54321',
+    dbDatabase: 'kingbase',
+    dbUser: 'nocobase',
+    dbPassword: 'nocobase',
+  });
+
+  assert.equal(
+    plan.image,
+    'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+  );
+  assert.equal(plan.builtinDbImage, plan.image);
+  assert.equal(plan.args.includes('--platform'), true);
+  assert.equal(plan.args.includes('linux/amd64'), true);
+  assert.equal(plan.args.includes('--privileged'), true);
+  assert.equal(plan.args.includes('ENABLE_CI=no'), true);
+  assert.equal(plan.args.includes('DB_MODE=pg'), true);
+  assert.equal(plan.args.includes('NEED_START=yes'), true);
+  assert.equal(plan.args.includes('54321:54321'), true);
+  assert.equal(
+    plan.args.includes(`${path.resolve('./storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`),
+    true,
+  );
+});
+
 test('docker app plan wires app, db, network, port, and image settings', () => {
   const installStatics = Install as unknown as InstallStatics;
   const prefix = `nb-${path.basename(process.cwd()).toLowerCase()}`;
@@ -210,7 +261,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
     },
     rootResults: {
       rootUsername: 'nocobase',
-      rootEmail: 'admin@example.com',
+      rootEmail: 'admin@nocobase.com',
       rootPassword: 'admin123',
       rootNickname: 'Super Admin',
     },
@@ -232,7 +283,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   assert.equal(plan.args.includes('--port'), false);
   assert.equal(plan.args.includes('INIT_APP_LANG=zh-CN'), true);
   assert.equal(plan.args.includes('INIT_ROOT_USERNAME=nocobase'), true);
-  assert.equal(plan.args.includes('INIT_ROOT_EMAIL=admin@example.com'), true);
+  assert.equal(plan.args.includes('INIT_ROOT_EMAIL=admin@nocobase.com'), true);
   assert.equal(plan.args.includes('INIT_ROOT_PASSWORD=admin123'), true);
   assert.equal(plan.args.includes('INIT_ROOT_NICKNAME=Super Admin'), true);
   assert.equal(plan.args.includes(`APP_KEY=${plan.appKey}`), true);
@@ -267,6 +318,7 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     dbResults: {
       builtinDb: true,
       dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
       dbHost: 'demo-postgres',
       dbPort: '5432',
       dbDatabase: 'nocobase',
@@ -312,6 +364,8 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     '--builtin-db',
     '--db-dialect',
     'postgres',
+    '--builtin-db-image',
+    'registry.example.com/postgres:16',
     '--db-host',
     'demo-postgres',
     '--db-port',

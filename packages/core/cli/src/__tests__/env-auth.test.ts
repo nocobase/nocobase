@@ -86,8 +86,9 @@ test('buildOauthCompletionHtml renders a styled completion page with auto-close 
   assert.match(html, /<title>Authentication complete<\/title>/);
   assert.match(html, /NocoBase CLI/);
   assert.match(html, /Authentication complete/);
-  assert.match(html, /This page will try to close automatically in a moment\./);
+  assert.match(html, /This page will close automatically in 10 seconds\./);
   assert.match(html, /window\.close\(\)/);
+  assert.match(html, /}, 10000\);/);
   assert.match(html, /If this tab stays open, you can close it manually\./);
 });
 

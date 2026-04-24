@@ -219,7 +219,7 @@ export default class Download extends Command {
       description: 'Git repository URL to clone when --source git is used.',
     }),
     'docker-registry': Flags.string({
-      description: 'Docker image repository to pull when --source docker is used.',
+      description: 'Docker registry to pull when --source docker is used; combine it with --version as the image tag.',
     }),
     'docker-platform': Flags.string({
       description: 'Docker image platform to pull; use auto to let Docker choose.',
@@ -271,7 +271,7 @@ export default class Download extends Command {
     },
     dockerRegistry: {
       type: 'text',
-      message: 'Which Docker image would you like to use?',
+      message: 'Which Docker registry would you like to use? The image tag is set separately in Version.',
       placeholder: DEFAULT_DOCKER_REGISTRY,
       initialValue: (values) => defaultDockerRegistryForLang(values.lang),
       yesInitialValue: DEFAULT_DOCKER_REGISTRY,

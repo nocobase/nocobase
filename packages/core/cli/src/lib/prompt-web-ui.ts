@@ -1643,7 +1643,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
           if (!s || document.visibilityState !== 'visible') { return; }
           pwcSetStatusSuccess('Saved. Automatic close was blocked by the browser. You can close this tab now.');
         }, 600);
-      }, 2000);
+      }, 5000);
     }
     function pwcSetFieldError(key, message) {
       if (!form || !key) { return; }
@@ -2097,7 +2097,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             return r.json();
           })
           .then(function () {
-            pwcSetStatusSuccess('Saved. This tab will close automatically in 2 seconds.');
+            pwcSetStatusSuccess('Saved. This tab will close automatically in 5 seconds.');
             pwcScheduleWindowClose();
           })
           .catch(function (err) {

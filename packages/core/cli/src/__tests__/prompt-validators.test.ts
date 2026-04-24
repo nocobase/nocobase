@@ -216,6 +216,7 @@ test('install prompts expose the expected defaults and validators', () => {
   const appPortPrompt = Install.appPrompts.appPort;
   const builtinDbPrompt = Install.dbPrompts.builtinDb;
   const dbDialectPrompt = Install.dbPrompts.dbDialect;
+  const builtinDbImagePrompt = Install.dbPrompts.builtinDbImage;
   const dbHostPrompt = Install.dbPrompts.dbHost;
   const dbPortPrompt = Install.dbPrompts.dbPort;
   const dbDatabasePrompt = Install.dbPrompts.dbDatabase;
@@ -240,6 +241,7 @@ test('install prompts expose the expected defaults and validators', () => {
   assert.equal(builtinDbPrompt.type, 'boolean');
   assert.equal(builtinDbPrompt.initialValue, true);
   assert.equal(builtinDbPrompt.yesInitialValue, true);
+  assert.equal(builtinDbPrompt.validate?.(true, { dbDialect: 'kingbase' }), undefined);
 
   assert.equal(dbDialectPrompt.type, 'select');
   assert.equal(dbDialectPrompt.initialValue, 'postgres');
@@ -253,6 +255,19 @@ test('install prompts expose the expected defaults and validators', () => {
   assert.equal(typeof dbHostPrompt.hidden, 'function');
   assert.equal(dbHostPrompt.hidden?.({ builtinDb: true }), true);
   assert.equal(dbHostPrompt.hidden?.({ builtinDb: false }), false);
+
+  assert.equal(builtinDbImagePrompt.type, 'text');
+  assert.equal(typeof builtinDbImagePrompt.initialValue, 'function');
+  assert.equal(builtinDbImagePrompt.initialValue({ dbDialect: 'postgres' }), 'postgres:16');
+  assert.equal(builtinDbImagePrompt.initialValue({ dbDialect: 'mysql' }), 'mysql:8');
+  assert.equal(builtinDbImagePrompt.initialValue({ dbDialect: 'mariadb' }), 'mariadb:11');
+  assert.equal(
+    builtinDbImagePrompt.initialValue({ dbDialect: 'kingbase' }),
+    'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+  );
+  assert.equal(builtinDbImagePrompt.hidden?.({ builtinDb: false, dbDialect: 'postgres' }), true);
+  assert.equal(builtinDbImagePrompt.hidden?.({ builtinDb: true, dbDialect: 'postgres' }), false);
+  assert.equal(builtinDbImagePrompt.hidden?.({ builtinDb: true, dbDialect: 'kingbase' }), false);
 
   assert.equal(dbPortPrompt.type, 'text');
   assert.equal(typeof dbPortPrompt.initialValue, 'function');
@@ -268,8 +283,10 @@ test('install prompts expose the expected defaults and validators', () => {
   assert.equal(dbPortPrompt.hidden?.({ builtinDb: false }), false);
 
   assert.equal(dbDatabasePrompt.type, 'text');
-  assert.equal(dbDatabasePrompt.initialValue, 'nocobase');
-  assert.equal(dbDatabasePrompt.yesInitialValue, 'nocobase');
+  assert.equal(typeof dbDatabasePrompt.initialValue, 'function');
+  assert.equal(dbDatabasePrompt.initialValue({ dbDialect: 'postgres' }), 'nocobase');
+  assert.equal(dbDatabasePrompt.initialValue({ dbDialect: 'kingbase' }), 'kingbase');
+  assert.equal(dbDatabasePrompt.yesInitialValue, undefined);
 
   assert.equal(dbUserPrompt.type, 'text');
   assert.equal(dbUserPrompt.initialValue, 'nocobase');
@@ -280,20 +297,25 @@ test('install prompts expose the expected defaults and validators', () => {
   assert.equal(dbPasswordPrompt.yesInitialValue, 'nocobase');
 
   assert.equal(rootUsernamePrompt.type, 'text');
-  assert.equal(rootUsernamePrompt.initialValue, 'nocobase');
+  assert.equal(rootUsernamePrompt.initialValue, undefined);
   assert.equal(rootUsernamePrompt.yesInitialValue, 'nocobase');
+  assert.equal(rootUsernamePrompt.required, true);
 
   assert.equal(rootEmailPrompt.type, 'text');
-  assert.equal(rootEmailPrompt.initialValue, 'admin@example.com');
-  assert.equal(rootEmailPrompt.yesInitialValue, 'admin@example.com');
+  assert.equal(rootEmailPrompt.initialValue, undefined);
+  assert.equal(rootEmailPrompt.yesInitialValue, 'admin@nocobase.com');
+  assert.equal(rootEmailPrompt.required, true);
 
   assert.equal(rootPasswordPrompt.type, 'password');
-  assert.equal(rootPasswordPrompt.initialValue, 'admin123');
+  assert.equal(rootPasswordPrompt.message, 'Choose the initial admin password');
+  assert.equal(rootPasswordPrompt.initialValue, undefined);
   assert.equal(rootPasswordPrompt.yesInitialValue, 'admin123');
+  assert.equal(rootPasswordPrompt.required, true);
 
   assert.equal(rootNicknamePrompt.type, 'text');
-  assert.equal(rootNicknamePrompt.initialValue, 'Super Admin');
+  assert.equal(rootNicknamePrompt.initialValue, undefined);
   assert.equal(rootNicknamePrompt.yesInitialValue, 'Super Admin');
+  assert.equal(rootNicknamePrompt.required, true);
 });
 
 test('docker image defaults follow app language', () => {

@@ -78,6 +78,7 @@ test('install --resume reuses the saved workspace env config for prompt values',
       storagePath: './app1/storage/',
       builtinDb: true,
       dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
       dbHost: 'app1-postgres',
       dbPort: '5432',
       dbDatabase: 'nocobase',
@@ -133,6 +134,7 @@ test('install --resume reuses the saved workspace env config for prompt values',
   assert.equal(result.downloadResults.buildDts, true);
   assert.equal(result.dbResults.builtinDb, true);
   assert.equal(result.dbResults.dbDialect, 'postgres');
+  assert.equal(result.dbResults.builtinDbImage, 'registry.example.com/postgres:16');
   assert.equal(result.dbResults.dbHost, 'app1-postgres');
   assert.equal(result.dbResults.dbPort, '5432');
   assert.equal(result.dbResults.dbDatabase, 'nocobase');

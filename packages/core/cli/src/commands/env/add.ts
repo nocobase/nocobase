@@ -48,6 +48,7 @@ type EnvAddParsedFlags = {
   timezone?: string;
   'builtin-db'?: boolean;
   'db-dialect'?: string;
+  'builtin-db-image'?: string;
   'db-host'?: string;
   'db-port'?: string;
   'db-database'?: string;
@@ -68,6 +69,7 @@ const ENV_RUNTIME_FLAG_MAP = {
   'app-key': 'appKey',
   timezone: 'timezone',
   'db-dialect': 'dbDialect',
+  'builtin-db-image': 'builtinDbImage',
   'db-host': 'dbHost',
   'db-port': 'dbPort',
   'db-database': 'dbDatabase',
@@ -216,6 +218,10 @@ export default class EnvAdd extends Command {
       hidden: true,
       description: 'Database dialect saved with this env',
     }),
+    'builtin-db-image': Flags.string({
+      hidden: true,
+      description: 'Built-in database image saved with this env',
+    }),
     'db-host': Flags.string({
       hidden: true,
       description: 'Database host saved with this env',
@@ -319,8 +325,8 @@ export default class EnvAdd extends Command {
   private buildEnvConfig(
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
-  ): Record<string, string | boolean> {
-    const envConfig: Record<string, string | boolean> = {
+  ): Record<string, string | boolean | undefined> {
+    const envConfig: Record<string, string | boolean | undefined> = {
       baseUrl: String(results.apiBaseUrl ?? ''),
     };
 
@@ -336,6 +342,10 @@ export default class EnvAdd extends Command {
       if (typeof value === 'boolean') {
         envConfig[configKey] = value;
       }
+    }
+
+    if (flags['builtin-db'] === false) {
+      envConfig.builtinDbImage = undefined;
     }
 
     if (results.authType === 'token' && results.accessToken != null) {

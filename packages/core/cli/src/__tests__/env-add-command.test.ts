@@ -72,6 +72,7 @@ test('env add saves builtinDb into env config when provided by install', async (
         'app-key': 'app-key-123',
         timezone: 'Asia/Shanghai',
         'builtin-db': true,
+        'builtin-db-image': 'registry.example.com/postgres:16',
       },
     })),
     config: {
@@ -95,6 +96,7 @@ test('env add saves builtinDb into env config when provided by install', async (
       appKey: 'app-key-123',
       timezone: 'Asia/Shanghai',
       builtinDb: true,
+      builtinDbImage: 'registry.example.com/postgres:16',
       accessToken: 'token-123',
     },
     { scope: 'project' },

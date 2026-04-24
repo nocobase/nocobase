@@ -235,8 +235,9 @@ Prompt modes:
     devDependencies: downloadInNewInstallOnly(Download.prompts.devDependencies),
     build: downloadInNewInstallOnly(Download.prompts.build),
     buildDts: downloadInNewInstallOnly(Download.prompts.buildDts),
-    builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
     dbDialect: newInstallOnly(Install.dbPrompts.dbDialect),
+    builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
+    builtinDbImage: newInstallOnly(Install.dbPrompts.builtinDbImage),
     dbHost: newInstallOnly(Install.dbPrompts.dbHost),
     dbPort: newInstallOnly(Install.dbPrompts.dbPort),
     dbDatabase: newInstallOnly(Install.dbPrompts.dbDatabase),
@@ -340,6 +341,7 @@ Prompt modes:
               'root-nickname'?: string;
               'builtin-db'?: boolean;
               'db-dialect'?: string;
+              'builtin-db-image'?: string;
               'db-host'?: string;
               'db-port'?: string;
               'db-database'?: string;
@@ -388,6 +390,7 @@ Prompt modes:
         'root-nickname'?: string;
         'builtin-db'?: boolean;
         'db-dialect'?: string;
+        'builtin-db-image'?: string;
         'db-host'?: string;
         'db-port'?: string;
         'db-database'?: string;
@@ -636,8 +639,9 @@ Prompt modes:
         sectionTitle: 'Configure the database',
         sectionDescription: 'Use built-in or custom.',
         catalog: {
-          builtinDb: c.builtinDb,
           dbDialect: c.dbDialect,
+          builtinDb: c.builtinDb,
+          builtinDbImage: c.builtinDbImage,
           dbHost: c.dbHost,
           dbPort: c.dbPort,
           dbDatabase: c.dbDatabase,
@@ -670,6 +674,7 @@ Prompt modes:
     'root-nickname'?: string;
     'builtin-db'?: boolean;
     'db-dialect'?: string;
+    'builtin-db-image'?: string;
     'db-host'?: string;
     'db-port'?: string;
     'db-database'?: string;
@@ -722,6 +727,9 @@ Prompt modes:
     }
     if (flags['db-dialect'] !== undefined && String(flags['db-dialect']).trim() !== '') {
       preset.dbDialect = String(flags['db-dialect']).trim();
+    }
+    if (flags['builtin-db-image'] !== undefined && String(flags['builtin-db-image']).trim() !== '') {
+      preset.builtinDbImage = String(flags['builtin-db-image']).trim();
     }
     if (flags['db-host'] !== undefined && String(flags['db-host']).trim() !== '') {
       preset.dbHost = String(flags['db-host']).trim();
@@ -805,6 +813,7 @@ Prompt modes:
     const appRootPath = String(results.appRootPath ?? '').trim();
     const storagePath = String(results.storagePath ?? '').trim();
     const dbDialect = String(results.dbDialect ?? '').trim();
+    const builtinDbImage = String(results.builtinDbImage ?? '').trim();
     const dbHost = String(results.dbHost ?? '').trim();
     const dbPort = String(results.dbPort ?? '').trim();
     const dbDatabase = String(results.dbDatabase ?? '').trim();
@@ -829,6 +838,7 @@ Prompt modes:
         ...(results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
         ...(results.builtinDb !== undefined ? { builtinDb: Boolean(results.builtinDb) } : {}),
         ...(dbDialect ? { dbDialect } : {}),
+        ...(builtinDbImage || results.builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
         ...(dbHost ? { dbHost } : {}),
         ...(dbPort ? { dbPort } : {}),
         ...(dbDatabase ? { dbDatabase } : {}),
@@ -964,6 +974,11 @@ Prompt modes:
       argv.push('--db-dialect', dbDialect);
     }
 
+    const builtinDbImage = String(results.builtinDbImage ?? '').trim();
+    if (builtinDb && builtinDbImage) {
+      argv.push('--builtin-db-image', builtinDbImage);
+    }
+
     const dbHost = String(results.dbHost ?? '').trim();
     if (dbHost) {
       argv.push('--db-host', dbHost);
@@ -1034,6 +1049,7 @@ Prompt modes:
     'root-nickname'?: string;
     'builtin-db'?: boolean;
     'db-dialect'?: string;
+    'builtin-db-image'?: string;
     'db-host'?: string;
     'db-port'?: string;
     'db-database'?: string;
