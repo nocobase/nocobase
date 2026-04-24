@@ -1,5 +1,13 @@
-import assert from 'node:assert/strict';
-import { test } from 'vitest';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { test, expect } from 'vitest';
 import { isTopicIndexCommand } from '../help/runtime-help.js';
 
 test('isTopicIndexCommand detects commands that are also topic namespaces', () => {
@@ -11,9 +19,9 @@ test('isTopicIndexCommand detects commands that are also topic namespaces', () =
     { name: 'api:resource:list' },
   ];
 
-  assert.equal(isTopicIndexCommand('api', topics), true);
-  assert.equal(isTopicIndexCommand('api:acl', topics), true);
-  assert.equal(isTopicIndexCommand('api:resource', topics), true);
-  assert.equal(isTopicIndexCommand('api:resource:list', topics), false);
-  assert.equal(isTopicIndexCommand('build', topics), false);
+  expect(isTopicIndexCommand('api', topics)).toBe(true);
+  expect(isTopicIndexCommand('api:acl', topics)).toBe(true);
+  expect(isTopicIndexCommand('api:resource', topics)).toBe(true);
+  expect(isTopicIndexCommand('api:resource:list', topics)).toBe(false);
+  expect(isTopicIndexCommand('build', topics)).toBe(false);
 });

@@ -92,7 +92,7 @@ const toSimplifyForm = (model: FormBlockModel) => {
       });
       duplicateFields.add(collectionField.name);
     }
-    if (model instanceof UploadFieldModel) {
+    if (model instanceof UploadFieldModel && model.props?.value?.length && typeof model.props.value !== 'string') {
       excludeFieldValues.add(model.props.name);
     }
   });

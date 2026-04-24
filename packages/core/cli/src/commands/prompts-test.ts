@@ -14,6 +14,15 @@ import {
   type PromptsCatalog,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
+import {
+  applyCliLocale,
+  CLI_LOCALE_FLAG_DESCRIPTION,
+  CLI_LOCALE_FLAG_OPTIONS,
+} from '../lib/cli-locale.ts';
+import {
+  type RunPromptCatalogWebUIOptionsWithoutSource,
+  runPromptCatalogWebUI,
+} from '../lib/prompt-web-ui.ts';
 
 export default class PromptsTest extends Command {
   static override hidden = true;
@@ -28,13 +37,27 @@ export default class PromptsTest extends Command {
     '<%= config.bin %> <%= command.id %> -t Ada --boolean',
     '<%= config.bin %> <%= command.id %> -y',
     '<%= config.bin %> <%= command.id %> -y ./README.md -p secret',
+    '<%= config.bin %> <%= command.id %> --ui',
   ];
   static override flags = {
+    ui: Flags.boolean({
+      description:
+        'Open a browser to configure the same parameters in a form (served only on 127.0.0.1). Uses `runPromptCatalogWebUI` with this command’s `prompts` catalog. Submit to continue; then `runPromptCatalog` runs in this terminal with the submitted preset.',
+      default: false,
+    }),
     yes: Flags.boolean({
       char: 'y',
       description:
         'Accept defaults only (no prompts); uses `yesInitialValues` merged over `initialValues`, then per-block `yesInitialValue`. Same as non-TTY.',
       default: false,
+    }),
+    locale: Flags.string({
+      description: CLI_LOCALE_FLAG_DESCRIPTION,
+      options: CLI_LOCALE_FLAG_OPTIONS,
+    }),
+    file: Flags.string({
+      char: 'f',
+      description: 'Merged into initialValues.file (default for the text prompt when set)',
     }),
     text: Flags.string({
       char: 't',
@@ -78,6 +101,15 @@ export default class PromptsTest extends Command {
       message: 'What is your name?',
       initialValue: 'world',
       placeholder: 'Your name',
+      /**
+       * Example: async validation (Clack re-prompts; Web UI returns 400 on submit with this message).
+       */
+      validate: async (v) => {
+        if (String(v).trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        return undefined;
+      },
     },
     boolean: {
       type: 'boolean',
@@ -119,21 +151,40 @@ export default class PromptsTest extends Command {
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(PromptsTest);
+    applyCliLocale(flags.locale);
 
-    const initialValues = this.buildInitialValuesFromParsed(args, flags);
+    let presetValues = this.buildPresetValuesFromParsed(args, flags);
+    if (flags.ui) {
+      presetValues = await runPromptCatalogWebUI(PromptsTest.prompts, {
+        values: presetValues,
+        pageTitle: 'nb prompts-test — UI',
+        documentHeading: 'nb prompts-test',
+        onServerStart: ({ host, port, url }) => {
+          this.log(
+            `Local Web UI ready — ${url} (listening on ${host}:${port}). Submit the form in the browser to continue.`,
+          );
+        },
+        onOpenBrowserError: (url, err) => {
+          this.log(`Open this URL in a browser: ${url} (${err instanceof Error ? err.message : String(err)})`);
+        },
+      } satisfies RunPromptCatalogWebUIOptionsWithoutSource);
+    }
 
     const results = await runPromptCatalog(PromptsTest.prompts, {
-      initialValues,
-      yes: flags.yes,
+      initialValues: {},
+      values: presetValues,
+      yes: flags.yes || flags.ui,
     });
 
     this.log(JSON.stringify(results, null, 2));
   }
 
-  /** Example: map oclif parse result into `initialValues` for `runPromptCatalog`. */
-  private buildInitialValuesFromParsed(
+  /** Map oclif parse result into `values` presets: each key here skips that prompt (no Clack UI). */
+  private buildPresetValuesFromParsed(
     args: { file?: string },
     flags: {
+      locale?: string;
+      file?: string;
       text?: string;
       boolean?: boolean;
       select?: string;
@@ -141,32 +192,33 @@ export default class PromptsTest extends Command {
       integer?: number;
     },
   ): PromptInitialValues {
-    const initialValues: PromptInitialValues = {};
+    const preset: PromptInitialValues = {};
 
-    if (args.file !== undefined) {
-      initialValues.file = args.file;
+    const file = args.file ?? flags.file;
+    if (file !== undefined) {
+      preset.file = file;
     }
 
     if (flags.text !== undefined) {
-      initialValues.text = flags.text;
+      preset.text = flags.text;
     }
 
     if (flags.boolean !== undefined) {
-      initialValues.boolean = flags.boolean;
+      preset.boolean = flags.boolean;
     }
 
     if (flags.select !== undefined) {
-      initialValues.select = flags.select;
+      preset.select = flags.select;
     }
 
     if (flags.password !== undefined) {
-      initialValues.password = flags.password;
+      preset.password = flags.password;
     }
 
     if (flags.integer !== undefined) {
-      initialValues.integer = flags.integer;
+      preset.integer = flags.integer;
     }
 
-    return initialValues;
+    return preset;
   }
 }

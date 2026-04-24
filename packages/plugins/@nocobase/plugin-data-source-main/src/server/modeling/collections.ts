@@ -208,6 +208,13 @@ export function normalizeCollectionInput(input: PlainObject, options: { mode?: '
     values.fields = values.fields.map((field) => normalizeFieldInput(field, { collectionName: values.name }));
   }
 
+  if ((options.mode || 'create') === 'create' && !values.titleField) {
+    const primaryKeyField = values.fields?.find?.((field) => field?.primaryKey === true);
+    if (primaryKeyField?.name) {
+      values.titleField = primaryKeyField.name;
+    }
+  }
+
   return values;
 }
 

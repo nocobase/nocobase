@@ -8,7 +8,7 @@
  */
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
-import { Registry, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { Registry, resolveStorageRoot, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -407,10 +407,10 @@ export class Gateway extends EventEmitter {
           return;
         }
       }
-      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);
       return handler(req, res, {
-        public: resolve(process.cwd()),
+        public: resolveStorageRoot(),
         directoryListing: false,
       });
     }

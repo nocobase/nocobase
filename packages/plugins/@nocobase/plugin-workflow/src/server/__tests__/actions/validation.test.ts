@@ -49,6 +49,20 @@ class CustomValidateInstruction extends Instruction {
   }
 }
 
+class AvailabilityInstruction extends Instruction {
+  isAvailable(workflow) {
+    return workflow.type === 'collection';
+  }
+
+  test(config: Record<string, any>) {
+    return { status: 1, result: config };
+  }
+
+  run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
+    return { status: 1, result: node.config };
+  }
+}
+
 describe('workflow > actions > node validation', () => {
   let app: MockServer;
   let agent;
@@ -67,6 +81,7 @@ describe('workflow > actions > node validation', () => {
     const workflowPlugin = app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('schemaTest', SchemaInstruction);
     workflowPlugin.registerInstruction('customValidateTest', CustomValidateInstruction);
+    workflowPlugin.registerInstruction('availabilityTest', AvailabilityInstruction);
 
     workflow = await WorkflowModel.create({
       enabled: true,
@@ -164,6 +179,33 @@ describe('workflow > actions > node validation', () => {
       expect(body.errors).toBeDefined();
       expect(body.errors.length).toBeGreaterThan(0);
     });
+
+    it('should reject unavailable node type in current workflow', async () => {
+      const { status, body } = await agent.resource('workflows.nodes', workflow.id).create({
+        values: { type: 'availabilityTest' },
+      });
+      expect(status).toBe(400);
+      expect(body.errors?.[0]?.message).toContain(
+        'Node type "availabilityTest" is not available in the current workflow',
+      );
+    });
+
+    it('should allow available node type in current workflow', async () => {
+      const collectionWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const { status, body } = await agent.resource('workflows.nodes', collectionWorkflow.id).create({
+        values: { type: 'availabilityTest' },
+      });
+      expect(status).toBe(200);
+      expect(body.data.type).toBe('availabilityTest');
+    });
   });
 
   describe('update', () => {
@@ -208,6 +250,40 @@ describe('workflow > actions > node validation', () => {
       expect(status).toBe(400);
       expect(body.errors).toBeDefined();
       expect(body.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should skip availability check on update', async () => {
+      const collectionWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const node = await collectionWorkflow.createNode({
+        type: 'availabilityTest',
+      });
+
+      await collectionWorkflow.update({
+        type: 'asyncTrigger',
+        config: null,
+      });
+
+      const { status } = await agent.resource('flow_nodes').update({
+        filterByTk: node.id,
+        values: { config: { updated: true } },
+      });
+      expect(status).toBe(200);
+    });
+  });
+
+  describe('test', () => {
+    it('should skip availability check when testing node config', async () => {
+      const { status } = await agent.resource('flow_nodes').test({
+        values: { type: 'availabilityTest', config: { tested: true } },
+      });
+      expect(status).toBe(200);
     });
   });
 });
