@@ -6,17 +6,18 @@ keywords: "AI Builder,data modeling,data tables,fields,relationships,collections
 
 # Data Modeling
 
+:::tip Prerequisites
+
+Before reading this page, make sure you have installed the NocoBase CLI and completed initialization as described in [AI Builder Quick Start](./index.md).
+
+:::
+
 ## Introduction
 
 The Data Modeling Skill enables creating and managing NocoBase data tables through natural language — creating tables, adding fields, setting up relationships, and more.
 
 Before use, make sure the target data source has been configured in "Data Source Management."
 
-## Installation
-
-```bash
-npx skills add nocobase/skills --skill nocobase-data-modeling -y
-```
 
 ## Capabilities
 

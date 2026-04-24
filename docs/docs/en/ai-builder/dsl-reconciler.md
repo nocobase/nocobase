@@ -6,17 +6,24 @@ keywords: "AI Builder,solutions,application building,YAML,batch table creation,d
 
 # Solutions
 
+:::tip Prerequisites
+
+Before reading this page, make sure you have installed the NocoBase CLI and completed initialization as described in [AI Builder Quick Start](./index.md).
+
+:::
+
+:::warning Note
+
+The Solutions feature is currently in testing with limited stability, available for early access only.
+
+:::
+
 ## Introduction
 
 The Solutions Skill batch-builds NocoBase applications from YAML configuration files — creating data tables, configuring pages, and generating dashboards and charts all at once.
 
 Ideal for scenarios that require quickly building complete business systems, such as CRM, ticket management, inventory management, and more.
 
-## Installation
-
-```bash
-npx skills add nocobase/skills --skill nocobase-dsl-reconciler -y
-```
 
 ## Capabilities
 
@@ -39,15 +46,19 @@ Cannot do:
 ### Scenario A: Building a complete system
 
 ```
-Help me build a ticket management system with a dashboard, ticket list, user management, and SLA configuration
+Help me use nocobase-dsl-reconciler skill to build a ticket management system with a dashboard, ticket list, user management, and SLA configuration
 ```
 
 The Skill will first output a design plan — listing all data tables and page structures — then execute the build in rounds after confirmation.
 
+![Design plan](https://static-docs.nocobase.com/20260420100420.png)
+
+![Build result](https://static-docs.nocobase.com/20260420100450.png)
+
 ### Scenario B: Modifying an existing module
 
 ```
-Add a "Priority" dropdown field to the ticket table with options P0 through P3
+Help me use nocobase-dsl-reconciler skill to add a "Priority" dropdown field to the ticket table with options P0 through P3
 ```
 
 Modify `structure.yaml` and update with `--force`.
@@ -55,8 +66,10 @@ Modify `structure.yaml` and update with `--force`.
 ### Scenario C: Customizing charts
 
 ```
-Change "New Tickets This Week" to "New Tickets This Month" on the dashboard
+Help me use nocobase-dsl-reconciler skill to change "New Tickets This Week" to "New Tickets This Month" on the dashboard
 ```
+
+![Customizing charts](https://static-docs.nocobase.com/20260420100517.png)
 
 Edit the corresponding SQL file, changing the time range from `'7 days'` to `'1 month'`, then run `--verify-sql` to validate.
 

@@ -1,13 +1,18 @@
 [
   {
     "type": "custom-link",
-    "label": "Overview",
+    "label": "Quick Start",
     "link": "/ai-builder"
   },
   {
     "type": "file",
+    "name": "security",
+    "label": "Security & Audit"
+  },
+  {
+    "type": "file",
     "name": "env-bootstrap",
-    "label": "Installation & Upgrade"
+    "label": "Environment Management"
   },
   {
     "type": "file",

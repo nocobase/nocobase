@@ -1,30 +1,36 @@
 ---
-title: "AI Development"
+title: "AI Plugin Development Quick Start"
 description: "Use AI to assist in developing NocoBase plugins. Describe your requirements in one sentence, and automatically generate frontend and backend code, collections, permission configurations, and i18n."
-keywords: "AI development,AI Development,NocoBase AI,plugin development,AI programming,Skills"
+keywords: "AI development,AI Development,NocoBase AI,plugin development,AI programming,Skills,quick start"
 ---
 
-# AI Development
+# AI Plugin Development Quick Start
 
-Describe the plugin you want in one sentence, and AI will generate the complete frontend and backend code for you -- including collections, APIs, frontend blocks, permissions, and i18n. AI follows NocoBase plugin conventions and generates code that conforms to the standards.
+AI plugin development is an AI-assisted plugin development capability provided by NocoBase -- you can describe your requirements in natural language, and AI will automatically generate complete frontend and backend code, including collections, APIs, frontend blocks, permissions, and i18n. It offers a more modern and efficient plugin development experience.
 
-For example, a single prompt can generate a complete watermark plugin:
+The AI plugin development capability is powered by the [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill. If you have already initialized via the NocoBase CLI (`nb init`), this Skill is automatically installed.
+
+## Quick Start
+
+If you have already installed the [NocoBase CLI](../ai/quick-start.md), you can skip this step.
+
+### One-Click AI Installation
+
+Copy the following prompt to your AI assistant (Claude Code, Codex, Cursor, Trae, etc.) to automatically complete the installation and configuration:
 
 ```
-Using nocobase-plugin-development skill to create a NocoBase watermark plugin.
-It needs to overlay a semi-transparent watermark on the page showing the currently logged-in username to prevent data leaks via screenshots.
-It should also periodically check if the watermark DOM has been removed and regenerate it if so.
-Additionally, the plugin settings page should support configuring the watermark text, opacity, and font size.
-The plugin name is @my-project/plugin-watermark
+Help me install NocoBase CLI: https://docs.nocobase.com/en/ai/ai-quick-start.md
 ```
 
-<video width="100%" height="450" controls>
-  <source src="https://static-docs.nocobase.com/nocobase-plugin-dev-compressed.mp4" type="video/mp4">
-</video>
+### Manual Installation
 
-AI will automatically: create the plugin scaffold, write the frontend rendering logic and tamper detection, generate the backend settings storage API, build the plugin settings page, and configure permissions and i18n. Throughout the entire process, you only need to describe your requirements and make decisions -- AI handles the rest.
+```bash
+npm install -g @nocobase/cli@alpha
+mkdir my-nocobase && cd my-nocobase
+nb init --ui
+```
 
-Want to see the full process? -> [Tutorial: Building a Watermark Plugin](./watermark-plugin)
+Your browser will automatically open the visual configuration page, guiding you through installing NocoBase Skills, configuring the database, and starting the application. For detailed steps, refer to the [Quick Start](../ai/quick-start.md).
 
 :::warning Note
 
@@ -34,49 +40,56 @@ Want to see the full process? -> [Tutorial: Building a Watermark Plugin](./water
 
 :::
 
-## Quick Start
+## From One Sentence to a Complete Plugin
 
-### Prerequisites
+After installation, you can directly tell AI in natural language what plugin you want to develop. Here are a few real-world scenarios to give you a feel for the capabilities of AI plugin development.
 
-- A running NocoBase development environment ([Installation Guide](/en/get-started/nocobase-cli))
-- An editor or CLI tool that supports AI Agent (e.g., Claude Code, Codex, Cursor, VS Code + Copilot, Trae, etc.)
+### Build a Watermark Plugin with One Sentence
 
-### Install Skills
-
-Run the following in your NocoBase project root directory:
-
-```bash
-npx skills add nocobase/skills -y
-```
-
-Skills are knowledge packages that help AI Agents understand NocoBase plugin development conventions -- once installed, AI knows how to write code that follows the standards.
-
-### Start Developing
-
-Simply tell AI what you want in natural language:
+With a single prompt, AI can help you generate a complete watermark plugin -- including frontend rendering logic, tamper detection, backend settings storage API, and a plugin settings page.
 
 ```
-Help me develop a NocoBase plugin that does [your requirements]
+Help me use nocobase-plugin-development skill to develop a NocoBase watermark plugin.
+Requirements: overlay a semi-transparent watermark on the page showing the currently logged-in username to prevent data leaks via screenshots.
+Periodically check if the watermark DOM has been removed and regenerate it if so.
+Support configuring watermark text, opacity, and font size in the plugin settings page.
+The plugin name is @my-project/plugin-watermark
 ```
 
-AI will first analyze the requirements, give you a development plan, and start writing code after your confirmation. The generated plugin can be enabled directly:
+<video width="100%" height="450" controls>
+  <source src="https://static-docs.nocobase.com/nocobase-plugin-dev-compressed.mp4" type="video/mp4">
+</video>
 
-```bash
-yarn pm enable <plugin-name>
+Throughout the process, you only need to describe your requirements and make decisions -- AI handles the rest. Want to see the full process? -> [Tutorial: Building a Watermark Plugin](./watermark-plugin)
+
+### Build a Custom Field Component with One Sentence
+
+Want to display an integer field as star ratings? Tell AI the display effect you want, and it will generate a custom FieldModel to replace the default field rendering component.
+
 ```
+Help me use nocobase-plugin-development skill to develop a NocoBase plugin called @my-scope/plugin-rating.
+Create a custom field display component (FieldModel) that renders integer type fields as star icons,
+supporting 1-5 ratings. Clicking a star should directly modify the rating value and save it to the database.
+```
+
+![Rating component display effect](https://static-docs.nocobase.com/20260422170712.png)
+
+To learn more about available capabilities, see [Supported Capabilities](./capabilities).
 
 ## What AI Can Do for You
 
-- **Plugin scaffolding** -- Generate a complete frontend and backend directory structure
-- **Collection definitions** -- Generate Collections, supporting all field types and relationships
-- **Custom blocks** -- Generate BlockModel + settings panel + register in the menu
-- **Custom fields** -- Generate FieldModel + bind to field interfaces
-- **Custom actions** -- Generate ActionModel + popups/confirmation dialogs
-- **Plugin settings page** -- Frontend form + backend API + storage
-- **Custom APIs** -- Resource Action + route registration + ACL configuration
-- **Permission configuration** -- Control access by role
-- **Internationalization** -- Automatically generate Chinese and English language packs
-- **Migration scripts** -- Generate Migration, supporting DDL and data migration
+| I want to...                  | AI can help you                                                        |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| Create a new plugin           | Generate a complete scaffold, including frontend and backend directory structure |
+| Define collections            | Generate Collection definitions, supporting all field types and relationships |
+| Build a custom block          | Generate BlockModel + settings panel + register it in the "Add Block" menu |
+| Build a custom field          | Generate FieldModel + bind it to a field interface                      |
+| Add a custom action button    | Generate ActionModel + popup/drawer/confirmation dialog                 |
+| Build a plugin settings page  | Generate frontend form + backend API + storage                          |
+| Write a custom API            | Generate Resource Action + route registration + ACL configuration       |
+| Configure permissions         | Generate ACL rules to control access by role                            |
+| Support multiple languages    | Automatically generate Chinese and English language packs               |
+| Write a migration script      | Generate Migration, supporting DDL and data migration                   |
 
 Detailed descriptions and sample prompts for each capability -> [Supported Capabilities](./capabilities)
 
@@ -84,6 +97,7 @@ Detailed descriptions and sample prompts for each capability -> [Supported Capab
 
 - [Tutorial: Building a Watermark Plugin](./watermark-plugin) -- A complete hands-on AI development case study, from one sentence to a working plugin
 - [Supported Capabilities](./capabilities) -- Everything AI can help you do, with sample prompts
-- [Plugin Development](/en/plugin-development) -- The complete guide to NocoBase plugin development
-- [NocoBase CLI](/en/get-started/nocobase-cli) -- Command-line tool for installing and managing NocoBase
-- [AI Builder](/en/ai-builder) -- Build NocoBase applications with AI (no coding required)
+- [NocoBase CLI](../ai/quick-start.md) -- Command-line tool for installing and managing NocoBase
+- [NocoBase CLI Reference](../api/cli/cli) -- Complete parameter documentation for all commands
+- [Plugin Development](../plugin-development/index.md) -- The complete guide to NocoBase plugin development
+- [AI Builder](../ai-builder/index.md) -- Build NocoBase applications with AI (no coding required)

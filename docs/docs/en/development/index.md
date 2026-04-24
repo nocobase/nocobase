@@ -1,7 +1,9 @@
 ---
 pageType: home
 pageName: development
-
+title: "NocoBase Development Guide"
+description: "NocoBase development guide: plugin development, FlowEngine, RunJS, block/field/action extensions, data source extensions, workflow extensions, authentication extensions."
+keywords: "NocoBase,development guide,plugin development,FlowEngine,RunJS,NocoBase extensions"
 features:
   - title: Core Development
     details: Master NocoBase's underlying extension mechanism and advanced development capabilities, including the plugin system, AI assistance, FlowEngine and RunJS environment, to build a solid development foundation.
@@ -10,7 +12,7 @@ features:
         details: Learn how to create, publish, and maintain custom plugins.
         link: /plugin-development
         showOnHome: true
-      - title: AI Development
+      - title: AI Plugin Development
         details: Use AI to assist NocoBase plugin development, covering the full process from scaffolding, component code to business logic.
         link: /ai-dev
         showOnHome: true
@@ -44,5 +46,4 @@ features:
       - title: File Preview Extension
         details: Extend file preview capabilities to support online preview and rendering of more file formats.
         link: /file-manager/development
-
 ---

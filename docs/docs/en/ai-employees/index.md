@@ -1,5 +1,8 @@
 ---
-pkg: "@nocobase/plugin-ai"
+pkg: '@nocobase/plugin-ai'
+title: 'AI Employees Overview'
+description: 'AI Employees are intelligent agent capabilities deeply integrated into NocoBase business systems. They can understand business context, execute actions directly, and collaborate by role. Supports configuring LLM services, skills, and knowledge bases.'
+keywords: 'AI Employees,NocoBase agent,LLM,large model,collaboration,skills,knowledge base'
 ---
 
 # Overview
@@ -44,11 +47,11 @@ Start with [Quick Start](/ai-employees/quick-start), and complete minimal setup 
 - [Built-in AI Employees](/ai-employees/features/built-in-employee): understand built-in role positioning and suitable scenarios.
 - [Permission Control](/ai-employees/permission): control employee, skill, and data access by org permissions.
 - [AI Knowledge Base](/ai-employees/knowledge-base/index): import enterprise knowledge for stable and traceable answers.
-- [Workflow LLM Nodes](/ai-employees/workflow/nodes/llm/chat): orchestrate AI capabilities into automated workflows.
+- [Workflow AI Employee Nodes](/ai-employees/workflow/nodes/employee/configuration): orchestrate AI Employee capabilities into automated workflows.
 
-## Core Concepts (Recommended to Align First)
+## Core Concepts
 
-Keep the following terms aligned with the glossary:
+Keep the following terms aligned with the glossary. It is recommended to use them consistently within your team:
 
 - **AI Employee**: an executable agent composed of Role setting and Tool/Skill.
 - **LLM Service**: model access and capability configuration unit for Provider and model list management.

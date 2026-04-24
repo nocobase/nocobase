@@ -22,16 +22,15 @@ After enabling the plugin:
 
 :::tip Recommended Reading
 
-- [NocoBase CLI](/en/get-started/nocobase-cli) -- Installing and starting NocoBase
-- [AI Development Overview](./index.md) -- Installing Skills
+- [NocoBase CLI](../ai/quick-start.md) -- Installing and starting NocoBase
+- [AI Plugin Development Quick Start](./index.md) -- Installing Skills
 
 :::
 
 Make sure you have:
 
-1. A running NocoBase development environment
-2. NocoBase Skills installed (`npx skills add nocobase/skills -y`)
-3. An editor that supports AI Agent open (e.g., Claude Code, Codex, Cursor, etc.)
+1. A running NocoBase development environment (NocoBase Skills are automatically installed during NocoBase CLI initialization)
+2. An editor that supports AI Agent open (e.g., Claude Code, Codex, Cursor, etc.)
 
 :::warning Note
 
@@ -45,10 +44,10 @@ Make sure you have:
 In your NocoBase project root directory, send the following prompt to AI:
 
 ```
-Using nocobase-plugin-development skill to create a NocoBase watermark plugin.
-It needs to overlay a semi-transparent watermark on the page showing the currently logged-in username to prevent data leaks via screenshots.
-It should also periodically check if the watermark DOM has been removed and regenerate it if so.
-Additionally, the plugin settings page should support configuring the watermark text, opacity, and font size.
+Help me use nocobase-plugin-development skill to develop a NocoBase watermark plugin.
+Requirements: overlay a semi-transparent watermark on the page showing the currently logged-in username to prevent data leaks via screenshots.
+Periodically check if the watermark DOM has been removed and regenerate it if so.
+Support configuring watermark text, opacity, and font size in the plugin settings page.
 The plugin name is @my-project/plugin-watermark
 ```
 
@@ -136,13 +135,13 @@ From entering the prompt to having a working plugin, it takes approximately **3-
 | **Total**                              | **~2 hours**        | **~5 minutes** |
 
 
-## Want to Build More Complex Plugins?
+## Want to Build More Plugins?
 
 The watermark plugin primarily involves frontend rendering and simple backend storage. If you want to learn what else AI can help you with -- such as custom blocks, complex collection relationships, workflow extensions, and more -- check out [Supported Capabilities](./capabilities).
 
 ## Related Links
 
-- [AI Development Overview](./index.md) -- Quick start and capability overview
+- [AI Plugin Development Quick Start](./index.md) -- Quick start and capability overview
 - [Supported Capabilities](./capabilities) -- Everything AI can help you do, with sample prompts
-- [Plugin Development](/en/plugin-development) -- The complete guide to NocoBase plugin development
-- [NocoBase CLI](/en/get-started/nocobase-cli) -- Command-line tool for installing and managing NocoBase
+- [Plugin Development](../plugin-development/index.md) -- The complete guide to NocoBase plugin development
+- [NocoBase CLI](../ai/quick-start.md) -- Command-line tool for installing and managing NocoBase

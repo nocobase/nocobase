@@ -6,28 +6,34 @@ keywords: "AI Builder,plugin management,enable plugin,disable plugin"
 
 # Plugin Management
 
+:::tip Prerequisites
+
+Before reading this page, make sure you have installed the NocoBase CLI and completed initialization as described in [AI Builder Quick Start](./index.md).
+
+:::
+
 ## Introduction
 
 The Plugin Management Skill views, enables, and disables NocoBase plugins — it automatically identifies local or remote environments, selects the appropriate execution backend, and verifies operations through read-back validation.
 
-## Installation
-
-```bash
-npx skills add nocobase/skills --skill nocobase-plugin-manage -y
-```
 
 ## Capabilities
 
-- View the plugin directory and enabled status (`inspect`)
-- Enable plugins (`enable`)
-- Disable plugins (`disable`)
+- View the plugin directory and enabled status.
+- Enable plugins.
+- Disable plugins.
 
 ## Prompt Examples
 
 ### Scenario A: Viewing plugin status
 
+Prompt mode
 ```
-Show which plugins are currently installed
+What plugins does the current environment have?
+```
+CLI mode
+```
+nb pm list
 ```
 
 It will list all plugins along with their enabled status and version information.
@@ -36,8 +42,13 @@ It will list all plugins along with their enabled status and version information
 
 ### Scenario B: Enabling a plugin
 
+Prompt mode
 ```
-Enable the plugin-localization plugin
+Help me enable the localization plugin
+```
+CLI mode
+```
+nb pm enable <localization>
 ```
 
 The Skill will enable plugins in order, with a read-back verification after each enable to confirm `enabled=true`.
@@ -46,8 +57,13 @@ The Skill will enable plugins in order, with a read-back verification after each
 
 ### Scenario C: Disabling a plugin
 
+Prompt mode
 ```
-Disable the plugin-localization plugin
+Help me disable the localization plugin
+```
+CLI mode
+```
+nb pm disable <localization>
 ```
 
 ![Disabling a plugin](https://static-docs.nocobase.com/20260417173442.png)
@@ -61,4 +77,4 @@ Some plugins require an application restart to take effect after being enabled. 
 ## Related Links
 
 - [AI Builder Overview](./index.md) — Overview and installation guide for all AI Builder Skills
-- [NocoBase CLI](../get-started/nocobase-cli.md) — Command-line tool for installing and managing NocoBase
+- [NocoBase CLI](../ai/quick-start.md) — Command-line tool for installing and managing NocoBase

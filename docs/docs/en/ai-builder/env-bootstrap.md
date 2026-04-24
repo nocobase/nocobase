@@ -1,59 +1,103 @@
 ---
-title: "Installation & Upgrade"
-description: "The Installation & Upgrade Skill handles NocoBase environment checks, installation, deployment, upgrades, and troubleshooting."
-keywords: "AI Builder,installation upgrade,installation,deployment,upgrade,diagnostics,Docker"
+title: "Environment Management"
+description: "The Environment Management Skill handles NocoBase application installation, upgrades, stopping, starting, and multi-environment management, such as development, testing, and production environments — from 'NocoBase isn't installed yet' to 'ready to log in and use.'"
+keywords: "AI Builder,environment management,installation,upgrade,Docker"
 ---
 
-# Installation & Upgrade
+# Environment Management
+
+:::tip Prerequisites
+
+Before reading this page, make sure you have installed the NocoBase CLI and completed initialization as described in [AI Builder Quick Start](./index.md).
+
+:::
 
 ## Introduction
 
-The Installation & Upgrade Skill handles NocoBase environment checks, installation, deployment, upgrades, and troubleshooting — from "NocoBase isn't installed yet" to "ready to log in and use," while maintaining the CLI runtime environment.
+The Environment Management Skill handles NocoBase application installation, upgrades, stopping, starting, and multi-environment management, such as development, testing, and production environments — from "NocoBase isn't installed yet" to "ready to log in and use."
 
-## Installation
-
-```bash
-npx skills add nocobase/skills --skill nocobase-env-bootstrap -y
-```
 
 ## Capabilities
 
-- Environment pre-checks: Automatically detect dependencies, ports, network, and paths
-- Installation & deployment: Support Docker, create-nocobase-app, and Git methods
-- Single-instance upgrades: Safe upgrade process with backup confirmation and version verification
-- Troubleshooting: Collect diagnostic information and provide minimal fix solutions based on common issues
-- CLI environment management: Add, switch, and view application environment configurations
+- Query NocoBase environment and status
+- Add, remove, and switch NocoBase instance environments
+- Install, upgrade, stop, and start NocoBase instances
+
 
 ## Prompt Examples
 
-### Scenario A: Quick installation
-
+### Scenario A: Environment status query
+Prompt mode
 ```
-Help me install NocoBase using Docker on port 13000
+What NocoBase instances do I have? Which environment am I currently in?
 ```
-
-The Skill will run environment pre-checks first, then install and start using the Docker workflow, and finally provide the login URL and default account.
-
-### Scenario B: Upgrading an instance
-
+CLI mode
 ```
-Upgrade the current instance to the latest version
+nb ps
 ```
 
-It will require backup status confirmation before proceeding with the upgrade. After completion, it automatically runs an availability check.
+### Scenario B: Adding an existing environment
+:::tip Prerequisites
 
-### Scenario C: Troubleshooting
+Requires an existing NocoBase instance, either local or remote
 
+:::
+
+Prompt mode
 ```
-The application failed to start, help me diagnose the issue
+Help me add a dev environment at http://localhost:13000
+```
+CLI mode
+```
+nb env add <dev> --base-url http://localhost:13000/api
+```
+### Scenario C: Installing a new NocoBase instance
+:::tip Prerequisites
+
+The quickest way to install NocoBase is using Docker mode. Make sure you have Node, Docker, and Yarn installed on your machine before proceeding.
+
+:::
+
+Prompt mode
+```
+Help me install NocoBase
+```
+CLI mode
+```
+nb init --ui
 ```
 
-It will collect logs and environment information, identify common issues (port conflicts, insufficient permissions, missing dependencies, etc.) and provide fix solutions.
+### Scenario D: Instance upgrade
 
-### Scenario D: Adding an environment
-
+Prompt mode
 ```
-Help me add a development environment at http://localhost:13000/
+Help me upgrade the current instance to the latest version
+```
+CLI mode
+```
+nb upgrade
+```
+
+### Scenario E: Stopping an instance
+
+Prompt mode
+```
+Help me stop the current instance
+```
+CLI mode
+```
+nb stop
+```
+
+### Scenario E: Starting an instance
+
+Prompt mode
+```
+Help me start the current instance
+```
+CLI mode
+```
+nb start
 ```
 
 ## FAQ
@@ -69,5 +113,4 @@ Use a different port (e.g., `port=14000`), or stop the process occupying port 13
 ## Related Links
 
 - [AI Builder Overview](./index.md) — Overview and installation guide for all AI Builder Skills
-- [NocoBase CLI](../get-started/nocobase-cli.md) — Command-line tool for installing and managing NocoBase
-- [Release Management](./publish) — Migrate and release configurations across environments
+- [NocoBase CLI](../ai/quick-start.md) — Command-line tool for installing and managing NocoBase

@@ -6,74 +6,76 @@ keywords: "AI Builder,ACL configuration,ACL,roles,permissions,user bindings,risk
 
 # ACL Configuration
 
+:::tip Prerequisites
+
+Before reading this page, make sure you have installed the NocoBase CLI and completed initialization as described in [AI Builder Quick Start](./index.md).
+
+:::
+
 ## Introduction
 
 The ACL Configuration Skill manages NocoBase roles, permission policies, user bindings, and ACL risk assessments through natural language — you describe the business objective, and it selects the commands and parameters.
 
-Before use, make sure the [NocoBase CLI](../get-started/nocobase-cli.md) environment is ready.
-
-## Installation
-
-```bash
-npx skills add nocobase/skills --skill nocobase-acl-manage -y
-```
 
 ## Capabilities
 
-- Create roles and set initial permission baselines
+- Create new roles
 - Switch global role modes (independent mode / union mode)
-- Configure action permissions and data scopes for data tables
-- Batch bind or unbind users and roles
+- Batch configure action permissions and data scopes for data tables
+- Unbind users from roles
 - Generate risk assessment reports at the role, user, and system levels
 
 ## Prompt Examples
 
-### Scenario A: Creating a role
+### Scenario A: Batch binding users
+:::tip Prerequisites
+The current environment must have a Member role and multiple users
+:::
 
 ```
-Create a sales role for me
+Help me bind the Member role to these new users: James, Emma, Michael
 ```
 
-After creation, it will automatically include the default read-only baseline permissions, then guide you through further permission configuration.
+![Batch binding users](https://static-docs.nocobase.com/20260422202343.png)
 
-![Creating a role](https://static-docs.nocobase.com/20260417152303.png)
-
-### Scenario B: Configuring system permissions
-
+### Scenario B: Batch configuring page permissions
+:::tip Prerequisites
+The current environment must have a Member role and multiple pages
+:::
 ```
-Configure plugin management permissions for the sales role
-```
-
-![Configuring system permissions](https://static-docs.nocobase.com/20260417152433.png)
-
-### Scenario C: Configuring data source permissions
-
-```
-Configure view and edit permissions on the customer management table for the sales role
+Help me configure permissions for the Member role on these pages: Product, Order, Stock
 ```
 
-![Configuring data source permissions](https://static-docs.nocobase.com/20260417152620.png)
+![Batch configuring page permissions](https://static-docs.nocobase.com/20260422202949.png)
 
-### Scenario D: Configuring page permissions
-
-```
-Configure permissions for the product management page for the sales role
-```
-
-![Configuring page permissions](https://static-docs.nocobase.com/20260417152705.png)
-
-### Scenario E: Binding a user to a role
+### Scenario C: Batch configuring multi-table permissions
+:::tip Prerequisites
+The current environment must have a Member role and multiple data tables
+:::
 
 ```
-Bind user Zhang San to the sales role
+Add independent read-only permissions on these data tables for the Member role: order, product, stock
 ```
 
-![Binding a user to a role](https://static-docs.nocobase.com/20260417152813.png)
+![Batch configuring independent table permissions](https://static-docs.nocobase.com/20260422205341.png)
 
-### Scenario F: Risk assessment
+![Batch configuring independent table permissions 2](https://static-docs.nocobase.com/20260422205430.png)
+
+### Scenario D: Multi-role multi-table permission configuration
+:::tip Prerequisites
+The current environment must have multiple roles and multiple data tables
+:::
 
 ```
-Assess the permission risks of the admin role
+Add independent read-write permissions on these data tables for the Member and Sales roles: order, product, stock
+```
+
+![Multi-role multi-table configuration](https://static-docs.nocobase.com/20260422213524.png)
+
+### Scenario E: Risk assessment
+
+```
+Assess the permission risks of the Member role
 ```
 
 This will output a risk score, impact scope description, and improvement recommendations.
@@ -87,4 +89,4 @@ First check whether the global role mode is correct — if a user has multiple r
 ## Related Links
 
 - [AI Builder Overview](./index.md) — Overview and installation guide for all AI Builder Skills
-- [NocoBase CLI](../get-started/nocobase-cli.md) — Command-line tool for installing and managing NocoBase
+- [NocoBase CLI](../ai/quick-start.md) — Command-line tool for installing and managing NocoBase

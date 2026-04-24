@@ -16,11 +16,6 @@
   },
   {
     "type": "custom-link",
-    "label": "NocoBase CLI",
-    "link": "/get-started/nocobase-cli"
-  },
-  {
-    "type": "custom-link",
     "label": "Install NocoBase",
     "items": [
       {
