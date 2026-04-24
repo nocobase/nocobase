@@ -96,7 +96,10 @@ export default defineConfig(({ command }) => {
   const isBuild = command === 'build';
   const appPublicPath = ensurePublicPath(process.env.APP_PUBLIC_PATH || '/');
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH || '/api/');
+  const localStorageBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/storage/uploads/`);
+  const staticBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/static/`);
   const v2PublicPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/v2/`);
+  const wsBasePath = ensurePublicPath(process.env.WS_PATH || '/ws/');
   const hmrPath = `${v2PublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
@@ -211,6 +214,20 @@ export default defineConfig(({ command }) => {
               });
             }
           },
+        },
+        [localStorageBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+        },
+        [staticBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+        },
+        [wsBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
+          xfwd: true,
         },
       },
       historyApiFallback: {

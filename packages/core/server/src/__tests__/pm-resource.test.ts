@@ -104,4 +104,23 @@ describe('pm resource', () => {
       }),
     ]);
   });
+
+  it('should only cache hashed package urls', async () => {
+    const packageName = '@nocobase/plugin-auth';
+    const fetchSpy = vi
+      .spyOn(PackageUrls, 'fetch')
+      .mockResolvedValueOnce(`/static/plugins/${packageName}/dist/client-v2/index.js`)
+      .mockResolvedValueOnce(`/static/plugins/${packageName}/dist/client-v2/index.js?hash=12345678`);
+
+    const firstUrl = await PackageUrls.get(packageName, 'client-v2');
+    const secondUrl = await PackageUrls.get(packageName, 'client-v2');
+    const thirdUrl = await PackageUrls.get(packageName, 'client-v2');
+
+    expect(firstUrl).toBe(`/static/plugins/${packageName}/dist/client-v2/index.js`);
+    expect(secondUrl).toBe(`/static/plugins/${packageName}/dist/client-v2/index.js?hash=12345678`);
+    expect(thirdUrl).toBe(`/static/plugins/${packageName}/dist/client-v2/index.js?hash=12345678`);
+    expect(fetchSpy).toHaveBeenNthCalledWith(1, packageName, 'client-v2');
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, packageName, 'client-v2');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
 });

@@ -4,7 +4,7 @@ Cette documentation a été traduite automatiquement par IA.
 
 # Routeur
 
-Le client NocoBase met à votre disposition un gestionnaire de routeur flexible. Il vous permet d'étendre les pages et les pages de configuration des plugins via les méthodes `router.add()` et `pluginSettingsRouter.add()`.
+Le client NocoBase met à votre disposition un gestionnaire de routeur flexible. Il vous permet d'étendre les pages et les pages de configuration des plugins via les méthodes `router.add()` et `pluginSettingsManager`.
 
 ## Routes de page par défaut enregistrées
 
@@ -78,49 +78,54 @@ Si la page est lourde ou n'est pas nécessaire au premier affichage, privilégie
 
 ## Extension des pages de configuration des plugins
 
-Ajoutez des pages de réglages de plugin via `pluginSettingsRouter.add()`. Comme pour les routes classiques, les pages de réglages doivent elles aussi utiliser `componentLoader` pour le chargement à la demande.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // Titre de la page de configuration
-      icon: 'ApiOutlined', // Icône du menu de la page de configuration
-      // Import dynamique : le module de page n'est chargé que lorsque cette page de réglages est réellement visitée
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
       componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-Exemple de routage multiniveau
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Route de niveau supérieur
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      element: <Outlet />,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // Routes enfants
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      // Import dynamique : le module de page n'est chargé que lorsque cette page de réglages est réellement visitée
-      componentLoader: () => import('./settings/Demo1Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      componentLoader: () => import('./settings/Demo2Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }

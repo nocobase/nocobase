@@ -38,7 +38,9 @@ import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useI
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useFieldModeOptions } from '../../hooks/useFieldModeOptions';
 import { isSubMode } from '../association-field/util';
 import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';

@@ -11,7 +11,7 @@
   },
   {
     "type": "custom-link",
-    "label": "功能介绍",
+    "label": "功能配置",
     "items": [
       {
         "type": "custom-link",
@@ -67,18 +67,18 @@
         "type": "custom-link",
         "label": "新建 AI 员工",
         "link": "/ai-employees/features/new-ai-employees"
+      },
+      {
+        "type": "custom-link",
+        "label": "权限控制",
+        "link": "/ai-employees/permission"
+      },
+      {
+        "type": "custom-link",
+        "label": "文件管理",
+        "link": "/ai-employees/file-manager"
       }
     ]
-  },
-  {
-    "type": "custom-link",
-    "label": "权限控制",
-    "link": "/ai-employees/permission"
-  },
-  {
-    "type": "custom-link",
-    "label": "文件管理",
-    "link": "/ai-employees/file-manager"
   },
   {
     "type": "custom-link",
@@ -156,18 +156,13 @@
   },
   {
     "type": "custom-link",
-    "label": "NocoBase MCP",
-    "link": "/ai-employees/mcp"
-  },
-  {
-    "type": "custom-link",
-    "label": "NocoBase Skills",
-    "link": "/ai-employees/skills"
-  },
-  {
-    "type": "custom-link",
     "label": "应用实践",
     "items": [
+      {
+        "type": "custom-link",
+        "label": "生成业务分析报告",
+        "link": "/ai-employees/scenarios/business-report"
+      },
       {
         "type": "custom-link",
         "label": "Viz: CRM 场景配置",

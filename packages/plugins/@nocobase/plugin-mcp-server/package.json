@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-mcp-server",
   "main": "dist/server/index.js",
-  "version": "2.1.0-alpha.21",
+  "version": "2.1.0-alpha.22",
   "displayName": "AI: MCP server",
   "displayName.zh-CN": "AI: MCP 服务器",
   "description": "An MCP server for building NocoBase systems and supporting business workflows.",

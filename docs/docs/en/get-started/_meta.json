@@ -11,7 +11,8 @@
   },
   {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "Installation Methods and Version Comparison"
   },
   {
     "type": "custom-link",

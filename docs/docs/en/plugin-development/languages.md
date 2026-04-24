@@ -1,7 +1,12 @@
+---
+title: "Supported Language List"
+description: "Language codes supported by NocoBase plugin internationalization, used for locales configuration."
+keywords: "language list,locales,internationalization,i18n,multi-language,NocoBase"
+---
+
 # Language List
 
-NocoBase provides multi-language support (i18n). Below is the list of currently built-in languages.
-Each language configuration consists of a **Locale Code** and a **Display Name (Label)**.
+NocoBase provides multi-language support (i18n). Below is the list of currently built-in languages. Each language configuration consists of a **Locale Code** and a **Display Name (Label)**.
 
 ## Language Code Standards
 
@@ -99,14 +104,20 @@ Each language configuration consists of a **Locale Code** and a **Display Name (
 
 ## Usage Instructions
 
-* Language configurations are typically used for:
+Language configurations are typically used for:
 
-  * **Interface Display**: Display the `label` in the language switching menu.
-  * **Internationalization File Loading**: Load corresponding translation JSON files based on the `Locale Code`.
+- **Interface Display** — Display the `label` in the language switching menu
+- **Internationalization File Loading** — Load corresponding translation JSON files based on the Locale Code
 
-* When adding a new language, you need to:
+If you need to add a new language:
 
-  1. Follow the BCP 47 standard to define the Locale Code;
-  2. Provide a clear localized name as the `label`;
-  3. Provide corresponding translation files.
+1. Follow the BCP 47 standard to define the Locale Code
+2. Provide a clear localized name as the `label`
+3. Provide corresponding translation files
+
+## Related Links
+
+- [Server-side Internationalization](./server/i18n.md) — Server-side i18n multi-language configuration and usage
+- [Plugin Development Overview](./index.md) — Overall introduction to plugin development
+- [Write Your First Plugin](./write-your-first-plugin.md) — Create a plugin from scratch
 

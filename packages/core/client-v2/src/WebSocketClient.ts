@@ -9,7 +9,7 @@
 
 import { define, observable } from '@formily/reactive';
 import { getSubAppName } from '@nocobase/sdk';
-import { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
 
 export type WebSocketClientOptions = {
   reconnectInterval?: number;
@@ -26,7 +26,7 @@ export class WebSocketClient {
   protected _reconnectTimes = 0;
   protected events = [];
   protected options: WebSocketClientOptions;
-  app: Application;
+  app: BaseApplication<any>;
   enabled: boolean;
   connected = false;
   serverDown = false;
@@ -47,7 +47,7 @@ export class WebSocketClient {
   }
 
   // TODO for plugin-multi-app
-  getSubAppName = (app: Application) => {
+  getSubAppName = (app: BaseApplication<any>) => {
     const publicPath = app.getPublicPath();
     const pattern = `^${publicPath}${'_app'}/([^/]*)/`;
     const match = location.pathname.match(new RegExp(pattern));
@@ -96,7 +96,7 @@ export class WebSocketClient {
   }
 
   get pingInterval() {
-    return this.options?.pingInterval || 30000;
+    return this.options?.pingInterval || 300000;
   }
 
   get readyState() {

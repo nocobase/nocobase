@@ -128,6 +128,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
       downloadLocalApp: (params: {
         appResults: Record<string, unknown>;
         downloadResults: Record<string, unknown>;
+        verbose?: boolean;
       }) => Promise<string>;
     }
   ).downloadLocalApp.call(command, {
@@ -141,6 +142,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
       devDependencies: true,
       build: false,
     },
+    verbose: true,
   });
 
   expect(resolvedProjectRoot).toBe(projectRoot);
@@ -151,6 +153,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
       [
         '-y',
         '--no-intro',
+        '--verbose',
         '--source',
         'npm',
         '--version',

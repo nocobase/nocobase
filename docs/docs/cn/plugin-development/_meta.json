@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "AI 开发插件",
+        "link": "/plugin-development/ai-development"
+      },
+      {
+        "type": "custom-link",
         "label": "项目目录结构",
         "link": "/plugin-development/project-structure"
       }
@@ -96,7 +101,7 @@
       },
       {
         "type": "custom-link",
-        "label": "I18n 国际化",
+        "label": "i18n 国际化",
         "link": "/plugin-development/server/i18n"
       },
       {
@@ -132,53 +137,128 @@
       },
       {
         "type": "custom-link",
-        "label": "Context 上下文",
-        "link": "/plugin-development/client/context"
-      },
-      {
-        "type": "custom-link",
         "label": "Router 路由",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "ACL 权限控制",
-        "link": "/plugin-development/client/acl"
+        "label": "Component 组件开发",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/component"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes 样式与主题",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n 国际化",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager 数据源管理",
-        "link": "/plugin-development/client/data-source-manager"
+        "label": "Context 上下文",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/ctx"
+          },
+          {
+            "type": "custom-link",
+            "label": "常用能力",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Resource 资源",
-        "link": "/plugin-development/client/resource"
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/flow-engine"
+          },
+          {
+            "type": "custom-link",
+            "label": "区块扩展",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "字段扩展",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "操作扩展",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Request 请求",
-        "link": "/plugin-development/client/request"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Styles & Themes 样式与主题",
-        "link": "/plugin-development/client/styles-themes"
+        "label": "插件实战示例",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/plugin-development/client/examples"
+          },
+          {
+            "type": "custom-link",
+            "label": "做一个插件设置页",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "做一个自定义展示区块",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "做一个自定义字段组件",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "做一个自定义操作按钮",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "做一个前后端联动的数据管理插件",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Logger 日志",
-        "link": "/plugin-development/client/logger"
-      },
-      {
-        "type": "custom-link",
-        "label": "I18n 国际化",
-        "link": "/plugin-development/client/i18n"
-      },
-      {
-        "type": "custom-link",
-        "label": "Test 测试",
-        "link": "/plugin-development/client/test"
+        "label": "附录",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "常见问题 & 排错指南",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "插件开发速查表",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
       }
     ]
   },
@@ -186,11 +266,6 @@
     "type": "custom-link",
     "label": "其他",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "插件升级指南",
-        "link": "/plugin-development/plugin-upgrade-guide"
-      },
       {
         "type": "custom-link",
         "label": "语言列表",
@@ -203,7 +278,7 @@
       },
       {
         "type": "custom-link",
-        "label": "构建",
+        "label": "构建与打包",
         "link": "/plugin-development/build"
       }
     ]

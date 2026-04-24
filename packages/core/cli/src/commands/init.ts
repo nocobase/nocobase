@@ -127,6 +127,20 @@ function formatSkippedAppNameRequiredMessage(): string {
   ].join('\n');
 }
 
+function initTitle(): string {
+  return translateCli('commands.init.messages.title');
+}
+
+function logInitUiReady(command: { log: (message: string) => void }, url: string) {
+  p.log.step(translateCli('commands.init.messages.uiReady'));
+  p.log.info(translateCli('commands.init.messages.uiReadyHelp'));
+  command.log(`URL: ${url}`);
+}
+
+function logInitUiBrowserOpenFallback() {
+  p.log.warn(translateCli('commands.init.messages.uiOpenBrowserFallback'));
+}
+
 export default class Init extends Command {
   static override summary =
     'Set up NocoBase so coding agents can connect and work with it';
@@ -256,12 +270,12 @@ Prompt modes:
   static flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip prompts and create a new local NocoBase app. Requires an app/env name.',
+      description: 'Skip prompts and create a new local NocoBase app. Requires an env name.',
       default: false,
     }),
     env: Flags.string({
       char: 'e',
-      description: 'App name / CLI env name for this setup. Required with --yes and --resume',
+      description: 'Env name for this setup. Required with --yes and --resume',
     }),
     'install-skills': Flags.boolean({
       description: 'Install NocoBase AI coding skills (`nocobase/skills`) for this workspace',
@@ -270,6 +284,10 @@ Prompt modes:
     ui: Flags.boolean({
       description:
         'Open the guided setup flow in a local browser form (not valid with --yes)',
+      default: false,
+    }),
+    verbose: Flags.boolean({
+      description: 'Show detailed command output',
       default: false,
     }),
     'ui-host': Flags.string({
@@ -313,7 +331,7 @@ Prompt modes:
         this.exit(1);
       }
 
-      p.intro('Set Up NocoBase for Coding Agents');
+      p.intro(initTitle());
 
       if (Boolean(normalizedFlags['install-skills'])) {
         try {
@@ -425,12 +443,10 @@ Prompt modes:
 
     const appName = String(presetValues.appName ?? '').trim();
     if (useBrowserUi) {
-      p.intro('Set Up NocoBase for Coding Agents');
-      p.log.info(
-        'A local setup form will open in your browser. Submit the form there to continue in this terminal.',
-      );
+      p.intro(initTitle());
+      p.log.info(translateCli('commands.init.messages.uiOpening'));
     } else {
-      p.intro('Set Up NocoBase for Coding Agents');
+      p.intro(initTitle());
 
       if (normalizedFlags.yes) {
         p.log.info(
@@ -463,13 +479,11 @@ Prompt modes:
         pageTitle: initText('webUi.pageTitle'),
         documentHeading: initText('webUi.documentHeading'),
         documentHint: initText('webUi.documentHint'),
-        onServerStart: ({ host, port, url }) => {
-          this.log(
-            `Local setup form ready at ${url} (listening on ${host}:${port}). Submit it in your browser to continue here.`,
-          );
+        onServerStart: ({ url }) => {
+          logInitUiReady(this, url);
         },
-        onOpenBrowserError: (url, err) => {
-          this.log(`Open this URL in your browser to continue setup: ${url} (${err instanceof Error ? err.message : String(err)})`);
+        onOpenBrowserError: (_url, _err) => {
+          logInitUiBrowserOpenFallback();
         },
       });
     }
@@ -557,6 +571,7 @@ Prompt modes:
           'app-root-path': flags['app-root-path'] ?? '',
           'storage-path': flags['storage-path'] ?? '',
         },
+        warnOnPortFallback: false,
       });
       if (appInitialValues.appPort !== undefined) {
         out.appPort = appInitialValues.appPort;
@@ -576,6 +591,7 @@ Prompt modes:
       flags,
       downloadResults: downloadSeed as Record<string, PromptValue>,
       dbPreset: presetValues,
+      warnOnPortFallback: false,
     });
     for (const [key, value] of Object.entries(dbInitial)) {
       if (!Object.prototype.hasOwnProperty.call(presetValues, key)) {
@@ -867,7 +883,7 @@ Prompt modes:
 
   private buildInstallArgv(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean; force?: boolean; build?: boolean },
+    flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
     options?: {
       nonInteractive?: boolean;
       resume?: boolean;
@@ -884,6 +900,10 @@ Prompt modes:
     argv.push('--env', envName);
     if (options?.resume) {
       argv.push('--resume');
+    }
+
+    if (Boolean(flags.verbose)) {
+      argv.push('--verbose');
     }
 
     const lang = String(results.lang ?? '').trim();

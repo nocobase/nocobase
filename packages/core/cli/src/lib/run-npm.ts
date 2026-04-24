@@ -7,18 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { spawn } from 'node:child_process';
 import path from 'node:path';
+import spawn from 'cross-spawn';
 
 function resolveCommandName(name: string): string {
-  if (process.platform !== 'win32' || path.extname(name) || name.includes(path.sep)) {
-    return name;
-  }
-
-  if (['npm', 'npx', 'pnpm', 'yarn'].includes(name)) {
-    return `${name}.cmd`;
-  }
-
   return name;
 }
 
@@ -37,14 +29,16 @@ export function run(
 ): Promise<void> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
+  const command = resolveCommandName(name);
   return new Promise((resolve, reject) => {
-    const child = spawn(resolveCommandName(name), [...args], {
+    const child = spawn(command, [...args], {
       stdio: options?.stdio ?? 'inherit',
       cwd,
       env: {
         ...process.env,
         ...options?.env,
       },
+      windowsHide: process.platform === 'win32',
     });
     child.once('error', reject);
     child.once('close', (code, signal) => {
@@ -67,14 +61,16 @@ export function commandSucceeds(
   options?: { cwd?: string; env?: Record<string, string> },
 ): Promise<boolean> {
   const cwd = resolveCwd(options?.cwd);
+  const command = resolveCommandName(name);
   return new Promise((resolve) => {
-    const child = spawn(resolveCommandName(name), [...args], {
+    const child = spawn(command, [...args], {
       cwd,
       env: {
         ...process.env,
         ...options?.env,
       },
       stdio: 'ignore',
+      windowsHide: process.platform === 'win32',
     });
 
     child.once('error', () => resolve(false));
@@ -89,14 +85,16 @@ export function commandOutput(
 ): Promise<string> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
+  const command = resolveCommandName(name);
   return new Promise((resolve, reject) => {
-    const child = spawn(resolveCommandName(name), [...args], {
+    const child = spawn(command, [...args], {
       cwd,
       env: {
         ...process.env,
         ...options?.env,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: process.platform === 'win32',
     });
     let stdout = '';
     let stderr = '';

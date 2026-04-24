@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionSceneEnum, PopupActionModel, handleDateChangeOnForm } from '@nocobase/client';
+import { ActionSceneEnum, PopupActionModel } from '@nocobase/client-v2';
+import { handleDateChangeOnForm } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
 import { set } from 'lodash';

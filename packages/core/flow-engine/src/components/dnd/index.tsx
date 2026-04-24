@@ -8,8 +8,10 @@
  */
 
 import { DragOutlined } from '@ant-design/icons';
+import type { Modifier } from '@dnd-kit/core';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
-import React, { FC, useState } from 'react';
+import type { Transform } from '@dnd-kit/utilities';
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FlowModel } from '../../models';
 import { useFlowEngine } from '../../provider';
@@ -19,18 +21,229 @@ export * from './findModelUidPosition';
 export * from './gridDragPlanner';
 
 export const EMPTY_COLUMN_UID = 'EMPTY_COLUMN';
+export const TOOLBAR_DRAG_ACTIVITY_EVENT = 'nb-toolbar-drag-activity';
+const TOOLBAR_DRAG_ANCHOR_EVENT = 'nb-toolbar-drag-anchor';
+const MENU_SUBMENU_POPUP_SELECTOR = '.ant-menu-submenu-popup';
+
+type ToolbarDragAnchorPoint = {
+  x: number;
+  y: number;
+};
+
+type ToolbarDragAnchorDetail = {
+  modelUid: string;
+  point: ToolbarDragAnchorPoint | null;
+};
+
+export const resolveOverlayAnchorTransform = ({
+  activeId,
+  active,
+  transform,
+  activeNodeRect,
+  dragAnchorPoint,
+}: {
+  activeId: string | null;
+  active: { id: string | number } | null | undefined;
+  transform: Transform;
+  activeNodeRect: { top: number; left: number } | null;
+  dragAnchorPoint: ToolbarDragAnchorPoint | null;
+}): Transform => {
+  if (!activeId || active?.id !== activeId || !dragAnchorPoint || !activeNodeRect) {
+    return transform;
+  }
+
+  return {
+    ...transform,
+    x: transform.x + dragAnchorPoint.x - activeNodeRect.left,
+    y: transform.y + dragAnchorPoint.y - activeNodeRect.top,
+  };
+};
+
+const resolveDraggableHostNode = (activatorNode: HTMLElement | null) => {
+  const ownerDocument = activatorNode?.ownerDocument;
+  const floatToolbarContainer = activatorNode?.closest<HTMLElement>('.nb-toolbar-container[data-model-uid]');
+  const toolbarModelUid = floatToolbarContainer?.getAttribute('data-model-uid');
+
+  if (!ownerDocument || !toolbarModelUid) {
+    return activatorNode;
+  }
+
+  const matchedHosts = Array.from(
+    ownerDocument.querySelectorAll<HTMLElement>(
+      `[data-has-float-menu="true"][data-float-menu-model-uid="${toolbarModelUid}"]`,
+    ),
+  );
+  const popupRoot = floatToolbarContainer.closest<HTMLElement>(MENU_SUBMENU_POPUP_SELECTOR);
+
+  if (popupRoot) {
+    return (
+      matchedHosts.find((hostNode) => hostNode.closest(MENU_SUBMENU_POPUP_SELECTOR) === popupRoot) || activatorNode
+    );
+  }
+
+  return (
+    matchedHosts.find((hostNode) => !hostNode.closest(MENU_SUBMENU_POPUP_SELECTOR)) || matchedHosts[0] || activatorNode
+  );
+};
 
 // 可拖拽图标组件
-export const DragHandler: FC<{ model: FlowModel; children: React.ReactNode }> = ({
+export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> = ({
   model,
   children = <DragOutlined />,
 }) => {
-  const { attributes, listeners, setNodeRef } = useDraggable({ id: model.uid });
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef } = useDraggable({ id: model.uid });
+  const dragHandlerRef = useRef<HTMLSpanElement | null>(null);
+  const draggableNodeRef = useRef<HTMLElement | null>(null);
+  const pointerPressCleanupRef = useRef<(() => void) | null>(null);
+  const isDraggingRef = useRef(isDragging);
+  const isPointerPressActiveRef = useRef(false);
+  const isToolbarDragActiveRef = useRef(false);
+  const syncDraggableNodeRef = useCallback(
+    (activatorNode: HTMLElement | null) => {
+      const nextNode = resolveDraggableHostNode(activatorNode);
+
+      if (draggableNodeRef.current === nextNode) {
+        return;
+      }
+
+      draggableNodeRef.current = nextNode;
+      setNodeRef(nextNode);
+    },
+    [setNodeRef],
+  );
+  const setDragHandlerNodeRef = useCallback(
+    (node: HTMLSpanElement | null) => {
+      dragHandlerRef.current = node;
+      setActivatorNodeRef(node);
+      syncDraggableNodeRef(node);
+    },
+    [setActivatorNodeRef, syncDraggableNodeRef],
+  );
+  const dispatchToolbarDragActivity = useCallback(
+    (active: boolean) => {
+      const ownerDocument = dragHandlerRef.current?.ownerDocument;
+      if (!ownerDocument) {
+        return;
+      }
+
+      ownerDocument.dispatchEvent(
+        new CustomEvent(TOOLBAR_DRAG_ACTIVITY_EVENT, {
+          detail: { active, modelUid: model.uid },
+        }),
+      );
+    },
+    [model.uid],
+  );
+
+  const dispatchToolbarDragAnchor = useCallback(
+    (detail: Pick<ToolbarDragAnchorDetail, 'point'>) => {
+      const ownerDocument = dragHandlerRef.current?.ownerDocument;
+      if (!ownerDocument) {
+        return;
+      }
+
+      ownerDocument.dispatchEvent(
+        new CustomEvent<ToolbarDragAnchorDetail>(TOOLBAR_DRAG_ANCHOR_EVENT, {
+          detail: { modelUid: model.uid, point: detail.point },
+        }),
+      );
+    },
+    [model.uid],
+  );
+
+  const clearPointerPressListeners = useCallback(() => {
+    pointerPressCleanupRef.current?.();
+    pointerPressCleanupRef.current = null;
+  }, []);
+
+  const syncToolbarDragActivity = useCallback(() => {
+    const nextActive = isPointerPressActiveRef.current || isDraggingRef.current;
+    if (nextActive === isToolbarDragActiveRef.current) {
+      return;
+    }
+
+    isToolbarDragActiveRef.current = nextActive;
+    dispatchToolbarDragActivity(nextActive);
+  }, [dispatchToolbarDragActivity]);
+
+  const handlePointerPressEnd = useCallback(() => {
+    isPointerPressActiveRef.current = false;
+    clearPointerPressListeners();
+    syncToolbarDragActivity();
+  }, [clearPointerPressListeners, syncToolbarDragActivity]);
+
+  const registerPointerPressListeners = useCallback(() => {
+    const ownerDocument = dragHandlerRef.current?.ownerDocument;
+    const ownerWindow = ownerDocument?.defaultView;
+    if (!ownerDocument) {
+      return;
+    }
+
+    clearPointerPressListeners();
+
+    const handlePointerEnd = () => {
+      handlePointerPressEnd();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handlePointerPressEnd();
+      }
+    };
+
+    ownerDocument.addEventListener('pointerup', handlePointerEnd, true);
+    ownerDocument.addEventListener('pointercancel', handlePointerEnd, true);
+    ownerDocument.addEventListener('keydown', handleKeyDown, true);
+    ownerWindow?.addEventListener('blur', handlePointerEnd);
+
+    pointerPressCleanupRef.current = () => {
+      ownerDocument.removeEventListener('pointerup', handlePointerEnd, true);
+      ownerDocument.removeEventListener('pointercancel', handlePointerEnd, true);
+      ownerDocument.removeEventListener('keydown', handleKeyDown, true);
+      ownerWindow?.removeEventListener('blur', handlePointerEnd);
+    };
+  }, [clearPointerPressListeners, handlePointerPressEnd]);
+
+  useEffect(() => {
+    syncDraggableNodeRef(dragHandlerRef.current);
+  }, [syncDraggableNodeRef]);
+
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+    syncToolbarDragActivity();
+  }, [isDragging, syncToolbarDragActivity]);
+
+  useEffect(() => {
+    return () => {
+      if (isToolbarDragActiveRef.current) {
+        dispatchToolbarDragActivity(false);
+      }
+      isPointerPressActiveRef.current = false;
+      isDraggingRef.current = false;
+      isToolbarDragActiveRef.current = false;
+      clearPointerPressListeners();
+    };
+  }, [clearPointerPressListeners, dispatchToolbarDragActivity]);
+
   return (
     <span
-      ref={setNodeRef}
+      ref={setDragHandlerNodeRef}
       {...listeners}
       {...attributes}
+      onPointerDownCapture={(event) => {
+        if (event.button !== 0) {
+          return;
+        }
+
+        dispatchToolbarDragAnchor({
+          point: {
+            x: event.clientX,
+            y: event.clientY,
+          },
+        });
+        isPointerPressActiveRef.current = true;
+        syncToolbarDragActivity();
+        registerPointerPressListeners();
+      }}
       style={{
         cursor: 'grab',
       }}
@@ -78,7 +291,40 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
   ...restProps
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [dragAnchorPoint, setDragAnchorPoint] = useState<ToolbarDragAnchorDetail['point']>(null);
   const flowEngine = useFlowEngine();
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const handleToolbarDragAnchor = (event: Event) => {
+      const customEvent = event as CustomEvent<ToolbarDragAnchorDetail>;
+      setDragAnchorPoint(customEvent.detail?.point || null);
+    };
+
+    document.addEventListener(TOOLBAR_DRAG_ANCHOR_EVENT, handleToolbarDragAnchor as EventListener);
+    return () => {
+      document.removeEventListener(TOOLBAR_DRAG_ANCHOR_EVENT, handleToolbarDragAnchor as EventListener);
+    };
+  }, []);
+
+  const overlayAnchorModifier = useCallback<Modifier>(
+    ({ active, activeNodeRect, transform }) => {
+      const nextTransform: Transform = resolveOverlayAnchorTransform({
+        activeId,
+        active,
+        transform,
+        activeNodeRect,
+        dragAnchorPoint,
+      });
+
+      return nextTransform;
+    },
+    [activeId, dragAnchorPoint],
+  );
+
   return (
     <DndContext
       onDragStart={(event) => {
@@ -87,6 +333,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
       }}
       onDragEnd={(event) => {
         setActiveId(null);
+        setDragAnchorPoint(null);
         // 如果没有 onDragEnd 回调，则默认调用 flowEngine 的 moveModel 方法
         if (!onDragEnd) {
           if (event.over) {
@@ -97,32 +344,45 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
           onDragEnd(event);
         }
       }}
+      onDragCancel={(event) => {
+        setActiveId(null);
+        setDragAnchorPoint(null);
+        restProps.onDragCancel?.(event);
+      }}
       {...restProps}
     >
       {children}
-      {createPortal(
-        <DragOverlay dropAnimation={null} zIndex={2000}>
-          {activeId && (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                whiteSpace: 'nowrap',
-                background: '#fff',
-                border: '1px solid #1890ff',
-                borderRadius: 4,
-                padding: '4px 12px',
-                color: '#1890ff',
-                // fontSize: 18,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
+      {typeof document !== 'undefined'
+        ? createPortal(
+            <DragOverlay
+              dropAnimation={null}
+              modifiers={[overlayAnchorModifier]}
+              zIndex={2000}
+              style={{ pointerEvents: 'none' }}
             >
-              {flowEngine.translate('Dragging')}
-            </span>
-          )}
-        </DragOverlay>,
-        document.body,
-      )}
+              {activeId && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    whiteSpace: 'nowrap',
+                    background: '#fff',
+                    border: '1px solid #1890ff',
+                    borderRadius: 4,
+                    padding: '4px 12px',
+                    color: '#1890ff',
+                    pointerEvents: 'none',
+                    // fontSize: 18,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  {flowEngine.translate('Dragging')}
+                </span>
+              )}
+            </DragOverlay>,
+            document.body,
+          )
+        : null}
     </DndContext>
   );
 };

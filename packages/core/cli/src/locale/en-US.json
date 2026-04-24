@@ -95,6 +95,43 @@
       }
     },
     "download": {
+      "failures": {
+        "dependencyInstall": {
+          "title": "Couldn't finish preparing the local NocoBase app.",
+          "body": "The download completed, but dependency installation did not finish successfully.",
+          "hint": "Run the same command again with `--verbose` to see the full install logs."
+        },
+        "gitClone": {
+          "title": "Couldn't download NocoBase from Git.",
+          "body": "The CLI was not able to clone the selected NocoBase repository.",
+          "hint": "Run the same command again with `--verbose` to see the full clone logs."
+        },
+        "dockerPull": {
+          "title": "Couldn't download the Docker image.",
+          "body": "The CLI was not able to pull the selected NocoBase image.",
+          "hint": "Run the same command again with `--verbose` to see the full Docker pull logs."
+        },
+        "dockerSave": {
+          "title": "The Docker image was pulled, but saving the tar file failed.",
+          "body": "The CLI could not finish exporting the image to the target tarball path.",
+          "hint": "Run the same command again with `--verbose` to see the full Docker save logs."
+        },
+        "scaffold": {
+          "title": "Couldn't create the local NocoBase app scaffold.",
+          "body": "The CLI was not able to finish generating the initial app files.",
+          "hint": "Run the same command again with `--verbose` to see the full scaffold logs."
+        },
+        "build": {
+          "title": "The local NocoBase app was downloaded, but the build step failed.",
+          "body": "The CLI could not finish building the downloaded source code.",
+          "hint": "Run the same command again with `--verbose` to see the full build logs."
+        },
+        "generic": {
+          "title": "Couldn't finish downloading NocoBase.",
+          "body": "The CLI hit an unexpected command failure while preparing the download.",
+          "hint": "Run the same command again with `--verbose` to see the full command logs."
+        }
+      },
       "prompts": {
         "source": {
           "message": "How would you like to get NocoBase?",
@@ -217,17 +254,22 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" already exists in this workspace. Choose another app name."
+        "envExists": "Env \"{{envName}}\" already exists in this workspace. Choose another env name."
       },
       "messages": {
-        "appNameRequiredWhenSkipped": "App name is required when prompts are skipped.",
-        "appNameEnvHelp": "The app name is also the CLI env name. Use `nb init --yes --env <envName>` to continue.",
+        "title": "Set Up Your NocoBase AI Workspace",
+        "appNameRequiredWhenSkipped": "Env name is required when prompts are skipped.",
+        "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
-        "resumeEnvHelp": "App name is also the CLI env name. Use `nb init --resume --env <envName>` to continue."
+        "resumeEnvHelp": "Use `nb init --resume --env <envName>` to continue.",
+        "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
+        "uiReady": "Local setup form is ready.",
+        "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",
+        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process."
       },
       "prompts": {
         "appName": {
-          "message": "App name (also used as the CLI env name)",
+          "message": "What should this environment use for `--env`?",
           "placeholder": "local"
         },
         "hasNocobase": {
@@ -244,9 +286,9 @@
         }
       },
       "webUi": {
-        "pageTitle": "Set Up NocoBase for Coding Agents",
-        "documentHeading": "Set Up NocoBase for Coding Agents",
-        "documentHint": "Connect an existing NocoBase app or install a new one, then save it as an agent-ready CLI environment.",
+        "pageTitle": "Set Up Your NocoBase AI Workspace",
+        "documentHeading": "Set Up Your NocoBase AI Workspace",
+        "documentHint": "Connect an existing NocoBase app, or install a new one and connect it, so coding agents can work with NocoBase in this workspace.",
         "gettingStarted": {
           "title": "Getting started",
           "description": "Pick your setup path."

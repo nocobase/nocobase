@@ -18,6 +18,7 @@ import { buildPlugin } from './buildPlugin';
 import {
   CORE_APP,
   CORE_CLIENT,
+  CORE_CLIENT_V2,
   ESM_PACKAGES,
   getCjsPackages,
   getPluginPackages,
@@ -97,6 +98,13 @@ export async function build(pkgs: string[]) {
       profile,
     });
     const clientCore = packages.find((item) => item.location === CORE_CLIENT);
+    const clientV2Core = packages.find((item) => item.location === CORE_CLIENT_V2);
+    if (clientV2Core) {
+      await buildSinglePackage(clientV2Core, 'es', buildClient, {
+        stageName: 'core client-v2',
+        profile,
+      });
+    }
     if (clientCore) {
       await buildSinglePackage(clientCore, 'es', buildClient, {
         stageName: 'core client',

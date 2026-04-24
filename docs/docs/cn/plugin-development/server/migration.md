@@ -6,7 +6,7 @@ keywords: "Migration,数据库迁移,up,down,升级脚本,schema 变更,NocoBase
 
 # Migration 升级脚本
 
-在 NocoBase 插件的开发与更新过程中，插件的数据库结构或配置可能会发生不兼容的变化。为了保证升级的平滑执行，NocoBase 提供了 **Migration** 机制，通过编写 migration 文件来处理这些变更。本文将带你系统了解 Migration 的使用方法和开发流程。
+在 NocoBase 插件的开发与更新过程中，插件的数据库结构或配置可能会发生不兼容的变化。为了保证升级的平滑执行，NocoBase 提供了 **Migration** 机制——通过编写 migration 文件来处理这些变更。
 
 ## Migration 的概念
 
@@ -26,7 +26,7 @@ Migration 的执行时机分为三类：
 
 ## 创建 Migration 文件
 
-Migration 文件应放在插件目录下的 `src/server/migrations/*.ts` 中。NocoBase 提供 `create-migration` 命令快速生成 migration 文件。
+Migration 文件放在插件目录下的 `src/server/migrations/*.ts` 中。NocoBase 提供了 `create-migration` 命令快速生成 migration 文件。
 
 ```bash
 yarn nocobase create-migration [options] <name>
@@ -66,7 +66,11 @@ export default class extends Migration {
 }
 ```
 
-> ⚠️ `appVersion` 用于标识升级所针对的版本，小于指定版本的环境会执行该 migration。
+:::tip 提示
+
+`appVersion` 用于标识升级所针对的版本，小于指定版本的环境会执行该 migration。
+
+:::
 
 ## 编写 Migration
 
@@ -74,34 +78,34 @@ export default class extends Migration {
 
 常用属性
 
-- **`this.app`**  
-  当前 NocoBase 应用实例。可用于访问全局服务、插件或配置。  
+- **`this.app`**
+  当前 NocoBase 应用实例，可用于访问全局服务、插件或配置。
   ```ts
   const config = this.app.config.get('database');
   ```
 
-- **`this.db`**  
-  数据库服务实例，提供对模型（Tables）操作的接口。  
+- **`this.db`**
+  数据库服务实例，提供对模型（Tables）操作的接口。
   ```ts
   const users = await this.db.getRepository('users').findAll();
   ```
 
-- **`this.plugin`**  
-  当前插件实例，可用于访问插件的自定义方法。  
+- **`this.plugin`**
+  当前插件实例，可用于访问插件的自定义方法。
   ```ts
   const settings = this.plugin.customMethod();
   ```
 
-- **`this.sequelize`**  
-  Sequelize 实例，可直接执行原生 SQL 或事务操作。  
+- **`this.sequelize`**
+  Sequelize 实例，可直接执行原生 SQL 或事务操作。
   ```ts
   await this.sequelize.transaction(async (transaction) => {
     await this.sequelize.query('UPDATE users SET active = 1', { transaction });
   });
   ```
 
-- **`this.queryInterface`**  
-  Sequelize 的 QueryInterface，常用于修改表结构，例如新增字段、删除表等。  
+- **`this.queryInterface`**
+  Sequelize 的 QueryInterface，常用于修改表结构，比如新增字段、删除表等。
   ```ts
   await this.queryInterface.addColumn('users', 'age', {
     type: this.sequelize.Sequelize.INTEGER,
@@ -119,26 +123,26 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // 使用 queryInterface 添加字段
+    // 用 queryInterface 添加字段
     await this.queryInterface.addColumn('users', 'nickname', {
       type: this.sequelize.Sequelize.STRING,
       allowNull: true,
     });
 
-    // 使用 db 访问数据模型
+    // 用 db 访问数据模型
     const users = await this.db.getRepository('users').findAll();
     for (const user of users) {
       user.nickname = user.username;
       await user.save();
     }
 
-    // 执行 plugin 的自定义方法
+    // 调用 plugin 的自定义方法
     await this.plugin.customMethod();
   }
 }
 ```
 
-除了上面列出的常用属性，Migration 还提供丰富的 API，详细文档请参考 [Migration API](/api/server/migration)。
+除了上面列出的常用属性，Migration 还提供更多 API，详细用法见 [Migration API](../../api/server/migration.md)。
 
 ## 触发 Migration
 
@@ -152,7 +156,7 @@ $ yarn nocobase upgrade
 
 ## 测试 Migration
 
-在插件开发中，建议使用 **Mock Server** 测试 migration 是否正确执行，避免破坏真实数据。
+在插件开发中，建议用 **Mock Server** 测试 migration 是否正确执行，避免破坏真实数据。
 
 ```ts
 import { createMockServer, MockServer } from '@nocobase/test';
@@ -178,15 +182,28 @@ describe('Migration Test', () => {
 });
 ```
 
-> Tip: 使用 Mock Server 可以快速模拟升级场景，并对 Migration 执行顺序和数据变更进行验证。
+:::tip 提示
+
+使用 Mock Server 可以快速模拟升级场景，并对 Migration 执行顺序和数据变更进行验证。
+
+:::
 
 ## 开发实践建议
 
-1. **拆分 Migration**  
+1. **拆分 Migration**
    每次升级尽量生成一个 migration 文件，保持原子性，便于排查问题。
-2. **指定执行时机**  
+2. **指定执行时机**
    根据操作对象选择 `beforeLoad`、`afterSync` 或 `afterLoad`，避免依赖未加载的模块。
-3. **注意版本控制**  
-   使用 `appVersion` 明确 migration 适用的版本，防止重复执行。
-4. **测试覆盖**  
-   在 Mock Server 上验证 migration 后，再在真实环境中执行升级。
+3. **注意版本控制**
+   用 `appVersion` 明确 migration 适用的版本，防止重复执行。
+4. **测试覆盖**
+   先在 Mock Server 上验证 migration，再到真实环境中执行升级。
+
+## 相关链接
+
+- [Collections 数据表](./collections.md) — Migration 中常需调整的数据表结构定义
+- [Database 数据库操作](./database.md) — Migration 中通过 `this.db` 操作数据的 API
+- [Plugin 插件](./plugin.md) — Migration 文件在插件中的组织与加载方式
+- [Command 命令行](./command.md) — 通过 `nocobase upgrade` 和 `create-migration` 命令触发迁移
+- [Test 测试](./test.md) — 使用 Mock Server 测试 Migration 的执行结果
+- [Migration API](../../api/server/migration.md) — Migration 类的完整 API 参考

@@ -8,14 +8,14 @@
  */
 
 import type { DevDynamicImport } from '../Application';
-import type { Plugin } from '../Plugin';
+import type { PluginClass } from '../PluginManager';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
 
 /**
  * @internal
  */
-export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
+export function defineDevPlugins(plugins: Record<string, PluginClass<any>>) {
   Object.entries(plugins).forEach(([packageName, plugin]) => {
     window.define(`${packageName}/client`, () => plugin);
   });
@@ -58,10 +58,13 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
 /**
  * @internal
  */
-export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins: [string, typeof Plugin][]) => void) {
-  return (...pluginModules: (typeof Plugin & { default?: typeof Plugin })[]) => {
-    const res: [string, typeof Plugin][] = pluginModules
-      .map<[string, typeof Plugin]>((item, index) => [pluginData[index].name, item?.default || item])
+export function processRemotePlugins(
+  pluginData: PluginData[],
+  resolve: (plugins: [string, PluginClass<any>][]) => void,
+) {
+  return (...pluginModules: (PluginClass<any> & { default?: PluginClass<any> })[]) => {
+    const res: [string, PluginClass<any>][] = pluginModules
+      .map<[string, PluginClass<any>]>((item, index) => [pluginData[index].name, item?.default || item])
       .filter((item) => item[1]);
     resolve(res);
 
@@ -85,7 +88,7 @@ export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins
 export function getRemotePlugins(
   requirejs: any,
   pluginData: PluginData[] = [],
-): Promise<Array<[string, typeof Plugin]>> {
+): Promise<Array<[string, PluginClass<any>]>> {
   configRequirejs(requirejs, pluginData);
 
   const packageNames = pluginData.map((item) => item.packageName);
@@ -107,13 +110,13 @@ interface GetPluginsOption {
 /**
  * @internal
  */
-export async function getPlugins(options: GetPluginsOption): Promise<Array<[string, typeof Plugin]>> {
+export async function getPlugins(options: GetPluginsOption): Promise<Array<[string, PluginClass<any>]>> {
   const { requirejs, pluginData, devDynamicImport } = options;
   if (pluginData.length === 0) return [];
 
-  const res: Array<[string, typeof Plugin]> = [];
+  const res: Array<[string, PluginClass<any>]> = [];
 
-  const resolveDevPlugins: Record<string, typeof Plugin> = {};
+  const resolveDevPlugins: Record<string, PluginClass<any>> = {};
   if (devDynamicImport) {
     for await (const plugin of pluginData) {
       const pluginModule = await devDynamicImport(plugin.packageName);

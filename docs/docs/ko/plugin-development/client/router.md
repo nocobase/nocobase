@@ -4,7 +4,7 @@
 
 # 라우터
 
-NocoBase 클라이언트는 유연한 라우터 관리자를 제공하며, `router.add()`와 `pluginSettingsRouter.add()`를 통해 페이지 및 플러그인 설정 페이지를 확장할 수 있도록 지원합니다.
+NocoBase 클라이언트는 유연한 라우터 관리자를 제공하며, `router.add()`와 `pluginSettingsManager`를 통해 페이지 및 플러그인 설정 페이지를 확장할 수 있도록 지원합니다.
 
 ## 등록된 기본 페이지 라우트
 
@@ -78,49 +78,54 @@ this.router.add('root.user', {
 
 ## 플러그인 설정 페이지 확장
 
-`pluginSettingsRouter.add()`를 사용해 플러그인 설정 페이지를 추가합니다. 일반 페이지 라우트와 마찬가지로 설정 페이지도 `componentLoader`를 사용해야 합니다.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // 설정 페이지 제목
-      icon: 'ApiOutlined', // 설정 페이지 메뉴 아이콘
-      // 동적 가져오기: 이 설정 페이지에 진입할 때만 페이지 모듈이 로드됩니다
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
       componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-다단계 라우팅 예시
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // 최상위 라우트
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      element: <Outlet />,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // 하위 라우트
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      // 동적 가져오기: 이 설정 페이지에 진입할 때만 페이지 모듈이 로드됩니다
-      componentLoader: () => import('./settings/Demo1Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      componentLoader: () => import('./settings/Demo2Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }

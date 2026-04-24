@@ -10,7 +10,8 @@
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { WorkContextOptions } from '../ai-employees/types';
-import { ToolModalProps, ToolsOptions } from '@nocobase/client';
+import { ToolsOptions } from '@nocobase/client';
+import { ToolModalProps } from '@nocobase/client-v2';
 
 export type LLMProviderOptions = {
   components: {
@@ -60,7 +61,7 @@ export class AIManager {
     });
   }
 
-  getWorkContext(name: string): WorkContextOptions {
+  getWorkContext(name: string): WorkContextOptions | null {
     const [rootKey, childKey] = name.split('.');
     if (childKey) {
       const root = this.workContext.get(rootKey);

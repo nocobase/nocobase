@@ -295,6 +295,7 @@ async function commandOutput(
 type InstallParsedFlags = {
   yes: boolean;
   resume: boolean;
+  verbose: boolean;
   locale?: string;
   env?: string;
   lang?: string;
@@ -409,6 +410,10 @@ export default class Install extends Command {
     resume: Flags.boolean({
       description:
         'Resume a previous unfinished setup for this env using the saved workspace env config',
+      default: false,
+    }),
+    verbose: Flags.boolean({
+      description: 'Show detailed command output',
       default: false,
     }),
     env: Flags.string({
@@ -985,6 +990,7 @@ export default class Install extends Command {
   static async buildAppPromptInitialValues(params: {
     envName?: string;
     flags: Pick<InstallParsedFlags, 'app-port' | 'app-root-path' | 'storage-path'>;
+    warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
     const initialValues: PromptInitialValues = {};
     const envName = params.envName ?? DEFAULT_INSTALL_ENV_NAME;
@@ -1002,7 +1008,7 @@ export default class Install extends Command {
         DEFAULT_INSTALL_APP_PORT,
         {
           label: 'Default app port',
-          warn: true,
+          warn: params.warnOnPortFallback ?? true,
         },
       );
     }
@@ -1021,6 +1027,7 @@ export default class Install extends Command {
     flags: Pick<InstallParsedFlags, 'db-port'>;
     downloadResults: Record<string, PromptValue>;
     dbPreset: PromptInitialValues;
+    warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
     if (params.flags['db-port'] !== undefined) {
       return {};
@@ -1041,7 +1048,7 @@ export default class Install extends Command {
         defaultPort,
         {
           label: `Default ${dialect} port`,
-          warn: true,
+          warn: params.warnOnPortFallback ?? true,
         },
       ),
     };
@@ -1817,8 +1824,14 @@ export default class Install extends Command {
 
   private static buildDownloadArgvFromResults(
     results: Record<string, PromptValue>,
+    options?: {
+      verbose?: boolean;
+    },
   ): string[] {
     const argv = ['-y', '--no-intro'];
+    if (options?.verbose) {
+      argv.push('--verbose');
+    }
     Install.pushDownloadArgIfValue(argv, '--source', results.source);
     Install.pushDownloadArgIfValue(argv, '--version', results.version);
     Install.pushDownloadArgIfValue(argv, '--output-dir', results.outputDir);
@@ -1868,8 +1881,11 @@ export default class Install extends Command {
     envName: string;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
+    verbose?: boolean;
   }): Promise<string> {
-    const argv = Install.buildDownloadArgvFromResults(params.downloadResults);
+    const argv = Install.buildDownloadArgvFromResults(params.downloadResults, {
+      verbose: params.verbose,
+    });
     p.log.step('Downloading local NocoBase app files');
     const result = await this.config.runCommand(
       'download',
@@ -2431,6 +2447,7 @@ export default class Install extends Command {
           envName,
           appResults,
           downloadResults,
+          verbose: parsed.verbose,
         });
         localAppPlan = await this.startLocalApp({
           envName,

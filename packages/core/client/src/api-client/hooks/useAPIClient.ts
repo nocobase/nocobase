@@ -9,7 +9,9 @@
 
 import { useContext } from 'react';
 import { APIClientContext } from '../context';
+import { useApp } from '../../application/hooks/useApp';
 
 export function useAPIClient() {
-  return useContext(APIClientContext);
+  const app = useApp();
+  return useContext(APIClientContext) || app.apiClient;
 }

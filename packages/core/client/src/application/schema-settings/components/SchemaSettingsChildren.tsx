@@ -12,7 +12,8 @@ import React, { FC, useEffect, useMemo, useRef } from 'react';
 import _ from 'lodash';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useFieldComponentName } from '../../../common/useFieldComponentName';
-import { ErrorFallback, useFindComponent } from '../../../schema-component';
+import { ErrorFallback } from '../../../schema-component/antd/error-fallback/ErrorFallback';
+import { useFindComponent } from '../../../schema-component/hooks/useDesignable';
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsCascaderItem,

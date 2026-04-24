@@ -10,11 +10,12 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { SchemaSettingsItemType } from '../application';
-import { useFormBlockContext, useTableBlockContext } from '../block-provider';
+import { useFormBlockContext } from '../block-provider/FormBlockProvider';
+import { useTableBlockContext } from '../block-provider/TableBlockProvider';
 import { useCollection_deprecated } from '../collection-manager';
-import { useDesignable, removeNullCondition } from '../schema-component';
+import { removeNullCondition } from '../schema-component/antd/filter/useFilterActionProps';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { SchemaSettingsDataScope } from './SchemaSettingsDataScope';
-import { useCollection } from '../data-source';
 
 export const setTheDataScopeSchemaSettingsItem: SchemaSettingsItemType = {
   name: 'SetTheDataScope',

@@ -1,0 +1,144 @@
+---
+title: "快速开始"
+description: "NocoBase CLI 命令行工具：安装、初始化、构建运行、环境管理，几分钟内完成 NocoBase 的安装和配置。"
+keywords: "NocoBase CLI,nb,命令行,安装,部署,快速开始"
+sidebar: false
+---
+
+# 快速开始
+
+以前，AI Agent 很难理解 NocoBase 的体系——没有标准的工具让它接入、读取和操作 NocoBase 的数据表、页面和工作流等等。
+
+现在，NocoBase 全面支持 AI Agent 协同——你可以用自然语言完成数据建模、页面搭建、工作流编排、权限配置，甚至开发自定义插件。无论你使用 Claude Code、Codex、Cursor 还是其他 AI 工具，都可以通过以下两个基础组件与 NocoBase 协同工作：
+
+- **[NocoBase CLI](../api/cli/cli)**——命令行工具（`nb` 命令），负责安装、管理和连接 NocoBase 应用。AI Agent 通过 CLI 执行创建数据表、搭建页面、管理环境等实际操作。
+- **[NocoBase Skills](https://github.com/nocobase/skills)**——领域知识包，让 AI Agent 理解 NocoBase 的配置体系和开发规范。涵盖数据建模、界面配置、工作流管理、权限配置、插件开发等能力域。NocoBase CLI 在初始化过程中（`nb init`）会自动安装 Skills，不需要手动安装。
+
+安装 CLI 并完成初始化后，AI Agent 就能直接操作你的 NocoBase 应用。
+
+## 什么是 NocoBase CLI
+
+NocoBase CLI（`nb`）是用于在本地工作区初始化、连接和管理 NocoBase 应用的命令行工具。它可以帮你准备 NocoBase 应用、保存 CLI env 配置，并提供启动、停止、查看日志、升级和清理等日常管理命令，让 AI Agent 可以连接并使用 NocoBase。
+
+CLI 支持两种常见的初始化方式：
+
+- 连接已有的 NocoBase 应用，让 AI Agent 直接使用。
+- 通过 Docker、npm 或 Git 安装一个新的 NocoBase 应用，并保存为 CLI env。
+
+## 前置条件
+
+在开始安装前，请确保已满足以下环境要求：
+
+- Node.js 22
+- Yarn 1.x
+
+如果已有 NocoBase 实例，需要版本 >= 2.1.0-alpha.22。
+
+如果为全新安装 NocoBase，还需确认以下条件：
+
+- 数据库已准备好（PostgreSQL、MySQL、MariaDB 任选其一），或使用内置 Docker 数据库服务
+- Docker（如使用 Docker 方式部署）
+- Git（如通过源码方式安装）
+
+## 安装
+
+import { Tab, Tabs } from '@rspress/core/theme';
+
+<Tabs>
+<Tab label="手动安装" value="manual">
+
+#### 第一步：安装 CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version // 确认安装成功
+```
+
+#### 第二步：创建工作目录
+
+> 工作目录名字可以自定义，但建议不要有空格等特殊字符，以免后续操作出问题。后续 CLI 相关的命令都需要在这个目录里执行。
+
+```bash
+mkdir my-nocobase && cd my-nocobase
+```
+
+#### 第三步：初始化
+
+```bash
+nb init --ui
+```
+
+浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：
+
+1. **开始配置** — 设置应用名称（同时作为 CLI 环境名），选择是全新安装还是连接已有应用
+2. **创建应用** — 选择安装方式（Docker / npm / Git）、设置端口等基础配置
+3. **下载应用文件** — 选择来源和版本，下载 NocoBase 源码或镜像
+4. **配置数据库** — 使用内置数据库或配置外部数据库（PostgreSQL、MySQL、MariaDB）
+5. **创建管理员账号** — 设置管理员邮箱和密码
+
+如果选择连接已有应用，则跳过 2-5 步，直接填写 API 地址和选择[认证方式](../ai-builder/security)（快速上手推荐 OAuth）。
+
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
+
+全新安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），用你刚才设置的管理员账号登录即可。
+
+（如果你更习惯在命令行里操作，也可以直接运行 `nb init` 进入交互式向导，或 `nb init --env=app -y` 一键使用默认配置。）
+
+#### 第四步：(可选) AI Agent 接入 NocoBase
+
+如果你想让 AI Agent 参与操作 NocoBase，你只需要：
+
+1. 进入 CLI 已经初始化的工作目录（如 `my-nocobase`）
+2. 在这个目录下新开或者重启 AI Agent 的会话（如果是桌面端 GUI 的 AI Agent 工具，则需要将 CLI 初始化的目录添加为工作目录），然后就可以让 AI Agent 开始操作 NocoBase 了。
+
+
+</Tab>
+<Tab label="用 AI Agent 安装" value="ai">
+
+将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），它会自动完成安装和配置：
+
+```
+帮我安装 NocoBase CLI：https://docs.nocobase.com/cn/ai/ai-quick-start.md
+```
+
+配置完成后，在 CLI 初始化的目录里 (默认是在当前目录下新建的 `my-nocobase` 目录，如果你不确定，你也可以询问 AI Agent NocoBase CLI 初始化后的目录在哪里) 重启你的 AI Agent 会话。比如：
+
+```bash
+cd my-nocobase && codex
+```
+
+如果你用的是图形化 AI 工具（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。
+
+</Tab>
+</Tabs>
+
+## 接下来
+
+### 管理应用环境
+
+如果你需要管理已有的 NocoBase 实例（比如测试环境、生产环境），或者管理多个环境之间的切换，请参阅 [环境管理](../ai-builder/env-bootstrap)——涵盖环境检查、添加环境、升级和故障诊断。
+
+### 开始 AI 搭建
+
+用自然语言描述需求，AI 帮你完成数据建模、页面搭建、工作流编排——从一句话到一整套业务系统。请参阅 [AI 搭建快速开始](../ai-builder/index.md)。
+
+### 继续 AI 开发插件
+
+如果你需要开发自定义插件，AI 同样能帮上忙——从脚手架生成到组件代码、业务逻辑，覆盖插件开发的完整流程。请参阅 [AI 开发插件](../ai-dev/index.md)。
+
+### 使用 AI 员工
+
+在 NocoBase 界面里直接和 AI 员工协作——数据分析、生成报告、翻译、决策辅助，不需要离开业务系统。请参阅 [AI 员工](../ai-employees/index.md)。
+
+### NocoBase CLI 命令参考
+
+如果你已经有 NocoBase 应用在运行，或者已经初始化成功过，想要继续开发、调试或者管理应用，所有 `nb` 命令的完整参数说明请参阅 [NocoBase CLI 命令参考](../api/cli/cli)。
+
+## 相关链接
+
+- [AI 搭建](../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
+- [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
+- [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
+- [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断
+- [NocoBase CLI 命令参考](../api/cli/cli) — 所有命令的完整参数说明
+- [安装方式和版本对比](../get-started/quickstart) — NocoBase 的不同安装方式和版本通道

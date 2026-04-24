@@ -95,6 +95,43 @@
       }
     },
     "download": {
+      "failures": {
+        "dependencyInstall": {
+          "title": "本地 NocoBase 应用还没有准备完成。",
+          "body": "下载已经完成，但依赖安装没有成功结束。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整安装日志。"
+        },
+        "gitClone": {
+          "title": "无法通过 Git 下载 NocoBase。",
+          "body": "CLI 没有成功克隆你选择的 NocoBase 仓库。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整克隆日志。"
+        },
+        "dockerPull": {
+          "title": "无法下载 Docker 镜像。",
+          "body": "CLI 没有成功拉取你选择的 NocoBase 镜像。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整 Docker pull 日志。"
+        },
+        "dockerSave": {
+          "title": "Docker 镜像已经拉取完成，但导出 tar 文件失败了。",
+          "body": "CLI 没有成功将镜像导出到目标 tar 包路径。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整 Docker save 日志。"
+        },
+        "scaffold": {
+          "title": "无法创建本地 NocoBase 应用骨架。",
+          "body": "CLI 没有成功生成初始应用文件。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整 scaffold 日志。"
+        },
+        "build": {
+          "title": "本地 NocoBase 应用已经下载完成，但构建步骤失败了。",
+          "body": "CLI 没有成功完成已下载源码的构建。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整构建日志。"
+        },
+        "generic": {
+          "title": "无法完成 NocoBase 下载。",
+          "body": "CLI 在准备下载内容时遇到了未预期的命令失败。",
+          "hint": "请使用相同命令加上 `--verbose` 重试，以查看完整命令日志。"
+        }
+      },
       "prompts": {
         "source": {
           "message": "你想通过哪种方式获取 NocoBase？",
@@ -217,17 +254,22 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" 已存在于当前 workspace 中，请换一个 app name。"
+        "envExists": "Env \"{{envName}}\" 已存在于当前 workspace 中，请换一个 env name。"
       },
       "messages": {
-        "appNameRequiredWhenSkipped": "跳过 prompts 时必须提供 App name。",
-        "appNameEnvHelp": "App name 也就是 CLI env name。请使用 `nb init --yes --env <envName>` 继续。",
-        "resumeEnvRequired": "恢复安装时必须提供 env name。",
-        "resumeEnvHelp": "App name 也就是 CLI env name。请使用 `nb init --resume --env <envName>` 继续。"
+        "title": "初始化你的 NocoBase AI 工作区",
+        "appNameRequiredWhenSkipped": "跳过 prompts 时必须提供 Env name。",
+        "appNameEnvHelp": "请使用 `nb init --yes --env <envName>` 继续。",
+        "resumeEnvRequired": "恢复安装时必须提供 Env name。",
+        "resumeEnvHelp": "请使用 `nb init --resume --env <envName>` 继续。",
+        "uiOpening": "本地 setup 表单即将在浏览器中打开。这个表单需要等待人工填写。如果你正在使用 AI agent，请不要停止当前进程，CLI 会继续等待表单提交结果。",
+        "uiReady": "本地 setup 表单已就绪。",
+        "uiReadyHelp": "如果没有自动打开浏览器，请复制下面的地址到浏览器中继续。CLI 会继续等待表单提交，请保持当前终端会话继续运行。",
+        "uiOpenBrowserFallback": "无法自动打开浏览器。请复制上面的地址到浏览器中继续 setup，并保持当前终端会话继续运行。如果你正在使用 AI agent，请不要停止当前进程。"
       },
       "prompts": {
         "appName": {
-          "message": "App name（同时也是 CLI env name）",
+          "message": "这个环境要使用什么 `--env` 标识？",
           "placeholder": "local"
         },
         "hasNocobase": {
@@ -244,9 +286,9 @@
         }
       },
       "webUi": {
-        "pageTitle": "为 Coding Agents 配置 NocoBase",
-        "documentHeading": "为 Coding Agents 配置 NocoBase",
-        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的，然后将它保存为可供 agent 使用的 CLI 环境。",
+        "pageTitle": "初始化你的 NocoBase AI 工作区",
+        "documentHeading": "初始化你的 NocoBase AI 工作区",
+        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的应用后再完成连接，让 Coding Agents 可以在当前工作区中结合 NocoBase 协同工作。",
         "gettingStarted": {
           "title": "开始设置",
           "description": "选择你的配置路径。"

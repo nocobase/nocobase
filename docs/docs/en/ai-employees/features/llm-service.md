@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Configure LLM Service'
+description: 'Configure LLM services available for AI Employees. Supports OpenAI, Gemini, Claude, DeepSeek, Qwen, Kimi, and Ollama. Includes creating services, enabling/sorting, and availability testing.'
+keywords: 'LLM Service,OpenAI,Claude,Gemini,DeepSeek,Ollama,NocoBase AI'
+---
+
 # Configure LLM Service
 
 Before using AI Employees, configure available LLM services first.
@@ -14,7 +21,7 @@ Go to `System Settings -> AI Employees -> LLM service`.
 4. Configure `Enabled Models`:
    - `Recommended models`: use officially recommended models.
    - `Select models`: select from the provider model list.
-   - `Manual input`: manually enter model ID and display name.
+   - `Manual input`: manually enter model ID and display name when the model list cannot be retrieved from the provider API.
 5. Click `Submit` to save.
 
 ![llm-service-create-provider-enabled-models.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-create-provider-enabled-models.png)

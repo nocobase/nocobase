@@ -13,6 +13,9 @@ import { FlowModelRenderer } from '@nocobase/flow-engine';
 <FlowModelRenderer model={myModel} />
 ```
 
+```tsx file="./_demos/flow-model-renderer.tsx" preview
+```
+
 ### FieldModelRenderer
 
 For controlled field Models, use `FieldModelRenderer` to render:

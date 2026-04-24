@@ -9,8 +9,8 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import React, { FC, useMemo } from 'react';
-import { useDesignable } from '../../../schema-component';
-import { SchemaSettingsDropdown } from '../../../schema-settings';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
+import { SchemaSettingsDropdown } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingOptions } from '../types';
 import { SchemaSettingsChildren } from './SchemaSettingsChildren';
 import { SchemaSettingsIcon } from './SchemaSettingsIcon';

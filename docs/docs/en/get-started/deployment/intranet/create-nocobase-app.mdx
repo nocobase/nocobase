@@ -1,3 +1,9 @@
+---
+title: "Install and Upgrade NocoBase in Intranet (create-nocobase-app)"
+description: "NocoBase Getting Started: Install and Upgrade NocoBase in Intranet (create-nocobase-app)"
+keywords: "create,nocobase,app,NocoBase"
+---
+
 # Install and Upgrade NocoBase in Intranet (create-nocobase-app)
 
 Intranet environments cannot directly access the npm registry. You need to create the project and install dependencies in an internet-connected environment, then package the complete project and migrate it to the intranet server for deployment.
@@ -6,7 +12,7 @@ Intranet environments cannot directly access the npm registry. You need to creat
 
 :::tip Prerequisites
 
-- Both internet and intranet machines need **Node.js 20+** and **Yarn 1.22.x** installed
+- Both internet and intranet machines need **Node.js 22** and **Yarn 1.22.x** installed
 - Database: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+ (can be deployed on intranet or internet)
 - **Node.js version and OS architecture** must match between internet and intranet machines; otherwise some native modules in `node_modules` may be incompatible
 - Project **installation path must be identical** on both sides (e.g., `/app/my-nocobase-app`), otherwise it will not run after migration

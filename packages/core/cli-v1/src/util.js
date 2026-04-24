@@ -260,6 +260,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   const cwd = process.cwd();
   const cwdLength = cwd.length;
   const paths = {
+    '@docs/*': ['docs/docs/*'],
     '@@/*': ['.dumi/tmp/*'],
   };
   const packages = fg.sync(['packages/*/*/package.json', 'packages/*/*/*/package.json'], {
