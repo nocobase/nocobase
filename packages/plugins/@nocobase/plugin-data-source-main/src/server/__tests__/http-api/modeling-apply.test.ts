@@ -33,7 +33,10 @@ describe('modeling apply actions', () => {
             name: 'status',
             title: 'Status',
             interface: 'select',
-            enum: ['draft', 'paid'],
+            enum: [
+              { label: 'Draft', value: 'draft', color: 'gold' },
+              { label: 'Paid', value: 'paid', color: 'green' },
+            ],
           },
           {
             name: 'customer',
@@ -51,6 +54,7 @@ describe('modeling apply actions', () => {
 
     const collection = app.db.getCollection('orders');
     expect(collection).toBeDefined();
+    expect(collection.options.titleField).toBe('id');
     expect(collection.hasField('createdAt')).toBe(true);
     expect(collection.hasField('createdBy')).toBe(true);
     expect(collection.hasField('updatedAt')).toBe(true);
@@ -60,8 +64,8 @@ describe('modeling apply actions', () => {
     expect(statusField.options.type).toBe('string');
     expect(statusField.options.uiSchema.title).toBe('Status');
     expect(statusField.options.uiSchema.enum).toEqual([
-      { label: 'draft', value: 'draft' },
-      { label: 'paid', value: 'paid' },
+      { label: 'Draft', value: 'draft', color: 'gold' },
+      { label: 'Paid', value: 'paid', color: 'green' },
     ]);
 
     const customerField = collection.getField('customer');
@@ -120,6 +124,35 @@ describe('modeling apply actions', () => {
     expect(commentsPost.options.uiSchema.title).toBe('Post');
     expect(postsComments.options.foreignKey).toBe(commentsPost.options.foreignKey);
     // expect(postsComments.options.reverseKey).toBeDefined();
+  });
+
+  it('should apply a choice field from fields apply when enum colors are valid', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'orders',
+      },
+    });
+
+    const response = await agent.resource('fields').apply({
+      values: {
+        collectionName: 'orders',
+        name: 'status',
+        title: 'Status',
+        interface: 'select',
+        enum: [
+          { label: 'Draft', value: 'draft', color: 'gold' },
+          { label: 'Paid', value: 'paid', color: 'green' },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const orders = app.db.getCollection('orders');
+    expect(orders.getField('status').options.uiSchema.enum).toEqual([
+      { label: 'Draft', value: 'draft', color: 'gold' },
+      { label: 'Paid', value: 'paid', color: 'green' },
+    ]);
   });
 
   it('should return normalized verification result from collections apply', async () => {
@@ -241,6 +274,45 @@ describe('modeling apply actions', () => {
 
     expect(response.statusCode).toBe(500);
     expect(response.body.errors[0].message).toContain('type json does not match interface markdown');
+  });
+
+  it('should reject collections apply choice fields when enum colors are missing', async () => {
+    const response = await agent.resource('collections').apply({
+      values: {
+        name: 'broken_choice_colors',
+        template: 'general',
+        fields: [
+          {
+            name: 'status',
+            interface: 'select',
+            enum: [{ label: 'Draft', value: 'draft' }],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.body.errors[0].message).toContain('requires color');
+  });
+
+  it('should reject fields apply choice fields when enum color is outside the available palette', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'palette_checks',
+      },
+    });
+
+    const response = await agent.resource('fields').apply({
+      values: {
+        collectionName: 'palette_checks',
+        name: 'status',
+        interface: 'select',
+        enum: [{ label: 'Draft', value: 'draft', color: 'pink' }],
+      },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.body.errors[0].message).toContain('Allowed colors');
   });
 
   it('should preserve explicit relation keys from compact field input', async () => {

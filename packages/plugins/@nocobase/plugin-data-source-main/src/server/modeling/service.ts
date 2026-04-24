@@ -10,7 +10,7 @@
 import { assertModelingSupport, verifyCollectionDefinition } from './capabilities';
 import { composeCollectionDefinition, normalizeCollectionInput } from './collections';
 import { PlainObject, RELATION_INTERFACES } from './constants';
-import { normalizeFieldInput, normalizeFieldList } from './fields';
+import { normalizeFieldInput, normalizeFieldList, validateChoiceFieldInput } from './fields';
 
 function mergeSettings(input: PlainObject = {}) {
   const { settings, ...rest } = input;
@@ -18,6 +18,14 @@ function mergeSettings(input: PlainObject = {}) {
     ...(settings || {}),
     ...rest,
   };
+}
+
+function validateApplyFieldInputs(fields?: PlainObject[]) {
+  if (!Array.isArray(fields)) {
+    return;
+  }
+
+  fields.forEach((field) => validateChoiceFieldInput(field));
 }
 
 export async function findCollection(ctx, collectionName: string) {
@@ -49,6 +57,7 @@ export async function upsertFieldDefinition(ctx, rawInput: PlainObject) {
     throw new Error('field apply requires collectionName');
   }
 
+  validateChoiceFieldInput(input);
   const values = normalizeFieldInput(input, { collectionName });
   await assertModelingSupport(ctx.app, { fields: [values] });
 
@@ -106,6 +115,7 @@ export async function applyCollectionDefinition(
     throw new Error('collections:apply requires name');
   }
 
+  validateApplyFieldInputs(input.fields);
   const existing = await findCollection(ctx, collectionName);
 
   if (!existing) {
