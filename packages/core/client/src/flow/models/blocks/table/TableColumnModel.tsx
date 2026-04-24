@@ -472,7 +472,12 @@ TableColumnModel.registerFlow({
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
         const targetInterface = ctx.model.collectionField.getInterfaceOptions();
-        return !targetInterface.sortable || ctx.associationModel;
+        return (
+          !targetInterface.sortable ||
+          ctx.collectionField?.isAssociationField?.() ||
+          !!ctx.model.associationPathName ||
+          ctx.associationModel
+        );
       },
       defaultParams: {
         sorter: false,
