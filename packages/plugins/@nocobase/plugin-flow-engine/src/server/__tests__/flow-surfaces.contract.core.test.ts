@@ -352,6 +352,32 @@ describe('flowSurfaces API contract core', () => {
     expect(readErrorMessage(rawWrappedValuesQueryRes)).toContain(`do not wrap them in 'values'`);
   });
 
+  it('should return structured bad_request errors when flow-surfaces write bodies are not top-level objects', async () => {
+    const nullBlueprintRes = await rootAgent
+      .post('/flowSurfaces:applyBlueprint')
+      .set('Content-Type', 'application/json')
+      .send('null');
+    expect(nullBlueprintRes.status).toBe(400);
+    expectStructuredError(readErrorItem(nullBlueprintRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorItem(nullBlueprintRes).code).toBe('FLOW_SURFACE_BAD_REQUEST');
+    expect(readErrorMessage(nullBlueprintRes)).toBe('flowSurfaces applyBlueprint payload must be an object');
+
+    const arrayComposeRes = await rootAgent
+      .post('/flowSurfaces:compose')
+      .set('Content-Type', 'application/json')
+      .send([]);
+    expect(arrayComposeRes.status).toBe(400);
+    expectStructuredError(readErrorItem(arrayComposeRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorItem(arrayComposeRes).code).toBe('FLOW_SURFACE_BAD_REQUEST');
+    expect(readErrorMessage(arrayComposeRes)).toBe('flowSurfaces compose values must be an object');
+  });
+
   it('should treat missing apply mode as replace and reject unsupported modes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Contract page',
