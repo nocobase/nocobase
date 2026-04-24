@@ -107,7 +107,7 @@
               "subModels": {
                 "field": {
                   "uid": "rd1njnddjka0",
-                  "use": "DisplayTextFieldModel",
+                  "use": "DisplayEnumFieldModel",
                   "stepParams": {
                     "fieldSettings": {
                       "init": {
@@ -224,7 +224,7 @@
               "subModels": {
                 "field": {
                   "uid": "vbvstng0dpma",
-                  "use": "DisplayTextFieldModel",
+                  "use": "DisplayEnumFieldModel",
                   "stepParams": {
                     "fieldSettings": {
                       "init": {
@@ -302,7 +302,7 @@
               "subModels": {
                 "field": {
                   "uid": "nol0fyesnipr",
-                  "use": "DisplayTextFieldModel",
+                  "use": "DisplayEnumFieldModel",
                   "stepParams": {
                     "fieldSettings": {
                       "init": {

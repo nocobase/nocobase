@@ -98,13 +98,13 @@
   "field.species.wrapper1": {
     "uid": "ri4ueon0fa1g"
   },
-  "node.DisplayTextFieldModel2": {
+  "node.DisplayEnumFieldModel1": {
     "uid": "i2zc9f5gz82v"
   },
   "field.breed.wrapper1": {
     "uid": "eh3ezt5pjv4d"
   },
-  "node.DisplayTextFieldModel3": {
+  "node.DisplayTextFieldModel2": {
     "uid": "cirur093vavv"
   },
   "field.ageYears.wrapper1": {
@@ -116,19 +116,19 @@
   "field.gender.wrapper1": {
     "uid": "bsur5cgu9jkv"
   },
-  "node.DisplayTextFieldModel4": {
+  "node.DisplayEnumFieldModel2": {
     "uid": "dv7lgscpoax1"
   },
   "field.owner.wrapper1": {
     "uid": "qk34mlk35960"
   },
-  "node.DisplayTextFieldModel5": {
+  "node.DisplayTextFieldModel3": {
     "uid": "cxgh58dvuu0d"
   },
   "field.status.wrapper1": {
     "uid": "gmfa7c7px9gz"
   },
-  "node.DisplayTextFieldModel6": {
+  "node.DisplayEnumFieldModel3": {
     "uid": "f8559to124ol"
   },
   "field.vaccinated.wrapper1": {
@@ -173,19 +173,19 @@
   "field.name.wrapper2": {
     "uid": "ak1p7lei4dun"
   },
-  "node.DisplayTextFieldModel7": {
+  "node.DisplayTextFieldModel4": {
     "uid": "g5w5yampdf15"
   },
   "field.species.wrapper2": {
     "uid": "f34uio74shio"
   },
-  "node.DisplayTextFieldModel8": {
+  "node.DisplayEnumFieldModel4": {
     "uid": "rd1njnddjka0"
   },
   "field.breed.wrapper2": {
     "uid": "al8zg87eu739"
   },
-  "node.DisplayTextFieldModel9": {
+  "node.DisplayTextFieldModel5": {
     "uid": "bnlkyabme31d"
   },
   "field.ageYears.wrapper2": {
@@ -197,19 +197,19 @@
   "field.gender.wrapper2": {
     "uid": "cul9x0hro5d0"
   },
-  "node.DisplayTextFieldModel10": {
+  "node.DisplayEnumFieldModel5": {
     "uid": "vbvstng0dpma"
   },
   "field.owner.wrapper2": {
     "uid": "ol3fjo39iqup"
   },
-  "node.DisplayTextFieldModel11": {
+  "node.DisplayTextFieldModel6": {
     "uid": "lao3dohdgbw6"
   },
   "field.status.wrapper2": {
     "uid": "yf7kossp3y9i"
   },
-  "node.DisplayTextFieldModel12": {
+  "node.DisplayEnumFieldModel6": {
     "uid": "nol0fyesnipr"
   },
   "field.vaccinated.wrapper2": {
@@ -227,7 +227,7 @@
   "field.notes.wrapper1": {
     "uid": "hk33ueoh3h7m"
   },
-  "node.DisplayTextFieldModel13": {
+  "node.DisplayTextFieldModel7": {
     "uid": "pr1qe69t2d4e"
   },
   "field.createdAt.wrapper": {

@@ -97,7 +97,7 @@
           "subModels": {
             "field": {
               "uid": "i2zc9f5gz82v",
-              "use": "DisplayTextFieldModel",
+              "use": "DisplayEnumFieldModel",
               "stepParams": {
                 "fieldSettings": {
                   "init": {
@@ -214,7 +214,7 @@
           "subModels": {
             "field": {
               "uid": "dv7lgscpoax1",
-              "use": "DisplayTextFieldModel",
+              "use": "DisplayEnumFieldModel",
               "stepParams": {
                 "fieldSettings": {
                   "init": {
@@ -292,7 +292,7 @@
           "subModels": {
             "field": {
               "uid": "f8559to124ol",
-              "use": "DisplayTextFieldModel",
+              "use": "DisplayEnumFieldModel",
               "stepParams": {
                 "fieldSettings": {
                   "init": {
@@ -592,7 +592,7 @@
                                               "subModels": {
                                                 "field": {
                                                   "uid": "rd1njnddjka0",
-                                                  "use": "DisplayTextFieldModel",
+                                                  "use": "DisplayEnumFieldModel",
                                                   "stepParams": {
                                                     "fieldSettings": {
                                                       "init": {
@@ -709,7 +709,7 @@
                                               "subModels": {
                                                 "field": {
                                                   "uid": "vbvstng0dpma",
-                                                  "use": "DisplayTextFieldModel",
+                                                  "use": "DisplayEnumFieldModel",
                                                   "stepParams": {
                                                     "fieldSettings": {
                                                       "init": {
@@ -787,7 +787,7 @@
                                               "subModels": {
                                                 "field": {
                                                   "uid": "nol0fyesnipr",
-                                                  "use": "DisplayTextFieldModel",
+                                                  "use": "DisplayEnumFieldModel",
                                                   "stepParams": {
                                                     "fieldSettings": {
                                                       "init": {
@@ -2217,7 +2217,7 @@
     },
     "i2zc9f5gz82v": {
       "uid": "i2zc9f5gz82v",
-      "use": "DisplayTextFieldModel",
+      "use": "DisplayEnumFieldModel",
       "stepParams": {
         "fieldSettings": {
           "init": {
@@ -2310,7 +2310,7 @@
     },
     "dv7lgscpoax1": {
       "uid": "dv7lgscpoax1",
-      "use": "DisplayTextFieldModel",
+      "use": "DisplayEnumFieldModel",
       "stepParams": {
         "fieldSettings": {
           "init": {
@@ -2372,7 +2372,7 @@
     },
     "f8559to124ol": {
       "uid": "f8559to124ol",
-      "use": "DisplayTextFieldModel",
+      "use": "DisplayEnumFieldModel",
       "stepParams": {
         "fieldSettings": {
           "init": {
@@ -2610,7 +2610,7 @@
     },
     "rd1njnddjka0": {
       "uid": "rd1njnddjka0",
-      "use": "DisplayTextFieldModel",
+      "use": "DisplayEnumFieldModel",
       "stepParams": {
         "fieldSettings": {
           "init": {
@@ -2703,7 +2703,7 @@
     },
     "vbvstng0dpma": {
       "uid": "vbvstng0dpma",
-      "use": "DisplayTextFieldModel",
+      "use": "DisplayEnumFieldModel",
       "stepParams": {
         "fieldSettings": {
           "init": {
@@ -2765,7 +2765,7 @@
     },
     "nol0fyesnipr": {
       "uid": "nol0fyesnipr",
-      "use": "DisplayTextFieldModel",
+      "use": "DisplayEnumFieldModel",
       "stepParams": {
         "fieldSettings": {
           "init": {

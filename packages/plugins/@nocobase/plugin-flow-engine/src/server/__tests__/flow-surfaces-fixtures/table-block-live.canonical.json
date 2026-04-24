@@ -581,8 +581,8 @@
           "subModels": {
             "field": [
               {
-                "alias": "node.DisplayTextFieldModel2",
-                "use": "DisplayTextFieldModel",
+                "alias": "node.DisplayEnumFieldModel1",
+                "use": "DisplayEnumFieldModel",
                 "stepParams": {
                   "fieldSettings": {
                     "init": {
@@ -616,7 +616,7 @@
           "subModels": {
             "field": [
               {
-                "alias": "node.DisplayTextFieldModel3",
+                "alias": "node.DisplayTextFieldModel2",
                 "use": "DisplayTextFieldModel",
                 "stepParams": {
                   "fieldSettings": {
@@ -686,8 +686,8 @@
           "subModels": {
             "field": [
               {
-                "alias": "node.DisplayTextFieldModel4",
-                "use": "DisplayTextFieldModel",
+                "alias": "node.DisplayEnumFieldModel2",
+                "use": "DisplayEnumFieldModel",
                 "stepParams": {
                   "fieldSettings": {
                     "init": {
@@ -721,7 +721,7 @@
           "subModels": {
             "field": [
               {
-                "alias": "node.DisplayTextFieldModel5",
+                "alias": "node.DisplayTextFieldModel3",
                 "use": "DisplayTextFieldModel",
                 "stepParams": {
                   "fieldSettings": {
@@ -756,8 +756,8 @@
           "subModels": {
             "field": [
               {
-                "alias": "node.DisplayTextFieldModel6",
-                "use": "DisplayTextFieldModel",
+                "alias": "node.DisplayEnumFieldModel3",
+                "use": "DisplayEnumFieldModel",
                 "stepParams": {
                   "fieldSettings": {
                     "init": {
@@ -986,7 +986,7 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel7",
+                                                          "alias": "node.DisplayTextFieldModel4",
                                                           "use": "DisplayTextFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {
@@ -1021,8 +1021,8 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel8",
-                                                          "use": "DisplayTextFieldModel",
+                                                          "alias": "node.DisplayEnumFieldModel4",
+                                                          "use": "DisplayEnumFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {
                                                               "init": {
@@ -1056,7 +1056,7 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel9",
+                                                          "alias": "node.DisplayTextFieldModel5",
                                                           "use": "DisplayTextFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {
@@ -1126,8 +1126,8 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel10",
-                                                          "use": "DisplayTextFieldModel",
+                                                          "alias": "node.DisplayEnumFieldModel5",
+                                                          "use": "DisplayEnumFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {
                                                               "init": {
@@ -1161,7 +1161,7 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel11",
+                                                          "alias": "node.DisplayTextFieldModel6",
                                                           "use": "DisplayTextFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {
@@ -1196,8 +1196,8 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel12",
-                                                          "use": "DisplayTextFieldModel",
+                                                          "alias": "node.DisplayEnumFieldModel6",
+                                                          "use": "DisplayEnumFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {
                                                               "init": {
@@ -1301,7 +1301,7 @@
                                                     "subModels": {
                                                       "field": [
                                                         {
-                                                          "alias": "node.DisplayTextFieldModel13",
+                                                          "alias": "node.DisplayTextFieldModel7",
                                                           "use": "DisplayTextFieldModel",
                                                           "stepParams": {
                                                             "fieldSettings": {

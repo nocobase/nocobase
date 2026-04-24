@@ -991,16 +991,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const { popupBlock } = await readPrimaryPopupBlockFromAction(addNewAction.uid);
     expect(popupBlock?.use).toBe('CreateFormModel');
 
-    const checkboxGroupField = collectDescendantNodes(
+    const checkboxGroupFormItem = collectDescendantNodes(
       popupBlock,
-      (item) =>
-        item?.use === 'SelectFieldModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === checkboxGroupFieldPath,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === checkboxGroupFieldPath,
     )[0];
-    expect(checkboxGroupField?.use).toBe('SelectFieldModel');
-    expect(checkboxGroupField?.props).toMatchObject({
-      allowClear: true,
-      mode: 'tags',
-    });
+    const checkboxGroupField = _.castArray(checkboxGroupFormItem?.subModels?.field || [])[0];
+    expect(checkboxGroupField?.use).toBe('CheckboxGroupFieldModel');
   });
 
   it('should apply blueprint defaults to generated popup names and grouped popup fields', async () => {
