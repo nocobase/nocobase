@@ -128,7 +128,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'TableColumnModel',
+      wrapperUse: 'TableColumnModel',
       fieldUse: 'DisplayEnumFieldModel',
     });
 
@@ -141,7 +141,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'DetailsItemModel',
+      wrapperUse: 'DetailsItemModel',
       fieldUse: 'DisplayEnumFieldModel',
     });
 
@@ -154,7 +154,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'FormItemModel',
+      wrapperUse: 'FormItemModel',
       fieldUse: 'RadioGroupFieldModel',
     });
 
@@ -167,7 +167,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'FormItemModel',
+      wrapperUse: 'FormItemModel',
       fieldUse: 'CheckboxGroupFieldModel',
     });
 
@@ -180,7 +180,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'FormItemModel',
+      wrapperUse: 'FormItemModel',
       fieldUse: 'CollectionSelectorFieldModel',
     });
 
@@ -193,7 +193,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'FilterFormItemModel',
+      wrapperUse: 'FilterFormItemModel',
       fieldUse: 'SelectFieldModel',
     });
 
@@ -206,7 +206,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'FilterFormItemModel',
+      wrapperUse: 'FilterFormItemModel',
       fieldUse: 'SelectFieldModel',
     });
 
@@ -219,7 +219,7 @@ describe('flowSurfaces field binding registry', () => {
         },
       }),
     ).toMatchObject({
-      use: 'FilterFormItemModel',
+      wrapperUse: 'FilterFormItemModel',
       fieldUse: 'NumberFieldModel',
     });
 

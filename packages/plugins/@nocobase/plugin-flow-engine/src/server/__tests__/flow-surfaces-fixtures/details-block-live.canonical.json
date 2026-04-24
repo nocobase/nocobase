@@ -92,7 +92,7 @@
                   "field": [
                     {
                       "alias": "field.species.inner",
-                      "use": "DisplayTextFieldModel",
+                      "use": "DisplayEnumFieldModel",
                       "stepParams": {
                         "fieldSettings": {
                           "init": {
@@ -197,7 +197,7 @@
                   "field": [
                     {
                       "alias": "field.gender.inner",
-                      "use": "DisplayTextFieldModel",
+                      "use": "DisplayEnumFieldModel",
                       "stepParams": {
                         "fieldSettings": {
                           "init": {
@@ -267,7 +267,7 @@
                   "field": [
                     {
                       "alias": "field.status.inner",
-                      "use": "DisplayTextFieldModel",
+                      "use": "DisplayEnumFieldModel",
                       "stepParams": {
                         "fieldSettings": {
                           "init": {

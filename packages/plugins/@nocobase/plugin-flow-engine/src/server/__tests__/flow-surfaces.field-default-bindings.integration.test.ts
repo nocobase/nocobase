@@ -83,10 +83,6 @@ describe('flowSurfaces field default bindings', () => {
       use: 'TableColumnModel',
       fieldUse: 'DisplayEnumFieldModel',
     });
-    expect(findCatalogField(tableCatalog, 'scope')).toMatchObject({
-      use: 'TableColumnModel',
-      fieldUse: 'DisplayEnumFieldModel',
-    });
     expect(findCatalogField(tableCatalog, '__collection')).toMatchObject({
       use: 'TableColumnModel',
       fieldUse: 'DisplayEnumFieldModel',
@@ -103,10 +99,6 @@ describe('flowSurfaces field default bindings', () => {
     expect(findCatalogField(formCatalog, 'tags')).toMatchObject({
       use: 'FormItemModel',
       fieldUse: 'CheckboxGroupFieldModel',
-    });
-    expect(findCatalogField(formCatalog, 'scope')).toMatchObject({
-      use: 'FormItemModel',
-      fieldUse: 'CollectionSelectorFieldModel',
     });
     expect(findCatalogField(formCatalog, '__collection')).toMatchObject({
       use: 'FormItemModel',
@@ -262,10 +254,6 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
           ],
         },
         {
-          name: 'scope',
-          interface: 'collection',
-        },
-        {
           interface: 'tableoid',
         },
         {
@@ -283,7 +271,7 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
   });
 
   await waitForFixtureCollectionsReady(app.db as any, {
-    [collectionName]: ['title', 'status', 'stage', 'tags', 'scope', '__collection', 'enabled', 'rank'],
+    [collectionName]: ['title', 'status', 'stage', 'tags', 'enabled', 'rank'],
   });
 
   return collectionName;

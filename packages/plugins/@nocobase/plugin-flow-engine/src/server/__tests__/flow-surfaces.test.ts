@@ -4308,7 +4308,7 @@ describe('flowSurfaces resource', () => {
     const updateFieldMode = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
-          uid: checkboxGroupField.fieldUid,
+          uid: checkboxGroupField.wrapperUid,
         },
         props: {
           disabled: true,
@@ -4318,7 +4318,7 @@ describe('flowSurfaces resource', () => {
     expect(updateFieldMode.status).toBe(200);
 
     const updatedReadback = await getSurface(rootAgent, {
-      uid: checkboxGroupField.fieldUid,
+      uid: checkboxGroupField.wrapperUid,
     });
     expect(updatedReadback.tree.props).toMatchObject({
       disabled: true,

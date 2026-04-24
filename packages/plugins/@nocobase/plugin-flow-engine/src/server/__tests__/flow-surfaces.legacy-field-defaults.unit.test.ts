@@ -12,12 +12,12 @@ import { describe, expect, it } from 'vitest';
 import { readCreateParityFixtureExpectation } from './flow-surfaces.fixtures';
 
 describe('flowSurfaces legacy field default compatibility', () => {
-  it('should keep persisted legacy enum display fixtures readable without rewriting their field uses', () => {
+  it('should keep persisted enum display fixtures aligned with current display defaults', () => {
     const legacyTableTree = readCreateParityFixtureExpectation('table', 'table-block-live');
 
-    expect(getTableFieldUseByPath(legacyTableTree, 'species')).toBe('DisplayTextFieldModel');
-    expect(getTableFieldUseByPath(legacyTableTree, 'gender')).toBe('DisplayTextFieldModel');
-    expect(getTableFieldUseByPath(legacyTableTree, 'status')).toBe('DisplayTextFieldModel');
+    expect(getTableFieldUseByPath(legacyTableTree, 'species')).toBe('DisplayEnumFieldModel');
+    expect(getTableFieldUseByPath(legacyTableTree, 'gender')).toBe('DisplayEnumFieldModel');
+    expect(getTableFieldUseByPath(legacyTableTree, 'status')).toBe('DisplayEnumFieldModel');
   });
 });
 

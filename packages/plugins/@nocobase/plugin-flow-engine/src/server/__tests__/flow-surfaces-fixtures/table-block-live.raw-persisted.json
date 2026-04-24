@@ -100,7 +100,7 @@
           "subModels": {
             "field": {
               "uid": "i2zc9f5gz82v",
-              "use": "DisplayTextFieldModel",
+              "use": "DisplayEnumFieldModel",
               "stepParams": {
                 "fieldSettings": {
                   "init": {
@@ -217,7 +217,7 @@
           "subModels": {
             "field": {
               "uid": "dv7lgscpoax1",
-              "use": "DisplayTextFieldModel",
+              "use": "DisplayEnumFieldModel",
               "stepParams": {
                 "fieldSettings": {
                   "init": {
@@ -295,7 +295,7 @@
           "subModels": {
             "field": {
               "uid": "f8559to124ol",
-              "use": "DisplayTextFieldModel",
+              "use": "DisplayEnumFieldModel",
               "stepParams": {
                 "fieldSettings": {
                   "init": {
@@ -595,7 +595,7 @@
                                               "subModels": {
                                                 "field": {
                                                   "uid": "rd1njnddjka0",
-                                                  "use": "DisplayTextFieldModel",
+                                                  "use": "DisplayEnumFieldModel",
                                                   "stepParams": {
                                                     "fieldSettings": {
                                                       "init": {
@@ -712,7 +712,7 @@
                                               "subModels": {
                                                 "field": {
                                                   "uid": "vbvstng0dpma",
-                                                  "use": "DisplayTextFieldModel",
+                                                  "use": "DisplayEnumFieldModel",
                                                   "stepParams": {
                                                     "fieldSettings": {
                                                       "init": {
@@ -790,7 +790,7 @@
                                               "subModels": {
                                                 "field": {
                                                   "uid": "nol0fyesnipr",
-                                                  "use": "DisplayTextFieldModel",
+                                                  "use": "DisplayEnumFieldModel",
                                                   "stepParams": {
                                                     "fieldSettings": {
                                                       "init": {
