@@ -12,12 +12,13 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi } from 'vitest';
 import Download, { defaultDockerRegistryForLang } from '../commands/download.js';
 import Init from '../commands/init.js';
 import EnvAdd from '../commands/env/add.js';
 import Install from '../commands/install.js';
 import { saveAuthConfig } from '../lib/auth-store.js';
+import { resolveLocalizedText } from '../lib/cli-locale.js';
 import { runPromptCatalog } from '../lib/prompt-catalog.js';
 import {
   findAvailableTcpPort,
@@ -38,6 +39,20 @@ async function withTempProjectCwd(run: () => Promise<void>) {
     await rm(tempRoot, { recursive: true, force: true });
   }
 }
+
+const originalNbLocale = process.env.NB_LOCALE;
+
+beforeEach(() => {
+  process.env.NB_LOCALE = 'en-US';
+});
+
+afterEach(() => {
+  if (originalNbLocale === undefined) {
+    delete process.env.NB_LOCALE;
+    return;
+  }
+  process.env.NB_LOCALE = originalNbLocale;
+});
 
 test('validateApiBaseUrl accepts http and https URLs', () => {
   assert.equal(validateApiBaseUrl('http://localhost:13000/api'), undefined);
@@ -307,7 +322,7 @@ test('install prompts expose the expected defaults and validators', () => {
   assert.equal(rootEmailPrompt.required, true);
 
   assert.equal(rootPasswordPrompt.type, 'password');
-  assert.equal(rootPasswordPrompt.message, 'Choose the initial admin password');
+  assert.equal(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' }), 'Choose the initial admin password');
   assert.equal(rootPasswordPrompt.initialValue, undefined);
   assert.equal(rootPasswordPrompt.yesInitialValue, 'admin123');
   assert.equal(rootPasswordPrompt.required, true);

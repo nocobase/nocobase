@@ -25,6 +25,11 @@ import {
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import {
+  applyCliLocale,
+  localeText,
+  translateCli,
+} from '../lib/cli-locale.ts';
+import {
   findAvailableTcpPort,
   validateAvailableTcpPort,
   validateTcpPort,
@@ -144,6 +149,9 @@ const INSTALL_LANGUAGE_OPTIONS = Object.entries(INSTALL_LANGUAGE_CODES).map(([va
   label: `${label} (${value})`,
 }));
 
+const installText = (key: string, values?: Record<string, unknown>) =>
+  localeText(`commands.install.${key}`, values);
+
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((t) => argv.includes(t));
 }
@@ -198,7 +206,7 @@ function validateBuiltinDbEnabled(
     return undefined;
   }
 
-  return `Built-in database does not support "${dialect}" yet. Choose PostgreSQL, MySQL, or MariaDB, or turn off built-in database.`;
+  return translateCli('commands.install.validation.builtinDbUnsupported', { dialect });
 }
 
 function defaultInstallAppRootPath(envName: PromptValue | undefined): string {
@@ -287,6 +295,7 @@ async function commandOutput(
 type InstallParsedFlags = {
   yes: boolean;
   resume: boolean;
+  locale?: string;
   env?: string;
   lang?: string;
   force: boolean;
@@ -479,8 +488,8 @@ export default class Install extends Command {
   static envPrompts: PromptsCatalog = {
     env: {
       type: 'text',
-      message: 'What would you like to call this app?',
-      placeholder: DEFAULT_INSTALL_ENV_NAME,
+      message: installText('prompts.env.message'),
+      placeholder: installText('prompts.env.placeholder'),
       required: true,
       validate: validateEnvKey,
     },
@@ -489,7 +498,7 @@ export default class Install extends Command {
   static appPrompts: PromptsCatalog = {
     lang: {
       type: 'select',
-      message: 'Which language would you like to use?',
+      message: installText('prompts.lang.message'),
       options: INSTALL_LANGUAGE_OPTIONS,
       initialValue: DEFAULT_INSTALL_LANG,
       yesInitialValue: DEFAULT_INSTALL_LANG,
@@ -502,25 +511,25 @@ export default class Install extends Command {
     // },
     appRootPath: {
       type: 'text',
-      message: 'Where should this app be stored?',
-      placeholder: './<env>/source/',
+      message: installText('prompts.appRootPath.message'),
+      placeholder: installText('prompts.appRootPath.placeholder'),
       initialValue: (values) => defaultInstallAppRootPath(values.env ?? values.appName),
     },
     appPort: {
       type: 'text',
-      message: 'Which port should this app use?',
-      placeholder: DEFAULT_INSTALL_APP_PORT,
+      message: installText('prompts.appPort.message'),
+      placeholder: installText('prompts.appPort.placeholder'),
       validate: validateAvailableTcpPort,
     },
     storagePath: {
       type: 'text',
-      message: 'Where should uploads and local files be stored?',
-      placeholder: './<env>/storage/',
+      message: installText('prompts.storagePath.message'),
+      placeholder: installText('prompts.storagePath.placeholder'),
       initialValue: (values) => defaultInstallStoragePath(values.env ?? values.appName),
     },
     fetchSource: {
       type: 'boolean',
-      message: 'Download NocoBase automatically if the app directory is empty?',
+      message: installText('prompts.fetchSource.message'),
       initialValue: true,
       yesInitialValue: true,
     },
@@ -529,7 +538,7 @@ export default class Install extends Command {
   static dbPrompts: PromptsCatalog = {
     dbDialect: {
       type: 'select',
-      message: 'Which database would you like to use?',
+      message: installText('prompts.dbDialect.message'),
       options: [
         { value: 'postgres', label: 'PostgreSQL' },
         { value: 'mysql', label: 'MySQL' },
@@ -542,15 +551,15 @@ export default class Install extends Command {
     },
     builtinDb: {
       type: 'boolean',
-      message: "Would you like to use the built-in database?",
+      message: installText('prompts.builtinDb.message'),
       initialValue: true,
       yesInitialValue: true,
       validate: validateBuiltinDbEnabled,
     },
     builtinDbImage: {
       type: 'text',
-      message: 'Which Docker image should be used for the built-in database?',
-      placeholder: 'postgres:16',
+      message: installText('prompts.builtinDbImage.message'),
+      placeholder: installText('prompts.builtinDbImage.placeholder'),
       initialValue: (values) => defaultBuiltinDbImageForDialect(values.dbDialect),
       hidden: (values) =>
         !Boolean(values.builtinDb)
@@ -559,8 +568,8 @@ export default class Install extends Command {
     },
     dbHost: {
       type: 'text',
-      message: 'What is the database host?',
-      placeholder: DEFAULT_INSTALL_DB_HOST,
+      message: installText('prompts.dbHost.message'),
+      placeholder: installText('prompts.dbHost.placeholder'),
       initialValue: (values) => defaultDbHostForBuiltinDb(values),
       yesInitialValue: DEFAULT_INSTALL_BUILTIN_DB_HOST,
       required: true,
@@ -568,8 +577,8 @@ export default class Install extends Command {
     },
     dbPort: {
       type: 'text',
-      message: 'What is the database port?',
-      placeholder: DEFAULT_INSTALL_DB_PORTS.postgres,
+      message: installText('prompts.dbPort.message'),
+      placeholder: installText('prompts.dbPort.placeholder'),
       initialValue: (values) => defaultDbPortForDialect(values.dbDialect),
       required: true,
       validate: validateTcpPort,
@@ -579,20 +588,20 @@ export default class Install extends Command {
     },
     dbDatabase: {
       type: 'text',
-      message: 'What is the database name?',
+      message: installText('prompts.dbDatabase.message'),
       initialValue: (values) => defaultDbDatabaseForDialect(values.dbDialect),
       required: true,
     },
     dbUser: {
       type: 'text',
-      message: 'What is the database username?',
+      message: installText('prompts.dbUser.message'),
       initialValue: DEFAULT_INSTALL_DB_USER,
       yesInitialValue: DEFAULT_INSTALL_DB_USER,
       required: true,
     },
     dbPassword: {
       type: 'password',
-      message: 'What is the database password?',
+      message: installText('prompts.dbPassword.message'),
       initialValue: DEFAULT_INSTALL_DB_PASSWORD,
       yesInitialValue: DEFAULT_INSTALL_DB_PASSWORD,
       required: true,
@@ -602,28 +611,28 @@ export default class Install extends Command {
   static rootUserPrompts: PromptsCatalog = {
     rootUsername: {
       type: 'text',
-      message: 'Choose the initial admin username',
-      placeholder: DEFAULT_INSTALL_ROOT_USERNAME,
+      message: installText('prompts.rootUsername.message'),
+      placeholder: installText('prompts.rootUsername.placeholder'),
       yesInitialValue: DEFAULT_INSTALL_ROOT_USERNAME,
       required: true,
     },
     rootEmail: {
       type: 'text',
-      message: 'What is the initial admin email?',
-      placeholder: DEFAULT_INSTALL_ROOT_EMAIL,
+      message: installText('prompts.rootEmail.message'),
+      placeholder: installText('prompts.rootEmail.placeholder'),
       yesInitialValue: DEFAULT_INSTALL_ROOT_EMAIL,
       required: true,
     },
     rootPassword: {
       type: 'password',
-      message: 'Choose the initial admin password',
+      message: installText('prompts.rootPassword.message'),
       yesInitialValue: DEFAULT_INSTALL_ROOT_PASSWORD,
       required: true,
     },
     rootNickname: {
       type: 'text',
-      message: 'What display name should the initial admin use?',
-      placeholder: DEFAULT_INSTALL_ROOT_NICKNAME,
+      message: installText('prompts.rootNickname.message'),
+      placeholder: installText('prompts.rootNickname.placeholder'),
       yesInitialValue: DEFAULT_INSTALL_ROOT_NICKNAME,
       required: true,
     },
@@ -2348,6 +2357,7 @@ export default class Install extends Command {
 
   public async run(): Promise<void> {
     const parsedResult = await this.parse(Install);
+    applyCliLocale((parsedResult.flags as InstallParsedFlags).locale);
     const flags = parsedResult.flags;
 
     const parsed = {

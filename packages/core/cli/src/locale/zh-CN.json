@@ -1,0 +1,277 @@
+{
+  "promptCatalog": {
+    "common": {
+      "cancelled": "已取消。",
+      "required": "必填",
+      "mustBeInteger": "必须为整数"
+    },
+    "preset": {
+      "required": "\"{{key}}\" 为必填项；请设置非空的 values.{{key}}，或移除该值以进入交互式填写。",
+      "invalidSelect": "values.{{key}} 无效：\"{{value}}\"。可选值为：{{options}}",
+      "invalidInteger": "values.{{key}} 无效：必须为整数。"
+    },
+    "nonInteractive": {
+      "textRequired": "非交互模式下，\"{{key}}\" 为必填项；请设置 initialValues.{{key}}、yesInitialValues.{{key}}、block 上的 yesInitialValue，或 initialValue。",
+      "selectMissingDefault": "非交互模式下，请为 {{key}} 设置 initialValues.{{key}}、yesInitialValues.{{key}}，或在 select block 上配置 initialValue / yesInitialValue / options。",
+      "selectInvalidValue": "{{key}} 的值无效：{{value}}。可选值为：{{options}}",
+      "selectRequiredNoOptions": "下拉项 \"{{key}}\" 为必填项，但当前没有可选项。",
+      "selectRequiredInteractive": "下拉项 \"{{key}}\" 为必填项；请设置 initialValues.{{key}}，或在 select block 上配置 initialValue / options。",
+      "selectMissingInteractiveDefault": "下拉项 \"{{key}}\" 没有可用默认值；请设置 initialValues.{{key}}，或在 block 上配置 options。",
+      "passwordRequired": "非交互模式下，\"{{key}}\" 为必填项；请设置 initialValues.{{key}}、yesInitialValues.{{key}}，或在 block 上配置 initialValue / yesInitialValue。",
+      "passwordRequiredNonEmpty": "非交互模式下，\"{{key}}\" 为必填项；请提供非空的 initialValues / yesInitialValues / initialValue / yesInitialValue。",
+      "integerRequired": "非交互模式下，\"{{key}}\" 为必填项；请设置 initialValues.{{key}}、yesInitialValues.{{key}}，或在 block 上配置 initialValue / yesInitialValue。"
+    },
+    "web": {
+      "pageTitle": "参数配置（本地页面）",
+      "documentHeading": "配置参数（仅本机可访问）",
+      "documentHint": "该服务仅监听本机回环地址。提交后，CLI 会在当前终端会话中继续执行。",
+      "defaultFormTitle": "表单",
+      "defaultStepTitle": "步骤 {{index}}",
+      "stepsAriaLabel": "表单步骤",
+      "stepsSidebarAriaLabel": "步骤导航",
+      "stepNavigationAriaLabel": "步骤导航与提交",
+      "submitAriaLabel": "提交",
+      "back": "上一步",
+      "next": "下一步",
+      "submit": "提交并回到终端继续",
+      "checking": "检查中...",
+      "sending": "提交中...",
+      "successTitle": "成功",
+      "errorTitle": "错误",
+      "savedAndClosing": "已保存。此标签页将在 5 秒后自动关闭。",
+      "savedCloseBlocked": "已保存。浏览器阻止了自动关闭，你现在可以手动关闭此标签页。",
+      "invalidValue": "无效值",
+      "invalidRequest": "请求无效",
+      "invalidStep": "步骤参数无效或缺失。",
+      "invalidField": "字段参数无效或缺失。",
+      "fieldRequired": "字段 \"{{key}}\" 为必填项。",
+      "fieldMustBeInteger": "字段 \"{{key}}\" 必须为整数。"
+    }
+  },
+  "validators": {
+    "apiBaseUrl": {
+      "invalid": "请输入有效的 URL，例如 {{example}}。",
+      "invalidProtocol": "URL 必须以 http:// 或 https:// 开头，例如 {{example}}。"
+    },
+    "envKey": {
+      "invalid": "仅支持字母和数字。"
+    },
+    "tcpPort": {
+      "invalid": "请输入 1 到 65535 之间的有效 TCP 端口，例如 {{example}}。",
+      "allocateFailed": "分配可用 TCP 端口失败。",
+      "allocateNotDockerPublished": "分配未被 Docker 占用的可用 TCP 端口失败。",
+      "alreadyInUse": "端口 {{port}} 已被占用，请更换其他端口。",
+      "alreadyInUseByDocker": "端口 {{port}} 已被 Docker 容器占用，请更换其他端口。"
+    }
+  },
+  "commands": {
+    "envAdd": {
+      "prompts": {
+        "name": {
+          "message": "你想如何命名这个环境？",
+          "placeholder": "default"
+        },
+        "scope": {
+          "message": "这个连接要保存到哪里？",
+          "projectLabel": "项目内",
+          "projectHint": "保存在当前仓库的 .nocobase 中",
+          "globalLabel": "全局",
+          "globalHint": "保存在用户级配置中"
+        },
+        "apiBaseUrl": {
+          "message": "API 基础地址是什么？",
+          "placeholder": "http://localhost:13000/api"
+        },
+        "authType": {
+          "message": "你想使用哪种登录方式？",
+          "oauthLabel": "OAuth（浏览器登录）",
+          "oauthHint": "保存后会自动执行 nb env auth",
+          "tokenLabel": "API Token / API Key"
+        },
+        "accessToken": {
+          "message": "请输入 API Token 或 API Key",
+          "placeholder": "请输入你的 API Token / API Key"
+        }
+      }
+    },
+    "download": {
+      "prompts": {
+        "source": {
+          "message": "你想通过哪种方式获取 NocoBase？",
+          "npmLabel": "npm 包",
+          "gitLabel": "Git 仓库",
+          "dockerLabel": "Docker 镜像"
+        },
+        "version": {
+          "message": "你想使用哪个版本？这里可以填写 npm 版本号、Docker tag，或 Git ref（例如分支名）。",
+          "placeholder": "alpha"
+        },
+        "dockerRegistry": {
+          "message": "你想使用哪个 Docker registry？镜像 tag 请单独在 Version 中填写。",
+          "placeholder": "nocobase/nocobase"
+        },
+        "dockerPlatform": {
+          "message": "要使用哪个 Docker 镜像平台？",
+          "autoLabel": "自动",
+          "autoHint": "由 Docker 根据当前机器自动选择"
+        },
+        "dockerSave": {
+          "message": "将 Docker 镜像另存为 tar 文件"
+        },
+        "gitUrl": {
+          "message": "Git 仓库地址",
+          "placeholder": "https://github.com/nocobase/nocobase.git"
+        },
+        "outputDir": {
+          "message": "下载目录",
+          "placeholder": "例如 ./nocobase-latest"
+        },
+        "npmRegistry": {
+          "message": "npm registry 地址（可选）",
+          "placeholder": "留空则使用默认 registry"
+        },
+        "replace": {
+          "message": "如果应用目录已有文件，是否先清空再继续"
+        },
+        "devDependencies": {
+          "message": "安装开发依赖（仅 npm）"
+        },
+        "build": {
+          "message": "下载后构建应用"
+        },
+        "buildDts": {
+          "message": "生成 TypeScript 声明文件"
+        }
+      }
+    },
+    "install": {
+      "validation": {
+        "builtinDbUnsupported": "内置数据库暂不支持 \"{{dialect}}\"。请选择 PostgreSQL、MySQL 或 MariaDB，或者关闭内置数据库。"
+      },
+      "prompts": {
+        "env": {
+          "message": "你想如何命名这个应用？",
+          "placeholder": "local"
+        },
+        "lang": {
+          "message": "你想使用哪种语言？"
+        },
+        "appRootPath": {
+          "message": "应用代码要放到哪里？",
+          "placeholder": "./<env>/source/"
+        },
+        "appPort": {
+          "message": "应用要使用哪个端口？",
+          "placeholder": "13000"
+        },
+        "storagePath": {
+          "message": "上传文件和本地存储目录要放到哪里？",
+          "placeholder": "./<env>/storage/"
+        },
+        "fetchSource": {
+          "message": "如果应用目录为空，是否自动下载 NocoBase？"
+        },
+        "dbDialect": {
+          "message": "你想使用哪种数据库？"
+        },
+        "builtinDb": {
+          "message": "是否使用内置数据库？"
+        },
+        "builtinDbImage": {
+          "message": "内置数据库要使用哪个 Docker 镜像？",
+          "placeholder": "postgres:16"
+        },
+        "dbHost": {
+          "message": "数据库主机地址是什么？",
+          "placeholder": "127.0.0.1"
+        },
+        "dbPort": {
+          "message": "数据库端口是什么？",
+          "placeholder": "5432"
+        },
+        "dbDatabase": {
+          "message": "数据库名称是什么？"
+        },
+        "dbUser": {
+          "message": "数据库用户名是什么？"
+        },
+        "dbPassword": {
+          "message": "数据库密码是什么？"
+        },
+        "rootUsername": {
+          "message": "设置初始管理员用户名",
+          "placeholder": "nocobase"
+        },
+        "rootEmail": {
+          "message": "初始管理员邮箱是什么？",
+          "placeholder": "admin@nocobase.com"
+        },
+        "rootPassword": {
+          "message": "设置初始管理员密码"
+        },
+        "rootNickname": {
+          "message": "初始管理员显示名称是什么？",
+          "placeholder": "Super Admin"
+        }
+      }
+    },
+    "init": {
+      "validation": {
+        "envExists": "Env \"{{envName}}\" 已存在于当前 workspace 中，请换一个 app name。"
+      },
+      "messages": {
+        "appNameRequiredWhenSkipped": "跳过 prompts 时必须提供 App name。",
+        "appNameEnvHelp": "App name 也就是 CLI env name。请使用 `nb init --yes --env <envName>` 继续。",
+        "resumeEnvRequired": "恢复安装时必须提供 env name。",
+        "resumeEnvHelp": "App name 也就是 CLI env name。请使用 `nb init --resume --env <envName>` 继续。"
+      },
+      "prompts": {
+        "appName": {
+          "message": "App name（同时也是 CLI env name）",
+          "placeholder": "local"
+        },
+        "hasNocobase": {
+          "message": "你是否已经有一个 NocoBase 应用？",
+          "noLabel": "还没有 NocoBase 应用",
+          "yesLabel": "已经有 NocoBase 应用"
+        },
+        "installSkills": {
+          "message": "是否安装 NocoBase AI coding skills（nocobase/skills）？"
+        },
+        "apiBaseUrl": {
+          "message": "API 基础地址",
+          "placeholder": "http://localhost:13000/api"
+        }
+      },
+      "webUi": {
+        "pageTitle": "为 Coding Agents 配置 NocoBase",
+        "documentHeading": "为 Coding Agents 配置 NocoBase",
+        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的，然后将它保存为可供 agent 使用的 CLI 环境。",
+        "gettingStarted": {
+          "title": "开始设置",
+          "description": "选择你的配置路径。"
+        },
+        "connectExistingApp": {
+          "title": "连接已有应用",
+          "description": "添加现有应用连接。"
+        },
+        "createNewApp": {
+          "title": "创建新应用",
+          "description": "设置项目基础信息。"
+        },
+        "downloadAppFiles": {
+          "title": "下载应用文件",
+          "description": "选择来源和下载选项。"
+        },
+        "configureDatabase": {
+          "title": "配置数据库",
+          "description": "选择内置数据库或自定义数据库。"
+        },
+        "createAdminAccount": {
+          "title": "创建管理员账号",
+          "description": "设置第一个管理员账号。"
+        }
+      }
+    }
+  }
+}

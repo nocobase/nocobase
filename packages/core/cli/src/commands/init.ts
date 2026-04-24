@@ -23,6 +23,7 @@ import {
   type TextPromptBlock,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
+import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import {
   type RunPromptCatalogWebUIStage,
   runPromptCatalogWebUI,
@@ -38,6 +39,9 @@ const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const CONFIG_SCOPE = 'project' as const;
+
+const initText = (key: string, values?: Record<string, unknown>) =>
+  localeText(`commands.init.${key}`, values);
 
 function withExtraHidden(
   def: PromptBlock,
@@ -92,7 +96,7 @@ async function validateInitAppName(value: PromptValue): Promise<string | undefin
     if (shouldAllowExistingInitEnv()) {
       return undefined;
     }
-    return `Env "${envName}" already exists in this workspace. Choose another app name.`;
+    return translateCli('commands.init.validation.envExists', { envName });
   }
 
   return undefined;
@@ -106,20 +110,20 @@ function highlightInitValidationMessage(message: string): string {
 }
 
 function formatInitValidationMessage(message: string): string {
-  if (/"appName" is required/.test(message)) {
-    return [
-      'App name is required when prompts are skipped.',
-      'The app name is also the CLI env name. Use `nb init --yes --env <envName>` to continue.',
-    ].join('\n');
-  }
-
   return message;
 }
 
 function formatResumeEnvRequiredMessage(): string {
   return [
-    'Env name is required when resuming setup.',
-    'App name is also the CLI env name. Use `nb init --resume --env <envName>` to continue.',
+    translateCli('commands.init.messages.resumeEnvRequired'),
+    translateCli('commands.init.messages.resumeEnvHelp'),
+  ].join('\n');
+}
+
+function formatSkippedAppNameRequiredMessage(): string {
+  return [
+    translateCli('commands.init.messages.appNameRequiredWhenSkipped'),
+    translateCli('commands.init.messages.appNameEnvHelp'),
   ].join('\n');
 }
 
@@ -160,23 +164,23 @@ Prompt modes:
   static prompts: PromptsCatalog = {
     appName: {
       type: 'text',
-      message: 'App name (also used as the CLI env name)',
-      placeholder: DEFAULT_INIT_APP_NAME,
+      message: initText('prompts.appName.message'),
+      placeholder: initText('prompts.appName.placeholder'),
       required: true,
       validate: validateInitAppName,
     },
     hasNocobase: {
       type: 'select',
       variant: 'radio',
-      message: 'Do you already have a NocoBase application?',
+      message: initText('prompts.hasNocobase.message'),
       options: [
         {
           value: 'no',
-          label: "I don't have a NocoBase application yet",
+          label: initText('prompts.hasNocobase.noLabel'),
         },
         {
           value: 'yes',
-          label: 'I already have a NocoBase application',
+          label: initText('prompts.hasNocobase.yesLabel'),
         },
       ],
       initialValue: 'no',
@@ -185,14 +189,14 @@ Prompt modes:
     },
     installSkills: {
       type: 'boolean',
-      message: 'Install NocoBase AI coding skills (nocobase/skills)?',
+      message: initText('prompts.installSkills.message'),
       initialValue: true,
       yesInitialValue: true,
     },
     apiBaseUrl: existingAppOnly({
       type: 'text',
-      message: 'API base URL',
-      placeholder: DEFAULT_INIT_API_BASE_URL,
+      message: initText('prompts.apiBaseUrl.message'),
+      placeholder: initText('prompts.apiBaseUrl.placeholder'),
       required: true,
       validate: validateApiBaseUrl,
     }),
@@ -283,6 +287,7 @@ Prompt modes:
 
   public async run(): Promise<void> {
     const parsedResult = await this.parse(Init);
+    applyCliLocale((parsedResult.flags as { locale?: string }).locale);
     const flags = parsedResult.flags;
     const normalizedFlags = { ...flags };
 
@@ -413,9 +418,7 @@ Prompt modes:
     );
 
     if (normalizedFlags.yes && !String(presetValues.appName ?? '').trim()) {
-      const formatted = formatInitValidationMessage(
-        'Non-interactive: "appName" is required; set initialValues.appName, yesInitialValues.appName, yesInitialValue on the block, or initialValue.',
-      );
+      const formatted = formatSkippedAppNameRequiredMessage();
       p.log.error(highlightInitValidationMessage(formatted));
       this.exit(1);
     }
@@ -457,10 +460,9 @@ Prompt modes:
         },
         host: normalizedFlags['ui-host']?.trim() || '127.0.0.1',
         port: normalizedFlags['ui-port'] ?? 0,
-        pageTitle: 'Set Up NocoBase for Coding Agents',
-        documentHeading: 'Set Up NocoBase for Coding Agents',
-        documentHint:
-          'Connect an existing NocoBase app or install a new one, then save it as an agent-ready CLI environment.',
+        pageTitle: initText('webUi.pageTitle'),
+        documentHeading: initText('webUi.documentHeading'),
+        documentHint: initText('webUi.documentHint'),
         onServerStart: ({ host, port, url }) => {
           this.log(
             `Local setup form ready at ${url} (listening on ${host}:${port}). Submit it in your browser to continue here.`,
@@ -589,8 +591,8 @@ Prompt modes:
 
     return [
       {
-        sectionTitle: 'Getting started',
-        sectionDescription: 'Pick your setup path.',
+        sectionTitle: initText('webUi.gettingStarted.title'),
+        sectionDescription: initText('webUi.gettingStarted.description'),
         catalog: {
           appName: c.appName,
           hasNocobase: c.hasNocobase,
@@ -598,8 +600,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Connect an existing app',
-        sectionDescription: 'Add your app connection.',
+        sectionTitle: initText('webUi.connectExistingApp.title'),
+        sectionDescription: initText('webUi.connectExistingApp.description'),
         catalog: {
           apiBaseUrl: c.apiBaseUrl,
           authType: c.authType,
@@ -607,8 +609,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Create a new app',
-        sectionDescription: 'Set project basics.',
+        sectionTitle: initText('webUi.createNewApp.title'),
+        sectionDescription: initText('webUi.createNewApp.description'),
         catalog: {
           lang: c.lang,
           appRootPath: c.appRootPath,
@@ -618,8 +620,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Download app files',
-        sectionDescription: 'Choose source and options.',
+        sectionTitle: initText('webUi.downloadAppFiles.title'),
+        sectionDescription: initText('webUi.downloadAppFiles.description'),
         catalog: {
           source: c.source,
           version: c.version,
@@ -636,8 +638,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Configure the database',
-        sectionDescription: 'Use built-in or custom.',
+        sectionTitle: initText('webUi.configureDatabase.title'),
+        sectionDescription: initText('webUi.configureDatabase.description'),
         catalog: {
           dbDialect: c.dbDialect,
           builtinDb: c.builtinDb,
@@ -650,8 +652,8 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: 'Create an admin account',
-        sectionDescription: 'Set up the first admin.',
+        sectionTitle: initText('webUi.createAdminAccount.title'),
+        sectionDescription: initText('webUi.createAdminAccount.description'),
         catalog: {
           rootUsername: c.rootUsername,
           rootEmail: c.rootEmail,

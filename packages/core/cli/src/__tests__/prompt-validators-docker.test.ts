@@ -9,7 +9,7 @@
 
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { afterEach, test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
@@ -23,8 +23,19 @@ vi.mock('node:child_process', async (importOriginal) => {
   };
 });
 
+const originalNbLocale = process.env.NB_LOCALE;
+
+beforeEach(() => {
+  process.env.NB_LOCALE = 'en-US';
+});
+
 afterEach(() => {
   mocks.spawn.mockReset();
+  if (originalNbLocale === undefined) {
+    delete process.env.NB_LOCALE;
+    return;
+  }
+  process.env.NB_LOCALE = originalNbLocale;
 });
 
 function mockDockerPs(output: string, code = 0) {
