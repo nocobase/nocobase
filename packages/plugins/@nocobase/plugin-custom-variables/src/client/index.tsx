@@ -28,6 +28,11 @@ import { flatten } from '@nocobase/utils/client';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { AddVariableButton } from './AddVariableButton';
 import { registerAdminLayoutMenuBadgeStep } from './adminLayoutMenuBadgeStep';
+import {
+  clearCustomVariableRequestCache,
+  getCustomVariableConfig,
+  parseCustomVariable,
+} from './customVariableRequestCache';
 import EditBadge from './EditBadge';
 import { useCustomVariablesOptions } from './useCustomVariablesOptions';
 import { variableInitializer } from './variableInitializer';
@@ -47,6 +52,9 @@ class PluginCustomVariablesClient extends Plugin {
 
     this.app.apiClient.axios.interceptors.response.use((response) => {
       const url = response.config.url.split('?')[0];
+      if (['customVariables:create', 'customVariables:update', 'customVariables:destroy'].includes(url)) {
+        clearCustomVariableRequestCache();
+      }
       this.app.eventBus.dispatchEvent(new CustomEvent(`collection:${url}`));
       return response;
     });
@@ -88,6 +96,7 @@ class PluginCustomVariablesClient extends Plugin {
         const eventNamesRef = React.useRef<Set<string>>(new Set());
 
         const refresh = useCallback(() => {
+          clearCustomVariableRequestCache();
           setRefreshId((id) => id + 1);
         }, []);
 
@@ -135,16 +144,7 @@ class PluginCustomVariablesClient extends Plugin {
         return useMemo(() => {
           return async ({ variableName }) => {
             const name = variableName.replace('$customVariables.', '');
-            const response = await api.request({
-              url: `customVariables:get?filter[name]=${name}`,
-              method: 'GET',
-            });
-
-            if (!response?.data?.data) {
-              throw new Error(`Custom variable "${name}" not found. It may have been deleted.`);
-            }
-
-            const variable = response.data.data;
+            const variable = await getCustomVariableConfig(api, name);
             const filterCtx = await getFilterCtx(variable.options.params.filter);
 
             // Define event names to listen to
@@ -165,13 +165,7 @@ class PluginCustomVariablesClient extends Plugin {
               app.eventBus.addEventListener(eventName, refresh);
             });
 
-            const { data } = await api.request({
-              url: `customVariables:parse?name=${name}`,
-              method: 'POST',
-              data: { filterCtx },
-            });
-
-            return data?.data;
+            return parseCustomVariable(api, name, filterCtx);
           };
         }, [refreshId]);
       },
