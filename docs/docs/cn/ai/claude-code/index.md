@@ -5,6 +5,12 @@ keywords: "Claude Code,NocoBase,AI Agent,Anthropic,Skills,CLI,自然语言"
 sidebar: false
 ---
 
+:::warning 内容撰写中
+
+本页内容还在撰写中，部分章节可能不完整或有变动。
+
+:::
+
 # Claude Code + NocoBase：最强 AI 大脑，你的 NocoBase 首席架构师
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 是 Anthropic 推出的官方 AI 编程助手——直接在终端里运行，能理解你的整个代码库，帮你完成从编码到系统搭建的各种任务。把它接入 NocoBase 后，你可以用自然语言创建数据表、搭建页面、配置工作流，享受最强大的 AI 模型带来的搭建体验。
@@ -85,23 +91,7 @@ nb init --ui
 nb ps
 ```
 
-确认输出中有已配置的环境，且标记了当前环境（`*`）。
-
-## 用 Claude Code 搭建个人知识库
-
-<!-- TODO: 完整演示用 Claude Code 对话式搭建一个个人知识库应用。包括：
-1. 创建数据表（文章表、分类表、标签表及关联关系）
-2. 搭建管理页面（文章列表、分类筛选、搜索框、详情弹窗）
-3. 配置交互（新建文章表单、编辑、删除确认）
-重点体现 Claude Code 的项目感知和强推理能力
-每步附 Claude Code 终端截图 + NocoBase 界面效果截图 -->
-
-## 数据分析与定时日报
-
-<!-- TODO: 基于已有的 NocoBase 数据，展示 Claude Code 的分析能力。包括：
-1. 对知识库数据进行分析（比如"帮我统计一下最近一周新增了多少篇文章，按分类汇总"）
-2. 设置定时日报（比如"每天早上 9 点给我推送昨天的知识库更新摘要"）
-每步附 Claude Code 终端截图 + 分析结果截图 -->
+确认输出中有已配置的环境，以及运行状态。
 
 ## 常见问题
 
