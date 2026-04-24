@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
   const useSchemaInitializerRenderMock = vi.fn(() => ({ render: renderMock }));
   const useTokenMock = vi.fn(() => ({ token: { borderRadius: 8 } }));
   const useVariableScopeInfoMock = vi.fn(() => ({ getVariableScopeInfo: () => ({ scopeId: 'page-1' }) }));
+  const requestMock = vi.fn();
   const dataSourceApplicationProviderMock = vi.fn(({ children }) => (
     <div data-testid="data-source-application-provider">{children}</div>
   ));
@@ -38,6 +39,7 @@ const mocks = vi.hoisted(() => {
     schemaComponentMock,
     schemaComponentOptionsMock,
     scopes,
+    requestMock,
     useSchemaInitializerRenderMock,
     useTokenMock,
     useVariableScopeInfoMock,
@@ -67,11 +69,17 @@ vi.mock('@nocobase/client', async () => {
 });
 
 import { AddVariableButton } from '../AddVariableButton';
+import {
+  clearCustomVariableRequestCache,
+  getCustomVariableConfig,
+  parseCustomVariable,
+} from '../customVariableRequestCache';
 import { variableInitializer } from '../variableInitializer';
 
 describe('flow badge variable entry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearCustomVariableRequestCache();
   });
 
   it('should render add variable initializer with designable enabled', () => {
@@ -115,5 +123,42 @@ describe('flow badge variable entry', () => {
     expect(screen.getByTestId('data-source-application-provider')).toBeInTheDocument();
     expect(screen.getByTestId('schema-component-options')).toBeInTheDocument();
     expect(screen.getByTestId('schema-component')).toBeInTheDocument();
+  });
+
+  it('should reuse custom variable config and parse requests with the same key', async () => {
+    mocks.requestMock.mockImplementation(async ({ url }) => {
+      if (url.startsWith('customVariables:get')) {
+        return {
+          data: {
+            data: {
+              name: 'foo',
+              options: { params: { filter: {} }, collection: 'users' },
+            },
+          },
+        };
+      }
+
+      return { data: { data: 3 } };
+    });
+
+    await Promise.all([
+      getCustomVariableConfig({ request: mocks.requestMock }, 'foo'),
+      getCustomVariableConfig({ request: mocks.requestMock }, 'foo'),
+    ]);
+    await Promise.all([
+      parseCustomVariable({ request: mocks.requestMock }, 'foo', { status: 'active' }),
+      parseCustomVariable({ request: mocks.requestMock }, 'foo', { status: 'active' }),
+    ]);
+
+    expect(mocks.requestMock).toHaveBeenCalledTimes(2);
+    expect(mocks.requestMock).toHaveBeenNthCalledWith(1, {
+      url: 'customVariables:get?filter[name]=foo',
+      method: 'GET',
+    });
+    expect(mocks.requestMock).toHaveBeenNthCalledWith(2, {
+      url: 'customVariables:parse?name=foo',
+      method: 'POST',
+      data: { filterCtx: { status: 'active' } },
+    });
   });
 });
