@@ -137,7 +137,15 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
-    const { clickToOpen = false, displayStyle, titleField, overflowMode, disabled, ...restProps } = this.props;
+    const {
+      clickToOpen = false,
+      displayStyle,
+      titleField,
+      overflowMode,
+      disabled,
+      tagColorField,
+      ...restProps
+    } = this.props;
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }
@@ -147,6 +155,8 @@ export class ClickableFieldModel extends FieldModel {
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
     };
+    const tagColor = tagColorField && record ? record?.[tagColorField] : undefined;
+    const tagProps = tagColor ? { color: tagColor } : undefined;
 
     const commonStyle = {
       // ...(restProps.style || {}),
@@ -159,7 +169,7 @@ export class ClickableFieldModel extends FieldModel {
     if (isTag) {
       return (
         value && (
-          <Tag {...restProps} style={commonStyle} onClick={handleClick} className={restProps.className}>
+          <Tag {...restProps} {...tagProps} style={commonStyle} onClick={handleClick} className={restProps.className}>
             {display}
           </Tag>
         )
@@ -255,6 +265,44 @@ ClickableFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ displayStyle: params.displayStyle });
+      },
+    },
+
+    tagColorField: {
+      title: tExpr('Tag color field'),
+      uiMode: (ctx) => {
+        const targetCollection = ctx.collectionField?.targetCollection;
+        const targetFields = typeof targetCollection?.getFields === 'function' ? targetCollection.getFields() : [];
+        const options = (targetFields || [])
+          .filter((field) => field?.interface === 'color')
+          .map((field) => ({
+            value: field.name,
+            label: field.title || field.name,
+          }));
+        return {
+          type: 'select',
+          key: 'tagColorField',
+          props: {
+            options,
+            allowClear: true,
+          },
+        };
+      },
+      hideInSettings: (ctx) => {
+        const currentDisplayStyle = ctx.getStepParams?.('displayStyle')?.displayStyle ?? ctx.model.props.displayStyle;
+        if (currentDisplayStyle !== 'tag') {
+          return true;
+        }
+        const targetCollection = ctx.collectionField?.targetCollection;
+        if (!targetCollection || typeof targetCollection.getFields !== 'function') {
+          return true;
+        }
+        const targetFields = targetCollection.getFields() || [];
+        const hasColorField = targetFields.some((field) => field?.interface === 'color');
+        return !hasColorField;
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ tagColorField: params.tagColorField });
       },
     },
 
