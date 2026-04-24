@@ -42,32 +42,27 @@ CLI 支持两种常见的初始化方式：
 
 ## 安装
 
-:::tip 一键 AI 安装
+import { Tab, Tabs } from '@rspress/core/theme';
 
-你也可以把下方提示词复制给 AI 助手（Claude Code、Codex、Cursor、Trae 等），让它自动完成安装和配置：
+<Tabs>
+<Tab label="手动安装" value="manual">
 
-```
-帮我安装 NocoBase CLI：https://pr-9098.v2.docs.nocobase.com/cn/ai/ai-quick-start.md
-```
-
-:::
-
-### 第一步：安装 CLI
+#### 第一步：安装 CLI
 
 ```bash
 npm install -g @nocobase/cli@alpha
+nb --version // 确认安装成功
 ```
 
-安装完成后，运行 `nb --version` 确认安装成功。
+#### 第二步：创建工作目录
 
-### 第二步：创建工作目录
+> 工作目录名字可以自定义，但建议不要有空格等特殊字符，以免后续操作出问题。后续 CLI 相关的命令都需要在这个目录里执行。
 
 ```bash
-mkdir my-nocobase
-cd my-nocobase
+mkdir my-nocobase && cd my-nocobase
 ```
 
-### 第三步：初始化
+#### 第三步：初始化
 
 ```bash
 nb init --ui
@@ -101,6 +96,26 @@ npx skills add nocobase/skills -y
 
 :::
 
+</Tab>
+<Tab label="用 AI Agent 安装" value="ai">
+
+将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），它会自动完成安装和配置：
+
+```
+帮我安装 NocoBase CLI：https://pr-9098.v2.docs.nocobase.com/cn/ai/ai-quick-start.md
+```
+
+配置完成后，在 CLI 初始化的目录里 (默认是在当前目录下新建的 `my-nocobase` 目录，如果你不确定，你也可以询问 AI Agent NocoBase CLI 初始化后的目录在哪里) 重启你的 AI Agent 会话。比如：
+
+```bash
+cd my-nocobase && codex
+```
+
+如果你用的是图形化 AI 工具（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。
+
+</Tab>
+</Tabs>
+
 ## 接下来
 
 ### 管理应用环境
@@ -119,9 +134,9 @@ npx skills add nocobase/skills -y
 
 在 NocoBase 界面里直接和 AI 员工协作——数据分析、生成报告、翻译、决策辅助，不需要离开业务系统。请参阅 [AI 员工](../ai-employees/index.md)。
 
-### 命令参考
+### NocoBase CLI 命令参考
 
-所有 `nb` 命令的完整参数说明请参阅 [CLI API 参考](../api/cli/cli)。
+如果你已经有 NocoBase 应用在运行，或者已经初始化成功过，想要继续开发、调试或者管理应用，所有 `nb` 命令的完整参数说明请参阅 [CLI 命令参考](../api/cli/cli)。
 
 ## 相关链接
 
@@ -129,5 +144,5 @@ npx skills add nocobase/skills -y
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
 - [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断
-- [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
+- [CLI 命令参考](../api/cli/cli) — 所有命令的完整参数说明
 - [安装方式和版本对比](../get-started/quickstart) — NocoBase 的不同安装方式和版本通道

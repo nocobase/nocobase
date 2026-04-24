@@ -30,12 +30,18 @@ npm install -g @nocobase/cli@alpha
 
 ## Step 3：创建工作目录
 
+询问用户是否以当前目录作为工作目录？需要告诉用户如果以当前目录作为工作目录，后续 CLI 会在当前目录下创建 `.nocobase` 、`.agents` 等相关文件、文件夹。如果用户选择不以当前目录作为工作目录，则提示用户你会在当前目录默认创建一个 `my-nocobase` 的目录作为工作目录，并在里面进行后续的 CLI 初始化和配置。如果用户同意就继续：
+
 ```bash
 mkdir my-nocobase
 cd my-nocobase
 ```
 
+如果用户不同意，则需要用户提供一个目录路径，你会在用户提供的目录下进入下一步初始化。
+
 ## Step 4：运行 nb init --ui
+
+在第三步创建或者选择的工作目录里运行：
 
 ```bash
 nb init --ui
@@ -65,7 +71,7 @@ nb env list
 
 告诉用户安装已完成。
 
-检查项目目录下 `.agent/skills` 是否包含 nocobase 相关的 Skills。如果没有，询问用户是否安装 NocoBase Skills（方便后续让 AI Agent 操作 NocoBase CLI）。如果用户选择安装，执行：
+检查项目目录下 `.agent/skills` 是否包含 nocobase 相关的 Skills。如果没有，询问用户是否安装 NocoBase Skills（方便后续让 AI Agent 操作 NocoBase CLI）。如果用户选择安装，在第三步的工作目录里执行：
 
 ```bash
 npx skills add nocobase/skills -y
@@ -73,7 +79,9 @@ npx skills add nocobase/skills -y
 
 如果用户选择不安装，跳过即可，但是需要提醒用户，如果不安装 Skills 可能会导致后续 AI Agent 操作 NocoBase 受限。
 
-安装了 Skills 的情况下，提示用户重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等），以加载 Skills。重启后 AI Agent 就能帮你搭建应用、配置页面、管理权限等。
+安装了 Skills 的情况下，提示用户需要在第三步的工作目录里重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等），这样 Skills 安装才会生效。
+如果用户是使用图形化界面的 AI Agent（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。这些都需要告知用户。
+
 
 `nb` 的所有命令和参数说明请参阅 [CLI API 参考](../api/cli/cli)。
 

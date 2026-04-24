@@ -119,6 +119,35 @@ nb api resource create --resource users --values '{"nickname":"Ada"}' -e app1
 nb api resource list --resource users -e app1 -j    # 输出原始 JSON
 ```
 
+## 配置文件
+
+NocoBase CLI 的配置存储在 `.nocobase/` 目录下，分两个范围：
+
+- **project** — 当前工作目录下的 `.nocobase/`
+- **global** — `~/.nocobase/`（可通过环境变量 `NOCOBASE_CTL_HOME` 覆盖）
+
+如果当前目录存在 `.nocobase/`，默认使用 project 范围；否则使用 global。
+
+配置文件 `.nocobase/config.json` 的结构：
+
+```json
+{
+  "currentEnv": "local",
+  "envs": {
+    "local": {
+      "baseUrl": "http://localhost:13000/api",
+      "auth": { "type": "token", "accessToken": "..." },
+      "appRootPath": "./nocobase",
+      "appPort": "13000",
+      "dbDialect": "postgres"
+    }
+  }
+}
+```
+
+运行时缓存存储在 `.nocobase/versions/<hash>/commands.json`，由 `nb env update` 自动生成和更新。
+
+
 ## 命令参考
 
 以下是所有命令的完整参数说明。
@@ -646,34 +675,6 @@ nb api resource query --resource orders --measures '[{"field":"amount","aggregat
 | `--json-output`, `-j` | boolean | 输出原始 JSON               |
 
 带请求体的命令还支持 `--body`（JSON 字符串）或 `--body-file`（JSON 文件路径），两者互斥。
-
-## 配置文件
-
-NocoBase CLI 的配置存储在 `.nocobase/` 目录下，分两个范围：
-
-- **project** — 当前工作目录下的 `.nocobase/`
-- **global** — `~/.nocobase/`（可通过环境变量 `NOCOBASE_CTL_HOME` 覆盖）
-
-如果当前目录存在 `.nocobase/`，默认使用 project 范围；否则使用 global。
-
-配置文件 `.nocobase/config.json` 的结构：
-
-```json
-{
-  "currentEnv": "local",
-  "envs": {
-    "local": {
-      "baseUrl": "http://localhost:13000/api",
-      "auth": { "type": "token", "accessToken": "..." },
-      "appRootPath": "./nocobase",
-      "appPort": "13000",
-      "dbDialect": "postgres"
-    }
-  }
-}
-```
-
-运行时缓存存储在 `.nocobase/versions/<hash>/commands.json`，由 `nb env update` 自动生成和更新。
 
 ## 相关链接
 
