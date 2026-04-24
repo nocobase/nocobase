@@ -84,17 +84,19 @@ nb init --ui
 
 （如果你更习惯在命令行里操作，也可以直接运行 `nb init` 进入交互式向导，或 `nb init --env=app -y` 一键使用默认配置。）
 
-:::tip 提示
+#### 第四步：(可选) AI Agent 接入 NocoBase
 
-如果初始化时跳过了 Skills 安装，后续可以随时手动补装：
+如果你此时想要 AI Agent 参与操作 NocoBase， 需要确保已经在 CLI 初始化的工作目录里安装了 NocoBase Skills（如果你在第一步的配置里勾选了安装 Skills，则 CLI 会自动帮你安装好）。如果没有安装，可以在 CLI 初始化的目录里执行：
 
 ```bash
 npx skills add nocobase/skills -y
 ```
 
-安装后重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等）即可生效。
+然后
 
-:::
+1. 进入 CLI 已经初始化的工作目录（如 `my-nocobase`）
+2. 在这个目录下新开或者重启 AI Agent 的会话（如果是桌面端 GUI 的 AI Agent 工具，则需要将 CLI 初始化的目录添加为工作目录），然后就可以让 AI Agent 开始操作 NocoBase 了。
+
 
 </Tab>
 <Tab label="用 AI Agent 安装" value="ai">
