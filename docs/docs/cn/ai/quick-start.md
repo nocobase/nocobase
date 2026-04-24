@@ -48,7 +48,7 @@ NocoBase CLI（`nb` 命令）是一个用于在本地初始化、连接和管理
 你也可以把下方提示词复制给 AI 助手（Claude Code、Codex、Cursor、Trae 等），让它自动完成安装和配置：
 
 ```
-安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/ai/ai-quick-start.md
+帮我安装 NocoBase CLI：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 :::
@@ -74,19 +74,19 @@ cd my-nocobase
 nb init --ui --locale=zh-CN
 ```
 
-浏览器会自动打开可视化配置页面，引导你完成以下操作：
+浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：
 
-- 是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）
-- 选择是已有 NocoBase 还是全新安装
-- 如果全新安装：选择安装方式（Docker / npm / Git）、配置数据库、设置端口等
-- 如果已有 NocoBase：填写 API 地址、选择[认证方式](../ai-builder/security)（快速上手的情况下推荐 OAuth）
+1. **开始配置** — 设置应用名称（同时作为 CLI 环境名），选择是全新安装还是连接已有应用，勾选是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）
+2. **创建应用** — 选择安装方式（Docker / npm / Git）、设置端口等基础配置
+3. **下载应用文件** — 选择来源和版本，下载 NocoBase 源码或镜像
+4. **配置数据库** — 使用内置数据库或配置外部数据库（PostgreSQL、MySQL、MariaDB）
+5. **创建管理员账号** — 设置管理员邮箱和密码
+
+如果选择连接已有应用，则跳过 2-5 步，直接填写 API 地址和选择[认证方式](../ai-builder/security)（快速上手推荐 OAuth）。
 
 ![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
 
-安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），默认登录账号和密码：
-
-- 邮箱：`admin@nocobase.com`
-- 密码：`admin123`
+全新安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），用你刚才设置的管理员账号登录即可。
 
 （如果你更习惯在命令行里操作，也可以直接运行 `nb init` 进入交互式向导，或 `nb init --env=app -y` 一键使用默认配置。）
 

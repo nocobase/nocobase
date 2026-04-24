@@ -19,7 +19,7 @@ NocoBase CLI（`nb` 命令）是一个用于在本地初始化、连接和管理
 将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），即可一键安装并启动 NocoBase 应用：
 
 ```
-安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/ai/ai-quick-start.md
+帮我安装 NocoBase CLI：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
 详细安装流程请参阅 [快速开始](../../ai/quick-start.md)。
@@ -591,6 +591,6 @@ NocoBase CLI 的配置存储在 `.nocobase/` 目录下，分两个范围：
 ## 相关链接
 
 - [快速开始](../../ai/quick-start.md) — 安装引导和使用入门
-- [环境变量](./env) — NocoBase 支持的全局环境变量
+- [环境变量](../app/env) — NocoBase 支持的全局环境变量
 - [AI 搭建](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [插件开发](../../plugin-development/index.md) — 学习如何创建和发布自定义插件

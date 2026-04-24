@@ -43,18 +43,11 @@ nb init --ui --locale=zh-CN
 
 ![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
 
-告诉用户：浏览器会自动打开一个本地配置页面，在里面完成以下操作（等待用户在浏览器中完成所有配置。请不要自行帮用户操作和填写任何信息，因为用户可能需要根据自己的环境和需求做出选择。）：
-
-- 是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）
-- 选择是已有 NocoBase 还是全新安装
-- 如果全新安装：选择安装方式（Docker / npm / Git）、配置数据库、设置端口等
-- 如果已有 NocoBase：填写 API 地址、选择[认证方式](../ai-builder/security)（快速上手的情况下推荐 OAuth）
+告诉用户：浏览器会自动打开一个本地配置页面，需要用户在里面完成相关的配置操作。
 
 注意：等待用户在浏览器中完成所有配置。请不要自行帮用户操作和填写任何信息，因为用户可能需要根据自己的环境和需求做出选择。
 
 ## Step 5：校验结果
-
-检查 `.nocobase/config.json` 确认环境已配好：
 
 ```bash
 nb env list
