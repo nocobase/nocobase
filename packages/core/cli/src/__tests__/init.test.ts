@@ -914,6 +914,49 @@ test('nb init preserves argument values that contain spaces when building instal
   }
 });
 
+test('nb init forwards --verbose to nb install', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const originalArgv = process.argv;
+  process.argv = ['node', 'nb', 'init', '--verbose'];
+
+  try {
+    const buildInstallArgv = (
+      Init.prototype as unknown as {
+        buildInstallArgv: (
+          results: Record<string, string | number | boolean>,
+          flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+        ) => string[];
+      }
+    ).buildInstallArgv;
+
+    const argv = buildInstallArgv.call(
+      Object.create(Init.prototype),
+      {
+        appName: 'app1',
+        lang: 'en-US',
+        appRootPath: './app1/source/',
+        appPort: '13000',
+        storagePath: './app1/storage/',
+        fetchSource: true,
+        source: 'git',
+        version: 'alpha',
+        outputDir: './app1/source/',
+        gitUrl: 'https://github.com/nocobase/nocobase.git',
+        builtinDb: true,
+        dbDialect: 'postgres',
+      },
+      {
+        yes: true,
+        verbose: true,
+      },
+    );
+
+    expect(argv).toContain('--verbose');
+  } finally {
+    process.argv = originalArgv;
+  }
+});
+
 test('nb init disables skills install by default when the current workspace has a .agents directory', async () => {
   const { default: Init } = await import('../commands/init.js');
 

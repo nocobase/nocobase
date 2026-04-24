@@ -286,6 +286,10 @@ Prompt modes:
         'Open the guided setup flow in a local browser form (not valid with --yes)',
       default: false,
     }),
+    verbose: Flags.boolean({
+      description: 'Show detailed command output',
+      default: false,
+    }),
     'ui-host': Flags.string({
       description:
         'Host for the local --ui setup server (default: 127.0.0.1)',
@@ -879,7 +883,7 @@ Prompt modes:
 
   private buildInstallArgv(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean; force?: boolean; build?: boolean },
+    flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
     options?: {
       nonInteractive?: boolean;
       resume?: boolean;
@@ -896,6 +900,10 @@ Prompt modes:
     argv.push('--env', envName);
     if (options?.resume) {
       argv.push('--resume');
+    }
+
+    if (Boolean(flags.verbose)) {
+      argv.push('--verbose');
     }
 
     const lang = String(results.lang ?? '').trim();
