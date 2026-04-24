@@ -25,13 +25,8 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.37.2",
     "codemirror": "^6.0.2",
-    "isolated-vm": "^6.1.2",
     "jshint": "^2.13.6",
-    "node-gyp": "^10.2.0"
-  },
-  "resolutions": {
-    "nan": "2.18.0",
-    "node-gyp": "^10.2.0"
+    "quickjs-emscripten": "^0.32.0"
   },
   "keywords": [
     "Workflow"
