@@ -30,6 +30,15 @@ function resolveCwd(cwd?: string): string {
   return path.resolve(process.cwd(), next);
 }
 
+function shouldUseWindowsShell(command: string): boolean {
+  if (process.platform !== 'win32') {
+    return false;
+  }
+
+  const ext = path.extname(command).toLowerCase();
+  return ext === '.cmd' || ext === '.bat';
+}
+
 export function run(
   name: string,
   args: string[],
@@ -37,14 +46,17 @@ export function run(
 ): Promise<void> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
+  const command = resolveCommandName(name);
   return new Promise((resolve, reject) => {
-    const child = spawn(resolveCommandName(name), [...args], {
+    const child = spawn(command, [...args], {
       stdio: options?.stdio ?? 'inherit',
       cwd,
       env: {
         ...process.env,
         ...options?.env,
       },
+      shell: shouldUseWindowsShell(command),
+      windowsHide: process.platform === 'win32',
     });
     child.once('error', reject);
     child.once('close', (code, signal) => {
@@ -67,14 +79,17 @@ export function commandSucceeds(
   options?: { cwd?: string; env?: Record<string, string> },
 ): Promise<boolean> {
   const cwd = resolveCwd(options?.cwd);
+  const command = resolveCommandName(name);
   return new Promise((resolve) => {
-    const child = spawn(resolveCommandName(name), [...args], {
+    const child = spawn(command, [...args], {
       cwd,
       env: {
         ...process.env,
         ...options?.env,
       },
       stdio: 'ignore',
+      shell: shouldUseWindowsShell(command),
+      windowsHide: process.platform === 'win32',
     });
 
     child.once('error', () => resolve(false));
@@ -89,14 +104,17 @@ export function commandOutput(
 ): Promise<string> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
+  const command = resolveCommandName(name);
   return new Promise((resolve, reject) => {
-    const child = spawn(resolveCommandName(name), [...args], {
+    const child = spawn(command, [...args], {
       cwd,
       env: {
         ...process.env,
         ...options?.env,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
+      shell: shouldUseWindowsShell(command),
+      windowsHide: process.platform === 'win32',
     });
     let stdout = '';
     let stderr = '';
