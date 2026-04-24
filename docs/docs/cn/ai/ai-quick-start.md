@@ -7,7 +7,7 @@ sidebar: false
 
 # AI Agent 安装指南
 
-本页面是面向 AI Agent（比如 Claude Code、Codex、Cursor、Copilot 等）的安装指南。AI Agent 不需要执行 `nb init`（那是交互式的），而是通过 `nb init --ui` 让用户在浏览器中完成配置。
+本页面是面向 AI Agent（比如 Claude Code、Codex、Cursor、Copilot 等）的 NocoBase CLI 安装和初始化指南。
 
 如果你是人类用户，请参阅 [快速开始](./quick-start.md)。
 
@@ -35,22 +35,22 @@ mkdir my-nocobase
 cd my-nocobase
 ```
 
-## Step 4：运行 nb init --ui
+## Step 4：运行 nb init --ui --locale=zh-CN
 
 ```bash
-nb init --ui
+nb init --ui --locale=zh-CN
 ```
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260421160702.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
 
-告诉用户：浏览器会自动打开一个本地配置页面，在里面完成以下操作：
+告诉用户：浏览器会自动打开一个本地配置页面，在里面完成以下操作（等待用户在浏览器中完成所有配置。请不要自行帮用户操作和填写任何信息，因为用户可能需要根据自己的环境和需求做出选择。）：
 
 - 是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）
 - 选择是已有 NocoBase 还是全新安装
 - 如果全新安装：选择安装方式（Docker / npm / Git）、配置数据库、设置端口等
-- 如果已有 NocoBase：填写 API 地址、选择认证方式（推荐 OAuth）
+- 如果已有 NocoBase：填写 API 地址、选择[认证方式](../ai-builder/security)（快速上手的情况下推荐 OAuth）
 
-等待用户在浏览器中完成所有配置。
+注意：等待用户在浏览器中完成所有配置。请不要自行帮用户操作和填写任何信息，因为用户可能需要根据自己的环境和需求做出选择。
 
 ## Step 5：校验结果
 
@@ -74,6 +74,17 @@ nb env list
 npx skills add nocobase/skills -y
 ```
 
-如果用户选择不安装，跳过即可。
+如果用户选择不安装，跳过即可，但是需要提醒用户，如果不安装 Skills 可能会导致后续 AI Agent 操作 NocoBase 受限。
 
 安装了 Skills 的情况下，提示用户重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等），以加载 Skills。重启后 AI Agent 就能帮你搭建应用、配置页面、管理权限等。
+
+`nb` 的所有命令和参数说明请参阅 [CLI API 参考](../api/cli/cli)。
+
+## 相关链接
+
+- [快速开始](./quick-start.md) — 面向人类用户的安装和配置指南
+- [AI 搭建快速开始](../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
+- [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
+- [安全与审计](../ai-builder/security) — 认证方式、权限控制和操作审计
+- [CLI API 参考](../api/cli/cli) — 所有命令的完整参数说明
+- [NocoBase Skills](https://github.com/nocobase/skills) — AI Agent 领域知识包源码

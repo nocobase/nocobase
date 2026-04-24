@@ -64,7 +64,7 @@ nb env add <dev> --base-url http://localhost:13000/api
 ```
 命令行模式
 ```
-nb init --ui
+nb init --ui --locale=zh-CN
 ```
 
 ### 场景 D：实例升级

@@ -27,10 +27,10 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 ```bash
 npm install -g @nocobase/cli@alpha
 mkdir my-nocobase && cd my-nocobase
-nb init --ui
+nb init --ui --locale=zh-CN
 ```
 
-浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。
+浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。详细步骤请参阅[快速开始](../ai/quick-start.md)。
 
 :::warning 注意
 

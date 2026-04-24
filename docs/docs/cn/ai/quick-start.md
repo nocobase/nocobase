@@ -41,17 +41,17 @@ NocoBase CLI（`nb` 命令）是一个用于在本地初始化、连接和管理
 - Docker（如使用 Docker 方式部署）
 - Git（如通过源码方式安装）
 
-## 一键 AI 安装
+## 安装
 
-将下方提示词复制给你的 AI 助手（Claude Code、Codex、Cursor、Trae 等），它会自动完成安装和配置：
+:::tip 一键 AI 安装
+
+你也可以把下方提示词复制给 AI 助手（Claude Code、Codex、Cursor、Trae 等），让它自动完成安装和配置：
 
 ```
 安装 NocoBase CLI 并快速开始 AI 搭建：https://docs.nocobase.com/cn/ai/ai-quick-start.md
 ```
 
-如果你想手动安装，继续往下看。
-
-## 手动安装
+:::
 
 ### 第一步：安装 CLI
 
@@ -70,15 +70,25 @@ cd my-nocobase
 
 ### 第三步：初始化
 
-三种方式任选：
-
-**交互式向导（终端）**
-
 ```bash
-nb init
+nb init --ui --locale=zh-CN
 ```
 
-在终端里逐步引导你完成配置：是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）、是否已有 NocoBase、安装方式选择等。
+浏览器会自动打开可视化配置页面，引导你完成以下操作：
+
+- 是否安装 [NocoBase Skills](https://github.com/nocobase/skills)（推荐安装）
+- 选择是已有 NocoBase 还是全新安装
+- 如果全新安装：选择安装方式（Docker / npm / Git）、配置数据库、设置端口等
+- 如果已有 NocoBase：填写 API 地址、选择[认证方式](../ai-builder/security)（快速上手的情况下推荐 OAuth）
+
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
+
+安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），默认登录账号和密码：
+
+- 邮箱：`admin@nocobase.com`
+- 密码：`admin123`
+
+（如果你更习惯在命令行里操作，也可以直接运行 `nb init` 进入交互式向导，或 `nb init --env=app -y` 一键使用默认配置。）
 
 :::tip 提示
 
@@ -91,37 +101,6 @@ npx skills add nocobase/skills -y
 安装后重启 AI Agent（比如重启 Claude Code 会话、重新打开 Cursor 等）即可生效。
 
 :::
-
-**可视化向导（浏览器）**
-
-```bash
-nb init --ui
-```
-
-会在本地启动一个临时 HTTP 服务并打开浏览器，在可视化界面里完成所有配置。
-
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260421160702.png)
-
-**一键安装**
-
-```bash
-nb init -y
-```
-
-跳过所有提示，使用默认配置：自动安装 Skills、用 Docker 方式安装 NocoBase、端口 13000。
-
-安装完成后，打开浏览器访问 `http://localhost:13000`，默认的登录账号和密码：
-
-- 邮箱：`admin@nocobase.com`
-- 密码：`admin123`
-
-:::tip 提示
-
-不确定选哪种安装方式？Docker 最简单，数据库已经内置，适合快速体验。如果你需要开发插件或深度定制，用 create-nocobase-app 或 Git 源码安装（需要自己准备数据库，推荐 PostgreSQL）。
-
-:::
-
-`nb init` 背后实际执行了多个步骤——安装 Skills、下载 NocoBase（`nb download`）、安装（`nb install`）和配置环境（`nb env add`）。如果你后续需要单独执行这些操作，可以查看 [CLI API 参考](../api/cli/cli)。
 
 ## 接下来
 

@@ -80,10 +80,10 @@ OpenClaw 通过以下方式与 NocoBase 协同工作：
 ```bash
 npm install -g @nocobase/cli@alpha
 mkdir my-nocobase && cd my-nocobase
-nb init --ui
+nb init --ui --locale=zh-CN
 ```
 
-浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。
+浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。详细步骤请参阅[快速开始](../quick-start.md)。
 
 安装完成后，运行 `nb env list` 确认环境已配置好：
 
