@@ -37,6 +37,7 @@ import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
+import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
   applyMobilePaginationProps,
@@ -870,7 +871,9 @@ const HighPerformanceTable = React.memo(
         const globalSort = model.props.globalSort;
         const resourceSort = model.resource.getSort();
         const currentSort = resourceSort?.length ? resourceSort : globalSort;
-        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : currentSort;
+        const sorterField = resolveTableSorterField(sorter);
+        const sort =
+          sorter.order && sorterField ? (sorter.order === `ascend` ? [sorterField] : [`-${sorterField}`]) : currentSort;
         if (sorter) {
           model.resource.setSort(sort);
         }

@@ -33,6 +33,7 @@ import { get, omit, capitalize } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
+import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
 export function FieldDeletePlaceholder(props: any) {
@@ -117,13 +118,6 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
   );
 };
 
-function getSavedAssociationTitleField(model: {
-  props?: { titleField?: string };
-  getStepParams?: (flowKey: string, stepKey: string) => { label?: string } | undefined;
-}) {
-  return model.getStepParams?.('tableColumnSettings', 'fieldNames')?.label || model.props?.titleField;
-}
-
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -180,7 +174,7 @@ export class TableColumnModel extends DisplayItemModel {
       .filter(Boolean);
   }
 
-  getColumnProps(): TableColumnProps {
+  getColumnProps(): TableColumnProps & { sortField?: string } {
     if (!this.props.width) {
       return;
     }
@@ -217,6 +211,7 @@ export class TableColumnModel extends DisplayItemModel {
 
     return {
       ...this.props,
+      sortField: getTableColumnSortField(this),
       ellipsis: true,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -476,7 +471,12 @@ TableColumnModel.registerFlow({
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
         const targetInterface = ctx.model.collectionField.getInterfaceOptions();
-        return !targetInterface.sortable || ctx.associationModel;
+        return (
+          !targetInterface.sortable ||
+          ctx.collectionField?.isAssociationField?.() ||
+          !!ctx.model.associationPathName ||
+          ctx.associationModel
+        );
       },
       defaultParams: {
         sorter: false,
