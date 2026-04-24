@@ -82,6 +82,17 @@ const FIXTURE_SAMPLES: Record<FormalFlowSurfaceBlockKey, FlowSurfaceFixtureManif
         'Captured as a flow-model CalendarBlockModel baseline with deterministic quick-create and event-view popup hosts.',
     },
   ],
+  kanban: [
+    {
+      name: 'kanban-block-live',
+      modelUid: 'fkanban9ock1',
+      pageRouteId: 355813771010048,
+      sampleKind: 'minimal',
+      captureStatus: 'captured',
+      sourceKind: 'live-flowPages-api',
+      notes: 'Flow Surface generated kanban baseline with deterministic card-item and hidden popup hosts.',
+    },
+  ],
   'create-form': [
     {
       name: 'create-form-block-live',

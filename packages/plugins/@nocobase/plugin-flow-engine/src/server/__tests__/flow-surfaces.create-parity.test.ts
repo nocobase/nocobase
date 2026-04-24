@@ -104,6 +104,8 @@ async function buildCreateParityReadback(rootAgent: any, key: FormalFlowSurfaceB
       return createTableParityReadback(rootAgent);
     case 'calendar':
       return createCalendarParityReadback(rootAgent);
+    case 'kanban':
+      return createKanbanParityReadback(rootAgent);
     case 'create-form':
       return createCreateFormParityReadback(rootAgent);
     case 'edit-form':
@@ -398,6 +400,10 @@ async function createCalendarParityReadback(rootAgent: any) {
   });
 }
 
+async function createKanbanParityReadback(rootAgent: any) {
+  return createCollectionBlockParityReadback(rootAgent, 'kanban', 'kanban_tasks');
+}
+
 async function createCreateFormParityReadback(rootAgent: any) {
   const page = await createPage(rootAgent, {
     title: 'Create parity create form page',
@@ -536,7 +542,11 @@ async function createStaticBlockParityReadback(
   });
 }
 
-async function createCollectionBlockParityReadback(rootAgent: any, type: 'list' | 'gridCard', collectionName: string) {
+async function createCollectionBlockParityReadback(
+  rootAgent: any,
+  type: 'list' | 'gridCard' | 'kanban',
+  collectionName: string,
+) {
   const page = await createPage(rootAgent, {
     title: `Create parity ${type} page`,
     tabTitle: `Create parity ${type} tab`,
@@ -1044,10 +1054,56 @@ async function setupCreateParityCollections(rootAgent: any) {
     values: {
       name: 'departments',
       title: 'Departments',
+      titleField: 'title',
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'location', type: 'string', interface: 'input' },
       ],
+    },
+  });
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'kanban_tasks',
+      title: 'Kanban tasks',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        {
+          name: 'status_sort',
+          type: 'sort',
+          interface: 'sort',
+          scopeKey: 'status',
+          hidden: true,
+        },
+        {
+          name: 'department_sort',
+          type: 'sort',
+          interface: 'sort',
+          scopeKey: 'departmentId',
+          hidden: true,
+        },
+        {
+          name: 'status',
+          type: 'string',
+          interface: 'select',
+          uiSchema: {
+            enum: [
+              { value: 'todo', label: 'To do', color: 'blue' },
+              { value: 'doing', label: 'Doing', color: 'gold' },
+              { value: 'done', label: 'Done', color: 'green' },
+            ],
+          },
+        },
+      ],
+    },
+  });
+  await rootAgent.resource('collections.fields', 'kanban_tasks').create({
+    values: {
+      name: 'department',
+      type: 'belongsTo',
+      target: 'departments',
+      foreignKey: 'departmentId',
+      interface: 'm2o',
     },
   });
 

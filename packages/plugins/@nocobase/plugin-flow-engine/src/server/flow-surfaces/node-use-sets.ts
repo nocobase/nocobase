@@ -12,6 +12,7 @@ import { APPROVAL_DETAILS_BLOCK_USES, APPROVAL_FIELD_WRAPPER_USES, APPROVAL_FORM
 export const COLLECTION_BLOCK_USES = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'KanbanBlockModel',
   'CreateFormModel',
   'EditFormModel',
   'FormBlockModel',
@@ -87,6 +88,8 @@ export const ACTION_BUTTON_USES = new Set([
   'CalendarNavActionModel',
   'CalendarTitleActionModel',
   'CalendarViewSelectActionModel',
+  'KanbanQuickCreateActionModel',
+  'KanbanCardViewActionModel',
   'ApplyFormSubmitModel',
   'ApplyFormSaveDraftModel',
   'ApplyFormWithdrawModel',

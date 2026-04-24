@@ -32,6 +32,7 @@ import type { FlowSurfaceWriteTarget } from './types';
 const FILTER_TARGET_BLOCK_USES = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'KanbanBlockModel',
   'DetailsBlockModel',
   'ListBlockModel',
   'GridCardBlockModel',
@@ -39,8 +40,10 @@ const FILTER_TARGET_BLOCK_USES = new Set([
   'MapBlockModel',
   'CommentsBlockModel',
 ]);
-const LIST_LIKE_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel']);
-const LIST_LIKE_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel']);
+const DETAILS_CARD_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel', 'KanbanBlockModel']);
+const DETAILS_CARD_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel', 'KanbanCardItemModel']);
+const RECORD_ACTION_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel']);
+const BLOCK_ACTION_CONTAINER_USES = new Set(['ListBlockModel', 'GridCardBlockModel', 'KanbanBlockModel']);
 
 function getDefaultGridUse(ownerUse: string | undefined, fallbackUse: string) {
   return getApprovalDefaultGridUse(ownerUse) || fallbackUse;
@@ -281,7 +284,7 @@ export class FlowSurfaceContextResolver {
         wrapperUse: getFieldWrapperUse(use, 'DetailsItemModel'),
       };
     }
-    if (LIST_LIKE_BLOCK_USES.has(use)) {
+    if (DETAILS_CARD_BLOCK_USES.has(use)) {
       const itemUid = node.subModels?.item?.uid;
       if (!itemUid) {
         throwBadRequest(`flowSurfaces addField target '${use}' is missing its item subtree`);
@@ -297,7 +300,7 @@ export class FlowSurfaceContextResolver {
         wrapperUse: 'DetailsItemModel',
       };
     }
-    if (LIST_LIKE_ITEM_USES.has(use)) {
+    if (DETAILS_CARD_ITEM_USES.has(use)) {
       return {
         ownerUid: node.uid,
         ownerUse: use,
@@ -364,8 +367,8 @@ export class FlowSurfaceContextResolver {
     if (
       ['TableBlockModel', 'CalendarBlockModel', 'TableActionsColumnModel'].includes(node?.use) ||
       node?.use === 'ActionPanelBlockModel' ||
-      LIST_LIKE_BLOCK_USES.has(node?.use) ||
-      LIST_LIKE_ITEM_USES.has(node?.use)
+      BLOCK_ACTION_CONTAINER_USES.has(node?.use) ||
+      RECORD_ACTION_ITEM_USES.has(node?.use)
     ) {
       return {
         parentUid: node.uid,

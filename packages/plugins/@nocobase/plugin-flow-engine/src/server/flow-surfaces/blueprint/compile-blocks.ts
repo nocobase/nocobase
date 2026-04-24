@@ -63,6 +63,7 @@ type FlowSurfaceCompiledPopup = {
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
   'calendar',
+  'kanban',
   'createForm',
   'editForm',
   'details',
@@ -175,6 +176,9 @@ function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, contex
   if (!Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')) {
     return;
   }
+  if (readOptionalString(block.type) === 'kanban') {
+    throwBadRequest(`${context}.fieldsLayout is not supported on kanban main blocks; use fields[] only`);
+  }
   if (APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES.has(readOptionalString(block.type) || '')) {
     return;
   }
@@ -199,6 +203,18 @@ function assertApplyBlueprintCalendarMainContent(block: Record<string, any>, con
     throwBadRequest(
       `${context}.recordActions is not supported on calendar main blocks; configure event actions inside the event-view popup host instead`,
     );
+  }
+}
+
+function assertApplyBlueprintKanbanMainContent(block: Record<string, any>, context: string) {
+  if (readOptionalString(block.type) !== 'kanban') {
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fieldGroups')) {
+    throwBadRequest(`${context}.fieldGroups is not supported on kanban main blocks; use fields instead`);
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
+    throwBadRequest(`${context}.recordActions is not supported on kanban main blocks in v1`);
   }
 }
 
@@ -1076,6 +1092,7 @@ function compileBlocks(
       throwBadRequest(`${context}[${index}] must be an object`);
     }
     assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
+    assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
     const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
     fields.forEach((field: any, fieldIndex: number) => {
       if (typeof field?.target !== 'string' || !field.target.trim()) {
@@ -1096,6 +1113,7 @@ function compileBlocks(
     assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
     assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
     assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
+    assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
     const explicitKey = readString(block.key);
     const fallback = block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`;
     const localKey = normalizeBlueprintLocalKey(block.key, fallback, `${context}[${index}].key`);
@@ -1194,9 +1212,9 @@ function compileBlocks(
       template,
       settings: Object.keys(settings).length ? settings : undefined,
       fields: blockType === 'calendar' ? undefined : fields,
-      fieldsLayout: blockType === 'calendar' ? undefined : fieldsLayout,
+      fieldsLayout: blockType === 'calendar' || blockType === 'kanban' ? undefined : fieldsLayout,
       actions: actionsWithDefaultFilter,
-      recordActions: blockType === 'calendar' ? undefined : mergedActions.recordActions,
+      recordActions: blockType === 'calendar' || blockType === 'kanban' ? undefined : mergedActions.recordActions,
     });
   });
 

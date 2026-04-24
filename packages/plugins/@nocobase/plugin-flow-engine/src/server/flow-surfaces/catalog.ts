@@ -42,6 +42,7 @@ import {
   FILTER_FORM_ACTION_CONTAINER_USES,
   FORM_ACTION_CONTAINER_USES,
   getActionContainerScope,
+  KANBAN_BLOCK_ACTION_CONTAINER_USES,
   LIST_BLOCK_ACTION_CONTAINER_USES,
   LIST_RECORD_ACTION_CONTAINER_USES,
   RECORD_ACTION_CONTAINER_USES,
@@ -70,6 +71,9 @@ const OPEN_VIEW_SCENE_SCHEMA = {
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
+const NULLABLE_NUMBER_OR_STRING_SCHEMA = {
+  oneOf: [NUMBER_SCHEMA, NULLABLE_STRING_SCHEMA],
+};
 const FILTER_CONDITION_SCHEMA = {
   type: 'object',
   properties: {
@@ -327,6 +331,49 @@ const CALENDAR_SETTINGS_GROUP = {
     'weekStart.weekStart': NUMBER_SCHEMA,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
     'linkageRules.value': ARRAY_SCHEMA,
+  },
+};
+const KANBAN_SETTINGS_GROUP = {
+  allowedPaths: [
+    'grouping.groupField',
+    'grouping.groupTitleField',
+    'grouping.groupColorField',
+    'grouping.groupOptions',
+    'styleVariant.styleVariant',
+    'defaultSorting.sort',
+    'dragEnabled.dragEnabled',
+    'dragSortBy.dragSortBy',
+    'quickCreate.quickCreateEnabled',
+    'popup.mode',
+    'popup.size',
+    'popup.popupTemplateUid',
+    'popup.pageModelClass',
+    'popup.uid',
+    'pageSize.pageSize',
+    'columnWidth.columnWidth',
+    'dataScope.filter',
+  ],
+  clearable: true,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['defaultSorting', 'dataScope'],
+  pathSchemas: {
+    'grouping.groupField': STRING_SCHEMA,
+    'grouping.groupTitleField': NULLABLE_STRING_SCHEMA,
+    'grouping.groupColorField': NULLABLE_STRING_SCHEMA,
+    'grouping.groupOptions': ARRAY_SCHEMA,
+    'styleVariant.styleVariant': STRING_SCHEMA,
+    'defaultSorting.sort': ARRAY_SCHEMA,
+    'dragEnabled.dragEnabled': BOOLEAN_SCHEMA,
+    'dragSortBy.dragSortBy': NULLABLE_STRING_SCHEMA,
+    'quickCreate.quickCreateEnabled': BOOLEAN_SCHEMA,
+    'popup.mode': STRING_SCHEMA,
+    'popup.size': STRING_SCHEMA,
+    'popup.popupTemplateUid': NULLABLE_STRING_SCHEMA,
+    'popup.pageModelClass': NULLABLE_STRING_SCHEMA,
+    'popup.uid': NULLABLE_STRING_SCHEMA,
+    'pageSize.pageSize': NUMBER_SCHEMA,
+    'columnWidth.columnWidth': NUMBER_SCHEMA,
+    'dataScope.filter': FILTER_GROUP_SCHEMA,
   },
 };
 const TABLE_SETTINGS_GROUP = {
@@ -935,6 +982,41 @@ CALENDAR_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
+const KANBAN_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: [
+    'groupField',
+    'groupTitleField',
+    'groupColorField',
+    'groupOptions',
+    'styleVariant',
+    'sortField',
+    'globalSort',
+    'dragEnabled',
+    'dragSortBy',
+    'quickCreateEnabled',
+    'popupMode',
+    'popupSize',
+    'popupTemplateUid',
+    'popupPageModelClass',
+    'popupTargetUid',
+    'pageSize',
+    'columnWidth',
+  ],
+  decoratorProps: ['height', 'heightMode'],
+  stepParams: ['resourceSettings', 'kanbanSettings', 'cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+KANBAN_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: RESOURCE_SETTINGS_GROUP,
+  kanbanSettings: KANBAN_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
+});
+
 const LIST_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: [],
@@ -1032,6 +1114,62 @@ GRID_CARD_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
     },
   },
   cardSettings: BLOCK_CARD_SETTINGS_GROUP,
+});
+
+const KANBAN_CARD_ITEM_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: [
+    'enableCardClick',
+    'openMode',
+    'popupSize',
+    'popupTemplateUid',
+    'pageModelClass',
+    'popupTargetUid',
+    'layout',
+    'labelAlign',
+    'labelWidth',
+    'labelWrap',
+    'colon',
+  ],
+  stepParams: ['cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+KANBAN_CARD_ITEM_CONTRACT.domains.stepParams = groupedDomain({
+  cardSettings: {
+    allowedPaths: [
+      'click.enableCardClick',
+      'popup.mode',
+      'popup.size',
+      'popup.popupTemplateUid',
+      'popup.pageModelClass',
+      'popup.uid',
+      'layout.layout',
+      'layout.labelAlign',
+      'layout.labelWidth',
+      'layout.labelWrap',
+      'layout.colon',
+    ],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['click', 'popup', 'layout'],
+    pathSchemas: {
+      'click.enableCardClick': BOOLEAN_SCHEMA,
+      'popup.mode': STRING_SCHEMA,
+      'popup.size': STRING_SCHEMA,
+      'popup.popupTemplateUid': NULLABLE_STRING_SCHEMA,
+      'popup.pageModelClass': NULLABLE_STRING_SCHEMA,
+      'popup.uid': NULLABLE_STRING_SCHEMA,
+      'layout.layout': STRING_SCHEMA,
+      'layout.labelAlign': STRING_SCHEMA,
+      'layout.labelWidth': NULLABLE_NUMBER_OR_STRING_SCHEMA,
+      'layout.labelWrap': BOOLEAN_SCHEMA,
+      'layout.colon': BOOLEAN_SCHEMA,
+    },
+  },
 });
 
 const MARKDOWN_BLOCK_CONTRACT = createContract({
@@ -1655,6 +1793,29 @@ const CALENDAR_POPUP_ACTION_CONTRACT = createContract({
   },
 });
 CALENDAR_POPUP_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  popupSettings: {
+    allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['openView'],
+    pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
+  },
+});
+
+const KANBAN_POPUP_ACTION_CONTRACT = createContract({
+  editableDomains: ['stepParams'],
+  stepParams: ['popupSettings'],
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    popupSettings: {
+      stepKeys: ['openView'],
+    },
+  },
+});
+KANBAN_POPUP_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   popupSettings: {
     allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
     clearable: true,
@@ -2330,6 +2491,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
   ['CalendarBlockModel', CALENDAR_BLOCK_CONTRACT],
+  ['KanbanBlockModel', KANBAN_BLOCK_CONTRACT],
   ['CreateFormModel', CREATE_FORM_BLOCK_CONTRACT],
   ['EditFormModel', EDIT_FORM_BLOCK_CONTRACT],
   ['FormBlockModel', FORM_BLOCK_CONTRACT],
@@ -2351,6 +2513,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FormItemModel', FORM_ITEM_CONTRACT],
   ['FormAssociationItemModel', DETAILS_ITEM_CONTRACT],
   ['DetailsItemModel', DETAILS_ITEM_CONTRACT],
+  ['KanbanCardItemModel', KANBAN_CARD_ITEM_CONTRACT],
   ['FilterFormItemModel', FILTER_FORM_ITEM_CONTRACT],
   ['PatternFormItemModel', FORM_ITEM_CONTRACT],
   ['ApprovalDetailsItemModel', DETAILS_ITEM_CONTRACT],
@@ -2370,6 +2533,8 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['PopupCollectionActionModel', POPUP_ACTION_CONTRACT],
   ['CalendarQuickCreateActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
   ['CalendarEventViewActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
+  ['KanbanQuickCreateActionModel', KANBAN_POPUP_ACTION_CONTRACT],
+  ['KanbanCardViewActionModel', KANBAN_POPUP_ACTION_CONTRACT],
   ['AddChildActionModel', POPUP_ACTION_CONTRACT],
   ['DeleteActionModel', DELETE_ACTION_CONTRACT],
   ['BulkDeleteActionModel', DELETE_ACTION_CONTRACT],
@@ -2932,6 +3097,7 @@ export function getAvailableActionCatalogItems(
 const COLLECTION_RESOURCE_REQUIRED = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'KanbanBlockModel',
   'CreateFormModel',
   'EditFormModel',
   'FormBlockModel',
@@ -2972,6 +3138,11 @@ const approvalBlockCatalog: FlowSurfaceCatalogItem[] = APPROVAL_BLOCK_CATALOG_SP
 );
 
 export const blockCatalog: FlowSurfaceCatalogItem[] = [...baseBlockCatalog, ...approvalBlockCatalog];
+
+const COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES = [
+  ...COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+  ...KANBAN_BLOCK_ACTION_CONTAINER_USES,
+];
 
 const APPROVAL_PAGE_LIKE_BLOCK_CONTAINER_USE_SET = new Set<string>([...APPROVAL_BLOCK_GRID_USES]);
 const APPROVAL_PAGE_LIKE_GENERIC_BLOCK_KEY_SET = new Set(['markdown', 'jsBlock']);
@@ -3023,7 +3194,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'FilterActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {
@@ -3033,7 +3204,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'AddNewActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {
@@ -3043,7 +3214,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'PopupCollectionActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {
@@ -3053,7 +3224,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'RefreshActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {
@@ -3193,7 +3364,7 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'JSCollectionActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {

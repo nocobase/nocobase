@@ -25,8 +25,10 @@ const DETAILS_FIELD_CONTAINER_USES = new Set([
   'DetailsItemModel',
   'ListBlockModel',
   'GridCardBlockModel',
+  'KanbanBlockModel',
   'ListItemModel',
   'GridCardItemModel',
+  'KanbanCardItemModel',
 ]);
 
 const FILTER_FIELD_CONTAINER_USES = new Set(['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel']);

@@ -397,6 +397,42 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       ],
     },
   });
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'kanban_tasks',
+      title: 'Kanban tasks',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        {
+          name: 'status_sort',
+          type: 'sort',
+          interface: 'sort',
+          scopeKey: 'status',
+          hidden: true,
+        },
+        {
+          name: 'department_sort',
+          type: 'sort',
+          interface: 'sort',
+          scopeKey: 'departmentId',
+          hidden: true,
+        },
+        {
+          name: 'status',
+          type: 'string',
+          interface: 'select',
+          uiSchema: {
+            enum: [
+              { value: 'todo', label: 'To do', color: 'blue' },
+              { value: 'doing', label: 'Doing', color: 'gold' },
+              { value: 'done', label: 'Done', color: 'green' },
+            ],
+          },
+        },
+      ],
+    },
+  });
   await rootAgent.resource('collections').apply({
     values: {
       name: 'categories',
@@ -430,6 +466,15 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       type: 'belongsTo',
       target: 'employees',
       foreignKey: 'managerId',
+      interface: 'm2o',
+    },
+  });
+  await rootAgent.resource('collections.fields', 'kanban_tasks').create({
+    values: {
+      name: 'department',
+      type: 'belongsTo',
+      target: 'departments',
+      foreignKey: 'departmentId',
       interface: 'm2o',
     },
   });
@@ -531,6 +576,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
   await waitForFixtureCollectionsReady(db, {
     categories: ['title', 'parentId'],
     calendar_events: ['title', 'status', 'startsAt', 'endsAt'],
+    kanban_tasks: ['title', 'status', 'status_sort', 'departmentId', 'department_sort'],
     departments: ['title'],
     employees: ['nickname', 'status', 'departmentId', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],

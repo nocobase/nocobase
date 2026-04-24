@@ -18,6 +18,8 @@ export const FLOW_SURFACE_POPUP_HOST_USES = new Set([
   'PopupCollectionActionModel',
   'CalendarQuickCreateActionModel',
   'CalendarEventViewActionModel',
+  'KanbanQuickCreateActionModel',
+  'KanbanCardViewActionModel',
   'ClickableFieldModel',
   'DisplayTextFieldModel',
   'DisplayEnumFieldModel',
@@ -157,6 +159,7 @@ export function isActionContainerUse(parentUse?: string) {
     [
       'TableBlockModel',
       'CalendarBlockModel',
+      'KanbanBlockModel',
       'TableActionsColumnModel',
       'ListBlockModel',
       'GridCardBlockModel',

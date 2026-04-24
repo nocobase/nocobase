@@ -62,7 +62,7 @@ describe('flowSurfaces formal block fixtures', () => {
     expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.map((entry) => entry.key).sort()).toEqual(
       [...FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS].sort(),
     );
-    expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).toHaveLength(13);
+    expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).toHaveLength(14);
     expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).not.toContain('map');
     expect(FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS).not.toContain('comments');
 
@@ -82,12 +82,12 @@ describe('flowSurfaces formal block fixtures', () => {
     ).toEqual([...FORMAL_FLOW_SURFACE_MINIMAL_CREATE_PARITY_BLOCK_KEYS].sort());
   });
 
-  it('should only allow temporary live-flowPages-api fixture sources for comments and map', () => {
+  it('should only allow non-frontend fixture sources for comments map and kanban', () => {
     expect(
       FORMAL_FLOW_SURFACE_BLOCK_FIXTURE_MANIFEST.flatMap((entry) =>
         entry.fixtures.filter((fixture) => fixture.sourceKind === 'live-flowPages-api').map(() => entry.key),
       ).sort(),
-    ).toEqual(['comments', 'map']);
+    ).toEqual(['comments', 'kanban', 'map']);
   });
 
   it('should keep representative create parity fixtures richer than minimal skeletons', () => {

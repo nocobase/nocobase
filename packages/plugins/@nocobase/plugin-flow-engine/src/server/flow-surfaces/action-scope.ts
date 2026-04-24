@@ -15,6 +15,7 @@ const ACTION_SCOPE_SET = new Set<FlowSurfaceActionScope>(['block', 'record', 'fo
 
 export const TABLE_BLOCK_ACTION_CONTAINER_USES = ['TableBlockModel'];
 export const CALENDAR_BLOCK_ACTION_CONTAINER_USES = ['CalendarBlockModel'];
+export const KANBAN_BLOCK_ACTION_CONTAINER_USES = ['KanbanBlockModel'];
 export const TABLE_ROW_ACTION_CONTAINER_USES = ['TableActionsColumnModel'];
 export const LIST_BLOCK_ACTION_CONTAINER_USES = ['ListBlockModel', 'GridCardBlockModel'];
 export const LIST_RECORD_ACTION_CONTAINER_USES = ['ListItemModel', 'GridCardItemModel'];
@@ -36,6 +37,7 @@ export const RECORD_ACTION_CONTAINER_USES = [
 
 export const ACTION_CONTAINER_SCOPE_BY_USE: Record<string, FlowSurfaceActionScope> = Object.fromEntries([
   ...COLLECTION_BLOCK_ACTION_CONTAINER_USES.map((use) => [use, 'block'] as const),
+  ...KANBAN_BLOCK_ACTION_CONTAINER_USES.map((use) => [use, 'block'] as const),
   ...RECORD_ACTION_CONTAINER_USES.map((use) => [use, 'record'] as const),
   ...FORM_ACTION_CONTAINER_USES.map((use) => [use, 'form'] as const),
   ...FILTER_FORM_ACTION_CONTAINER_USES.map((use) => [use, 'filterForm'] as const),

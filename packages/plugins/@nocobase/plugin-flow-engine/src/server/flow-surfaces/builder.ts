@@ -99,6 +99,8 @@ const JS_ITEM_DEFAULT_CODE = [
 const JS_COLUMN_DEFAULT_CODE = `ctx.render('<span class="nb-js-column">JS column</span>');`;
 const CALENDAR_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
 const CALENDAR_EVENT_VIEW_ACTION_KEY = 'eventViewAction';
+const KANBAN_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
+const KANBAN_CARD_VIEW_ACTION_KEY = 'cardViewAction';
 const CALENDAR_READONLY_ACTION_MODEL_USES = new Set([
   'CalendarNavActionModel',
   'CalendarTitleActionModel',
@@ -280,7 +282,7 @@ export function buildBlockTree(options: {
   }
 
   const model: FlowSurfaceNodeSpec = {
-    ...(use === 'CalendarBlockModel' ? { uid: uid() } : {}),
+    ...(use === 'CalendarBlockModel' || use === 'KanbanBlockModel' ? { uid: uid() } : {}),
     use,
     ...(typeof approvalBlockDefaults?.async === 'boolean' ? { async: approvalBlockDefaults.async } : {}),
     props: _.merge(
@@ -376,6 +378,31 @@ export function buildBlockTree(options: {
         },
       },
     };
+  } else if (use === 'KanbanBlockModel') {
+    const blockUid = model.uid || uid();
+    model.uid = blockUid;
+    model.subModels = {
+      item: {
+        uid: uid(),
+        use: 'KanbanCardItemModel',
+        subModels: {
+          grid: {
+            uid: uid(),
+            use: 'DetailsGridModel',
+          },
+        },
+      },
+      [KANBAN_QUICK_CREATE_ACTION_KEY]: buildKanbanPopupActionNode({
+        actionKey: KANBAN_QUICK_CREATE_ACTION_KEY,
+        blockUid,
+        resourceInit: normalizedResourceInit,
+      }),
+      [KANBAN_CARD_VIEW_ACTION_KEY]: buildKanbanPopupActionNode({
+        actionKey: KANBAN_CARD_VIEW_ACTION_KEY,
+        blockUid,
+        resourceInit: normalizedResourceInit,
+      }),
+    };
   } else if (use === 'CalendarBlockModel') {
     const blockUid = model.uid || uid();
     model.uid = blockUid;
@@ -396,6 +423,63 @@ export function buildBlockTree(options: {
   }
 
   return assignClientKeysToUids(model, {});
+}
+
+function buildKanbanPopupActionNode(options: {
+  actionKey: typeof KANBAN_QUICK_CREATE_ACTION_KEY | typeof KANBAN_CARD_VIEW_ACTION_KEY;
+  blockUid: string;
+  resourceInit?: Record<string, any>;
+  popupSettings?: Record<string, any>;
+}) {
+  const actionUid =
+    options.actionKey === KANBAN_QUICK_CREATE_ACTION_KEY
+      ? `${options.blockUid}-quick-create-action`
+      : `${options.blockUid}-card-view-action`;
+  return {
+    uid: actionUid,
+    use:
+      options.actionKey === KANBAN_QUICK_CREATE_ACTION_KEY
+        ? 'KanbanQuickCreateActionModel'
+        : 'KanbanCardViewActionModel',
+    stepParams: {
+      popupSettings: {
+        openView: buildKanbanPopupOpenView({
+          actionUid,
+          resourceInit: options.resourceInit,
+          popupSettings: options.popupSettings,
+        }),
+      },
+    },
+  };
+}
+
+function buildKanbanPopupOpenView(options: {
+  actionUid: string;
+  resourceInit?: Record<string, any>;
+  popupSettings?: Record<string, any>;
+}) {
+  const defaults = _.pickBy(
+    {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      uid: options.actionUid,
+      collectionName: options.resourceInit?.collectionName,
+      dataSourceKey: options.resourceInit?.dataSourceKey || (options.resourceInit?.collectionName ? 'main' : undefined),
+    },
+    (value) => !_.isUndefined(value),
+  );
+  const current = _.cloneDeep(options.popupSettings || {});
+  return _.pickBy(
+    {
+      ...defaults,
+      ...current,
+      uid: current.uid || defaults.uid,
+      collectionName: current.collectionName || defaults.collectionName,
+      dataSourceKey: current.dataSourceKey || defaults.dataSourceKey,
+    },
+    (value) => !_.isUndefined(value),
+  );
 }
 
 function buildCalendarPopupActionNode(options: {
