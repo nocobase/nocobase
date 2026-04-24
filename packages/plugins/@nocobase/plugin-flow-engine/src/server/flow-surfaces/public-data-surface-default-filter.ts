@@ -11,8 +11,14 @@ import _ from 'lodash';
 import { throwBadRequest } from './errors';
 import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
 
-export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar']);
-export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL = 'table/list/gridCard/calendar';
+export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'calendar',
+  'kanban',
+]);
+export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL = 'table/list/gridCard/calendar/kanban';
 
 export function isFlowSurfacePublicDataSurfaceBlockType(blockType?: string) {
   return FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES.has(String(blockType || '').trim());

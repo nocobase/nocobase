@@ -241,6 +241,37 @@ const CALENDAR_OPTIONS: FlowSurfaceConfigureOptions = {
   eventPopup: OPEN_VIEW,
 };
 
+const KANBAN_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  groupField: stringOption('Grouping field', { example: 'status' }),
+  groupTitleField: stringOption('Association grouping title field', { example: 'title' }),
+  groupColorField: stringOption('Association grouping color field', { example: 'color' }),
+  groupOptions: arrayOption('Ordered kanban group options', {
+    example: [
+      { value: 'todo', label: 'To do', color: 'blue' },
+      { value: 'done', label: 'Done', color: 'green' },
+    ],
+  }),
+  styleVariant: stringOption('Kanban style variant', { enum: ['default', 'filled'], example: 'filled' }),
+  sorting: SORTING,
+  dragEnabled: booleanOption('Whether drag sorting is enabled', { example: true }),
+  dragSortBy: stringOption('Drag-sort field', { example: 'status_sort' }),
+  quickCreateEnabled: booleanOption('Whether per-column quick create is enabled', { example: true }),
+  quickCreatePopup: OPEN_VIEW,
+  enableCardClick: booleanOption('Whether cards can be clicked to open a popup', { example: true }),
+  cardPopup: OPEN_VIEW,
+  cardLayout: stringOption('Kanban card layout', { example: 'vertical' }),
+  cardLabelAlign: stringOption('Kanban card label alignment', { example: 'left' }),
+  cardLabelWidth: stringOption('Kanban card label width', { example: '120px' }),
+  cardLabelWrap: booleanOption('Whether kanban card labels should wrap', { example: false }),
+  cardColon: booleanOption('Whether kanban card labels display a colon', { example: true }),
+  pageSize: numberOption('Page size', { example: 20 }),
+  columnWidth: numberOption('Column width', { example: 300 }),
+  dataScope: FILTER_GROUP,
+};
+
 const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
@@ -778,6 +809,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'CalendarBlockModel':
       options = cloneOptions(CALENDAR_OPTIONS);
+      break;
+    case 'KanbanBlockModel':
+      options = cloneOptions(KANBAN_OPTIONS);
       break;
     case 'FormBlockModel':
     case 'CreateFormModel':

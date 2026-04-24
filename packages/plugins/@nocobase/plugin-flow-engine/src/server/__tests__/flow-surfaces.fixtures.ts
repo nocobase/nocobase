@@ -104,6 +104,8 @@ export function projectFormalBlockCreateParityTree(formalKey: FormalFlowSurfaceB
         return projectTableBlock(tree);
       case 'calendar':
         return projectCalendarBlock(tree);
+      case 'kanban':
+        return projectKanbanBlock(tree);
       case 'create-form':
         return projectCreateFormBlock(tree);
       case 'edit-form':
@@ -137,6 +139,8 @@ export function extractCreateParityFixtureExpectation(formalKey: FormalFlowSurfa
         return extractFixtureTableBlock(tree);
       case 'calendar':
         return extractFixtureCalendarBlock(tree);
+      case 'kanban':
+        return extractFixtureKanbanBlock(tree);
       case 'create-form':
         return extractFixtureCreateFormBlock(tree);
       case 'edit-form':
@@ -308,6 +312,63 @@ function projectListLikeBlock(node: any) {
 
 function projectGridCardLikeBlock(node: any) {
   return projectListLikeBlock(node);
+}
+
+function projectKanbanBlock(node: any) {
+  const item = firstChild(node?.subModels?.item);
+  const grid = firstChild(item?.subModels?.grid);
+  const quickCreateAction = firstChild(node?.subModels?.quickCreateAction);
+  const cardViewAction = firstChild(node?.subModels?.cardViewAction);
+  const actions = toArray(node?.subModels?.actions)
+    .map((itemNode) => {
+      if (
+        [
+          'FilterActionModel',
+          'AddNewActionModel',
+          'PopupCollectionActionModel',
+          'RefreshActionModel',
+          'JSCollectionActionModel',
+        ].includes(itemNode?.use)
+      ) {
+        return projectSimpleAction(itemNode);
+      }
+      return undefined;
+    })
+    .filter(Boolean);
+
+  return compactObject({
+    alias: node?.alias,
+    use: node?.use,
+    props: normalizeValue(node?.props),
+    decoratorProps: normalizeValue(node?.decoratorProps),
+    stepParams: normalizeValue(node?.stepParams),
+    flowRegistry: normalizeValue(node?.flowRegistry),
+    subModels: compactObject({
+      actions: actions.length ? actions : undefined,
+      item: item
+        ? [
+            compactObject({
+              alias: item.alias,
+              use: item.use,
+              props: normalizeValue(item.props),
+              stepParams: normalizeValue(item.stepParams),
+              subModels: compactObject({
+                grid: grid
+                  ? [
+                      compactObject({
+                        alias: grid.alias,
+                        use: grid.use,
+                      }),
+                    ]
+                  : undefined,
+              }),
+            }),
+          ]
+        : undefined,
+      quickCreateAction: quickCreateAction ? [projectCalendarPopupAction(quickCreateAction)] : undefined,
+      cardViewAction: cardViewAction ? [projectCalendarPopupAction(cardViewAction)] : undefined,
+    }),
+  });
 }
 
 function projectCreateFormBlock(node: any) {
@@ -703,6 +764,63 @@ function extractFixtureListLikeBlock(node: any) {
 
 function extractFixtureGridCardLikeBlock(node: any) {
   return extractFixtureListLikeBlock(node);
+}
+
+function extractFixtureKanbanBlock(node: any) {
+  const item = firstChild(node?.subModels?.item);
+  const grid = firstChild(item?.subModels?.grid);
+  const quickCreateAction = firstChild(node?.subModels?.quickCreateAction);
+  const cardViewAction = firstChild(node?.subModels?.cardViewAction);
+  const actions = toArray(node?.subModels?.actions)
+    .map((itemNode) => {
+      if (
+        [
+          'FilterActionModel',
+          'AddNewActionModel',
+          'PopupCollectionActionModel',
+          'RefreshActionModel',
+          'JSCollectionActionModel',
+        ].includes(itemNode?.use)
+      ) {
+        return extractFixtureSimpleAction(itemNode);
+      }
+      return undefined;
+    })
+    .filter(Boolean);
+
+  return compactObject({
+    alias: node?.alias,
+    use: node?.use,
+    props: normalizeValue(node?.props),
+    decoratorProps: normalizeValue(node?.decoratorProps),
+    stepParams: normalizeValue(node?.stepParams),
+    flowRegistry: normalizeValue(node?.flowRegistry),
+    subModels: compactObject({
+      actions: actions.length ? actions : undefined,
+      item: item
+        ? [
+            compactObject({
+              alias: item?.alias,
+              use: item?.use,
+              props: normalizeValue(item?.props),
+              stepParams: normalizeValue(item?.stepParams),
+              subModels: compactObject({
+                grid: grid
+                  ? [
+                      compactObject({
+                        alias: grid?.alias,
+                        use: grid?.use,
+                      }),
+                    ]
+                  : undefined,
+              }),
+            }),
+          ]
+        : undefined,
+      quickCreateAction: quickCreateAction ? [extractFixtureCalendarPopupAction(quickCreateAction)] : undefined,
+      cardViewAction: cardViewAction ? [extractFixtureCalendarPopupAction(cardViewAction)] : undefined,
+    }),
+  });
 }
 
 function extractFixtureCreateFormBlock(node: any) {
@@ -1680,6 +1798,7 @@ const BLOCK_USE_ALIAS: Record<string, string> = {
   JSBlockModel: 'jsBlock',
   TableBlockModel: 'table',
   CalendarBlockModel: 'calendar',
+  KanbanBlockModel: 'kanban',
   CreateFormModel: 'createForm',
   EditFormModel: 'editForm',
   FormBlockModel: 'form',
@@ -1701,6 +1820,8 @@ const ACTION_USE_ALIAS: Record<string, string> = {
   PopupCollectionActionModel: 'popup',
   CalendarQuickCreateActionModel: 'calendarQuickCreate',
   CalendarEventViewActionModel: 'calendarEventView',
+  KanbanQuickCreateActionModel: 'kanbanQuickCreate',
+  KanbanCardViewActionModel: 'kanbanCardView',
   CalendarTodayActionModel: 'calendarToday',
   CalendarNavActionModel: 'calendarNav',
   CalendarTitleActionModel: 'calendarTitle',

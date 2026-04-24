@@ -11,10 +11,12 @@ import { describe, expect, it } from 'vitest';
 import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from '../flow-surfaces/field-semantics';
 
 describe('flowSurfaces field semantics', () => {
-  it('should classify details/list/grid-card containers as details kind', () => {
+  it('should classify details/list/grid-card/kanban containers as details kind', () => {
     expect(normalizeFieldContainerKind('DetailsBlockModel')).toBe('details');
     expect(normalizeFieldContainerKind('ListBlockModel')).toBe('details');
     expect(normalizeFieldContainerKind('GridCardItemModel')).toBe('details');
+    expect(normalizeFieldContainerKind('KanbanBlockModel')).toBe('details');
+    expect(normalizeFieldContainerKind('KanbanCardItemModel')).toBe('details');
     expect(normalizeFieldContainerKind('ApplyTaskCardDetailsModel')).toBe('details');
     expect(normalizeFieldContainerKind('ApprovalTaskCardGridModel')).toBe('details');
     expect(normalizeFieldContainerKind('ApprovalDetailsModel')).toBe('details');

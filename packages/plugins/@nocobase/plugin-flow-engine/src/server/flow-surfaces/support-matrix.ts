@@ -11,6 +11,7 @@ export type FormalFlowSurfaceBlockKey =
   | 'js-block'
   | 'table'
   | 'calendar'
+  | 'kanban'
   | 'create-form'
   | 'edit-form'
   | 'details'
@@ -72,6 +73,18 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
     label: 'Calendar',
     modelUse: 'CalendarBlockModel',
     ownerPlugin: '@nocobase/plugin-calendar',
+    topLevelAddable: true,
+    formalBuiltin: true,
+    fixtureCaptured: true,
+    readbackSupported: true,
+    createSupported: true,
+  },
+  {
+    key: 'kanban',
+    formalKey: 'kanban',
+    label: 'Kanban',
+    modelUse: 'KanbanBlockModel',
+    ownerPlugin: '@nocobase/plugin-kanban',
     topLevelAddable: true,
     formalBuiltin: true,
     fixtureCaptured: true,

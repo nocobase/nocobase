@@ -121,7 +121,7 @@ export type FlowSurfaceCompiledComposePlan = {
   layoutPlan: FlowSurfaceComposeLayoutPlan;
 };
 
-const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
+const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard', 'kanban']);
 
 export function compileComposeExecutionPlan(input: {
   gridUid: string;

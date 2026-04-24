@@ -71,6 +71,18 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
     },
     { type: 'refresh', scope: 'actions' },
   ],
+  kanban: [
+    { type: 'filter', scope: 'actions' },
+    {
+      type: 'addNew',
+      scope: 'actions',
+      popup: {
+        tryTemplate: true,
+        [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+      },
+    },
+    { type: 'refresh', scope: 'actions' },
+  ],
   createForm: [{ type: 'submit', scope: 'actions' }],
   editForm: [{ type: 'submit', scope: 'actions' }],
   details: [

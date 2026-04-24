@@ -174,6 +174,7 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'details'
   | 'filterForm'
   | 'calendar'
+  | 'kanban'
   | 'list'
   | 'gridCard'
   | 'markdown'
