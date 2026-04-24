@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
-import { beforeEach, test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalogWebUI: vi.fn(),
@@ -27,7 +26,18 @@ const mocks = vi.hoisted(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.NB_LOCALE = 'en-US';
   mocks.upsertEnv.mockResolvedValue(undefined);
+});
+
+const originalNbLocale = process.env.NB_LOCALE;
+
+afterEach(() => {
+  if (originalNbLocale === undefined) {
+    delete process.env.NB_LOCALE;
+    return;
+  }
+  process.env.NB_LOCALE = originalNbLocale;
 });
 
 vi.mock('../lib/prompt-web-ui.ts', () => ({
@@ -119,9 +129,9 @@ test('nb init continues from the browser UI result and runs env:add for an exist
 
   await Init.prototype.run.call(command);
 
-  assert.equal(mocks.runPromptCatalogWebUI.mock.calls.length, 1);
-  assert.equal(mocks.runPromptCatalog.mock.calls.length, 1);
-  assert.deepEqual(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values, {
+  expect(mocks.runPromptCatalogWebUI.mock.calls.length).toBe(1);
+  expect(mocks.runPromptCatalog.mock.calls.length).toBe(1);
+  expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values).toEqual({
     appName: 'staging',
     hasNocobase: 'yes',
     installSkills: false,
@@ -129,9 +139,9 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     authType: 'token',
     accessToken: 'secret-token',
   });
-  assert.equal(mocks.runPromptCatalog.mock.calls[0]?.[1]?.yes, true);
-  assert.equal(mocks.runNpm.mock.calls.length, 0);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.yes).toBe(true);
+  expect(mocks.runNpm.mock.calls.length).toBe(0);
+  expect(runCommand.mock.calls).toEqual([
     [
       'env:add',
       [
@@ -170,13 +180,14 @@ test('nb init forwards download options to nb install for a new app flow', async
     npmRegistry: 'https://registry.npmmirror.com',
     builtinDb: true,
     dbDialect: 'postgres',
+    builtinDbImage: 'registry.example.com/postgres:16',
     dbHost: '127.0.0.1',
     dbPort: '5432',
     dbDatabase: 'demoapp',
     dbUser: 'nocobase',
     dbPassword: 'secret',
     rootUsername: 'admin',
-    rootEmail: 'admin@example.com',
+    rootEmail: 'admin@nocobase.com',
     rootPassword: 'admin123',
     rootNickname: 'Admin',
   });
@@ -210,8 +221,8 @@ test('nb init forwards download options to nb install for a new app flow', async
 
   await Init.prototype.run.call(command);
 
-  assert.equal(mocks.runNpm.mock.calls.length, 0);
-  assert.deepEqual(mocks.upsertEnv.mock.calls, [[
+  expect(mocks.runNpm.mock.calls.length).toBe(0);
+  expect(mocks.upsertEnv.mock.calls).toEqual([[
     'demoapp',
     {
       baseUrl: 'http://127.0.0.1:13080/api',
@@ -224,6 +235,7 @@ test('nb init forwards download options to nb install for a new app flow', async
       appPort: '13080',
       builtinDb: true,
       dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
       dbHost: '127.0.0.1',
       dbPort: '5432',
       dbDatabase: 'demoapp',
@@ -232,7 +244,7 @@ test('nb init forwards download options to nb install for a new app flow', async
     },
     { scope: 'project' },
   ]]);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(runCommand.mock.calls).toEqual([
     [
       'install',
       [
@@ -263,6 +275,8 @@ test('nb init forwards download options to nb install for a new app flow', async
         '--builtin-db',
         '--db-dialect',
         'postgres',
+        '--builtin-db-image',
+        'registry.example.com/postgres:16',
         '--db-host',
         '127.0.0.1',
         '--db-port',
@@ -276,7 +290,7 @@ test('nb init forwards download options to nb install for a new app flow', async
         '--root-username',
         'admin',
         '--root-email',
-        'admin@example.com',
+        'admin@nocobase.com',
         '--root-password',
         'admin123',
         '--root-nickname',
@@ -310,7 +324,7 @@ test('nb init saves env config before install starts so failures still leave the
     dbUser: 'nocobase',
     dbPassword: 'secret',
     rootUsername: 'admin',
-    rootEmail: 'admin@example.com',
+    rootEmail: 'admin@nocobase.com',
     rootPassword: 'admin123',
     rootNickname: 'Admin',
     ...(options.values ?? {}),
@@ -341,13 +355,10 @@ test('nb init saves env config before install starts so failures still leave the
     },
   });
 
-  await assert.rejects(
-    () => Init.prototype.run.call(command),
-    /install failed/,
-  );
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/install failed/);
 
-  assert.equal(mocks.upsertEnv.mock.calls.length, 1);
-  assert.equal(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0], true);
+  expect(mocks.upsertEnv.mock.calls.length).toBe(1);
+  expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
 });
 
 test('nb init --resume delegates to nb install --resume for the selected env', async () => {
@@ -376,8 +387,8 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
 
   await Init.prototype.run.call(command);
 
-  assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
+  expect(runCommand.mock.calls).toEqual([
     [
       'install',
       ['--no-intro', '--env', 'app1', '--resume'],
@@ -425,10 +436,10 @@ test('nb init installs skills when --install-skills is provided', async () => {
     process.argv = originalArgv;
   }
 
-  assert.deepEqual(mocks.runNpm.mock.calls, [
+  expect(mocks.runNpm.mock.calls).toEqual([
     ['npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y']],
   ]);
-  assert.deepEqual(runCommand.mock.calls[0], [
+  expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);
@@ -462,7 +473,7 @@ test('nb init does not forward the default app port in --yes mode unless it was 
       { yes: true },
     );
 
-    assert.equal(argv.includes('--app-port'), false);
+    expect(argv.includes('--app-port')).toBe(false);
   } finally {
     process.argv = originalArgv;
   }
@@ -495,12 +506,9 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
     },
   });
 
-  await assert.rejects(
-    () => Init.prototype.run.call(command),
-    /exit: 1/,
-  );
-  assert.equal(mocks.promptError.mock.calls.length, 1);
-  assert.match(String(mocks.promptError.mock.calls[0]?.[0] ?? ''), /local3/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  expect(mocks.promptError.mock.calls.length).toBe(1);
+  expect(String(mocks.promptError.mock.calls[0]?.[0] ?? '')).toMatch(/local3/);
 });
 
 test('nb init explains that --env is required when --yes skips prompts', async () => {
@@ -523,17 +531,40 @@ test('nb init explains that --env is required when --yes skips prompts', async (
     },
   });
 
-  await assert.rejects(
-    () => Init.prototype.run.call(command),
-    /exit: 1/,
-  );
-  assert.equal(mocks.runPromptCatalog.mock.calls.length, 0);
-  assert.equal(mocks.promptInfo.mock.calls.length, 0);
-  assert.equal(mocks.promptWarn.mock.calls.length, 0);
-  assert.equal(runCommand.mock.calls.length, 0);
-  assert.equal(mocks.promptError.mock.calls.length, 1);
-  assert.match(
-    String(mocks.promptError.mock.calls[0]?.[0] ?? ''),
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
+  expect(mocks.promptInfo.mock.calls.length).toBe(0);
+  expect(mocks.promptWarn.mock.calls.length).toBe(0);
+  expect(runCommand.mock.calls.length).toBe(0);
+  expect(mocks.promptError.mock.calls.length).toBe(1);
+  expect(String(mocks.promptError.mock.calls[0]?.[0] ?? '')).toMatch(/App name is required when prompts are skipped\..*nb init --yes --env <envName>/s);
+});
+
+test('nb init --locale overrides the environment locale for prompt-side messages', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const runCommand = vi.fn(async () => undefined);
+  process.env.NB_LOCALE = 'zh-CN';
+
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        ui: false,
+        locale: 'en-US',
+      },
+    })),
+    config: {
+      runCommand,
+    },
+    log: vi.fn(),
+    exit: (code?: number) => {
+      throw new Error(`exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  expect(mocks.promptError.mock.calls.length).toBe(1);
+  expect(String(mocks.promptError.mock.calls[0]?.[0] ?? '')).toMatch(
     /App name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
   );
 });
@@ -588,18 +619,12 @@ test('nb init --force allows reconfiguring an existing workspace env and warns b
     process.argv = originalArgv;
   }
 
-  assert.deepEqual(runCommand.mock.calls[0], [
+  expect(runCommand.mock.calls[0]).toEqual([
     'install',
     ['-y', '--no-intro', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
   ]);
-  assert.equal(
-    mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env')),
-    true,
-  );
-  assert.equal(
-    mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('local5')),
-    true,
-  );
+  expect(mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env'))).toBe(true);
+  expect(mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('local5'))).toBe(true);
 });
 
 test('nb init forwards dynamically selected ports in --yes mode', async () => {
@@ -632,14 +657,8 @@ test('nb init forwards dynamically selected ports in --yes mode', async () => {
       { yes: true },
     );
 
-    assert.deepEqual(
-      argv.slice(argv.indexOf('--app-port'), argv.indexOf('--app-port') + 2),
-      ['--app-port', '54180'],
-    );
-    assert.deepEqual(
-      argv.slice(argv.indexOf('--db-port'), argv.indexOf('--db-port') + 2),
-      ['--db-port', '54181'],
-    );
+    expect(argv.slice(argv.indexOf('--app-port'), argv.indexOf('--app-port') + 2)).toEqual(['--app-port', '54180']);
+    expect(argv.slice(argv.indexOf('--db-port'), argv.indexOf('--db-port') + 2)).toEqual(['--db-port', '54181']);
   } finally {
     process.argv = originalArgv;
   }
@@ -674,7 +693,7 @@ test('nb init does not forward a hidden Docker built-in database port in --yes m
       { yes: true },
     );
 
-    assert.equal(argv.includes('--db-port'), false);
+    expect(argv.includes('--db-port')).toBe(false);
   } finally {
     process.argv = originalArgv;
   }
@@ -699,13 +718,10 @@ test('nb init treats the --yes download source as docker when resolving dynamic 
 
     const initialValues = await buildDynamicInitialValuesForInstall({ yes: true }, { appPort: '13000' });
 
-    assert.equal(Object.prototype.hasOwnProperty.call(initialValues, 'appRootPath'), false);
-    assert.equal(Object.prototype.hasOwnProperty.call(initialValues, 'storagePath'), false);
+    expect(Object.prototype.hasOwnProperty.call(initialValues, 'appRootPath')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(initialValues, 'storagePath')).toBe(false);
 
-    assert.equal(
-      buildDbPromptInitialValues.mock.calls[0]?.[0].downloadResults.source,
-      'docker',
-    );
+    expect(buildDbPromptInitialValues.mock.calls[0]?.[0].downloadResults.source).toBe('docker');
   } finally {
     buildDbPromptInitialValues.mockRestore();
   }
@@ -745,7 +761,7 @@ test('nb init preserves argument values that contain spaces when building instal
         dbUser: 'nocobase',
         dbPassword: 'nocobase',
         rootUsername: 'nocobase',
-        rootEmail: 'admin@example.com',
+        rootEmail: 'admin@nocobase.com',
         rootPassword: 'admin123',
         rootNickname: 'Super Admin',
       },
@@ -753,12 +769,9 @@ test('nb init preserves argument values that contain spaces when building instal
     );
 
     const nicknameIndex = argv.indexOf('--root-nickname');
-    assert.notEqual(nicknameIndex, -1);
-    assert.equal(argv[nicknameIndex + 1], 'Super Admin');
-    assert.deepEqual(
-      argv.slice(argv.indexOf('--docker-platform'), argv.indexOf('--docker-platform') + 2),
-      ['--docker-platform', 'linux/arm64'],
-    );
+    expect(nicknameIndex).not.toBe(-1);
+    expect(argv[nicknameIndex + 1]).toBe('Super Admin');
+    expect(argv.slice(argv.indexOf('--docker-platform'), argv.indexOf('--docker-platform') + 2)).toEqual(['--docker-platform', 'linux/arm64']);
   } finally {
     process.argv = originalArgv;
   }
@@ -802,13 +815,10 @@ test('nb init disables skills install by default when the current workspace has 
   } finally {
   }
 
-  assert.equal(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values?.installSkills, false);
-  assert.equal(mocks.runNpm.mock.calls.length, 0);
-  assert.equal(
-    mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('Skipped NocoBase agent skills install.')),
-    true,
-  );
-  assert.deepEqual(runCommand.mock.calls[0], [
+  expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values?.installSkills).toBe(false);
+  expect(mocks.runNpm.mock.calls.length).toBe(0);
+  expect(mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('Skipped NocoBase agent skills install.'))).toBe(true);
+  expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);

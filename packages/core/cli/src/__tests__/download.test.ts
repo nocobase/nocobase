@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, test, vi } from 'vitest';
+import { afterEach, test, vi, expect } from 'vitest';
 import type { DownloadResolvedFlags } from '../commands/download.js';
 import Download from '../commands/download.js';
 
@@ -95,7 +94,7 @@ test('downloadFromDocker pulls image and saves a sanitized tarball path', async 
     'registry.cn-shanghai.aliyuncs.com-nocobase-nocobase-feature-foo.tar',
   );
 
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(mocks.run.mock.calls).toEqual([
     [
       'docker',
       ['pull', '--platform', 'linux/arm64', imageRef],
@@ -126,8 +125,8 @@ test('downloadFromNpm skips build without dev dependencies and forwards npm regi
 
   const projectRoot = await command.downloadFromNpm(flags);
 
-  assert.equal(projectRoot, path.join(cwd, 'app'));
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(projectRoot).toBe(path.join(cwd, 'app'));
+  expect(mocks.run.mock.calls).toEqual([
     [
       'npx',
       ['-y', 'create-nocobase-app@latest', 'app', '--skip-dev-dependencies'],
@@ -155,7 +154,7 @@ test('downloadFromNpm skips build without dev dependencies and forwards npm regi
       },
     ],
   ]);
-  assert.equal(runCommand.mock.calls.length, 0);
+  expect(runCommand.mock.calls.length).toBe(0);
 });
 
 test('downloadFromGit maps alpha to develop and builds with --no-dts by default', async () => {
@@ -174,8 +173,8 @@ test('downloadFromGit maps alpha to develop and builds with --no-dts by default'
 
   const projectRoot = await command.downloadFromGit(flags);
 
-  assert.equal(projectRoot, path.join(cwd, 'repo'));
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(projectRoot).toBe(path.join(cwd, 'repo'));
+  expect(mocks.run.mock.calls).toEqual([
     [
       'git',
       ['clone', '--branch', 'develop', '--depth', '1', 'https://github.com/nocobase/nocobase.git', './repo'],
@@ -192,7 +191,7 @@ test('downloadFromGit maps alpha to develop and builds with --no-dts by default'
       },
     ],
   ]);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(runCommand.mock.calls).toEqual([
     ['build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']],
   ]);
 });
@@ -214,8 +213,8 @@ test('download forwards raw command output only in verbose mode', async () => {
 
   const projectRoot = await command.downloadFromGit(flags);
 
-  assert.equal(projectRoot, path.join(cwd, 'repo'));
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(projectRoot).toBe(path.join(cwd, 'repo'));
+  expect(mocks.run.mock.calls).toEqual([
     [
       'git',
       ['clone', '--branch', 'develop', '--depth', '1', 'https://github.com/nocobase/nocobase.git', './repo'],
@@ -232,7 +231,7 @@ test('download forwards raw command output only in verbose mode', async () => {
       },
     ],
   ]);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(runCommand.mock.calls).toEqual([
     ['build', ['--cwd', path.join(cwd, 'repo'), '--no-dts', '--verbose']],
   ]);
 });
@@ -263,18 +262,18 @@ test('download shows a delayed loading indicator for long-running commands in no
   const promise = command.downloadFromDocker(flags);
 
   await vi.advanceTimersByTimeAsync(7_999);
-  assert.equal(mocks.startTask.mock.calls.length, 0);
+  expect(mocks.startTask.mock.calls.length).toBe(0);
 
   await vi.advanceTimersByTimeAsync(1);
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Pulling the Docker image. Please wait...'],
   ]);
 
   resolveRun?.();
   await promise;
 
-  assert.equal(mocks.stopTask.mock.calls.length, 1);
-  assert.equal(mocks.updateTask.mock.calls.length, 0);
+  expect(mocks.stopTask.mock.calls.length).toBe(1);
+  expect(mocks.updateTask.mock.calls.length).toBe(0);
 });
 
 test('download shows a preparation loading state before entering the source-specific flow', async () => {
@@ -300,16 +299,16 @@ test('download shows a preparation loading state before entering the source-spec
     vi.fn(async () => resolved) as never;
   (command as Download & { downloadFromNpm: (flags: DownloadResolvedFlags) => Promise<string> }).downloadFromNpm =
     vi.fn(async (flags: DownloadResolvedFlags) => {
-      assert.deepEqual(flags, resolved);
-      assert.deepEqual(mocks.startTask.mock.calls, [
+      expect(flags).toEqual(resolved);
+      expect(mocks.startTask.mock.calls).toEqual([
         ['Preparing download from npm package'],
       ]);
-      assert.equal(mocks.stopTask.mock.calls.length, 0);
+      expect(mocks.stopTask.mock.calls.length).toBe(0);
       return path.join(process.cwd(), 'app');
     }) as never;
 
   const result = await command.download();
 
-  assert.equal(result.projectRoot, path.join(process.cwd(), 'app'));
-  assert.equal(mocks.stopTask.mock.calls.length, 1);
+  expect(result.projectRoot).toBe(path.join(process.cwd(), 'app'));
+  expect(mocks.stopTask.mock.calls.length).toBe(1);
 });

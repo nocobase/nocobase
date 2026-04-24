@@ -1,5 +1,13 @@
-import assert from 'node:assert/strict';
-import { test } from 'vitest';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { test, expect } from 'vitest';
 import {
   formatMissingRuntimeEnvError,
   formatSwaggerSchemaError,
@@ -7,20 +15,20 @@ import {
 } from '../lib/bootstrap.js';
 
 test('shouldSkipRuntimeBootstrap skips root help and no-arg invocations', () => {
-  assert.equal(shouldSkipRuntimeBootstrap([]), false);
-  assert.equal(shouldSkipRuntimeBootstrap(['--help']), false);
-  assert.equal(shouldSkipRuntimeBootstrap(['-h']), false);
-  assert.equal(shouldSkipRuntimeBootstrap(['api']), false);
-  assert.equal(shouldSkipRuntimeBootstrap(['env', '--help']), true);
-  assert.equal(shouldSkipRuntimeBootstrap(['resource', 'list']), true);
-  assert.equal(shouldSkipRuntimeBootstrap(['api', 'resource', 'list']), true);
-  assert.equal(shouldSkipRuntimeBootstrap(['api', 'resource', 'list', '--help']), true);
+  expect(shouldSkipRuntimeBootstrap([])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['--help'])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['-h'])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['api'])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['env', '--help'])).toBe(true);
+  expect(shouldSkipRuntimeBootstrap(['resource', 'list'])).toBe(true);
+  expect(shouldSkipRuntimeBootstrap(['api', 'resource', 'list'])).toBe(true);
+  expect(shouldSkipRuntimeBootstrap(['api', 'resource', 'list', '--help'])).toBe(true);
 });
 
 test('shouldSkipRuntimeBootstrap still loads runtime for non-builtin commands', () => {
-  assert.equal(shouldSkipRuntimeBootstrap(['users', 'list']), false);
-  assert.equal(shouldSkipRuntimeBootstrap(['users', 'list', '--json-output']), false);
-  assert.equal(shouldSkipRuntimeBootstrap(['api', 'users', 'list']), false);
+  expect(shouldSkipRuntimeBootstrap(['users', 'list'])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['users', 'list', '--json-output'])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['api', 'users', 'list'])).toBe(false);
 });
 
 test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', () => {
@@ -43,12 +51,12 @@ test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', 
     },
   );
 
-  assert.match(message, /Authentication failed while loading the command runtime/);
-  assert.match(message, /env "local"/);
-  assert.match(message, /INVALID_TOKEN/);
-  assert.match(message, /env add <name> --base-url <url> --auth-type token --token <api-key>/);
-  assert.match(message, /nb env update/);
-  assert.match(message, /nb --help/);
+  expect(message).toMatch(/Authentication failed while loading the command runtime/);
+  expect(message).toMatch(/env "local"/);
+  expect(message).toMatch(/INVALID_TOKEN/);
+  expect(message).toMatch(/env add <name> --base-url <url> --auth-type token --token <api-key>/);
+  expect(message).toMatch(/nb env update/);
+  expect(message).toMatch(/nb --help/);
 });
 
 test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth failures', () => {
@@ -66,8 +74,8 @@ test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth 
     },
   );
 
-  assert.match(message, /^Failed to load swagger schema from `swagger:get`\./);
-  assert.match(message, /Internal Server Error/);
+  expect(message).toMatch(/^Failed to load swagger schema from `swagger:get`\./);
+  expect(message).toMatch(/Internal Server Error/);
 });
 
 test('formatSwaggerSchemaError explains network fetch failures clearly', () => {
@@ -86,18 +94,18 @@ test('formatSwaggerSchemaError explains network fetch failures clearly', () => {
     },
   );
 
-  assert.match(message, /Failed to reach the NocoBase server while loading the command runtime/);
-  assert.match(message, /Base URL: http:\/\/localhost:13000\/api/);
-  assert.match(message, /Network error: fetch failed/);
-  assert.match(message, /nb env add <name> --base-url <url>/);
-  assert.match(message, /nb env list/);
+  expect(message).toMatch(/Failed to reach the NocoBase server while loading the command runtime/);
+  expect(message).toMatch(/Base URL: http:\/\/localhost:13000\/api/);
+  expect(message).toMatch(/Network error: fetch failed/);
+  expect(message).toMatch(/nb env add <name> --base-url <url>/);
+  expect(message).toMatch(/nb env list/);
 });
 
 test('formatMissingRuntimeEnvError explains unknown runtime commands without an env', () => {
   const message = formatMissingRuntimeEnvError('not-a-real-command');
 
-  assert.match(message, /Unable to resolve runtime command `not-a-real-command`/);
-  assert.match(message, /No env is configured/);
-  assert.match(message, /nb --help/);
-  assert.match(message, /nb env update/);
+  expect(message).toMatch(/Unable to resolve runtime command `not-a-real-command`/);
+  expect(message).toMatch(/No env is configured/);
+  expect(message).toMatch(/nb --help/);
+  expect(message).toMatch(/nb env update/);
 });

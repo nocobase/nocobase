@@ -1,0 +1,277 @@
+{
+  "promptCatalog": {
+    "common": {
+      "cancelled": "Cancelled.",
+      "required": "Required",
+      "mustBeInteger": "Must be an integer"
+    },
+    "preset": {
+      "required": "\"{{key}}\" is required; set a non-empty values.{{key}} or omit it to prompt.",
+      "invalidSelect": "Invalid values.{{key}}: \"{{value}}\". Expected one of: {{options}}",
+      "invalidInteger": "Invalid values.{{key}}: must be an integer."
+    },
+    "nonInteractive": {
+      "textRequired": "Non-interactive: \"{{key}}\" is required; set initialValues.{{key}}, yesInitialValues.{{key}}, yesInitialValue on the block, or initialValue.",
+      "selectMissingDefault": "Non-interactive: set initialValues.{{key}}, yesInitialValues.{{key}}, or select.initialValue / yesInitialValue / options on the catalog block.",
+      "selectInvalidValue": "Invalid value for {{key}}: {{value}}. Expected one of: {{options}}",
+      "selectRequiredNoOptions": "Select \"{{key}}\" is required but has no options.",
+      "selectRequiredInteractive": "Select \"{{key}}\" is required; set initialValues.{{key}} or select.initialValue / options on the catalog block.",
+      "selectMissingInteractiveDefault": "Select \"{{key}}\" has no valid default; set initialValues.{{key}} or options on the catalog block.",
+      "passwordRequired": "Non-interactive: \"{{key}}\" is required; set initialValues.{{key}}, yesInitialValues.{{key}}, or initialValue / yesInitialValue on the block.",
+      "passwordRequiredNonEmpty": "Non-interactive: \"{{key}}\" is required; set a non-empty initialValues / yesInitialValues / initialValue / yesInitialValue.",
+      "integerRequired": "Non-interactive: \"{{key}}\" is required; set initialValues.{{key}}, yesInitialValues.{{key}}, or initialValue / yesInitialValue on the block."
+    },
+    "web": {
+      "pageTitle": "Prompt catalog (local UI)",
+      "documentHeading": "Configure parameters (localhost only)",
+      "documentHint": "This server is only bound to the loopback interface. After submit, the CLI continues in the same terminal session.",
+      "defaultFormTitle": "Form",
+      "defaultStepTitle": "Step {{index}}",
+      "stepsAriaLabel": "Form steps",
+      "stepsSidebarAriaLabel": "Steps",
+      "stepNavigationAriaLabel": "Step navigation and submit",
+      "submitAriaLabel": "Submit",
+      "back": "Back",
+      "next": "Next",
+      "submit": "Submit & continue in terminal",
+      "checking": "Checking...",
+      "sending": "Sending...",
+      "successTitle": "Success",
+      "errorTitle": "Error",
+      "savedAndClosing": "Saved. This tab will close automatically in 5 seconds.",
+      "savedCloseBlocked": "Saved. Automatic close was blocked by the browser. You can close this tab now.",
+      "invalidValue": "Invalid value",
+      "invalidRequest": "Invalid request",
+      "invalidStep": "Invalid or missing wizard step.",
+      "invalidField": "Invalid or missing field key.",
+      "fieldRequired": "Field \"{{key}}\" is required.",
+      "fieldMustBeInteger": "Field \"{{key}}\" must be an integer."
+    }
+  },
+  "validators": {
+    "apiBaseUrl": {
+      "invalid": "Enter a valid URL, for example {{example}}.",
+      "invalidProtocol": "URL must start with http:// or https://, for example {{example}}."
+    },
+    "envKey": {
+      "invalid": "Use letters and numbers only."
+    },
+    "tcpPort": {
+      "invalid": "Enter a valid TCP port between 1 and 65535, for example {{example}}.",
+      "allocateFailed": "Failed to allocate an available TCP port.",
+      "allocateNotDockerPublished": "Failed to allocate an available TCP port that is not already published by Docker.",
+      "alreadyInUse": "Port {{port}} is already in use. Choose another port.",
+      "alreadyInUseByDocker": "Port {{port}} is already in use by a Docker container. Choose another port."
+    }
+  },
+  "commands": {
+    "envAdd": {
+      "prompts": {
+        "name": {
+          "message": "What would you like to call this environment?",
+          "placeholder": "default"
+        },
+        "scope": {
+          "message": "Where should this connection be saved?",
+          "projectLabel": "Project",
+          "projectHint": ".nocobase in this repo",
+          "globalLabel": "Global",
+          "globalHint": "user-level config"
+        },
+        "apiBaseUrl": {
+          "message": "What is the API base URL?",
+          "placeholder": "http://localhost:13000/api"
+        },
+        "authType": {
+          "message": "How would you like to sign in?",
+          "oauthLabel": "OAuth (browser login)",
+          "oauthHint": "runs nb env auth after save",
+          "tokenLabel": "API token / API key"
+        },
+        "accessToken": {
+          "message": "Enter an API token or API key",
+          "placeholder": "Enter your API token / API key"
+        }
+      }
+    },
+    "download": {
+      "prompts": {
+        "source": {
+          "message": "How would you like to get NocoBase?",
+          "npmLabel": "npm package",
+          "gitLabel": "Git repository",
+          "dockerLabel": "Docker image"
+        },
+        "version": {
+          "message": "Which version would you like to use? You can enter a package version, Docker image tag, or Git ref such as a branch name.",
+          "placeholder": "alpha"
+        },
+        "dockerRegistry": {
+          "message": "Which Docker registry would you like to use? The image tag is set separately in Version.",
+          "placeholder": "nocobase/nocobase"
+        },
+        "dockerPlatform": {
+          "message": "Which Docker image platform should be used?",
+          "autoLabel": "Auto",
+          "autoHint": "Use Docker default for this machine"
+        },
+        "dockerSave": {
+          "message": "Save the Docker image as a tar file"
+        },
+        "gitUrl": {
+          "message": "Git repository URL",
+          "placeholder": "https://github.com/nocobase/nocobase.git"
+        },
+        "outputDir": {
+          "message": "Download location",
+          "placeholder": "e.g. ./nocobase-latest"
+        },
+        "npmRegistry": {
+          "message": "npm registry URL (optional)",
+          "placeholder": "Leave empty to use the default registry"
+        },
+        "replace": {
+          "message": "Clear the app directory if it already contains files"
+        },
+        "devDependencies": {
+          "message": "Install development dependencies (npm only)"
+        },
+        "build": {
+          "message": "Build the app after download"
+        },
+        "buildDts": {
+          "message": "Generate TypeScript declaration files"
+        }
+      }
+    },
+    "install": {
+      "validation": {
+        "builtinDbUnsupported": "Built-in database does not support \"{{dialect}}\" yet. Choose PostgreSQL, MySQL, or MariaDB, or turn off built-in database."
+      },
+      "prompts": {
+        "env": {
+          "message": "What would you like to call this app?",
+          "placeholder": "local"
+        },
+        "lang": {
+          "message": "Which language would you like to use?"
+        },
+        "appRootPath": {
+          "message": "Where should this app be stored?",
+          "placeholder": "./<env>/source/"
+        },
+        "appPort": {
+          "message": "Which port should this app use?",
+          "placeholder": "13000"
+        },
+        "storagePath": {
+          "message": "Where should uploads and local files be stored?",
+          "placeholder": "./<env>/storage/"
+        },
+        "fetchSource": {
+          "message": "Download NocoBase automatically if the app directory is empty?"
+        },
+        "dbDialect": {
+          "message": "Which database would you like to use?"
+        },
+        "builtinDb": {
+          "message": "Would you like to use the built-in database?"
+        },
+        "builtinDbImage": {
+          "message": "Which Docker image should be used for the built-in database?",
+          "placeholder": "postgres:16"
+        },
+        "dbHost": {
+          "message": "What is the database host?",
+          "placeholder": "127.0.0.1"
+        },
+        "dbPort": {
+          "message": "What is the database port?",
+          "placeholder": "5432"
+        },
+        "dbDatabase": {
+          "message": "What is the database name?"
+        },
+        "dbUser": {
+          "message": "What is the database username?"
+        },
+        "dbPassword": {
+          "message": "What is the database password?"
+        },
+        "rootUsername": {
+          "message": "Choose the initial admin username",
+          "placeholder": "nocobase"
+        },
+        "rootEmail": {
+          "message": "What is the initial admin email?",
+          "placeholder": "admin@nocobase.com"
+        },
+        "rootPassword": {
+          "message": "Choose the initial admin password"
+        },
+        "rootNickname": {
+          "message": "What display name should the initial admin use?",
+          "placeholder": "Super Admin"
+        }
+      }
+    },
+    "init": {
+      "validation": {
+        "envExists": "Env \"{{envName}}\" already exists in this workspace. Choose another app name."
+      },
+      "messages": {
+        "appNameRequiredWhenSkipped": "App name is required when prompts are skipped.",
+        "appNameEnvHelp": "The app name is also the CLI env name. Use `nb init --yes --env <envName>` to continue.",
+        "resumeEnvRequired": "Env name is required when resuming setup.",
+        "resumeEnvHelp": "App name is also the CLI env name. Use `nb init --resume --env <envName>` to continue."
+      },
+      "prompts": {
+        "appName": {
+          "message": "App name (also used as the CLI env name)",
+          "placeholder": "local"
+        },
+        "hasNocobase": {
+          "message": "Do you already have a NocoBase application?",
+          "noLabel": "I don't have a NocoBase application yet",
+          "yesLabel": "I already have a NocoBase application"
+        },
+        "installSkills": {
+          "message": "Install NocoBase AI coding skills (nocobase/skills)?"
+        },
+        "apiBaseUrl": {
+          "message": "API base URL",
+          "placeholder": "http://localhost:13000/api"
+        }
+      },
+      "webUi": {
+        "pageTitle": "Set Up NocoBase for Coding Agents",
+        "documentHeading": "Set Up NocoBase for Coding Agents",
+        "documentHint": "Connect an existing NocoBase app or install a new one, then save it as an agent-ready CLI environment.",
+        "gettingStarted": {
+          "title": "Getting started",
+          "description": "Pick your setup path."
+        },
+        "connectExistingApp": {
+          "title": "Connect an existing app",
+          "description": "Add your app connection."
+        },
+        "createNewApp": {
+          "title": "Create a new app",
+          "description": "Set project basics."
+        },
+        "downloadAppFiles": {
+          "title": "Download app files",
+          "description": "Choose source and options."
+        },
+        "configureDatabase": {
+          "title": "Configure the database",
+          "description": "Use built-in or custom."
+        },
+        "createAdminAccount": {
+          "title": "Create an admin account",
+          "description": "Set up the first admin."
+        }
+      }
+    }
+  }
+}

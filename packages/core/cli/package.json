@@ -6,7 +6,7 @@
   "main": "dist/generated/command-registry.js",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "yarn clean && tsc -p tsconfig.json",
+    "build": "yarn clean && tsc -p tsconfig.json && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
     "test": "TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli"
   },
   "keywords": [],
@@ -47,6 +47,7 @@
   "dependencies": {
     "@clack/prompts": "^0.9.1",
     "@oclif/core": "^4.10.4",
+    "lodash": "^4.17.21",
     "openapi-types": "^12.1.3",
     "ora": "^8.2.0",
     "picocolors": "^1.1.1"

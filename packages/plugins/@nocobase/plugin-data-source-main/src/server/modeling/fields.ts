@@ -19,6 +19,7 @@ import {
   normalizeChoiceEnum,
   toDisplayTitle,
   uniqueByName,
+  validateChoiceEnumColors,
 } from './constants';
 
 export function normalizeInterfaceName(value?: string) {
@@ -439,6 +440,33 @@ function buildReverseField(field: PlainObject) {
     },
     { collectionName: field.target },
   );
+}
+
+function getChoiceEnumInput(field: PlainObject) {
+  if (Array.isArray(field?.enum)) {
+    return field.enum;
+  }
+
+  if (Array.isArray(field?.uiSchema?.enum)) {
+    return field.uiSchema.enum;
+  }
+
+  return [];
+}
+
+export function validateChoiceFieldInput(field: PlainObject = {}) {
+  const interfaceName = normalizeInterfaceName(field.interface);
+
+  if (!CHOICE_INTERFACES.has(interfaceName)) {
+    return;
+  }
+
+  const enumValues = getChoiceEnumInput(field);
+  if (!enumValues.length) {
+    return;
+  }
+
+  validateChoiceEnumColors(enumValues, field.name || '(unknown)');
 }
 
 export function normalizeFieldInput(input: PlainObject, context: PlainObject = {}) {

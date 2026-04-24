@@ -148,6 +148,36 @@ describe('validation', () => {
 
       expect(result.get('amount')).toBeCloseTo(1.23, 10);
     });
+
+    it('should succeed when precision is within limit with string input', async () => {
+      const result = await NumberCollection.repository.create({
+        values: {
+          amount: '1.23',
+        },
+      });
+
+      expect(result.get('amount')).toBeCloseTo(1.23, 10);
+    });
+
+    it('should succeed when zero string input keeps fixed decimal places within precision limit', async () => {
+      const result = await NumberCollection.repository.create({
+        values: {
+          amount: '0.00',
+        },
+      });
+
+      expect(result.get('amount')).toBeCloseTo(0, 10);
+    });
+
+    it('should throw validation error when string input has trailing decimals beyond precision limit', async () => {
+      await expect(
+        NumberCollection.repository.create({
+          values: {
+            amount: '1.230',
+          },
+        }),
+      ).rejects.toThrow();
+    });
   });
 
   describe('date field validation', () => {

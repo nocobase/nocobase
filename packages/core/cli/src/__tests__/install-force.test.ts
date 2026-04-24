@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, test, vi } from 'vitest';
+import { afterEach, test, vi, expect } from 'vitest';
 import Install from '../commands/install.js';
 import { findAvailableTcpPort } from '../lib/prompt-validators.js';
 
@@ -93,7 +92,7 @@ test('startBuiltinDb removes the existing db container before docker run when --
     force: true,
   });
 
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(mocks.run.mock.calls).toEqual([
     [
       'docker',
       ['rm', '-f', plan.containerName],
@@ -144,9 +143,9 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
     },
   });
 
-  assert.equal(resolvedProjectRoot, projectRoot);
-  assert.equal(appResults.appRootPath, projectRoot);
-  assert.deepEqual(runCommand.mock.calls, [
+  expect(resolvedProjectRoot).toBe(projectRoot);
+  expect(appResults.appRootPath).toBe(projectRoot);
+  expect(runCommand.mock.calls).toEqual([
     [
       'download',
       [
@@ -213,13 +212,13 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
     },
     rootResults: {
       rootUsername: 'nocobase',
-      rootEmail: 'admin@example.com',
+      rootEmail: 'admin@nocobase.com',
       rootPassword: 'admin123',
       rootNickname: 'Super Admin',
     },
   });
 
-  assert.deepEqual(mocks.runNocoBaseCommand.mock.calls, [
+  expect(mocks.runNocoBaseCommand.mock.calls).toEqual([
     [
       ['pm2', 'kill'],
       {
@@ -237,7 +236,7 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
           DB_PASSWORD: 'nocobase',
           INIT_APP_LANG: 'en-US',
           INIT_ROOT_USERNAME: 'nocobase',
-          INIT_ROOT_EMAIL: 'admin@example.com',
+          INIT_ROOT_EMAIL: 'admin@nocobase.com',
           INIT_ROOT_PASSWORD: 'admin123',
           INIT_ROOT_NICKNAME: 'Super Admin',
         },
@@ -260,20 +259,20 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
           DB_PASSWORD: 'nocobase',
           INIT_APP_LANG: 'en-US',
           INIT_ROOT_USERNAME: 'nocobase',
-          INIT_ROOT_EMAIL: 'admin@example.com',
+          INIT_ROOT_EMAIL: 'admin@nocobase.com',
           INIT_ROOT_PASSWORD: 'admin123',
           INIT_ROOT_NICKNAME: 'Super Admin',
         },
       },
     ],
   ]);
-  assert.equal(plan.source, 'npm');
-  assert.equal(plan.projectRoot, projectRoot);
-  assert.equal(plan.appPort, '14000');
-  assert.equal(plan.storagePath, storagePath);
-  assert.equal(plan.appKey.length, 64);
-  assert.equal(plan.timeZone.length > 0, true);
-  assert.deepEqual(plan.args, ['start', '--quickstart', '--daemon']);
+  expect(plan.source).toBe('npm');
+  expect(plan.projectRoot).toBe(projectRoot);
+  expect(plan.appPort).toBe('14000');
+  expect(plan.storagePath).toBe(storagePath);
+  expect(plan.appKey.length).toBe(64);
+  expect(plan.timeZone.length > 0).toBe(true);
+  expect(plan.args).toEqual(['start', '--quickstart', '--daemon']);
 });
 
 test('installDockerApp removes the existing app container before docker run when --force is enabled', async () => {
@@ -320,14 +319,14 @@ test('installDockerApp removes the existing app container before docker run when
     },
     rootResults: {
       rootUsername: 'nocobase',
-      rootEmail: 'admin@example.com',
+      rootEmail: 'admin@nocobase.com',
       rootPassword: 'admin123',
       rootNickname: 'Super Admin',
     },
     force: true,
   });
 
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(mocks.run.mock.calls).toEqual([
     [
       'docker',
       ['rm', '-f', plan.containerName],

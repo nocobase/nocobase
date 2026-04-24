@@ -15,6 +15,11 @@ import {
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import {
+  applyCliLocale,
+  CLI_LOCALE_FLAG_DESCRIPTION,
+  CLI_LOCALE_FLAG_OPTIONS,
+} from '../lib/cli-locale.ts';
+import {
   type RunPromptCatalogWebUIOptionsWithoutSource,
   runPromptCatalogWebUI,
 } from '../lib/prompt-web-ui.ts';
@@ -45,6 +50,10 @@ export default class PromptsTest extends Command {
       description:
         'Accept defaults only (no prompts); uses `yesInitialValues` merged over `initialValues`, then per-block `yesInitialValue`. Same as non-TTY.',
       default: false,
+    }),
+    locale: Flags.string({
+      description: CLI_LOCALE_FLAG_DESCRIPTION,
+      options: CLI_LOCALE_FLAG_OPTIONS,
     }),
     file: Flags.string({
       char: 'f',
@@ -142,6 +151,7 @@ export default class PromptsTest extends Command {
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(PromptsTest);
+    applyCliLocale(flags.locale);
 
     let presetValues = this.buildPresetValuesFromParsed(args, flags);
     if (flags.ui) {
@@ -173,6 +183,7 @@ export default class PromptsTest extends Command {
   private buildPresetValuesFromParsed(
     args: { file?: string },
     flags: {
+      locale?: string;
       file?: string;
       text?: string;
       boolean?: boolean;

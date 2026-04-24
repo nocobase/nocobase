@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import assert from 'node:assert/strict';
-import { afterEach, beforeEach, test, vi } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) =>
@@ -166,19 +165,16 @@ test('start enables daemon by default for npm/git envs', async () => {
 
   await Start.prototype.run.call(command);
 
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Starting NocoBase for "local" in the background...'],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['NocoBase is starting for "local" at http://127.0.0.1:13000.'],
   ]);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 1);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName, 'local');
-  assert.deepEqual(
-    mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1],
-    ['start', '--quickstart', '--port', '13000', '--daemon', '--instances', '2', '--launch-mode', 'pm2'],
-  );
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2], {
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(1);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName).toBe('local');
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--quickstart', '--port', '13000', '--daemon', '--instances', '2', '--launch-mode', 'pm2']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
     stdio: 'ignore',
   });
 });
@@ -193,10 +189,7 @@ test('start explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Start.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --env local53` first\./s,
-  );
+  await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --env local53` first\./s);
 });
 
 test('start reports when the local app is already running', async () => {
@@ -227,10 +220,10 @@ test('start reports when the local app is already running', async () => {
 
   await Start.prototype.run.call(command);
 
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['NocoBase is already running for "local" at http://127.0.0.1:13000.'],
   ]);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('start supports --no-daemon for npm/git envs', async () => {
@@ -256,17 +249,14 @@ test('start supports --no-daemon for npm/git envs', async () => {
 
   await Start.prototype.run.call(command);
 
-  assert.deepEqual(mocks.printInfo.mock.calls, [
+  expect(mocks.printInfo.mock.calls).toEqual([
     ['Starting NocoBase for "local" in the foreground at http://127.0.0.1:13000. Press Ctrl+C to stop.'],
   ]);
-  assert.equal(mocks.startTask.mock.calls.length, 0);
-  assert.equal(mocks.succeedTask.mock.calls.length, 0);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 1);
-  assert.deepEqual(
-    mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1],
-    ['start', '--port', '13000'],
-  );
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2], {
+  expect(mocks.startTask.mock.calls.length).toBe(0);
+  expect(mocks.succeedTask.mock.calls.length).toBe(0);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(1);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--port', '13000']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
     stdio: 'ignore',
   });
 });
@@ -301,10 +291,10 @@ test('start foreground mode explains how to restart when the local app is alread
 
   await Start.prototype.run.call(command);
 
-  assert.deepEqual(mocks.printInfo.mock.calls, [
+  expect(mocks.printInfo.mock.calls).toEqual([
     ['NocoBase is already running for "local" at http://127.0.0.1:13000. Use `nb stop --env local` before starting it again in the foreground.'],
   ]);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('start enables raw startup output when --verbose is set', async () => {
@@ -329,7 +319,7 @@ test('start enables raw startup output when --verbose is set', async () => {
 
   await Start.prototype.run.call(command);
 
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2], {
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
     stdio: 'inherit',
   });
 });
@@ -354,14 +344,11 @@ test('start shows product-style local failure guidance instead of raw command er
     },
   });
 
-  await assert.rejects(
-    () => Start.prototype.run.call(command),
-    /Couldn't start NocoBase for "local".*The CLI was not able to start the local npm app successfully\..*Expected app port: 13000\./s,
-  );
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(/Couldn't start NocoBase for "local".*The CLI was not able to start the local npm app successfully\..*Expected app port: 13000\./s);
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Starting NocoBase for "local" in the background...'],
   ]);
-  assert.deepEqual(mocks.failTask.mock.calls, [
+  expect(mocks.failTask.mock.calls).toEqual([
     ['Failed to start NocoBase for "local".'],
   ]);
 });
@@ -387,13 +374,13 @@ test('start accepts docker envs without treating the default daemon flag as expl
 
   await Start.prototype.run.call(command);
 
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Starting NocoBase for "docker-local"...'],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['NocoBase is already running for "docker-local".'],
   ]);
-  assert.deepEqual(mocks.startDockerContainer.mock.calls, [[
+  expect(mocks.startDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
   ]]);
@@ -418,10 +405,7 @@ test('start rejects local-only flags for docker envs', async () => {
   });
   command.argv = ['--no-daemon'];
 
-  await assert.rejects(
-    () => Start.prototype.run.call(command),
-    /Can't apply --no-daemon to "docker-local".*only available for local npm\/git installs/s,
-  );
+  await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(/Can't apply --no-daemon to "docker-local".*only available for local npm\/git installs/s);
 });
 
 test('stop routes docker envs to docker stop', async () => {
@@ -444,13 +428,13 @@ test('stop routes docker envs to docker stop', async () => {
 
   await Stop.prototype.run.call(command);
 
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Stopping NocoBase for "docker-local"...'],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['NocoBase is already stopped for "docker-local".'],
   ]);
-  assert.deepEqual(mocks.stopDockerContainer.mock.calls, [[
+  expect(mocks.stopDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
   ]]);
@@ -466,10 +450,7 @@ test('stop explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Stop.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --env local53` first\./s,
-  );
+  await expect((() => Stop.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --env local53` first\./s);
 });
 
 test('upgrade explains when the requested env does not exist', async () => {
@@ -482,10 +463,7 @@ test('upgrade explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Upgrade.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
-  );
+  await expect((() => Upgrade.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
 test('pm list explains when the requested env does not exist', async () => {
@@ -498,10 +476,7 @@ test('pm list explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => PmList.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
-  );
+  await expect((() => PmList.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
 test('stop enables raw shutdown output when --verbose is set', async () => {
@@ -525,13 +500,13 @@ test('stop enables raw shutdown output when --verbose is set', async () => {
 
   await Stop.prototype.run.call(command);
 
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Stopping NocoBase for "local"...'],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['NocoBase has stopped for "local".'],
   ]);
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2], {
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
     stdio: 'inherit',
   });
 });
@@ -555,14 +530,11 @@ test('stop shows product-style local failure guidance', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Stop.prototype.run.call(command),
-    /Couldn't stop NocoBase for "local".*still available, then try again\..*Details: nocobase command exited with code 1/s,
-  );
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  await expect((() => Stop.prototype.run.call(command))()).rejects.toThrow(/Couldn't stop NocoBase for "local".*still available, then try again\..*Details: nocobase command exited with code 1/s);
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Stopping NocoBase for "local"...'],
   ]);
-  assert.deepEqual(mocks.failTask.mock.calls, [
+  expect(mocks.failTask.mock.calls).toEqual([
     ['Failed to stop NocoBase for "local".'],
   ]);
 });
@@ -589,11 +561,11 @@ test('logs supports --env and --no-follow for local app logs', async () => {
 
   await Logs.prototype.run.call(command);
 
-  assert.deepEqual(mocks.resolveManagedAppRuntime.mock.calls, [['app1']]);
-  assert.deepEqual(mocks.printInfo.mock.calls, [
+  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['app1']]);
+  expect(mocks.printInfo.mock.calls).toEqual([
     ['Showing recent logs for "app1".'],
   ]);
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1], [
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual([
     'pm2',
     'logs',
     '--lines',
@@ -623,7 +595,7 @@ test('logs reads docker app logs', async () => {
 
   await Logs.prototype.run.call(command);
 
-  assert.deepEqual(mocks.run.mock.calls, [[
+  expect(mocks.run.mock.calls).toEqual([[
     'docker',
     ['logs', '--tail', '100', '--follow', 'nb-demo-docker-local-app'],
     {
@@ -643,10 +615,7 @@ test('logs explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Logs.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
-  );
+  await expect((() => Logs.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
 test('logs explains remote envs do not have local runtime logs', async () => {
@@ -664,10 +633,7 @@ test('logs explains remote envs do not have local runtime logs', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Logs.prototype.run.call(command),
-    /Can't show runtime logs for "remote" from this machine\..*only has an API connection/s,
-  );
+  await expect((() => Logs.prototype.run.call(command))()).rejects.toThrow(/Can't show runtime logs for "remote" from this machine\..*only has an API connection/s);
 });
 
 test('ps lists all configured env runtime statuses', async () => {
@@ -740,16 +706,16 @@ test('ps lists all configured env runtime statuses', async () => {
 
   await Ps.prototype.run.call(command);
 
-  assert.deepEqual(mocks.listEnvs.mock.calls, [[]]);
-  assert.deepEqual(mocks.resolveManagedAppRuntime.mock.calls, [['docker'], ['local'], ['remote']]);
-  assert.deepEqual(mocks.buildDockerDbContainerName.mock.calls[0], ['docker', 'postgres', 'nb-demo']);
-  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[0], ['Env', 'Source', 'App', 'Database', 'URL']);
-  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[1], [
+  expect(mocks.listEnvs.mock.calls).toEqual([[]]);
+  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['docker'], ['local'], ['remote']]);
+  expect(mocks.buildDockerDbContainerName.mock.calls[0]).toEqual(['docker', 'postgres', 'nb-demo']);
+  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual(['Env', 'Source', 'App', 'Database', 'URL']);
+  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
     ['docker', 'docker', 'running', 'stopped', 'http://127.0.0.1:13000'],
     ['local', 'npm', 'running', '-', 'http://127.0.0.1:13001'],
     ['remote', 'remote', 'remote', 'external', 'https://demo.example.com'],
   ]);
-  assert.match(String(command.log.mock.calls[0]?.[0] ?? ''), /Env\|Source\|App\|Database\|URL/);
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toMatch(/Env\|Source\|App\|Database\|URL/);
 });
 
 test('ps supports --env without listing all envs first', async () => {
@@ -778,9 +744,9 @@ test('ps supports --env without listing all envs first', async () => {
 
   await Ps.prototype.run.call(command);
 
-  assert.equal(mocks.listEnvs.mock.calls.length, 0);
-  assert.deepEqual(mocks.resolveManagedAppRuntime.mock.calls, [['app1']]);
-  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[1], [
+  expect(mocks.listEnvs.mock.calls.length).toBe(0);
+  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['app1']]);
+  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
     ['app1', 'docker', 'stopped', '-', 'http://127.0.0.1:13000'],
   ]);
 });
@@ -795,10 +761,7 @@ test('ps explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Ps.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
-  );
+  await expect((() => Ps.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
 test('db ps lists all configured database runtime statuses', async () => {
@@ -867,10 +830,10 @@ test('db ps lists all configured database runtime statuses', async () => {
 
   await DbPs.prototype.run.call(command);
 
-  assert.deepEqual(mocks.resolveManagedAppRuntime.mock.calls, [['docker'], ['local'], ['remote']]);
-  assert.deepEqual(mocks.buildDockerDbContainerName.mock.calls[0], ['docker', 'postgres', 'nb-demo']);
-  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[0], ['Env', 'Type', 'Dialect', 'Status', 'Address']);
-  assert.deepEqual(mocks.renderTable.mock.calls[0]?.[1], [
+  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['docker'], ['local'], ['remote']]);
+  expect(mocks.buildDockerDbContainerName.mock.calls[0]).toEqual(['docker', 'postgres', 'nb-demo']);
+  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual(['Env', 'Type', 'Dialect', 'Status', 'Address']);
+  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
     ['docker', 'builtin', 'postgres', 'running', 'nb-demo-docker-postgres:5432'],
     ['local', 'external', 'postgres', 'external', '127.0.0.1:5432'],
     ['remote', 'remote', 'mysql', 'remote', ''],
@@ -905,14 +868,14 @@ test('db start routes built-in database envs to docker start', async () => {
 
   await DbStart.prototype.run.call(command);
 
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Starting the built-in database for "app1"...'],
   ]);
-  assert.deepEqual(mocks.startDockerContainer.mock.calls, [[
+  expect(mocks.startDockerContainer.mock.calls).toEqual([[
     'nb-demo-app1-postgres',
     { stdio: 'ignore' },
   ]]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['The built-in database is running for "app1" at 127.0.0.1:5432.'],
   ]);
 });
@@ -946,14 +909,14 @@ test('db stop routes built-in database envs to docker stop', async () => {
 
   await DbStop.prototype.run.call(command);
 
-  assert.deepEqual(mocks.startTask.mock.calls, [
+  expect(mocks.startTask.mock.calls).toEqual([
     ['Stopping the built-in database for "app1"...'],
   ]);
-  assert.deepEqual(mocks.stopDockerContainer.mock.calls, [[
+  expect(mocks.stopDockerContainer.mock.calls).toEqual([[
     'nb-demo-app1-postgres',
     { stdio: 'inherit' },
   ]]);
-  assert.deepEqual(mocks.succeedTask.mock.calls, [
+  expect(mocks.succeedTask.mock.calls).toEqual([
     ['The built-in database has stopped for "app1".'],
   ]);
 });
@@ -987,10 +950,10 @@ test('db logs routes built-in database envs to docker logs', async () => {
 
   await DbLogs.prototype.run.call(command);
 
-  assert.deepEqual(mocks.printInfo.mock.calls, [
+  expect(mocks.printInfo.mock.calls).toEqual([
     ['Showing recent built-in database logs for "app1".'],
   ]);
-  assert.deepEqual(mocks.run.mock.calls, [[
+  expect(mocks.run.mock.calls).toEqual([[
     'docker',
     ['logs', '--tail', '50', 'nb-demo-app1-postgres'],
     {
@@ -1023,11 +986,8 @@ test('db start explains when the env does not use a built-in database', async ()
     },
   });
 
-  await assert.rejects(
-    () => DbStart.prototype.run.call(command),
-    /does not use a CLI-managed built-in database.*recreate the env with the built-in database option enabled/s,
-  );
-  assert.equal(mocks.startDockerContainer.mock.calls.length, 0);
+  await expect((() => DbStart.prototype.run.call(command))()).rejects.toThrow(/does not use a CLI-managed built-in database.*recreate the env with the built-in database option enabled/s);
+  expect(mocks.startDockerContainer.mock.calls.length).toBe(0);
 });
 
 test('db logs explains when the env does not use a built-in database', async () => {
@@ -1053,11 +1013,8 @@ test('db logs explains when the env does not use a built-in database', async () 
     },
   });
 
-  await assert.rejects(
-    () => DbLogs.prototype.run.call(command),
-    /does not use a CLI-managed built-in database.*read logs from here.*recreate the env with the built-in database option enabled/s,
-  );
-  assert.equal(mocks.run.mock.calls.length, 0);
+  await expect((() => DbLogs.prototype.run.call(command))()).rejects.toThrow(/does not use a CLI-managed built-in database.*read logs from here.*recreate the env with the built-in database option enabled/s);
+  expect(mocks.run.mock.calls.length).toBe(0);
 });
 
 test('down removes docker app and built-in database containers by default', async () => {
@@ -1086,7 +1043,7 @@ test('down removes docker app and built-in database containers by default', asyn
 
   await Down.prototype.run.call(command);
 
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(mocks.run.mock.calls).toEqual([
     [
       'docker',
       ['rm', '-f', 'nb-demo-docker-local-app'],
@@ -1104,8 +1061,8 @@ test('down removes docker app and built-in database containers by default', asyn
       },
     ],
   ]);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
-  assert.equal(mocks.removeEnv.mock.calls.length, 0);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
+  expect(mocks.removeEnv.mock.calls.length).toBe(0);
 });
 
 test('down stops local apps and removes the built-in database container when configured', async () => {
@@ -1137,12 +1094,12 @@ test('down stops local apps and removes the built-in database container when con
 
   await Down.prototype.run.call(command);
 
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls, [[
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[
     runtime,
     ['pm2', 'kill'],
     { stdio: 'inherit' },
   ]]);
-  assert.deepEqual(mocks.run.mock.calls, [[
+  expect(mocks.run.mock.calls).toEqual([[
     'docker',
     ['rm', '-f', 'nb-demo-local-mysql'],
     {
@@ -1179,15 +1136,12 @@ test('down confirms before removing user data', async () => {
 
   await Down.prototype.run.call(command);
 
-  assert.equal(mocks.confirmAction.mock.calls.length, 1);
-  assert.match(String(mocks.confirmAction.mock.calls[0]?.[0] ?? ''), /Delete storage and managed database data/);
-  assert.equal(mocks.run.mock.calls.length, 0);
-  assert.equal(
-    mocks.succeedTask.mock.calls.some((call) =>
+  expect(mocks.confirmAction.mock.calls.length).toBe(1);
+  expect(String(mocks.confirmAction.mock.calls[0]?.[0] ?? '')).toMatch(/Delete storage and managed database data/);
+  expect(mocks.run.mock.calls.length).toBe(0);
+  expect(mocks.succeedTask.mock.calls.some((call) =>
       String(call[0]).includes('Storage and managed database data deleted'),
-    ),
-    true,
-  );
+    )).toBe(true);
 });
 
 test('down can remove CLI env config when requested', async () => {
@@ -1215,7 +1169,7 @@ test('down can remove CLI env config when requested', async () => {
 
   await Down.prototype.run.call(command);
 
-  assert.deepEqual(mocks.removeEnv.mock.calls, [['docker-local']]);
+  expect(mocks.removeEnv.mock.calls).toEqual([['docker-local']]);
 });
 
 test('down refuses to remove data without confirmation in non-interactive mode', async () => {
@@ -1242,11 +1196,8 @@ test('down refuses to remove data without confirmation in non-interactive mode',
     },
   });
 
-  await assert.rejects(
-    () => Down.prototype.run.call(command),
-    /Refusing to remove user data for "docker-local" without confirmation/,
-  );
-  assert.equal(mocks.run.mock.calls.length, 0);
+  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/Refusing to remove user data for "docker-local" without confirmation/);
+  expect(mocks.run.mock.calls.length).toBe(0);
 });
 
 test('down explains remote envs do not have local runtime resources', async () => {
@@ -1266,10 +1217,7 @@ test('down explains remote envs do not have local runtime resources', async () =
     },
   });
 
-  await assert.rejects(
-    () => Down.prototype.run.call(command),
-    /Can't bring down "remote" from this machine\..*only has an API connection/s,
-  );
+  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/Can't bring down "remote" from this machine\..*only has an API connection/s);
 });
 
 test('upgrade refreshes local npm envs, then restarts them with quickstart', async () => {
@@ -1310,7 +1258,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
 
   await Upgrade.prototype.run.call(command);
 
-  assert.deepEqual(runCommand.mock.calls, [[
+  expect(runCommand.mock.calls).toEqual([[
     'download',
     [
       '-y',
@@ -1328,7 +1276,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
       '--no-build',
     ],
   ]]);
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls, [
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
     [
       {
         kind: 'local',
@@ -1374,7 +1322,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
       { stdio: 'ignore' },
     ],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls.at(-1), [
+  expect(mocks.succeedTask.mock.calls.at(-1)).toEqual([
     'NocoBase has been upgraded for "local" at http://127.0.0.1:13000.',
   ]);
 });
@@ -1413,15 +1361,15 @@ test('upgrade skips download for local app-path envs and still restarts with qui
 
   await Upgrade.prototype.run.call(command);
 
-  assert.equal(runCommand.mock.calls.length, 0);
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1], [
+  expect(runCommand.mock.calls.length).toBe(0);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
     'start',
     '--quickstart',
     '--port',
     '14000',
     '--daemon',
   ]);
-  assert.deepEqual(mocks.printInfo.mock.calls, [[
+  expect(mocks.printInfo.mock.calls).toEqual([[
     'Skipping code download for "local-app" because this env is managed from an existing local app path.',
   ]]);
 });
@@ -1471,7 +1419,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
 
   await Upgrade.prototype.run.call(command);
 
-  assert.deepEqual(runCommand.mock.calls, [[
+  expect(runCommand.mock.calls).toEqual([[
     'download',
     [
       '-y',
@@ -1487,11 +1435,11 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
       'linux/arm64',
     ],
   ]]);
-  assert.deepEqual(mocks.stopDockerContainer.mock.calls, [[
+  expect(mocks.stopDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
   ]]);
-  assert.deepEqual(mocks.run.mock.calls, [
+  expect(mocks.run.mock.calls).toEqual([
     [
       'docker',
       ['rm', '-f', 'nb-demo-docker-local-app'],
@@ -1533,7 +1481,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
       { errorName: 'docker run', stdio: 'ignore' },
     ],
   ]);
-  assert.deepEqual(mocks.succeedTask.mock.calls.at(-1), [
+  expect(mocks.succeedTask.mock.calls.at(-1)).toEqual([
     'NocoBase has been upgraded for "docker-local" at http://127.0.0.1:13000.',
   ]);
 });
@@ -1584,16 +1532,16 @@ test('upgrade can restart docker envs without pulling a new image', async () => 
 
   await Upgrade.prototype.run.call(command);
 
-  assert.equal(runCommand.mock.calls.length, 0);
-  assert.deepEqual(mocks.stopDockerContainer.mock.calls, [[
+  expect(runCommand.mock.calls.length).toBe(0);
+  expect(mocks.stopDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
   ]]);
-  assert.deepEqual(mocks.startDockerContainer.mock.calls, [[
+  expect(mocks.startDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
   ]]);
-  assert.equal(mocks.run.mock.calls.length, 0);
+  expect(mocks.run.mock.calls.length).toBe(0);
 });
 
 test('pm enable routes docker envs to docker exec nocobase pm enable', async () => {
@@ -1618,7 +1566,7 @@ test('pm enable routes docker envs to docker exec nocobase pm enable', async () 
 
   await PmEnable.prototype.run.call(command);
 
-  assert.deepEqual(mocks.runDockerNocoBaseCommand.mock.calls, [[
+  expect(mocks.runDockerNocoBaseCommand.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     ['pm', 'enable', '@nocobase/plugin-sample'],
   ]]);
@@ -1647,12 +1595,9 @@ test('pm disable routes local envs to the local nocobase command', async () => {
 
   await PmDisable.prototype.run.call(command);
 
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 1);
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName, 'dev');
-  assert.deepEqual(
-    mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1],
-    ['pm', 'disable', '@nocobase/plugin-a', '@nocobase/plugin-b'],
-  );
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(1);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName).toBe('dev');
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['pm', 'disable', '@nocobase/plugin-a', '@nocobase/plugin-b']);
 });
 
 test('dev runs local npm/git source envs with saved env settings', async () => {
@@ -1682,10 +1627,10 @@ test('dev runs local npm/git source envs with saved env settings', async () => {
 
   await Dev.prototype.run.call(command);
 
-  assert.deepEqual(mocks.printInfo.mock.calls, [
+  expect(mocks.printInfo.mock.calls).toEqual([
     ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
   ]);
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls, [[
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[
     runtime,
     ['dev', '--rsbuild', '--db-sync', '--port', '13000', '--client', '--inspect', '9229'],
     { stdio: 'inherit' },
@@ -1715,7 +1660,7 @@ test('dev uses an explicit port instead of the saved app port', async () => {
 
   await Dev.prototype.run.call(command);
 
-  assert.deepEqual(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1], [
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual([
     'dev',
     '--rsbuild',
     '--port',
@@ -1750,11 +1695,8 @@ test('dev explains when the app is already running on the target port', async ()
     },
   });
 
-  await assert.rejects(
-    () => Dev.prototype.run.call(command),
-    /NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb stop --env dev.*dev port/s,
-  );
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb stop --env dev.*dev port/s);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('dev rejects docker envs with source-oriented guidance', async () => {
@@ -1774,11 +1716,8 @@ test('dev rejects docker envs with source-oriented guidance', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Dev.prototype.run.call(command),
-    /Can't run dev mode for "docker-local".*requires a local npm or Git source directory/s,
-  );
-  assert.equal(mocks.runLocalNocoBaseCommand.mock.calls.length, 0);
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/Can't run dev mode for "docker-local".*requires a local npm or Git source directory/s);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('dev rejects remote envs because they have no local source directory', async () => {
@@ -1796,10 +1735,7 @@ test('dev rejects remote envs because they have no local source directory', asyn
     },
   });
 
-  await assert.rejects(
-    () => Dev.prototype.run.call(command),
-    /Can't run dev mode for "remote".*only has an API connection/s,
-  );
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/Can't run dev mode for "remote".*only has an API connection/s);
 });
 
 test('dev explains when the requested env does not exist', async () => {
@@ -1812,10 +1748,7 @@ test('dev explains when the requested env does not exist', async () => {
     },
   });
 
-  await assert.rejects(
-    () => Dev.prototype.run.call(command),
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
-  );
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
 test('pm list keeps API fallback for remote envs', async () => {
@@ -1838,5 +1771,5 @@ test('pm list keeps API fallback for remote envs', async () => {
 
   await PmList.prototype.run.call(command);
 
-  assert.deepEqual(runCommand.mock.calls, [['api:pm:list', ['--mode=summary']]]);
+  expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary']]]);
 });
