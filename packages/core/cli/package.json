@@ -5,8 +5,8 @@
   "type": "module",
   "main": "dist/generated/command-registry.js",
   "scripts": {
-    "clean": "rm -rf dist",
-    "build": "yarn clean && tsc -p tsconfig.json && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "yarn clean && tsc -p tsconfig.json && node -e \"const fs=require('node:fs');const path=require('node:path');const src='src/locale';const dest='dist/locale';fs.mkdirSync(dest,{recursive:true});for(const name of fs.readdirSync(src)){if(name.endsWith('.json'))fs.copyFileSync(path.join(src,name),path.join(dest,name));}\"",
     "test": "TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli"
   },
   "keywords": [],

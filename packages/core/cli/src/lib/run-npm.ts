@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import fs from 'node:fs';
 import type { ChildProcess } from 'node:child_process';
 import path from 'node:path';
@@ -219,11 +228,12 @@ export function runNocoBaseCommand(
 ): Promise<void> {
   const cwd = resolveProjectCwd(options?.cwd);
   const localBin = path.join(cwd, 'node_modules', '.bin');
-  return run(process.execPath, ['./node_modules/.bin/nocobase-v1', ...args], {
+  return run('nocobase-v1', [...args], {
     ...options,
+    cwd,
     errorName: 'nocobase command',
     env: {
-      PATH: `${localBin}${path.delimiter}${process.env.PATH}`,
+      PATH: `${localBin}${path.delimiter}${process.env.PATH ?? ''}`,
       ...options?.env,
     },
   });
