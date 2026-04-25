@@ -1568,6 +1568,7 @@ export default class Install extends Command {
   private async removeDockerContainer(name: string): Promise<void> {
     await run('docker', ['rm', '-f', name], {
       errorName: 'docker rm',
+      stdio: 'ignore',
     });
   }
 
@@ -1610,7 +1611,10 @@ export default class Install extends Command {
     return env;
   }
 
-  private async ensureBuiltinDbContainer(plan: BuiltinDbPlan): Promise<void> {
+  private async ensureBuiltinDbContainer(
+    plan: BuiltinDbPlan,
+    options?: { stdio?: 'inherit' | 'ignore' },
+  ): Promise<void> {
     const exists = await this.dockerContainerExists(plan.containerName);
     if (exists) {
       p.log.info(
@@ -1622,6 +1626,7 @@ export default class Install extends Command {
     await mkdir(plan.dataDir, { recursive: true });
     await run('docker', plan.args, {
       errorName: 'docker run',
+      stdio: options?.stdio ?? 'ignore',
     });
   }
 
@@ -1632,6 +1637,7 @@ export default class Install extends Command {
     downloadResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
     force?: boolean;
+    commandStdio?: 'inherit' | 'ignore';
   }): Promise<BuiltinDbPlan> {
     const storagePath =
       String(params.appResults.storagePath ?? '').trim()
@@ -1667,7 +1673,9 @@ export default class Install extends Command {
       }
     }
 
-    await this.ensureBuiltinDbContainer(plan);
+    await this.ensureBuiltinDbContainer(plan, {
+      stdio: params.commandStdio ?? 'ignore',
+    });
     p.log.info(
       `Built-in ${plan.dbDialect} database is ready at ${plan.dbHost}:${plan.dbPort}`,
     );
@@ -1764,7 +1772,10 @@ export default class Install extends Command {
     };
   }
 
-  private async ensureDockerAppContainer(plan: DockerAppPlan): Promise<'created' | 'existing'> {
+  private async ensureDockerAppContainer(
+    plan: DockerAppPlan,
+    options?: { stdio?: 'inherit' | 'ignore' },
+  ): Promise<'created' | 'existing'> {
     const exists = await this.dockerContainerExists(plan.containerName);
     if (exists) {
       p.log.info(`App container already exists: ${plan.containerName}`);
@@ -1774,6 +1785,7 @@ export default class Install extends Command {
     await mkdir(plan.storagePath, { recursive: true });
     await run('docker', plan.args, {
       errorName: 'docker run',
+      stdio: options?.stdio ?? 'ignore',
     });
     return 'created';
   }
@@ -1787,6 +1799,7 @@ export default class Install extends Command {
     rootResults: Record<string, PromptValue>;
     builtinDbPlan?: BuiltinDbPlan;
     force?: boolean;
+    commandStdio?: 'inherit' | 'ignore';
   }): Promise<DockerAppPlan> {
     const networkName =
       params.builtinDbPlan?.networkName
@@ -1811,7 +1824,9 @@ export default class Install extends Command {
       displayName: 'app container',
       force: params.force,
     });
-    const containerState = await this.ensureDockerAppContainer(plan);
+    const containerState = await this.ensureDockerAppContainer(plan, {
+      stdio: params.commandStdio ?? 'ignore',
+    });
     if (containerState === 'existing') {
       const env = await this.inspectDockerContainerEnv(plan.containerName);
       plan.appKey = env.APP_KEY || plan.appKey;
@@ -1888,20 +1903,39 @@ export default class Install extends Command {
     return path.resolve(process.cwd(), outputDir);
   }
 
+  private commandStdio(verbose?: boolean): 'inherit' | 'ignore' {
+    return verbose ? 'inherit' : 'ignore';
+  }
+
+  private async downloadManagedSource(params: {
+    downloadResults: Record<string, PromptValue>;
+    verbose?: boolean;
+  }): Promise<DownloadCommandResult | undefined> {
+    const argv = Install.buildDownloadArgvFromResults(params.downloadResults, {
+      verbose: params.verbose,
+    });
+    const source = String(params.downloadResults.source ?? '').trim();
+    p.log.step(
+      source === 'docker'
+        ? 'Downloading Docker image'
+        : 'Downloading local NocoBase app files',
+    );
+    return await this.config.runCommand(
+      'download',
+      argv,
+    ) as DownloadCommandResult | undefined;
+  }
+
   private async downloadLocalApp(params: {
     envName: string;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
     verbose?: boolean;
   }): Promise<string> {
-    const argv = Install.buildDownloadArgvFromResults(params.downloadResults, {
+    const result = await this.downloadManagedSource({
+      downloadResults: params.downloadResults,
       verbose: params.verbose,
     });
-    p.log.step('Downloading local NocoBase app files');
-    const result = await this.config.runCommand(
-      'download',
-      argv,
-    ) as DownloadCommandResult | undefined;
 
     const projectRoot = Install.resolveLocalProjectRoot({
       envName: params.envName,
@@ -1967,6 +2001,7 @@ export default class Install extends Command {
     appResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
     rootResults: Record<string, PromptValue>;
+    commandStdio?: 'inherit' | 'ignore';
   }): Promise<LocalAppPlan> {
     const env = Install.buildLocalAppEnvVars({
       envName: params.envName,
@@ -1981,6 +2016,7 @@ export default class Install extends Command {
       await runNocoBaseCommand(['pm2', 'kill'], {
         cwd: params.projectRoot,
         env,
+        stdio: params.commandStdio ?? 'ignore',
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1993,6 +2029,7 @@ export default class Install extends Command {
     await runNocoBaseCommand(args, {
       cwd: params.projectRoot,
       env,
+      stdio: params.commandStdio ?? 'ignore',
     });
     p.log.info(`Local app is starting at http://127.0.0.1:${env.APP_PORT}`);
 
@@ -2390,6 +2427,7 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
+    const commandStdio = this.commandStdio(parsed.verbose);
     if (!parsed['no-intro']) {
       p.intro('Set Up NocoBase');
     }
@@ -2428,6 +2466,7 @@ export default class Install extends Command {
         downloadResults,
         dbResults,
         force: parsed.force,
+        commandStdio,
       });
       dbResults.dbHost = builtinDbPlan.dbHost;
       dbResults.dbPort = builtinDbPlan.dbPort;
@@ -2441,6 +2480,10 @@ export default class Install extends Command {
     let localAppPlan: LocalAppPlan | undefined;
     if (Boolean(appResults.fetchSource)) {
       if (source === 'docker') {
+        await this.downloadManagedSource({
+          downloadResults,
+          verbose: parsed.verbose,
+        });
         dockerAppPlan = await this.installDockerApp({
           envName,
           workspaceName,
@@ -2450,6 +2493,7 @@ export default class Install extends Command {
           rootResults,
           builtinDbPlan,
           force: parsed.force,
+          commandStdio,
         });
         appResults.appKey = dockerAppPlan.appKey;
         appResults.timeZone = dockerAppPlan.timeZone;
@@ -2467,6 +2511,7 @@ export default class Install extends Command {
           appResults,
           dbResults,
           rootResults,
+          commandStdio,
         });
         appResults.appKey = localAppPlan.appKey;
         appResults.timeZone = localAppPlan.timeZone;
