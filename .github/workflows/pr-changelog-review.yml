@@ -1,7 +1,7 @@
 name: PR Changelog Review
 
- on:
-   pull_request:
+on:
+  pull_request:
     types: [opened, edited]
 
 permissions:
