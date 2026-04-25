@@ -29,18 +29,21 @@ export const AIEmployeeSelect: React.FC = observer(() => {
   const { token } = useToken();
   const disabled = form.disabled || field.disabled || field.pattern === 'disabled' || field.pattern === 'readPretty';
   const ctx = useFlowContext();
+  const currentEmployee = aiEmployees.find((employee) => employee.username === field.value);
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees();
   }, [aiConfigRepository]);
 
   useEffect(() => {
+    ctx.model.props.aiEmployee.username = field.value;
+  }, []);
+
+  useEffect(() => {
     if (disabled && isOpen) {
       setIsOpen(false);
     }
   }, [disabled, isOpen]);
-
-  const currentEmployee = aiEmployees.find((employee) => employee.username === field.value);
 
   const menuItems = !aiEmployees.length
     ? [
@@ -67,9 +70,12 @@ export const AIEmployeeSelect: React.FC = observer(() => {
             if (disabled) {
               return;
             }
+            const defaultSkills = employee.skillSettings?.skills?.map((name: string) => name) ?? [];
+            const defaultTools = employee.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
             ctx.model.props.aiEmployee.username = employee.username;
-
-            field.value = employee.username;
+            field.setValue(employee.username);
+            form.setValuesIn('skillSettings.skills', defaultSkills);
+            form.setValuesIn('skillSettings.tools', defaultTools);
             setIsOpen(false);
           },
         };

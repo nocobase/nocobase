@@ -35,6 +35,7 @@ export const list = async (ctx: Context, next: Next) => {
 
 export const listByUser = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const skills = await plugin.ai.skillsManager.listSkills({ scope: 'GENERAL' });
   const tools = await plugin.ai.toolsManager.listTools({ scope: 'GENERAL' });
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
@@ -89,12 +90,18 @@ export const listByUser = async (ctx: Context, next: Next) => {
   });
 
   ctx.body = rows.map((row) => {
-    const skillSettings: { tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? { tools: [] };
+    const skillSettings: { skills: string[]; tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? {
+      skills: [],
+      tools: [],
+    };
     for (const tool of tools) {
       skillSettings.tools.push({
         name: tool.definition.name,
         autoCall: tool.defaultPermission === 'ALLOW',
       });
+    }
+    for (const { name } of skills) {
+      skillSettings.skills.push(name);
     }
     return {
       username: row.username,

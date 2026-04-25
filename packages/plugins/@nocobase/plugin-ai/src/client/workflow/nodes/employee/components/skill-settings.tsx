@@ -7,53 +7,77 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { RemoteSelect, SchemaComponent } from '@nocobase/client';
-import { Schema, useField } from '@formily/react';
+import { Schema, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { Typography } from 'antd';
+import { Radio, RadioGroupProps, Space, Typography } from 'antd';
 import { namespace, useT } from '../../../../locale';
+
+const RadioOptions = {
+  preset: { label: 'Preset', value: 'preset' },
+  custom: { label: 'Custom', value: 'custom' },
+};
 
 const Skills: React.FC = observer(() => {
   const t = useT();
   const field = useField<ArrayField>();
   const ctx = useFlowContext();
+  const form = useForm();
   const username = ctx.model.props.aiEmployee.username;
   const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
-  useEffect(() => {
-    const aiEmployee = aiEmployeesMap[username];
-    const defaultSkills = aiEmployee?.skillSettings?.skills?.map((name) => name) ?? [];
-    if (field.value?.length) {
-      field.setValue(field.value.filter((tool) => defaultSkills.includes(tool)));
-    }
-  }, [aiEmployeesMap, field, username]);
+  const defaultSkills: string[] = useMemo(() => {
+    return aiEmployeesMap[username]?.skillSettings?.skills?.map((name: string) => name) ?? [];
+  }, [aiEmployeesMap, username]);
 
   const handleChange = (value: string[]) => {
-    field.setValue(value);
+    field.setValue(value.filter((skill) => defaultSkills.includes(skill)));
   };
 
+  const [radioValue, setRadioValue] = useState(RadioOptions.preset.value);
+  const onRadioChange: RadioGroupProps['onChange'] = (e) => {
+    setRadioValue(e.target.value);
+    if (e.target.value === RadioOptions.preset.value) {
+      field.setValue(undefined);
+    } else {
+      field.setValue(defaultSkills);
+    }
+  };
+
+  useEffect(() => {
+    setRadioValue(
+      Array.isArray(form.initialValues?.skillSettings?.skills) ? RadioOptions.custom.value : RadioOptions.preset.value,
+    );
+  }, [form]);
+
   return (
-    <RemoteSelect
-      defaultValue={field.value}
-      onChange={handleChange}
-      manual={false}
-      multiple={true}
-      popupMatchSelectWidth
-      placeholder={t('Use all AI employee skills')}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
-      optionRender={renderTitleWithDescription(t)}
-      service={{
-        resource: 'aiSkills',
-        action: 'listBinding',
-        params: {
-          username,
-        },
-      }}
-    />
+    <Space style={{ width: '100%' }} direction="vertical">
+      <Radio.Group value={radioValue} onChange={onRadioChange} options={Object.values(RadioOptions)} />
+      {radioValue === RadioOptions.custom.value && (
+        <RemoteSelect
+          key={username}
+          value={field.value}
+          onChange={handleChange}
+          manual={false}
+          multiple={true}
+          popupMatchSelectWidth
+          placeholder={t('Use all AI employee skills')}
+          fieldNames={{
+            label: 'title',
+            value: 'name',
+          }}
+          optionRender={renderTitleWithDescription(t)}
+          service={{
+            resource: 'aiSkills',
+            action: 'listBinding',
+            params: {
+              username,
+            },
+          }}
+        />
+      )}
+    </Space>
   );
 });
 
@@ -61,41 +85,61 @@ const Tools: React.FC = observer(() => {
   const t = useT();
   const field = useField<ArrayField>();
   const ctx = useFlowContext();
+  const form = useForm();
   const username = ctx.model.props.aiEmployee.username;
   const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
-  useEffect(() => {
+  const defaultTools: string[] = useMemo(() => {
     const aiEmployee = aiEmployeesMap[username];
-    const defaultTools = aiEmployee?.skillSettings?.tools?.map(({ name }) => name) ?? [];
-    if (field.value?.length) {
-      field.setValue(field.value.filter((tool) => defaultTools.includes(tool)));
-    }
-  }, [aiEmployeesMap, field, username]);
+    return aiEmployee?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
+  }, [aiEmployeesMap, username]);
 
   const handleChange = (value: string[]) => {
-    field.setValue(value);
+    field.setValue(value.filter((tool) => defaultTools.includes(tool)));
   };
 
+  const [radioValue, setRadioValue] = useState(RadioOptions.preset.value);
+  const onRadioChange: RadioGroupProps['onChange'] = (e) => {
+    setRadioValue(e.target.value);
+    if (e.target.value === RadioOptions.preset.value) {
+      field.setValue(undefined);
+    } else {
+      field.setValue(defaultTools);
+    }
+  };
+
+  useEffect(() => {
+    setRadioValue(
+      Array.isArray(form.initialValues?.skillSettings?.tools) ? RadioOptions.custom.value : RadioOptions.preset.value,
+    );
+  }, [form]);
+
   return (
-    <RemoteSelect
-      defaultValue={field.value}
-      onChange={handleChange}
-      manual={false}
-      multiple={true}
-      popupMatchSelectWidth
-      placeholder={t('Use all AI employee tools')}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
-      optionRender={renderTitleWithDescription(t)}
-      service={{
-        resource: 'aiTools',
-        action: 'listBinding',
-        params: {
-          username,
-        },
-      }}
-    />
+    <Space style={{ width: '100%' }} direction="vertical">
+      <Radio.Group value={radioValue} onChange={onRadioChange} options={Object.values(RadioOptions)} />
+      {radioValue === RadioOptions.custom.value && (
+        <RemoteSelect
+          key={username}
+          value={field.value}
+          onChange={handleChange}
+          manual={false}
+          multiple={true}
+          popupMatchSelectWidth
+          placeholder={t('Use all AI employee tools')}
+          fieldNames={{
+            label: 'title',
+            value: 'name',
+          }}
+          optionRender={renderTitleWithDescription(t)}
+          service={{
+            resource: 'aiTools',
+            action: 'listBinding',
+            params: {
+              username,
+            },
+          }}
+        />
+      )}
+    </Space>
   );
 });
 
@@ -140,7 +184,7 @@ const OptionContent: React.FC<{
   );
 };
 
-export const SkillSettings: React.FC = observer(() => {
+export const SkillSettings: React.FC = () => {
   return (
     <SchemaComponent
       components={{ Skills, Tools }}
@@ -151,8 +195,9 @@ export const SkillSettings: React.FC = observer(() => {
             title: tExpr('Skills', { ns: namespace }),
             type: 'array',
             'x-decorator': 'FormItem',
-            'x-component': Skills,
+            'x-component': 'Skills',
             'x-decorator-props': {
+              layout: 'horizontal',
               tooltip: tExpr('Restrict task skills', {
                 ns: namespace,
               }),
@@ -162,8 +207,9 @@ export const SkillSettings: React.FC = observer(() => {
             title: tExpr('Tools', { ns: namespace }),
             type: 'array',
             'x-decorator': 'FormItem',
-            'x-component': Tools,
+            'x-component': 'Tools',
             'x-decorator-props': {
+              layout: 'horizontal',
               tooltip: tExpr('Restrict task tools', {
                 ns: namespace,
               }),
@@ -173,4 +219,4 @@ export const SkillSettings: React.FC = observer(() => {
       }}
     />
   );
-});
+};
