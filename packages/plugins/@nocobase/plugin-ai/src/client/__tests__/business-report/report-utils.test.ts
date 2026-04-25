@@ -32,4 +32,38 @@ describe('business report utils', () => {
     expect(report.markdown).toBe('# Body');
     expect(report.charts).toHaveLength(1);
   });
+
+  it('should rewrite pie tooltip formatter for dataset object sources', () => {
+    const [chart] = normalizeBusinessReportCharts([
+      {
+        title: 'Revenue share',
+        options: {
+          dataset: {
+            source: [
+              { category: 'A', amount: 120 },
+              { category: 'B', amount: 80 },
+            ],
+          },
+          tooltip: {
+            formatter: '{b}: {c}',
+          },
+          series: [
+            {
+              type: 'pie',
+              encode: {
+                itemName: 'category',
+                value: 'amount',
+              },
+              label: {
+                formatter: '{b}: {c}',
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(chart.options.tooltip.formatter).toBe('{b}: {@amount}');
+    expect(chart.options.series[0].label.formatter).toBe('{b}: {@amount}');
+  });
 });

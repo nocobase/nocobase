@@ -39,13 +39,72 @@ type ReportRenderOptions = {
   locale?: string;
 };
 
+function normalizeBusinessReportChartOptions(options: Record<string, any>) {
+  if (!options || typeof options !== 'object') {
+    return options;
+  }
+
+  const cloned = JSON.parse(JSON.stringify(options));
+  const dataset = cloned.dataset;
+  const source = Array.isArray(dataset) ? dataset[0]?.source : dataset?.source;
+  const seriesRaw = cloned.series;
+  const series = Array.isArray(seriesRaw) ? seriesRaw : seriesRaw ? [seriesRaw] : [];
+
+  if (!Array.isArray(source) || source.length === 0) {
+    return cloned;
+  }
+
+  const first = source[0];
+  if (!first || typeof first !== 'object' || Array.isArray(first)) {
+    return cloned;
+  }
+
+  const pieSeries = series.filter((item: any) => item?.type === 'pie');
+  if (!pieSeries.length) {
+    return cloned;
+  }
+
+  const encodedValue = pieSeries[0]?.encode?.value;
+  let valueDimension = Array.isArray(encodedValue) ? encodedValue[0] : encodedValue;
+  if (typeof valueDimension !== 'string' || !valueDimension) {
+    if (Object.prototype.hasOwnProperty.call(first, 'value')) {
+      valueDimension = 'value';
+    }
+  }
+
+  if (typeof valueDimension !== 'string' || !valueDimension) {
+    return cloned;
+  }
+
+  const replaceValuePlaceholder = (template: string) =>
+    template.includes('{c}') ? template.replace(/\{c\}/g, '{@' + valueDimension + '}') : template;
+
+  for (const item of pieSeries) {
+    if (item?.label && typeof item.label.formatter === 'string') {
+      item.label.formatter = replaceValuePlaceholder(item.label.formatter);
+    }
+    if (item?.tooltip && typeof item.tooltip.formatter === 'string') {
+      item.tooltip.formatter = replaceValuePlaceholder(item.tooltip.formatter);
+    }
+  }
+
+  if (cloned.tooltip && typeof cloned.tooltip.formatter === 'string') {
+    cloned.tooltip.formatter = replaceValuePlaceholder(cloned.tooltip.formatter);
+  }
+
+  return cloned;
+}
+
 function isBusinessReportChart(value: unknown): value is BusinessReportChart {
   return !!value && typeof value === 'object' && typeof (value as BusinessReportChart).options === 'object';
 }
 
 export function normalizeBusinessReportCharts(charts: unknown): BusinessReportChart[] {
   if (Array.isArray(charts)) {
-    return charts.filter(isBusinessReportChart);
+    return charts.filter(isBusinessReportChart).map((chart) => ({
+      ...chart,
+      options: normalizeBusinessReportChartOptions(chart.options),
+    }));
   }
 
   if (typeof charts !== 'string') {
@@ -59,7 +118,12 @@ export function normalizeBusinessReportCharts(charts: unknown): BusinessReportCh
 
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(isBusinessReportChart) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter(isBusinessReportChart).map((chart) => ({
+          ...chart,
+          options: normalizeBusinessReportChartOptions(chart.options),
+        }))
+      : [];
   } catch (error) {
     return [];
   }
