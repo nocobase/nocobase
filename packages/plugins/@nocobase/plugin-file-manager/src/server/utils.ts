@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
 import crypto from 'crypto';
 import path from 'path';
 import urlJoin from 'url-join';
@@ -119,4 +119,18 @@ export function encodeURL(url) {
   } catch (error) {
     return url;
   }
+}
+
+export function normalizeDocumentRoot(documentRoot?: string): string {
+  // 如果 documentRoot 是绝对路径，直接返回
+  if (documentRoot && path.isAbsolute(documentRoot)) {
+    return documentRoot;
+  }
+  // 如果以 storage 或 ./storage 开头，按 storagePathJoin 处理，不过要去掉开头的 storage 或 ./storage
+  if (documentRoot && (documentRoot.startsWith('storage') || documentRoot.startsWith('./storage'))) {
+    const relativePath = documentRoot.replace(/^\.?\/?storage/, '').replace(/^\/+/, '');
+    return storagePathJoin(relativePath);
+  }
+  // 否则按相对路径处理，基于当前工作目录
+  return path.resolve(process.cwd(), documentRoot || 'storage/uploads');
 }
