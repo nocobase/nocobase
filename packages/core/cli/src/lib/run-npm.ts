@@ -176,7 +176,7 @@ export function runNocoBaseCommand(
 ): Promise<void> {
   const cwd = resolveProjectCwd(options?.cwd);
   const localBin = path.join(cwd, 'node_modules', '.bin');
-  return run('node', ['./node_modules/.bin/nocobase-v1', ...args], {
+  return run(process.execPath, ['./node_modules/.bin/nocobase-v1', ...args], {
     ...options,
     errorName: 'nocobase command',
     env: {
