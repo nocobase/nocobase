@@ -11,6 +11,30 @@ const { Command } = require('commander');
 const { run, checkDBDialect } = require('../util');
 const path = require('path');
 
+function stripSingleThreadArgs(argv) {
+  const nextArgv = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+
+    if (token === '--single-thread') {
+      const next = argv[index + 1];
+      if (next && !next.startsWith('-')) {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (token.startsWith('--single-thread=')) {
+      continue;
+    }
+
+    nextArgv.push(token);
+  }
+
+  return nextArgv;
+}
+
 /**
  *
  * @param {String} name
@@ -65,11 +89,11 @@ function addTestCommand(name, cli) {
         process.argv.push('--poolOptions.threads.singleThread=true');
       }
 
-      if (opts.singleThread === 'false') {
-        process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
-      }
-
-      const cliArgs = ['--max_old_space_size=14096', './node_modules/vitest/vitest.mjs', ...process.argv.slice(3)];
+      const cliArgs = [
+        '--max_old_space_size=14096',
+        './node_modules/vitest/vitest.mjs',
+        ...stripSingleThreadArgs(process.argv.slice(3)),
+      ];
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         await run('node', cliArgs);

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
 import spawn from 'cross-spawn';
 
@@ -14,12 +15,51 @@ function resolveCommandName(name: string): string {
   return name;
 }
 
-function resolveCwd(cwd?: string): string {
+function pathExists(candidate: string): boolean {
+  try {
+    return Boolean(candidate) && fs.statSync(candidate) !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+function hasLocalNocoBaseBinary(candidate: string): boolean {
+  return (
+    pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1'))
+    || pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1.cmd'))
+  );
+}
+
+export function resolveCwd(cwd?: string): string {
   const next = cwd ?? process.cwd();
   if (path.isAbsolute(next)) {
     return next;
   }
   return path.resolve(process.cwd(), next);
+}
+
+export function resolveProjectCwd(cwd?: string): string {
+  const next = cwd ?? process.cwd();
+  if (path.isAbsolute(next) || !next) {
+    return next;
+  }
+
+  const baseCwd = process.cwd();
+  let current = baseCwd;
+  const fallback = path.resolve(baseCwd, next);
+
+  while (true) {
+    const candidate = path.resolve(current, next);
+    if (hasLocalNocoBaseBinary(candidate)) {
+      return candidate;
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return fallback;
+    }
+    current = parent;
+  }
 }
 
 export function run(
@@ -134,10 +174,7 @@ export function runNocoBaseCommand(
   args: string[],
   options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
 ): Promise<void> {
-  let cwd = options?.cwd ?? process.cwd();
-  if (!path.isAbsolute(cwd)) {
-    cwd = path.resolve(process.cwd(), cwd);
-  }
+  const cwd = resolveProjectCwd(options?.cwd);
   const localBin = path.join(cwd, 'node_modules', '.bin');
   return run('node', ['./node_modules/.bin/nocobase-v1', ...args], {
     ...options,

@@ -10,8 +10,8 @@
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { test } from 'vitest';
-import { run } from '../lib/run-npm.js';
+import { afterEach, expect, test, vi } from 'vitest';
+import { resolveProjectCwd, run } from '../lib/run-npm.js';
 
 test('run preserves arguments containing spaces', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-'));
@@ -29,4 +29,17 @@ test('run preserves arguments containing spaces', async () => {
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+test('resolveProjectCwd walks up parent directories to find a NocoBase project root', () => {
+  vi.stubGlobal('process', {
+    ...process,
+    cwd: vi.fn(() => '/Users/chen/test500/app2/source/packages/core/cli'),
+  });
+
+  expect(resolveProjectCwd('./app2/source')).toBe('/Users/chen/test500/app2/source');
 });

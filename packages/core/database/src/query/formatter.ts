@@ -43,13 +43,10 @@ export abstract class QueryFormatter {
     if (moment.tz.zone(offset)) {
       return offset;
     }
-    if (!/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
-      return;
+    if (/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
+      return offset;
     }
-    const offsetMinutes = moment.duration(offset).asMinutes();
-    return moment.tz.names().find((timezone) => {
-      return moment.tz(timezone).utcOffset() === offsetMinutes;
-    });
+    return;
   }
 
   protected getOffsetExpression(timezone: string) {

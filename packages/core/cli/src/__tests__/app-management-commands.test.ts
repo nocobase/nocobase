@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { spawn } from 'node:child_process';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -23,6 +24,10 @@ const mocks = vi.hoisted(() => ({
   runDockerNocoBaseCommand: vi.fn(),
   dockerContainerExists: vi.fn(),
   dockerContainerIsRunning: vi.fn(),
+  defaultWorkspaceName: vi.fn((cwd?: string) => {
+    const value = String(cwd ?? process.cwd()).replace(/\\/g, '/').split('/').filter(Boolean).at(-1) ?? 'demo';
+    return `nb-${value}`;
+  }),
   buildDockerDbContainerName: vi.fn((envName: string, dbDialect: string, workspaceName?: string) =>
     `${workspaceName ?? 'nb-demo'}-${envName}-${dbDialect || 'postgres'}`,
   ),
@@ -32,6 +37,7 @@ const mocks = vi.hoisted(() => ({
   startTask: vi.fn(),
   updateTask: vi.fn(),
   stopTask: vi.fn(),
+  setVerboseMode: vi.fn(),
   succeedTask: vi.fn(),
   failTask: vi.fn(),
   printInfo: vi.fn(),
@@ -40,8 +46,40 @@ const mocks = vi.hoisted(() => ({
   renderTable: vi.fn((headers: string[], rows: string[][]) => [headers.join('|'), ...rows.map((row) => row.join('|'))].join('\n')),
   listEnvs: vi.fn(),
   run: vi.fn(),
+  runNocoBaseCommand: vi.fn(),
   commandSucceeds: vi.fn(),
   commandOutput: vi.fn(),
+  resolveProjectCwd: vi.fn((cwd?: string) => cwd ?? process.cwd()),
+  findAvailableTcpPort: vi.fn(),
+  validateAvailableTcpPort: vi.fn(),
+  fsRm: vi.fn(),
+  fsMkdir: vi.fn(),
+  childSpawnCalls: [] as Array<{
+    command: string;
+    args: string[];
+    options: Record<string, unknown>;
+  }>,
+  childOnceHandlers: [] as Array<Record<string, (...args: any[]) => void>>,
+}));
+
+vi.mock('node:child_process', () => ({
+  spawn: vi.fn((command: string, args: string[], options: Record<string, unknown>) => {
+    const handlers: Record<string, (...args: any[]) => void> = {};
+    mocks.childSpawnCalls.push({ command, args, options });
+    mocks.childOnceHandlers.push(handlers);
+    return {
+      exitCode: null,
+      killed: false,
+      once: vi.fn((event: string, handler: (...args: any[]) => void) => {
+        handlers[event] = handler;
+        return this;
+      }),
+      kill: vi.fn(() => {
+        handlers.close?.(0, null);
+        return true;
+      }),
+    };
+  }),
 }));
 
 vi.mock('../lib/app-runtime.js', () => ({
@@ -51,6 +89,7 @@ vi.mock('../lib/app-runtime.js', () => ({
   runDockerNocoBaseCommand: mocks.runDockerNocoBaseCommand,
   dockerContainerExists: mocks.dockerContainerExists,
   dockerContainerIsRunning: mocks.dockerContainerIsRunning,
+  defaultWorkspaceName: mocks.defaultWorkspaceName,
   buildDockerDbContainerName: mocks.buildDockerDbContainerName,
   startDockerContainer: mocks.startDockerContainer,
   stopDockerContainer: mocks.stopDockerContainer,
@@ -60,6 +99,7 @@ vi.mock('../lib/ui.js', () => ({
   startTask: mocks.startTask,
   updateTask: mocks.updateTask,
   stopTask: mocks.stopTask,
+  setVerboseMode: mocks.setVerboseMode,
   succeedTask: mocks.succeedTask,
   failTask: mocks.failTask,
   printInfo: mocks.printInfo,
@@ -70,9 +110,34 @@ vi.mock('../lib/ui.js', () => ({
 
 vi.mock('../lib/run-npm.js', () => ({
   run: mocks.run,
+  runNocoBaseCommand: mocks.runNocoBaseCommand,
   commandSucceeds: mocks.commandSucceeds,
   commandOutput: mocks.commandOutput,
+  resolveProjectCwd: mocks.resolveProjectCwd,
 }));
+
+vi.mock('../lib/prompt-validators.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();
+  return {
+    ...actual,
+    findAvailableTcpPort: mocks.findAvailableTcpPort,
+    validateAvailableTcpPort: mocks.validateAvailableTcpPort,
+  };
+});
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    rm: mocks.fsRm,
+    mkdir: mocks.fsMkdir,
+    default: {
+      ...actual,
+      rm: mocks.fsRm,
+      mkdir: mocks.fsMkdir,
+    },
+  };
+});
 
 vi.mock('../lib/auth-store.js', () => ({
   removeEnv: mocks.removeEnv,
@@ -88,6 +153,10 @@ beforeEach(() => {
         ].join('\n')
       : 'No NocoBase env is configured yet. Run `nb init` to create one first.',
   );
+  mocks.defaultWorkspaceName.mockImplementation((cwd?: string) => {
+    const value = String(cwd ?? process.cwd()).replace(/\\/g, '/').split('/').filter(Boolean).at(-1) ?? 'demo';
+    return `nb-${value}`;
+  });
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => {
@@ -95,8 +164,35 @@ beforeEach(() => {
     }),
   );
   mocks.run.mockResolvedValue(undefined);
+  mocks.runNocoBaseCommand.mockResolvedValue(undefined);
   mocks.commandSucceeds.mockResolvedValue(true);
   mocks.commandOutput.mockResolvedValue('');
+  mocks.resolveProjectCwd.mockImplementation((cwd?: string) => cwd ?? process.cwd());
+  mocks.findAvailableTcpPort.mockResolvedValue('5544');
+  mocks.validateAvailableTcpPort.mockResolvedValue(undefined);
+  mocks.fsRm.mockResolvedValue(undefined);
+  mocks.fsMkdir.mockResolvedValue(undefined);
+  mocks.childSpawnCalls.length = 0;
+  mocks.childOnceHandlers.length = 0;
+  vi.mocked(spawn).mockImplementation(
+    (command: string, args: string[], options: Record<string, unknown>) => {
+      const handlers: Record<string, (...args: any[]) => void> = {};
+      mocks.childSpawnCalls.push({ command, args, options });
+      mocks.childOnceHandlers.push(handlers);
+      return {
+        exitCode: null,
+        killed: false,
+        once: vi.fn((event: string, handler: (...args: any[]) => void) => {
+          handlers[event] = handler;
+          return undefined as any;
+        }),
+        kill: vi.fn(() => {
+          handlers.close?.(0, null);
+          return true;
+        }),
+      } as any;
+    },
+  );
   mocks.renderTable.mockImplementation((headers: string[], rows: string[][]) => [
     headers.join('|'),
     ...rows.map((row) => row.join('|')),
@@ -1015,6 +1111,303 @@ test('db logs explains when the env does not use a built-in database', async () 
 
   await expect((() => DbLogs.prototype.run.call(command))()).rejects.toThrow(/does not use a CLI-managed built-in database.*read logs from here.*recreate the env with the built-in database option enabled/s);
   expect(mocks.run.mock.calls.length).toBe(0);
+});
+
+test('test recreates the built-in test database before running tests', async () => {
+  const { default: Test } = await import('../commands/test.js');
+  const command = createCommandHarness({
+    args: {
+      paths: [],
+    },
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      verbose: false,
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.run.mock.calls).toEqual([
+    [
+      'docker',
+      ['rm', '-f', 'nb-app2-test-postgres'],
+      {
+        errorName: 'docker rm',
+        stdio: 'ignore',
+      },
+    ],
+    [
+      'docker',
+      [
+        'run',
+        '-d',
+        '--name',
+        'nb-app2-test-postgres',
+        '--restart',
+        'always',
+        '--network',
+        'nb-app2',
+        '-e',
+        'POSTGRES_USER=nocobase',
+        '-e',
+        'POSTGRES_DB=nocobase-test',
+        '-e',
+        'POSTGRES_PASSWORD=nocobase',
+        '-v',
+        '/tmp/app2/storage/test/db/postgres:/var/lib/postgresql/data',
+        '-p',
+        '5433:5432',
+        'postgres:16',
+        'postgres',
+        '-c',
+        'wal_level=logical',
+      ],
+      {
+        errorName: 'docker run',
+        stdio: 'ignore',
+      },
+    ],
+  ]);
+  expect(mocks.fsRm.mock.calls[0]).toEqual([
+    '/tmp/app2/storage/test',
+    { recursive: true, force: true },
+  ]);
+  expect(mocks.fsMkdir.mock.calls[0]).toEqual([
+    '/tmp/app2/storage/test/db/postgres',
+    { recursive: true },
+  ]);
+  expect(mocks.succeedTask.mock.calls[0]).toEqual([
+    'The built-in test database is ready at 127.0.0.1:5433.',
+  ]);
+  expect(mocks.childSpawnCalls[0]).toMatchObject({
+    command: process.execPath,
+    args: [
+      expect.stringContaining('/node_modules/tsx/dist/cli.mjs'),
+      expect.stringContaining('/packages/core/test/src/scripts/test-db-creator.ts'),
+    ],
+  });
+  expect(mocks.childSpawnCalls[0]?.options?.env).toMatchObject({
+    TZ: 'UTC',
+    DB_TEST_DISTRIBUTOR_PORT: '23450',
+    DB_TEST_PREFIX: 'test',
+  });
+});
+
+test('test injects DB_* and STORAGE_PATH into nocobase test', async () => {
+  const { default: Test } = await import('../commands/test.js');
+  const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
+
+  const command = createCommandHarness({
+    args: {
+      paths: ['packages/core/server/src/__tests__/foo.test.ts'],
+    },
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: true,
+      server: false,
+      client: false,
+      'db-clean': true,
+      verbose: true,
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(runNocoBaseCommandMock.mock.calls).toEqual([
+    [
+      [
+        'test',
+        'packages/core/server/src/__tests__/foo.test.ts',
+        '--run',
+        '--coverage',
+        '--db-clean',
+        '--single-thread=true',
+      ],
+      {
+        cwd: '/tmp/app2',
+        env: {
+          APP_ENV_PATH: '.env',
+          STORAGE_PATH: '/tmp/app2/storage/test',
+          TZ: 'UTC',
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5433',
+          DB_DATABASE: 'nocobase-test',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'nocobase',
+          DB_TEST_DISTRIBUTOR_PORT: '23450',
+          DB_TEST_PREFIX: 'test',
+        },
+        stdio: 'inherit',
+      },
+    ],
+  ]);
+});
+
+test('test respects explicit server and client mode flags', async () => {
+  const { default: Test } = await import('../commands/test.js');
+  const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
+
+  const serverCommand = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: true,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: true,
+      client: false,
+      'db-clean': false,
+      verbose: false,
+    },
+    args: {
+      paths: [],
+    },
+  });
+
+  await Test.prototype.run.call(serverCommand);
+
+  expect(runNocoBaseCommandMock.mock.calls[0]).toEqual([
+    ['test', '--watch', '--server'],
+    {
+      cwd: '/tmp/app2',
+      env: {
+        APP_ENV_PATH: '.env',
+        STORAGE_PATH: '/tmp/app2/storage/test',
+        TZ: 'UTC',
+        DB_DIALECT: 'postgres',
+        DB_HOST: '127.0.0.1',
+        DB_PORT: '5433',
+        DB_DATABASE: 'nocobase-test',
+        DB_USER: 'nocobase',
+        DB_PASSWORD: 'nocobase',
+        DB_TEST_DISTRIBUTOR_PORT: '23450',
+        DB_TEST_PREFIX: 'test',
+      },
+      stdio: 'ignore',
+    },
+  ]);
+
+  const clientCommand = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: true,
+      allowOnly: true,
+      bail: true,
+      coverage: false,
+      server: false,
+      client: true,
+      'db-clean': false,
+      verbose: false,
+    },
+    args: {
+      paths: ['packages/core/client/src/foo.test.tsx'],
+    },
+  });
+
+  await Test.prototype.run.call(clientCommand);
+
+  expect(runNocoBaseCommandMock.mock.calls[1]).toEqual([
+    [
+      'test',
+      'packages/core/client/src/foo.test.tsx',
+      '--run',
+      '--allowOnly',
+      '--bail',
+      '--client',
+    ],
+    {
+      cwd: '/tmp/app2',
+      env: {
+        APP_ENV_PATH: '.env',
+        STORAGE_PATH: '/tmp/app2/storage/test',
+        TZ: 'UTC',
+        DB_DIALECT: 'postgres',
+        DB_HOST: '127.0.0.1',
+        DB_PORT: '5433',
+        DB_DATABASE: 'nocobase-test',
+        DB_USER: 'nocobase',
+        DB_PASSWORD: 'nocobase',
+      },
+      stdio: 'ignore',
+    },
+  ]);
+});
+
+test('test falls back to an available port when the default test port is busy', async () => {
+  const { default: Test } = await import('../commands/test.js');
+  const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
+  mocks.validateAvailableTcpPort.mockResolvedValueOnce('already in use');
+  mocks.findAvailableTcpPort.mockResolvedValueOnce('5544');
+
+  const command = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      'db-dialect': undefined,
+      'db-port': undefined,
+      'db-database': undefined,
+      'db-user': undefined,
+      'db-password': undefined,
+      verbose: false,
+    },
+    args: {
+      paths: [],
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.printInfo.mock.calls[0]).toEqual([
+    'Host port 5433 is unavailable for the test database, so the CLI will use 5544 instead.',
+  ]);
+  expect(mocks.run.mock.calls.at(-1)?.[1]).toContain('5544:5432');
+  expect(runNocoBaseCommandMock.mock.calls[0]?.[1]?.env?.DB_PORT).toBe('5544');
+});
+
+test('test rejects conflicting server and client flags', async () => {
+  const { default: Test } = await import('../commands/test.js');
+
+  const command = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: true,
+      client: true,
+      'db-clean': false,
+      verbose: false,
+    },
+    args: {
+      paths: [],
+    },
+  });
+
+  await expect((() => Test.prototype.run.call(command))()).rejects.toThrow(/Cannot use `--server` and `--client` together/);
 });
 
 test('down removes docker app and built-in database containers by default', async () => {
