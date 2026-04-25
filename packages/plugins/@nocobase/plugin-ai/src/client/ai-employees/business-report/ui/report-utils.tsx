@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { jsonrepair } from 'jsonrepair';
 import { namespace } from '../../../locale';
 
 export type BusinessReportChart = {
@@ -125,7 +126,18 @@ export function normalizeBusinessReportCharts(charts: unknown): BusinessReportCh
         }))
       : [];
   } catch (error) {
-    return [];
+    try {
+      const repaired = jsonrepair(raw);
+      const parsed = JSON.parse(repaired);
+      return Array.isArray(parsed)
+        ? parsed.filter(isBusinessReportChart).map((chart) => ({
+            ...chart,
+            options: normalizeBusinessReportChartOptions(chart.options),
+          }))
+        : [];
+    } catch (repairError) {
+      return [];
+    }
   }
 }
 

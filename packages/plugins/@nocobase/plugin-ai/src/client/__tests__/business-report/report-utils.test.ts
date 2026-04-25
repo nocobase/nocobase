@@ -22,6 +22,12 @@ describe('business report utils', () => {
     expect(normalizeBusinessReportCharts('{"title":"Orders"}')).toEqual([]);
   });
 
+  it('should repair loose chart JSON strings for rendering', () => {
+    expect(
+      normalizeBusinessReportCharts('[{title:"Orders",options:{series:[{type:"pie",data:[{name:"Paid",value:2}]}]}}]'),
+    ).toHaveLength(1);
+  });
+
   it('should normalize malformed report payloads for rendering', () => {
     const report = normalizeBusinessReport({
       title: 'April report',

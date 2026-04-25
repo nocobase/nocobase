@@ -9,25 +9,74 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+import { jsonrepair } from 'jsonrepair';
 // @ts-ignore
 import pkg from '../../../../../package.json';
 
 function normalizeChartsInput(value: unknown) {
+  const result: {
+    charts?: unknown[];
+    errors: string[];
+    warnings: string[];
+  } = {
+    errors: [],
+    warnings: [],
+  };
+
+  if (value == null || value === '') {
+    return result;
+  }
+
+  if (Array.isArray(value)) {
+    result.charts = value;
+    return result;
+  }
+
   if (typeof value !== 'string') {
-    return value;
+    result.errors.push(`Expected charts to be an array or a JSON string array, but received ${typeof value}.`);
+    return result;
   }
 
   const raw = value.trim();
   if (!raw) {
-    return undefined;
+    return result;
   }
 
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : undefined;
+    if (Array.isArray(parsed)) {
+      result.charts = parsed;
+    } else {
+      result.errors.push('Expected charts JSON to parse to an array.');
+    }
   } catch (error) {
-    return undefined;
+    try {
+      const repaired = jsonrepair(raw);
+      const parsed = JSON.parse(repaired);
+      if (Array.isArray(parsed)) {
+        result.charts = parsed;
+        result.warnings.push('Charts JSON was repaired before parsing. Prefer sending strict JSON next time.');
+      } else {
+        result.errors.push('Expected repaired charts JSON to parse to an array.');
+      }
+    } catch (repairError) {
+      const message = repairError instanceof Error ? repairError.message : String(repairError);
+      result.errors.push(`Failed to parse charts JSON: ${message}`);
+    }
   }
+
+  return result;
+}
+
+function isValidChart(value: unknown) {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    !!(value as { options?: unknown }).options &&
+    typeof (value as { options?: unknown }).options === 'object' &&
+    !Array.isArray((value as { options?: unknown }).options)
+  );
 }
 
 const chartSchema = z.object({
@@ -65,13 +114,22 @@ export default defineTools({
     }),
   },
   invoke: async (_ctx, args) => {
-    const charts = normalizeChartsInput(args.charts);
+    const { charts, errors, warnings } = normalizeChartsInput(args.charts);
+    const validCharts = Array.isArray(charts) ? charts.filter(isValidChart) : [];
+    if (Array.isArray(charts) && validCharts.length !== charts.length) {
+      errors.push(
+        `Invalid chart definitions: expected each chart to include an options object. Valid charts: ${validCharts.length}/${charts.length}.`,
+      );
+    }
+
     return {
-      status: 'success',
+      status: errors.length ? 'error' : 'success',
       content: JSON.stringify({
         title: args.title,
-        chartCount: Array.isArray(charts) ? charts.length : 0,
+        chartCount: validCharts.length,
         fileName: args.fileName ?? null,
+        ...(warnings.length ? { warnings } : {}),
+        ...(errors.length ? { errors } : {}),
       }),
     };
   },
