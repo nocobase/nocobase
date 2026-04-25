@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -72,7 +81,7 @@ test('run keeps non-shim commands off the shell on Windows', async () => {
   expect(options).not.toHaveProperty('shell');
 });
 
-test('runNocoBaseCommand inherits the current Node executable', async () => {
+test('runNocoBaseCommand executes nocobase-v1 via PATH resolution', async () => {
   spawnMock.mockReturnValue(successfulChild());
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-nocobase-'));
 
@@ -85,8 +94,8 @@ test('runNocoBaseCommand inherits the current Node executable', async () => {
 
     expect(spawnMock).toHaveBeenCalledTimes(1);
     const [command, args, options] = spawnMock.mock.calls[0] ?? [];
-    expect(command).toBe(process.execPath);
-    expect(args).toEqual(['./node_modules/.bin/nocobase-v1', 'test']);
+    expect(command).toBe('nocobase-v1');
+    expect(args).toEqual(['test']);
     expect(options).toMatchObject({
       cwd: dir,
       stdio: 'ignore',
