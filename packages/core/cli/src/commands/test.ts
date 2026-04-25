@@ -472,6 +472,11 @@ export default class Test extends Command {
       options: ['postgres', 'mysql', 'mariadb', 'kingbase'],
       required: false,
     }),
+    'db-image': Flags.string({
+      description: 'Built-in test database Docker image to start',
+      aliases: ['builtin-db-image'],
+      required: false,
+    }),
     'db-port': Flags.string({
       description: 'Host TCP port to publish for the built-in test database',
       required: false,
@@ -552,6 +557,7 @@ export default class Test extends Command {
         buildTestDbConfig({
           cwd,
           dbDialect: flags['db-dialect'],
+          builtinDbImage: flags['db-image'],
           dbPort: flags['db-port'],
           dbDatabase: flags['db-database'],
           dbUser: flags['db-user'],

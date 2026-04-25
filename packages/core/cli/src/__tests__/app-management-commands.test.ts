@@ -1440,6 +1440,45 @@ test('test waits for the MySQL test database port to become ready before running
   });
 });
 
+test('test forwards a custom built-in database image', async () => {
+  const { default: Test } = await import('../commands/test.js');
+
+  const command = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      'db-dialect': 'mysql',
+      'db-image': 'registry.example.com/custom-mysql:8.4',
+      'db-port': undefined,
+      'db-database': undefined,
+      'db-user': undefined,
+      'db-password': undefined,
+      verbose: false,
+    },
+    args: {
+      paths: [],
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.run.mock.calls.at(-1)).toEqual([
+    'docker',
+    expect.arrayContaining(['-p', '3307:3306', 'registry.example.com/custom-mysql:8.4']),
+    {
+      errorName: 'docker run',
+      stdio: 'ignore',
+    },
+  ]);
+});
+
 test('test rejects conflicting server and client flags', async () => {
   const { default: Test } = await import('../commands/test.js');
 
