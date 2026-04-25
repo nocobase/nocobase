@@ -8,8 +8,11 @@
  */
 
 import fs from 'node:fs';
+import type { ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import spawn from 'cross-spawn';
+
+const FORWARDED_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
 
 function resolveCommandName(name: string): string {
   return name;
@@ -83,8 +86,13 @@ export function run(
       },
       windowsHide: process.platform === 'win32',
     });
-    child.once('error', reject);
+    const cleanupSignalForwarding = forwardSignalsToChild(child);
+    child.once('error', (error) => {
+      cleanupSignalForwarding();
+      reject(error);
+    });
     child.once('close', (code, signal) => {
+      cleanupSignalForwarding();
       if (code === 0) {
         resolve();
         return;
@@ -96,6 +104,38 @@ export function run(
       reject(new Error(`${label} exited with code ${code}`));
     });
   });
+}
+
+function forwardSignalsToChild(child: ChildProcess): () => void {
+  let forwardedSignalCount = 0;
+  const listeners = new Map<NodeJS.Signals, () => void>();
+  const isChildRunning = () => child.exitCode === null && child.signalCode === null;
+
+  for (const signal of FORWARDED_SIGNALS) {
+    const listener = () => {
+      if (!isChildRunning()) {
+        return;
+      }
+
+      const nextSignal: NodeJS.Signals = forwardedSignalCount > 0 ? 'SIGKILL' : signal;
+      forwardedSignalCount += 1;
+
+      try {
+        child.kill(nextSignal);
+      } catch {
+        // Ignore kill errors here and let the child close/error handlers surface the failure.
+      }
+    };
+
+    listeners.set(signal, listener);
+    process.on(signal, listener);
+  }
+
+  return () => {
+    for (const [signal, listener] of listeners) {
+      process.off(signal, listener);
+    }
+  };
 }
 
 export function commandSucceeds(
