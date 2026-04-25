@@ -121,16 +121,29 @@ export function encodeURL(url) {
   }
 }
 
+function isStorageRelativeDocumentRoot(documentRoot: string): boolean {
+  return (
+    documentRoot === 'storage' ||
+    documentRoot.startsWith('storage/') ||
+    documentRoot === './storage' ||
+    documentRoot.startsWith('./storage/')
+  );
+}
+
 export function normalizeDocumentRoot(documentRoot?: string): string {
+  if (!documentRoot) {
+    return storagePathJoin('uploads');
+  }
   // 如果 documentRoot 是绝对路径，直接返回
-  if (documentRoot && path.isAbsolute(documentRoot)) {
+  if (path.isAbsolute(documentRoot)) {
     return documentRoot;
   }
-  // 如果以 storage 或 ./storage 开头，按 storagePathJoin 处理，不过要去掉开头的 storage 或 ./storage
-  if (documentRoot && (documentRoot.startsWith('storage') || documentRoot.startsWith('./storage'))) {
-    const relativePath = documentRoot.replace(/^\.?\/?storage/, '').replace(/^\/+/, '');
-    return storagePathJoin(relativePath);
+  const normalizedDocumentRoot = documentRoot.replace(/\\/g, '/');
+  // 如果以 storage/ 或 ./storage/ 开头，按 storagePathJoin 处理，不过要去掉开头的 storage 或 ./storage
+  if (isStorageRelativeDocumentRoot(normalizedDocumentRoot)) {
+    const relativePath = normalizedDocumentRoot.replace(/^\.?\/?storage(?:\/|$)/, '').replace(/^[/\\]+/, '');
+    return relativePath ? storagePathJoin(relativePath) : storagePathJoin();
   }
   // 否则按相对路径处理，基于当前工作目录
-  return path.resolve(process.cwd(), documentRoot || 'storage/uploads');
+  return path.resolve(process.cwd(), documentRoot);
 }

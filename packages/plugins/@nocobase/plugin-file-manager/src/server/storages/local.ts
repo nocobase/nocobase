@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isURL, resolveStorageRoot, storagePathJoin } from '@nocobase/utils';
+import { isURL, storagePathJoin } from '@nocobase/utils';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import multer from 'multer';

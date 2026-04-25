@@ -13,16 +13,14 @@ import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
-import { storagePathJoin } from '@nocobase/utils';
-import { normalizeDocumentRoot } from '../utils';
+import { getDocumentRoot } from '../storages/local';
 
-const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
+const { LOCAL_STORAGE_BASE_URL } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
 
 function getStorageDestPath(storage) {
-  const { documentRoot = storagePathJoin('uploads') } = storage.options || {};
-  return path.join(normalizeDocumentRoot(documentRoot), storage.path || '');
+  return path.join(getDocumentRoot(storage), storage.path || '');
 }
 
 describe('action', () => {
@@ -181,15 +179,15 @@ describe('action', () => {
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
         });
-        expect(normalizeDocumentRoot(storage.options?.documentRoot)).toBe(LOCAL_STORAGE_DEST);
 
         const destPath = getStorageDestPath(storage);
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
         expect(file.toString().includes('Hello world!')).toBeTruthy();
 
-        // 默认 local storage 的静态访问已由其他测试覆盖，这里只校验实际落盘内容
-        expect(file.toString().includes('Hello world!')).toBeTruthy();
+        // 默认 local storage 的静态访问需要至少一个端到端校验，确保静态文件中间件仍可通过生成的 URL 访问
+        const res = await agent.get(body.data.url);
+        expect(res.text).toContain('Hello world!');
       });
 
       it('filename with special character (URL)', async () => {

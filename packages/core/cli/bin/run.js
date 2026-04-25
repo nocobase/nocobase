@@ -38,18 +38,20 @@ function reexecWithTsx() {
     process.exit(1);
   }
 
-  const result = spawnSync(
-    process.execPath,
-    ['--import', pathToFileURL(tsxEntry).href, '--disable-warning=ExperimentalWarning', ...process.argv.slice(1)],
-    {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        _NOCO_CLI_TSX_CHILD: '1',
-        NODE_ENV: 'development',
-      },
+  const reexecArgs = ['--import', pathToFileURL(tsxEntry).href];
+  const supportedFlags = Array.from(process.allowedNodeEnvironmentFlags);
+  if (supportedFlags.some((flag) => flag === '--disable-warning' || flag.startsWith('--disable-warning='))) {
+    reexecArgs.push('--disable-warning=ExperimentalWarning');
+  }
+
+  const result = spawnSync(process.execPath, [...reexecArgs, ...process.argv.slice(1)], {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      _NOCO_CLI_TSX_CHILD: '1',
+      NODE_ENV: 'development',
     },
-  );
+  });
   process.exit(result.status === null ? 1 : result.status);
 }
 
