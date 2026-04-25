@@ -12,16 +12,48 @@ import { observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { RemoteSelect, SchemaComponent } from '@nocobase/client';
 import { Schema, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { Radio, RadioGroupProps, Space, Typography } from 'antd';
+import { Radio, RadioGroupProps, Space, Tooltip, Typography } from 'antd';
 import { namespace, useT } from '../../../../locale';
 
 const RadioOptions = {
-  preset: { label: 'Preset', value: 'preset' },
-  custom: { label: 'Custom', value: 'custom' },
+  preset: { value: 'preset' },
+  custom: { value: 'custom' },
 };
+
+const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') => [
+  {
+    label: (
+      <Tooltip
+        title={t(
+          type === 'skills'
+            ? "Use the AI employee's default skills for this node."
+            : "Use the AI employee's default tools for this node.",
+        )}
+      >
+        <span>{t('Preset')}</span>
+      </Tooltip>
+    ),
+    value: RadioOptions.preset.value,
+  },
+  {
+    label: (
+      <Tooltip
+        title={t(
+          type === 'skills'
+            ? 'Select the specific skills this node is allowed to use.'
+            : 'Select the specific tools this node is allowed to use.',
+        )}
+      >
+        <span>{t('Custom')}</span>
+      </Tooltip>
+    ),
+    value: RadioOptions.custom.value,
+  },
+];
 
 const Skills: React.FC = observer(() => {
   const t = useT();
+  const radioOptions = useMemo(() => getRadioOptions(t, 'skills'), [t]);
   const field = useField<ArrayField>();
   const ctx = useFlowContext();
   const form = useForm();
@@ -55,7 +87,7 @@ const Skills: React.FC = observer(() => {
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
-      <Radio.Group value={radioValue} onChange={onRadioChange} options={Object.values(RadioOptions)} />
+      <Radio.Group value={radioValue} onChange={onRadioChange} options={radioOptions} />
       {radioValue === RadioOptions.custom.value && (
         <RemoteSelect
           key={username}
@@ -64,7 +96,7 @@ const Skills: React.FC = observer(() => {
           manual={false}
           multiple={true}
           popupMatchSelectWidth
-          placeholder={t('Use all AI employee skills')}
+          placeholder={t('Leave empty to disable skills.')}
           fieldNames={{
             label: 'title',
             value: 'name',
@@ -85,6 +117,7 @@ const Skills: React.FC = observer(() => {
 
 const Tools: React.FC = observer(() => {
   const t = useT();
+  const radioOptions = useMemo(() => getRadioOptions(t, 'tools'), [t]);
   const field = useField<ArrayField>();
   const ctx = useFlowContext();
   const form = useForm();
@@ -119,7 +152,7 @@ const Tools: React.FC = observer(() => {
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
-      <Radio.Group value={radioValue} onChange={onRadioChange} options={Object.values(RadioOptions)} />
+      <Radio.Group value={radioValue} onChange={onRadioChange} options={radioOptions} />
       {radioValue === RadioOptions.custom.value && (
         <RemoteSelect
           key={username}
@@ -128,7 +161,7 @@ const Tools: React.FC = observer(() => {
           manual={false}
           multiple={true}
           popupMatchSelectWidth
-          placeholder={t('Use all AI employee tools')}
+          placeholder={t('Leave empty to disable tools.')}
           fieldNames={{
             label: 'title',
             value: 'name',
@@ -202,7 +235,7 @@ export const SkillSettings: React.FC = () => {
             'x-component': 'Skills',
             'x-decorator-props': {
               layout: 'horizontal',
-              tooltip: tExpr('Restrict task skills', {
+              tooltip: tExpr('Configure the skills available to this node', {
                 ns: namespace,
               }),
             },
@@ -214,7 +247,7 @@ export const SkillSettings: React.FC = () => {
             'x-component': 'Tools',
             'x-decorator-props': {
               layout: 'horizontal',
-              tooltip: tExpr('Restrict task tools', {
+              tooltip: tExpr('Configure the tools available to this node', {
                 ns: namespace,
               }),
             },

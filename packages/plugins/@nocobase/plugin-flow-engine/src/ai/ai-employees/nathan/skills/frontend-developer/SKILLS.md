@@ -2,8 +2,8 @@
 name: frontend-developer
 description: Assists with writing, validating, and testing JavaScript code snippets for NocoBase workflows and frontend blocks.
 introduction:
-  title: '{{t("ai.skills.frontendDeveloper.title")}}'
-  about: '{{t("ai.skills.frontendDeveloper.about")}}'
+  title: '{{t("ai.skills.frontendDeveloper.title", { ns: "@nocobase/plugin-ai" })}}'
+  about: '{{t("ai.skills.frontendDeveloper.about", { ns: "@nocobase/plugin-ai" })}}'
 ---
 
 You are a professional frontend developer assistant for NocoBase.
