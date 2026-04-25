@@ -62,25 +62,36 @@ const mocks = vi.hoisted(() => ({
   childOnceHandlers: [] as Array<Record<string, (...args: any[]) => void>>,
 }));
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn((command: string, args: string[], options: Record<string, unknown>) => {
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  const spawn = vi.fn((command: string, args: string[], options: Record<string, unknown>) => {
     const handlers: Record<string, (...args: any[]) => void> = {};
     mocks.childSpawnCalls.push({ command, args, options });
     mocks.childOnceHandlers.push(handlers);
-    return {
+    const child = {
       exitCode: null,
       killed: false,
       once: vi.fn((event: string, handler: (...args: any[]) => void) => {
         handlers[event] = handler;
-        return this;
+        return child;
       }),
       kill: vi.fn(() => {
         handlers.close?.(0, null);
         return true;
       }),
     };
-  }),
-}));
+    return child;
+  });
+
+  return {
+    ...actual,
+    spawn,
+    default: {
+      ...actual,
+      spawn,
+    },
+  };
+});
 
 vi.mock('../lib/app-runtime.js', () => ({
   formatMissingManagedAppEnvMessage: mocks.formatMissingManagedAppEnvMessage,
@@ -179,18 +190,19 @@ beforeEach(() => {
       const handlers: Record<string, (...args: any[]) => void> = {};
       mocks.childSpawnCalls.push({ command, args, options });
       mocks.childOnceHandlers.push(handlers);
-      return {
+      const child = {
         exitCode: null,
         killed: false,
         once: vi.fn((event: string, handler: (...args: any[]) => void) => {
           handlers[event] = handler;
-          return undefined as any;
+          return child;
         }),
         kill: vi.fn(() => {
           handlers.close?.(0, null);
           return true;
         }),
       } as any;
+      return child;
     },
   );
   mocks.renderTable.mockImplementation((headers: string[], rows: string[][]) => [
@@ -1384,6 +1396,99 @@ test('test falls back to an available port when the default test port is busy', 
   ]);
   expect(mocks.run.mock.calls.at(-1)?.[1]).toContain('5544:5432');
   expect(runNocoBaseCommandMock.mock.calls[0]?.[1]?.env?.DB_PORT).toBe('5544');
+});
+
+test('test waits for the MySQL test database port to become ready before running tests', async () => {
+  const { default: Test } = await import('../commands/test.js');
+  const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
+
+  mocks.commandSucceeds
+    .mockResolvedValueOnce(true)
+    .mockResolvedValueOnce(false)
+    .mockResolvedValueOnce(true)
+    .mockResolvedValue(true);
+
+  const command = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      'db-dialect': 'mysql',
+      verbose: false,
+    },
+    args: {
+      paths: ['packages/core/database/src/__tests__/query/formatter.test.ts'],
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.run.mock.calls.at(-1)).toEqual([
+    'docker',
+    expect.arrayContaining(['-p', '3307:3306', 'mysql:8']),
+    {
+      errorName: 'docker run',
+      stdio: 'ignore',
+    },
+  ]);
+  expect(runNocoBaseCommandMock.mock.calls[0]?.[1]?.env).toMatchObject({
+    DB_DIALECT: 'mysql',
+    DB_PORT: '3307',
+    DB_TEST_DISTRIBUTOR_PORT: '23450',
+    DB_TEST_PREFIX: 'test_',
+  });
+  expect(mocks.childSpawnCalls[0]?.options?.env).toMatchObject({
+    DB_DIALECT: 'mysql',
+    DB_USER: 'root',
+    DB_PASSWORD: 'nocobase',
+    DB_TEST_DISTRIBUTOR_PORT: '23450',
+    DB_TEST_PREFIX: 'test_',
+  });
+});
+
+test('test forwards a custom built-in database image', async () => {
+  const { default: Test } = await import('../commands/test.js');
+
+  const command = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      'db-dialect': 'mysql',
+      'db-image': 'registry.example.com/custom-mysql:8.4',
+      'db-port': undefined,
+      'db-database': undefined,
+      'db-user': undefined,
+      'db-password': undefined,
+      verbose: false,
+    },
+    args: {
+      paths: [],
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.run.mock.calls.at(-1)).toEqual([
+    'docker',
+    expect.arrayContaining(['-p', '3307:3306', 'registry.example.com/custom-mysql:8.4']),
+    {
+      errorName: 'docker run',
+      stdio: 'ignore',
+    },
+  ]);
 });
 
 test('test rejects conflicting server and client flags', async () => {

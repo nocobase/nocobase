@@ -17,37 +17,6 @@ import { findAvailableTcpPort, validateAvailableTcpPort } from '../lib/prompt-va
 import { commandSucceeds, resolveProjectCwd, run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { failTask, printInfo, setVerboseMode, startTask, succeedTask } from '../lib/ui.js';
 
-type BuiltinDbPlan = {
-  dbDialect: string;
-  dbHost: string;
-  dbPort: string;
-  dbDatabase: string;
-  dbUser: string;
-  dbPassword: string;
-  builtinDbImage?: string;
-  networkName: string;
-  containerName: string;
-  dataDir: string;
-  image: string;
-  args: string[];
-};
-
-type InstallStatics = {
-  buildBuiltinDbPlan: (params: {
-    envName: string;
-    workspaceName?: string;
-    storagePath: string;
-    source?: string;
-    dbDialect?: string;
-    dbHost?: string;
-    dbPort?: string;
-    dbDatabase?: string;
-    dbUser?: string;
-    dbPassword?: string;
-    builtinDbImage?: string;
-  }) => BuiltinDbPlan;
-};
-
 type TestDbConfig = {
   storagePath: string;
   env: Record<string, string>;
@@ -63,7 +32,12 @@ const DEFAULT_DB_USER = 'nocobase';
 const DEFAULT_DB_PASSWORD = 'nocobase';
 const DEFAULT_DB_DIALECT = 'postgres';
 const DEFAULT_TEST_TIMEZONE = 'UTC';
-const DEFAULT_TEST_DB_IMAGE = 'postgres:16';
+const DEFAULT_TEST_DB_IMAGES: Record<string, string> = {
+  postgres: 'postgres:16',
+  mysql: 'mysql:8',
+  mariadb: 'mariadb:11',
+  kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+};
 const DEFAULT_TEST_DB_DISTRIBUTOR_PORT = '23450';
 const DEFAULT_TEST_DB_DISTRIBUTOR_PREFIX: Record<string, string> = {
   postgres: 'test',
@@ -115,6 +89,10 @@ function defaultTestDbPort(dbDialect: string): string {
   return String(DEFAULT_DB_PORTS[dbDialect] ?? DEFAULT_DB_PORTS.postgres);
 }
 
+function defaultTestDbImage(dbDialect: string): string {
+  return DEFAULT_TEST_DB_IMAGES[dbDialect] ?? DEFAULT_TEST_DB_IMAGES.postgres;
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -143,6 +121,18 @@ function defaultTestDbDistributorPrefix(dbDialect: string): string | undefined {
 
 function supportsTestDbDistributor(dbDialect: string): boolean {
   return Boolean(defaultTestDbDistributorPrefix(dbDialect));
+}
+
+function buildTestDbDistributorEnv(env: Record<string, string>): Record<string, string> {
+  if (env.DB_DIALECT === 'mysql' || env.DB_DIALECT === 'mariadb') {
+    return {
+      ...env,
+      DB_APP_USER: env.DB_USER,
+      DB_USER: 'root',
+    };
+  }
+
+  return env;
 }
 
 async function waitForTcpPortReady(port: string, timeoutMs = 5000): Promise<void> {
@@ -199,6 +189,7 @@ async function startTestDbDistributor(params: {
     throw new Error(`Host port ${port} is unavailable for the test DB distributor. ${portError}`);
   }
 
+  const distributorEnv = buildTestDbDistributorEnv(params.env);
   const child = spawn(
     process.execPath,
     [
@@ -209,7 +200,7 @@ async function startTestDbDistributor(params: {
       cwd: params.cwd,
       env: {
         ...process.env,
-        ...params.env,
+        ...distributorEnv,
         DB_TEST_DISTRIBUTOR_PORT: port,
         DB_TEST_PREFIX: prefix,
       },
@@ -300,8 +291,7 @@ function buildTestDbConfig(params: {
   const dbDialect = trimValue(params.dbDialect) || DEFAULT_DB_DIALECT;
   const workspaceName = resolveWorkspaceName(params.cwd);
   const storagePath = path.join(params.cwd, 'storage', 'test');
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'test',
     workspaceName,
     storagePath,
@@ -312,7 +302,7 @@ function buildTestDbConfig(params: {
     dbDatabase: trimValue(params.dbDatabase) || DEFAULT_DB_DATABASE,
     dbUser: trimValue(params.dbUser) || DEFAULT_DB_USER,
     dbPassword: trimValue(params.dbPassword) || DEFAULT_DB_PASSWORD,
-    builtinDbImage: trimValue(params.builtinDbImage) || DEFAULT_TEST_DB_IMAGE,
+    builtinDbImage: trimValue(params.builtinDbImage) || defaultTestDbImage(dbDialect),
   });
 
   return {
@@ -375,6 +365,8 @@ async function prepareTestDatabase(
     errorName: 'docker run',
     stdio: options?.stdio ?? 'ignore',
   });
+
+  await waitForTcpPortReady(nextConfig.env.DB_PORT, 30_000);
 
   return nextConfig;
 }
@@ -446,6 +438,11 @@ export default class Test extends Command {
     'db-dialect': Flags.string({
       description: 'Built-in test database dialect to start',
       options: ['postgres', 'mysql', 'mariadb', 'kingbase'],
+      required: false,
+    }),
+    'db-image': Flags.string({
+      description: 'Built-in test database Docker image to start',
+      aliases: ['builtin-db-image'],
       required: false,
     }),
     'db-port': Flags.string({
@@ -528,6 +525,7 @@ export default class Test extends Command {
         buildTestDbConfig({
           cwd,
           dbDialect: flags['db-dialect'],
+          builtinDbImage: flags['db-image'],
           dbPort: flags['db-port'],
           dbDatabase: flags['db-database'],
           dbUser: flags['db-user'],

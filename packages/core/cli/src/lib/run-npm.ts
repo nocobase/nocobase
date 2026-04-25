@@ -48,14 +48,17 @@ export function resolveCwd(cwd?: string): string {
 }
 
 export function resolveProjectCwd(cwd?: string): string {
-  const next = cwd ?? process.cwd();
-  if (path.isAbsolute(next) || !next) {
-    return next;
+  const normalizedCwd = typeof cwd === 'string' && cwd.trim() === '' ? undefined : cwd;
+  const next = normalizedCwd ?? process.cwd();
+  const resolvedNext = resolveCwd(normalizedCwd);
+
+  if (!normalizedCwd || path.isAbsolute(next)) {
+    return resolvedNext;
   }
 
   const baseCwd = process.cwd();
   let current = baseCwd;
-  const fallback = path.resolve(baseCwd, next);
+  const fallback = resolvedNext;
 
   while (true) {
     const candidate = path.resolve(current, next);

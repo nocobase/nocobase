@@ -71,6 +71,18 @@ abstract class BaseClient<Client> {
   }
 }
 
+function escapeMysqlIdentifier(name: string): string {
+  return `\`${String(name).replace(/`/g, '``')}\``;
+}
+
+function escapeMysqlString(value: string): string {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+function mysqlAppUser(): string {
+  return String(process.env['DB_APP_USER'] || process.env['DB_USER'] || '').trim();
+}
+
 class PostgresClient extends BaseClient<pg.Client> {
   async _removeDB(name: string): Promise<void> {
     await this._client.query(`DROP DATABASE IF EXISTS ${name}`);
@@ -101,7 +113,15 @@ class MySQLClient extends BaseClient<any> {
   }
 
   async _createDB(name: string): Promise<void> {
-    await this._client.query(`CREATE DATABASE IF NOT EXISTS ${name}`);
+    const database = escapeMysqlIdentifier(name);
+    const appUser = mysqlAppUser();
+    if (!appUser) {
+      throw new Error('DB_APP_USER or DB_USER is required for MySQL test database grants.');
+    }
+    const user = escapeMysqlString(appUser);
+    await this._client.query(`CREATE DATABASE IF NOT EXISTS ${database}`);
+    await this._client.query(`GRANT ALL PRIVILEGES ON ${database}.* TO ${user}@'%'`);
+    await this._client.query('FLUSH PRIVILEGES');
   }
 
   async _createConnection(): Promise<mysql.Connection> {
@@ -121,7 +141,15 @@ class MariaDBClient extends BaseClient<any> {
   }
 
   async _createDB(name: string): Promise<void> {
-    await this._client.query(`CREATE DATABASE IF NOT EXISTS ${name}`);
+    const database = escapeMysqlIdentifier(name);
+    const appUser = mysqlAppUser();
+    if (!appUser) {
+      throw new Error('DB_APP_USER or DB_USER is required for MariaDB test database grants.');
+    }
+    const user = escapeMysqlString(appUser);
+    await this._client.query(`CREATE DATABASE IF NOT EXISTS ${database}`);
+    await this._client.query(`GRANT ALL PRIVILEGES ON ${database}.* TO ${user}@'%'`);
+    await this._client.query('FLUSH PRIVILEGES');
   }
 
   async _createConnection(): Promise<mariadb.Connection> {

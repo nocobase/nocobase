@@ -340,7 +340,7 @@ type NocoBaseInstallArgvFlags = {
   rootNickname?: string;
 };
 
-type BuiltinDbPlan = {
+export type BuiltinDbPlan = {
   source?: string;
   dbDialect: string;
   dbHost: string;
@@ -1274,7 +1274,7 @@ export default class Install extends Command {
     return String(source ?? '').trim() !== 'docker';
   }
 
-  private static buildBuiltinDbPlan(params: {
+  static buildBuiltinDbPlan(params: {
     envName: string;
     workspaceName?: PromptValue;
     storagePath: string;

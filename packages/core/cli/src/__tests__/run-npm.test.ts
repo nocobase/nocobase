@@ -35,11 +35,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test('resolveProjectCwd walks up parent directories to find a NocoBase project root', () => {
-  vi.stubGlobal('process', {
-    ...process,
-    cwd: vi.fn(() => '/Users/chen/test500/app2/source/packages/core/cli'),
-  });
+test('resolveProjectCwd walks up parent directories to find a NocoBase project root', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-project-'));
+  const projectRoot = path.join(dir, 'app2', 'source');
+  const nestedCwd = path.join(projectRoot, 'packages', 'core', 'cli');
+  const marker = path.join(projectRoot, 'node_modules', '.bin', 'nocobase-v1');
 
-  expect(resolveProjectCwd('./app2/source')).toBe('/Users/chen/test500/app2/source');
+  try {
+    await fsp.mkdir(path.dirname(marker), { recursive: true });
+    await fsp.mkdir(nestedCwd, { recursive: true });
+    await fsp.writeFile(marker, '');
+
+    vi.stubGlobal('process', {
+      ...process,
+      cwd: vi.fn(() => nestedCwd),
+    });
+
+    expect(resolveProjectCwd('./app2/source')).toBe(projectRoot);
+    expect(resolveProjectCwd('')).toBe(nestedCwd);
+    expect(resolveProjectCwd('   ')).toBe(nestedCwd);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
 });
