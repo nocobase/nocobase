@@ -46,9 +46,11 @@ const Skills: React.FC = observer(() => {
   };
 
   useEffect(() => {
-    setRadioValue(
-      Array.isArray(form.initialValues?.skillSettings?.skills) ? RadioOptions.custom.value : RadioOptions.preset.value,
-    );
+    const hasInitialSkills = Array.isArray(form.initialValues?.skillSettings?.skills);
+    if (!hasInitialSkills) {
+      form.setValuesIn('skillSettings.skills', undefined);
+    }
+    setRadioValue(hasInitialSkills ? RadioOptions.custom.value : RadioOptions.preset.value);
   }, [form]);
 
   return (
@@ -108,9 +110,11 @@ const Tools: React.FC = observer(() => {
   };
 
   useEffect(() => {
-    setRadioValue(
-      Array.isArray(form.initialValues?.skillSettings?.tools) ? RadioOptions.custom.value : RadioOptions.preset.value,
-    );
+    const hasInitialTools = Array.isArray(form.initialValues?.skillSettings?.tools);
+    if (!hasInitialTools) {
+      form.setValuesIn('skillSettings.tools', undefined);
+    }
+    setRadioValue(hasInitialTools ? RadioOptions.custom.value : RadioOptions.preset.value);
   }, [form]);
 
   return (

@@ -72,10 +72,16 @@ export const AIEmployeeSelect: React.FC = observer(() => {
             }
             const defaultSkills = employee.skillSettings?.skills?.map((name: string) => name) ?? [];
             const defaultTools = employee.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
+            const shouldUpdateSkills = Array.isArray(form.values?.skillSettings?.skills);
+            const shouldUpdateTools = Array.isArray(form.values?.skillSettings?.tools);
             ctx.model.props.aiEmployee.username = employee.username;
             field.setValue(employee.username);
-            form.setValuesIn('skillSettings.skills', defaultSkills);
-            form.setValuesIn('skillSettings.tools', defaultTools);
+            if (shouldUpdateSkills) {
+              form.setValuesIn('skillSettings.skills', defaultSkills);
+            }
+            if (shouldUpdateTools) {
+              form.setValuesIn('skillSettings.tools', defaultTools);
+            }
             setIsOpen(false);
           },
         };
