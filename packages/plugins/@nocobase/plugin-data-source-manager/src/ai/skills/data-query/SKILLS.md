@@ -59,6 +59,30 @@ Use `dataQuery` when the user wants:
 
 Prefer `dataQuery` over `dataSourceCounting` whenever the request can be expressed as a measure query, because it is closer to the repository `query` capability used by charts, actions, ACL, and MCP.
 
+### Aggregate Query Failure Handling
+
+If `dataQuery` fails, do not immediately switch to `dataSourceQuery` and manually sum, count, group, or rank records.
+
+Before falling back to raw records, inspect the tool error and retry `dataQuery` with corrected parameters. Date filters are the most common source of aggregate query failures, so check them first. Common fixes include:
+
+- rebuild date ranges with the frontend date filter contract below, such as `$dateOn`, `$dateBetween`, or relative period objects
+- replace unsupported calendar operators such as `$gte`, `$gt`, `$lte`, `$lt`, or custom date operator names
+- avoid UTC boundary expansions like `2026-04-01T00:00:00.000Z` to `2026-05-01T00:00:00.000Z` unless the user explicitly asks for exact timestamp comparison
+- verify field names, relation paths, and data types with metadata
+- correct `measures`, `dimensions`, aliases, and `orders`
+- fix `filter` versus `having` placement
+- simplify grouping, relation paths, or post-aggregation filters
+- confirm the intended `dataSource` and `collectionName`
+
+For aggregation/statistics/rankings/trends, raw record fetching plus manual calculation is a last resort only. Use `dataSourceQuery` as a fallback only when:
+
+- the user explicitly asks to inspect raw records
+- the requested computation cannot be expressed with `dataQuery`
+- boundary-sensitive verification requires a small sample of source records
+- at least two corrected `dataQuery` attempts have failed and the error has been analyzed
+
+When a raw-record fallback is unavoidable, explain why `dataQuery` could not be used, keep the fetched record set small, and do not fetch large datasets just to manually aggregate them.
+
 ## Count Records
 
 Use `dataSourceCounting` only for a simple total when grouped output is unnecessary.
@@ -217,6 +241,6 @@ Action:
 
 - Always validate collection and field names before querying.
 - Prefer metadata tools first when the request is ambiguous.
-- Prefer `dataQuery` for analysis and metrics.
+- Prefer `dataQuery` for analysis and metrics. If it fails, first check whether the date range or date operator is invalid, then retry corrected aggregate queries before using raw records.
 - Use `dataSourceQuery` for raw rows and `dataSourceCounting` for the simplest count case.
 - Respect user permissions; if the tool returns `No permissions`, explain that the current role cannot access the requested data.
