@@ -28,32 +28,6 @@ afterEach(() => {
 });
 
 type InstallStatics = {
-  buildBuiltinDbPlan: (params: {
-    envName: string;
-    workspaceName?: string;
-    storagePath: string;
-    source?: string;
-    dbDialect?: string;
-    builtinDbImage?: string;
-    dbHost?: string;
-    dbPort?: string;
-    dbDatabase?: string;
-    dbUser?: string;
-    dbPassword?: string;
-  }) => {
-    dbDialect: string;
-    dbHost: string;
-    dbPort: string;
-    dbDatabase: string;
-    dbUser: string;
-    dbPassword: string;
-    builtinDbImage?: string;
-    networkName: string;
-    containerName: string;
-    dataDir: string;
-    image: string;
-    args: string[];
-  };
   buildDockerAppPlan: (params: {
     envName: string;
     workspaceName?: string;
@@ -93,8 +67,7 @@ type InstallStatics = {
 };
 
 test('builtin postgres db plan uses workspace network and env scoped docker containers', () => {
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     storagePath: './storage/demo',
     source: 'npm',
@@ -142,8 +115,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
 });
 
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     storagePath: './storage/demo',
     source: 'npm',
@@ -157,8 +129,7 @@ test('builtin postgres db plan uses a custom built-in database image when provid
 });
 
 test('builtin postgres db plan can use the workspace name from config', () => {
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     workspaceName: 'nb-shared-workspace',
     storagePath: './storage/demo',
@@ -172,9 +143,8 @@ test('builtin postgres db plan can use the workspace name from config', () => {
 
 test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN', () => {
   process.env.NB_LOCALE = 'zh-CN';
-  const installStatics = Install as unknown as InstallStatics;
 
-  const postgresPlan = installStatics.buildBuiltinDbPlan({
+  const postgresPlan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     storagePath: './storage/demo',
     source: 'npm',
@@ -182,7 +152,7 @@ test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN',
   });
   expect(postgresPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
 
-  const mysqlPlan = installStatics.buildBuiltinDbPlan({
+  const mysqlPlan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     storagePath: './storage/demo',
     source: 'npm',
@@ -190,7 +160,7 @@ test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN',
   });
   expect(mysqlPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8');
 
-  const mariadbPlan = installStatics.buildBuiltinDbPlan({
+  const mariadbPlan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     storagePath: './storage/demo',
     source: 'npm',
@@ -200,8 +170,7 @@ test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN',
 });
 
 test('builtin db plan does not publish host port for docker source and uses container host', () => {
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'dockerapp',
     storagePath: './storage/dockerapp',
     source: 'docker',
@@ -218,8 +187,7 @@ test('builtin db plan does not publish host port for docker source and uses cont
 });
 
 test('builtin mysql db plan publishes the selected db port', () => {
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'mysqlapp',
     storagePath: './storage/mysqlapp',
     source: 'git',
@@ -240,8 +208,7 @@ test('builtin mysql db plan publishes the selected db port', () => {
 });
 
 test('builtin kingbase db plan uses the default kingbase image and runtime options', () => {
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'kingapp',
     storagePath: './storage/kingapp',
     source: 'git',

@@ -62,25 +62,36 @@ const mocks = vi.hoisted(() => ({
   childOnceHandlers: [] as Array<Record<string, (...args: any[]) => void>>,
 }));
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn((command: string, args: string[], options: Record<string, unknown>) => {
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  const spawn = vi.fn((command: string, args: string[], options: Record<string, unknown>) => {
     const handlers: Record<string, (...args: any[]) => void> = {};
     mocks.childSpawnCalls.push({ command, args, options });
     mocks.childOnceHandlers.push(handlers);
-    return {
+    const child = {
       exitCode: null,
       killed: false,
       once: vi.fn((event: string, handler: (...args: any[]) => void) => {
         handlers[event] = handler;
-        return this;
+        return child;
       }),
       kill: vi.fn(() => {
         handlers.close?.(0, null);
         return true;
       }),
     };
-  }),
-}));
+    return child;
+  });
+
+  return {
+    ...actual,
+    spawn,
+    default: {
+      ...actual,
+      spawn,
+    },
+  };
+});
 
 vi.mock('../lib/app-runtime.js', () => ({
   formatMissingManagedAppEnvMessage: mocks.formatMissingManagedAppEnvMessage,
@@ -179,18 +190,19 @@ beforeEach(() => {
       const handlers: Record<string, (...args: any[]) => void> = {};
       mocks.childSpawnCalls.push({ command, args, options });
       mocks.childOnceHandlers.push(handlers);
-      return {
+      const child = {
         exitCode: null,
         killed: false,
         once: vi.fn((event: string, handler: (...args: any[]) => void) => {
           handlers[event] = handler;
-          return undefined as any;
+          return child;
         }),
         kill: vi.fn(() => {
           handlers.close?.(0, null);
           return true;
         }),
       } as any;
+      return child;
     },
   );
   mocks.renderTable.mockImplementation((headers: string[], rows: string[][]) => [

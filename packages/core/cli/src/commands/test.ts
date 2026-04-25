@@ -17,37 +17,6 @@ import { findAvailableTcpPort, validateAvailableTcpPort } from '../lib/prompt-va
 import { commandSucceeds, resolveProjectCwd, run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { failTask, printInfo, setVerboseMode, startTask, succeedTask } from '../lib/ui.js';
 
-type BuiltinDbPlan = {
-  dbDialect: string;
-  dbHost: string;
-  dbPort: string;
-  dbDatabase: string;
-  dbUser: string;
-  dbPassword: string;
-  builtinDbImage?: string;
-  networkName: string;
-  containerName: string;
-  dataDir: string;
-  image: string;
-  args: string[];
-};
-
-type InstallStatics = {
-  buildBuiltinDbPlan: (params: {
-    envName: string;
-    workspaceName?: string;
-    storagePath: string;
-    source?: string;
-    dbDialect?: string;
-    dbHost?: string;
-    dbPort?: string;
-    dbDatabase?: string;
-    dbUser?: string;
-    dbPassword?: string;
-    builtinDbImage?: string;
-  }) => BuiltinDbPlan;
-};
-
 type TestDbConfig = {
   storagePath: string;
   env: Record<string, string>;
@@ -322,8 +291,7 @@ function buildTestDbConfig(params: {
   const dbDialect = trimValue(params.dbDialect) || DEFAULT_DB_DIALECT;
   const workspaceName = resolveWorkspaceName(params.cwd);
   const storagePath = path.join(params.cwd, 'storage', 'test');
-  const installStatics = Install as unknown as InstallStatics;
-  const plan = installStatics.buildBuiltinDbPlan({
+  const plan = Install.buildBuiltinDbPlan({
     envName: 'test',
     workspaceName,
     storagePath,
