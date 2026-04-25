@@ -1386,6 +1386,60 @@ test('test falls back to an available port when the default test port is busy', 
   expect(runNocoBaseCommandMock.mock.calls[0]?.[1]?.env?.DB_PORT).toBe('5544');
 });
 
+test('test waits for the MySQL test database port to become ready before running tests', async () => {
+  const { default: Test } = await import('../commands/test.js');
+  const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
+
+  mocks.commandSucceeds
+    .mockResolvedValueOnce(true)
+    .mockResolvedValueOnce(false)
+    .mockResolvedValueOnce(true)
+    .mockResolvedValue(true);
+
+  const command = createCommandHarness({
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      'db-dialect': 'mysql',
+      verbose: false,
+    },
+    args: {
+      paths: ['packages/core/database/src/__tests__/query/formatter.test.ts'],
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.run.mock.calls.at(-1)).toEqual([
+    'docker',
+    expect.arrayContaining(['-p', '3307:3306', 'mysql:8']),
+    {
+      errorName: 'docker run',
+      stdio: 'ignore',
+    },
+  ]);
+  expect(runNocoBaseCommandMock.mock.calls[0]?.[1]?.env).toMatchObject({
+    DB_DIALECT: 'mysql',
+    DB_PORT: '3307',
+    DB_TEST_DISTRIBUTOR_PORT: '23450',
+    DB_TEST_PREFIX: 'test_',
+  });
+  expect(mocks.childSpawnCalls[0]?.options?.env).toMatchObject({
+    DB_DIALECT: 'mysql',
+    DB_USER: 'root',
+    DB_PASSWORD: 'nocobase',
+    DB_TEST_DISTRIBUTOR_PORT: '23450',
+    DB_TEST_PREFIX: 'test_',
+  });
+});
+
 test('test rejects conflicting server and client flags', async () => {
   const { default: Test } = await import('../commands/test.js');
 

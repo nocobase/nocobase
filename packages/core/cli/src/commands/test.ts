@@ -63,7 +63,12 @@ const DEFAULT_DB_USER = 'nocobase';
 const DEFAULT_DB_PASSWORD = 'nocobase';
 const DEFAULT_DB_DIALECT = 'postgres';
 const DEFAULT_TEST_TIMEZONE = 'UTC';
-const DEFAULT_TEST_DB_IMAGE = 'postgres:16';
+const DEFAULT_TEST_DB_IMAGES: Record<string, string> = {
+  postgres: 'postgres:16',
+  mysql: 'mysql:8',
+  mariadb: 'mariadb:11',
+  kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+};
 const DEFAULT_TEST_DB_DISTRIBUTOR_PORT = '23450';
 const DEFAULT_TEST_DB_DISTRIBUTOR_PREFIX: Record<string, string> = {
   postgres: 'test',
@@ -115,6 +120,10 @@ function defaultTestDbPort(dbDialect: string): string {
   return String(DEFAULT_DB_PORTS[dbDialect] ?? DEFAULT_DB_PORTS.postgres);
 }
 
+function defaultTestDbImage(dbDialect: string): string {
+  return DEFAULT_TEST_DB_IMAGES[dbDialect] ?? DEFAULT_TEST_DB_IMAGES.postgres;
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -143,6 +152,18 @@ function defaultTestDbDistributorPrefix(dbDialect: string): string | undefined {
 
 function supportsTestDbDistributor(dbDialect: string): boolean {
   return Boolean(defaultTestDbDistributorPrefix(dbDialect));
+}
+
+function buildTestDbDistributorEnv(env: Record<string, string>): Record<string, string> {
+  if (env.DB_DIALECT === 'mysql' || env.DB_DIALECT === 'mariadb') {
+    return {
+      ...env,
+      DB_APP_USER: env.DB_USER,
+      DB_USER: 'root',
+    };
+  }
+
+  return env;
 }
 
 async function waitForTcpPortReady(port: string, timeoutMs = 5000): Promise<void> {
@@ -199,6 +220,7 @@ async function startTestDbDistributor(params: {
     throw new Error(`Host port ${port} is unavailable for the test DB distributor. ${portError}`);
   }
 
+  const distributorEnv = buildTestDbDistributorEnv(params.env);
   const child = spawn(
     process.execPath,
     [
@@ -209,7 +231,7 @@ async function startTestDbDistributor(params: {
       cwd: params.cwd,
       env: {
         ...process.env,
-        ...params.env,
+        ...distributorEnv,
         DB_TEST_DISTRIBUTOR_PORT: port,
         DB_TEST_PREFIX: prefix,
       },
@@ -312,7 +334,7 @@ function buildTestDbConfig(params: {
     dbDatabase: trimValue(params.dbDatabase) || DEFAULT_DB_DATABASE,
     dbUser: trimValue(params.dbUser) || DEFAULT_DB_USER,
     dbPassword: trimValue(params.dbPassword) || DEFAULT_DB_PASSWORD,
-    builtinDbImage: trimValue(params.builtinDbImage) || DEFAULT_TEST_DB_IMAGE,
+    builtinDbImage: trimValue(params.builtinDbImage) || defaultTestDbImage(dbDialect),
   });
 
   return {
@@ -375,6 +397,8 @@ async function prepareTestDatabase(
     errorName: 'docker run',
     stdio: options?.stdio ?? 'ignore',
   });
+
+  await waitForTcpPortReady(nextConfig.env.DB_PORT, 30_000);
 
   return nextConfig;
 }
