@@ -36,7 +36,7 @@ export default defineCollection({
       allowNull: true,
     },
     {
-      name: 'status', // processing; pending_acceptance; pending_approval; approved; rejected; aborted;
+      name: 'status', // processing; pending_acceptance; pending_approval; approved;
       type: 'string',
       allowNull: false,
     },

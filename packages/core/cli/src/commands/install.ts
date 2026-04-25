@@ -27,7 +27,6 @@ import {
 import {
   applyCliLocale,
   localeText,
-  resolveCliLocale,
   translateCli,
 } from '../lib/cli-locale.ts';
 import {
@@ -62,12 +61,6 @@ const DEFAULT_INSTALL_BUILTIN_DB_IMAGES = {
   postgres: 'postgres:16',
   mysql: 'mysql:8',
   mariadb: 'mariadb:11',
-  kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
-} as const;
-const DEFAULT_INSTALL_BUILTIN_DB_IMAGES_ZH_CN = {
-  postgres: 'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
-  mysql: 'registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8',
-  mariadb: 'registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11',
   kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
 } as const;
 const DEFAULT_INSTALL_DB_DATABASE = 'nocobase';
@@ -183,13 +176,9 @@ export function defaultDbPortForDialect(value: PromptValue | undefined): string 
 
 function defaultBuiltinDbImageForDialect(value: PromptValue | undefined): string {
   const dialect = String(value ?? 'postgres').trim();
-  const defaults =
-    resolveCliLocale(process.env.NB_LOCALE) === 'zh-CN'
-      ? DEFAULT_INSTALL_BUILTIN_DB_IMAGES_ZH_CN
-      : DEFAULT_INSTALL_BUILTIN_DB_IMAGES;
   return supportsBuiltinDbDialect(dialect)
-    ? defaults[dialect]
-    : defaults.postgres;
+    ? DEFAULT_INSTALL_BUILTIN_DB_IMAGES[dialect]
+    : DEFAULT_INSTALL_BUILTIN_DB_IMAGES.postgres;
 }
 
 function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
@@ -1066,8 +1055,8 @@ export default class Install extends Command {
   }
 
   /**
-   * When install runs {@link Download.prompts} after app prompts, align the download
-   * output directory with app settings, while Docker registry defaults follow the CLI locale.
+   * When install runs {@link Download.prompts} after app prompts, align language and
+   * output directory defaults with the app settings collected earlier in the flow.
    */
   private static buildDownloadPromptOptionsForInstall(
     appResults: Record<string, PromptValue>,
@@ -1077,7 +1066,7 @@ export default class Install extends Command {
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
     const initialValues: PromptInitialValues = {
       lang,
-      dockerRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      dockerRegistry: defaultDockerRegistryForLang(lang),
       outputDir: appRoot,
     };
 
@@ -1318,7 +1307,7 @@ export default class Install extends Command {
         );
 
     if (dbDialect === 'postgres') {
-      const image = String(params.builtinDbImage ?? '').trim() || defaultBuiltinDbImageForDialect(dbDialect);
+      const image = String(params.builtinDbImage ?? '').trim() || DEFAULT_INSTALL_BUILTIN_DB_IMAGES.postgres;
       const dataDir = path.resolve(params.storagePath, 'db', 'postgres');
       const args = [
         'run',
@@ -1369,7 +1358,7 @@ export default class Install extends Command {
     }
 
     if (dbDialect === 'mysql') {
-      const image = String(params.builtinDbImage ?? '').trim() || defaultBuiltinDbImageForDialect(dbDialect);
+      const image = String(params.builtinDbImage ?? '').trim() || DEFAULT_INSTALL_BUILTIN_DB_IMAGES.mysql;
       const dataDir = path.resolve(params.storagePath, 'db', 'mysql');
       const dbUser = String(params.dbUser ?? DEFAULT_INSTALL_DB_USER).trim() || DEFAULT_INSTALL_DB_USER;
       const dbDatabase = String(params.dbDatabase ?? defaultDbDatabase).trim() || defaultDbDatabase;
@@ -1419,7 +1408,7 @@ export default class Install extends Command {
     }
 
     if (dbDialect === 'mariadb') {
-      const image = String(params.builtinDbImage ?? '').trim() || defaultBuiltinDbImageForDialect(dbDialect);
+      const image = String(params.builtinDbImage ?? '').trim() || DEFAULT_INSTALL_BUILTIN_DB_IMAGES.mariadb;
       const dataDir = path.resolve(params.storagePath, 'db', 'mariadb');
       const dbUser = String(params.dbUser ?? DEFAULT_INSTALL_DB_USER).trim() || DEFAULT_INSTALL_DB_USER;
       const dbDatabase = String(params.dbDatabase ?? defaultDbDatabase).trim() || defaultDbDatabase;
@@ -1469,7 +1458,7 @@ export default class Install extends Command {
     }
 
     if (dbDialect === 'kingbase') {
-      const image = String(params.builtinDbImage ?? '').trim() || defaultBuiltinDbImageForDialect(dbDialect);
+      const image = String(params.builtinDbImage ?? '').trim() || DEFAULT_INSTALL_BUILTIN_DB_IMAGES.kingbase;
       const dataDir = path.resolve(params.storagePath, 'db', 'kingbase');
       const dbUser = String(params.dbUser ?? DEFAULT_INSTALL_DB_USER).trim() || DEFAULT_INSTALL_DB_USER;
       const dbDatabase = String(params.dbDatabase ?? defaultDbDatabase).trim() || defaultDbDatabase;
@@ -1686,7 +1675,7 @@ export default class Install extends Command {
   }): DockerAppPlan {
     const dockerRegistry =
       String(downloadResultsValue(params.downloadResults, 'dockerRegistry') ?? '').trim()
-      || defaultDockerRegistryForLang(process.env.NB_LOCALE);
+      || defaultDockerRegistryForLang(params.appResults.lang);
     const version = String(downloadResultsValue(params.downloadResults, 'version') ?? '').trim() || 'latest';
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
     const storagePath =
