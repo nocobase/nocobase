@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useLangsMenu } from '../Nav/hooks';
 import './NavScreenLangs.scss';
 import { useI18n } from '@rspress/core/runtime';
-import { Link } from '@rspress/core/theme';
 import clsx from 'clsx';
 import { SvgDown } from './NavScreenMenuItem';
 
@@ -48,16 +47,16 @@ export function NavScreenLangs() {
                 {item.text}
               </span>
             ) : (
-              <Link
+              <a
                 key={item.text}
                 href={item.link}
-                className={className}
+                className={clsx(className, 'rp-link')}
                 hrefLang={item.lang}
                 lang={item.lang}
                 rel="alternate"
               >
                 {item.text}
-              </Link>
+              </a>
             );
           })}
         </div>

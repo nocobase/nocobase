@@ -134,11 +134,57 @@ export function NavMenuDivider() {
 export function NavLangs() {
   const { items, activeValue } = useLangsMenu();
 
+  // Language links must use plain <a> tags instead of Rspress's Link component,
+  // because each language is built separately with its own base (e.g., /cn/).
+  // Rspress's Link would prepend the current base to the href, producing
+  // incorrect URLs like /cn/es/ instead of /es/.
+  const customChildren = (
+    <>
+      {items.map(item => {
+        const isActive = item.text === activeValue;
+        return (
+          <li
+            key={item.text}
+            className={cls(
+              'rp-hover-group__item',
+              isActive && 'rp-hover-group__item--active',
+            )}
+          >
+            <a
+              href={item.link}
+              aria-label={item.text}
+              className="rp-hover-group__item__link rp-link"
+              hrefLang={item.lang}
+              lang={item.lang}
+              rel={item.rel}
+            >
+              {item.text}
+            </a>
+          </li>
+        );
+      })}
+    </>
+  );
+
+  const { handleMouseEnter, handleMouseLeave, hoverGroup } = useHoverGroup({
+    items: [],
+    activeMatcher: item => item.text === activeValue,
+    customChildren,
+  });
+
   return items.length > 1 ? (
-    <NavMenuItemWithChildren
-      menuItem={{ text: activeValue, items }}
-      activeMatcher={item => item.text === activeValue}
-    />
+    <li
+      className="rp-nav-menu__item"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleMouseEnter}
+    >
+      <div className="rp-nav-menu__item__container">
+        {activeValue}
+        <SvgDown className="rp-nav-menu__item__icon" />
+      </div>
+      {hoverGroup}
+    </li>
   ) : null;
 }
 
