@@ -312,10 +312,6 @@ TreeBlockModel.registerFlow({
       use: 'dataScope',
       title: tExpr('Data scope'),
     },
-    defaultSorting: {
-      use: 'sortingRule',
-      title: tExpr('Default sorting'),
-    },
     connectFields: {
       use: treeConnectDataBlocks.name,
       title: tExpr('Connect data blocks'),
