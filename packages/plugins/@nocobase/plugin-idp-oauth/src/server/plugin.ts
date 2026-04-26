@@ -54,6 +54,7 @@ export class PluginIdpOauthServer extends Plugin {
       },
       {
         tag: 'idp-oauth-provider',
+        after: 'bodyParser',
         before: 'dataSource',
       },
     );

@@ -406,12 +406,24 @@ export class IdpOauthService {
   }
 
   async resolveInteractionBridgeUser(ctx: any) {
-    const { bridge_token: token, bridge_authenticator: authenticator } = ctx.request.body || {};
+    const { bridge_token: bridgeToken, bridge_authenticator: bridgeAuthenticator } =
+      (ctx.request.body as Record<string, any>) || {};
+    const bearerToken = ctx.getBearerToken?.();
+    const token = typeof bridgeToken === 'string' && bridgeToken ? bridgeToken : bearerToken;
     if (!token || typeof token !== 'string') {
+      ctx.logger?.debug?.('idp-oauth interaction bridge user missing token', {
+        path: ctx.path,
+        hasBridgeToken: !!bridgeToken,
+        hasBearerToken: !!bearerToken,
+      });
       return undefined;
     }
 
-    const authenticatorName = typeof authenticator === 'string' && authenticator ? authenticator : 'basic';
+    const headerAuthenticator = ctx.get?.('x-authenticator');
+    const authenticatorName =
+      typeof bridgeAuthenticator === 'string' && bridgeAuthenticator
+        ? bridgeAuthenticator
+        : headerAuthenticator || 'basic';
     try {
       const auth = await ctx.app.authManager.get(authenticatorName, {
         app: ctx.app,
@@ -458,7 +470,12 @@ export class IdpOauthService {
         return user;
       }
       return undefined;
-    } catch (_error) {
+    } catch (error) {
+      ctx.logger?.debug?.('idp-oauth interaction bridge user failed', {
+        path: ctx.path,
+        authenticator: authenticatorName,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return undefined;
     }
   }
