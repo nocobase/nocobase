@@ -76,6 +76,7 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'chart',
   'actionPanel',
   'jsBlock',
+  'tree',
 ] as const;
 
 const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
@@ -217,6 +218,24 @@ function assertApplyBlueprintKanbanMainContent(block: Record<string, any>, conte
   }
   if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
     throwBadRequest(`${context}.recordActions is not supported on kanban main blocks in v1`);
+  }
+}
+
+function assertApplyBlueprintTreeMainContent(block: Record<string, any>, context: string) {
+  if (readOptionalString(block.type) !== 'tree') {
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fields')) {
+    throwBadRequest(`${context}.fields is not supported on tree blocks`);
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'fieldGroups')) {
+    throwBadRequest(`${context}.fieldGroups is not supported on tree blocks`);
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'actions')) {
+    throwBadRequest(`${context}.actions is not supported on tree blocks`);
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
+    throwBadRequest(`${context}.recordActions is not supported on tree blocks`);
   }
 }
 
@@ -1097,6 +1116,7 @@ function compileBlocks(
     }
     assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
+    assertApplyBlueprintTreeMainContent(block, `${context}[${index}]`);
     const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
     fields.forEach((field: any, fieldIndex: number) => {
       if (typeof field?.target !== 'string' || !field.target.trim()) {
@@ -1118,6 +1138,7 @@ function compileBlocks(
     assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
     assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
+    assertApplyBlueprintTreeMainContent(block, `${context}[${index}]`);
     const explicitKey = readString(block.key);
     const fallback = block.type ? `${block.type}_${index + 1}` : `block_${index + 1}`;
     const localKey = normalizeBlueprintLocalKey(block.key, fallback, `${context}[${index}].key`);
@@ -1220,10 +1241,14 @@ function compileBlocks(
       resource: buildBlockResource(block, blockContext),
       template,
       settings: Object.keys(settings).length ? settings : undefined,
-      fields: blockType === 'calendar' ? undefined : fields,
-      fieldsLayout: blockType === 'calendar' || blockType === 'kanban' ? undefined : fieldsLayout,
-      actions: actionsWithDefaultFilter,
-      recordActions: blockType === 'calendar' || blockType === 'kanban' ? undefined : mergedActions.recordActions,
+      fields: blockType === 'calendar' || blockType === 'tree' ? undefined : fields,
+      fieldsLayout:
+        blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree' ? undefined : fieldsLayout,
+      actions: blockType === 'tree' ? undefined : actionsWithDefaultFilter,
+      recordActions:
+        blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree'
+          ? undefined
+          : mergedActions.recordActions,
     });
   });
 

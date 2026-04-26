@@ -408,6 +408,7 @@ type KanbanPopupActionKey = (typeof KANBAN_POPUP_ACTION_KEYS)[number];
 const CANONICAL_BLOCK_HEADER_USES = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'TreeBlockModel',
   'KanbanBlockModel',
   'FormBlockModel',
   'CreateFormModel',
@@ -434,6 +435,7 @@ const OPEN_VIEW_SUPPORTED_MODES = new Set(['drawer', 'dialog', 'embed']);
 const FILTER_TARGET_BLOCK_USES = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'TreeBlockModel',
   'KanbanBlockModel',
   'DetailsBlockModel',
   'ListBlockModel',
@@ -573,6 +575,7 @@ const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectio
   CommentsBlockModel: ['one', 'many'],
   TableBlockModel: ['many'],
   CalendarBlockModel: ['many'],
+  TreeBlockModel: ['filter'],
   KanbanBlockModel: ['many'],
   ListBlockModel: ['many'],
   GridCardBlockModel: ['many'],
@@ -5120,6 +5123,9 @@ export class FlowSurfacesService {
     }
     if (current?.use === 'CalendarBlockModel') {
       return this.configureCalendarBlock(target, current, values.changes, options);
+    }
+    if (current?.use === 'TreeBlockModel') {
+      return this.configureTreeBlock(target, current, values.changes, options);
     }
     if (current?.use === 'KanbanBlockModel') {
       return this.configureKanbanBlock(target, current, values.changes, options);
@@ -11915,6 +11921,7 @@ export class FlowSurfacesService {
     );
     const hasFields = Object.prototype.hasOwnProperty.call(input, 'fields');
     const hasFieldGroups = Object.prototype.hasOwnProperty.call(input, 'fieldGroups');
+    const hasActions = Object.prototype.hasOwnProperty.call(input, 'actions');
     const hasRecordActions = Object.prototype.hasOwnProperty.call(input, 'recordActions');
     if (type === 'calendar') {
       if (hasFields) {
@@ -11958,6 +11965,23 @@ export class FlowSurfacesService {
         throwBadRequest(
           `flowSurfaces compose block #${index + 1} kanban does not support fieldsLayout on the main block`,
         );
+      }
+    }
+    if (type === 'tree') {
+      if (hasFields) {
+        throwBadRequest(`flowSurfaces compose block #${index + 1} tree does not support fields[]`);
+      }
+      if (hasFieldGroups) {
+        throwBadRequest(`flowSurfaces compose block #${index + 1} tree does not support fieldGroups[]`);
+      }
+      if (hasActions) {
+        throwBadRequest(`flowSurfaces compose block #${index + 1} tree does not support actions[]`);
+      }
+      if (hasRecordActions) {
+        throwBadRequest(`flowSurfaces compose block #${index + 1} tree does not support recordActions[]`);
+      }
+      if (Object.prototype.hasOwnProperty.call(input, 'fieldsLayout')) {
+        throwBadRequest(`flowSurfaces compose block #${index + 1} tree does not support fieldsLayout`);
       }
     }
     if (hasFields && hasFieldGroups) {
@@ -12616,6 +12640,84 @@ export class FlowSurfacesService {
     });
     await this.ensureCalendarBlockPopupHosts(reloaded, options.transaction);
     return result;
+  }
+
+  private async configureTreeBlock(
+    target: FlowSurfaceWriteTarget,
+    current: any,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
+    const allowedKeys = getConfigureOptionKeysForUse('TreeBlockModel');
+    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    assertSupportedSimpleChanges('tree', changes, allowedKeys);
+
+    const nextFieldNames = _.isPlainObject(changes.fieldNames)
+      ? _.merge({}, current?.props?.fieldNames || {}, changes.fieldNames)
+      : _.cloneDeep(current?.props?.fieldNames || {});
+    if (hasOwnDefined(changes, 'titleField')) {
+      nextFieldNames.title = String(changes.titleField || '').trim();
+    }
+    const hasFieldNamesPatch = hasOwnDefined(changes, 'titleField') || _.isPlainObject(changes.fieldNames);
+
+    return this.updateSettings(
+      {
+        target,
+        props: buildDefinedPayload({
+          ...(hasOwnDefined(changes, 'searchable') ? { searchable: changes.searchable !== false } : {}),
+          ...(hasOwnDefined(changes, 'defaultExpandAll')
+            ? { defaultExpandAll: changes.defaultExpandAll === true }
+            : {}),
+          ...(hasOwnDefined(changes, 'includeDescendants')
+            ? { includeDescendants: changes.includeDescendants !== false }
+            : {}),
+          ...(hasFieldNamesPatch ? { fieldNames: nextFieldNames } : {}),
+          ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: changes.pageSize } : {}),
+        }),
+        decoratorProps: buildDefinedPayload({
+          height: changes.height,
+          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
+        }),
+        stepParams: {
+          ...(cardSettings ? { cardSettings } : {}),
+          ...(changes.resource
+            ? {
+                resourceSettings: {
+                  init: normalizeSimpleResourceInit(changes.resource),
+                },
+              }
+            : {}),
+          ...(hasDefinedValue(changes, [
+            'searchable',
+            'defaultExpandAll',
+            'includeDescendants',
+            'titleField',
+            'pageSize',
+            'dataScope',
+            'sorting',
+          ])
+            ? {
+                treeSettings: buildDefinedPayload({
+                  ...(hasOwnDefined(changes, 'searchable')
+                    ? { searchable: { searchable: changes.searchable !== false } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'defaultExpandAll')
+                    ? { defaultExpandAll: { defaultExpandAll: changes.defaultExpandAll === true } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'includeDescendants')
+                    ? { includeDescendants: { includeDescendants: changes.includeDescendants !== false } }
+                    : {}),
+                  ...(hasOwnDefined(changes, 'titleField') ? { titleField: { titleField: nextFieldNames.title } } : {}),
+                  ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: { pageSize: changes.pageSize } } : {}),
+                  ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting') ? { defaultSorting: { sort: changes.sorting } } : {}),
+                }),
+              }
+            : {}),
+        },
+      },
+      options,
+    );
   }
 
   private async configureKanbanBlock(

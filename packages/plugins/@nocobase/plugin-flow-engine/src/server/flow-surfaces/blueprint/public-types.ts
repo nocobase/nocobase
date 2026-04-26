@@ -182,7 +182,8 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'iframe'
   | 'chart'
   | 'actionPanel'
-  | 'jsBlock';
+  | 'jsBlock'
+  | 'tree';
 
 export type FlowSurfaceApplyBlueprintBlockSpec = {
   key?: string;

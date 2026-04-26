@@ -331,6 +331,36 @@ const CALENDAR_SETTINGS_GROUP = {
     'linkageRules.value': ARRAY_SCHEMA,
   },
 };
+const TREE_BLOCK_PROP_SCHEMAS = {
+  searchable: BOOLEAN_SCHEMA,
+  defaultExpandAll: BOOLEAN_SCHEMA,
+  includeDescendants: BOOLEAN_SCHEMA,
+  fieldNames: OBJECT_SCHEMA,
+  pageSize: NUMBER_SCHEMA,
+};
+const TREE_SETTINGS_GROUP = {
+  allowedPaths: [
+    'searchable.searchable',
+    'defaultExpandAll.defaultExpandAll',
+    'includeDescendants.includeDescendants',
+    'titleField.titleField',
+    'pageSize.pageSize',
+    'dataScope.filter',
+    'defaultSorting.sort',
+  ],
+  clearable: true,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['treeSettings', 'dataScope', 'defaultSorting'],
+  pathSchemas: {
+    'searchable.searchable': BOOLEAN_SCHEMA,
+    'defaultExpandAll.defaultExpandAll': BOOLEAN_SCHEMA,
+    'includeDescendants.includeDescendants': BOOLEAN_SCHEMA,
+    'titleField.titleField': STRING_SCHEMA,
+    'pageSize.pageSize': NUMBER_SCHEMA,
+    'dataScope.filter': FILTER_GROUP_SCHEMA,
+    'defaultSorting.sort': ARRAY_SCHEMA,
+  },
+};
 const KANBAN_SETTINGS_GROUP = {
   allowedPaths: [
     'grouping.groupField',
@@ -984,6 +1014,28 @@ const CALENDAR_BLOCK_CONTRACT = createContract({
 CALENDAR_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   calendarSettings: CALENDAR_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
+});
+
+const TREE_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ['searchable', 'defaultExpandAll', 'includeDescendants', 'fieldNames', 'pageSize'],
+  decoratorProps: ['height', 'heightMode'],
+  stepParams: ['resourceSettings', 'treeSettings', 'cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+TREE_BLOCK_CONTRACT.domains.props = keyedDomain(
+  ['searchable', 'defaultExpandAll', 'includeDescendants', 'fieldNames', 'pageSize'],
+  'deep',
+  TREE_BLOCK_PROP_SCHEMAS,
+);
+TREE_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: RESOURCE_SETTINGS_GROUP,
+  treeSettings: TREE_SETTINGS_GROUP,
   cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
@@ -2496,6 +2548,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
   ['CalendarBlockModel', CALENDAR_BLOCK_CONTRACT],
+  ['TreeBlockModel', TREE_BLOCK_CONTRACT],
   ['KanbanBlockModel', KANBAN_BLOCK_CONTRACT],
   ['CreateFormModel', CREATE_FORM_BLOCK_CONTRACT],
   ['EditFormModel', EDIT_FORM_BLOCK_CONTRACT],
@@ -3069,6 +3122,7 @@ export function getAvailableActionCatalogItems(
 const COLLECTION_RESOURCE_REQUIRED = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'TreeBlockModel',
   'KanbanBlockModel',
   'CreateFormModel',
   'EditFormModel',

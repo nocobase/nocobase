@@ -1146,6 +1146,15 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
       },
     };
   }
+  if (use === 'TreeBlockModel') {
+    return {
+      props: {
+        searchable: true,
+        defaultExpandAll: false,
+        includeDescendants: true,
+      },
+    };
+  }
   return {};
 }
 

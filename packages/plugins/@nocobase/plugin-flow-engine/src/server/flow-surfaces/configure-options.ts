@@ -241,6 +241,20 @@ const CALENDAR_OPTIONS: FlowSurfaceConfigureOptions = {
   eventPopup: OPEN_VIEW,
 };
 
+const TREE_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  searchable: booleanOption('Whether search is enabled', { example: true }),
+  defaultExpandAll: booleanOption('Whether all tree nodes are expanded by default', { example: false }),
+  includeDescendants: booleanOption('Whether child nodes are included when filtering', { example: true }),
+  titleField: stringOption('Tree node title field', { example: 'title' }),
+  fieldNames: objectOption('Tree field names', { example: { title: 'title', key: 'id', children: 'children' } }),
+  pageSize: numberOption('Root records per page', { example: 200 }),
+  dataScope: FILTER_GROUP,
+  sorting: SORTING,
+};
+
 const KANBAN_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_HEADER_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
@@ -809,6 +823,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'CalendarBlockModel':
       options = cloneOptions(CALENDAR_OPTIONS);
+      break;
+    case 'TreeBlockModel':
+      options = cloneOptions(TREE_OPTIONS);
       break;
     case 'KanbanBlockModel':
       options = cloneOptions(KANBAN_OPTIONS);

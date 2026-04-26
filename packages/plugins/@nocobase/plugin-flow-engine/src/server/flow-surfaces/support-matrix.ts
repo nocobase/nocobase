@@ -246,6 +246,17 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
     readbackSupported: true,
     createSupported: true,
   },
+  {
+    key: 'tree',
+    label: 'Tree',
+    modelUse: 'TreeBlockModel',
+    ownerPlugin: '@nocobase/plugin-block-tree',
+    topLevelAddable: true,
+    formalBuiltin: false,
+    fixtureCaptured: false,
+    readbackSupported: true,
+    createSupported: true,
+  },
 ];
 
 function hasFormalFlowSurfaceBlockKey(
