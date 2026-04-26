@@ -20,7 +20,7 @@ You can configure LLM services from either entry:
 1. Admin entry: `System Settings -> AI Employees -> LLM Service`.
 2. Frontend shortcut: In the AI chat panel, click the "Add LLM Service" shortcut when selecting a model to jump directly to configuration.
 
-![quick-start-model-switcher-add-llm-service.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/quick-start-model-switcher-add-llm-service.png)
+![20260425172540](https://static-docs.nocobase.com/20260425172540.png)
 
 Usually you need to:
 
