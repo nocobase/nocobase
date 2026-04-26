@@ -5174,7 +5174,10 @@ export class FlowSurfacesService {
       return this.configureFieldNode(target, values.changes, options);
     }
     if (ACTION_BUTTON_USES.has(current?.use || '')) {
-      return this.configureActionNode(target, current.use, values.changes, options);
+      return this.configureActionNode(target, current.use, values.changes, {
+        ...options,
+        current,
+      });
     }
 
     throwBadRequest(`flowSurfaces configure does not support configureOptions on '${current?.use || resolved.uid}'`);
@@ -14089,8 +14092,9 @@ export class FlowSurfacesService {
     target: FlowSurfaceWriteTarget,
     use: string,
     changes: Record<string, any>,
-    options: { transaction?: any; openViewActionName?: string },
+    options: { transaction?: any; openViewActionName?: string; current?: any },
   ) {
+    changes = await this.normalizeActionPanelActionChanges(changes, options);
     const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
     const normalizedDefaultFilter = hasOwnDefined(changes, 'defaultFilter')
@@ -14333,6 +14337,27 @@ export class FlowSurfacesService {
         popupTemplateHostUid: target.uid,
       },
     );
+  }
+
+  private async normalizeActionPanelActionChanges(
+    changes: Record<string, any>,
+    options: { transaction?: any; current?: any },
+  ) {
+    if (!hasOwnDefined(changes, 'type') || !options.current?.uid) {
+      return changes;
+    }
+    const parentUid =
+      options.current.parentId || (await this.locator.findParentUid(options.current.uid, options.transaction));
+    const parentNode = parentUid
+      ? await this.repository.findModelById(parentUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        })
+      : null;
+    if (parentNode?.use !== 'ActionPanelBlockModel') {
+      return changes;
+    }
+    return _.omit(changes, ['type']);
   }
 
   private async buildFieldCatalog(

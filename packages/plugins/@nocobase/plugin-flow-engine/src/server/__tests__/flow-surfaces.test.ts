@@ -1160,6 +1160,65 @@ describe('flowSurfaces resource', () => {
     expect(expandCollapseReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
   });
 
+  it('should ignore button type for actions directly under an action panel', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Action panel button type page',
+      tabTitle: 'Action panel button type tab',
+    });
+    const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const panelJsAction = await addAction(rootAgent, actionPanelUid, 'js', {
+      settings: {
+        title: 'Run panel code',
+        type: 'primary',
+        code: "return 'panel';",
+        version: '1.0.0',
+      },
+    });
+    const panelReadback = await getSurface(rootAgent, { uid: panelJsAction.uid });
+    expect(panelReadback.tree.use).toBe('JSActionModel');
+    expect(panelReadback.tree.props?.title).toBe('Run panel code');
+    expect(panelReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Run panel code');
+    expect(panelReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
+      code: "return 'panel';",
+      version: '1.0.0',
+    });
+    expect(panelReadback.tree.props?.type).not.toBe('primary');
+    expect(panelReadback.tree.stepParams?.buttonSettings?.general?.type).not.toBe('primary');
+
+    const configurePanelRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: panelJsAction.uid },
+        changes: {
+          title: 'Run panel code configured',
+          type: 'primary',
+        },
+      },
+    });
+    expect(configurePanelRes.status).toBe(200);
+    const configuredPanelReadback = await getSurface(rootAgent, { uid: panelJsAction.uid });
+    expect(configuredPanelReadback.tree.props?.title).toBe('Run panel code configured');
+    expect(configuredPanelReadback.tree.props?.type).not.toBe('primary');
+    expect(configuredPanelReadback.tree.stepParams?.buttonSettings?.general?.type).not.toBe('primary');
+
+    const formJsAction = await addAction(rootAgent, createFormUid, 'js', {
+      settings: {
+        title: 'Run form code',
+        type: 'primary',
+        code: "return 'form';",
+        version: '1.0.0',
+      },
+    });
+    const formReadback = await getSurface(rootAgent, { uid: formJsAction.uid });
+    expect(formReadback.tree.use).toBe('JSFormActionModel');
+    expect(formReadback.tree.props?.type).toBe('primary');
+    expect(formReadback.tree.stepParams?.buttonSettings?.general?.type).toBe('primary');
+  });
+
   it('should persist canonical block headers through configure for representative block families', async () => {
     const page = await createPage(rootAgent, {
       title: 'Canonical block header page',
