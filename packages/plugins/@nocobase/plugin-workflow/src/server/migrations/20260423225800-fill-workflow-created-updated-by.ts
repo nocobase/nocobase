@@ -11,7 +11,7 @@ import { Op } from 'sequelize';
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<2.1.0-alpha.21';
+  appVersion = '<2.1.0-beta.20';
 
   async up() {
     const { db } = this.context;
