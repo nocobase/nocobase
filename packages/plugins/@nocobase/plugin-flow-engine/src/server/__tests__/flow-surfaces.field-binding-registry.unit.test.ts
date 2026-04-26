@@ -251,4 +251,46 @@ describe('flowSurfaces field binding registry', () => {
       })?.has('CheckboxGroupFieldModel'),
     ).toBe(true);
   });
+
+  it('should expose generic relation fieldComponent sets that match current frontend wrappers', () => {
+    const singleAssociationField = {
+      interface: 'm2o',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+    const multiAssociationField = {
+      interface: 'm2m',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'FormItemModel', field: singleAssociationField }) || [],
+      ),
+    ).toEqual(['RecordSelectFieldModel', 'RecordPickerFieldModel', 'SubFormFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'FormItemModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual([
+      'RecordSelectFieldModel',
+      'RecordPickerFieldModel',
+      'SubFormListFieldModel',
+      'SubTableFieldModel',
+      'PopupSubTableFieldModel',
+    ]);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'DetailsItemModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'TableColumnModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
+  });
 });

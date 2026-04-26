@@ -656,6 +656,7 @@ export function buildFieldTree(params: BuildFieldParams) {
               },
             }),
           ),
+          ...(fieldDefaults.subModels ? { subModels: _.cloneDeep(fieldDefaults.subModels) } : {}),
         },
       },
     },
@@ -1148,8 +1149,28 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
   return {};
 }
 
-function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
+export function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
   switch (use) {
+    case 'PopupSubTableFieldModel':
+      return {
+        subModels: {
+          subTableColumns: [
+            {
+              use: 'PopupSubTableActionsColumnModel',
+              subModels: {
+                actions: [
+                  {
+                    use: 'PopupSubTableEditActionModel',
+                  },
+                  {
+                    use: 'PopupSubTableRemoveActionModel',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
     case 'JSFieldModel':
       return {
         stepParams: {

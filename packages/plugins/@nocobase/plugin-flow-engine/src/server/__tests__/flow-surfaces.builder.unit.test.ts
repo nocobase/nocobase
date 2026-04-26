@@ -9,7 +9,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildApprovalActionDefaults } from '../flow-surfaces/approval/builder';
-import { buildActionTree, buildPopupPageTree, buildStandaloneFieldNode } from '../flow-surfaces/builder';
+import {
+  buildActionTree,
+  buildFieldTree,
+  buildPopupPageTree,
+  buildStandaloneFieldNode,
+} from '../flow-surfaces/builder';
 
 describe('flowSurfaces builder translation defaults', () => {
   it('should persist translatable core default strings', () => {
@@ -126,6 +131,37 @@ describe('flowSurfaces builder action style defaults', () => {
     expect(detailsEditAction.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'default',
       icon: 'EditOutlined',
+    });
+  });
+});
+
+describe('flowSurfaces builder relation field defaults', () => {
+  it('should create PopupSubTableFieldModel with default actions column and edit/remove actions', () => {
+    const fieldTree = buildFieldTree({
+      wrapperUse: 'FormItemModel',
+      fieldUse: 'PopupSubTableFieldModel',
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+
+    expect(fieldTree.model).toMatchObject({
+      use: 'FormItemModel',
+      subModels: {
+        field: {
+          use: 'PopupSubTableFieldModel',
+          subModels: {
+            subTableColumns: [
+              {
+                use: 'PopupSubTableActionsColumnModel',
+                subModels: {
+                  actions: [{ use: 'PopupSubTableEditActionModel' }, { use: 'PopupSubTableRemoveActionModel' }],
+                },
+              },
+            ],
+          },
+        },
+      },
     });
   });
 });

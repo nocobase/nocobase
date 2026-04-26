@@ -815,6 +815,7 @@ function createFieldNode(
       dataSourceKey: fieldInit.dataSourceKey,
       collectionName: fieldInit.collectionName,
       ...(requestedRenderer ? { renderer: requestedRenderer } : {}),
+      ...(innerField?.stepParams?.fieldBinding?.use ? { fieldComponent: innerField.stepParams.fieldBinding.use } : {}),
       ...(fieldCapability.fieldUse ? { fieldUse: fieldCapability.fieldUse } : {}),
       ...(defaultTargetUid ? { defaultTargetUid } : {}),
       ...(popup ? { popup } : {}),

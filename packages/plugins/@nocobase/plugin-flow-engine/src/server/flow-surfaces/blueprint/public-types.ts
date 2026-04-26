@@ -109,6 +109,7 @@ export type FlowSurfaceApplyBlueprintFieldObjectSpec = {
   associationPathName?: string;
   renderer?: string;
   type?: string;
+  fieldComponent?: string;
   label?: string;
   target?: string;
   settings?: Record<string, any>;

@@ -4299,6 +4299,46 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
   });
 
+  it('should apply relation fieldComponent on blueprint field objects without creating standalone table blocks', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint relation fieldComponent',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'userForm',
+                type: 'createForm',
+                collection: 'users',
+                fields: [
+                  {
+                    key: 'rolesField',
+                    field: 'roles',
+                    fieldComponent: 'PopupSubTableFieldModel',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const formBlock = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items?.[0];
+    const formItems = _.castArray(formBlock?.subModels?.grid?.subModels?.items || []);
+    expect(formItems).toHaveLength(1);
+    expect(formItems[0]?.use).toBe('FormItemModel');
+    expect(formItems[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+  });
+
   it('should reject fieldsLayout on applyBlueprint blocks that do not own a field grid', async () => {
     const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

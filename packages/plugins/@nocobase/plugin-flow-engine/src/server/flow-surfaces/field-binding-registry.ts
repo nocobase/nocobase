@@ -7,8 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MULTI_VALUE_ASSOCIATION_INTERFACES, SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { normalizeFieldContainerKind } from './field-semantics';
 import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
+
+export { MULTI_VALUE_ASSOCIATION_INTERFACES, SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 
 export type FlowSurfaceFieldBindingScope = 'display' | 'editable' | 'filter';
 

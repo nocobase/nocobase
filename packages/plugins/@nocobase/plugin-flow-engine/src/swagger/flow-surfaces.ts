@@ -969,7 +969,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultFilter`, `defaultActionSettings`, or `template`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` items may use block-level `defaultFilter` to backfill the auto-created default filter action; backend runtime compatibility remains tolerant of omitted or empty values. Legacy `defaultActionSettings.filter.defaultFilter` is still supported for compatibility and wins when both are provided. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultFilter`, `defaultActionSettings`, `template`, or inline `fields` / `fieldsLayout`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Inline fields use the same public field semantics as compose/addField, including relation `fieldComponent`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` items may use block-level `defaultFilter` to backfill the auto-created default filter action; backend runtime compatibility remains tolerant of omitted or empty values. Legacy `defaultActionSettings.filter.defaultFilter` is still supported for compatibility and wins when both are provided. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -2158,6 +2158,11 @@ const schemas = {
           },
           fieldPath: {
             type: 'string',
+          },
+          fieldComponent: {
+            type: 'string',
+            description:
+              'Preferred public field model semantic for relation fields, for example PopupSubTableFieldModel.',
           },
           renderer: {
             type: 'string',
@@ -3443,6 +3448,11 @@ const schemas = {
           associationPathName: { type: 'string' },
           renderer: { type: 'string' },
           type: { type: 'string' },
+          fieldComponent: {
+            type: 'string',
+            description:
+              'Preferred public field model semantic for relation fields, for example PopupSubTableFieldModel.',
+          },
           label: { type: 'string' },
           target: {
             type: 'string',
@@ -4361,6 +4371,11 @@ const schemas = {
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeFieldSpec'),
+      },
+      fieldsLayout: ref('FlowSurfaceComposeLayout'),
       settings: ANY_OBJECT_SCHEMA,
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
@@ -4454,7 +4469,12 @@ const schemas = {
       },
       fieldUse: {
         type: 'string',
-        description: 'Optional compatibility check. The server infers the actual field use from catalog capabilities.',
+        description:
+          'Legacy compatibility alias. Prefer fieldComponent; the server infers and validates the actual field use from catalog capabilities.',
+      },
+      fieldComponent: {
+        type: 'string',
+        description: 'Preferred public field model semantic for relation fields, for example PopupSubTableFieldModel.',
       },
       defaultTargetUid: {
         type: 'string',
@@ -4630,6 +4650,11 @@ const schemas = {
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeFieldSpec'),
+      },
+      fieldsLayout: ref('FlowSurfaceComposeLayout'),
       settings: ANY_OBJECT_SCHEMA,
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
@@ -4676,6 +4701,12 @@ const schemas = {
       },
       fieldUse: {
         type: 'string',
+        description:
+          'Legacy compatibility alias. Prefer fieldComponent; the server infers and validates the actual field use from catalog capabilities.',
+      },
+      fieldComponent: {
+        type: 'string',
+        description: 'Preferred public field model semantic for relation fields, for example PopupSubTableFieldModel.',
       },
       defaultTargetUid: {
         type: 'string',

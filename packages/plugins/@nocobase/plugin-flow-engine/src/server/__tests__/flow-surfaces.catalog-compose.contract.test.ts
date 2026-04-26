@@ -1885,6 +1885,149 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(usernameFilterReadback.tree.stepParams?.filterFormItemSettings?.init?.defaultTargetUid).toBe(tableBlock.uid);
   });
 
+  it('should compose relation fields with fieldComponent on form blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose relation fieldComponent page',
+      tabTitle: 'Compose relation fieldComponent tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'userForm',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: [
+                {
+                  key: 'rolesField',
+                  fieldPath: 'roles',
+                  fieldComponent: 'PopupSubTableFieldModel',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const formBlock = getComposeBlock(composeRes, 'userForm');
+    const formSurface = await getSurface(rootAgent, {
+      uid: formBlock.uid,
+    });
+    const formItems = _.castArray(formSurface.tree?.subModels?.grid?.subModels?.items || []);
+    expect(formItems).toHaveLength(1);
+    expect(formItems[0]?.use).toBe('FormItemModel');
+    expect(formItems[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+  });
+
+  it('should addBlock with inline fields that use relation fieldComponent semantics', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'AddBlock inline relation fields page',
+      tabTitle: 'AddBlock inline relation fields tab',
+    });
+
+    const addBlockByTypeRes = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'createForm',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+          },
+          fields: [
+            {
+              key: 'rolesField',
+              fieldPath: 'roles',
+              fieldComponent: 'PopupSubTableFieldModel',
+            },
+          ],
+        },
+      }),
+    );
+
+    const blockByTypeSurface = await getSurface(rootAgent, {
+      uid: addBlockByTypeRes.uid,
+    });
+    const formItemsByType = _.castArray(blockByTypeSurface.tree?.subModels?.grid?.subModels?.items || []);
+    expect(formItemsByType).toHaveLength(1);
+    expect(formItemsByType[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+
+    const addBlockByUseRes = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          use: 'CreateFormModel',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+          },
+          fields: [
+            {
+              key: 'rolesFieldByUse',
+              fieldPath: 'roles',
+              fieldComponent: 'PopupSubTableFieldModel',
+            },
+          ],
+        },
+      }),
+    );
+
+    const blockByUseSurface = await getSurface(rootAgent, {
+      uid: addBlockByUseRes.uid,
+    });
+    const formItemsByUse = _.castArray(blockByUseSurface.tree?.subModels?.grid?.subModels?.items || []);
+    expect(formItemsByUse).toHaveLength(1);
+    expect(formItemsByUse[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+
+    const addBlocksData = getData(
+      await rootAgent.resource('flowSurfaces').addBlocks({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'batchUserForm',
+              type: 'createForm',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: [
+                {
+                  key: 'batchRolesField',
+                  fieldPath: 'roles',
+                  fieldComponent: 'PopupSubTableFieldModel',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(addBlocksData.successCount).toBe(1);
+    const batchBlockSurface = await getSurface(rootAgent, {
+      uid: addBlocksData.blocks[0].result.uid,
+    });
+    const batchFormItems = _.castArray(batchBlockSurface.tree?.subModels?.grid?.subModels?.items || []);
+    expect(batchFormItems).toHaveLength(1);
+    expect(batchFormItems[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+  });
+
   it('should reject fieldsLayout on compose blocks that do not own a field grid', async () => {
     const page = await createPage(rootAgent, {
       title: 'Invalid compose fieldsLayout page',

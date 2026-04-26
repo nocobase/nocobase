@@ -4272,6 +4272,165 @@ describe('flowSurfaces resource', () => {
     });
   });
 
+  it('should create and switch generic relation fields with fieldComponent semantics', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Generic relation fieldComponent page',
+      tabTitle: 'Generic relation fieldComponent tab',
+    });
+
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+
+    const rolesCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: formUid,
+          },
+        },
+      }),
+    ).fields.find((item: any) => item.key === 'roles');
+    expect(rolesCatalog.fieldUse).toBe('RecordSelectFieldModel');
+
+    const createdRolesField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: formUid,
+          },
+          fieldPath: 'roles',
+          fieldComponent: 'PopupSubTableFieldModel',
+        },
+      }),
+    );
+    expect(createdRolesField.fieldUse).toBe('PopupSubTableFieldModel');
+
+    const createdRolesWrapperReadback = await getSurface(rootAgent, {
+      uid: createdRolesField.wrapperUid,
+    });
+    const createdRolesInnerReadback = await getSurface(rootAgent, {
+      uid: createdRolesField.fieldUid,
+    });
+    expect(createdRolesWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBeUndefined();
+    expect(createdRolesInnerReadback.tree.use).toBe('PopupSubTableFieldModel');
+    expect(createdRolesInnerReadback.tree.subModels?.subTableColumns?.[0]?.use).toBe('PopupSubTableActionsColumnModel');
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns?.[0]?.subModels?.actions || []).map(
+        (item: any) => item.use,
+      ),
+    ).toEqual(['PopupSubTableEditActionModel', 'PopupSubTableRemoveActionModel']);
+
+    const addFieldsData = getData(
+      await rootAgent.resource('flowSurfaces').addFields({
+        values: {
+          target: {
+            uid: formUid,
+          },
+          fields: [
+            {
+              key: 'batchRolesField',
+              fieldPath: 'roles',
+              fieldComponent: 'PopupSubTableFieldModel',
+            },
+          ],
+        },
+      }),
+    );
+    expect(addFieldsData.successCount).toBe(1);
+    expect(addFieldsData.fields[0].ok).toBe(true);
+    expect(addFieldsData.fields[0].result.fieldUse).toBe('PopupSubTableFieldModel');
+    const batchRolesInnerReadback = await getSurface(rootAgent, {
+      uid: addFieldsData.fields[0].result.fieldUid,
+    });
+    expect(batchRolesInnerReadback.tree.use).toBe('PopupSubTableFieldModel');
+    expect(batchRolesInnerReadback.tree.subModels?.subTableColumns?.[0]?.use).toBe('PopupSubTableActionsColumnModel');
+
+    const defaultRolesField = await addField(rootAgent, formUid, 'roles');
+    const switchRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: defaultRolesField.wrapperUid,
+        },
+        changes: {
+          fieldComponent: 'PopupSubTableFieldModel',
+        },
+      },
+    });
+    expect(switchRes.status).toBe(200);
+
+    const switchedRolesWrapper = await getSurface(rootAgent, {
+      uid: defaultRolesField.wrapperUid,
+    });
+    const switchedRolesInner = await getSurface(rootAgent, {
+      uid: defaultRolesField.fieldUid,
+    });
+    expect(switchedRolesWrapper.tree.stepParams?.editItemSettings?.model?.use).toBe('PopupSubTableFieldModel');
+    expect(switchedRolesInner.tree.stepParams?.fieldBinding?.use).toBe('PopupSubTableFieldModel');
+    expect(switchedRolesInner.tree.subModels?.subTableColumns?.[0]?.use).toBe('PopupSubTableActionsColumnModel');
+
+    const configureInnerTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: defaultRolesField.fieldUid,
+        },
+        changes: {
+          titleField: 'title',
+        },
+      },
+    });
+    expect(configureInnerTitleFieldRes.status).toBe(200);
+    const innerTitleFieldReadback = await getSurface(rootAgent, {
+      uid: defaultRolesField.fieldUid,
+    });
+    expect(innerTitleFieldReadback.tree.props?.titleField).toBe('title');
+
+    const customSubModels = _.cloneDeep(innerTitleFieldReadback.tree.subModels || {});
+    customSubModels.subTableColumns = _.castArray(customSubModels.subTableColumns || []);
+    customSubModels.subTableColumns[0] = {
+      ...(customSubModels.subTableColumns[0] || {}),
+      props: {
+        ...(customSubModels.subTableColumns[0]?.props || {}),
+        reviewMarker: 'preserve-on-same-field-component',
+      },
+    };
+    await flowRepo.patch({
+      uid: defaultRolesField.fieldUid,
+      subModels: customSubModels,
+    });
+    const sameFieldComponentRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: defaultRolesField.wrapperUid,
+        },
+        changes: {
+          fieldComponent: 'PopupSubTableFieldModel',
+        },
+      },
+    });
+    expect(sameFieldComponentRes.status).toBe(200);
+    const sameFieldComponentReadback = await getSurface(rootAgent, {
+      uid: defaultRolesField.fieldUid,
+    });
+    expect(sameFieldComponentReadback.tree.subModels?.subTableColumns?.[0]?.props?.reviewMarker).toBe(
+      'preserve-on-same-field-component',
+    );
+    expect(sameFieldComponentReadback.tree.stepParams?.fieldBinding?.use).toBe('PopupSubTableFieldModel');
+
+    const invalidScalarFieldRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        fieldPath: 'nickname',
+        fieldComponent: 'PopupSubTableFieldModel',
+      },
+    });
+    expect(invalidScalarFieldRes.status).toBe(400);
+    expect(readErrorMessage(invalidScalarFieldRes)).toContain(`is not allowed under`);
+  });
+
   it('should reject invalid openView uid through updateSettings stepParams writes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Invalid updateSettings popup uid page',

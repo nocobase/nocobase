@@ -8,6 +8,9 @@
  */
 
 import { normalizeApprovalSemanticUse } from './approval';
+import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
+
+export { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 
 const FORM_FIELD_CONTAINER_USES = new Set([
   'FormBlockModel',
@@ -34,8 +37,6 @@ const DETAILS_FIELD_CONTAINER_USES = new Set([
 const FILTER_FIELD_CONTAINER_USES = new Set(['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel']);
 
 const TABLE_FIELD_CONTAINER_USES = new Set(['TableBlockModel', 'TableColumnModel']);
-
-export const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
 
 export function normalizeFieldContainerKind(containerUse?: string) {
   const normalized = normalizeApprovalSemanticUse(containerUse);

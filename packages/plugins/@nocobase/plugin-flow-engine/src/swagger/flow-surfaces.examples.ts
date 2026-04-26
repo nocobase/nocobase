@@ -1488,17 +1488,28 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        key: 'teamNotes',
-        type: 'markdown',
-        settings: {
-          content: '# Team notes',
+        key: 'userForm',
+        type: 'createForm',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+        fields: [
+          {
+            key: 'rolesField',
+            fieldPath: 'roles',
+            fieldComponent: 'PopupSubTableFieldModel',
+          },
+        ],
+        fieldsLayout: {
+          rows: [['rolesField']],
         },
       },
     ],
   },
   addFields: {
     target: {
-      uid: 'table-block-uid',
+      uid: 'create-form-block-uid',
     },
     fields: [
       {
@@ -1523,13 +1534,11 @@ export const flowSurfaceExamples = {
         },
       },
       {
-        key: 'nickname',
-        fieldPath: 'nickname',
-        renderer: 'js',
+        key: 'rolesField',
+        fieldPath: 'roles',
+        fieldComponent: 'PopupSubTableFieldModel',
         settings: {
-          label: 'Nickname (JS)',
-          code: 'return value;',
-          version: '1.0.0',
+          title: 'Roles',
         },
       },
     ],

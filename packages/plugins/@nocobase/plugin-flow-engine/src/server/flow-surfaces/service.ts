@@ -30,6 +30,7 @@ import {
   buildBlockTree,
   buildCanonicalTableActionsColumnNode,
   buildFieldTree,
+  getStandaloneFieldDefaults,
   buildStandaloneFieldNode,
   buildPersistedRootPageModel,
   buildPopupPageTree,
@@ -80,11 +81,8 @@ import { collectFlowSurfaceCreatedKeys, collectPersistableFlowSurfaceCreatedKeys
 import { persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode } from './planning/key-persistence';
 import { validateFlowSurfacePayloadShape } from './payload-shape';
 import type { FlowSurfacePlanSurfaceContext } from './planning/types';
-import {
-  MULTI_VALUE_ASSOCIATION_INTERFACES,
-  normalizeFieldContainerKind,
-  shouldUseAssociationTitleTextDisplay,
-} from './field-semantics';
+import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
+import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { resolveRegisteredFieldBinding } from './field-binding-registry';
 import {
   ACTION_BUTTON_USES,
@@ -117,7 +115,11 @@ import {
   projectCatalogNode as projectSmartCatalogNode,
   type FlowSurfaceCatalogProjectableItem,
 } from './catalog-smart';
-import { compileComposeExecutionPlan, type FlowSurfaceComposeNormalizedBlockSpec } from './compose-compiler';
+import {
+  compileComposeExecutionPlan,
+  type FlowSurfaceComposeNormalizedBlockSpec,
+  type FlowSurfaceComposeTargetKey,
+} from './compose-compiler';
 import { executeComposeRuntime } from './compose-runtime';
 import { SurfaceLocator } from './locator';
 import { isPageModelUse, isPopupHostUse } from './placement';
@@ -264,6 +266,9 @@ import {
   normalizeComposeFieldSpec,
   normalizeGridCardColumns,
   normalizePublicBlockHeightMode,
+  resolveRequestedFieldComponent,
+  resolveRequestedFieldUse,
+  resolveRequestedFieldUseAlias,
   normalizeRowSpans,
   normalizeSimpleConfirm,
   normalizeSimpleLayoutValue,
@@ -6256,6 +6261,9 @@ export class FlowSurfacesService {
       throwBadRequest('flowSurfaces addBlock does not allow resource and resourceInit at the same time');
     }
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const hasInlineFields =
+      Object.prototype.hasOwnProperty.call(values || {}, 'fields') ||
+      Object.prototype.hasOwnProperty.call(values || {}, 'fieldsLayout');
     let resolvedTarget = await this.locator.resolve(target, options);
     let targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction);
     const targetOpenView = this.resolvePopupHostOpenView(targetNode);
@@ -6290,6 +6298,20 @@ export class FlowSurfacesService {
         requireCreateSupported: true,
       },
     );
+    const inlineFields = hasInlineFields
+      ? this.normalizeComposeBlock(
+          {
+            key:
+              String(values?.key || catalogItem.key || values?.type || values?.use || 'addBlock_inline').trim() ||
+              'addBlock_inline',
+            type: catalogItem.key || values.type,
+            fields: values.fields,
+            fieldsLayout: values.fieldsLayout,
+          },
+          0,
+          enabledPackages,
+        )
+      : null;
     const resolvedResourceInit = await this.resolvePopupCollectionBlockResourceInit({
       actionName: 'addBlock',
       blockUse: catalogItem.use,
@@ -6380,6 +6402,69 @@ export class FlowSurfacesService {
         : {}),
     };
     await this.applyInlineNodeSettings('addBlock', created, inlineSettings, options);
+    if (inlineFields?.fields?.length) {
+      const fieldTargetUid = this.resolveComposeFieldContainerUid(inlineFields, result);
+      const createdByKey: Record<string, FlowSurfaceComposeTargetKey> = {};
+      for (const fieldSpec of inlineFields.fields) {
+        const createdField = await this.addField(
+          {
+            target: {
+              uid: fieldTargetUid,
+            },
+            ...(fieldSpec.key ? { key: fieldSpec.key } : {}),
+            ...(fieldSpec.fieldPath ? { fieldPath: fieldSpec.fieldPath } : {}),
+            ...(fieldSpec.associationPathName ? { associationPathName: fieldSpec.associationPathName } : {}),
+            ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
+            ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
+            ...(fieldSpec.fieldComponent ? { fieldComponent: fieldSpec.fieldComponent } : {}),
+            ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
+            ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
+            ...(fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
+              ? {
+                  [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]:
+                    fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY],
+                }
+              : {}),
+          },
+          {
+            transaction: options.transaction,
+            enabledPackages,
+          },
+        );
+        if (fieldSpec.settings && Object.keys(fieldSpec.settings).length) {
+          await this.applyInlineFieldSettings('addBlock field', createdField, fieldSpec.settings, {
+            transaction: options.transaction,
+          });
+        }
+        const layoutUid = createdField.wrapperUid || createdField.uid;
+        if (layoutUid && fieldSpec.key) {
+          createdByKey[fieldSpec.key] = { uid: layoutUid };
+        }
+      }
+      if (inlineFields.fieldsLayout && Object.keys(createdByKey).length) {
+        const layoutHost = await this.repository.findModelById(created, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+        const layoutItems = _.castArray(
+          layoutHost?.subModels?.grid?.subModels?.items || layoutHost?.subModels?.items || [],
+        );
+        const layoutPayload = this.buildComposeLayoutPayload({
+          layout: inlineFields.fieldsLayout,
+          createdByKey,
+          finalItems: layoutItems,
+        });
+        await this.setLayout(
+          {
+            target: {
+              uid: created,
+            },
+            ...layoutPayload,
+          },
+          options,
+        );
+      }
+    }
     if (!options.skipDefaultBlockActions) {
       await this.applyDefaultActionsForCreatedBlock(
         {
@@ -6452,6 +6537,9 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
     const isApprovalFormTarget = isApprovalFormContainerUse(container.ownerUse);
+    const requestedFieldComponent = resolveRequestedFieldComponent(values);
+    const requestedLegacyFieldUse = resolveRequestedFieldUseAlias(values);
+    const requestedFieldUse = resolveRequestedFieldUse(values);
     const requestedStandaloneType =
       typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
     const fieldCapability = resolveSupportedFieldCapability({
@@ -6596,25 +6684,29 @@ export class FlowSurfacesService {
     let capabilityField = preferredCapabilityField;
     let boundFieldCapability;
     if (fieldMenuCandidate?.explicitWrapperUse && fieldMenuCandidate?.explicitFieldUse && !values.renderer) {
-      if (hasOwnDefined(values, 'fieldUse') && values.fieldUse !== fieldMenuCandidate.explicitFieldUse) {
+      if (requestedLegacyFieldUse && requestedLegacyFieldUse !== fieldMenuCandidate.explicitFieldUse) {
         throwBadRequest(
-          `flowSurfaces fieldUse '${values.fieldUse}' does not match inferred fieldUse '${fieldMenuCandidate.explicitFieldUse}' under '${container.ownerUse}'`,
+          `flowSurfaces fieldUse '${requestedLegacyFieldUse}' does not match inferred fieldUse '${fieldMenuCandidate.explicitFieldUse}' under '${container.ownerUse}'`,
         );
       }
-      boundFieldCapability = {
-        wrapperUse: fieldMenuCandidate.explicitWrapperUse,
-        fieldUse: fieldMenuCandidate.explicitFieldUse,
-        inferredFieldUse: fieldMenuCandidate.explicitFieldUse,
-        standaloneUse: undefined,
-        renderer: undefined,
-      };
-      capabilityField = resolvedField.field;
-    } else {
+      if (!requestedFieldComponent) {
+        boundFieldCapability = {
+          wrapperUse: fieldMenuCandidate.explicitWrapperUse,
+          fieldUse: fieldMenuCandidate.explicitFieldUse,
+          inferredFieldUse: fieldMenuCandidate.explicitFieldUse,
+          standaloneUse: undefined,
+          renderer: undefined,
+        };
+        capabilityField = resolvedField.field;
+      }
+    }
+    if (!boundFieldCapability) {
       try {
         boundFieldCapability = resolveSupportedFieldCapability({
           containerUse: container.ownerUse,
           field: capabilityField,
-          requestedFieldUse: values.fieldUse,
+          requestedFieldUse,
+          requestedFieldUseMode: requestedFieldComponent ? 'fieldComponent' : 'fieldUse',
           requestedWrapperUse: container.wrapperUse,
           requestedRenderer: values.renderer,
           enabledPackages,
@@ -6623,7 +6715,7 @@ export class FlowSurfacesService {
         });
       } catch (error) {
         if (
-          hasOwnDefined(values, 'fieldUse') &&
+          requestedFieldUse &&
           capabilityField !== resolvedField.field &&
           error instanceof FlowSurfaceBadRequestError
         ) {
@@ -6631,7 +6723,8 @@ export class FlowSurfacesService {
           boundFieldCapability = resolveSupportedFieldCapability({
             containerUse: container.ownerUse,
             field: capabilityField,
-            requestedFieldUse: values.fieldUse,
+            requestedFieldUse,
+            requestedFieldUseMode: requestedFieldComponent ? 'fieldComponent' : 'fieldUse',
             requestedWrapperUse: container.wrapperUse,
             requestedRenderer: values.renderer,
             enabledPackages,
@@ -6684,7 +6777,16 @@ export class FlowSurfacesService {
     const wrapperShouldPersistTitleField =
       !_.isUndefined(defaultTitleField) &&
       TITLE_FIELD_SUPPORTED_WRAPPER_USES.has(boundFieldCapability.wrapperUse || '');
-    const fieldShouldPersistTitleField = !_.isUndefined(defaultTitleField);
+    const fieldShouldPersistTitleField =
+      !_.isUndefined(defaultTitleField) && this.supportsFieldTitleFieldProp(boundFieldCapability.fieldUse);
+    const normalizedDefaultFieldProps = this.normalizeFieldPropsForUse(
+      boundFieldCapability.fieldUse,
+      defaultFieldState.fieldProps || {},
+    );
+    const normalizedInlineFieldProps = this.normalizeFieldPropsForUse(
+      boundFieldCapability.fieldUse,
+      values.fieldProps || {},
+    );
 
     const tree = buildFieldTree({
       wrapperUse: boundFieldCapability.wrapperUse,
@@ -6702,9 +6804,9 @@ export class FlowSurfacesService {
       ),
       fieldProps: _.merge(
         {},
-        defaultFieldState.fieldProps || {},
+        normalizedDefaultFieldProps,
         fieldShouldPersistTitleField ? { titleField: defaultTitleField } : {},
-        values.fieldProps || {},
+        normalizedInlineFieldProps,
       ),
     });
     this.contractGuard.validateNodeTreeAgainstContract(tree.model);
@@ -13817,6 +13919,7 @@ export class FlowSurfacesService {
       }
     }
 
+    let effectiveInnerFieldUse = innerField?.use;
     if (hasOwnDefined(changes, 'fieldComponent')) {
       if (!innerUid) {
         throwConflict(
@@ -13832,10 +13935,11 @@ export class FlowSurfacesService {
         enabledPackages,
         transaction: options.transaction,
       });
+      effectiveInnerFieldUse = normalizedFieldComponentUse;
       await this.syncFieldComponentStepParams(current, normalizedFieldComponentUse, options.transaction);
     }
 
-    if (shouldSyncTitleField) {
+    if (shouldSyncTitleField && this.supportsFieldTitleFieldProp(effectiveInnerFieldUse)) {
       if (!innerUid) {
         throwConflict(
           `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
@@ -13932,6 +14036,7 @@ export class FlowSurfacesService {
     });
     const shouldSyncTitleField = titleFieldSyncDecision.shouldSync;
     const syncedTitleField = titleFieldSyncDecision.titleField;
+    const canSyncInnerTitleField = this.supportsFieldTitleFieldProp(current?.use);
 
     if (parentWrapper?.uid && canSyncWrapperTitleField && shouldSyncTitleField) {
       await this.updateSettings(
@@ -14007,7 +14112,7 @@ export class FlowSurfacesService {
           quickCreate: changes.quickCreate,
           displayStyle: changes.displayStyle,
           options: changes.options,
-          ...(shouldSyncTitleField ? { titleField: syncedTitleField } : {}),
+          ...(shouldSyncTitleField && canSyncInnerTitleField ? { titleField: syncedTitleField } : {}),
           ...(hasOwnDefined(changes, 'clickToOpen') || !_.isUndefined(changes.openView)
             ? { clickToOpen: effectiveClickToOpen }
             : {}),
@@ -17304,6 +17409,21 @@ export class FlowSurfacesService {
     return resolveFieldFromCollection(targetCollection, titleFieldName) || input.field;
   }
 
+  private supportsFieldTitleFieldProp(use?: string) {
+    return getConfigureOptionKeysForUse(use).includes('titleField');
+  }
+
+  private normalizeFieldPropsForUse(use: string | undefined, props: Record<string, any> | undefined) {
+    const normalizedProps = _.cloneDeep(props || {});
+    if (this.supportsFieldTitleFieldProp(use)) {
+      return normalizedProps;
+    }
+    if (Object.prototype.hasOwnProperty.call(normalizedProps, 'titleField')) {
+      delete normalizedProps.titleField;
+    }
+    return normalizedProps;
+  }
+
   private async ensureGridChild(parentUid: string, use: string, transaction?: any) {
     const existing = await this.repository.findModelByParentId(parentUid, {
       transaction,
@@ -17794,16 +17914,41 @@ export class FlowSurfacesService {
       dataSourceKey: fieldSource.fieldSettingsInit?.dataSourceKey,
       enabledPackages: input.enabledPackages,
     });
+    if (innerField.use === normalizedTargetUse) {
+      await this.repository.patch(
+        {
+          uid: innerField.uid,
+          stepParams: _.merge({}, innerField.stepParams || {}, {
+            fieldBinding: {
+              use: normalizedTargetUse,
+            },
+            fieldSettings: {
+              init: fieldSource.fieldSettingsInit,
+            },
+          }),
+        },
+        { transaction: input.transaction },
+      );
+      return normalizedTargetUse;
+    }
     const defaultProps = getFieldBindingDefaultProps(input.wrapperNode?.use, normalizedTargetUse, fieldSource.field);
+    const fieldDefaults = getStandaloneFieldDefaults(normalizedTargetUse);
     const shouldPreservePatternFormField = input.wrapperNode?.use === 'PatternFormItemModel';
+    const preservedPopupPageSubModel =
+      input.innerField?.subModels && Object.prototype.hasOwnProperty.call(input.innerField.subModels, 'page')
+        ? {
+            page: _.cloneDeep(input.innerField.subModels.page),
+          }
+        : {};
+    const nextSubModels = {
+      ...(fieldDefaults.subModels ? _.cloneDeep(fieldDefaults.subModels) : {}),
+      ...preservedPopupPageSubModel,
+    };
     const nextFieldNode = {
       uid: innerField.uid,
       use: shouldPreservePatternFormField ? 'PatternFormFieldModel' : normalizedTargetUse,
       props: _.pickBy(
-        {
-          ...(innerField.props || {}),
-          ...defaultProps,
-        },
+        this.normalizeFieldPropsForUse(normalizedTargetUse, { ...(innerField.props || {}), ...defaultProps }),
         (value) => !_.isUndefined(value),
       ),
       decoratorProps: _.cloneDeep(innerField.decoratorProps || {}),
@@ -17816,6 +17961,7 @@ export class FlowSurfacesService {
           init: fieldSource.fieldSettingsInit,
         },
       }),
+      subModels: nextSubModels,
     };
     await this.repository.patch(nextFieldNode, { transaction: input.transaction });
     return normalizedTargetUse;

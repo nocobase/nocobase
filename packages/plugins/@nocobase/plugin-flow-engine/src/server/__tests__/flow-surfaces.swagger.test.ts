@@ -1217,6 +1217,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockRequest.properties.resource.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.fields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeFieldSpec',
+    );
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.fieldsLayout.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeLayout',
+    );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
@@ -1338,11 +1344,12 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain('`kanban`');
     expect(addBlocksRequest.example.blocks).toHaveLength(2);
     expect(addBlocksRequest.example.blocks[0].type).toBe('table');
-    expect(addBlocksRequest.example.blocks[1].type).toBe('markdown');
+    expect(addBlocksRequest.example.blocks[1].type).toBe('createForm');
     expect(addBlocksRequest.example.blocks[0].settings.pageSize).toBe(50);
     expect(addBlocksRequest.example.blocks[0].defaultFilter.items[0].value).toBe('staff');
     expect(addBlocksRequest.example.blocks[0].defaultActionSettings.filter.defaultFilter.items).toHaveLength(3);
-    expect(addBlocksRequest.example.blocks[1].settings.content).toContain('Team notes');
+    expect(addBlocksRequest.example.blocks[1].fields[0].fieldComponent).toBe('PopupSubTableFieldModel');
+    expect(addBlocksRequest.example.blocks[1].fieldsLayout.rows).toEqual([['rolesField']]);
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
     expect(schemas.FlowSurfaceAddBlockItem.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.allOf).toEqual([
@@ -1353,6 +1360,12 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceAddBlockItem.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
+    );
+    expect(schemas.FlowSurfaceAddBlockItem.properties.fields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeFieldSpec',
+    );
+    expect(schemas.FlowSurfaceAddBlockItem.properties.fieldsLayout.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeLayout',
     );
     expect(schemas.FlowSurfaceComposeBlockSpec.anyOf).toEqual(
       expect.arrayContaining([{ required: ['type'] }, { required: ['template'] }]),
@@ -1380,9 +1393,9 @@ describe('flowSurfaces swagger', () => {
       swaggerDocument.paths['/flowSurfaces:addFields'].post.requestBody.content['application/json'];
     expect(addFieldsRequest.example.fields).toHaveLength(2);
     expect(addFieldsRequest.example.fields[0].popup.blocks[0].type).toBe('details');
-    expect(addFieldsRequest.example.fields[1].renderer).toBe('js');
+    expect(addFieldsRequest.example.fields[1].fieldComponent).toBe('PopupSubTableFieldModel');
     expect(addFieldsRequest.example.fields[0].settings.title).toBe('User name');
-    expect(addFieldsRequest.example.fields[1].settings.version).toBe('1.0.0');
+    expect(addFieldsRequest.example.fields[1].settings.title).toBe('Roles');
     expect(schemas.FlowSurfaceAddFieldsRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceAddFieldsRequest.oneOf).toHaveLength(2);
     expect(schemas.FlowSurfaceAddFieldsRequest.properties.template.$ref).toBe(
@@ -1395,6 +1408,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddFieldItem.properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeFieldPopup',
     );
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.fieldComponent.type).toBe('string');
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.fieldUse.description).toContain('Legacy');
+    expect(schemas.FlowSurfaceAddFieldItem.properties.fieldComponent.type).toBe('string');
+    expect(schemas.FlowSurfaceAddFieldItem.properties.fieldUse.description).toContain('Legacy');
+    expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.fieldComponent.type).toBe('string');
+    expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.fieldComponent.type).toBe('string');
     expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.props).toBeUndefined();

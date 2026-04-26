@@ -106,6 +106,7 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
   'associationPathName',
   'renderer',
   'type',
+  'fieldComponent',
   'label',
   'target',
   'settings',
@@ -976,6 +977,7 @@ function compileField(
   assertOnlyAllowedKeys(input, `${context}[${index}]`, APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS);
   const fieldPath = readOptionalString(input.field);
   const syntheticType = readOptionalString(input.type);
+  const fieldComponent = readOptionalString((input as any).fieldComponent);
   if (!fieldPath && !syntheticType) {
     throwBadRequest(`${context}[${index}] requires field or type`);
   }
@@ -1003,6 +1005,7 @@ function compileField(
     associationPathName: readOptionalString(input.associationPathName),
     renderer: readOptionalString(input.renderer),
     type: syntheticType,
+    fieldComponent,
     target: resolveTargetBlockKey(input.target, localBlockKeys, `${context}[${index}].target`),
     settings: Object.keys(settings).length ? settings : undefined,
     popup,

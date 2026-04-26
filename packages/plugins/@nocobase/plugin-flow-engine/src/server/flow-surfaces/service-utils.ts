@@ -340,6 +340,7 @@ export type NormalizedComposeFieldSpec = {
   associationPathName?: string;
   renderer?: string;
   type?: string;
+  fieldComponent?: string;
   target?: string;
   settings: Record<string, any>;
   popup?: Record<string, any>;
@@ -371,6 +372,8 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   const semanticType = String(input.type || '').trim() || undefined;
   const fieldPath = String(input.fieldPath || '').trim();
   const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();
+  const explicitFieldComponent =
+    String(input.fieldComponent || input.settings?.fieldComponent || '').trim() || undefined;
   if (!_.isUndefined(input.popup) && !_.isPlainObject(input.popup)) {
     throwBadRequest(`flowSurfaces compose field #${index + 1} popup must be an object`);
   }
@@ -397,12 +400,27 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
     associationPathName: String(input.associationPathName || '').trim() || undefined,
     ...(renderer ? { renderer } : {}),
     ...(semanticType ? { type: semanticType } : {}),
+    ...(explicitFieldComponent ? { fieldComponent: explicitFieldComponent } : {}),
     target: typeof input.target === 'string' ? String(input.target || '').trim() || undefined : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
     __autoPopupForRelationField: input.__autoPopupForRelationField === true,
     ...(popupDefaultsMetadata ? { [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: popupDefaultsMetadata } : {}),
   };
+}
+
+export function resolveRequestedFieldComponent(values: Record<string, any> | undefined) {
+  const fieldComponent = String(values?.fieldComponent || values?.settings?.fieldComponent || '').trim();
+  return fieldComponent || undefined;
+}
+
+export function resolveRequestedFieldUse(values: Record<string, any> | undefined) {
+  return resolveRequestedFieldComponent(values) || resolveRequestedFieldUseAlias(values);
+}
+
+export function resolveRequestedFieldUseAlias(values: Record<string, any> | undefined) {
+  const legacyFieldUse = String(values?.fieldUse || '').trim();
+  return legacyFieldUse || undefined;
 }
 
 export function normalizeComposeActionSpec(input: any, index: number) {

@@ -50,13 +50,10 @@ import {
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
 import { FlowSurfaceBadRequestError, FlowSurfaceInternalError } from './errors';
-import {
-  MULTI_VALUE_ASSOCIATION_INTERFACES,
-  normalizeFieldContainerKind,
-  shouldUseAssociationTitleTextDisplay,
-} from './field-semantics';
+import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
 import { inferSharedFieldDefaultBindingUse } from './core-field-default-bindings';
 import { getRegisteredFieldUses, resolveRegisteredFieldBinding } from './field-binding-registry';
+import { MULTI_VALUE_ASSOCIATION_INTERFACES, SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
@@ -437,6 +434,7 @@ const REGISTERED_FILTER_FIELD_USE_SET = getRegisteredFieldUses('filter');
 const EDITABLE_FIELD_USE_SET = new Set([
   ...JS_EDITABLE_FIELD_USE_SET,
   'RecordSelectFieldModel',
+  'RecordPickerFieldModel',
   'JsonFieldModel',
   'TextareaFieldModel',
   'IconFieldModel',
@@ -455,10 +453,15 @@ const EDITABLE_FIELD_USE_SET = new Set([
   'CollectionSelectorFieldModel',
   'RichTextFieldModel',
   'InputFieldModel',
+  'SubFormListFieldModel',
+  'SubTableFieldModel',
+  'PopupSubTableFieldModel',
+  'PatternSubTableFieldModel',
 ]);
 const DISPLAY_FIELD_USE_SET = new Set([
   ...JS_DISPLAY_FIELD_USE_SET,
   'DisplaySubItemFieldModel',
+  'DisplaySubListFieldModel',
   'DisplaySubTableFieldModel',
   'DisplayHtmlFieldModel',
   'DisplayNumberFieldModel',
@@ -490,7 +493,6 @@ const APPROVAL_DETAILS_FIELD_COMPONENT_WRAPPER_USE_SET = new Set([
   'ApplyTaskCardDetailsItemModel',
   'ApprovalTaskCardDetailsItemModel',
 ]);
-const SINGLE_VALUE_ASSOCIATION_INTERFACES = new Set(['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy']);
 const KNOWN_FIELD_NODE_USES = new Set<string>([
   ...EDITABLE_FIELD_USE_SET,
   ...DISPLAY_FIELD_USE_SET,
@@ -2670,7 +2672,7 @@ function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: Readonly
   }
 }
 
-function canUseNestedApprovalAssociationFieldComponent(input: {
+function canUseNestedAssociationFieldComponent(input: {
   field?: any;
   dataSourceKey?: string;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
@@ -2696,7 +2698,10 @@ export function getSupportedFieldComponentUseSet(input: {
     return baseAllowedFieldUses;
   }
 
-  const wrapperUse = getApprovalFieldWrapperUse(input.containerUse) || String(input.containerUse || '').trim();
+  const wrapperUse =
+    getApprovalFieldWrapperUse(input.containerUse) ||
+    getFieldWrapperUseForContainer(input.containerUse) ||
+    String(input.containerUse || '').trim();
   const inferredFieldUse = inferFieldUseByContainer(input.containerUse, input.field, {
     enabledPackages: input.enabledPackages,
     dataSourceKey: input.dataSourceKey,
@@ -2709,7 +2714,7 @@ export function getSupportedFieldComponentUseSet(input: {
         [
           'RecordSelectFieldModel',
           'RecordPickerFieldModel',
-          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
           inferredFieldUse,
         ].filter(Boolean),
       );
@@ -2719,8 +2724,33 @@ export function getSupportedFieldComponentUseSet(input: {
         [
           'RecordSelectFieldModel',
           'RecordPickerFieldModel',
-          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
-          canUseNestedApprovalAssociationFieldComponent(input) ? 'PatternSubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'PatternSubTableFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+  }
+
+  if (wrapperUse === 'FormItemModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'PopupSubTableFieldModel' : undefined,
           inferredFieldUse,
         ].filter(Boolean),
       );
@@ -2738,6 +2768,27 @@ export function getSupportedFieldComponentUseSet(input: {
         ),
       );
     }
+  }
+
+  if (
+    wrapperUse === 'DetailsItemModel' ||
+    wrapperUse === 'FormAssociationItemModel' ||
+    wrapperUse === 'TableColumnModel'
+  ) {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(['DisplayTextFieldModel', inferredFieldUse].filter(Boolean));
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        ['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel', inferredFieldUse].filter(
+          Boolean,
+        ),
+      );
+    }
+  }
+
+  if (inferredFieldUse) {
+    return new Set([inferredFieldUse]);
   }
 
   return baseAllowedFieldUses;
@@ -2834,6 +2885,7 @@ export function resolveSupportedFieldCapability(input: {
   containerUse: string;
   field?: any;
   requestedFieldUse?: string;
+  requestedFieldUseMode?: 'fieldUse' | 'fieldComponent';
   requestedWrapperUse?: string;
   allowUnresolvedFieldUse?: boolean;
   requestedRenderer?: string;
@@ -2911,6 +2963,7 @@ export function resolveSupportedFieldCapability(input: {
     input.requestedFieldUse &&
     inferredFieldUse &&
     input.requestedFieldUse !== inferredFieldUse &&
+    input.requestedFieldUseMode !== 'fieldComponent' &&
     KNOWN_FIELD_NODE_USES.has(input.requestedFieldUse)
   ) {
     throw new FlowSurfaceBadRequestError(
@@ -2918,7 +2971,16 @@ export function resolveSupportedFieldCapability(input: {
     );
   }
 
-  const allowedFieldUses = getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
+  const allowedFieldUses =
+    input.requestedFieldUseMode === 'fieldComponent' && input.field
+      ? getSupportedFieldComponentUseSet({
+          containerUse: input.containerUse,
+          field: input.field,
+          enabledPackages: input.enabledPackages,
+          dataSourceKey: input.dataSourceKey,
+          getCollection: input.getCollection,
+        })
+      : getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
   if (!allowedFieldUses?.has(fieldUse)) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces fieldUse '${fieldUse}' is not allowed under '${input.containerUse}'`,

@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './field-semantics';
+import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { getFieldInterface, getFieldName, getFieldType } from './service-helpers';
 
 export type FlowSurfaceDefaultActionPopupType = 'addNew' | 'view' | 'edit';

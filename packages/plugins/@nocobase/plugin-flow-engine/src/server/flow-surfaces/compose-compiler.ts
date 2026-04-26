@@ -34,6 +34,7 @@ export type FlowSurfaceComposeNormalizedFieldSpec = {
   associationPathName?: string;
   renderer?: string;
   type?: string;
+  fieldComponent?: string;
   target?: string | Record<string, unknown>;
   settings?: FlowSurfaceComposeObject;
   popup?: FlowSurfaceComposeObject;
@@ -243,6 +244,7 @@ function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedF
     ...(fieldSpec.associationPathName ? { associationPathName: fieldSpec.associationPathName } : {}),
     ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
     ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
+    ...(fieldSpec.fieldComponent ? { fieldComponent: fieldSpec.fieldComponent } : {}),
     ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
     ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
     ...(fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
