@@ -501,6 +501,7 @@ describe('flowSurfaces swagger', () => {
       'chart',
       'actionPanel',
       'jsBlock',
+      'tree',
     ]);
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.description).toContain(
       'Generic `form` is not supported',
@@ -944,6 +945,7 @@ describe('flowSurfaces swagger', () => {
       expect.arrayContaining([
         'table',
         'filterForm',
+        'tree',
         'actionPanel',
         'jsBlock',
         'approvalInitiator',
