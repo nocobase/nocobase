@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Alert, Typography } from 'antd';
-import { FlowModel, tExpr, useFlowSettingsContext, observer } from '@nocobase/flow-engine';
+import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Alert, Typography, Input } from 'antd';
+import { FlowModel, tExpr, useFlowSettingsContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
 import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
@@ -29,6 +29,8 @@ import { useLLMProviders } from '../../../llm-services/llm-providers';
 import { useT } from '../../../locale';
 import { buildProviderGroupedModelOptions, getServiceByOverride } from '../../../llm-services/utils';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { Skills, Tools } from '../../../components/skill-settings';
+import _ from 'lodash';
 
 const { Meta } = Card;
 
@@ -192,137 +194,6 @@ const WorkContext: React.FC = () => {
   );
 };
 
-const OptionContent: React.FC<{
-  t: any;
-  title?: string;
-  description?: string;
-}> = ({ t, title, description }) => {
-  const compiledTitle = Schema.compile(title, { t });
-  const compiledDescription = Schema.compile(description, { t });
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        width: '100%',
-        minWidth: 0,
-        padding: '2px 0',
-      }}
-    >
-      <div>{compiledTitle}</div>
-      {compiledDescription ? (
-        <Typography.Text
-          type="secondary"
-          style={{
-            fontSize: 12,
-          }}
-          ellipsis={{
-            tooltip: typeof compiledDescription === 'string' ? compiledDescription : undefined,
-          }}
-        >
-          {compiledDescription}
-        </Typography.Text>
-      ) : null}
-    </div>
-  );
-};
-
-const SkillSettings: React.FC<{
-  aiEmployeesMap: {
-    [username: string]: AIEmployee;
-  };
-}> = ({ aiEmployeesMap = {} }) => {
-  const t = useT();
-  const field = useField<ArrayField>();
-  const ctx = useFlowSettingsContext();
-  const username = ctx.model.props.aiEmployee?.username;
-  useEffect(() => {
-    const aiEmployee = aiEmployeesMap[username];
-    const defaultSkills = aiEmployee?.skillSettings?.skills?.map((name) => name) ?? [];
-    if (field.value?.length) {
-      field.setValue(field.value.filter((tool) => defaultSkills.includes(tool)));
-    }
-  }, [aiEmployeesMap, field, username]);
-
-  const handleChange = (value: string[]) => {
-    field.setValue(value);
-  };
-
-  return (
-    <RemoteSelect
-      defaultValue={field.value}
-      onChange={handleChange}
-      manual={false}
-      multiple={true}
-      popupMatchSelectWidth
-      placeholder={t('Use all AI employee skills')}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
-      optionRender={renderTitleWithDescription(t)}
-      service={{
-        resource: 'aiSkills',
-        action: 'listBinding',
-        params: {
-          username,
-        },
-      }}
-    />
-  );
-};
-
-const ToolSettings: React.FC<{
-  aiEmployeesMap: {
-    [username: string]: AIEmployee;
-  };
-}> = ({ aiEmployeesMap = {} }) => {
-  const t = useT();
-  const field = useField<ArrayField>();
-  const ctx = useFlowSettingsContext();
-  const username = ctx.model.props.aiEmployee?.username;
-  useEffect(() => {
-    const aiEmployee = aiEmployeesMap[username];
-    const defaultTools = aiEmployee?.skillSettings?.tools?.map(({ name }) => name) ?? [];
-    if (field.value?.length) {
-      field.setValue(field.value.filter((tool) => defaultTools.includes(tool)));
-    }
-  }, [aiEmployeesMap, field, username]);
-
-  const handleChange = (value: string[]) => {
-    field.setValue(value);
-  };
-
-  return (
-    <RemoteSelect
-      defaultValue={field.value}
-      onChange={handleChange}
-      manual={false}
-      multiple={true}
-      popupMatchSelectWidth
-      placeholder={t('Use all AI employee tools')}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
-      optionRender={renderTitleWithDescription(t)}
-      service={{
-        resource: 'aiTools',
-        action: 'listBinding',
-        params: {
-          username,
-        },
-      }}
-    />
-  );
-};
-
-const renderTitleWithDescription = (t: any) => (option: { data?: { title?: string; description?: string } }) => (
-  <OptionContent t={t} title={option.data?.title} description={option.data?.description} />
-);
-
 const TaskModelSelect: React.FC = observer(() => {
   const t = useT();
   const field = useField<ObjectField>();
@@ -388,10 +259,68 @@ const TaskWebSearchSwitch: React.FC = observer(() => {
   );
 });
 
+const SkillsWrapper: React.FC<any> = (props) => {
+  const ctx = useFlowContext();
+  const field = useField<ArrayField>();
+  const skillsSettingField = field.parent as ObjectField;
+  const taskField = skillsSettingField?.parent as ObjectField;
+  const taskIndex = taskField?.index ?? -1;
+  const tasks = ctx.model?.props?.tasks ?? [];
+  const task = taskIndex >= 0 ? tasks[taskIndex] ?? {} : {};
+  const initials = task.skillSettings?.skills;
+
+  useEffect(() => {
+    if (initials == null) {
+      field.setValue(undefined);
+    }
+  }, [field, initials]);
+
+  return <Skills {...props} initials={initials} />;
+};
+
+const ToolsWrapper: React.FC<any> = (props) => {
+  const ctx = useFlowContext();
+  const field = useField<ArrayField>();
+  const skillsSettingField = field.parent as ObjectField;
+  const taskField = skillsSettingField?.parent as ObjectField;
+  const taskIndex = taskField?.index ?? -1;
+  const tasks = ctx.model?.props?.tasks ?? [];
+  const task = taskIndex >= 0 ? tasks[taskIndex] ?? {} : {};
+  const initials = task.skillSettings?.tools;
+
+  useEffect(() => {
+    if (initials == null) {
+      field.setValue(undefined);
+    }
+  }, [field, initials]);
+
+  return <Tools {...props} initials={initials} />;
+};
+
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
   title: tExpr('Task settings', { ns: namespace }),
   steps: {
+    migration: {
+      handler: async (ctx) => {
+        console.log('cgyrock', 'migration', ctx.model?.stepParams?.shortcutSettings?.editTasks);
+        for (const task of ctx.model?.stepParams?.shortcutSettings?.editTasks?.tasks ?? []) {
+          const { skillsVersion, toolsVersion, skills, tools } = task.skillSettings;
+          if (skillsVersion == null) {
+            if (_.isArray(skills) && skills.length === 0) {
+              task.skillSettings.skills = undefined;
+            }
+            task.skillSettings.skillsVersion = 2;
+          }
+          if (toolsVersion == null) {
+            if (_.isArray(tools) && tools.length === 0) {
+              task.skillSettings.tools = undefined;
+            }
+            task.skillSettings.toolsVersion = 2;
+          }
+        }
+      },
+    },
     editTasks: {
       title: tExpr('Edit tasks', { ns: namespace }),
       uiMode(ctx) {
@@ -408,6 +337,11 @@ AIEmployeeShortcutModel.registerFlow({
       uiSchema: async (ctx) => {
         await ctx.aiConfigRepository.getAIEmployees();
         const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
+        const username = ctx.model.props?.aiEmployee?.username ?? '';
+        const defaultSkills: string[] =
+          aiEmployeesMap[username]?.skillSettings?.skills?.map((name: string) => name) ?? [];
+        const defaultTools: string[] =
+          aiEmployeesMap[username]?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
         return {
           profile: {
             type: 'void',
@@ -472,13 +406,26 @@ AIEmployeeShortcutModel.registerFlow({
                   type: 'object',
                   nullable: true,
                   properties: {
+                    toolsVersion: {
+                      type: 'number',
+                      'x-hidden': true,
+                    },
+                    skillsVersion: {
+                      type: 'number',
+                      'x-hidden': true,
+                    },
                     skills: {
                       title: tExpr('Skills', { ns: namespace }),
                       type: 'array',
                       'x-decorator': 'FormItem',
-                      'x-component': () => <SkillSettings aiEmployeesMap={aiEmployeesMap} />,
+                      'x-component': SkillsWrapper,
+                      'x-component-props': {
+                        username,
+                        defaultSkills,
+                      },
                       'x-decorator-props': {
-                        tooltip: tExpr('Restrict task skills', {
+                        layout: 'horizontal',
+                        tooltip: tExpr('Configure the skills available to this task', {
                           ns: namespace,
                         }),
                       },
@@ -487,9 +434,14 @@ AIEmployeeShortcutModel.registerFlow({
                       title: tExpr('Tools', { ns: namespace }),
                       type: 'array',
                       'x-decorator': 'FormItem',
-                      'x-component': () => <ToolSettings aiEmployeesMap={aiEmployeesMap} />,
+                      'x-component': ToolsWrapper,
+                      'x-component-props': {
+                        username,
+                        defaultTools,
+                      },
                       'x-decorator-props': {
-                        tooltip: tExpr('Restrict task tools', {
+                        layout: 'horizontal',
+                        tooltip: tExpr('Configure the tools available to this task', {
                           ns: namespace,
                         }),
                       },
@@ -514,6 +466,19 @@ AIEmployeeShortcutModel.registerFlow({
             },
           },
         };
+      },
+      beforeParamsSave(_ctx, params) {
+        for (const task of params.tasks ?? []) {
+          if (task.skillSettings) {
+            const { skillsVersion, toolsVersion } = task.skillSettings;
+            if (skillsVersion == null) {
+              task.skillSettings.skillsVersion = 2;
+            }
+            if (toolsVersion == null) {
+              task.skillSettings.toolsVersion = 2;
+            }
+          }
+        }
       },
       handler(ctx, params) {
         ctx.model.setProps({

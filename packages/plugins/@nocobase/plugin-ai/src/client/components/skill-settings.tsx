@@ -26,8 +26,8 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
       <Tooltip
         title={t(
           type === 'skills'
-            ? "Use the AI employee's default skills for this node."
-            : "Use the AI employee's default tools for this node.",
+            ? "Use the AI employee's default skills for this task."
+            : "Use the AI employee's default tools for this task.",
         )}
       >
         <span>{t('Preset')}</span>
@@ -40,8 +40,8 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
       <Tooltip
         title={t(
           type === 'skills'
-            ? 'Select the specific skills this node is allowed to use.'
-            : 'Select the specific tools this node is allowed to use.',
+            ? 'Select the specific skills this task is allowed to use.'
+            : 'Select the specific tools this task is allowed to use.',
         )}
       >
         <span>{t('Custom')}</span>
@@ -51,7 +51,11 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
   },
 ];
 
-export const Skills: React.FC<{ username: string; defaultSkills: string[] }> = ({ username, defaultSkills }) => {
+export const Skills: React.FC<{ username: string; defaultSkills: string[]; initials?: string[] }> = ({
+  username,
+  defaultSkills,
+  initials,
+}) => {
   const t = useT();
   const radioOptions = useMemo(() => getRadioOptions(t, 'skills'), [t]);
   const field = useField<ArrayField>();
@@ -72,12 +76,12 @@ export const Skills: React.FC<{ username: string; defaultSkills: string[] }> = (
   };
 
   useEffect(() => {
-    const hasInitialSkills = Array.isArray(form.initialValues?.skillSettings?.skills);
+    const hasInitialSkills = initials ?? Array.isArray(form.initialValues?.skillSettings?.skills);
     if (!hasInitialSkills) {
       form.setValuesIn('skillSettings.skills', undefined);
     }
     setRadioValue(hasInitialSkills ? RadioOptions.custom.value : RadioOptions.preset.value);
-  }, [form]);
+  }, [form, initials]);
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
@@ -109,7 +113,11 @@ export const Skills: React.FC<{ username: string; defaultSkills: string[] }> = (
   );
 };
 
-export const Tools: React.FC<{ username: string; defaultTools: string[] }> = ({ username, defaultTools }) => {
+export const Tools: React.FC<{ username: string; defaultTools: string[]; initials?: string[] }> = ({
+  username,
+  defaultTools,
+  initials,
+}) => {
   const t = useT();
   const radioOptions = useMemo(() => getRadioOptions(t, 'tools'), [t]);
   const field = useField<ArrayField>();
@@ -130,12 +138,12 @@ export const Tools: React.FC<{ username: string; defaultTools: string[] }> = ({ 
   };
 
   useEffect(() => {
-    const hasInitialTools = Array.isArray(form.initialValues?.skillSettings?.tools);
+    const hasInitialTools = initials ?? Array.isArray(form.initialValues?.skillSettings?.tools);
     if (!hasInitialTools) {
       form.setValuesIn('skillSettings.tools', undefined);
     }
     setRadioValue(hasInitialTools ? RadioOptions.custom.value : RadioOptions.preset.value);
-  }, [form]);
+  }, [form, initials]);
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
@@ -236,7 +244,7 @@ export const SkillSettings: React.FC = observer(() => {
             },
             'x-decorator-props': {
               // layout: 'horizontal',
-              tooltip: tExpr('Configure the skills available to this node', {
+              tooltip: tExpr('Configure the skills available to this task', {
                 ns: namespace,
               }),
             },
@@ -252,7 +260,7 @@ export const SkillSettings: React.FC = observer(() => {
             },
             'x-decorator-props': {
               // layout: 'horizontal',
-              tooltip: tExpr('Configure the tools available to this node', {
+              tooltip: tExpr('Configure the tools available to this task', {
                 ns: namespace,
               }),
             },
