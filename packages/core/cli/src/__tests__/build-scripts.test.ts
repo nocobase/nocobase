@@ -9,17 +9,43 @@
 
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vitest';
 
 test('build script copies locale JSON files into dist/locale', async () => {
-  const packageRoot = path.resolve(__dirname, '..', '..');
-  const sourceLocale = path.join(packageRoot, 'src', 'locale', 'en-US.json');
-  const distLocale = path.join(packageRoot, 'dist', 'locale', 'en-US.json');
+  const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const buildScript = path.join(packageRoot, 'scripts', 'build.mjs');
+  const sourceLocaleDir = path.join(packageRoot, 'src', 'locale');
+  const distLocaleDir = path.join(packageRoot, 'dist', 'locale');
 
-  const [sourceContent, distContent] = await Promise.all([
-    fsp.readFile(sourceLocale, 'utf8'),
-    fsp.readFile(distLocale, 'utf8'),
+  const build = spawnSync(process.execPath, [buildScript], {
+    cwd: packageRoot,
+    stdio: 'pipe',
+    encoding: 'utf8',
+  });
+
+  expect(
+    build.status,
+    build.stderr || build.stdout || 'expected build script to exit successfully',
+  ).toBe(0);
+
+  const [sourceEntries, distEntries] = await Promise.all([
+    fsp.readdir(sourceLocaleDir),
+    fsp.readdir(distLocaleDir),
   ]);
 
-  expect(distContent).toBe(sourceContent);
+  const sourceJsonFiles = sourceEntries.filter((name) => name.endsWith('.json')).sort();
+  const distJsonFiles = distEntries.filter((name) => name.endsWith('.json')).sort();
+
+  expect(distJsonFiles).toEqual(sourceJsonFiles);
+
+  for (const fileName of sourceJsonFiles) {
+    const [sourceContent, distContent] = await Promise.all([
+      fsp.readFile(path.join(sourceLocaleDir, fileName), 'utf8'),
+      fsp.readFile(path.join(distLocaleDir, fileName), 'utf8'),
+    ]);
+
+    expect(distContent).toBe(sourceContent);
+  }
 });

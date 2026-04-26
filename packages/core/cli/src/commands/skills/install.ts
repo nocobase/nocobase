@@ -24,7 +24,7 @@ export default class SkillsInstall extends Command {
   static override flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip the install or update confirmation prompt',
+      description: 'Skip the install confirmation prompt',
       default: false,
     }),
     json: Flags.boolean({
