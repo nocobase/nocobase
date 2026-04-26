@@ -36,15 +36,21 @@ keywords: "知识库,Local 知识库,RAG,向量存储,文档上传,NocoBase"
 
 创建知识库后，在知识库列表页面，点击刚刚创建的知识库，进入知识库文档管理页。
 
-![20251023100458](https://static-docs.nocobase.com/20251023100458.png)
+![20260426233838](https://static-docs.nocobase.com/20260426233838.png)
 
-![20251023100527](https://static-docs.nocobase.com/20251023100527.png)
+![20260426233417](https://static-docs.nocobase.com/20260426233417.png)
 
 点击 `Upload` 按钮上传文档，文档上传后，会自动开始向量化，等待 `Status` 从 `Pending` 状态变为 `Success` 状态。
 
-目前知识库支持的文档类型：txt, pdf, doc, docx, ppt, pptx；pdf只支持纯文本。
+目前知识库支持的文档类型：txt, md, json, cvs, xls, xlsx, pdf, doc, docx, ppt, pptx；pdf只支持纯文本。
 
-![20251023100901](https://static-docs.nocobase.com/20251023100901.png)
+如果该需要批量上传文件，可以创建一个 zip 压缩包，然后在知识库上传。后台会解压 zip 压缩包然后自动导入并向量化文档。
+
+![20260426233711](https://static-docs.nocobase.com/20260426233711.png)
+
+如果上传 zip 压缩包遇到报错，提示文件过大，可以在文件管理模块设置上传文件大小限制。
+
+![20260426234224](https://static-docs.nocobase.com/20260426234224.png)
 
 ## 知识库类型
 
