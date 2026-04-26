@@ -15,10 +15,10 @@ If you are a human user, please refer to [Quick Start](./quick-start.md).
 
 Confirm the user has the following dependencies installed:
 
-- **Node.js 22** (run `node -v` to check). If the current version is not 22.x:
+- **Node.js >= 22** (run `node -v` to check). If the current version is below 22:
   1. First check whether the user has a Node version manager installed (run `nvm --version`, `fnm --version`, `volta --version` in order)
   2. If any of these tools is detected, use it to switch to Node.js 22 (e.g., `nvm install 22 && nvm use 22`, `fnm install 22 && fnm use 22`, `volta install node@22`)
-  3. If no version manager is found, guide the user to download and install Node.js 22 from the [Node.js website](https://nodejs.org/)
+  3. If no version manager is found, guide the user to download and install Node.js >= 22 from the [Node.js website](https://nodejs.org/)
 - **Yarn 1.x** (run `yarn -v` to check). If not installed, install via `npm install -g yarn`
 - **Git** (run `git --version` to check). If not installed, install from the [Git website](https://git-scm.com/)
 - **Docker** (if the user needs to install NocoBase via Docker). Run `docker -v` to check; if not installed, guide the user to install from the [Docker website](https://www.docker.com/get-started/)

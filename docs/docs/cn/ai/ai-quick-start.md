@@ -15,10 +15,10 @@ sidebar: false
 
 确认用户已安装以下依赖：
 
-- **Node.js 22**（运行 `node -v` 检查）。如果当前版本不是 22.x：
+- **Node.js >= 22**（运行 `node -v` 检查）。如果当前版本低于 22：
   1. 先检查用户系统中是否已安装 Node 版本管理工具（依次运行 `nvm --version`、`fnm --version`、`volta --version`）
   2. 如果检测到其中任一工具，直接用它切换到 Node.js 22（例如 `nvm install 22 && nvm use 22`、`fnm install 22 && fnm use 22`、`volta install node@22`）
-  3. 如果没有版本管理工具，引导用户通过 [Node.js 官网](https://nodejs.org/) 下载安装 Node.js 22
+  3. 如果没有版本管理工具，引导用户通过 [Node.js 官网](https://nodejs.org/) 下载安装 Node.js >= 22
 - **Yarn 1.x**（运行 `yarn -v` 检查）。如果没有，通过 `npm install -g yarn` 安装
 - **Git**（运行 `git --version` 检查）。如果没有，通过 [Git 官网](https://git-scm.com/) 安装
 - **Docker**（如果用户需要用 Docker 方式安装 NocoBase）。运行 `docker -v` 检查，如果没有，引导用户通过 [Docker 官网](https://www.docker.com/get-started/) 安装

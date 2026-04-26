@@ -68,7 +68,7 @@ Unlike other Agents, Hermes updates its memory and skill documents after each op
 Before starting, make sure you have the following environment ready:
 
 - A server running Hermes Agent (Linux / macOS, Python 3.10+)
-- Node.js 22 (for running NocoBase CLI and Skills)
+- Node.js >= 22 (for running NocoBase CLI and Skills)
 - If you already have a NocoBase instance, it needs to be version >= 2.1.0-alpha.22
 
 Installing Hermes requires just one command:

@@ -69,7 +69,7 @@ You send instructions from any supported platform, WorkBuddy completes NocoBase 
 Before starting, make sure you have the following environment ready:
 
 - WorkBuddy account ([registration portal](https://www.codebuddy.cn))
-- Node.js 22 (for running NocoBase CLI and Skills)
+- Node.js >= 22 (for running NocoBase CLI and Skills)
 - If you already have a NocoBase instance, it needs to be version >= 2.1.0-alpha.22
 
 :::warning Note

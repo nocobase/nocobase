@@ -62,7 +62,7 @@ You (Terminal / VS Code / JetBrains / ...)
 Before starting, make sure you have the following environment ready:
 
 - OpenCode installed ([installation guide](https://opencode.ai/docs/))
-- Node.js 22 (for running NocoBase CLI and Skills)
+- Node.js >= 22 (for running NocoBase CLI and Skills)
 - If you already have a NocoBase instance, it needs to be version >= 2.1.0-alpha.22
 
 ## Quick Start

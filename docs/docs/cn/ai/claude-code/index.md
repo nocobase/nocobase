@@ -62,7 +62,7 @@ Claude Code 通过以下方式与 NocoBase 协同工作：
 开始之前，确保你准备好了以下环境：
 
 - 已安装 Claude Code（`npm install -g @anthropic-ai/claude-code`）
-- Node.js 22（用于运行 NocoBase CLI 和 Skills）
+- Node.js >= 22（用于运行 NocoBase CLI 和 Skills）
 - 如果已有 NocoBase 实例，需要版本 >= 2.1.0-alpha.22
 
 ## 快速开始
