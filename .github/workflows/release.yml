@@ -22,10 +22,10 @@ jobs:
     needs: get-plugins
     runs-on: ubuntu-latest
     steps:
-      - name: Set Node.js 20
+      - name: Set Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 22
       - name: Get info
         id: get-info
         shell: bash
