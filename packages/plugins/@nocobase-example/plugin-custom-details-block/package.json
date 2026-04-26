@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-custom-details-block",
   "displayName": "Plugin example: Custom details block",
   "description": "This plugin demonstrates how to use the custom details block feature to create a custom details block.",
-  "version": "2.1.0-beta.17",
+  "version": "2.1.0-beta.18",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
