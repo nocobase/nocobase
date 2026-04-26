@@ -1355,8 +1355,19 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       tools.push(tool);
     }
-    const toolFilter = this.skillSettings?.tools ?? [];
-    return tools.filter((t) => toolFilter.length === 0 || toolFilter.includes(t.definition.name));
+    if (!this.skillSettings) {
+      return tools;
+    } else if (!this.skillSettings.toolsVersion) {
+      const toolFilter = this.skillSettings.tools ?? [];
+      return tools.filter((t) => toolFilter.length === 0 || toolFilter.includes(t.definition.name));
+    } else {
+      const toolFilter = this.skillSettings.tools;
+      if (_.isArray(toolFilter)) {
+        return tools.filter((t) => toolFilter.includes(t.definition.name));
+      } else {
+        return tools;
+      }
+    }
   }
 
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
@@ -1369,10 +1380,21 @@ If information is missing, clearly state it in the summary.</Important>`;
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
     const specifiedSkillNames = this.employee.skillSettings?.skills ?? [];
     const specifiedSkills = specifiedSkillNames.length ? await skillsManager.getSkills(specifiedSkillNames) : [];
-    const skillFilter = this.skillSettings?.skills ?? [];
-    return _.uniqBy([...(specifiedSkills || []), ...(generalSkills || [])], 'name').filter(
-      (it) => skillFilter.length === 0 || skillFilter.includes(it.name),
-    );
+    const mergedSkills = _.uniqBy([...(specifiedSkills || []), ...(generalSkills || [])], 'name');
+
+    if (!this.skillSettings) {
+      return mergedSkills;
+    } else if (!this.skillSettings.skillsVersion) {
+      const skillFilter = this.skillSettings.skills ?? [];
+      return mergedSkills.filter((it) => skillFilter.length === 0 || skillFilter.includes(it.name));
+    } else {
+      const skillFilter = this.skillSettings.skills;
+      if (_.isArray(skillFilter)) {
+        return mergedSkills.filter((it) => skillFilter.includes(it.name));
+      } else {
+        return mergedSkills;
+      }
+    }
   }
 
   private async getAgentTools(): Promise<{

@@ -53,6 +53,13 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
     await processor.exit();
 
     try {
+      if (skillSettings && skillSettings.skillsVersion == null) {
+        skillSettings.skillsVersion = 2;
+      }
+      if (skillSettings && skillSettings.toolsVersion == null) {
+        skillSettings.toolsVersion = 2;
+      }
+
       const { conversation, aiWorkflowTasks } = await this.createWorkflowTask({
         username,
         userMessage,
