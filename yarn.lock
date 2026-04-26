@@ -5706,6 +5706,13 @@
     openai "^6.18.0"
     zod "^3.25.76 || ^4"
 
+"@langchain/xai@1.3.3":
+  version "1.3.3"
+  resolved "https://registry.npmjs.org/@langchain/xai/-/xai-1.3.3.tgz#483e0be66fba50bb470f8e2686f93ed931e64eef"
+  integrity sha512-bK4WeoFPy8+sEwlJ6FsGWaf8uaNOCKd4QFydQibuRtkShFMnAdkombIdujlNTtNkycguftlWU45dihf72jHm6Q==
+  dependencies:
+    "@langchain/openai" "1.2.7"
+
 "@langchain/textsplitters@1.0.1", "@langchain/textsplitters@^1.0.1":
   version "1.0.1"
   resolved "https://registry.npmjs.org/@langchain/textsplitters/-/textsplitters-1.0.1.tgz#292f9c93239178c248b3338acf7b68aa47aa9830"

@@ -49,13 +49,11 @@ export class XAIProvider extends LLMProvider {
     return new ChatXAI({
       apiKey,
       ...filteredModelOptions,
+      baseURL: baseURL || this.baseURL,
       modelKwargs: {
         response_format: responseFormatOptions,
       },
-      configuration: {
-        baseURL: baseURL || this.baseURL,
-      },
-    });
+    } as any);
   }
 }
 
