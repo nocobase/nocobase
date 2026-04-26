@@ -1207,8 +1207,8 @@ test('test recreates the built-in test database before running tests', async () 
   expect(mocks.childSpawnCalls[0]).toMatchObject({
     command: process.execPath,
     args: [
-      expect.stringContaining('/node_modules/tsx/dist/cli.mjs'),
-      expect.stringContaining('/packages/core/test/src/scripts/test-db-creator.ts'),
+      expect.stringMatching(/[\\/]node_modules[\\/]tsx[\\/]dist[\\/]cli\.mjs$/),
+      expect.stringMatching(/[\\/]packages[\\/]core[\\/]test[\\/]src[\\/]scripts[\\/]test-db-creator\.ts$/),
     ],
   });
   expect(mocks.childSpawnCalls[0]?.options?.env).toMatchObject({
