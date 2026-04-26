@@ -2334,6 +2334,96 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
   });
 
+  it('should create list and grid-card record actions with frontend-aligned button defaults', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Record action style page',
+      tabTitle: 'Record action style tab',
+    });
+    const list = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'list',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+    const gridCard = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'gridCard',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+
+    const listEditAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: list.uid,
+          },
+          type: 'edit',
+          settings: {
+            title: '编辑',
+          },
+        },
+      }),
+    );
+    const gridCardViewAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: gridCard.uid,
+          },
+          type: 'view',
+        },
+      }),
+    );
+    const explicitListEditAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: list.uid,
+          },
+          type: 'edit',
+          settings: {
+            type: 'primary',
+            icon: 'EditOutlined',
+          },
+        },
+      }),
+    );
+
+    const listEditReadback = await getSurface(rootAgent, {
+      uid: listEditAction.uid,
+    });
+    expect(listEditReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: '编辑',
+      type: 'link',
+      icon: null,
+    });
+
+    const gridCardViewReadback = await getSurface(rootAgent, {
+      uid: gridCardViewAction.uid,
+    });
+    expect(gridCardViewReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+
+    const explicitListEditReadback = await getSurface(rootAgent, {
+      uid: explicitListEditAction.uid,
+    });
+    expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'primary',
+      icon: 'EditOutlined',
+    });
+  });
+
   it('should compose a grid-card block with item fields block actions and record actions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose grid-card page',

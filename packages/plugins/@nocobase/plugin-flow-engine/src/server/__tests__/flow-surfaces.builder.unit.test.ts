@@ -91,3 +91,41 @@ describe('flowSurfaces builder translation defaults', () => {
     });
   });
 });
+
+describe('flowSurfaces builder action style defaults', () => {
+  it('should align record action button defaults with their container initializers', () => {
+    const tableEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'TableActionsColumnModel',
+    });
+    const listEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'ListItemModel',
+    });
+    const gridCardEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'GridCardItemModel',
+    });
+    const detailsEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'DetailsBlockModel',
+    });
+
+    expect(tableEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+    expect(listEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+    expect(gridCardEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+    expect(detailsEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'default',
+      icon: 'EditOutlined',
+    });
+  });
+});

@@ -1089,7 +1089,7 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
 }
 
 function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
-  if (containerUse === 'TableActionsColumnModel') {
+  if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(containerUse || '').trim())) {
     return {
       ...props,
       type: 'link',
