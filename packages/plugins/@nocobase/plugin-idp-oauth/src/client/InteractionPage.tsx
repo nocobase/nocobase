@@ -59,18 +59,13 @@ export const InteractionPage = () => {
 
       const token = api.auth.getToken();
       const authenticator = api.auth.getAuthenticator() || 'basic';
-      const body = { ...(payload || {}) };
-      if (token) {
-        body.bridge_token = token;
-        body.bridge_authenticator = authenticator;
-      }
 
       const response = await api.request({
         url: interactionApiPath,
         method,
         skipNotify: true,
         withCredentials: true,
-        data: method === 'post' ? body : undefined,
+        data: method === 'post' ? payload : undefined,
         headers: token
           ? {
               Authorization: `Bearer ${token}`,
