@@ -29,10 +29,10 @@ jobs:
       TARGET_TAG: ${{ inputs.tag }}
       NPM_DIST_TAG: republish
     steps:
-      - name: Set Node.js 20
+      - name: Set Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Print mode
         run: |

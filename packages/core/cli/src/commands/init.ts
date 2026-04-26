@@ -30,6 +30,7 @@ import {
 } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { run } from '../lib/run-npm.ts';
+import { installNocoBaseSkills } from '../lib/skills-manager.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -344,8 +345,8 @@ Prompt modes:
 
       if (Boolean(normalizedFlags['install-skills'])) {
         try {
-          p.log.step('Installing NocoBase agent skills (npx -y skills add nocobase/skills)');
-          await run('npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y']);
+          p.log.step('Installing NocoBase agent skills (nb skills install)');
+          await installNocoBaseSkills();
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : String(error);
           p.outro(pc.red(`Skills install failed: ${message}`));
@@ -529,8 +530,8 @@ Prompt modes:
 
     if (installSkills) {
       try {
-        p.log.step('Installing NocoBase agent skills (npx -y skills add nocobase/skills)');
-        await run('npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y']);
+        p.log.step('Installing NocoBase agent skills (nb skills install)');
+        await installNocoBaseSkills();
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         p.outro(pc.red(`Skills install failed: ${message}`));

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   runPromptCatalogWebUI: vi.fn(),
   runPromptCatalog: vi.fn(),
   runNpm: vi.fn(),
+  installNocoBaseSkills: vi.fn(),
   getEnv: vi.fn(),
   upsertEnv: vi.fn(),
   promptInfo: vi.fn(),
@@ -72,9 +73,26 @@ vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
   };
 });
 
-vi.mock('../lib/run-npm.ts', () => ({
-  run: mocks.runNpm,
-}));
+vi.mock('../lib/run-npm.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/run-npm.js')>();
+  return {
+    ...actual,
+    run: mocks.runNpm,
+  };
+});
+
+vi.mock('../lib/skills-manager.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/skills-manager.js')>();
+  return {
+    ...actual,
+    installNocoBaseSkills: (...args: Parameters<typeof actual.installNocoBaseSkills>) => {
+      if (mocks.installNocoBaseSkills.mock.calls.length || mocks.installNocoBaseSkills.getMockImplementation()) {
+        return mocks.installNocoBaseSkills(...args);
+      }
+      return actual.installNocoBaseSkills(...args);
+    },
+  };
+});
 
 vi.mock('@clack/prompts', () => ({
   intro: mocks.promptIntro,
@@ -544,7 +562,20 @@ test('nb init installs skills when --install-skills is provided', async () => {
     authType: 'oauth',
     ...(options.values ?? {}),
   }));
-  mocks.runNpm.mockResolvedValue(undefined);
+  mocks.installNocoBaseSkills.mockResolvedValue({
+    action: 'installed',
+    status: {
+      workspaceRoot: process.cwd(),
+      stateFile: '',
+      installed: true,
+      managedByNb: true,
+      sourcePackage: 'nocobase/skills',
+      installedSkillNames: ['nocobase-env-manage'],
+      latestRef: 'abc123',
+      installedRef: 'abc123',
+      updateAvailable: false,
+    },
+  });
 
   const runCommand = vi.fn(async () => undefined);
   const command = Object.assign(Object.create(Init.prototype), {
@@ -571,9 +602,7 @@ test('nb init installs skills when --install-skills is provided', async () => {
     process.argv = originalArgv;
   }
 
-  expect(mocks.runNpm.mock.calls).toEqual([
-    ['npx', ['-y', 'skills', 'add', 'nocobase/skills', '-y']],
-  ]);
+  expect(mocks.installNocoBaseSkills.mock.calls.length).toBe(1);
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--scope', 'project', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],

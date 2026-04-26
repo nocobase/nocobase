@@ -94,6 +94,12 @@ export const listByUser = async (ctx: Context, next: Next) => {
       skills: [],
       tools: [],
     };
+    if (!_.isArray(skillSettings.skills)) {
+      skillSettings.skills = [];
+    }
+    if (!_.isArray(skillSettings.tools)) {
+      skillSettings.tools = [];
+    }
     for (const tool of tools) {
       skillSettings.tools.push({
         name: tool.definition.name,

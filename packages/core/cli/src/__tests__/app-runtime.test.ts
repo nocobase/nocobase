@@ -71,7 +71,9 @@ test('resolveManagedAppRuntime detects local, docker, and remote envs', async ()
       kind: 'local',
       source: 'git',
     });
-    expect(localRuntime?.kind === 'local' ? localRuntime.projectRoot : '').toMatch(/apps\/git-env$/);
+    expect(localRuntime?.kind === 'local' ? localRuntime.projectRoot : '').toBe(
+      path.resolve('./apps/git-env'),
+    );
 
     const remoteRuntime = await resolveManagedAppRuntime('remote');
     expect(remoteRuntime && { kind: remoteRuntime.kind, source: remoteRuntime.source }).toEqual({

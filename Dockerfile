@@ -1,4 +1,4 @@
-FROM node:20-bookworm as app-builder
+FROM node:22-bookworm as app-builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
@@ -35,7 +35,7 @@ RUN yarn config set registry $VERDACCIO_URL && \
 FROM scratch as app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 
-FROM node:20-bookworm-slim as runtime
+FROM node:22-bookworm-slim as runtime
 ARG COMMIT_HASH
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \

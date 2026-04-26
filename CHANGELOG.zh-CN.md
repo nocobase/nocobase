@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.44](https://github.com/nocobase/nocobase/compare/v2.0.43...v2.0.44) - 2026-04-26
+
+### 🚀 优化
+
+- **[AI 员工]** 移除LLM服务配置中的推荐模型 ([#9228](https://github.com/nocobase/nocobase/pull/9228)) by @cgyrock
+
+### 🐛 修复
+
+- **[client]** 关系字段隐藏排序开关 ([#9220](https://github.com/nocobase/nocobase/pull/9220)) by @jiannx
+
 ## [v2.0.43](https://github.com/nocobase/nocobase/compare/v2.0.42...v2.0.43) - 2026-04-24
 
 ### 🚀 优化

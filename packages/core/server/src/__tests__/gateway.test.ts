@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
+import { mockServer, startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { vi } from 'vitest';
 console.log('before import');
 import ws from 'ws';
@@ -90,12 +90,7 @@ describe('gateway', () => {
     });
 
     it('should match error structure', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
       expect(res.status).toBe(503);
       const data = res.body;
@@ -109,12 +104,7 @@ describe('gateway', () => {
     });
 
     it('should return error when app not installed', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       // app should have error when not installed
       await main.runAsCLI(['start'], {
         from: 'user',
@@ -137,12 +127,7 @@ describe('gateway', () => {
       });
     });
     it('should return running message when app is command running status', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       main.on('beforeInstall', async () => {
         await new Promise((resolve) => {
           setTimeout(resolve, 2000);

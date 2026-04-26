@@ -147,6 +147,8 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | `nb env` | Manage saved CLI env connections. |
 | `nb api` | Call NocoBase API resources from the CLI. |
 | `nb pm` | Manage plugins for the selected NocoBase env. |
+| `nb self` | Check or update the installed NocoBase CLI. |
+| `nb skills` | Check, install, or update NocoBase AI coding skills for the current workspace. |
 
 Recommended style: use `--env` explicitly for app/runtime commands. `-e` is the short form:
 
@@ -164,6 +166,35 @@ nb start -e app1
 nb logs -e app1
 nb upgrade -e app1
 nb db start -e app1
+```
+
+## CLI And Skills Updates
+
+Check whether the installed CLI itself is up to date:
+
+```bash
+nb self check
+nb self check --json
+```
+
+Update the CLI when it is installed globally with npm:
+
+```bash
+nb self update
+```
+
+Check whether the current workspace already has the NocoBase AI coding skills:
+
+```bash
+nb skills check
+nb skills check --json
+```
+
+Install the skills for the first time, or update an existing `nocobase/skills` install:
+
+```bash
+nb skills install
+nb skills update
 ```
 
 ## Runtime Types

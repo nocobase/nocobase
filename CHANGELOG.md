@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.44](https://github.com/nocobase/nocobase/compare/v2.0.43...v2.0.44) - 2026-04-26
+
+### 🚀 Improvements
+
+- **[AI employees]** Remove the recommended model in the LLM service configuration ([#9228](https://github.com/nocobase/nocobase/pull/9228)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]** relationship field hidden sort switch ([#9220](https://github.com/nocobase/nocobase/pull/9220)) by @jiannx
+
 ## [v2.0.43](https://github.com/nocobase/nocobase/compare/v2.0.42...v2.0.43) - 2026-04-24
 
 ### 🚀 Improvements
