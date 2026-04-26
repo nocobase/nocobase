@@ -243,7 +243,7 @@ export const SkillSettings: React.FC = observer(() => {
               defaultSkills,
             },
             'x-decorator-props': {
-              // layout: 'horizontal',
+              layout: 'horizontal',
               tooltip: tExpr('Configure the skills available to this task', {
                 ns: namespace,
               }),
@@ -259,7 +259,7 @@ export const SkillSettings: React.FC = observer(() => {
               defaultTools,
             },
             'x-decorator-props': {
-              // layout: 'horizontal',
+              layout: 'horizontal',
               tooltip: tExpr('Configure the tools available to this task', {
                 ns: namespace,
               }),
