@@ -8,7 +8,12 @@
  */
 
 import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
+
+const TEST_CWD = '/tmp/app2';
+const TEST_STORAGE_PATH = path.join(TEST_CWD, 'storage', 'test');
+const TEST_POSTGRES_DATA_DIR = path.resolve(TEST_STORAGE_PATH, 'db', 'postgres');
 
 const mocks = vi.hoisted(() => ({
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) =>
@@ -1174,7 +1179,7 @@ test('test recreates the built-in test database before running tests', async () 
         '-e',
         'POSTGRES_PASSWORD=nocobase',
         '-v',
-        '/tmp/app2/storage/test/db/postgres:/var/lib/postgresql/data',
+        `${TEST_POSTGRES_DATA_DIR}:/var/lib/postgresql/data`,
         '-p',
         '5433:5432',
         'postgres:16',
@@ -1189,11 +1194,11 @@ test('test recreates the built-in test database before running tests', async () 
     ],
   ]);
   expect(mocks.fsRm.mock.calls[0]).toEqual([
-    '/tmp/app2/storage/test',
+    TEST_STORAGE_PATH,
     { recursive: true, force: true },
   ]);
   expect(mocks.fsMkdir.mock.calls[0]).toEqual([
-    '/tmp/app2/storage/test/db/postgres',
+    TEST_POSTGRES_DATA_DIR,
     { recursive: true },
   ]);
   expect(mocks.succeedTask.mock.calls[0]).toEqual([
@@ -1202,8 +1207,8 @@ test('test recreates the built-in test database before running tests', async () 
   expect(mocks.childSpawnCalls[0]).toMatchObject({
     command: process.execPath,
     args: [
-      expect.stringContaining('/node_modules/tsx/dist/cli.mjs'),
-      expect.stringContaining('/packages/core/test/src/scripts/test-db-creator.ts'),
+      expect.stringMatching(/[\\/]node_modules[\\/]tsx[\\/]dist[\\/]cli\.mjs$/),
+      expect.stringMatching(/[\\/]packages[\\/]core[\\/]test[\\/]src[\\/]scripts[\\/]test-db-creator\.ts$/),
     ],
   });
   expect(mocks.childSpawnCalls[0]?.options?.env).toMatchObject({
@@ -1251,7 +1256,7 @@ test('test injects DB_* and STORAGE_PATH into nocobase test', async () => {
         cwd: '/tmp/app2',
         env: {
           APP_ENV_PATH: '.env',
-          STORAGE_PATH: '/tmp/app2/storage/test',
+          STORAGE_PATH: TEST_STORAGE_PATH,
           TZ: 'UTC',
           DB_DIALECT: 'postgres',
           DB_HOST: '127.0.0.1',
@@ -1298,7 +1303,7 @@ test('test respects explicit server and client mode flags', async () => {
       cwd: '/tmp/app2',
       env: {
         APP_ENV_PATH: '.env',
-        STORAGE_PATH: '/tmp/app2/storage/test',
+        STORAGE_PATH: TEST_STORAGE_PATH,
         TZ: 'UTC',
         DB_DIALECT: 'postgres',
         DB_HOST: '127.0.0.1',
@@ -1346,7 +1351,7 @@ test('test respects explicit server and client mode flags', async () => {
       cwd: '/tmp/app2',
       env: {
         APP_ENV_PATH: '.env',
-        STORAGE_PATH: '/tmp/app2/storage/test',
+        STORAGE_PATH: TEST_STORAGE_PATH,
         TZ: 'UTC',
         DB_DIALECT: 'postgres',
         DB_HOST: '127.0.0.1',
