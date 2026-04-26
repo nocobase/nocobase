@@ -4404,18 +4404,14 @@ describe('flowSurfaces resource', () => {
     });
     expect(innerTitleFieldReadback.tree.props?.titleField).toBe('title');
 
-    const customSubModels = _.cloneDeep(innerTitleFieldReadback.tree.subModels || {});
-    customSubModels.subTableColumns = _.castArray(customSubModels.subTableColumns || []);
-    customSubModels.subTableColumns[0] = {
-      ...(customSubModels.subTableColumns[0] || {}),
+    const customActionsColumn = innerTitleFieldReadback.tree.subModels?.subTableColumns?.[0];
+    expect(customActionsColumn?.use).toBe('PopupSubTableActionsColumnModel');
+    await flowRepo.patch({
+      uid: customActionsColumn.uid,
       props: {
-        ...(customSubModels.subTableColumns[0]?.props || {}),
+        ...(customActionsColumn.props || {}),
         reviewMarker: 'preserve-on-same-field-component',
       },
-    };
-    await flowRepo.patch({
-      uid: defaultRolesField.fieldUid,
-      subModels: customSubModels,
     });
     const sameFieldComponentRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
