@@ -50,6 +50,11 @@ import {
   readOptionalString,
   readString,
 } from './private-utils';
+import {
+  assertNoInternalFieldKeys,
+  normalizePublicFieldNameList,
+  normalizePublicFieldType,
+} from '../field-type-resolver';
 
 type FlowSurfaceCompiledBlocks = {
   blocks: any[];
@@ -107,7 +112,14 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
   'associationPathName',
   'renderer',
   'type',
-  'fieldComponent',
+  'fieldType',
+  'fields',
+  'selectorFields',
+  'titleField',
+  'openMode',
+  'popupSize',
+  'pageSize',
+  'showIndex',
   'label',
   'target',
   'settings',
@@ -994,9 +1006,16 @@ function compileField(
     throwBadRequest(`${context}[${index}] must be a string or object`);
   }
   assertOnlyAllowedKeys(input, `${context}[${index}]`, APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS);
+  assertNoInternalFieldKeys(input, `${context}[${index}]`);
+  assertNoInternalFieldKeys(input.settings, `${context}[${index}].settings`);
   const fieldPath = readOptionalString(input.field);
   const syntheticType = readOptionalString(input.type);
-  const fieldComponent = readOptionalString((input as any).fieldComponent);
+  const fieldType = normalizePublicFieldType((input as any).fieldType, `${context}[${index}]`);
+  const fields = normalizePublicFieldNameList((input as any).fields, `${context}[${index}].fields`);
+  const selectorFields = normalizePublicFieldNameList(
+    (input as any).selectorFields,
+    `${context}[${index}].selectorFields`,
+  );
   if (!fieldPath && !syntheticType) {
     throwBadRequest(`${context}[${index}] requires field or type`);
   }
@@ -1024,7 +1043,14 @@ function compileField(
     associationPathName: readOptionalString(input.associationPathName),
     renderer: readOptionalString(input.renderer),
     type: syntheticType,
-    fieldComponent,
+    fieldType,
+    fields,
+    selectorFields,
+    titleField: readOptionalString((input as any).titleField),
+    openMode: readOptionalString((input as any).openMode),
+    popupSize: readOptionalString((input as any).popupSize),
+    pageSize: (input as any).pageSize,
+    showIndex: (input as any).showIndex,
     target: resolveTargetBlockKey(input.target, localBlockKeys, `${context}[${index}].target`),
     settings: Object.keys(settings).length ? settings : undefined,
     popup,

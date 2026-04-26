@@ -1498,7 +1498,8 @@ export const flowSurfaceExamples = {
           {
             key: 'rolesField',
             fieldPath: 'roles',
-            fieldComponent: 'PopupSubTableFieldModel',
+            fieldType: 'popupSubTable',
+            fields: ['title', 'name'],
           },
         ],
         fieldsLayout: {
@@ -1536,7 +1537,8 @@ export const flowSurfaceExamples = {
       {
         key: 'rolesField',
         fieldPath: 'roles',
-        fieldComponent: 'PopupSubTableFieldModel',
+        fieldType: 'popupSubTable',
+        fields: ['title', 'name'],
         settings: {
           title: 'Roles',
         },

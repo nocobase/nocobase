@@ -2240,10 +2240,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     }
   });
 
-  it('should compose relation fields with fieldComponent on form blocks', async () => {
+  it('should compose relation fields with fieldType on form blocks', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Compose relation fieldComponent page',
-      tabTitle: 'Compose relation fieldComponent tab',
+      title: 'Compose relation fieldType page',
+      tabTitle: 'Compose relation fieldType tab',
     });
 
     const composeRes = getData(
@@ -2264,7 +2264,8 @@ describe('flowSurfaces catalog + compose contract', () => {
                 {
                   key: 'rolesField',
                   fieldPath: 'roles',
-                  fieldComponent: 'PopupSubTableFieldModel',
+                  fieldType: 'popupSubTable',
+                  fields: ['title', 'name'],
                 },
               ],
             },
@@ -2281,9 +2282,14 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(formItems).toHaveLength(1);
     expect(formItems[0]?.use).toBe('FormItemModel');
     expect(formItems[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+    expect(
+      _.castArray(formItems[0]?.subModels?.field?.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', 'name']);
   });
 
-  it('should addBlock with inline fields that use relation fieldComponent semantics', async () => {
+  it('should addBlock with inline fields that use relation fieldType semantics', async () => {
     const page = await createPage(rootAgent, {
       title: 'AddBlock inline relation fields page',
       tabTitle: 'AddBlock inline relation fields tab',
@@ -2304,7 +2310,8 @@ describe('flowSurfaces catalog + compose contract', () => {
             {
               key: 'rolesField',
               fieldPath: 'roles',
-              fieldComponent: 'PopupSubTableFieldModel',
+              fieldType: 'popupSubTable',
+              fields: ['title'],
             },
           ],
         },
@@ -2317,6 +2324,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     const formItemsByType = _.castArray(blockByTypeSurface.tree?.subModels?.grid?.subModels?.items || []);
     expect(formItemsByType).toHaveLength(1);
     expect(formItemsByType[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+    expect(
+      _.castArray(formItemsByType[0]?.subModels?.field?.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title']);
 
     const addBlockByUseRes = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
@@ -2333,7 +2345,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             {
               key: 'rolesFieldByUse',
               fieldPath: 'roles',
-              fieldComponent: 'PopupSubTableFieldModel',
+              fieldType: 'popupSubTable',
             },
           ],
         },
@@ -2365,7 +2377,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                 {
                   key: 'batchRolesField',
                   fieldPath: 'roles',
-                  fieldComponent: 'PopupSubTableFieldModel',
+                  fieldType: 'popupSubTable',
                 },
               ],
             },
@@ -2381,6 +2393,41 @@ describe('flowSurfaces catalog + compose contract', () => {
     const batchFormItems = _.castArray(batchBlockSurface.tree?.subModels?.grid?.subModels?.items || []);
     expect(batchFormItems).toHaveLength(1);
     expect(batchFormItems[0]?.subModels?.field?.use).toBe('PopupSubTableFieldModel');
+  });
+
+  it('should reject internal relation field model keys in public field specs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Reject internal relation field keys page',
+      tabTitle: 'Reject internal relation field keys tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'userForm',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            fields: [
+              {
+                key: 'rolesField',
+                fieldPath: 'roles',
+                fieldComponent: 'PopupSubTableFieldModel',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expect(readErrorMessage(composeRes)).toContain('does not accept internal field keys');
   });
 
   it('should reject fieldsLayout on compose blocks that do not own a field grid', async () => {

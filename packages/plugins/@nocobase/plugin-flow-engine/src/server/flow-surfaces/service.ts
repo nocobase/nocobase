@@ -279,6 +279,12 @@ import {
   toFlowSurfaceBatchItemError,
 } from './service-utils';
 import {
+  assertNoInternalFieldKeys,
+  getPublicFieldTypeForUse,
+  resolveRelationFieldType,
+  usesNestedRelationFields,
+} from './field-type-resolver';
+import {
   areFlowTemplateRootUsesCompatible,
   buildTemplateMissingContextReason,
   getTemplateResourceCompatibilityDisabledReason,
@@ -1456,7 +1462,7 @@ export class FlowSurfacesService {
     projected: ReturnType<typeof projectSmartCatalogNode>,
     enabledPackages?: ReadonlySet<string>,
   ) {
-    if (!projected?.configureOptions?.fieldComponent || !node?.use) {
+    if (!projected?.configureOptions?.fieldType || !node?.use) {
       return projected;
     }
     try {
@@ -1471,19 +1477,78 @@ export class FlowSurfacesService {
       if (!supportedFieldUses?.size) {
         return projected;
       }
+      const supportedFieldTypes = Array.from(supportedFieldUses)
+        .map((use) => getPublicFieldTypeForUse(use))
+        .filter(Boolean);
       const configureOptions = _.cloneDeep(projected.configureOptions || {});
-      configureOptions.fieldComponent = {
-        type: configureOptions.fieldComponent?.type || 'string',
-        ...(configureOptions.fieldComponent || {}),
-        enum: Array.from(supportedFieldUses),
+      configureOptions.fieldType = {
+        type: configureOptions.fieldType?.type || 'string',
+        ...(configureOptions.fieldType || {}),
+        enum: Array.from(new Set(supportedFieldTypes)),
       };
+      const innerField = node?.subModels?.field || node;
       return {
         ...projected,
         configureOptions,
+        relation: {
+          ...(projected as any).relation,
+          fieldTypes: Array.from(new Set(supportedFieldTypes)),
+          current: buildDefinedPayload({
+            fieldType: getPublicFieldTypeForUse(innerField?.stepParams?.fieldBinding?.use || innerField?.use),
+            fields: this.collectRelationNestedFieldPaths(innerField),
+            selectorFields: this.collectRelationSelectorFieldPaths(innerField),
+            titleField: innerField?.props?.titleField || node?.props?.titleField,
+          }),
+          defaults: buildDefinedPayload({
+            titleField: this.getAssociationDefaultTitleFieldName(
+              fieldSource.field,
+              fieldSource.fieldSettingsInit?.dataSourceKey,
+            ),
+          }),
+          configureOptions,
+        },
       };
     } catch {
       return projected;
     }
+  }
+
+  private collectRelationNestedFieldPaths(fieldNode: any) {
+    const fieldUse = String(fieldNode?.stepParams?.fieldBinding?.use || fieldNode?.use || '').trim();
+    if (['SubTableFieldModel', 'DisplaySubTableFieldModel'].includes(fieldUse)) {
+      return _.castArray(fieldNode?.subModels?.columns || [])
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+        .filter(Boolean);
+    }
+    if (fieldUse === 'PopupSubTableFieldModel') {
+      return _.castArray(fieldNode?.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+        .filter(Boolean);
+    }
+    if (
+      ['SubFormFieldModel', 'SubFormListFieldModel', 'DisplaySubItemFieldModel', 'DisplaySubListFieldModel'].includes(
+        fieldUse,
+      )
+    ) {
+      return _.castArray(fieldNode?.subModels?.grid?.subModels?.items || [])
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+        .filter(Boolean);
+    }
+    return undefined;
+  }
+
+  private collectRelationSelectorFieldPaths(fieldNode: any) {
+    const fieldUse = String(fieldNode?.stepParams?.fieldBinding?.use || fieldNode?.use || '').trim();
+    if (fieldUse !== 'RecordPickerFieldModel') {
+      return undefined;
+    }
+    const table = _.castArray(fieldNode?.subModels?.['grid-block']?.subModels?.items || []).find(
+      (item: any) => item?.use === 'TableBlockModel',
+    );
+    return _.castArray(table?.subModels?.columns || [])
+      .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+      .filter(Boolean);
   }
 
   private projectCatalogItem(
@@ -6422,7 +6487,14 @@ export class FlowSurfacesService {
             ...(fieldSpec.associationPathName ? { associationPathName: fieldSpec.associationPathName } : {}),
             ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
             ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
-            ...(fieldSpec.fieldComponent ? { fieldComponent: fieldSpec.fieldComponent } : {}),
+            ...(fieldSpec.fieldType ? { fieldType: fieldSpec.fieldType } : {}),
+            ...(fieldSpec.fields ? { fields: fieldSpec.fields } : {}),
+            ...(fieldSpec.selectorFields ? { selectorFields: fieldSpec.selectorFields } : {}),
+            ...(fieldSpec.titleField ? { titleField: fieldSpec.titleField } : {}),
+            ...(fieldSpec.openMode ? { openMode: fieldSpec.openMode } : {}),
+            ...(fieldSpec.popupSize ? { popupSize: fieldSpec.popupSize } : {}),
+            ...(!_.isUndefined(fieldSpec.pageSize) ? { pageSize: fieldSpec.pageSize } : {}),
+            ...(!_.isUndefined(fieldSpec.showIndex) ? { showIndex: fieldSpec.showIndex } : {}),
             ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
             ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
             ...(fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
@@ -6527,6 +6599,8 @@ export class FlowSurfacesService {
       return result;
     }
     const target = await this.prepareWriteTarget('addField', values?.target, values, options);
+    assertNoInternalFieldKeys(values, 'flowSurfaces addField');
+    assertNoInternalFieldKeys(values?.settings, 'flowSurfaces addField.settings');
     ensureNoRawDirectAddKeys('addField', values, [
       'wrapperProps',
       'fieldProps',
@@ -6543,9 +6617,8 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
     const isApprovalFormTarget = isApprovalFormContainerUse(container.ownerUse);
-    const requestedFieldComponent = resolveRequestedFieldComponent(values);
     const requestedLegacyFieldUse = resolveRequestedFieldUseAlias(values);
-    const requestedFieldUse = resolveRequestedFieldUse(values);
+    let requestedFieldUse = resolveRequestedFieldUse(values);
     const requestedStandaloneType =
       typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
     const fieldCapability = resolveSupportedFieldCapability({
@@ -6558,6 +6631,9 @@ export class FlowSurfacesService {
     });
 
     if (fieldCapability.standaloneUse) {
+      if (hasOwnDefined(values, 'fieldType')) {
+        throwBadRequest('flowSurfaces fieldType is only supported for relation fields');
+      }
       if (inlinePopup) {
         throwBadRequest(`flowSurfaces addField type '${values.type}' does not support popup`);
       }
@@ -6680,6 +6756,28 @@ export class FlowSurfacesService {
       associationPathName: resolvedField.associationPathName,
       field: resolvedField.field,
     });
+    const relationFieldTypeResolution = resolveRelationFieldType({
+      fieldType: values.fieldType,
+      containerUse: container.ownerUse,
+      field: resolvedField.field,
+      dataSourceKey: resolvedField.dataSourceKey,
+      getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      fields: values.fields,
+      selectorFields: values.selectorFields,
+      titleField: values.titleField,
+      context: 'addField',
+    });
+    if (relationFieldTypeResolution) {
+      if (values.renderer) {
+        throwBadRequest(`flowSurfaces addField fieldType cannot be combined with renderer`);
+      }
+      if (requestedLegacyFieldUse && requestedLegacyFieldUse !== relationFieldTypeResolution.fieldUse) {
+        throwBadRequest(
+          `flowSurfaces fieldUse '${requestedLegacyFieldUse}' does not match fieldType '${relationFieldTypeResolution.fieldType}'`,
+        );
+      }
+      requestedFieldUse = relationFieldTypeResolution.fieldUse;
+    }
 
     const filterFormInit = isFilterFormItem
       ? {
@@ -6695,7 +6793,7 @@ export class FlowSurfacesService {
           `flowSurfaces fieldUse '${requestedLegacyFieldUse}' does not match inferred fieldUse '${fieldMenuCandidate.explicitFieldUse}' under '${container.ownerUse}'`,
         );
       }
-      if (!requestedFieldComponent) {
+      if (!relationFieldTypeResolution) {
         boundFieldCapability = {
           wrapperUse: fieldMenuCandidate.explicitWrapperUse,
           fieldUse: fieldMenuCandidate.explicitFieldUse,
@@ -6712,7 +6810,7 @@ export class FlowSurfacesService {
           containerUse: container.ownerUse,
           field: capabilityField,
           requestedFieldUse,
-          requestedFieldUseMode: requestedFieldComponent ? 'fieldComponent' : 'fieldUse',
+          requestedFieldUseMode: relationFieldTypeResolution ? 'fieldComponent' : 'fieldUse',
           requestedWrapperUse: container.wrapperUse,
           requestedRenderer: values.renderer,
           enabledPackages,
@@ -6730,7 +6828,7 @@ export class FlowSurfacesService {
             containerUse: container.ownerUse,
             field: capabilityField,
             requestedFieldUse,
-            requestedFieldUseMode: requestedFieldComponent ? 'fieldComponent' : 'fieldUse',
+            requestedFieldUseMode: relationFieldTypeResolution ? 'fieldComponent' : 'fieldUse',
             requestedWrapperUse: container.wrapperUse,
             requestedRenderer: values.renderer,
             enabledPackages,
@@ -6777,6 +6875,7 @@ export class FlowSurfacesService {
       capabilityField,
     );
     const defaultTitleField =
+      relationFieldTypeResolution?.titleField ??
       titleFieldSyncDecision.titleField ??
       normalizedFieldBinding.defaultTitleField ??
       fieldMenuCandidate?.defaultTitleField;
@@ -6856,6 +6955,21 @@ export class FlowSurfacesService {
       associationPathName: normalizedFieldBinding.associationPathName,
       fieldPath: normalizedFieldBinding.fieldPath,
     };
+    if (relationFieldTypeResolution) {
+      await this.applyResolvedRelationFieldType({
+        fieldUid: tree.innerUid,
+        fieldUse: boundFieldCapability.fieldUse,
+        targetCollection: relationFieldTypeResolution.targetCollection,
+        fields: relationFieldTypeResolution.fields,
+        selectorFields: relationFieldTypeResolution.selectorFields,
+        titleField: relationFieldTypeResolution.titleField,
+        openMode: values.openMode,
+        popupSize: values.popupSize,
+        pageSize: values.pageSize,
+        showIndex: values.showIndex,
+        transaction: options.transaction,
+      });
+    }
     await this.applyInlineFieldSettings('addField', result, inlineSettings, options);
     await this.applyInlineFieldPopup('addField', result, inlinePopup, {
       ...options,
@@ -13886,7 +14000,19 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     assertSupportedSimpleChanges('field wrapper', changes, getConfigureOptionKeysForUse(current?.use));
 
-    const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version', 'fieldComponent']);
+    const rawWrapperChanges = _.omit(changes, [
+      'clickToOpen',
+      'openView',
+      'code',
+      'version',
+      'fieldType',
+      'fields',
+      'selectorFields',
+      'openMode',
+      'popupSize',
+      'pageSize',
+      'showIndex',
+    ]);
     const wrapperChanges =
       current?.use === 'TableColumnModel' &&
       !hasOwnDefined(rawWrapperChanges, 'title') &&
@@ -14022,26 +14148,65 @@ export class FlowSurfacesService {
     }
 
     let effectiveInnerFieldUse = innerField?.use;
-    if (hasOwnDefined(changes, 'fieldComponent')) {
+    let fieldTypeResolution;
+    if (
+      hasOwnDefined(changes, 'fieldType') ||
+      hasOwnDefined(changes, 'fields') ||
+      hasOwnDefined(changes, 'selectorFields')
+    ) {
       if (!innerUid) {
         throwConflict(
           `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
           'FLOW_SURFACE_INNER_FIELD_MISSING',
         );
       }
+      const fieldSource = this.resolveFieldComponentFieldSource(current, normalizedBinding);
+      fieldTypeResolution = resolveRelationFieldType({
+        fieldType: hasOwnDefined(changes, 'fieldType')
+          ? changes.fieldType
+          : getPublicFieldTypeForUse(innerField?.stepParams?.fieldBinding?.use || innerField?.use),
+        containerUse: current?.use,
+        field: fieldSource.field,
+        dataSourceKey: fieldSource.fieldSettingsInit?.dataSourceKey,
+        getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+        fields: changes.fields,
+        selectorFields: changes.selectorFields,
+        titleField: hasOwnDefined(wrapperChanges, 'titleField') ? wrapperChanges.titleField : undefined,
+        context: 'configure',
+      });
+      if (!fieldTypeResolution) {
+        throwBadRequest('flowSurfaces configure fieldType is required when configuring relation fields');
+      }
       const normalizedFieldComponentUse = await this.rebuildFieldSubModelOnServer({
         wrapperNode: current,
         innerField,
-        targetFieldUse: changes.fieldComponent,
+        targetFieldUse: fieldTypeResolution.fieldUse,
         normalizedBinding,
         enabledPackages,
         transaction: options.transaction,
       });
       effectiveInnerFieldUse = normalizedFieldComponentUse;
       await this.syncFieldComponentStepParams(current, normalizedFieldComponentUse, options.transaction);
+      await this.applyResolvedRelationFieldType({
+        fieldUid: innerUid,
+        fieldUse: normalizedFieldComponentUse,
+        targetCollection: fieldTypeResolution.targetCollection,
+        fields: hasOwnDefined(changes, 'fields') ? fieldTypeResolution.fields : undefined,
+        selectorFields: hasOwnDefined(changes, 'selectorFields') ? fieldTypeResolution.selectorFields : undefined,
+        titleField: fieldTypeResolution.titleField,
+        openMode: changes.openMode,
+        popupSize: changes.popupSize,
+        pageSize: changes.pageSize,
+        showIndex: changes.showIndex,
+        transaction: options.transaction,
+      });
     }
 
-    if (shouldSyncTitleField && this.supportsFieldTitleFieldProp(effectiveInnerFieldUse)) {
+    const effectiveSyncedTitleField = fieldTypeResolution?.titleField ?? syncedTitleField;
+    if (
+      (shouldSyncTitleField || fieldTypeResolution?.titleField) &&
+      this.supportsFieldTitleFieldProp(effectiveInnerFieldUse)
+    ) {
       if (!innerUid) {
         throwConflict(
           `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
@@ -14054,7 +14219,7 @@ export class FlowSurfacesService {
             uid: innerUid,
           },
           props: {
-            titleField: syncedTitleField,
+            titleField: effectiveSyncedTitleField,
           },
         },
         options,
@@ -17773,6 +17938,399 @@ export class FlowSurfacesService {
       defaultTitleField: undefined,
       usesAssociationValueBinding: false,
     };
+  }
+
+  private getCollectionFieldOrBadRequest(collection: any, fieldPath: string, context: string) {
+    const field = resolveFieldFromCollection(collection, fieldPath);
+    if (!field) {
+      throwBadRequest(`flowSurfaces ${context} field '${fieldPath}' does not exist on relation target collection`);
+    }
+    return field;
+  }
+
+  private buildRelationTargetFieldInit(collection: any, fieldPath: string) {
+    return buildDefinedPayload({
+      dataSourceKey: collection?.dataSourceKey || 'main',
+      collectionName: getCollectionName(collection),
+      fieldPath,
+    });
+  }
+
+  private buildRelationTargetTableColumnNode(input: { collection: any; fieldPath: string; columnUse: string }) {
+    const field = this.getCollectionFieldOrBadRequest(input.collection, input.fieldPath, 'fieldType.fields');
+    const fieldUse = inferAssociationLeafDisplayFieldUse(getFieldInterface(field)) || 'DisplayTextFieldModel';
+    const title = getFieldTitle(field);
+    const fieldInit = this.buildRelationTargetFieldInit(input.collection, input.fieldPath);
+    return {
+      uid: uid(),
+      use: input.columnUse,
+      props: buildDefinedPayload({
+        title,
+        dataIndex: getFieldName(field),
+      }),
+      stepParams: {
+        fieldSettings: {
+          init: fieldInit,
+        },
+        ...(input.columnUse === 'TableColumnModel'
+          ? {
+              tableColumnSettings: {
+                title: {
+                  title,
+                },
+              },
+            }
+          : {}),
+      },
+      subModels: {
+        field: {
+          uid: uid(),
+          use: fieldUse,
+          props: this.normalizeFieldPropsForUse(
+            fieldUse,
+            getFieldBindingDefaultProps('TableColumnModel', fieldUse, field),
+          ),
+          stepParams: {
+            fieldSettings: {
+              init: fieldInit,
+            },
+            fieldBinding: {
+              use: fieldUse,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  private buildRelationTargetGridItemNode(input: { collection: any; fieldPath: string; wrapperUse: string }) {
+    const field = this.getCollectionFieldOrBadRequest(input.collection, input.fieldPath, 'fieldType.fields');
+    const fieldUse =
+      input.wrapperUse === 'FormItemModel'
+        ? inferFieldMenuEditableFieldUse(getFieldInterface(field)) || 'InputFieldModel'
+        : inferAssociationLeafDisplayFieldUse(getFieldInterface(field)) || 'DisplayTextFieldModel';
+    const title = getFieldTitle(field);
+    const fieldInit = this.buildRelationTargetFieldInit(input.collection, input.fieldPath);
+    return {
+      uid: uid(),
+      use: input.wrapperUse,
+      props: buildDefinedPayload({
+        label: title,
+      }),
+      stepParams: {
+        fieldSettings: {
+          init: fieldInit,
+        },
+      },
+      subModels: {
+        field: {
+          uid: uid(),
+          use: fieldUse,
+          props: this.normalizeFieldPropsForUse(
+            fieldUse,
+            getFieldBindingDefaultProps(input.wrapperUse, fieldUse, field),
+          ),
+          stepParams: {
+            fieldSettings: {
+              init: fieldInit,
+            },
+            fieldBinding: {
+              use: fieldUse,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  private async replaceFieldSubModelArray(input: {
+    parentUid: string;
+    subKey: string;
+    keepUses?: string[];
+    children: any[];
+    transaction?: any;
+  }) {
+    const parentNode = await this.repository.findModelById(input.parentUid, {
+      transaction: input.transaction,
+      includeAsyncNode: true,
+    });
+    const keptChildren: any[] = [];
+    for (const child of _.castArray(parentNode?.subModels?.[input.subKey] || [])) {
+      if (!child?.uid) {
+        continue;
+      }
+      if (input.keepUses?.includes(child.use)) {
+        keptChildren.push(child);
+        continue;
+      }
+      await this.removeNodeTreeWithBindings(child.uid, input.transaction);
+    }
+    for (const child of keptChildren.reverse()) {
+      await this.repository.attach(
+        child.uid,
+        {
+          parentId: input.parentUid,
+          subKey: input.subKey,
+          subType: 'array',
+          position: 'first',
+        },
+        { transaction: input.transaction },
+      );
+    }
+    for (const child of input.children) {
+      await this.repository.upsertModel(
+        {
+          parentId: input.parentUid,
+          subKey: input.subKey,
+          subType: 'array',
+          ...child,
+        },
+        { transaction: input.transaction },
+      );
+    }
+  }
+
+  private buildPopupSubTableActionsColumnNode(existing?: any) {
+    const defaultActionColumn = _.cloneDeep(
+      getStandaloneFieldDefaults('PopupSubTableFieldModel').subModels?.subTableColumns?.[0],
+    );
+    return {
+      ...(defaultActionColumn || {
+        use: 'PopupSubTableActionsColumnModel',
+      }),
+      ...(existing || {}),
+      uid: existing?.uid || defaultActionColumn?.uid || uid(),
+    };
+  }
+
+  private async ensureFieldGridSubModel(input: { fieldUid: string; gridUse: string; transaction?: any }) {
+    const fieldNode = await this.repository.findModelById(input.fieldUid, {
+      transaction: input.transaction,
+      includeAsyncNode: true,
+    });
+    const existingGrid = fieldNode?.subModels?.grid;
+    if (existingGrid?.uid) {
+      return existingGrid.uid;
+    }
+    const gridUid = uid();
+    await this.repository.upsertModel(
+      {
+        uid: gridUid,
+        parentId: input.fieldUid,
+        subKey: 'grid',
+        subType: 'object',
+        use: input.gridUse,
+      },
+      { transaction: input.transaction },
+    );
+    return gridUid;
+  }
+
+  private async applyResolvedRelationFieldType(input: {
+    fieldUid: string;
+    fieldUse: string;
+    targetCollection: any;
+    fields?: string[];
+    selectorFields?: string[];
+    titleField?: string;
+    openMode?: string;
+    popupSize?: string;
+    pageSize?: any;
+    showIndex?: any;
+    transaction?: any;
+  }) {
+    if (input.titleField || input.pageSize || !_.isUndefined(input.showIndex)) {
+      const fieldNode = await this.repository.findModelById(input.fieldUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      });
+      const props = buildDefinedPayload({
+        ...(input.titleField && this.supportsFieldTitleFieldProp(input.fieldUse)
+          ? { titleField: input.titleField }
+          : {}),
+        pageSize: input.pageSize,
+        showIndex: input.showIndex,
+      });
+      if (Object.keys(props).length) {
+        await this.repository.patch(
+          {
+            uid: input.fieldUid,
+            props: {
+              ...(fieldNode?.props || {}),
+              ...props,
+            },
+          },
+          { transaction: input.transaction },
+        );
+      }
+    }
+
+    const fields = input.fields;
+    if (usesNestedRelationFields(input.fieldUse) && fields) {
+      if (['SubTableFieldModel', 'DisplaySubTableFieldModel'].includes(input.fieldUse)) {
+        await this.replaceFieldSubModelArray({
+          parentUid: input.fieldUid,
+          subKey: 'columns',
+          children: fields.map((fieldPath) =>
+            this.buildRelationTargetTableColumnNode({
+              collection: input.targetCollection,
+              fieldPath,
+              columnUse: input.fieldUse === 'SubTableFieldModel' ? 'SubTableColumnModel' : 'TableColumnModel',
+            }),
+          ),
+          transaction: input.transaction,
+        });
+      } else if (input.fieldUse === 'PopupSubTableFieldModel') {
+        const fieldNode = await this.repository.findModelById(input.fieldUid, {
+          transaction: input.transaction,
+          includeAsyncNode: true,
+        });
+        const existingActionsColumn = _.castArray(fieldNode?.subModels?.subTableColumns || []).find(
+          (item: any) => item?.use === 'PopupSubTableActionsColumnModel',
+        );
+        await this.replaceFieldSubModelArray({
+          parentUid: input.fieldUid,
+          subKey: 'subTableColumns',
+          children: [
+            this.buildPopupSubTableActionsColumnNode(existingActionsColumn),
+            ...fields.map((fieldPath) =>
+              this.buildRelationTargetTableColumnNode({
+                collection: input.targetCollection,
+                fieldPath,
+                columnUse: 'TableColumnModel',
+              }),
+            ),
+          ],
+          transaction: input.transaction,
+        });
+      } else {
+        const gridUse = ['SubFormFieldModel', 'SubFormListFieldModel'].includes(input.fieldUse)
+          ? 'FormGridModel'
+          : 'DetailsGridModel';
+        const wrapperUse = ['SubFormFieldModel', 'SubFormListFieldModel'].includes(input.fieldUse)
+          ? 'FormItemModel'
+          : 'DetailsItemModel';
+        const gridUid = await this.ensureFieldGridSubModel({
+          fieldUid: input.fieldUid,
+          gridUse,
+          transaction: input.transaction,
+        });
+        await this.replaceFieldSubModelArray({
+          parentUid: gridUid,
+          subKey: 'items',
+          children: fields.map((fieldPath) =>
+            this.buildRelationTargetGridItemNode({
+              collection: input.targetCollection,
+              fieldPath,
+              wrapperUse,
+            }),
+          ),
+          transaction: input.transaction,
+        });
+      }
+    }
+
+    if (input.fieldUse === 'RecordPickerFieldModel') {
+      await this.applyRecordPickerFieldTypeSettings(input);
+    }
+  }
+
+  private async applyRecordPickerFieldTypeSettings(input: {
+    fieldUid: string;
+    targetCollection: any;
+    selectorFields?: string[];
+    openMode?: string;
+    popupSize?: string;
+    transaction?: any;
+  }) {
+    const fieldNode = await this.repository.findModelById(input.fieldUid, {
+      transaction: input.transaction,
+      includeAsyncNode: true,
+    });
+    const openView = buildDefinedPayload({
+      mode: input.openMode,
+      size: input.popupSize,
+      pageModelClass: 'ChildPageModel',
+      dataSourceKey: input.targetCollection?.dataSourceKey || 'main',
+      collectionName: getCollectionName(input.targetCollection),
+    });
+    if (Object.keys(openView).length > 2) {
+      await this.repository.patch(
+        {
+          uid: input.fieldUid,
+          stepParams: _.merge({}, fieldNode?.stepParams || {}, {
+            popupSettings: {
+              openView,
+            },
+          }),
+        },
+        { transaction: input.transaction },
+      );
+    }
+    if (!input.selectorFields) {
+      return;
+    }
+    let grid = await this.repository.findModelByParentId(input.fieldUid, {
+      transaction: input.transaction,
+      subKey: 'grid-block',
+      includeAsyncNode: true,
+    });
+    if (!grid?.uid) {
+      const gridUid = uid();
+      await this.repository.upsertModel(
+        {
+          uid: gridUid,
+          parentId: input.fieldUid,
+          subKey: 'grid-block',
+          subType: 'object',
+          use: 'BlockGridModel',
+        },
+        { transaction: input.transaction },
+      );
+      grid = await this.repository.findModelById(gridUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      });
+    }
+    if (!grid?.uid) {
+      return;
+    }
+    const existingTable = _.castArray(grid?.subModels?.items || []).find(
+      (item: any) => item?.use === 'TableBlockModel',
+    );
+    const tableUid = existingTable?.uid || uid();
+    if (!existingTable?.uid) {
+      await this.repository.upsertModel(
+        {
+          uid: tableUid,
+          parentId: grid.uid,
+          subKey: 'items',
+          subType: 'array',
+          use: 'TableBlockModel',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: input.targetCollection?.dataSourceKey || 'main',
+                collectionName: getCollectionName(input.targetCollection),
+              },
+            },
+          },
+        },
+        { transaction: input.transaction },
+      );
+    }
+    await this.replaceFieldSubModelArray({
+      parentUid: tableUid,
+      subKey: 'columns',
+      children: input.selectorFields.map((fieldPath) =>
+        this.buildRelationTargetTableColumnNode({
+          collection: input.targetCollection,
+          fieldPath,
+          columnUse: 'TableColumnModel',
+        }),
+      ),
+      transaction: input.transaction,
+    });
   }
 
   private buildExactFieldSettingsInitPayload(input: {

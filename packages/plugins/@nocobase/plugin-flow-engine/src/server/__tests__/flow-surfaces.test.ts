@@ -4213,7 +4213,7 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(invalidRes)).toContain('must reference an existing node');
   });
 
-  it('should configure roles table fields with displayStyle tag and switch fieldComponent via wrapper changes', async () => {
+  it('should configure roles table fields with displayStyle tag and switch fieldType via wrapper changes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Users roles field configure page',
       tabTitle: 'Users roles field configure tab',
@@ -4250,7 +4250,8 @@ describe('flowSurfaces resource', () => {
           uid: rolesField.wrapperUid,
         },
         changes: {
-          fieldComponent: 'DisplaySubTableFieldModel',
+          fieldType: 'subTable',
+          fields: ['title', 'name'],
         },
       },
     });
@@ -4265,6 +4266,11 @@ describe('flowSurfaces resource', () => {
     expect(rolesWrapperAfterSwitch.tree.stepParams?.tableColumnSettings?.model?.use).toBe('DisplaySubTableFieldModel');
     expect(rolesInnerAfterSwitch.tree.use).toBe('DisplaySubTableFieldModel');
     expect(rolesInnerAfterSwitch.tree.stepParams?.fieldBinding?.use).toBe('DisplaySubTableFieldModel');
+    expect(
+      _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+      ),
+    ).toEqual(['title', 'name']);
     expect(rolesInnerAfterSwitch.tree.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',
@@ -4272,10 +4278,10 @@ describe('flowSurfaces resource', () => {
     });
   });
 
-  it('should create and switch generic relation fields with fieldComponent semantics', async () => {
+  it('should create and switch generic relation fields with fieldType semantics', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Generic relation fieldComponent page',
-      tabTitle: 'Generic relation fieldComponent tab',
+      title: 'Generic relation fieldType page',
+      tabTitle: 'Generic relation fieldType tab',
     });
 
     const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
@@ -4301,7 +4307,8 @@ describe('flowSurfaces resource', () => {
             uid: formUid,
           },
           fieldPath: 'roles',
-          fieldComponent: 'PopupSubTableFieldModel',
+          fieldType: 'popupSubTable',
+          fields: ['title', 'name'],
         },
       }),
     );
@@ -4316,6 +4323,11 @@ describe('flowSurfaces resource', () => {
     expect(createdRolesWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBeUndefined();
     expect(createdRolesInnerReadback.tree.use).toBe('PopupSubTableFieldModel');
     expect(createdRolesInnerReadback.tree.subModels?.subTableColumns?.[0]?.use).toBe('PopupSubTableActionsColumnModel');
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', 'name']);
     expect(
       _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns?.[0]?.subModels?.actions || []).map(
         (item: any) => item.use,
@@ -4332,7 +4344,7 @@ describe('flowSurfaces resource', () => {
             {
               key: 'batchRolesField',
               fieldPath: 'roles',
-              fieldComponent: 'PopupSubTableFieldModel',
+              fieldType: 'popupSubTable',
             },
           ],
         },
@@ -4354,7 +4366,8 @@ describe('flowSurfaces resource', () => {
           uid: defaultRolesField.wrapperUid,
         },
         changes: {
-          fieldComponent: 'PopupSubTableFieldModel',
+          fieldType: 'popupSubTable',
+          fields: ['title'],
         },
       },
     });
@@ -4369,6 +4382,11 @@ describe('flowSurfaces resource', () => {
     expect(switchedRolesWrapper.tree.stepParams?.editItemSettings?.model?.use).toBe('PopupSubTableFieldModel');
     expect(switchedRolesInner.tree.stepParams?.fieldBinding?.use).toBe('PopupSubTableFieldModel');
     expect(switchedRolesInner.tree.subModels?.subTableColumns?.[0]?.use).toBe('PopupSubTableActionsColumnModel');
+    expect(
+      _.castArray(switchedRolesInner.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title']);
 
     const configureInnerTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -4405,7 +4423,7 @@ describe('flowSurfaces resource', () => {
           uid: defaultRolesField.wrapperUid,
         },
         changes: {
-          fieldComponent: 'PopupSubTableFieldModel',
+          fieldType: 'popupSubTable',
         },
       },
     });
@@ -4424,11 +4442,11 @@ describe('flowSurfaces resource', () => {
           uid: formUid,
         },
         fieldPath: 'nickname',
-        fieldComponent: 'PopupSubTableFieldModel',
+        fieldType: 'popupSubTable',
       },
     });
     expect(invalidScalarFieldRes.status).toBe(400);
-    expect(readErrorMessage(invalidScalarFieldRes)).toContain(`is not allowed under`);
+    expect(readErrorMessage(invalidScalarFieldRes)).toContain(`fieldType is only supported for relation fields`);
   });
 
   it('should reject invalid openView uid through updateSettings stepParams writes', async () => {
