@@ -19,12 +19,11 @@ keywords: 'LLM 服务,OpenAI,Claude,Gemini,DeepSeek,Ollama,NocoBase AI'
 2. 选择 `Provider`。
 3. 填写 `Title`、`API Key`、`Base URL`（可选）。
 4. 配置 `Enabled Models`：
-   - `Recommended models`：使用推荐模型。
    - `Select models`：从服务商接口响应的模型列表中选择。
    - `Manual input`：无法从服务商接口获取模型列表时，可以手动输入模型 ID 与显示名称。
 5. 点击 `Submit` 保存。
 
-![llm-service-create-provider-enabled-models.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-create-provider-enabled-models.png)
+![20260425172809](https://static-docs.nocobase.com/20260425172809.png)
 
 ## 服务启用与排序
 
