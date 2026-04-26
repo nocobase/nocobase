@@ -10,7 +10,7 @@
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { FlowModel, tExpr } from '@nocobase/flow-engine';
-import { SkillSettings } from '../components/skill-settings';
+import { SkillSettings } from '../../../../components/skill-settings';
 import { ModelOptions } from '../components/model-options';
 import { WebSearchOptions } from '../components/web-search-options';
 import { MessageInputs } from '../components/message-inputs';
