@@ -15,7 +15,10 @@ If you are a human user, please refer to [Quick Start](./quick-start.md).
 
 Confirm the user has the following dependencies installed:
 
-- **Node.js 22** (run `node -v` to check). If not installed, guide the user to install via [nvm](https://github.com/nvm-sh/nvm), [fnm](https://github.com/Schniz/fnm), or the [Node.js website](https://nodejs.org/)
+- **Node.js 22** (run `node -v` to check). If the current version is not 22.x:
+  1. First check whether the user has a Node version manager installed (run `nvm --version`, `fnm --version`, `volta --version` in order)
+  2. If any of these tools is detected, use it to switch to Node.js 22 (e.g., `nvm install 22 && nvm use 22`, `fnm install 22 && fnm use 22`, `volta install node@22`)
+  3. If no version manager is found, guide the user to download and install Node.js 22 from the [Node.js website](https://nodejs.org/)
 - **Yarn 1.x** (run `yarn -v` to check). If not installed, install via `npm install -g yarn`
 - **Git** (run `git --version` to check). If not installed, install from the [Git website](https://git-scm.com/)
 - **Docker** (if the user needs to install NocoBase via Docker). Run `docker -v` to check; if not installed, guide the user to install from the [Docker website](https://www.docker.com/get-started/)
@@ -41,7 +44,9 @@ If the user disagrees, ask them to provide a directory path, and proceed to the 
 
 ## Step 4: Run nb init --ui
 
-Run this command in the working directory created or selected in Step 3 (this command has a default timeout of 30 minutes — do not interrupt it midway, and do not run it repeatedly):
+**⚠️ IMPORTANT: You MUST run the exact command below. Do NOT modify, replace, or omit the `--ui` flag. Do NOT use any other combination of `nb init` parameters (such as `--yes`, `--env`, `--source`, `--version`, `--builtin-db`, etc.) instead of `--ui`. Do NOT attempt to "speed things up" by using non-interactive mode or assembling parameters yourself — `--ui` is the only correct way to initialize.**
+
+Run in the working directory created or selected in Step 3:
 
 ```bash
 nb init --ui
@@ -49,14 +54,18 @@ nb init --ui
 
 ![nocobase cli visual wizard](https://static-docs.nocobase.com/20260424121223.png)
 
-Tell the user: the browser will automatically open a local configuration page where they need to complete the configuration. If the browser cannot open automatically due to sandbox permissions or similar issues, provide the output URL to the user so they can copy it into their browser. After completion, ask the user to confirm before proceeding to the next steps.
+This command launches a browser-based visual wizard where the user completes all configuration (including installation method, database, admin account, etc.). Your responsibilities as an AI Agent are:
 
-Notes:
+1. **Only run `nb init --ui`** — do not append any additional parameters
+2. **Tell the user** the browser will automatically open a local configuration page where they need to complete the setup
+3. **If the browser cannot open automatically** (e.g., due to sandbox permission restrictions), provide the URL from the command output to the user so they can manually copy it into their browser
+4. **Wait for the user to confirm** the configuration is complete before proceeding to the next step
 
-- The `nb init --ui` command has a 30-minute timeout and cannot be interrupted while running. If the user doesn't complete the browser configuration within 30 minutes, CLI will exit automatically. Do not run this command again before it exits.
-- If the URL can't be opened in a sandbox, suggest elevating permissions first; if denied, give the URL to the user
-- The user fills in the installation form in the browser themselves; the agent is only responsible for prompting and guiding
-- Wait for the user to complete all configuration in the browser. Do not fill in any information on behalf of the user, as they may need to make choices based on their own environment and requirements.
+Prohibited actions:
+
+- **Do NOT** assemble other `nb init` parameters to replace `--ui`
+- **Do NOT** choose installation methods, database types, or fill in account/password for the user — these are all done by the user in the browser
+- **Do NOT** interrupt or re-run this command midway (timeout is 30 minutes; do not re-execute before the command exits)
 
 ## Step 5: Verify Results
 
