@@ -999,7 +999,10 @@ describe('flowSurfaces catalog + compose contract', () => {
       },
       pageSize: 200,
     });
-    expect(configuredTree.tree.decoratorProps).toMatchObject({
+    expect(configuredTree.tree.decoratorProps || {}).not.toHaveProperty('height');
+    expect(configuredTree.tree.decoratorProps || {}).not.toHaveProperty('heightMode');
+    expect(configuredTree.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'specifyValue',
       height: 420,
     });
     expect(configuredTree.tree.stepParams?.treeSettings).toMatchObject({
@@ -1157,6 +1160,76 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(_.castArray(gridAfterClear?.filterManager || []).some((item: any) => item.filterId === tree.uid)).toBe(
       false,
     );
+  });
+
+  it('should validate tree connectFields against the rendered tree key field', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Tree connect custom key page',
+      tabTitle: 'Tree connect custom key tab',
+    });
+    const employeesTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const tree = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'tree',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const configureByCustomKey = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          fieldNames: {
+            key: 'nickname',
+          },
+          connectFields: {
+            targets: [{ targetId: employeesTable.uid, filterPaths: ['nickname'] }],
+          },
+        },
+      },
+    });
+    expect(configureByCustomKey.status, readErrorMessage(configureByCustomKey)).toBe(200);
+    const gridAfterConfigure = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(gridAfterConfigure?.filterManager || []).filter((item: any) => item.filterId === tree.uid),
+    ).toEqual([
+      {
+        filterId: tree.uid,
+        targetId: employeesTable.uid,
+        filterPaths: ['nickname'],
+      },
+    ]);
+
+    const configureByDefaultId = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: employeesTable.uid, filterPaths: ['id'] }],
+          },
+        },
+      },
+    });
+    expect(configureByDefaultId.status).toBe(400);
+    expect(readErrorMessage(configureByDefaultId)).toContain('type-compatible');
+    expect(readErrorMessage(configureByDefaultId)).toContain("tree selected key 'nickname'");
   });
 
   it('should clear stale tree connectFields bindings when tree resource changes without connectFields', async () => {

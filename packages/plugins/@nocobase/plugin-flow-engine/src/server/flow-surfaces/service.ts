@@ -239,6 +239,7 @@ import {
 import {
   assertFlowSurfaceComposeUniqueKeys,
   assertSupportedSimpleChanges,
+  buildBlockCardSettingsFromSemanticChanges,
   buildBlockTitleDescriptionFromSemanticChanges,
   buildChartCardSettingsFromSemanticChanges,
   buildDefaultFieldState,
@@ -267,7 +268,6 @@ import {
   normalizeComposeActionSpec,
   normalizeComposeFieldSpec,
   normalizeGridCardColumns,
-  normalizePublicBlockHeightMode,
   resolveRequestedFieldComponent,
   resolveRequestedFieldUse,
   resolveRequestedFieldUseAlias,
@@ -9950,7 +9950,6 @@ export class FlowSurfacesService {
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
     await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
     this.syncCanonicalBlockHeaderForUpdateSettings(current, nextPayload);
-    this.syncMapHeightChromeForUpdateSettings(current, nextPayload);
     this.syncChartCardRuntimeStepParamsForUpdateSettings(
       current,
       nextPayload,
@@ -10206,11 +10205,20 @@ export class FlowSurfacesService {
     const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
     const nextCardSettings = _.cloneDeep(_.get(nextStepParams, ['cardSettings']) || {});
     const normalizedTitleDescription = normalizeBlockTitleDescription(_.get(nextCardSettings, ['titleDescription']));
+    const normalizedBlockHeight = normalizeChartCardSettings({
+      blockHeight: _.get(nextCardSettings, ['blockHeight']),
+    })?.blockHeight;
 
     if (normalizedTitleDescription) {
       _.set(nextCardSettings, ['titleDescription'], normalizedTitleDescription);
     } else {
       _.unset(nextCardSettings, ['titleDescription']);
+    }
+
+    if (normalizedBlockHeight) {
+      _.set(nextCardSettings, ['blockHeight'], normalizedBlockHeight);
+    } else {
+      _.unset(nextCardSettings, ['blockHeight']);
     }
 
     if (_.isEmpty(nextCardSettings)) {
@@ -10254,37 +10262,6 @@ export class FlowSurfacesService {
         _.cloneDeep(nextPayload.decoratorProps ?? currentDecoratorProps),
         legacyDecoratorKeys,
       );
-    }
-  }
-
-  private syncMapHeightChromeForUpdateSettings(current: any, nextPayload: Record<string, any>) {
-    if (current?.use !== 'MapBlockModel') {
-      return;
-    }
-
-    const nextProps = _.isPlainObject(nextPayload.props) ? nextPayload.props : undefined;
-    if (!nextProps) {
-      return;
-    }
-
-    const nextDecoratorProps = _.cloneDeep(nextPayload.decoratorProps ?? current?.decoratorProps ?? {});
-    let changed = false;
-
-    if (Object.prototype.hasOwnProperty.call(nextProps, 'height') && nextDecoratorProps.height !== nextProps.height) {
-      nextDecoratorProps.height = nextProps.height;
-      changed = true;
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(nextProps, 'heightMode') &&
-      nextDecoratorProps.heightMode !== nextProps.heightMode
-    ) {
-      nextDecoratorProps.heightMode = nextProps.heightMode;
-      changed = true;
-    }
-
-    if (changed) {
-      nextPayload.decoratorProps = buildDefinedPayload(nextDecoratorProps);
     }
   }
 
@@ -12663,15 +12640,11 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('TableBlockModel');
-    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('table', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
-        decoratorProps: buildDefinedPayload({
-          height: changes.height,
-          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
-        }),
         stepParams: {
           ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
@@ -12725,7 +12698,7 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('CalendarBlockModel');
-    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('calendar', changes, allowedKeys);
     this.validateCalendarSettingValues('configure', {
       defaultView: changes.defaultView,
@@ -12783,10 +12756,6 @@ export class FlowSurfacesService {
           weekStart,
           quickCreatePopupSettings,
           eventPopupSettings,
-        }),
-        decoratorProps: buildDefinedPayload({
-          height: changes.height,
-          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
           ...(cardSettings ? { cardSettings } : {}),
@@ -12848,7 +12817,7 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('TreeBlockModel');
-    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('tree', changes, allowedKeys);
 
     const nextFieldNames = _.isPlainObject(changes.fieldNames)
@@ -12872,10 +12841,6 @@ export class FlowSurfacesService {
             : {}),
           ...(hasFieldNamesPatch ? { fieldNames: nextFieldNames } : {}),
           ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: changes.pageSize } : {}),
-        }),
-        decoratorProps: buildDefinedPayload({
-          height: changes.height,
-          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
         }),
         stepParams: {
           ...(cardSettings ? { cardSettings } : {}),
@@ -12920,6 +12885,7 @@ export class FlowSurfacesService {
     if (hasOwnDefined(changes, 'connectFields')) {
       const effectiveTreeNode =
         changes.resource ||
+        hasFieldNamesPatch ||
         hasDefinedValue(changes, [
           'searchable',
           'defaultExpandAll',
@@ -12962,7 +12928,7 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('KanbanBlockModel');
-    const blockCardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const blockCardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('kanban', changes, allowedKeys);
 
     if (!_.isUndefined(changes.dragEnabled) && !_.isBoolean(changes.dragEnabled)) {
@@ -13358,19 +13324,11 @@ export class FlowSurfacesService {
     });
 
     const updated = new Set<string>();
-    if (
-      Object.keys(blockProps).length ||
-      Object.keys(blockStepParams).length ||
-      hasDefinedValue(changes, ['height', 'heightMode'])
-    ) {
+    if (Object.keys(blockProps).length || Object.keys(blockStepParams).length) {
       const blockResult = await this.updateSettings(
         {
           target,
           props: blockProps,
-          decoratorProps: buildDefinedPayload({
-            height: changes.height,
-            heightMode: normalizePublicBlockHeightMode(changes.heightMode),
-          }),
           stepParams: blockStepParams,
         },
         options,
@@ -13598,16 +13556,12 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('ListBlockModel');
-    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('list', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
         target,
-        decoratorProps: buildDefinedPayload({
-          height: changes.height,
-          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
-        }),
         stepParams: {
           ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
@@ -13639,17 +13593,13 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('GridCardBlockModel');
-    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('gridCard', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const columns = normalizeGridCardColumns(changes.columns);
     return this.updateSettings(
       {
         target,
-        decoratorProps: buildDefinedPayload({
-          height: changes.height,
-          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
-        }),
         stepParams: {
           ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
@@ -13870,15 +13820,11 @@ export class FlowSurfacesService {
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('MapBlockModel');
-    const cardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes);
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('map', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
-        decoratorProps: buildDefinedPayload({
-          height: changes.height,
-          heightMode: normalizePublicBlockHeightMode(changes.heightMode),
-        }),
         stepParams: buildDefinedPayload({
           ...(cardSettings ? { cardSettings } : {}),
           ...(changes.resource
@@ -15575,6 +15521,11 @@ export class FlowSurfacesService {
     return init;
   }
 
+  private getTreeSelectedKeyFieldPath(treeNode: any, treeCollection: any) {
+    const configuredKey = String(_.get(treeNode, ['props', 'fieldNames', 'key']) || '').trim();
+    return configuredKey ? normalizeFieldPath(configuredKey) : this.getCollectionFilterTargetKey(treeCollection);
+  }
+
   private normalizeTreeConnectFilterPaths(input: {
     actionName: string;
     treeNode: any;
@@ -15631,7 +15582,7 @@ export class FlowSurfacesService {
     }
 
     const filterTargetKey = this.getCollectionFilterTargetKey(targetCollection);
-    const treeKeyFieldPath = this.getCollectionFilterTargetKey(treeCollection);
+    const treeKeyFieldPath = this.getTreeSelectedKeyFieldPath(input.treeNode, treeCollection);
     const treeKeyField = this.resolveTreeConnectComparableField(treeCollection, treeKeyFieldPath);
     const treeKeyKind = this.normalizeTreeConnectValueKind(treeKeyField);
     return normalizedPaths.map((fieldPath) => {

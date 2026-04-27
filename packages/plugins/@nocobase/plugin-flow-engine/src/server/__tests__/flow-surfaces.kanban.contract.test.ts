@@ -351,10 +351,8 @@ describe('flowSurfaces kanban contract', () => {
     const readback = await getSurface(rootAgent, {
       uid: kanban.uid,
     });
-    expect(readback.tree.decoratorProps).toMatchObject({
-      height: 480,
-      heightMode: 'specifyValue',
-    });
+    expect(readback.tree.decoratorProps || {}).not.toHaveProperty('height');
+    expect(readback.tree.decoratorProps || {}).not.toHaveProperty('heightMode');
     expect(readback.tree.props).toMatchObject({
       groupField: 'department',
       groupTitleField: 'title',
@@ -373,6 +371,10 @@ describe('flowSurfaces kanban contract', () => {
     expect(readback.tree.stepParams?.cardSettings?.titleDescription).toMatchObject({
       title: 'Team board',
       description: 'Ship work',
+    });
+    expect(readback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'specifyValue',
+      height: 480,
     });
     expect(readback.tree.stepParams?.kanbanSettings).toMatchObject({
       grouping: {
