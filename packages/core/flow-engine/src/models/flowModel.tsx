@@ -706,6 +706,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     } else {
       this.props = { ...this.props, ...props };
     }
+
+    this._options.props = { ...this.props };
   }
 
   getProps(): ReadonlyModelProps {
@@ -1453,6 +1455,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const data = {
       uid: this.uid,
       ..._.omit(this._options, ['flowEngine']),
+      props: { ...this.props },
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
       flowRegistry: {},

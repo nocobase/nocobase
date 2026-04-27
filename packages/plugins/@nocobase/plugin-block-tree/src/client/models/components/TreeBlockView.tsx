@@ -7,13 +7,123 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterContext, FilterDynamicComponent } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
+import { Checkbox, DatePicker, Input, InputNumber, Radio, Select, Switch } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { Tree, TreeProps } from '../../component';
 import type { TreeBlockModel } from '../TreeBlockModel';
 
 const SEARCH_FILTER_GROUP = '__tree_search__';
+
+const getInputValue = (value: any) => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value;
+  }
+
+  return value == null ? '' : String(value);
+};
+
+const getCommonComponentProps = (schema: any) => ({
+  allowClear: true,
+  placeholder: schema?.['x-component-props']?.placeholder,
+  ...(schema?.['x-component-props'] || {}),
+  style: {
+    width: '100%',
+    minWidth: 150,
+    ...(schema?.['x-component-props']?.style || {}),
+  },
+});
+
+const getSelectOptions = (schema: any, componentProps: any) => {
+  if (Array.isArray(componentProps?.options)) {
+    return componentProps.options;
+  }
+
+  if (Array.isArray(schema?.enum)) {
+    return schema.enum;
+  }
+
+  return undefined;
+};
+
+const normalizeChangeValue = (input: any) => {
+  if (input && typeof input === 'object' && 'target' in input) {
+    return input.target?.value;
+  }
+
+  return input;
+};
+
+const omitUndefined = (props: Record<string, any> = {}) => {
+  return Object.fromEntries(Object.entries(props).filter(([, value]) => value !== undefined));
+};
+
+const renderFilterInput = (app: any, schema: any, value: any, onChange: (value: any) => void): React.ReactElement => {
+  const xComponent = schema?.['x-component'];
+  const componentProps = getCommonComponentProps(schema);
+
+  if (!xComponent || xComponent === 'Input') {
+    return (
+      <Input {...componentProps} value={getInputValue(value)} onChange={(event) => onChange(event.target.value)} />
+    );
+  }
+
+  if (xComponent === 'InputNumber') {
+    return (
+      <InputNumber {...componentProps} value={typeof value === 'number' ? value : undefined} onChange={onChange} />
+    );
+  }
+
+  if (xComponent === 'Select') {
+    return (
+      <Select
+        {...componentProps}
+        options={getSelectOptions(schema, componentProps)}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (xComponent === 'Switch') {
+    return <Switch {...componentProps} checked={!!value} onChange={onChange} />;
+  }
+
+  if (xComponent === 'Checkbox') {
+    return <Checkbox {...componentProps} checked={!!value} onChange={(event) => onChange(event.target.checked)} />;
+  }
+
+  if (xComponent === 'Checkbox.Group') {
+    return <Checkbox.Group {...componentProps} value={Array.isArray(value) ? value : undefined} onChange={onChange} />;
+  }
+
+  if (xComponent === 'Radio.Group') {
+    return <Radio.Group {...componentProps} value={value} onChange={(event) => onChange(event.target.value)} />;
+  }
+
+  if (xComponent === 'DatePicker') {
+    return <DatePicker {...componentProps} value={value} onChange={onChange} />;
+  }
+
+  if (xComponent === 'Input.TextArea' || xComponent === 'TextArea') {
+    return (
+      <Input.TextArea
+        {...componentProps}
+        value={getInputValue(value)}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    );
+  }
+
+  if (xComponent) {
+    const Component = app?.getComponent?.(xComponent);
+    if (Component) {
+      return <Component {...componentProps} value={value} onChange={(next) => onChange(normalizeChangeValue(next))} />;
+    }
+  }
+
+  return <Input {...componentProps} value={getInputValue(value)} onChange={(event) => onChange(event.target.value)} />;
+};
 
 const collectDescendantKeys = (node: any, keyName: string, keys: React.Key[] = []) => {
   if (!node) {
@@ -51,7 +161,17 @@ const findNodeByKey = (treeData: any[], keyName: string, targetKey: React.Key): 
 export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => {
   const resource = model.resource;
   const collection = model.collection;
-  const fieldNames = model.getFieldNames();
+  const collectionFilterTargetKey = collection?.filterTargetKey;
+  const propsFieldNames = model.props?.fieldNames;
+  const fieldNames = useMemo(
+    () => ({
+      key: collectionFilterTargetKey,
+      title: propsFieldNames?.title || collectionFilterTargetKey,
+      children: 'children',
+      ...(propsFieldNames || {}),
+    }),
+    [collectionFilterTargetKey, propsFieldNames],
+  );
   const titleField = fieldNames.title;
   const collectionField = collection?.getField?.(titleField);
   const titleFieldModel = model.subModels.field as any;
@@ -69,20 +189,9 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
 
   const FilterComponent = useCallback<TreeProps['FilterComponent']>(
     ({ value, onChange }) => {
-      return (
-        <FilterContext.Provider value={{}}>
-          <FilterDynamicComponent
-            value={value}
-            schema={schema}
-            collectionField={collectionField}
-            onChange={onChange}
-            style={{ width: '100%' }}
-            componentProps={{ allowClear: true }}
-          />
-        </FilterContext.Provider>
-      );
+      return renderFilterInput(model.context.app, schema, value, onChange);
     },
-    [collectionField, schema],
+    [model.context.app, schema],
   );
 
   const onSearch = useCallback<NonNullable<TreeProps['onSearch']>>(
@@ -150,15 +259,15 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
       });
 
       fieldModel.setProps({
-        ...collectionField.getComponentProps(),
+        ...omitUndefined(collectionField.getComponentProps()),
         value,
         clickToOpen: false,
       });
 
       const rendered =
-        typeof fieldModel.renderComponent === 'function' ? fieldModel.renderComponent(value) : fieldModel.render?.();
+        typeof fieldModel.render === 'function' ? fieldModel.render() : fieldModel.renderComponent?.(value);
 
-      return <span style={{ pointerEvents: 'none' }}>{rendered ?? String(value)}</span>;
+      return <span>{rendered ?? String(value)}</span>;
     },
     [collectionField, fieldNames.key, titleField, titleFieldModel],
   );

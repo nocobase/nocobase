@@ -35,7 +35,7 @@ describe('rebuildFieldSubModel', () => {
     });
   });
 
-  test('rebuilds field with same uid and updates binding use', async () => {
+  test('rebuilds field with same uid and direct target field model use', async () => {
     const staleClickHandler = () => null;
     const parent = engine.createModel<DummyParentModel>({
       use: DummyParentModel,
@@ -66,7 +66,8 @@ describe('rebuildFieldSubModel', () => {
 
     expect(rebuilt).toBeInstanceOf(DummyTargetFieldModel);
     expect(rebuilt.uid).toBe('field-1');
-    expect(getFieldBindingUse(rebuilt)).toBe('DummyTargetFieldModel');
+    expect(getFieldBindingUse(rebuilt)).toBeUndefined();
+    expect(rebuilt.use).toBe('DummyTargetFieldModel');
     expect(rebuilt.props).toMatchObject({ added: 'yes', pattern: 'readPretty' });
     expect((rebuilt.props as any).onClick).toBeUndefined();
 
@@ -105,5 +106,79 @@ describe('rebuildFieldSubModel', () => {
     const cols = rebuilt.subModels?.['columns'] as any[];
     expect(Array.isArray(cols)).toBe(true);
     expect(cols.map((c) => c.uid)).toEqual(['col-1', 'col-2']);
+  });
+
+  test('preserves compatible step params when rebuilding with the same field model use', async () => {
+    const parent = engine.createModel<DummyParentModel>({
+      use: DummyParentModel,
+      uid: 'parent-3',
+      subModels: {
+        field: {
+          use: DummyTargetFieldModel,
+          uid: 'field-3',
+          stepParams: {
+            fieldSettings: { init: { initKey: true } },
+            displayFieldSettings: {
+              overflowMode: {
+                overflowMode: true,
+              },
+            },
+          } as any,
+        },
+      },
+    });
+
+    await rebuildFieldSubModel({
+      parentModel: parent,
+      targetUse: 'DummyTargetFieldModel',
+      fieldSettingsInit: { fieldPath: 'title' },
+    });
+
+    const rebuilt = parent.subModels.field as DummyTargetFieldModel;
+    expect(rebuilt.stepParams).toEqual({
+      fieldSettings: {
+        init: { fieldPath: 'title' },
+      },
+      displayFieldSettings: {
+        overflowMode: {
+          overflowMode: true,
+        },
+      },
+    });
+  });
+
+  test('drops incompatible step params when rebuilding to a different field model use', async () => {
+    const parent = engine.createModel<DummyParentModel>({
+      use: DummyParentModel,
+      uid: 'parent-4',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-4',
+          stepParams: {
+            fieldBinding: { use: 'FieldModel' },
+            fieldSettings: { init: { initKey: true } },
+            numberSettings: {
+              format: {
+                separator: '0,0.00',
+              },
+            },
+          } as any,
+        },
+      },
+    });
+
+    await rebuildFieldSubModel({
+      parentModel: parent,
+      targetUse: 'DummyTargetFieldModel',
+      fieldSettingsInit: { fieldPath: 'title' },
+    });
+
+    const rebuilt = parent.subModels.field as DummyTargetFieldModel;
+    expect(rebuilt.stepParams).toEqual({
+      fieldSettings: {
+        init: { fieldPath: 'title' },
+      },
+    });
   });
 });

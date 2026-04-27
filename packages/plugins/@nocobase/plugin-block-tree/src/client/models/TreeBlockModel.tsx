@@ -8,7 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
-import { BlockSceneEnum, CollectionBlockModel, FieldModel, isTitleField } from '@nocobase/client';
+import { BlockSceneEnum, CollectionBlockModel, isTitleField } from '@nocobase/client';
 import { DisplayItemModel, MultiRecordResource } from '@nocobase/flow-engine';
 import React from 'react';
 import { TreeBlockView } from './components/TreeBlockView';
@@ -16,6 +16,23 @@ import { tExpr } from '../locale';
 import { treeConnectDataBlocks } from './treeConnectDataBlocks';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 200, 500];
+
+const getEffectiveFieldModelUse = (fieldModel: any) => {
+  return fieldModel?.getStepParams?.('fieldBinding', 'use') || fieldModel?.use;
+};
+
+const getTitleFieldStepParams = (fieldModel: any, initParams: any, preservePrevious: boolean) => {
+  const previousStepParams = preservePrevious ? fieldModel?.getStepParams?.() || {} : {};
+  const { fieldBinding: _fieldBinding, ...stepParams } = previousStepParams;
+
+  return {
+    ...stepParams,
+    fieldSettings: {
+      ...(stepParams.fieldSettings || {}),
+      init: initParams,
+    },
+  };
+};
 
 export class TreeBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.filter;
@@ -125,7 +142,10 @@ export class TreeBlockModel extends CollectionBlockModel {
 
     const currentFieldModel = this.subModels.field as any;
     const currentFieldPath = currentFieldModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-    const currentBindingUse = currentFieldModel?.getStepParams?.('fieldBinding', 'use') || currentFieldModel?.use;
+    const currentBindingUse = getEffectiveFieldModelUse(currentFieldModel);
+    const currentModelUse = currentFieldModel?.use;
+    const shouldPreserveStepParams = currentFieldPath === titleFieldName && currentBindingUse === binding.modelName;
+    const nextStepParams = getTitleFieldStepParams(currentFieldModel, initParams, shouldPreserveStepParams);
     const nextProps = {
       ...(typeof binding.defaultProps === 'function'
         ? binding.defaultProps(bindingCtx, titleField)
@@ -134,18 +154,9 @@ export class TreeBlockModel extends CollectionBlockModel {
       clickToOpen: false,
     };
 
-    if (currentFieldModel && currentFieldPath === titleFieldName && currentBindingUse === binding.modelName) {
+    if (currentFieldModel && shouldPreserveStepParams && currentModelUse === binding.modelName) {
       currentFieldModel.setProps(nextProps);
-      currentFieldModel.setStepParams({
-        ...currentFieldModel.getStepParams(),
-        fieldBinding: {
-          ...(currentFieldModel.getStepParams('fieldBinding') || {}),
-          use: binding.modelName,
-        },
-        fieldSettings: {
-          init: initParams,
-        },
-      });
+      currentFieldModel.setStepParams(nextStepParams);
       await currentFieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
       if (options.persist) {
         await currentFieldModel.save?.();
@@ -155,22 +166,19 @@ export class TreeBlockModel extends CollectionBlockModel {
     }
 
     if (currentFieldModel?.uid) {
-      currentFieldModel.invalidateFlowCache?.('beforeRender', true);
-      this.flowEngine.removeModelWithSubModels(currentFieldModel.uid);
+      if (options.persist && this.flowEngine.destroyModel) {
+        await this.flowEngine.destroyModel(currentFieldModel.uid);
+      } else {
+        currentFieldModel.invalidateFlowCache?.('beforeRender', true);
+        this.flowEngine.removeModelWithSubModels(currentFieldModel.uid);
+      }
     }
 
     const fieldModel = this.setSubModel('field', {
       uid: currentFieldModel?.uid,
-      use: FieldModel,
+      use: binding.modelName,
       props: nextProps,
-      stepParams: {
-        fieldBinding: {
-          use: binding.modelName,
-        },
-        fieldSettings: {
-          init: initParams,
-        },
-      } as any,
+      stepParams: nextStepParams as any,
     });
 
     if (options.persist) {
