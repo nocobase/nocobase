@@ -70,6 +70,9 @@ describe('flowSurfaces kanban contract', () => {
       dataSourceKey: 'main',
       collectionName: 'kanban_tasks',
     });
+    expect(readback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'fullHeight',
+    });
     expect(readKanbanActionUses(readback.tree)).toEqual([
       'FilterActionModel',
       'AddNewActionModel',
@@ -114,6 +117,35 @@ describe('flowSurfaces kanban contract', () => {
           },
         },
       },
+    });
+  });
+
+  it('should let explicit kanban block height settings override the full-height creation default', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Kanban explicit height page',
+      tabTitle: 'Kanban explicit height tab',
+    });
+    const kanban = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'kanban',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'kanban_tasks',
+      },
+      settings: {
+        height: 420,
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: kanban.uid,
+    });
+
+    expect(readback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'specifyValue',
+      height: 420,
     });
   });
 
@@ -559,6 +591,9 @@ describe('flowSurfaces kanban contract', () => {
       uid: kanbanBlock.uid,
     });
     expect(readback.tree.use).toBe('KanbanBlockModel');
+    expect(readback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'fullHeight',
+    });
     expect(readback.tree.subModels?.item?.use).toBe('KanbanCardItemModel');
     expect(readback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
     expect(readKanbanFieldPaths(readback.tree)).toEqual(['title']);
@@ -619,6 +654,11 @@ describe('flowSurfaces kanban contract', () => {
     expect(kanbanBlock).toMatchObject({
       use: 'KanbanBlockModel',
       stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'fullHeight',
+          },
+        },
         resourceSettings: {
           init: {
             dataSourceKey: 'main',

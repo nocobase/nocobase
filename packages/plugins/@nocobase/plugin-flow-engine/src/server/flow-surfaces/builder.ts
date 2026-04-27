@@ -1144,6 +1144,24 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
         enableQuickCreateEvent: true,
         weekStart: 1,
       },
+      stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'fullHeight',
+          },
+        },
+      },
+    };
+  }
+  if (use === 'KanbanBlockModel') {
+    return {
+      stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'fullHeight',
+          },
+        },
+      },
     };
   }
   if (use === 'TreeBlockModel') {

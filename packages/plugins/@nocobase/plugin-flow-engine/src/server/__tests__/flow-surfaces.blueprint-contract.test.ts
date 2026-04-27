@@ -347,6 +347,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
         },
       },
       stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'fullHeight',
+          },
+        },
         resourceSettings: {
           init: {
             dataSourceKey: 'main',

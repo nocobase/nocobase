@@ -1641,6 +1641,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     const calendarReadback = await getSurface(rootAgent, {
       uid: calendar.uid,
     });
+    expect(calendarReadback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'fullHeight',
+    });
     expect(calendarReadback.tree.subModels?.quickCreateAction).toMatchObject({
       uid: quickCreateActionUid,
       use: 'CalendarQuickCreateActionModel',
@@ -4321,15 +4324,31 @@ describe('flowSurfaces catalog + compose contract', () => {
               content: '# Team notes',
             },
           },
+          {
+            key: 'calendar',
+            type: 'calendar',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'calendar_events',
+            },
+          },
         ],
       },
     });
     expect(addBlocksRes.status).toBe(200);
     const addBlocksData = getData(addBlocksRes);
-    expect(addBlocksData.successCount).toBe(2);
+    expect(addBlocksData.successCount).toBe(3);
     expect(addBlocksData.errorCount).toBe(0);
     const tableUid = addBlocksData.blocks.find((item: any) => item.key === 'table')?.result?.uid;
     expect(tableUid).toBeTruthy();
+    const calendarUid = addBlocksData.blocks.find((item: any) => item.key === 'calendar')?.result?.uid;
+    expect(calendarUid).toBeTruthy();
+    const calendarReadback = await getSurface(rootAgent, {
+      uid: calendarUid,
+    });
+    expect(calendarReadback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'fullHeight',
+    });
     const tableReadback = await getSurface(rootAgent, {
       uid: tableUid,
     });
