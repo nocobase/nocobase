@@ -91,6 +91,13 @@ describe('startup update prompt', () => {
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
   });
 
+  test('startup update check still runs in non-interactive sessions', async () => {
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    mocks.isInteractiveTerminal.mockReturnValue(false);
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+  });
+
   test('updates CLI and skills when user accepts', async () => {
     const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
     mocks.inspectSelfStatus.mockResolvedValue({
@@ -150,8 +157,33 @@ describe('startup update prompt', () => {
     expect(result).toEqual({ kind: 'declined' });
     expect(mocks.run).not.toHaveBeenCalled();
     expect(mocks.printWarning).toHaveBeenCalledWith(
-      'Skipped updating the global CLI and skills. You may run into compatibility issues until you update.',
+      'Skipped available updates (CLI 2.1.0-beta.20 -> 2.1.0-beta.21). You can update manually with: nb self update --yes You may run into compatibility issues until you update.',
     );
+  });
+
+  test('warns and continues in non-interactive sessions', async () => {
+    const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    mocks.isInteractiveTerminal.mockReturnValue(false);
+    mocks.inspectSelfStatus.mockResolvedValue({
+      installMethod: 'npm-global',
+      updatable: true,
+      updateAvailable: true,
+      currentVersion: '2.1.0-beta.20',
+      latestVersion: '2.1.0-beta.21',
+    });
+    mocks.inspectSkillsStatus.mockResolvedValue({
+      updateAvailable: true,
+    });
+
+    const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
+
+    expect(result).toEqual({ kind: 'warned' });
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(mocks.run).not.toHaveBeenCalled();
+    expect(mocks.printWarning).toHaveBeenCalledWith(
+      'Detected available updates (CLI 2.1.0-beta.20 -> 2.1.0-beta.21, NocoBase AI skills update available). Skipping the interactive startup update prompt because this terminal session is non-interactive and may be controlled by an AI agent. To update manually, run: nb self update --yes && nb skills update --yes Continuing without auto-update. You may run into compatibility issues until you update.',
+    );
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
   });
 
   test('only prompts once per day', async () => {

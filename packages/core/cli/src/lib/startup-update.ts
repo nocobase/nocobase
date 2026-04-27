@@ -30,6 +30,7 @@ type StartupUpdateState = {
 type StartupUpdatePromptResult =
   | { kind: 'skipped' }
   | { kind: 'no-update' }
+  | { kind: 'warned' }
   | { kind: 'declined' }
   | { kind: 'updated' };
 
@@ -78,10 +79,6 @@ export async function shouldRunStartupUpdateCheck(argv: string[], now = new Date
     return false;
   }
 
-  if (!isInteractiveTerminal()) {
-    return false;
-  }
-
   if (shouldSkipByArgv(argv)) {
     return false;
   }
@@ -114,6 +111,77 @@ function buildPromptMessage(selfStatus: SelfStatus, skillsStatus: Awaited<Return
   }
 
   return `A newer NocoBase setup is available (${parts.join(', ')}). Update now?`;
+}
+
+function buildUpdateCommands(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {
+  const commands: string[] = [];
+
+  if (selfStatus.updateAvailable && selfStatus.updatable) {
+    commands.push('nb self update --yes');
+  }
+
+  if (skillsStatus.updateAvailable === true) {
+    commands.push('nb skills update --yes');
+  }
+
+  return commands;
+}
+
+function buildNonInteractiveWarning(
+  selfStatus: SelfStatus,
+  skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>,
+) {
+  const commands = buildUpdateCommands(selfStatus, skillsStatus);
+  const details: string[] = [];
+
+  if (selfStatus.updateAvailable) {
+    details.push(
+      selfStatus.latestVersion
+        ? `CLI ${selfStatus.currentVersion} -> ${selfStatus.latestVersion}`
+        : `CLI update available from ${selfStatus.currentVersion}`,
+    );
+  }
+
+  if (skillsStatus.updateAvailable === true) {
+    details.push('NocoBase AI skills update available');
+  }
+
+  return [
+    `Detected available updates${details.length ? ` (${details.join(', ')})` : ''}.`,
+    'Skipping the interactive startup update prompt because this terminal session is non-interactive and may be controlled by an AI agent.',
+    commands.length
+      ? `To update manually, run: ${commands.join(' && ')}`
+      : 'Run `nb self check` and `nb skills check` to inspect available updates.',
+    'Continuing without auto-update. You may run into compatibility issues until you update.',
+  ].join(' ');
+}
+
+function buildDeclinedWarning(
+  selfStatus: SelfStatus,
+  skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>,
+) {
+  const commands = buildUpdateCommands(selfStatus, skillsStatus);
+  const details: string[] = [];
+
+  if (selfStatus.updateAvailable) {
+    details.push(
+      selfStatus.latestVersion
+        ? `CLI ${selfStatus.currentVersion} -> ${selfStatus.latestVersion}`
+        : `CLI update available from ${selfStatus.currentVersion}`,
+    );
+  }
+
+  if (skillsStatus.updateAvailable === true) {
+    details.push('NocoBase AI skills update available');
+  }
+
+  return [
+    `Skipped available updates${details.length ? ` (${details.join(', ')})` : ''}.`,
+    commands.length
+      ? `You can update manually with: ${commands.join(' && ')}`
+      : 'Run `nb self check` and `nb skills check` to inspect available updates.',
+    'You may run into compatibility issues until you update.',
+  ].join(' ');
 }
 
 async function runStartupUpdates() {
@@ -150,6 +218,12 @@ export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<Start
     return { kind: 'no-update' };
   }
 
+  if (!isInteractiveTerminal()) {
+    printWarning(buildNonInteractiveWarning(selfStatus, skillsStatus));
+    await markChecked();
+    return { kind: 'warned' };
+  }
+
   const answer = await p.confirm({
     message: buildPromptMessage(selfStatus, skillsStatus),
     active: 'Yes',
@@ -158,9 +232,7 @@ export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<Start
   });
 
   if (p.isCancel(answer) || !answer) {
-    printWarning(
-      'Skipped updating the global CLI and skills. You may run into compatibility issues until you update.',
-    );
+    printWarning(buildDeclinedWarning(selfStatus, skillsStatus));
     await markChecked();
     return { kind: 'declined' };
   }
