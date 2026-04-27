@@ -53,7 +53,7 @@ nb init
 nb init --ui
 ```
 
-`nb init` 可以连接已有的 NocoBase 应用，也可以安装一个新的 NocoBase 应用。创建新应用时，还可以为当前工作区安装 NocoBase AI coding skills (`nocobase/skills`)。
+`nb init` 可以连接已有的 NocoBase 应用，也可以安装一个新的 NocoBase 应用。创建新应用时，还可以全局安装 NocoBase AI coding skills (`nocobase/skills`)。
 
 ### 非交互式初始化
 

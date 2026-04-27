@@ -73,6 +73,8 @@
         },
         "scope": {
           "message": "这个连接要保存到哪里？",
+          "autoLabel": "自动",
+          "autoHint": "当前仓库已有 .nocobase 时保存到项目内，否则保存到全局",
           "projectLabel": "项目内",
           "projectHint": "保存在当前仓库的 .nocobase 中",
           "globalLabel": "全局",

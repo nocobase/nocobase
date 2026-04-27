@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { resolveCliHomeDir } from './cli-home.js';
 import { commandOutput, run } from './run-npm.js';
 
 export const NOCOBASE_SKILLS_PACKAGE = 'nocobase/skills';
@@ -58,24 +58,16 @@ function normalizePath(value: string): string {
   return path.resolve(value);
 }
 
-export function resolveSkillsWorkspaceRoot(startCwd = process.cwd()): string {
-  let current = normalizePath(startCwd);
-
-  while (true) {
-    if (fs.existsSync(path.join(current, '.nocobase')) || fs.existsSync(path.join(current, '.agents'))) {
-      return current;
-    }
-
-    const parent = path.dirname(current);
-    if (parent === current) {
-      return normalizePath(startCwd);
-    }
-    current = parent;
-  }
+export function resolveSkillsWorkspaceRoot(_startCwd = process.cwd()): string {
+  return normalizePath(resolveCliHomeDir('global'));
 }
 
 export function getManagedSkillsStateFile(workspaceRoot: string): string {
-  return path.join(workspaceRoot, '.nocobase', 'skills.json');
+  return path.join(workspaceRoot, 'skills.json');
+}
+
+async function ensureSkillsWorkspaceRoot(workspaceRoot: string): Promise<void> {
+  await fsp.mkdir(workspaceRoot, { recursive: true });
 }
 
 async function readManagedSkillsState(workspaceRoot: string): Promise<ManagedSkillsState | undefined> {
@@ -96,7 +88,8 @@ async function writeManagedSkillsState(workspaceRoot: string, state: ManagedSkil
 
 export async function listProjectSkills(options: SkillsManagerOptions = {}): Promise<InstalledSkill[]> {
   const workspaceRoot = options.workspaceRoot ? normalizePath(options.workspaceRoot) : resolveSkillsWorkspaceRoot();
-  const output = await (options.commandOutputFn ?? commandOutput)('npx', ['-y', 'skills', 'list', '--json'], {
+  await ensureSkillsWorkspaceRoot(workspaceRoot);
+  const output = await (options.commandOutputFn ?? commandOutput)('npx', ['-y', 'skills', 'list', '-g', '--json'], {
     cwd: workspaceRoot,
     errorName: 'skills list',
   });
@@ -119,12 +112,14 @@ function pickInstalledNocoBaseSkillNames(installedSkills: InstalledSkill[], stat
 export async function readNocoBaseSkillsHeadRef(
   options: SkillsManagerOptions = {},
 ): Promise<{ ref?: string; error?: string }> {
+  const workspaceRoot = options.workspaceRoot ? normalizePath(options.workspaceRoot) : resolveSkillsWorkspaceRoot();
+  await ensureSkillsWorkspaceRoot(workspaceRoot);
   try {
     const output = await (options.commandOutputFn ?? commandOutput)(
       'git',
       ['ls-remote', NOCOBASE_SKILLS_REPO_URL, 'HEAD'],
       {
-        cwd: options.workspaceRoot ? normalizePath(options.workspaceRoot) : resolveSkillsWorkspaceRoot(),
+        cwd: workspaceRoot,
         errorName: 'git ls-remote',
       },
     );
@@ -183,7 +178,7 @@ export async function inspectSkillsStatus(options: SkillsManagerOptions = {}): P
 
 function formatSkillsNotInstalledMessage(): string {
   return [
-    'NocoBase AI coding skills are not installed for this workspace.',
+    'NocoBase AI coding skills are not installed globally.',
     'Run `nb skills install` first.',
   ].join('\n');
 }
@@ -236,7 +231,8 @@ export async function installNocoBaseSkills(options: SkillsSyncOptions = {}): Pr
     };
   }
 
-  await (options.runFn ?? run)('npx', ['-y', 'skills', 'add', NOCOBASE_SKILLS_PACKAGE, '-y'], {
+  await ensureSkillsWorkspaceRoot(workspaceRoot);
+  await (options.runFn ?? run)('npx', ['-y', 'skills', 'add', NOCOBASE_SKILLS_PACKAGE, '-g', '-y'], {
     cwd: workspaceRoot,
     stdio: 'inherit',
     errorName: 'skills add',
@@ -276,7 +272,7 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
 
   await (options.runFn ?? run)(
     'npx',
-    ['-y', 'skills', 'update', '-p', '-y', ...status.installedSkillNames],
+    ['-y', 'skills', 'update', '-g', '-y', ...status.installedSkillNames],
     {
       cwd: workspaceRoot,
       stdio: 'inherit',

@@ -26,7 +26,7 @@ import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import { printVerbose, setVerboseMode } from '../../lib/ui.js';
 import * as p from '@clack/prompts';
 
-type EnvScope = Exclude<CliHomeScope, 'auto'>;
+type EnvScope = CliHomeScope;
 type EnvAddParsedFlags = {
   env?: string;
   verbose: boolean;
@@ -136,9 +136,9 @@ export default class EnvAdd extends Command {
     scope: Flags.string({
       char: 's',
       description:
-        'Where to store env config: project (.nocobase in the repo) or global (user-level); prompted in a TTY when omitted',
-      options: ['project', 'global'],
-      default: 'project',
+        'Where to store env config: auto, project (.nocobase in the repo), or global (user-level); prompted in a TTY when omitted',
+      options: ['auto', 'project', 'global'],
+      default: 'auto',
     }),
     'default-api-base-url': Flags.string({
       char: 'd',
@@ -270,6 +270,11 @@ export default class EnvAdd extends Command {
       message: envAddText('prompts.scope.message'),
       options: [
         {
+          value: 'auto',
+          label: envAddText('prompts.scope.autoLabel'),
+          hint: envAddText('prompts.scope.autoHint'),
+        },
+        {
           value: 'project',
           label: envAddText('prompts.scope.projectLabel'),
           hint: envAddText('prompts.scope.projectHint'),
@@ -280,7 +285,7 @@ export default class EnvAdd extends Command {
           hint: envAddText('prompts.scope.globalHint'),
         },
       ],
-      initialValue: 'project',
+      initialValue: 'auto',
       required: true,
     },
     apiBaseUrl: {

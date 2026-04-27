@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { test, vi, expect } from 'vitest';
+import { beforeEach, test, vi, expect } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
@@ -39,6 +39,10 @@ vi.mock('@clack/prompts', () => ({
   intro: mocks.intro,
   outro: mocks.outro,
 }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 test('env add saves builtinDb into env config when provided by install', async () => {
   const { default: EnvAdd } = await import('../commands/env/add.js');
@@ -103,4 +107,55 @@ test('env add saves builtinDb into env config when provided by install', async (
   expect(runCommand.mock.calls).toEqual([
     ['env:update', ['local']],
   ]);
+});
+
+test('env add accepts auto scope from non-interactive callers', async () => {
+  const { default: EnvAdd } = await import('../commands/env/add.js');
+  mocks.runPromptCatalog.mockResolvedValue({
+    name: 'local',
+    scope: 'auto',
+    apiBaseUrl: 'http://127.0.0.1:13000/api',
+    authType: 'oauth',
+  });
+  mocks.upsertEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(EnvAdd.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        scope: 'auto',
+        verbose: false,
+        'api-base-url': 'http://127.0.0.1:13000/api',
+        'auth-type': 'oauth',
+      },
+    })),
+    config: {
+      runCommand,
+    },
+  });
+
+  await EnvAdd.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]).toEqual([
+    'local',
+    {
+      baseUrl: 'http://127.0.0.1:13000/api',
+    },
+    { scope: 'auto' },
+  ]);
+  expect(runCommand.mock.calls).toEqual([
+    ['env:auth', ['local']],
+    ['env:update', ['local']],
+  ]);
+});
+
+test('env add defaults scope to auto', async () => {
+  const { default: EnvAdd } = await import('../commands/env/add.js');
+
+  expect(EnvAdd.flags.scope.default).toBe('auto');
+  expect(EnvAdd.prompts.scope.type).toBe('select');
+  if (EnvAdd.prompts.scope.type === 'select') {
+    expect(EnvAdd.prompts.scope.initialValue).toBe('auto');
+  }
 });

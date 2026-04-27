@@ -12,9 +12,9 @@ import { inspectSkillsStatus } from '../../lib/skills-manager.js';
 import { printInfo, renderTable } from '../../lib/ui.js';
 
 export default class SkillsCheck extends Command {
-  static override summary = 'Check the NocoBase AI coding skills installed for this workspace';
+  static override summary = 'Check the globally installed NocoBase AI coding skills';
   static override description =
-    'Inspect the current workspace for NocoBase AI coding skills and report whether they are managed by the CLI and whether an update is available.';
+    'Inspect the global NocoBase AI coding skills and report whether they are managed by the CLI and whether an update is available.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --json',
@@ -59,7 +59,7 @@ export default class SkillsCheck extends Command {
       renderTable(
         ['Field', 'Value'],
         [
-          ['Workspace', status.workspaceRoot],
+          ['Skills home', status.workspaceRoot],
           ['Installed', status.installed ? 'yes' : 'no'],
           ['Managed by nb', status.managedByNb ? 'yes' : 'no'],
           ['Installed skills', status.installedSkillNames.length ? status.installedSkillNames.join(', ') : '(none)'],
@@ -69,12 +69,12 @@ export default class SkillsCheck extends Command {
     );
 
     if (!status.installed) {
-      printInfo('Run `nb skills install` to install the NocoBase AI coding skills for this workspace.');
+      printInfo('Run `nb skills install` to install the NocoBase AI coding skills globally.');
       return;
     }
 
     if (status.updateAvailable) {
-      printInfo('Run `nb skills update` to refresh the NocoBase AI coding skills for this workspace.');
+      printInfo('Run `nb skills update` to refresh the global NocoBase AI coding skills.');
     }
 
     if (status.registryError) {

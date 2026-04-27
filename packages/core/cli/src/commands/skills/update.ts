@@ -12,9 +12,9 @@ import { confirmAction } from '../../lib/ui.js';
 import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsUpdate extends Command {
-  static override summary = 'Update the NocoBase AI coding skills for this workspace';
+  static override summary = 'Update the globally installed NocoBase AI coding skills';
   static override description =
-    'Refresh the NocoBase AI coding skills for the current workspace. This command only updates an existing nocobase/skills install.';
+    'Refresh the globally installed NocoBase AI coding skills. This command only updates an existing nocobase/skills install.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
@@ -38,7 +38,7 @@ export default class SkillsUpdate extends Command {
 
     if (!flags.yes) {
       const confirmed = await confirmAction(
-        'Update the NocoBase AI coding skills for this workspace?',
+        'Update the globally installed NocoBase AI coding skills?',
         { defaultValue: true },
       );
       if (!confirmed) {
@@ -68,10 +68,10 @@ export default class SkillsUpdate extends Command {
     }
 
     if (result.action === 'noop') {
-      this.log('NocoBase AI coding skills are already up to date for this workspace.');
+      this.log('NocoBase AI coding skills are already up to date globally.');
       return;
     }
 
-    this.log('Updated the NocoBase AI coding skills for this workspace.');
+    this.log('Updated the global NocoBase AI coding skills.');
   }
 }

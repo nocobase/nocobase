@@ -58,7 +58,7 @@ nb init --ui
 
 `nb init` can either connect to an existing NocoBase app or install a new one.
 When creating a new app, it can also install NocoBase AI coding skills
-(`nocobase/skills`) for the current workspace.
+(`nocobase/skills`) globally.
 
 ### Non-Interactive Setup
 
@@ -149,7 +149,7 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | `nb api` | Call NocoBase API resources from the CLI. |
 | `nb pm` | Manage plugins for the selected NocoBase env. |
 | `nb self` | Check or update the installed NocoBase CLI. |
-| `nb skills` | Check, install, or update NocoBase AI coding skills for the current workspace. |
+| `nb skills` | Check, install, or update global NocoBase AI coding skills. |
 
 Recommended style: use `--env` explicitly for app/runtime commands. `-e` is the short form:
 
@@ -186,7 +186,7 @@ Update the CLI when it is installed globally with npm:
 nb self update
 ```
 
-Check whether the current workspace already has the NocoBase AI coding skills:
+Check whether the global NocoBase AI coding skills are installed:
 
 ```bash
 nb skills check

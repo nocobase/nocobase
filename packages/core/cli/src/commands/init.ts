@@ -39,7 +39,7 @@ import _ from 'lodash';
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
-const CONFIG_SCOPE = 'project' as const;
+const CONFIG_SCOPE = 'auto' as const;
 
 const initText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.init.${key}`, values);
@@ -124,7 +124,7 @@ async function validateInitAppName(value: PromptValue): Promise<string | undefin
     return undefined;
   }
 
-  const existingEnv = await getEnv(envName, { scope: 'project' });
+  const existingEnv = await getEnv(envName, { scope: CONFIG_SCOPE });
   if (existingEnv) {
     if (shouldAllowExistingInitEnv()) {
       return undefined;
@@ -547,7 +547,7 @@ Prompt modes:
     const installSkills = Boolean(results.installSkills);
     const hasNocobase = results.hasNocobase === 'yes';
     const existingEnv = !hasNocobase
-      ? await getEnv(String(results.appName ?? '').trim(), { scope: 'project' })
+      ? await getEnv(String(results.appName ?? '').trim(), { scope: CONFIG_SCOPE })
       : undefined;
 
     if (existingEnv && Boolean(normalizedFlags.force)) {
