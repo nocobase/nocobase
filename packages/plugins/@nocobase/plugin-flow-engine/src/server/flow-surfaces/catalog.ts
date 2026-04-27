@@ -2823,11 +2823,20 @@ export function getSupportedFieldComponentUseSet(input: {
     }
   }
 
-  if (
-    wrapperUse === 'DetailsItemModel' ||
-    wrapperUse === 'FormAssociationItemModel' ||
-    wrapperUse === 'TableColumnModel'
-  ) {
+  if (wrapperUse === 'DetailsItemModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(['DisplayTextFieldModel', 'DisplaySubItemFieldModel', inferredFieldUse].filter(Boolean));
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        ['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel', inferredFieldUse].filter(
+          Boolean,
+        ),
+      );
+    }
+  }
+
+  if (wrapperUse === 'FormAssociationItemModel' || wrapperUse === 'TableColumnModel') {
     if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
       return new Set(['DisplayTextFieldModel', inferredFieldUse].filter(Boolean));
     }

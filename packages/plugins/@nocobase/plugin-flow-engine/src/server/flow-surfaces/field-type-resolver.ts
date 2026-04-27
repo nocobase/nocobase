@@ -13,13 +13,13 @@ import { SINGLE_VALUE_ASSOCIATION_INTERFACES, MULTI_VALUE_ASSOCIATION_INTERFACES
 import { normalizeFieldContainerKind } from './field-semantics';
 import {
   getCollectionFields,
-  getCollectionTitleFieldName,
   getFieldInterface,
   getFieldName,
   isAssociationField,
   resolveFieldFromCollection,
   resolveFieldTargetCollection,
 } from './service-helpers';
+import { resolveCollectionSafeTitleField } from './association-title-field';
 
 export const FLOW_SURFACE_PUBLIC_RELATION_FIELD_TYPES = [
   'text',
@@ -65,6 +65,19 @@ const FIELD_USE_TO_PUBLIC_FIELD_TYPE: Record<string, FlowSurfacePublicRelationFi
   SubTableFieldModel: 'subTable',
   PopupSubTableFieldModel: 'popupSubTable',
 };
+
+const FIELD_TYPES_WITH_FIELDS = new Set<FlowSurfacePublicRelationFieldType>([
+  'subForm',
+  'subFormList',
+  'subDetails',
+  'subDetailsList',
+  'subTable',
+  'popupSubTable',
+]);
+
+const FIELD_TYPES_WITH_SELECTOR_FIELDS = new Set<FlowSurfacePublicRelationFieldType>(['picker']);
+
+const FIELD_TYPES_WITH_TABLE_PROPS = new Set<FlowSurfacePublicRelationFieldType>(['subTable', 'popupSubTable']);
 
 export function assertNoInternalFieldKeys(input: Record<string, any> | undefined, context: string) {
   if (!_.isPlainObject(input)) {
@@ -129,9 +142,9 @@ function getAssociationCardinality(field: any): 'single' | 'multi' | null {
 }
 
 function pickCollectionFallbackFieldName(collection: any) {
-  const titleFieldName = String(getCollectionTitleFieldName(collection) || '').trim();
-  if (titleFieldName && resolveFieldFromCollection(collection, titleFieldName)) {
-    return titleFieldName;
+  const safeTitleFieldName = resolveCollectionSafeTitleField(collection)?.fieldName;
+  if (safeTitleFieldName && resolveFieldFromCollection(collection, safeTitleFieldName)) {
+    return safeTitleFieldName;
   }
   const primaryField = getCollectionFields(collection).find(
     (field) => !!field?.primaryKey || !!field?.options?.primaryKey,
@@ -156,6 +169,11 @@ export function resolveRelationFieldType(input: {
   fields?: any;
   selectorFields?: any;
   titleField?: any;
+  openMode?: any;
+  popupSize?: any;
+  pageSize?: any;
+  showIndex?: any;
+  applyDefaults?: boolean;
   context: string;
 }) {
   const fieldType = normalizePublicFieldType(input.fieldType, input.context);
@@ -235,11 +253,30 @@ export function resolveRelationFieldType(input: {
   if (explicitFields && explicitSelectorFields) {
     throwBadRequest(`flowSurfaces ${input.context} cannot mix fields and selectorFields on the same field`);
   }
-  const defaultTargetField = pickCollectionFallbackFieldName(targetCollection);
-  const fields = explicitFields ?? (usesNestedRelationFields(fieldUse) ? [defaultTargetField] : undefined);
+  if (explicitFields && !FIELD_TYPES_WITH_FIELDS.has(fieldType)) {
+    throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support fields`);
+  }
+  if (explicitSelectorFields && !FIELD_TYPES_WITH_SELECTOR_FIELDS.has(fieldType)) {
+    throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support selectorFields`);
+  }
+  if ((!_.isUndefined(input.openMode) || !_.isUndefined(input.popupSize)) && fieldType !== 'picker') {
+    throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support openMode or popupSize`);
+  }
+  if (
+    (!_.isUndefined(input.pageSize) || !_.isUndefined(input.showIndex)) &&
+    !FIELD_TYPES_WITH_TABLE_PROPS.has(fieldType)
+  ) {
+    throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support pageSize or showIndex`);
+  }
+  const shouldApplyDefaults = input.applyDefaults !== false;
+  const defaultTargetField = shouldApplyDefaults ? pickCollectionFallbackFieldName(targetCollection) : undefined;
+  const fields =
+    explicitFields ?? (shouldApplyDefaults && usesNestedRelationFields(fieldUse) ? [defaultTargetField] : undefined);
   const selectorFields =
     explicitSelectorFields ??
-    (fieldType === 'picker' && _.isUndefined(input.selectorFields) ? [defaultTargetField] : undefined);
+    (shouldApplyDefaults && fieldType === 'picker' && _.isUndefined(input.selectorFields)
+      ? [defaultTargetField]
+      : undefined);
   const titleField = _.isUndefined(input.titleField)
     ? defaultTargetField
     : String(input.titleField || '').trim() || undefined;
@@ -264,6 +301,10 @@ export function resolveRelationFieldType(input: {
     fields,
     selectorFields,
     titleField,
+    openMode: input.openMode,
+    popupSize: input.popupSize,
+    pageSize: input.pageSize,
+    showIndex: input.showIndex,
   };
 }
 

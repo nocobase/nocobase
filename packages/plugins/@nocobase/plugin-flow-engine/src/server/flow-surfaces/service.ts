@@ -1487,12 +1487,17 @@ export class FlowSurfacesService {
         enum: Array.from(new Set(supportedFieldTypes)),
       };
       const innerField = node?.subModels?.field || node;
+      const relationFieldTypes = Array.from(new Set(supportedFieldTypes));
+      const defaultTitleField = this.getAssociationDefaultTitleFieldName(
+        fieldSource.field,
+        fieldSource.fieldSettingsInit?.dataSourceKey,
+      );
       return {
         ...projected,
         configureOptions,
         relation: {
           ...(projected as any).relation,
-          fieldTypes: Array.from(new Set(supportedFieldTypes)),
+          fieldTypes: relationFieldTypes,
           current: buildDefinedPayload({
             fieldType: getPublicFieldTypeForUse(innerField?.stepParams?.fieldBinding?.use || innerField?.use),
             fields: this.collectRelationNestedFieldPaths(innerField),
@@ -1500,17 +1505,36 @@ export class FlowSurfacesService {
             titleField: innerField?.props?.titleField || node?.props?.titleField,
           }),
           defaults: buildDefinedPayload({
-            titleField: this.getAssociationDefaultTitleFieldName(
-              fieldSource.field,
-              fieldSource.fieldSettingsInit?.dataSourceKey,
-            ),
+            titleField: defaultTitleField,
           }),
+          candidates: this.buildRelationFieldTypeCandidates(relationFieldTypes, defaultTitleField),
           configureOptions,
         },
       };
     } catch {
       return projected;
     }
+  }
+
+  private buildRelationFieldTypeCandidates(fieldTypes: string[], defaultTitleField?: string) {
+    return fieldTypes.map((fieldType) => {
+      const defaults: Record<string, any> = {
+        titleField: defaultTitleField,
+      };
+      if (
+        ['subForm', 'subFormList', 'subDetails', 'subDetailsList', 'subTable', 'popupSubTable'].includes(fieldType) &&
+        defaultTitleField
+      ) {
+        defaults.fields = [defaultTitleField];
+      }
+      if (fieldType === 'picker' && defaultTitleField) {
+        defaults.selectorFields = [defaultTitleField];
+      }
+      return {
+        fieldType,
+        defaults: buildDefinedPayload(defaults),
+      };
+    });
   }
 
   private collectRelationNestedFieldPaths(fieldNode: any) {
@@ -6488,8 +6512,8 @@ export class FlowSurfacesService {
             ...(fieldSpec.renderer ? { renderer: fieldSpec.renderer } : {}),
             ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
             ...(fieldSpec.fieldType ? { fieldType: fieldSpec.fieldType } : {}),
-            ...(fieldSpec.fields ? { fields: fieldSpec.fields } : {}),
-            ...(fieldSpec.selectorFields ? { selectorFields: fieldSpec.selectorFields } : {}),
+            ...(!_.isUndefined(fieldSpec.fields) ? { fields: fieldSpec.fields } : {}),
+            ...(!_.isUndefined(fieldSpec.selectorFields) ? { selectorFields: fieldSpec.selectorFields } : {}),
             ...(fieldSpec.titleField ? { titleField: fieldSpec.titleField } : {}),
             ...(fieldSpec.openMode ? { openMode: fieldSpec.openMode } : {}),
             ...(fieldSpec.popupSize ? { popupSize: fieldSpec.popupSize } : {}),
@@ -6765,6 +6789,10 @@ export class FlowSurfacesService {
       fields: values.fields,
       selectorFields: values.selectorFields,
       titleField: values.titleField,
+      openMode: values.openMode,
+      popupSize: values.popupSize,
+      pageSize: values.pageSize,
+      showIndex: values.showIndex,
       context: 'addField',
     });
     if (relationFieldTypeResolution) {
@@ -6963,10 +6991,10 @@ export class FlowSurfacesService {
         fields: relationFieldTypeResolution.fields,
         selectorFields: relationFieldTypeResolution.selectorFields,
         titleField: relationFieldTypeResolution.titleField,
-        openMode: values.openMode,
-        popupSize: values.popupSize,
-        pageSize: values.pageSize,
-        showIndex: values.showIndex,
+        openMode: relationFieldTypeResolution.openMode,
+        popupSize: relationFieldTypeResolution.popupSize,
+        pageSize: relationFieldTypeResolution.pageSize,
+        showIndex: relationFieldTypeResolution.showIndex,
         transaction: options.transaction,
       });
     }
@@ -14062,6 +14090,9 @@ export class FlowSurfacesService {
     });
     const shouldSyncTitleField = titleFieldSyncDecision.shouldSync;
     const syncedTitleField = titleFieldSyncDecision.titleField;
+    const shouldPatchTableColumnTitle = current?.use === 'TableColumnModel' && hasOwnDefined(wrapperChanges, 'title');
+    const shouldPatchFieldSettings =
+      hasDefinedValue(wrapperChanges, ['fieldPath', 'associationPathName']) || shouldPatchTableColumnTitle;
 
     if (Object.keys(wrapperChanges).length) {
       await this.updateSettings(
@@ -14102,21 +14133,19 @@ export class FlowSurfacesService {
                   labelWidth: wrapperChanges.labelWidth,
                   labelWrap: wrapperChanges.labelWrap,
                 }),
-          stepParams:
-            hasDefinedValue(wrapperChanges, ['fieldPath', 'associationPathName']) ||
-            (current?.use === 'TableColumnModel' && hasOwnDefined(wrapperChanges, 'title'))
-              ? buildDefinedPayload({
-                  ...(current?.use === 'TableColumnModel' && hasOwnDefined(wrapperChanges, 'title')
-                    ? {
-                        tableColumnSettings: {
-                          title: {
-                            title: wrapperChanges.title,
-                          },
+          stepParams: shouldPatchFieldSettings
+            ? buildDefinedPayload({
+                ...(shouldPatchTableColumnTitle
+                  ? {
+                      tableColumnSettings: {
+                        title: {
+                          title: wrapperChanges.title,
                         },
-                      }
-                    : {}),
-                })
-              : undefined,
+                      },
+                    }
+                  : {}),
+              })
+            : undefined,
         },
         options,
       );
@@ -14149,10 +14178,16 @@ export class FlowSurfacesService {
 
     let effectiveInnerFieldUse = innerField?.use;
     let fieldTypeResolution;
+    let relationTitleFieldToApply;
     if (
       hasOwnDefined(changes, 'fieldType') ||
       hasOwnDefined(changes, 'fields') ||
-      hasOwnDefined(changes, 'selectorFields')
+      hasOwnDefined(changes, 'selectorFields') ||
+      hasOwnDefined(changes, 'titleField') ||
+      hasOwnDefined(changes, 'openMode') ||
+      hasOwnDefined(changes, 'popupSize') ||
+      hasOwnDefined(changes, 'pageSize') ||
+      hasOwnDefined(changes, 'showIndex')
     ) {
       if (!innerUid) {
         throwConflict(
@@ -14161,10 +14196,13 @@ export class FlowSurfacesService {
         );
       }
       const fieldSource = this.resolveFieldComponentFieldSource(current, normalizedBinding);
+      const currentPublicFieldType = getPublicFieldTypeForUse(
+        innerField?.stepParams?.fieldBinding?.use || innerField?.use,
+      );
+      const shouldApplyResolverDefaults =
+        hasOwnDefined(changes, 'fieldType') && changes.fieldType !== currentPublicFieldType;
       fieldTypeResolution = resolveRelationFieldType({
-        fieldType: hasOwnDefined(changes, 'fieldType')
-          ? changes.fieldType
-          : getPublicFieldTypeForUse(innerField?.stepParams?.fieldBinding?.use || innerField?.use),
+        fieldType: hasOwnDefined(changes, 'fieldType') ? changes.fieldType : currentPublicFieldType,
         containerUse: current?.use,
         field: fieldSource.field,
         dataSourceKey: fieldSource.fieldSettingsInit?.dataSourceKey,
@@ -14172,11 +14210,19 @@ export class FlowSurfacesService {
         fields: changes.fields,
         selectorFields: changes.selectorFields,
         titleField: hasOwnDefined(wrapperChanges, 'titleField') ? wrapperChanges.titleField : undefined,
+        openMode: hasOwnDefined(changes, 'openMode') ? changes.openMode : undefined,
+        popupSize: hasOwnDefined(changes, 'popupSize') ? changes.popupSize : undefined,
+        pageSize: hasOwnDefined(changes, 'pageSize') ? changes.pageSize : undefined,
+        showIndex: hasOwnDefined(changes, 'showIndex') ? changes.showIndex : undefined,
+        applyDefaults: shouldApplyResolverDefaults,
         context: 'configure',
       });
       if (!fieldTypeResolution) {
         throwBadRequest('flowSurfaces configure fieldType is required when configuring relation fields');
       }
+      const shouldApplyFieldTypeDefaults = shouldApplyResolverDefaults;
+      const shouldApplyRelationTitleField = hasOwnDefined(wrapperChanges, 'titleField') || shouldApplyFieldTypeDefaults;
+      relationTitleFieldToApply = shouldApplyRelationTitleField ? fieldTypeResolution.titleField : undefined;
       const normalizedFieldComponentUse = await this.rebuildFieldSubModelOnServer({
         wrapperNode: current,
         innerField,
@@ -14191,20 +14237,24 @@ export class FlowSurfacesService {
         fieldUid: innerUid,
         fieldUse: normalizedFieldComponentUse,
         targetCollection: fieldTypeResolution.targetCollection,
-        fields: hasOwnDefined(changes, 'fields') ? fieldTypeResolution.fields : undefined,
-        selectorFields: hasOwnDefined(changes, 'selectorFields') ? fieldTypeResolution.selectorFields : undefined,
-        titleField: fieldTypeResolution.titleField,
-        openMode: changes.openMode,
-        popupSize: changes.popupSize,
-        pageSize: changes.pageSize,
-        showIndex: changes.showIndex,
+        fields:
+          hasOwnDefined(changes, 'fields') || shouldApplyFieldTypeDefaults ? fieldTypeResolution.fields : undefined,
+        selectorFields:
+          hasOwnDefined(changes, 'selectorFields') || shouldApplyFieldTypeDefaults
+            ? fieldTypeResolution.selectorFields
+            : undefined,
+        titleField: relationTitleFieldToApply,
+        openMode: fieldTypeResolution.openMode,
+        popupSize: fieldTypeResolution.popupSize,
+        pageSize: fieldTypeResolution.pageSize,
+        showIndex: fieldTypeResolution.showIndex,
         transaction: options.transaction,
       });
     }
 
-    const effectiveSyncedTitleField = fieldTypeResolution?.titleField ?? syncedTitleField;
+    const effectiveSyncedTitleField = relationTitleFieldToApply ?? syncedTitleField;
     if (
-      (shouldSyncTitleField || fieldTypeResolution?.titleField) &&
+      (shouldSyncTitleField || !_.isUndefined(relationTitleFieldToApply)) &&
       this.supportsFieldTitleFieldProp(effectiveInnerFieldUse)
     ) {
       if (!innerUid) {
@@ -18139,7 +18189,7 @@ export class FlowSurfacesService {
     showIndex?: any;
     transaction?: any;
   }) {
-    if (input.titleField || input.pageSize || !_.isUndefined(input.showIndex)) {
+    if (input.titleField || !_.isUndefined(input.pageSize) || !_.isUndefined(input.showIndex)) {
       const fieldNode = await this.repository.findModelById(input.fieldUid, {
         transaction: input.transaction,
         includeAsyncNode: true,
@@ -18535,7 +18585,10 @@ export class FlowSurfacesService {
     if (!flowDomain || !wrapperNode?.uid) {
       return;
     }
-    const nextStepParams = _.merge({}, wrapperNode.stepParams || {}, {
+    const latestWrapper = await this.repository.findModelById(wrapperNode.uid, {
+      transaction,
+    });
+    const nextStepParams = _.merge({}, latestWrapper?.stepParams || wrapperNode.stepParams || {}, {
       [flowDomain.flowKey]: {
         [flowDomain.stepKey]: {
           use: targetFieldUse,

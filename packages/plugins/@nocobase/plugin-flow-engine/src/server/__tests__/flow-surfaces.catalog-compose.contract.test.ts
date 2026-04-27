@@ -2287,6 +2287,88 @@ describe('flowSurfaces catalog + compose contract', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['title', 'name']);
+
+    const fieldCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: formItems[0].uid,
+          },
+        },
+      }),
+    );
+    expect(fieldCatalog.node.relation?.fieldTypes).toEqual(
+      expect.arrayContaining(['select', 'picker', 'subFormList', 'popupSubTable']),
+    );
+    expect(fieldCatalog.node.relation?.current).toMatchObject({
+      fieldType: 'popupSubTable',
+      fields: ['title', 'name'],
+      titleField: 'title',
+    });
+    expect(fieldCatalog.node.relation?.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fieldType: 'picker',
+          defaults: expect.objectContaining({
+            titleField: 'title',
+            selectorFields: ['title'],
+          }),
+        }),
+        expect.objectContaining({
+          fieldType: 'popupSubTable',
+          defaults: expect.objectContaining({
+            titleField: 'title',
+            fields: ['title'],
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should preserve explicit empty relation fields in compose fieldType specs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose empty relation fieldType page',
+      tabTitle: 'Compose empty relation fieldType tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'userForm',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: [
+                {
+                  key: 'rolesField',
+                  fieldPath: 'roles',
+                  fieldType: 'popupSubTable',
+                  fields: [],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const formBlock = getComposeBlock(composeRes, 'userForm');
+    const formSurface = await getSurface(rootAgent, {
+      uid: formBlock.uid,
+    });
+    const formItems = _.castArray(formSurface.tree?.subModels?.grid?.subModels?.items || []);
+    expect(
+      _.castArray(formItems[0]?.subModels?.field?.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual([]);
   });
 
   it('should addBlock with inline fields that use relation fieldType semantics', async () => {
@@ -4309,7 +4391,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       },
     });
     expect(rawFieldRes.status).toBe(400);
-    expect(readErrorMessage(rawFieldRes)).toContain('does not accept raw keys');
+    expect(readErrorMessage(rawFieldRes)).toContain('does not accept internal field keys');
 
     const rawActionRes = await rootAgent.resource('flowSurfaces').addAction({
       values: {
