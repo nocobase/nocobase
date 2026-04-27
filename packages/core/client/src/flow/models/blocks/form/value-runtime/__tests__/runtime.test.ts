@@ -1775,6 +1775,50 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect((runtime as any).findExplicitHit('roles[0].title')).toBe('roles[0].title');
   });
 
+  it('moves observable binding writes with filterTargetKey identified rows after deleting a preceding row', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      roles: [{ code: 'admin' }, { code: 'editor' }],
+    });
+
+    const blockModel: any = {
+      uid: 'form-assign-default-observable-shift-row',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const roleRowCollection: any = { getField: () => null, filterTargetKey: 'code' };
+    const rolesField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: roleRowCollection };
+    const rootCollection: any = { getField: (name: string) => (name === 'roles' ? rolesField : null) };
+    blockCtx.defineProperty('collection', { value: rootCollection });
+    blockCtx.defineProperty('fieldIndex', { value: ['roles:1'] });
+    blockModel.context = blockCtx;
+
+    const defaultMeta = observable({ label: 'Editor' });
+    await runtime.setFormValues(blockCtx, [{ path: 'roles.meta', value: defaultMeta }], {
+      source: 'linkage',
+      markExplicit: false,
+    });
+
+    expect(formStub.getFieldValue(['roles', 1, 'meta'])).toEqual({ label: 'Editor' });
+
+    const shiftedRow = formStub.getFieldValue(['roles', 1]);
+    lodashSet((formStub as any).__store, ['roles'], [shiftedRow]);
+    runtime.handleFormValuesChange({ roles: [shiftedRow] }, formStub.getFieldsValue());
+
+    defaultMeta.label = 'Updated';
+
+    await waitFor(() => expect(formStub.getFieldValue(['roles', 0, 'meta'])).toEqual({ label: 'Updated' }));
+    expect(formStub.getFieldValue(['roles', 1])).toBeUndefined();
+  });
+
   it('skips stale to-many row rules after the row index is out of bounds', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

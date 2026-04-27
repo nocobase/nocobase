@@ -52,6 +52,7 @@ type RuntimeRule = {
 
 type ObservableBinding = {
   source: ValueSource;
+  pathKey: string;
   dispose: () => void;
 };
 

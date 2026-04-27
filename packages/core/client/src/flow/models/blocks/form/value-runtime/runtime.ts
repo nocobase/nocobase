@@ -30,6 +30,7 @@ import { createTxId, isEmptyValue, MAX_WRITES_PER_PATH_PER_TX } from './utils';
 
 type ObservableBinding = {
   source: ValueSource;
+  pathKey: string;
   dispose: () => void;
 };
 
@@ -505,6 +506,7 @@ export class FormValueRuntime {
       }
       if (result.action === 'move') {
         changed = true;
+        binding.pathKey = result.key;
         nextEntries.set(result.key, binding);
         continue;
       }
@@ -922,19 +924,30 @@ export class FormValueRuntime {
         }
       }
 
-      for (const { namePath, rawValue, pathKey } of filteredToWrite) {
+      for (const { rawValue, pathKey } of filteredToWrite) {
         if (!isObservable(rawValue)) continue;
         const obs = rawValue;
 
+        const binding: ObservableBinding = { source, pathKey, dispose: () => {} };
         const disposer = observe(obs, () => {
-          this.applyBoundValue(callerCtx, namePath, pathKey, toJS(obs), source, linkageScopeDepth, linkageTxId);
+          const currentPathKey = binding.pathKey;
+          this.applyBoundValue(
+            callerCtx,
+            pathKeyToNamePath(currentPathKey),
+            currentPathKey,
+            toJS(obs),
+            source,
+            linkageScopeDepth,
+            linkageTxId,
+          );
         });
+        binding.dispose = disposer;
 
         const existing = this.observableBindings.get(pathKey);
         if (existing) {
           existing.dispose();
         }
-        this.observableBindings.set(pathKey, { source, dispose: disposer });
+        this.observableBindings.set(pathKey, binding);
       }
 
       if (triggerEvent) {
