@@ -48,7 +48,7 @@ IsInSettingsPageContext.displayName = 'IsInSettingsPageContext';
 export const CurrentTabUidContext = React.createContext<string>('');
 CurrentTabUidContext.displayName = 'CurrentTabUidContext';
 
-const SearchParamsContext = React.createContext<URLSearchParams>(new URLSearchParams());
+export const SearchParamsContext = React.createContext<URLSearchParams>(new URLSearchParams());
 SearchParamsContext.displayName = 'SearchParamsContext';
 
 const RouterBasenameContext = React.createContext<string>('');

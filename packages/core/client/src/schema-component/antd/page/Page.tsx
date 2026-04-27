@@ -24,9 +24,12 @@ import { FormDialog, ICON_POPUP_Z_INDEX, withSearchParams, zIndexContext } from 
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
+  LocationSearchContext,
+  SearchParamsContext,
   useCurrentSearchParams,
   useCurrentTabUid,
   useLocationNoUpdate,
+  useLocationSearch,
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
@@ -115,12 +118,27 @@ const InternalPage = React.memo((props: PageProps) => {
   );
 });
 
+export const useKeepAliveLocationSearch = () => {
+  const { active } = useKeepAlive();
+  const locationSearch = useLocationSearch();
+  const locationSearchRef = useRef(locationSearch);
+
+  // 缓存页失活后保留自己的查询串，避免被其他页面的 URL 参数污染。
+  if (active) {
+    locationSearchRef.current = locationSearch;
+  }
+
+  return active ? locationSearch : locationSearchRef.current;
+};
+
 export const Page = React.memo((props: PageProps) => {
   const { hashId, componentCls } = useStyles();
   const { active: pageActive } = useKeepAlive();
   const currentTabUid = useCurrentTabUid();
+  const locationSearch = useKeepAliveLocationSearch();
   const tabUidRef = useRef(currentTabUid);
   const engineCtx = useFlowEngineContext();
+  const searchParams = useMemo(() => new URLSearchParams(locationSearch), [locationSearch]);
   useEffect(() => {
     if (pageActive && engineCtx?.pageInfo) {
       engineCtx.pageInfo.version = 'v1';
@@ -134,10 +152,14 @@ export const Page = React.memo((props: PageProps) => {
   return (
     <AllDataBlocksProvider>
       <div className={`${componentCls} ${hashId} ${antTableCell}`}>
-        {/* Avoid passing values down to improve rendering performance */}
-        <CurrentTabUidContext.Provider value={''}>
-          <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
-        </CurrentTabUidContext.Provider>
+        <LocationSearchContext.Provider value={locationSearch}>
+          <SearchParamsContext.Provider value={searchParams}>
+            {/* Avoid passing values down to improve rendering performance */}
+            <CurrentTabUidContext.Provider value={''}>
+              <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+            </CurrentTabUidContext.Provider>
+          </SearchParamsContext.Provider>
+        </LocationSearchContext.Provider>
       </div>
     </AllDataBlocksProvider>
   );
