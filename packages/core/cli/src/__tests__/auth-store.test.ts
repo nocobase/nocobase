@@ -7,15 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { test, expect } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import {
   ensureWorkspaceName,
   getEnv,
+  getCurrentEnvName,
   loadAuthConfig,
+  removeEnv,
   saveAuthConfig,
+  setCurrentEnv,
   setEnvOauthSession,
   updateEnvConnection,
   upsertEnv,
@@ -290,5 +293,89 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
       schemaHash: 'hash',
       generatedAt: '2026-04-13T00:00:00.000Z',
     });
+  });
+});
+
+test('loadAuthConfig and getEnv fall back to legacy project config when global is empty', async () => {
+  await withTempCliHome(async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceDir);
+
+    try {
+      await mkdir(path.join(workspaceDir, '.nocobase'), { recursive: true });
+
+      await saveAuthConfig(
+        {
+          currentEnv: 'legacy',
+          envs: {
+            legacy: {
+              baseUrl: 'http://localhost:13000/api',
+            },
+          },
+        },
+        { scope: 'project' },
+      );
+
+      const config = await loadAuthConfig({ scope: 'global' });
+      const currentEnv = await getCurrentEnvName({ scope: 'global' });
+      const env = await getEnv(undefined, { scope: 'global' });
+
+      expect(config.currentEnv).toBe('legacy');
+      expect(config.envs.legacy?.baseUrl).toBe('http://localhost:13000/api');
+      expect(currentEnv).toBe('legacy');
+      expect(env?.name).toBe('legacy');
+      expect(env?.baseUrl).toBe('http://localhost:13000/api');
+    } finally {
+      cwdSpy.mockRestore();
+      await rm(workspaceDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('write operations keep using legacy project config when env only exists there', async () => {
+  await withTempCliHome(async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceDir);
+
+    try {
+      await mkdir(path.join(workspaceDir, '.nocobase'), { recursive: true });
+
+      await saveAuthConfig(
+        {
+          currentEnv: 'legacy',
+          envs: {
+            legacy: {
+              baseUrl: 'http://localhost:13000/api',
+              auth: {
+                type: 'token',
+                accessToken: 'old-token',
+              },
+            },
+          },
+        },
+        { scope: 'project' },
+      );
+
+      await updateEnvConnection('legacy', { accessToken: 'new-token' }, { scope: 'global' });
+      await setCurrentEnv('legacy', { scope: 'global' });
+
+      const projectConfig = await loadAuthConfig({ scope: 'project' });
+      const globalConfigPath = path.join(process.env.NOCOBASE_CTL_HOME!, '.nocobase', 'config.json');
+
+      expect(projectConfig.currentEnv).toBe('legacy');
+      expect(projectConfig.envs.legacy?.auth).toEqual({
+        type: 'token',
+        accessToken: 'new-token',
+      });
+      await expect(readFile(globalConfigPath, 'utf8')).rejects.toThrow();
+
+      const removal = await removeEnv('legacy', { scope: 'global' });
+      const afterProjectConfig = await loadAuthConfig({ scope: 'project' });
+      expect(removal.removed).toBe('legacy');
+      expect(afterProjectConfig.envs.legacy).toBe(undefined);
+    } finally {
+      cwdSpy.mockRestore();
+      await rm(workspaceDir, { recursive: true, force: true });
+    }
   });
 });

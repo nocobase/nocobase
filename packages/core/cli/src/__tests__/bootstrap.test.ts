@@ -59,6 +59,32 @@ test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', 
   expect(message).toMatch(/nb --help/);
 });
 
+test('formatSwaggerSchemaError returns actionable guidance for missing tokens', () => {
+  const message = formatSwaggerSchemaError(
+    {
+      status: 401,
+      data: {
+        errors: [
+          {
+            message: 'Unauthenticated. Please sign in to continue.',
+            code: 'EMPTY_TOKEN',
+          },
+        ],
+      },
+    },
+    {
+      baseUrl: 'http://localhost:13000/api',
+      envName: 'app1',
+    },
+  );
+
+  expect(message).toMatch(/Authentication failed while loading the command runtime/);
+  expect(message).toMatch(/env "app1"/);
+  expect(message).toMatch(/EMPTY_TOKEN/);
+  expect(message).toMatch(/nb env auth <name>/);
+  expect(message).toMatch(/--token <api-key>/);
+});
+
 test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth failures', () => {
   const message = formatSwaggerSchemaError(
     {

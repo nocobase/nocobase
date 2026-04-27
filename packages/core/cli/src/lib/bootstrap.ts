@@ -10,6 +10,7 @@
 import { getCurrentEnvName, getEnv, setEnvRuntime, updateEnvConnection } from './auth-store.js';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveAccessToken } from './env-auth.js';
+import { fetchWithPreservedAuthRedirect } from './http-request.js';
 import { generateRuntime } from './runtime-generator.js';
 import { hasRuntimeSync, saveRuntime } from './runtime-store.js';
 import { confirmAction, printInfo, printVerbose, printWarningBlock, setVerboseMode, stopTask, updateTask } from './ui.js';
@@ -117,7 +118,7 @@ async function requestJson(url: string, options: { method?: string; token?: stri
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await fetchWithPreservedAuthRedirect(url, {
       method: options.method ?? 'GET',
       headers,
     });
@@ -177,7 +178,7 @@ async function waitForServiceReady(baseUrl: string, token?: string, role?: strin
   let notified = false;
 
   while (Date.now() - startedAt < APP_RETRY_TIMEOUT) {
-    const response = await fetch(healthCheckUrl, {
+    const response = await fetchWithPreservedAuthRedirect(healthCheckUrl, {
       method: 'GET',
       headers:
         token || role
@@ -299,8 +300,10 @@ function collectErrorEntries(data: any) {
   return [];
 }
 
-function hasInvalidTokenError(data: any) {
-  return collectErrorEntries(data).some((entry) => entry?.code === 'INVALID_TOKEN');
+function hasAuthenticationError(data: any) {
+  return collectErrorEntries(data).some((entry) =>
+    entry?.code === 'INVALID_TOKEN' || entry?.code === 'EMPTY_TOKEN',
+  );
 }
 
 function isNetworkFetchFailure(response: { status: number; data: any }) {
@@ -311,7 +314,7 @@ export function formatSwaggerSchemaError(
   response: { status: number; data: any },
   context: { baseUrl: string; token?: string; role?: string; envName?: string; commandToken?: string },
 ) {
-  if (hasInvalidTokenError(response.data)) {
+  if (hasAuthenticationError(response.data)) {
     const entries = collectErrorEntries(response.data);
     const details = entries
       .map((entry) => {
