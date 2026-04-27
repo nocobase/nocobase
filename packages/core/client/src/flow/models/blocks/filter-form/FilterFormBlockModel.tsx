@@ -106,12 +106,14 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     // 的临时模型卸载被误判成“用户删除了目标区块”。
     const blockGridModel = this.context.blockGridModel;
     if (blockGridModel?.emitter) {
-      const handleTargetRemoved = (model) => {
+      const handleTargetDestroyed = (model) => {
         if (!model?.uid || model.uid === this.uid) return;
-        this.handleTargetBlockRemoved(model.uid);
+        void this.handleTargetBlockRemoved(model.uid).catch((error) => {
+          console.error('Failed to handle destroyed target block in FilterFormBlockModel:', error);
+        });
       };
-      blockGridModel.emitter.on('onSubModelDestroyed', handleTargetRemoved);
-      this.removeTargetBlockListener = () => blockGridModel.emitter.off('onSubModelDestroyed', handleTargetRemoved);
+      blockGridModel.emitter.on('onSubModelDestroyed', handleTargetDestroyed);
+      this.removeTargetBlockListener = () => blockGridModel.emitter.off('onSubModelDestroyed', handleTargetDestroyed);
     }
   }
 

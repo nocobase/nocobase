@@ -10,6 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import '@nocobase/client';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { waitFor } from '@testing-library/react';
 import { TableBlockModel } from '../../table/TableBlockModel';
 import { FilterFormBlockModel } from '../FilterFormBlockModel';
 import { FilterFormGridModel } from '../FilterFormGridModel';
@@ -127,8 +128,10 @@ describe('FilterFormBlockModel cleanup', () => {
 
     await tableBlock.destroy();
 
-    expect(removeFilterConfig).toHaveBeenCalledWith({ filterId: 'filter-item' });
-    expect(destroySpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(removeFilterConfig).toHaveBeenCalledWith({ filterId: 'filter-item' });
+      expect(destroySpy).toHaveBeenCalledTimes(1);
+    });
 
     (filterForm as any).onUnmount();
   });
