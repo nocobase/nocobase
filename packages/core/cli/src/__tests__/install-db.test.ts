@@ -332,8 +332,6 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
   expect(argv).toEqual([
     'demo',
     '--no-intro',
-    '--scope',
-    'project',
     '--api-base-url',
     'http://127.0.0.1:13080/api',
     '--auth-type',

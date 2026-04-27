@@ -123,7 +123,7 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   expect(envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '').toMatch(/http:\/\/ or https:\/\//);
 });
 
-test('init appName validates workspace env name uniqueness', async () => {
+test('init appName validates global env name uniqueness', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
@@ -134,7 +134,7 @@ test('init appName validates workspace env name uniqueness', async () => {
           },
         },
       },
-      { scope: 'project' },
+      { scope: 'global' },
     );
 
     const appNamePrompt = Init.prompts.appName;
@@ -144,7 +144,7 @@ test('init appName validates workspace env name uniqueness', async () => {
   });
 });
 
-test('init appName allows reusing a workspace env name when --force is set', async () => {
+test('init appName allows reusing a global env name when --force is set', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
@@ -155,7 +155,7 @@ test('init appName allows reusing a workspace env name when --force is set', asy
           },
         },
       },
-      { scope: 'project' },
+      { scope: 'global' },
     );
 
     const appNamePrompt = Init.prompts.appName;
@@ -170,7 +170,7 @@ test('init appName allows reusing a workspace env name when --force is set', asy
   });
 });
 
-test('init --yes --env validates workspace env name uniqueness through preset values', async () => {
+test('init --yes --env validates global env name uniqueness through preset values', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
@@ -181,7 +181,7 @@ test('init --yes --env validates workspace env name uniqueness through preset va
           },
         },
       },
-      { scope: 'project' },
+      { scope: 'global' },
     );
 
     await expect((() =>
@@ -200,7 +200,7 @@ test('init --yes --env validates workspace env name uniqueness through preset va
               },
             },
           },
-        ))()).rejects.toThrow(/already exists in this workspace/i);
+        ))()).rejects.toThrow(/already exists/i);
   });
 });
 

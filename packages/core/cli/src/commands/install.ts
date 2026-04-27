@@ -30,6 +30,7 @@ import {
   resolveCliLocale,
   translateCli,
 } from '../lib/cli-locale.ts';
+import { resolveDefaultConfigScope } from '../lib/cli-home.js';
 import {
   findAvailableTcpPort,
   validateAvailableTcpPort,
@@ -77,7 +78,6 @@ const DEFAULT_INSTALL_ROOT_USERNAME = 'nocobase';
 const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
-const CONFIG_SCOPE = 'project' as const;
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
 const APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS = 5_000;
@@ -968,7 +968,7 @@ export default class Install extends Command {
       return undefined;
     }
 
-    const env = await getEnv(parsed.env, { scope: CONFIG_SCOPE });
+    const env = await getEnv(parsed.env, { scope: resolveDefaultConfigScope() });
     if (!env) {
       throw new Error(formatMissingManagedAppEnvMessage(parsed.env));
     }
@@ -1239,7 +1239,7 @@ export default class Install extends Command {
   private static async ensureWorkspaceName(): Promise<string> {
     return await ensureWorkspaceName(
       Install.defaultWorkspaceName(),
-      { scope: CONFIG_SCOPE },
+      { scope: resolveDefaultConfigScope() },
     );
   }
 
@@ -2255,8 +2255,6 @@ export default class Install extends Command {
     const argv = [
       params.envName,
       '--no-intro',
-      '--scope',
-      CONFIG_SCOPE,
       '--api-base-url',
       apiBaseUrl,
       '--auth-type',
@@ -2423,7 +2421,6 @@ export default class Install extends Command {
       },
       values: {
         name: envName,
-        scope: 'project',
         ...(resumePreset?.envAddPreset ?? {}),
       },
       yes,

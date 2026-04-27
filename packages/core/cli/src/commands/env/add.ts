@@ -9,7 +9,7 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import { upsertEnv } from '../../lib/auth-store.js';
-import { type CliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import {
   runPromptCatalog,
   type PromptCatalogValues,
@@ -26,13 +26,11 @@ import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import { printVerbose, setVerboseMode } from '../../lib/ui.js';
 import * as p from '@clack/prompts';
 
-type EnvScope = CliHomeScope;
 type EnvAddParsedFlags = {
   env?: string;
   verbose: boolean;
   locale?: string;
   'no-intro': boolean;
-  scope?: string;
   'default-api-base-url'?: string;
   'api-base-url'?: string;
   'base-url'?: string;
@@ -101,7 +99,7 @@ export default class EnvAdd extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> local',
-    '<%= config.bin %> <%= command.id %> local --scope project --api-base-url http://localhost:13000/api --auth-type oauth',
+    '<%= config.bin %> <%= command.id %> local --api-base-url http://localhost:13000/api --auth-type oauth',
   ];
 
   static override args = {
@@ -132,13 +130,6 @@ export default class EnvAdd extends Command {
       hidden: true,
       description: 'Skip command intro when invoked by another CLI command',
       default: false,
-    }),
-    scope: Flags.string({
-      char: 's',
-      description:
-        'Where to store env config: auto, project (.nocobase in the repo), or global (user-level); prompted in a TTY when omitted',
-      options: ['auto', 'project', 'global'],
-      default: 'auto',
     }),
     'default-api-base-url': Flags.string({
       char: 'd',
@@ -265,29 +256,6 @@ export default class EnvAdd extends Command {
       placeholder: envAddText('prompts.name.placeholder'),
       required: true,
     },
-    scope: {
-      type: 'select',
-      message: envAddText('prompts.scope.message'),
-      options: [
-        {
-          value: 'auto',
-          label: envAddText('prompts.scope.autoLabel'),
-          hint: envAddText('prompts.scope.autoHint'),
-        },
-        {
-          value: 'project',
-          label: envAddText('prompts.scope.projectLabel'),
-          hint: envAddText('prompts.scope.projectHint'),
-        },
-        {
-          value: 'global',
-          label: envAddText('prompts.scope.globalLabel'),
-          hint: envAddText('prompts.scope.globalHint'),
-        },
-      ],
-      initialValue: 'auto',
-      required: true,
-    },
     apiBaseUrl: {
       type: 'text',
       message: envAddText('prompts.apiBaseUrl.message'),
@@ -326,9 +294,6 @@ export default class EnvAdd extends Command {
     const name = nameArg?.trim() || flags.env?.trim();
     if (name) {
       values.name = name;
-    }
-    if (flags.scope) {
-      values.scope = flags.scope;
     }
     const apiFromFlag = flags['api-base-url'] ?? flags['base-url'];
     if (typeof apiFromFlag === 'string' && apiFromFlag.trim() !== '') {
@@ -401,15 +366,14 @@ export default class EnvAdd extends Command {
       command: this,
     });
     const envName = String(results.name);
-    const scope = results.scope as EnvScope;
     const envConfig = this.buildEnvConfig(results, parsedFlags);
 
-    printVerbose(`Saving env "${envName}" with scope "${scope}".`);
+    printVerbose(`Saving env "${envName}" globally.`);
 
     await upsertEnv(
       envName,
       envConfig,
-      { scope },
+      { scope: resolveDefaultConfigScope() },
     );
 
     if (results.authType === 'oauth') {

@@ -270,7 +270,7 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" 已存在于当前 workspace 中，请换一个 env name。"
+        "envExists": "Env \"{{envName}}\" 已存在，请换一个 env name。"
       },
       "messages": {
         "title": "初始化你的 NocoBase AI 工作区",

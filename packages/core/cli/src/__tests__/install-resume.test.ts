@@ -118,7 +118,7 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(mocks.getEnv.mock.calls.length).toBe(1);
   expect(mocks.getEnv.mock.calls[0]).toEqual([
     'app1',
-    { scope: 'project' },
+    { scope: 'global' },
   ]);
   expect(result.envName).toBe('app1');
   expect(result.appResults.appRootPath).toBe('./app1/source/');

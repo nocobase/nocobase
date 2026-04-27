@@ -235,7 +235,6 @@ test('hidden required fields are rendered disabled so browser validation does no
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'local',
-        scope: 'project',
         apiBaseUrl: 'http://localhost:13000/api',
         authType: 'oauth',
       }),
@@ -254,7 +253,6 @@ test('hidden required fields are rendered disabled so browser validation does no
 
     expect(resolved).toEqual({
       name: 'local',
-      scope: 'project',
       apiBaseUrl: 'http://localhost:13000/api',
       authType: 'oauth',
     });

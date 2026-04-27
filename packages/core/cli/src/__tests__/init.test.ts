@@ -181,8 +181,6 @@ test('nb init continues from the browser UI result and runs env:add for an exist
       [
         'staging',
         '--no-intro',
-        '--scope',
-        'auto',
         '--api-base-url',
         'http://localhost:13000/api',
         '--auth-type',
@@ -356,7 +354,7 @@ test('nb init forwards download options to nb install for a new app flow', async
       dbUser: 'nocobase',
       dbPassword: 'secret',
     },
-    { scope: 'auto' },
+    { scope: 'global' },
   ]]);
   expect(runCommand.mock.calls).toEqual([
     [
@@ -820,7 +818,7 @@ test('nb init installs skills when --install-skills is provided', async () => {
   expect(mocks.installNocoBaseSkills.mock.calls.length).toBe(1);
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
-    ['staging', '--no-intro', '--scope', 'auto', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+    ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);
 });
 
@@ -862,7 +860,7 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
   const { default: Init } = await import('../commands/init.js');
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => {
     options.hooks?.onMissingNonInteractive?.(
-      'Env "local3" already exists in this workspace. Choose another env name.',
+      'Env "local3" already exists. Choose another env name.',
     );
     return {};
   });
@@ -948,7 +946,7 @@ test('nb init --locale overrides the environment locale for prompt-side messages
   );
 });
 
-test('nb init --force allows reconfiguring an existing workspace env and warns before install', async () => {
+test('nb init --force allows reconfiguring an existing global env and warns before install', async () => {
   const { default: Init } = await import('../commands/init.js');
   mocks.getEnv.mockResolvedValue({
     name: 'local5',
@@ -1499,6 +1497,6 @@ test('nb init disables skills install by default when the current workspace has 
   expect(mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('Skipped NocoBase agent skills install.'))).toBe(true);
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
-    ['staging', '--no-intro', '--scope', 'auto', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+    ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);
 });

@@ -24,6 +24,7 @@ import {
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
+import { resolveDefaultConfigScope } from '../lib/cli-home.js';
 import {
   type RunPromptCatalogWebUIStage,
   runPromptCatalogWebUI,
@@ -39,7 +40,6 @@ import _ from 'lodash';
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
-const CONFIG_SCOPE = 'auto' as const;
 
 const initText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.init.${key}`, values);
@@ -124,7 +124,7 @@ async function validateInitAppName(value: PromptValue): Promise<string | undefin
     return undefined;
   }
 
-  const existingEnv = await getEnv(envName, { scope: CONFIG_SCOPE });
+  const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
   if (existingEnv) {
     if (shouldAllowExistingInitEnv()) {
       return undefined;
@@ -547,12 +547,12 @@ Prompt modes:
     const installSkills = Boolean(results.installSkills);
     const hasNocobase = results.hasNocobase === 'yes';
     const existingEnv = !hasNocobase
-      ? await getEnv(String(results.appName ?? '').trim(), { scope: CONFIG_SCOPE })
+      ? await getEnv(String(results.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
       : undefined;
 
     if (existingEnv && Boolean(normalizedFlags.force)) {
       p.log.warn(
-        `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} in this workspace because ${pc.bold('--force')} was set. The env config will be updated before install starts, then refreshed again after install succeeds.`,
+        `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} from the global config because ${pc.bold('--force')} was set. The env config will be updated before install starts, then refreshed again after install succeeds.`,
       );
     }
 
@@ -925,14 +925,13 @@ Prompt modes:
         ...(dbUser ? { dbUser } : {}),
         ...(dbPassword ? { dbPassword } : {}),
       },
-      { scope: CONFIG_SCOPE },
+      { scope: resolveDefaultConfigScope() },
     );
   }
 
   private buildEnvAddArgv(results: Record<string, string | number | boolean>): string[] {
     const argv = [String(results.appName ?? DEFAULT_INIT_APP_NAME)];
     argv.push('--no-intro');
-    argv.push('--scope', CONFIG_SCOPE);
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
 

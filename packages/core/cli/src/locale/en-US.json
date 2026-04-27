@@ -270,7 +270,7 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" already exists in this workspace. Choose another env name."
+        "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
         "title": "Set Up Your NocoBase AI Workspace",
