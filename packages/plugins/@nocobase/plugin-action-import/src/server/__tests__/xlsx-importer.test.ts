@@ -1477,7 +1477,7 @@ describe('basic importer', () => {
     });
 
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.sheet_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([]);
 
     XLSX.utils.sheet_add_aoa(
       worksheet,
@@ -2360,6 +2360,9 @@ describe('basic importer', () => {
       origin: 'A3',
     });
 
+    const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: TextareaCollection,
@@ -2370,10 +2373,10 @@ describe('basic importer', () => {
           defaultTitle: '多行文本',
         },
       ],
-      workbook: template,
+      workbook,
     });
 
-    expect(importer.run()).rejects.toThrow();
+    await expect(importer.run()).rejects.toThrow();
   });
 
   it('should import password field, insert data is encrypt', async () => {
