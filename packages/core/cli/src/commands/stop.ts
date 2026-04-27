@@ -65,12 +65,22 @@ export default class Stop extends Command {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'remote') {
+    if (runtime.kind === 'http') {
       this.error(
         [
           `Can't stop "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app or Docker runtime to stop here.',
           'If the app is running on a server, stop it there or reconnect this env to a local runtime first.',
+        ].join('\n'),
+      );
+    }
+
+    if (runtime.kind === 'ssh') {
+      this.error(
+        [
+          `Can't stop "${runtime.envName}" yet.`,
+          'SSH env support is reserved but not implemented yet.',
+          'Use a local or Docker env if you need CLI-managed stop right now.',
         ].join('\n'),
       );
     }

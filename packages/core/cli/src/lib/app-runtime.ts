@@ -8,7 +8,7 @@
  */
 
 import path from 'node:path';
-import type { Env } from './auth-store.js';
+import { resolveEnvKind, type Env } from './auth-store.js';
 import { getEnv, loadAuthConfig } from './auth-store.js';
 import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from './run-npm.js';
 
@@ -32,7 +32,13 @@ export type ManagedAppRuntime =
       workspaceName: string;
     }
   | {
-      kind: 'remote';
+      kind: 'http';
+      env: Env;
+      envName: string;
+      source?: string;
+    }
+  | {
+      kind: 'ssh';
       env: Env;
       envName: string;
       source?: string;
@@ -74,7 +80,8 @@ function normalizeEnvSource(env: Env): ManagedAppRuntime['source'] {
     return source;
   }
 
-  if (env.config.appRootPath) {
+  const kind = resolveEnvKind(env.config);
+  if (kind === 'local') {
     return 'local';
   }
 
@@ -91,19 +98,20 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
   const resolvedName = env.name || envName?.trim() || config.currentEnv || 'default';
   const source = normalizeEnvSource(env);
   const workspaceName = config.name?.trim() || defaultWorkspaceName();
+  const kind = env.kind ?? resolveEnvKind(env.config);
 
-  if (source === 'docker') {
+  if (kind === 'docker') {
     return {
       kind: 'docker',
       env,
       envName: resolvedName,
-      source,
+      source: 'docker',
       workspaceName,
       containerName: buildDockerAppContainerName(resolvedName, workspaceName),
     };
   }
 
-  if (env.config.appRootPath) {
+  if (kind === 'local') {
     return {
       kind: 'local',
       env,
@@ -114,8 +122,17 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
     };
   }
 
+  if (kind === 'ssh') {
+    return {
+      kind: 'ssh',
+      env,
+      envName: resolvedName,
+      source,
+    };
+  }
+
   return {
-    kind: 'remote',
+    kind: 'http',
     env,
     envName: resolvedName,
     source,

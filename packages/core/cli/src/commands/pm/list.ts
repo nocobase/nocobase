@@ -19,7 +19,7 @@ export default class PmList extends Command {
   static override args = {};
   static override summary = 'List plugins for the selected env';
   static override description =
-    'List installed plugins in the selected env (npm/git runs locally, Docker runs inside the saved app container, remote envs fall back to the API)';
+    'List installed plugins in the selected env (npm/git runs locally, Docker runs inside the saved app container, HTTP envs fall back to the API)';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> -e local',
@@ -60,6 +60,16 @@ export default class PmList extends Command {
         this.error(message);
       }
       return;
+    }
+
+    if (runtime.kind === 'ssh') {
+      this.error(
+        [
+          `Can't list plugins for "${runtime.envName}" yet.`,
+          'SSH env support is reserved but not implemented yet.',
+          'Use a local, Docker, or HTTP env for plugin inspection right now.',
+        ].join('\n'),
+      );
     }
 
     await this.config.runCommand('api:pm:list', ['--mode=summary']);

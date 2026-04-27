@@ -133,12 +133,22 @@ export default class Start extends Command {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'remote') {
+    if (runtime.kind === 'http') {
       this.error(
         [
           `Can't start "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app or Docker runtime to launch here.',
           'Connect it to a local checkout or reinstall it with npm, git, or Docker if you want CLI-managed start and stop.',
+        ].join('\n'),
+      );
+    }
+
+    if (runtime.kind === 'ssh') {
+      this.error(
+        [
+          `Can't start "${runtime.envName}" yet.`,
+          'SSH env support is reserved but not implemented yet.',
+          'Use a local or Docker env if you need CLI-managed start and stop right now.',
         ].join('\n'),
       );
     }

@@ -69,7 +69,7 @@ async function removeDockerContainerIfExists(containerName: string): Promise<'re
   return 'removed';
 }
 
-function builtinDbContainerName(runtime: Exclude<ManagedAppRuntime, { kind: 'remote' }>): string | undefined {
+function builtinDbContainerName(runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>): string | undefined {
   if (!runtime.env.config.builtinDb) {
     return undefined;
   }
@@ -151,12 +151,22 @@ export default class Down extends Command {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'remote') {
+    if (runtime.kind === 'http') {
       this.error(
         [
           `Can't bring down "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app, Docker app, or managed database to remove here.',
           'Use `nb env remove` if you only want to remove the CLI connection config.',
+        ].join('\n'),
+      );
+    }
+
+    if (runtime.kind === 'ssh') {
+      this.error(
+        [
+          `Can't bring down "${runtime.envName}" yet.`,
+          'SSH env support is reserved but not implemented yet.',
+          'Use `nb env remove` if you only want to remove the saved CLI config for now.',
         ].join('\n'),
       );
     }

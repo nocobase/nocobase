@@ -727,12 +727,22 @@ export default class Upgrade extends Command {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'remote') {
+    if (runtime.kind === 'http') {
       this.error(
         [
           `Can't upgrade "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app or Docker runtime to upgrade here.',
           'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init` first.',
+        ].join('\n'),
+      );
+    }
+
+    if (runtime.kind === 'ssh') {
+      this.error(
+        [
+          `Can't upgrade "${runtime.envName}" yet.`,
+          'SSH env support is reserved but not implemented yet.',
+          'Use a local or Docker env if you need CLI-managed upgrades right now.',
         ].join('\n'),
       );
     }

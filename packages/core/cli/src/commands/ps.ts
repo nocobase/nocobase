@@ -19,7 +19,7 @@ import {
 import { listEnvs } from '../lib/auth-store.js';
 import { renderTable } from '../lib/ui.js';
 
-type RuntimeStatus = 'running' | 'stopped' | 'missing' | 'remote' | 'external' | '-';
+type RuntimeStatus = 'running' | 'stopped' | 'missing' | 'http' | 'ssh' | 'external' | '-';
 
 function appUrl(runtime: ManagedAppRuntime): string {
   const port = String(runtime.env.config.appPort ?? '').trim();
@@ -62,11 +62,15 @@ async function dockerStatus(containerName: string): Promise<RuntimeStatus> {
 
 async function dbStatus(runtime: ManagedAppRuntime): Promise<RuntimeStatus> {
   if (!runtime.env.config.builtinDb) {
-    return runtime.kind === 'remote' ? 'external' : '-';
+    return runtime.kind === 'http' ? 'external' : '-';
   }
 
-  if (runtime.kind === 'remote') {
+  if (runtime.kind === 'http') {
     return 'external';
+  }
+
+  if (runtime.kind === 'ssh') {
+    return '-';
   }
 
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
@@ -74,9 +78,13 @@ async function dbStatus(runtime: ManagedAppRuntime): Promise<RuntimeStatus> {
   return await dockerStatus(containerName);
 }
 
-async function appStatus(runtime: ManagedAppRuntime): Promise<RuntimeStatus> {
-  if (runtime.kind === 'remote') {
-    return 'remote';
+async function runtimeStatus(runtime: ManagedAppRuntime): Promise<RuntimeStatus> {
+  if (runtime.kind === 'http') {
+    return 'http';
+  }
+
+  if (runtime.kind === 'ssh') {
+    return 'ssh';
   }
 
   if (runtime.kind === 'docker') {
@@ -85,14 +93,6 @@ async function appStatus(runtime: ManagedAppRuntime): Promise<RuntimeStatus> {
 
   return await isLocalAppHealthy(runtime) ? 'running' : 'stopped';
 }
-
-function sourceLabel(runtime: ManagedAppRuntime): string {
-  if (runtime.kind === 'remote') {
-    return 'remote';
-  }
-  return runtime.source;
-}
-
 export default class Ps extends Command {
   static override description =
     'Show NocoBase runtime status for configured envs without starting or stopping anything.';
@@ -135,13 +135,13 @@ export default class Ps extends Command {
 
       rows.push([
         runtime.envName,
-        sourceLabel(runtime),
-        await appStatus(runtime),
+        runtime.kind,
+        await runtimeStatus(runtime),
         await dbStatus(runtime),
         appUrl(runtime),
       ]);
     }
 
-    this.log(renderTable(['Env', 'Source', 'App', 'Database', 'URL'], rows));
+    this.log(renderTable(['Env', 'Kind', 'Status', 'Database', 'URL'], rows));
   }
 }

@@ -15,12 +15,20 @@ import {
 } from '../lib/app-runtime.js';
 import { printInfo } from '../lib/ui.js';
 
-function formatUnsupportedRuntimeMessage(kind: 'docker' | 'remote', envName: string): string {
+function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envName: string): string {
   if (kind === 'docker') {
     return [
       `Can't run dev mode for "${envName}".`,
       'This env is managed by Docker, but `nb dev` requires a local npm or Git source directory.',
       `Use \`nb logs --env ${envName}\` to inspect the Docker app, or create a source-based env with \`nb init --env ${envName} --source git\`.`,
+    ].join('\n');
+  }
+
+  if (kind === 'ssh') {
+    return [
+      `Can't run dev mode for "${envName}" yet.`,
+      'SSH env support is reserved but not implemented yet.',
+      `Create a source-based env with \`nb init --env ${envName} --source git\` if you want local development mode right now.`,
     ].join('\n');
   }
 
@@ -116,7 +124,7 @@ export default class Dev extends Command {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'docker' || runtime.kind === 'remote') {
+    if (runtime.kind === 'docker' || runtime.kind === 'http' || runtime.kind === 'ssh') {
       this.error(formatUnsupportedRuntimeMessage(runtime.kind, runtime.envName));
     }
 

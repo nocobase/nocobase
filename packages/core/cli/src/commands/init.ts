@@ -903,6 +903,13 @@ Prompt modes:
     await upsertEnv(
       envName,
       {
+        ...(source === 'docker'
+          ? { kind: 'docker' }
+          : source || appRootPath
+            ? { kind: 'local' }
+            : appPort
+              ? { kind: 'http' }
+              : {}),
         ...(appPort ? { baseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),

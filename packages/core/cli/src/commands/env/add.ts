@@ -322,7 +322,17 @@ export default class EnvAdd extends Command {
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
   ): Record<string, string | boolean | undefined> {
+    const source = String(flags.source ?? '').trim();
+    const appRootPath = String(flags['app-root-path'] ?? '').trim();
+    const kind =
+      source === 'docker'
+        ? 'docker'
+        : source === 'npm' || source === 'git' || source === 'local' || appRootPath
+          ? 'local'
+          : 'http';
+
     const envConfig: Record<string, string | boolean | undefined> = {
+      kind,
       baseUrl: String(results.apiBaseUrl ?? ''),
     };
 

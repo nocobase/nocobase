@@ -36,7 +36,7 @@ test('buildDockerAppContainerName keeps workspace-scoped naming consistent', () 
   expect(buildDockerAppContainerName('Local_01', 'NB Demo Workspace')).toBe('nb-demo-workspace-local_01-app');
 });
 
-test('resolveManagedAppRuntime detects local, docker, and remote envs', async () => {
+test('resolveManagedAppRuntime detects local, docker, and http envs', async () => {
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
@@ -78,7 +78,7 @@ test('resolveManagedAppRuntime detects local, docker, and remote envs', async ()
 
     const remoteRuntime = await resolveManagedAppRuntime('remote');
     expect(remoteRuntime && { kind: remoteRuntime.kind, source: remoteRuntime.source }).toEqual({
-      kind: 'remote',
+      kind: 'http',
       source: undefined,
     });
   });

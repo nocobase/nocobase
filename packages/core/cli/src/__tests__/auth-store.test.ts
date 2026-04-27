@@ -23,7 +23,7 @@ import {
   updateEnvConnection,
   upsertEnv,
 } from '../lib/auth-store.js';
-import { resolveCliHomeRoot } from '../lib/cli-home.js';
+import { resolveCliHomeDir, resolveCliHomeRoot } from '../lib/cli-home.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NOCOBASE_CTL_HOME;
@@ -180,6 +180,46 @@ test('env relative paths resolve from NB_ENV_ROOT when provided', async () => {
     } finally {
       await rm(envRoot, { recursive: true, force: true });
     }
+  });
+});
+
+test('legacy remote kind is normalized to http when loading env config', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        currentEnv: 'remote',
+        envs: {
+          remote: {
+            kind: 'remote' as any,
+            baseUrl: 'https://demo.example.com/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('remote', { scope: 'global' });
+    expect(env?.kind).toBe('http');
+  });
+});
+
+test('normalized kind is persisted to config.json', async () => {
+  await withTempCliHome(async () => {
+    await upsertEnv(
+      'app1',
+      {
+        kind: 'remote',
+        baseUrl: 'https://demo.example.com/api',
+      },
+      { scope: 'global' },
+    );
+
+    const content = await readFile(path.join(resolveCliHomeDir('global'), 'config.json'), 'utf8');
+    const parsed = JSON.parse(content) as {
+      envs?: Record<string, { kind?: string }>;
+    };
+
+    expect(parsed.envs?.app1?.kind).toBe('http');
   });
 });
 

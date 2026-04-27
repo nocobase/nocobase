@@ -15,7 +15,7 @@ import {
   resolveManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 
-export type DbStatus = 'running' | 'stopped' | 'missing' | 'external' | 'remote';
+export type DbStatus = 'running' | 'stopped' | 'missing' | 'external' | 'http' | 'ssh';
 
 export type ResolvedDbRuntime =
   | {
@@ -25,7 +25,7 @@ export type ResolvedDbRuntime =
       dbDialect: string;
       address: string;
       containerName: string;
-      appRuntime: Exclude<ManagedAppRuntime, { kind: 'remote' }>;
+      appRuntime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
     }
   | {
       kind: 'external';
@@ -33,7 +33,7 @@ export type ResolvedDbRuntime =
       source: string;
       dbDialect: string;
       address: string;
-      status: 'external' | 'remote';
+      status: 'external' | 'http' | 'ssh';
       appRuntime: ManagedAppRuntime;
     };
 
@@ -54,10 +54,10 @@ export async function resolveDbRuntime(envName?: string): Promise<ResolvedDbRunt
     return undefined;
   }
 
-  const source = runtime.kind === 'remote' ? 'remote' : runtime.source;
+  const source = runtime.kind === 'http' || runtime.kind === 'ssh' ? runtime.kind : runtime.source;
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
 
-  if (runtime.kind !== 'remote' && runtime.env.config.builtinDb) {
+  if ((runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb) {
     const containerName = buildDockerDbContainerName(runtime.envName, dbDialect, runtime.workspaceName);
     return {
       kind: 'builtin',
@@ -76,12 +76,12 @@ export async function resolveDbRuntime(envName?: string): Promise<ResolvedDbRunt
     source,
     dbDialect,
     address: formatAddress(runtime.env.config.dbHost, runtime.env.config.dbPort),
-    status: runtime.kind === 'remote' ? 'remote' : 'external',
+    status: runtime.kind === 'http' || runtime.kind === 'ssh' ? runtime.kind : 'external',
     appRuntime: runtime,
   };
 }
 
-export async function builtinDbStatus(containerName: string): Promise<Exclude<DbStatus, 'external' | 'remote'>> {
+export async function builtinDbStatus(containerName: string): Promise<Exclude<DbStatus, 'external' | 'http' | 'ssh'>> {
   if (!(await dockerContainerExists(containerName))) {
     return 'missing';
   }
@@ -95,11 +95,19 @@ export function formatUnmanagedDbMessage(
 ): string {
   const verb = action === 'start' ? 'start' : 'stop';
 
-  if (runtime.appRuntime.kind === 'remote') {
+  if (runtime.appRuntime.kind === 'http') {
     return [
       `Can't ${verb} the database for "${runtime.envName}" from this machine.`,
       'This env only has an API connection, so there is no CLI-managed database container here.',
       'If you need CLI-managed database start and stop, create a local env with the built-in database option enabled.',
+    ].join('\n');
+  }
+
+  if (runtime.appRuntime.kind === 'ssh') {
+    return [
+      `Can't ${verb} the database for "${runtime.envName}" yet.`,
+      'SSH env support is reserved but not implemented yet.',
+      'Use a local env with the built-in database option enabled if you need CLI-managed database operations right now.',
     ].join('\n');
   }
 
@@ -111,11 +119,19 @@ export function formatUnmanagedDbMessage(
 }
 
 export function formatUnmanagedDbLogsMessage(runtime: ResolvedDbRuntime): string {
-  if (runtime.appRuntime.kind === 'remote') {
+  if (runtime.appRuntime.kind === 'http') {
     return [
       `Can't show database logs for "${runtime.envName}" from this machine.`,
       'This env only has an API connection, so there is no CLI-managed database container here.',
       'If you need CLI-managed database logs, create a local env with the built-in database option enabled.',
+    ].join('\n');
+  }
+
+  if (runtime.appRuntime.kind === 'ssh') {
+    return [
+      `Can't show database logs for "${runtime.envName}" yet.`,
+      'SSH env support is reserved but not implemented yet.',
+      'Use a local env with the built-in database option enabled if you need CLI-managed database logs right now.',
     ].join('\n');
   }
 

@@ -33,7 +33,10 @@ export interface OauthAuthConfig {
   resource?: string;
 }
 
+export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
+
 export interface EnvConfigEntry {
+  kind?: EnvKind;
   baseUrl?: string;
   apibaseUrl?: string;
   auth?: TokenAuthConfig | OauthAuthConfig;
@@ -101,6 +104,71 @@ export type GetEnvOptions = AuthStoreOptions & {
   config?: AuthConfig;
 };
 
+function normalizeStoredEnvKind(value: unknown): EnvKind | undefined {
+  const kind = String(value ?? '').trim();
+  if (kind === 'remote') {
+    return 'http';
+  }
+  if (kind === 'local' || kind === 'http' || kind === 'docker' || kind === 'ssh') {
+    return kind;
+  }
+  return undefined;
+}
+
+export function resolveEnvKind(config?: Partial<EnvConfigEntry>): EnvKind | undefined {
+  if (!config) {
+    return undefined;
+  }
+
+  const explicitKind = normalizeStoredEnvKind((config as { kind?: unknown }).kind);
+  if (explicitKind) {
+    return explicitKind;
+  }
+
+  const source = String(config.source ?? '').trim();
+  if (source === 'docker') {
+    return 'docker';
+  }
+
+  if (source === 'npm' || source === 'git' || source === 'local') {
+    return 'local';
+  }
+
+  if (String(config.appRootPath ?? '').trim()) {
+    return 'local';
+  }
+
+  if (
+    String(config.baseUrl ?? '').trim()
+    || String(config.apibaseUrl ?? '').trim()
+    || config.auth
+  ) {
+    return 'http';
+  }
+
+  return undefined;
+}
+
+function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEntry | undefined {
+  if (!entry) {
+    return entry;
+  }
+
+  const { kind: _kind, ...rest } = entry as EnvConfigEntry & { kind?: unknown };
+  const normalizedKind = resolveEnvKind(entry);
+  return normalizedKind ? { ...rest, kind: normalizedKind } : rest;
+}
+
+function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
+  return {
+    name: config.name || config.dockerResourcePrefix,
+    currentEnv: config.currentEnv || 'default',
+    envs: Object.fromEntries(
+      Object.entries(config.envs || {}).map(([envName, entry]) => [envName, normalizeEnvConfigEntry(entry) ?? {}]),
+    ),
+  };
+}
+
 function getConfigFile(options: AuthStoreOptions = {}) {
   return path.join(resolveCliHomeDir(options.scope), 'config.json');
 }
@@ -127,11 +195,7 @@ async function loadExactAuthConfig(options: AuthStoreOptions = {}): Promise<Auth
     const parsed = JSON.parse(content) as AuthConfig & {
       dockerResourcePrefix?: string;
     };
-    return {
-      name: parsed.name || parsed.dockerResourcePrefix,
-      currentEnv: parsed.currentEnv || 'default',
-      envs: parsed.envs || {},
-    };
+    return normalizeAuthConfig(parsed);
   } catch (_error) {
     return createDefaultConfig();
   }
@@ -172,7 +236,7 @@ export async function loadAuthConfig(options: AuthStoreOptions = {}): Promise<Au
 export async function saveAuthConfig(config: AuthConfig, options: AuthStoreOptions = {}) {
   const filePath = getConfigFile(options);
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(config, null, 2));
+  await fs.writeFile(filePath, JSON.stringify(normalizeAuthConfig(config), null, 2));
 }
 
 export async function listEnvs(options: AuthStoreOptions = {}) {
@@ -233,11 +297,27 @@ export class Env {
     return this.config.runtime;
   }
 
+  get kind() {
+    return resolveEnvKind(this.config);
+  }
+
   get appRootPath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appRootPath ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
     return resolveConfiguredEnvPath(this.config.appRootPath) ?? resolveEnvRelativePath('.');
   }
 
   get storagePath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.storagePath ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
     return resolveConfiguredEnvPath(this.config.storagePath) ?? resolveEnvRelativePath('.');
   }
 
@@ -285,9 +365,9 @@ export async function getEnv(envName?: string, options: GetEnvOptions = {}): Pro
       return undefined;
     }
 
-    return new Env({ ...legacyEnvConfig, name: legacyResolved });
+    return new Env({ ...(normalizeEnvConfigEntry(legacyEnvConfig) ?? {}), name: legacyResolved });
   }
-  return new Env({ ...envConfig, name: resolved });
+  return new Env({ ...(normalizeEnvConfigEntry(envConfig) ?? {}), name: resolved });
 }
 
 function areAuthConfigsEquivalent(left?: EnvConfigEntry['auth'], right?: EnvConfigEntry['auth']) {
