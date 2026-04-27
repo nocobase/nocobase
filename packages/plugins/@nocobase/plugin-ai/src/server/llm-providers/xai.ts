@@ -23,21 +23,7 @@ export class XAIProvider extends LLMProvider {
     const { responseFormat, structuredOutput, ...restModelOptions } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
 
-    // xAI Grok models don't support these OpenAI-specific parameters
-    // Filter them out to avoid 400 errors
-    const unsupportedParams = [
-      'presencePenalty',
-      'frequencyPenalty',
-      'presence_penalty',
-      'frequency_penalty',
-      'logitBias',
-      'logit_bias',
-      'topLogprobs',
-      'top_logprobs',
-    ];
-    const filteredModelOptions = Object.fromEntries(
-      Object.entries(restModelOptions).filter(([key]) => !unsupportedParams.includes(key)),
-    );
+    // ChatXAI strips xAI-incompatible OpenAI penalty/logit parameters internally.
 
     const responseFormatOptions = {
       type: responseFormat ?? 'text',
@@ -48,7 +34,7 @@ export class XAIProvider extends LLMProvider {
 
     return new ChatXAI({
       apiKey,
-      ...filteredModelOptions,
+      ...restModelOptions,
       baseURL: baseURL || this.baseURL,
       modelKwargs: {
         response_format: responseFormatOptions,
