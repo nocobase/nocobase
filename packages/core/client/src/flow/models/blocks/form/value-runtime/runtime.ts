@@ -381,8 +381,13 @@ export class FormValueRuntime {
   }
 
   private reconcileArrayItemState(rawChangedPaths: NamePath[], changedValues: any, snapshot: any) {
+    const seenPathKeys = new Set<string>();
+
     for (const path of rawChangedPaths || []) {
       if (!path?.length) continue;
+      const pathKey = namePathToPathKey(path);
+      if (seenPathKeys.has(pathKey)) continue;
+      seenPathKeys.add(pathKey);
 
       const prevValue = _.get(this.valuesMirror, path as any);
       const nextValue = this.getObservedChangedValue(path, changedValues, snapshot);
