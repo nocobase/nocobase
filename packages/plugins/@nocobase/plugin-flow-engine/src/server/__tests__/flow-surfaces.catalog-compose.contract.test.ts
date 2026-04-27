@@ -2325,6 +2325,54 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
   });
 
+  it('should compose inline editable subTable columns with editable fields', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose editable relation subTable page',
+      tabTitle: 'Compose editable relation subTable tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'userForm',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: [
+                {
+                  key: 'rolesField',
+                  fieldPath: 'roles',
+                  fieldType: 'subTable',
+                  fields: ['title', 'name'],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const formBlock = getComposeBlock(composeRes, 'userForm');
+    const formSurface = await getSurface(rootAgent, {
+      uid: formBlock.uid,
+    });
+    const formItems = _.castArray(formSurface.tree?.subModels?.grid?.subModels?.items || []);
+    expect(formItems).toHaveLength(1);
+    const rolesField = formItems[0]?.subModels?.field;
+    expect(rolesField?.use).toBe('SubTableFieldModel');
+
+    const columns = _.castArray(rolesField?.subModels?.columns || []);
+    expect(columns.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)).toEqual(['title', 'name']);
+    expect(columns.map((item: any) => item?.subModels?.field?.use)).toEqual(['InputFieldModel', 'InputFieldModel']);
+  });
+
   it('should preserve explicit empty relation fields in compose fieldType specs', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose empty relation fieldType page',

@@ -18008,7 +18008,10 @@ export class FlowSurfacesService {
 
   private buildRelationTargetTableColumnNode(input: { collection: any; fieldPath: string; columnUse: string }) {
     const field = this.getCollectionFieldOrBadRequest(input.collection, input.fieldPath, 'fieldType.fields');
-    const fieldUse = inferAssociationLeafDisplayFieldUse(getFieldInterface(field)) || 'DisplayTextFieldModel';
+    const fieldUse =
+      input.columnUse === 'SubTableColumnModel'
+        ? inferFieldMenuEditableFieldUse(getFieldInterface(field)) || 'InputFieldModel'
+        : inferAssociationLeafDisplayFieldUse(getFieldInterface(field)) || 'DisplayTextFieldModel';
     const title = getFieldTitle(field);
     const fieldInit = this.buildRelationTargetFieldInit(input.collection, input.fieldPath);
     return {
