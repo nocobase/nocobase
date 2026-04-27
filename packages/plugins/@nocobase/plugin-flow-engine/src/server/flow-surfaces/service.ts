@@ -1539,15 +1539,26 @@ export class FlowSurfacesService {
 
   private collectRelationNestedFieldPaths(fieldNode: any) {
     const fieldUse = String(fieldNode?.stepParams?.fieldBinding?.use || fieldNode?.use || '').trim();
+    const relationFieldInit = fieldNode?.stepParams?.fieldSettings?.init || {};
+    const relationFieldPath = normalizeFieldPath(relationFieldInit.fieldPath, relationFieldInit.associationPathName);
+    const toPublicFieldPath = (fieldPath: any) => {
+      const normalized = String(fieldPath || '').trim();
+      if (!normalized || !relationFieldPath || !normalized.startsWith(`${relationFieldPath}.`)) {
+        return normalized;
+      }
+      return normalized.slice(relationFieldPath.length + 1);
+    };
     if (['SubTableFieldModel', 'DisplaySubTableFieldModel'].includes(fieldUse)) {
       return _.castArray(fieldNode?.subModels?.columns || [])
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+        .map(toPublicFieldPath)
         .filter(Boolean);
     }
     if (fieldUse === 'PopupSubTableFieldModel') {
       return _.castArray(fieldNode?.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+        .map(toPublicFieldPath)
         .filter(Boolean);
     }
     if (
@@ -1557,6 +1568,7 @@ export class FlowSurfacesService {
     ) {
       return _.castArray(fieldNode?.subModels?.grid?.subModels?.items || [])
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+        .map(toPublicFieldPath)
         .filter(Boolean);
     }
     return undefined;
@@ -6988,6 +7000,7 @@ export class FlowSurfacesService {
         fieldUid: tree.innerUid,
         fieldUse: boundFieldCapability.fieldUse,
         targetCollection: relationFieldTypeResolution.targetCollection,
+        relationFieldInit: normalizedFieldBinding,
         fields: relationFieldTypeResolution.fields,
         selectorFields: relationFieldTypeResolution.selectorFields,
         titleField: relationFieldTypeResolution.titleField,
@@ -14237,6 +14250,7 @@ export class FlowSurfacesService {
         fieldUid: innerUid,
         fieldUse: normalizedFieldComponentUse,
         targetCollection: fieldTypeResolution.targetCollection,
+        relationFieldInit: fieldSource.fieldSettingsInit,
         fields:
           hasOwnDefined(changes, 'fields') || shouldApplyFieldTypeDefaults ? fieldTypeResolution.fields : undefined,
         selectorFields:
@@ -17998,22 +18012,50 @@ export class FlowSurfacesService {
     return field;
   }
 
-  private buildRelationTargetFieldInit(collection: any, fieldPath: string) {
+  private buildRelationTargetFieldInit(input: {
+    targetCollection: any;
+    targetFieldPath: string;
+    relationFieldInit?: Record<string, any>;
+  }) {
+    const relationFieldPath = normalizeFieldPath(
+      input.relationFieldInit?.fieldPath,
+      input.relationFieldInit?.associationPathName,
+    );
+    if (!relationFieldPath) {
+      return buildDefinedPayload({
+        dataSourceKey: input.targetCollection?.dataSourceKey || 'main',
+        collectionName: getCollectionName(input.targetCollection),
+        fieldPath: input.targetFieldPath,
+      });
+    }
+    const targetAssociationPath = input.targetFieldPath.includes('.')
+      ? input.targetFieldPath.split('.').slice(0, -1).join('.')
+      : undefined;
     return buildDefinedPayload({
-      dataSourceKey: collection?.dataSourceKey || 'main',
-      collectionName: getCollectionName(collection),
-      fieldPath,
+      dataSourceKey: input.relationFieldInit?.dataSourceKey || input.targetCollection?.dataSourceKey || 'main',
+      collectionName: input.relationFieldInit?.collectionName || getCollectionName(input.targetCollection),
+      fieldPath: `${relationFieldPath}.${input.targetFieldPath}`,
+      associationPathName: targetAssociationPath ? `${relationFieldPath}.${targetAssociationPath}` : undefined,
     });
   }
 
-  private buildRelationTargetTableColumnNode(input: { collection: any; fieldPath: string; columnUse: string }) {
+  private buildRelationTargetTableColumnNode(input: {
+    collection: any;
+    fieldPath: string;
+    columnUse: string;
+    relationFieldInit?: Record<string, any>;
+  }) {
     const field = this.getCollectionFieldOrBadRequest(input.collection, input.fieldPath, 'fieldType.fields');
     const fieldUse =
       input.columnUse === 'SubTableColumnModel'
         ? inferFieldMenuEditableFieldUse(getFieldInterface(field)) || 'InputFieldModel'
         : inferAssociationLeafDisplayFieldUse(getFieldInterface(field)) || 'DisplayTextFieldModel';
     const title = getFieldTitle(field);
-    const fieldInit = this.buildRelationTargetFieldInit(input.collection, input.fieldPath);
+    const fieldInit = this.buildRelationTargetFieldInit({
+      targetCollection: input.collection,
+      targetFieldPath: input.fieldPath,
+      relationFieldInit: input.relationFieldInit,
+    });
     return {
       uid: uid(),
       use: input.columnUse,
@@ -18056,14 +18098,23 @@ export class FlowSurfacesService {
     };
   }
 
-  private buildRelationTargetGridItemNode(input: { collection: any; fieldPath: string; wrapperUse: string }) {
+  private buildRelationTargetGridItemNode(input: {
+    collection: any;
+    fieldPath: string;
+    wrapperUse: string;
+    relationFieldInit?: Record<string, any>;
+  }) {
     const field = this.getCollectionFieldOrBadRequest(input.collection, input.fieldPath, 'fieldType.fields');
     const fieldUse =
       input.wrapperUse === 'FormItemModel'
         ? inferFieldMenuEditableFieldUse(getFieldInterface(field)) || 'InputFieldModel'
         : inferAssociationLeafDisplayFieldUse(getFieldInterface(field)) || 'DisplayTextFieldModel';
     const title = getFieldTitle(field);
-    const fieldInit = this.buildRelationTargetFieldInit(input.collection, input.fieldPath);
+    const fieldInit = this.buildRelationTargetFieldInit({
+      targetCollection: input.collection,
+      targetFieldPath: input.fieldPath,
+      relationFieldInit: input.relationFieldInit,
+    });
     return {
       uid: uid(),
       use: input.wrapperUse,
@@ -18183,6 +18234,7 @@ export class FlowSurfacesService {
     fieldUid: string;
     fieldUse: string;
     targetCollection: any;
+    relationFieldInit?: Record<string, any>;
     fields?: string[];
     selectorFields?: string[];
     titleField?: string;
@@ -18229,6 +18281,7 @@ export class FlowSurfacesService {
               collection: input.targetCollection,
               fieldPath,
               columnUse: input.fieldUse === 'SubTableFieldModel' ? 'SubTableColumnModel' : 'TableColumnModel',
+              relationFieldInit: input.relationFieldInit,
             }),
           ),
           transaction: input.transaction,
@@ -18251,6 +18304,7 @@ export class FlowSurfacesService {
                 collection: input.targetCollection,
                 fieldPath,
                 columnUse: 'TableColumnModel',
+                relationFieldInit: input.relationFieldInit,
               }),
             ),
           ],
@@ -18276,6 +18330,7 @@ export class FlowSurfacesService {
               collection: input.targetCollection,
               fieldPath,
               wrapperUse,
+              relationFieldInit: input.relationFieldInit,
             }),
           ),
           transaction: input.transaction,

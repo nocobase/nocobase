@@ -2286,7 +2286,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       _.castArray(formItems[0]?.subModels?.field?.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title', 'name']);
+    ).toEqual(['roles.title', 'roles.name']);
 
     const fieldCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -2369,7 +2369,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(rolesField?.use).toBe('SubTableFieldModel');
 
     const columns = _.castArray(rolesField?.subModels?.columns || []);
-    expect(columns.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)).toEqual(['title', 'name']);
+    expect(columns.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)).toEqual([
+      'roles.title',
+      'roles.name',
+    ]);
     expect(columns.map((item: any) => item?.subModels?.field?.use)).toEqual(['InputFieldModel', 'InputFieldModel']);
   });
 
@@ -2458,7 +2461,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       _.castArray(formItemsByType[0]?.subModels?.field?.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title']);
+    ).toEqual(['roles.title']);
 
     const addBlockByUseRes = getData(
       await rootAgent.resource('flowSurfaces').addBlock({

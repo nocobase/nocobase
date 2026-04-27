@@ -4493,7 +4493,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
       _.castArray(formItems[0]?.subModels?.field?.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title', 'name']);
+    ).toEqual(['roles.title', 'roles.name']);
   });
 
   it('should reject fieldsLayout on applyBlueprint blocks that do not own a field grid', async () => {
