@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, test, vi, expect } from 'vitest';
 import Install from '../commands/install.js';
+import { resolveConfiguredEnvPath } from '../lib/cli-home.js';
 import { findAvailableTcpPort } from '../lib/prompt-validators.js';
 
 const mocks = vi.hoisted(() => ({
@@ -215,7 +216,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
         '--version',
         'alpha',
         '--output-dir',
-        '/Users/chen/downloaded-app',
+        resolveConfiguredEnvPath('./downloaded-app'),
         '--npm-registry',
         'https://registry.npmmirror.com',
         '--replace',
@@ -583,7 +584,7 @@ test('downloadManagedSource resolves otherVersion before delegating to nb downlo
     '--version',
     'next',
     '--output-dir',
-    '/Users/chen/local/source',
+    resolveConfiguredEnvPath('./local/source/'),
     '--git-url',
     'https://github.com/nocobase/nocobase.git',
   ]);
