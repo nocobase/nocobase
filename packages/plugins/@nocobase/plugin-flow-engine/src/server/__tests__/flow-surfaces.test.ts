@@ -6181,17 +6181,15 @@ describe('flowSurfaces resource', () => {
       fieldUse: 'InputFieldModel',
     });
 
-    const explicitFormField = await addField(rootAgent, createFormUid, 'nickname', {
-      fieldUse: formNicknameField.fieldUse,
-    });
-    expect(explicitFormField.fieldUse).toBe(formNicknameField.fieldUse);
+    const inferredFormField = await addField(rootAgent, createFormUid, 'nickname');
+    expect(inferredFormField.fieldUse).toBe(formNicknameField.fieldUse);
 
-    const explicitFormFieldReadback = await getSurface(rootAgent, {
-      uid: explicitFormField.fieldUid,
+    const inferredFormFieldReadback = await getSurface(rootAgent, {
+      uid: inferredFormField.fieldUid,
     });
-    expect(explicitFormFieldReadback.tree.use).toBe(formNicknameField.fieldUse);
+    expect(inferredFormFieldReadback.tree.use).toBe(formNicknameField.fieldUse);
 
-    const mismatchedFieldUseRes = await rootAgent.resource('flowSurfaces').addField({
+    const fieldUseRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
         target: {
           uid: createFormUid,
@@ -6200,8 +6198,8 @@ describe('flowSurfaces resource', () => {
         fieldUse: tableNicknameField.fieldUse,
       },
     });
-    expect(mismatchedFieldUseRes.status).toBe(400);
-    expect(readErrorMessage(mismatchedFieldUseRes)).toContain(`does not match inferred fieldUse`);
+    expect(fieldUseRes.status).toBe(400);
+    expect(readErrorMessage(fieldUseRes)).toContain(`does not accept internal field keys: fieldUse`);
 
     const unknownFieldUseRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -6213,11 +6211,10 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(unknownFieldUseRes.status).toBe(400);
-    expect(readErrorMessage(unknownFieldUseRes)).toContain(`is not allowed under`);
+    expect(readErrorMessage(unknownFieldUseRes)).toContain(`does not accept internal field keys: fieldUse`);
 
     const explicitFilterField = await addField(rootAgent, filterFormUid, 'nickname', {
       defaultTargetUid: tableUid,
-      fieldUse: filterNicknameField.fieldUse,
     });
     expect(explicitFilterField.fieldUse).toBe(filterNicknameField.fieldUse);
 

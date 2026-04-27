@@ -146,7 +146,7 @@ describe('flowSurfaces association contract', () => {
       }),
     );
     expect(rolesWrapperCatalog.node.configureOptions).toMatchObject({
-      fieldComponent: {
+      fieldType: {
         type: 'string',
       },
     });

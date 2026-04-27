@@ -16,6 +16,7 @@ import {
   resolveSupportedBlockCatalogItem,
 } from '../flow-surfaces/catalog';
 import { getConfigureOptionsForUse } from '../flow-surfaces/configure-options';
+import { getPublicFieldTypeForUse } from '../flow-surfaces/field-type-resolver';
 import { buildPlanKeyKind } from '../flow-surfaces/planning/key-kind';
 import { getReactionKindsForUse } from '../flow-surfaces/reaction/registry';
 
@@ -198,7 +199,7 @@ describe('flowSurfaces approval surface', () => {
     });
   });
 
-  it('should expose approval relation fieldComponent sets that match current frontend wrappers', () => {
+  it('should expose approval relation fieldType sets that match current frontend wrappers', () => {
     const singleAssociationField = {
       interface: 'm2o',
       targetCollection: {
@@ -226,12 +227,18 @@ describe('flowSurfaces approval surface', () => {
     expect(
       Array.from(
         getSupportedFieldComponentUseSet({ containerUse: 'PatternFormItemModel', field: multiAssociationField }) || [],
+      ).map((use) => getPublicFieldTypeForUse(use)),
+    ).toEqual(['select', 'picker', 'subFormList', 'subTable', 'popupSubTable']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'PatternFormItemModel', field: multiAssociationField }) || [],
       ),
     ).toEqual([
       'RecordSelectFieldModel',
       'RecordPickerFieldModel',
       'SubFormListFieldModel',
-      'PatternSubTableFieldModel',
+      'SubTableFieldModel',
+      'PopupSubTableFieldModel',
     ]);
     expect(
       Array.from(

@@ -83,16 +83,16 @@
 - `ApplyTaskCardDetailsItemModel`
 - `ApprovalTaskCardDetailsItemModel`
 
-### Approval relation fieldComponent switching
+### Approval relation fieldType switching
 
 - `PatternFormItemModel`
-  - 单值关系字段: `RecordSelectFieldModel` / `RecordPickerFieldModel` / `SubFormFieldModel`
-  - 多值关系字段: `RecordSelectFieldModel` / `RecordPickerFieldModel` / `SubFormListFieldModel` / `PatternSubTableFieldModel`
+  - 单值关系字段: `text` / `picker` / `subForm`
+  - 多值关系字段: `text` / `picker` / `subFormList` / `subTable` / `popupSubTable`
   - 指向 file collection 时，继续保留推导出的默认 binding use，不公开 nested subform / subtable 切换
 - `ApprovalDetailsItemModel` / `ApplyTaskCardDetailsItemModel` / `ApprovalTaskCardDetailsItemModel`
-  - 单值关系字段: `DisplayTextFieldModel` / `DisplaySubItemFieldModel`
-  - 多值关系字段: `DisplayTextFieldModel` / `DisplaySubListFieldModel` / `DisplaySubTableFieldModel`
-- `catalog.node.configureOptions.fieldComponent.enum` 会按当前 wrapper use 与真实字段 interface 动态收窄，`configure(fieldComponent)` 也按同一套 truth source 校验
+  - 单值关系字段: `text` / `subDetails`
+  - 多值关系字段: `text` / `subDetailsList` / `subTable`
+- `catalog.node.configureOptions.fieldType.enum` 会按当前 wrapper use 与真实字段 interface 动态收窄，`configure(fieldType)` 也按同一套 truth source 校验
 
 ## 关键约束
 
@@ -105,7 +105,7 @@
 - approval actions 只应出现在各自 block 的 action 容器中。
 - approval singleton actions 在当前表单已经存在时，不应继续出现在 catalog 中。
 - `PatternFormItemModel` 下的 inner field 必须持久化为 `PatternFormFieldModel`，并把真实字段 use 记录到 `stepParams.fieldBinding.use`。
-- approval relation `fieldComponent` 的公开切换范围必须跟随真实字段 interface 与 wrapper use 动态收窄，不能再靠静态全局枚举推断。
+- approval relation `fieldType` 的公开切换范围必须跟随真实字段 interface 与 wrapper use 动态收窄，不能再靠静态全局枚举推断。
 - approval details / task-card details 复用 details 语义，但保留自己的 wrapper use，以便 client 侧继续走审批专属的模型逻辑。
 
 ## 对外 API 策略

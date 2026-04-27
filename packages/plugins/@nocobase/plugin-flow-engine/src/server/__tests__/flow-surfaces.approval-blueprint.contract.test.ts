@@ -428,15 +428,9 @@ describe('flowSurfaces approval blueprint API contract', () => {
         },
       }),
     );
-    expect(taskCardManagerCatalog.node.configureOptions.fieldComponent.enum).toEqual([
-      'DisplayTextFieldModel',
-      'DisplaySubItemFieldModel',
-    ]);
-    expect(taskCardSkillsCatalog.node.configureOptions.fieldComponent.enum).toEqual([
-      'DisplayTextFieldModel',
-      'DisplaySubListFieldModel',
-      'DisplaySubTableFieldModel',
-    ]);
+    expect(taskCardManagerCatalog.node.configureOptions.fieldComponent).toBeUndefined();
+    expect(taskCardManagerCatalog.node.configureOptions.fieldType.enum).toEqual(['text', 'subDetails']);
+    expect(taskCardSkillsCatalog.node.configureOptions.fieldType.enum).toEqual(['text', 'subDetailsList', 'subTable']);
 
     expect(
       (
@@ -446,7 +440,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
               uid: taskCardManagerItem.uid,
             },
             changes: {
-              fieldComponent: 'DisplaySubItemFieldModel',
+              fieldType: 'subDetails',
             },
           },
         })
@@ -460,7 +454,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
               uid: taskCardSkillsItem.uid,
             },
             changes: {
-              fieldComponent: 'DisplaySubListFieldModel',
+              fieldType: 'subDetailsList',
             },
           },
         })

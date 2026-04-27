@@ -6838,7 +6838,7 @@ export class FlowSurfacesService {
           containerUse: container.ownerUse,
           field: capabilityField,
           requestedFieldUse,
-          requestedFieldUseMode: relationFieldTypeResolution ? 'fieldComponent' : 'fieldUse',
+          requestedFieldUseMode: relationFieldTypeResolution ? 'fieldType' : 'fieldUse',
           requestedWrapperUse: container.wrapperUse,
           requestedRenderer: values.renderer,
           enabledPackages,
@@ -6856,7 +6856,7 @@ export class FlowSurfacesService {
             containerUse: container.ownerUse,
             field: capabilityField,
             requestedFieldUse,
-            requestedFieldUseMode: relationFieldTypeResolution ? 'fieldComponent' : 'fieldUse',
+            requestedFieldUseMode: relationFieldTypeResolution ? 'fieldType' : 'fieldUse',
             requestedWrapperUse: container.wrapperUse,
             requestedRenderer: values.renderer,
             enabledPackages,
@@ -14232,7 +14232,7 @@ export class FlowSurfacesService {
         transaction: options.transaction,
       });
       effectiveInnerFieldUse = normalizedFieldComponentUse;
-      await this.syncFieldComponentStepParams(current, normalizedFieldComponentUse, options.transaction);
+      await this.syncFieldTypeStepParams(current, normalizedFieldComponentUse, options.transaction);
       await this.applyResolvedRelationFieldType({
         fieldUid: innerUid,
         fieldUse: normalizedFieldComponentUse,
@@ -18519,7 +18519,7 @@ export class FlowSurfacesService {
     const targetFieldUse = input.targetFieldUse;
     const normalizedTargetUse = String(targetFieldUse || '').trim();
     if (!normalizedTargetUse) {
-      throwBadRequest('flowSurfaces configure fieldComponent cannot be empty');
+      throwBadRequest('flowSurfaces configure fieldType cannot be empty');
     }
     const normalizedWrapperUse = String(wrapperUse || '').trim();
     const containerUse =
@@ -18536,7 +18536,7 @@ export class FlowSurfacesService {
         });
         if (!supportedFieldUses?.has(normalizedTargetUse)) {
           throwBadRequest(
-            `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+            `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldType '${normalizedTargetUse}'`,
           );
         }
         return normalizedTargetUse;
@@ -18547,7 +18547,7 @@ export class FlowSurfacesService {
       });
       if (!contract?.fieldUse) {
         throwBadRequest(
-          `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+          `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldType '${normalizedTargetUse}'`,
         );
       }
       return contract.fieldUse;
@@ -18564,7 +18564,7 @@ export class FlowSurfacesService {
         });
         if (!supportedFieldUses?.has(normalizedTargetUse)) {
           throwBadRequest(
-            `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+            `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldType '${normalizedTargetUse}'`,
           );
         }
         return normalizedTargetUse;
@@ -18575,15 +18575,15 @@ export class FlowSurfacesService {
       });
       if (!contract?.fieldUse) {
         throwBadRequest(
-          `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent '${normalizedTargetUse}'`,
+          `flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldType '${normalizedTargetUse}'`,
         );
       }
       return contract.fieldUse;
     }
-    throwBadRequest(`flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldComponent`);
+    throwBadRequest(`flowSurfaces configure field wrapper '${normalizedWrapperUse}' does not support fieldType`);
   }
 
-  private async syncFieldComponentStepParams(wrapperNode: any, targetFieldUse: string, transaction?: any) {
+  private async syncFieldTypeStepParams(wrapperNode: any, targetFieldUse: string, transaction?: any) {
     const flowDomain = this.inferFieldComponentFlowDomain(wrapperNode?.use);
     if (!flowDomain || !wrapperNode?.uid) {
       return;

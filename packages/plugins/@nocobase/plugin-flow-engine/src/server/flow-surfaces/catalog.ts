@@ -486,7 +486,6 @@ const EDITABLE_FIELD_USE_SET = new Set([
   'SubFormListFieldModel',
   'SubTableFieldModel',
   'PopupSubTableFieldModel',
-  'PatternSubTableFieldModel',
 ]);
 const DISPLAY_FIELD_USE_SET = new Set([
   ...JS_DISPLAY_FIELD_USE_SET,
@@ -2778,7 +2777,8 @@ export function getSupportedFieldComponentUseSet(input: {
           'RecordSelectFieldModel',
           'RecordPickerFieldModel',
           canUseNestedAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
-          canUseNestedAssociationFieldComponent(input) ? 'PatternSubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'PopupSubTableFieldModel' : undefined,
           inferredFieldUse,
         ].filter(Boolean),
       );
@@ -2947,7 +2947,7 @@ export function resolveSupportedFieldCapability(input: {
   containerUse: string;
   field?: any;
   requestedFieldUse?: string;
-  requestedFieldUseMode?: 'fieldUse' | 'fieldComponent';
+  requestedFieldUseMode?: 'fieldUse' | 'fieldType';
   requestedWrapperUse?: string;
   allowUnresolvedFieldUse?: boolean;
   requestedRenderer?: string;
@@ -3025,7 +3025,7 @@ export function resolveSupportedFieldCapability(input: {
     input.requestedFieldUse &&
     inferredFieldUse &&
     input.requestedFieldUse !== inferredFieldUse &&
-    input.requestedFieldUseMode !== 'fieldComponent' &&
+    input.requestedFieldUseMode !== 'fieldType' &&
     KNOWN_FIELD_NODE_USES.has(input.requestedFieldUse)
   ) {
     throw new FlowSurfaceBadRequestError(
@@ -3034,7 +3034,7 @@ export function resolveSupportedFieldCapability(input: {
   }
 
   const allowedFieldUses =
-    input.requestedFieldUseMode === 'fieldComponent' && input.field
+    input.requestedFieldUseMode === 'fieldType' && input.field
       ? getSupportedFieldComponentUseSet({
           containerUse: input.containerUse,
           field: input.field,

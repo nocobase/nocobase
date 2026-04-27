@@ -252,7 +252,7 @@ describe('flowSurfaces field binding registry', () => {
     ).toBe(true);
   });
 
-  it('should expose generic relation fieldComponent sets that match current frontend wrappers', () => {
+  it('should expose generic relation field component sets that back public fieldType options', () => {
     const singleAssociationField = {
       interface: 'm2o',
       targetCollection: {

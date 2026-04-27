@@ -567,7 +567,8 @@ describe('flowSurfaces approval API contract', () => {
         },
       },
     });
-    expect(configureRes.status).toBe(200);
+    expect(configureRes.status).toBe(400);
+    expect(readErrorMessage(configureRes)).toContain('fieldComponent');
 
     const applyFieldWrapperReadback = await getSurface(rootAgent, {
       uid: applyField.wrapperUid,
@@ -576,7 +577,7 @@ describe('flowSurfaces approval API contract', () => {
       uid: applyField.fieldUid,
     });
 
-    expect(applyFieldWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBe('InputFieldModel');
+    expect(applyFieldWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBeUndefined();
     expect(applyFieldInnerReadback.tree).toMatchObject({
       use: 'PatternFormFieldModel',
       stepParams: {
@@ -919,7 +920,7 @@ describe('flowSurfaces approval API contract', () => {
     });
   });
 
-  it('should switch approval relation field components and expose dynamic fieldComponent enums through catalog', async () => {
+  it('should switch approval relation fieldTypes and expose dynamic fieldType enums through catalog', async () => {
     const triggerSurface = await createApprovalSurface(flowRepo, {
       pageUse: 'TriggerChildPageModel',
       tabUse: 'TriggerChildPageTabModel',
@@ -1038,25 +1039,23 @@ describe('flowSurfaces approval API contract', () => {
       }),
     );
 
-    expect(applyManagerCatalog.node.configureOptions.fieldComponent.enum).toEqual([
-      'RecordSelectFieldModel',
-      'RecordPickerFieldModel',
-      'SubFormFieldModel',
+    expect(applyManagerCatalog.node.configureOptions.fieldComponent).toBeUndefined();
+    expect(applyManagerCatalog.node.configureOptions.fieldType.enum).toEqual(['select', 'picker', 'subForm']);
+    expect(applySkillsCatalog.node.configureOptions.fieldType.enum).toEqual([
+      'select',
+      'picker',
+      'subFormList',
+      'subTable',
+      'popupSubTable',
     ]);
-    expect(applySkillsCatalog.node.configureOptions.fieldComponent.enum).toEqual([
-      'RecordSelectFieldModel',
-      'RecordPickerFieldModel',
-      'SubFormListFieldModel',
-      'PatternSubTableFieldModel',
-    ]);
-    expect(approvalManagerCatalog.node.configureOptions.fieldComponent.enum).toEqual([
-      'DisplayTextFieldModel',
-      'DisplaySubItemFieldModel',
-    ]);
-    expect(approvalSkillsCatalog.node.configureOptions.fieldComponent.enum).toEqual([
-      'DisplayTextFieldModel',
-      'DisplaySubListFieldModel',
-      'DisplaySubTableFieldModel',
+    expect(approvalManagerCatalog.node.configureOptions.fieldType.enum).toEqual(['text', 'subDetails']);
+    expect(approvalSkillsCatalog.node.configureOptions.fieldType.enum).toEqual(['text', 'subDetailsList', 'subTable']);
+    expect(applySkillsCatalog.node.relation?.fieldTypes).toEqual([
+      'select',
+      'picker',
+      'subFormList',
+      'subTable',
+      'popupSubTable',
     ]);
 
     expect(
@@ -1067,7 +1066,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: applyManagerField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'RecordPickerFieldModel',
+              fieldType: 'picker',
             },
           },
         })
@@ -1081,7 +1080,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: applyManagerField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'SubFormFieldModel',
+              fieldType: 'subForm',
             },
           },
         })
@@ -1095,7 +1094,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: applySkillsField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'SubFormListFieldModel',
+              fieldType: 'subFormList',
             },
           },
         })
@@ -1109,7 +1108,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: applySkillsField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'PatternSubTableFieldModel',
+              fieldType: 'subTable',
             },
           },
         })
@@ -1123,7 +1122,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: approvalManagerField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'DisplaySubItemFieldModel',
+              fieldType: 'subDetails',
             },
           },
         })
@@ -1137,7 +1136,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: approvalSkillsField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'DisplaySubListFieldModel',
+              fieldType: 'subDetailsList',
             },
           },
         })
@@ -1151,7 +1150,7 @@ describe('flowSurfaces approval API contract', () => {
               uid: approvalSkillsField.wrapperUid,
             },
             changes: {
-              fieldComponent: 'DisplaySubTableFieldModel',
+              fieldType: 'subTable',
             },
           },
         })
@@ -1192,12 +1191,12 @@ describe('flowSurfaces approval API contract', () => {
         },
       },
     });
-    expect(applySkillsWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBe('PatternSubTableFieldModel');
+    expect(applySkillsWrapperReadback.tree.stepParams?.editItemSettings?.model?.use).toBe('SubTableFieldModel');
     expect(applySkillsInnerReadback.tree).toMatchObject({
       use: 'PatternFormFieldModel',
       stepParams: {
         fieldBinding: {
-          use: 'PatternSubTableFieldModel',
+          use: 'SubTableFieldModel',
         },
       },
     });
