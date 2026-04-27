@@ -12945,6 +12945,13 @@ export class FlowSurfacesService {
         updated: _.uniq([...(result.updated || []), 'connectFields']),
       };
     }
+    if (hasOwnDefined(changes, 'resource')) {
+      await this.removeFilterSourceBindings(current.uid, options.transaction);
+      return {
+        ...result,
+        updated: _.uniq([...(result.updated || []), 'connectFields']),
+      };
+    }
     return result;
   }
 
@@ -15601,6 +15608,12 @@ export class FlowSurfacesService {
         `flowSurfaces ${input.actionName} tree connectFields target collection '${targetDataSourceKey}.${targetCollectionName}' not found`,
       );
     }
+    const treeCollection = this.getCollection(treeDataSourceKey, treeCollectionName);
+    if (!treeCollection) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} tree connectFields source collection '${treeDataSourceKey}.${treeCollectionName}' not found`,
+      );
+    }
 
     const isSameCollection = treeDataSourceKey === targetDataSourceKey && treeCollectionName === targetCollectionName;
     const normalizedPaths =
@@ -15618,16 +15631,70 @@ export class FlowSurfacesService {
     }
 
     const filterTargetKey = this.getCollectionFilterTargetKey(targetCollection);
+    const treeKeyFieldPath = this.getCollectionFilterTargetKey(treeCollection);
+    const treeKeyField = this.resolveTreeConnectComparableField(treeCollection, treeKeyFieldPath);
+    const treeKeyKind = this.normalizeTreeConnectValueKind(treeKeyField);
     return normalizedPaths.map((fieldPath) => {
       const normalizedFieldPath = normalizeFieldPath(fieldPath);
       const isBuiltInTargetPath = normalizedFieldPath === 'id' || normalizedFieldPath === filterTargetKey;
-      if (!isBuiltInTargetPath && !resolveFieldFromCollection(targetCollection, normalizedFieldPath)) {
+      const targetField = this.resolveTreeConnectComparableField(targetCollection, normalizedFieldPath);
+      if (!isBuiltInTargetPath && !targetField) {
         throwBadRequest(
           `flowSurfaces ${input.actionName} tree connectFields filterPaths '${normalizedFieldPath}' does not exist on target collection '${targetDataSourceKey}.${targetCollectionName}'`,
         );
       }
+      const targetKind = this.normalizeTreeConnectValueKind(targetField);
+      if (treeKeyKind && targetKind && treeKeyKind !== targetKind) {
+        throwBadRequest(
+          `flowSurfaces ${input.actionName} tree connectFields filterPaths '${normalizedFieldPath}' is not type-compatible with tree selected key '${treeKeyFieldPath}'`,
+        );
+      }
       return normalizedFieldPath;
     });
+  }
+
+  private resolveTreeConnectComparableField(collection: any, fieldPath: string) {
+    const normalizedFieldPath = normalizeFieldPath(fieldPath);
+    const resolvedField = resolveFieldFromCollection(collection, normalizedFieldPath);
+    if (resolvedField) {
+      return resolvedField;
+    }
+    if (normalizedFieldPath === 'id') {
+      return {
+        name: 'id',
+        type: 'bigInt',
+        interface: 'integer',
+      };
+    }
+    return null;
+  }
+
+  private normalizeTreeConnectValueKind(field: any): 'number' | 'string' | 'date' | 'boolean' | undefined {
+    const fieldType = String(getFieldType(field) || '')
+      .trim()
+      .toLowerCase();
+    const fieldInterface = String(getFieldInterface(field) || '')
+      .trim()
+      .toLowerCase();
+    if (
+      ['bigint', 'integer', 'int', 'number', 'float', 'double', 'decimal', 'real'].includes(fieldType) ||
+      ['bigint', 'integer', 'number', 'percent'].includes(fieldInterface)
+    ) {
+      return 'number';
+    }
+    if (
+      ['string', 'text', 'uid', 'uuid', 'varchar', 'char'].includes(fieldType) ||
+      ['input', 'textarea', 'select', 'radiogroup', 'url', 'email', 'phone'].includes(fieldInterface)
+    ) {
+      return 'string';
+    }
+    if (['date', 'datetime', 'time'].includes(fieldType) || ['date', 'datetime', 'time'].includes(fieldInterface)) {
+      return 'date';
+    }
+    if (fieldType === 'boolean' || fieldInterface === 'boolean') {
+      return 'boolean';
+    }
+    return undefined;
   }
 
   private async persistTreeConnectFields(treeNode: any, connectFields: any, actionName: string, transaction?: any) {
