@@ -595,6 +595,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       pageSize: {
         type: 'number',
       },
+      connectFields: {
+        type: 'object',
+      },
     });
 
     const createFormCatalog = getData(
@@ -1054,6 +1057,419 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(batchData.successCount).toBe(2);
     expect(batchData.errorCount).toBe(0);
     expect(batchData.blocks.map((item: any) => item.result?.uid).filter(Boolean)).toHaveLength(2);
+  });
+
+  it('should add configure and clear tree connectFields bindings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Tree connect contract page',
+      tabTitle: 'Tree connect contract tab',
+    });
+    const employeesTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const departmentsTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'departments',
+      },
+    });
+
+    const tree = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'tree',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      settings: {
+        connectFields: {
+          targets: [{ targetId: employeesTable.uid }],
+        },
+      },
+    });
+    const gridAfterAdd = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(gridAfterAdd?.filterManager).toEqual(
+      expect.arrayContaining([
+        {
+          filterId: tree.uid,
+          targetId: employeesTable.uid,
+          filterPaths: ['id'],
+        },
+      ]),
+    );
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [
+              {
+                targetId: employeesTable.uid,
+                filterPaths: ['department.title'],
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+    const gridAfterConfigure = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(gridAfterConfigure?.filterManager || []).filter((item: any) => item.filterId === tree.uid),
+    ).toEqual([
+      {
+        filterId: tree.uid,
+        targetId: employeesTable.uid,
+        filterPaths: ['department.title'],
+      },
+    ]);
+
+    const clearRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [],
+          },
+        },
+      },
+    });
+    expect(clearRes.status, readErrorMessage(clearRes)).toBe(200);
+    const gridAfterClear = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(_.castArray(gridAfterClear?.filterManager || []).some((item: any) => item.filterId === tree.uid)).toBe(
+      false,
+    );
+  });
+
+  it('should keep tree event flows separate from connectFields persistence', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Tree flow registry separation page',
+      tabTitle: 'Tree flow registry separation tab',
+    });
+    const tree = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'tree',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const eventFlowRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        flowRegistry: {
+          treeBeforeRender: {
+            key: 'treeBeforeRender',
+            on: 'beforeRender',
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(eventFlowRes.status, readErrorMessage(eventFlowRes)).toBe(200);
+
+    const rawUpdateConnectFields = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        flowRegistry: {
+          connectFields: {
+            targets: [],
+          },
+        },
+      },
+    });
+    expect(rawUpdateConnectFields.status).toBe(400);
+    expect(readErrorMessage(rawUpdateConnectFields)).toContain('changes.connectFields');
+
+    const rawSetEventConnectFields = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        flowRegistry: {
+          connectFields: {
+            targets: [],
+          },
+        },
+      },
+    });
+    expect(rawSetEventConnectFields.status).toBe(400);
+    expect(readErrorMessage(rawSetEventConnectFields)).toContain('changes.connectFields');
+  });
+
+  it('should reject invalid tree connectFields targets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Invalid tree connect page',
+      tabTitle: 'Invalid tree connect tab',
+    });
+    const tree = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'tree',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const departmentsTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'departments',
+      },
+    });
+    const employeesTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const markdown = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'markdown',
+      settings: {
+        content: 'Unsupported target',
+      },
+    });
+
+    const crossCollectionMissingPaths = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: departmentsTable.uid }],
+          },
+        },
+      },
+    });
+    expect(crossCollectionMissingPaths.status).toBe(400);
+    expect(readErrorMessage(crossCollectionMissingPaths)).toContain('filterPaths');
+
+    const unsupportedTarget = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: markdown.uid, filterPaths: ['id'] }],
+          },
+        },
+      },
+    });
+    expect(unsupportedTarget.status).toBe(400);
+    expect(readErrorMessage(unsupportedTarget)).toContain('does not support tree connectFields');
+
+    const missingTarget = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: 'missing-target-uid', filterPaths: ['id'] }],
+          },
+        },
+      },
+    });
+    expect(missingTarget.status).toBe(400);
+    expect(readErrorMessage(missingTarget)).toContain('targetId');
+
+    const selfTarget = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: tree.uid, filterPaths: ['id'] }],
+          },
+        },
+      },
+    });
+    expect(selfTarget.status).toBe(400);
+    expect(readErrorMessage(selfTarget)).toContain('cannot be the tree block itself');
+
+    const otherPage = await createPage(rootAgent, {
+      title: 'Invalid tree connect other page',
+      tabTitle: 'Invalid tree connect other tab',
+    });
+    const otherPageTable = await addBlockData(rootAgent, {
+      target: {
+        uid: otherPage.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const crossGridTarget = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: otherPageTable.uid, filterPaths: ['id'] }],
+          },
+        },
+      },
+    });
+    expect(crossGridTarget.status).toBe(400);
+    expect(readErrorMessage(crossGridTarget)).toContain('same block grid');
+
+    const duplicateTarget = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tree.uid,
+        },
+        changes: {
+          connectFields: {
+            targets: [{ targetId: employeesTable.uid }, { targetBlockUid: employeesTable.uid, filterPaths: ['id'] }],
+          },
+        },
+      },
+    });
+    expect(duplicateTarget.status).toBe(400);
+    expect(readErrorMessage(duplicateTarget)).toContain('duplicate targetId');
+  });
+
+  it('should clean tree connectFields bindings when removing tree or target blocks', async () => {
+    const treeRemovalPage = await createPage(rootAgent, {
+      title: 'Tree connect remove tree page',
+      tabTitle: 'Tree connect remove tree tab',
+    });
+    const treeRemovalTable = await addBlockData(rootAgent, {
+      target: {
+        uid: treeRemovalPage.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const removableTree = await addBlockData(rootAgent, {
+      target: {
+        uid: treeRemovalPage.tabSchemaUid,
+      },
+      type: 'tree',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      settings: {
+        connectFields: {
+          targets: [{ targetId: treeRemovalTable.uid }],
+        },
+      },
+    });
+    const gridBeforeTreeRemoval = await flowRepo.findModelById(treeRemovalPage.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(gridBeforeTreeRemoval?.filterManager || []).some((item: any) => item.filterId === removableTree.uid),
+    ).toBe(true);
+
+    const removeTreeRes = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid: removableTree.uid,
+        },
+      },
+    });
+    expect(removeTreeRes.status, readErrorMessage(removeTreeRes)).toBe(200);
+    const gridAfterTreeRemoval = await flowRepo.findModelById(treeRemovalPage.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(gridAfterTreeRemoval?.filterManager || []).some((item: any) => item.filterId === removableTree.uid),
+    ).toBe(false);
+
+    const targetRemovalPage = await createPage(rootAgent, {
+      title: 'Tree connect remove target page',
+      tabTitle: 'Tree connect remove target tab',
+    });
+    const targetRemovalTable = await addBlockData(rootAgent, {
+      target: {
+        uid: targetRemovalPage.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const targetRemovalTree = await addBlockData(rootAgent, {
+      target: {
+        uid: targetRemovalPage.tabSchemaUid,
+      },
+      type: 'tree',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      settings: {
+        connectFields: {
+          targets: [{ targetId: targetRemovalTable.uid }],
+        },
+      },
+    });
+    const gridBeforeTargetRemoval = await flowRepo.findModelById(targetRemovalPage.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(gridBeforeTargetRemoval?.filterManager || []).some(
+        (item: any) => item.filterId === targetRemovalTree.uid && item.targetId === targetRemovalTable.uid,
+      ),
+    ).toBe(true);
+
+    const removeTargetRes = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid: targetRemovalTable.uid,
+        },
+      },
+    });
+    expect(removeTargetRes.status, readErrorMessage(removeTargetRes)).toBe(200);
+    const gridAfterTargetRemoval = await flowRepo.findModelById(targetRemovalPage.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(gridAfterTargetRemoval?.filterManager || []).some(
+        (item: any) => item.targetId === targetRemovalTable.uid,
+      ),
+    ).toBe(false);
   });
 
   it('should project missing calendar popup hosts during readback without persisting them', async () => {
@@ -2238,6 +2654,58 @@ describe('flowSurfaces catalog + compose contract', () => {
       expect(invalidRes.status).toBe(400);
       expect(readErrorMessage(invalidRes)).toContain(item.message);
     }
+  });
+
+  it('should compose same-run tree connectFields targets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose tree connect page',
+      tabTitle: 'Compose tree connect tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'usersTree',
+            type: 'tree',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            settings: {
+              connectFields: {
+                targets: [{ target: 'usersTable' }],
+              },
+            },
+          },
+          {
+            key: 'usersTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const composed = getData(composeRes);
+    const treeBlock = getComposeBlock(composed, 'usersTree');
+    const tableBlock = getComposeBlock(composed, 'usersTable');
+    const pageGrid = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(pageGrid?.filterManager).toEqual(
+      expect.arrayContaining([
+        {
+          filterId: treeBlock.uid,
+          targetId: tableBlock.uid,
+          filterPaths: ['id'],
+        },
+      ]),
+    );
   });
 
   it('should compose relation fields with fieldType on form blocks', async () => {

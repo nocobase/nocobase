@@ -52,6 +52,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   }
 
+  function findDescendantNode(node: any, predicate: (input: any) => boolean) {
+    return collectDescendantNodes(node, predicate)[0];
+  }
+
   function readDirectFormFieldPaths(node: any) {
     return _.castArray(node?.subModels?.grid?.subModels?.items || [])
       .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
@@ -599,6 +603,106 @@ describe('flowSurfaces applyBlueprint contract', () => {
       expect(invalidRes.status).toBe(400);
       expect(readErrorMessage(invalidRes)).toContain(item.message);
     }
+  });
+
+  it('should persist tree connectFields targets from applyBlueprint settings', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Tree connect blueprint',
+          },
+        },
+        page: {
+          title: 'Tree connect blueprint',
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Tree connect',
+            blocks: [
+              {
+                key: 'usersTree',
+                type: 'tree',
+                collection: 'employees',
+                settings: {
+                  connectFields: {
+                    targets: [{ target: 'usersTable' }],
+                  },
+                },
+              },
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'employees',
+              },
+            ],
+            layout: {
+              rows: [
+                [
+                  { key: 'usersTree', span: 8 },
+                  { key: 'usersTable', span: 16 },
+                ],
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const treeBlock = findDescendantNode(data.surface.tree, (item) => item?.use === 'TreeBlockModel');
+    const tableBlock = findDescendantNode(data.surface.tree, (item) => item?.use === 'TableBlockModel');
+    const blockGrid = findDescendantNode(data.surface.tree, (item) => item?.use === 'BlockGridModel');
+    expect(blockGrid?.filterManager).toEqual(
+      expect.arrayContaining([
+        {
+          filterId: treeBlock.uid,
+          targetId: tableBlock.uid,
+          filterPaths: ['id'],
+        },
+      ]),
+    );
+  });
+
+  it('should reject duplicate tree connectFields targets from applyBlueprint settings', async () => {
+    const duplicateRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Duplicate tree connect blueprint',
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            blocks: [
+              {
+                key: 'usersTree',
+                type: 'tree',
+                collection: 'employees',
+                settings: {
+                  connectFields: {
+                    targets: [{ target: 'usersTable' }, { target: 'usersTable', filterPaths: ['id'] }],
+                  },
+                },
+              },
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'employees',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(duplicateRes.status).toBe(400);
+    expect(readErrorMessage(duplicateRes)).toContain('duplicate target');
   });
 
   it('should apply block-level defaultFilter in applyBlueprint data blocks and prefer explicit action settings', async () => {
