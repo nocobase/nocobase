@@ -955,7 +955,7 @@ export async function resolveAccessToken(options: {
 
   const baseUrl = options.baseUrl ?? env.baseUrl;
   if (!baseUrl) {
-    throw new Error(`Env "${envName}" is missing a base URL. Run \`nb env add ${envName} --base-url <url>\`.`);
+    throw new Error(`Env "${envName}" is missing a base URL. Run \`nb env add ${envName} --api-base-url <url>\`.`);
   }
 
   printVerbose(`Refreshing OAuth session for env "${envName}"`);
@@ -984,7 +984,7 @@ export async function resolveServerRequestTarget(options: {
   });
 
   if (!baseUrl) {
-    throw new Error('Missing base URL. Use --base-url or configure one with `nb env add`.');
+    throw new Error('Missing base URL. Use --api-base-url or configure one with `nb env add`.');
   }
 
   return { baseUrl, token };
@@ -1005,7 +1005,7 @@ export async function authenticateEnvWithOauth(options: {
           ? `Environment "${envName}" does not have an API base URL yet.`
           : `Environment "${envName}" has not been set up yet.`,
         env
-          ? `Run \`nb env add ${envName} --base-url <url>\` to finish setting it up.`
+          ? `Run \`nb env add ${envName} --api-base-url <url>\` to finish setting it up.`
           : `Run \`nb env add ${envName}\` first.`,
       ]
         .filter(Boolean)

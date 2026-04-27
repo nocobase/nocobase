@@ -63,7 +63,7 @@ test('install --resume reuses the saved workspace env config for prompt values',
   mocks.getEnv.mockResolvedValue({
     name: 'app1',
     config: {
-      baseUrl: 'http://127.0.0.1:13080/api',
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
       auth: {
         type: 'token',
         accessToken: 'resume-token',

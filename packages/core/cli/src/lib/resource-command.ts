@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { executeResourceRequest, type ResourceAction, type ResourceRequestArgs } from './resource-request.js';
@@ -102,7 +111,7 @@ function printResponse(command: Command, response: { ok: boolean; status: number
 }
 
 export const resourceBaseFlags = {
-  'base-url': Flags.string({
+  'api-base-url': Flags.string({
     description: 'NocoBase API base URL, for example http://localhost:13000/api',
   }),
   verbose: Flags.boolean({
@@ -380,7 +389,7 @@ export async function runResourceCommand(
 
   const response = await executeResourceRequest({
     envName: flags.env,
-    baseUrl: flags['base-url'],
+    baseUrl: flags['api-base-url'],
     role: flags.role,
     token: flags.token,
     action,

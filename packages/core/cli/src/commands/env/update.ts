@@ -37,7 +37,7 @@ export default class EnvUpdate extends Command {
       description: 'Show detailed progress output',
       default: false,
     }),
-    'base-url': Flags.string({
+    'api-base-url': Flags.string({
       description: 'NocoBase API base URL override. When provided, persist it to the target env before saving the refreshed runtime.',
     }),
     role: Flags.string({
@@ -60,7 +60,7 @@ export default class EnvUpdate extends Command {
       const runtime = await updateEnvRuntime({
         envName,
         scope: resolveDefaultConfigScope(),
-        baseUrl: flags['base-url'],
+        baseUrl: flags['api-base-url'],
         role: flags.role,
         token: flags.token,
         configFile: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'nocobase-ctl.config.json'),

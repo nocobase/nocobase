@@ -87,7 +87,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     'local',
     {
       kind: 'docker',
-      baseUrl: 'http://127.0.0.1:13000/api',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
       source: 'docker',
       downloadVersion: 'alpha',
       dockerRegistry: 'nocobase/nocobase',
@@ -138,7 +138,7 @@ test('env add stores config globally by default', async () => {
     'local',
     {
       kind: 'http',
-      baseUrl: 'http://127.0.0.1:13000/api',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
     },
     { scope: 'global' },
   ]);

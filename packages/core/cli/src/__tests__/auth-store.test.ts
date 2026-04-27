@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdtemp, rm, mkdir, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test, expect, vi } from 'vitest';
@@ -216,10 +216,12 @@ test('normalized kind is persisted to config.json', async () => {
 
     const content = await readFile(path.join(resolveCliHomeDir('global'), 'config.json'), 'utf8');
     const parsed = JSON.parse(content) as {
-      envs?: Record<string, { kind?: string }>;
+      envs?: Record<string, { kind?: string; apiBaseUrl?: string; baseUrl?: string }>;
     };
 
     expect(parsed.envs?.app1?.kind).toBe('http');
+    expect(parsed.envs?.app1?.apiBaseUrl).toBe('https://demo.example.com/api');
+    expect(parsed.envs?.app1?.baseUrl).toBe(undefined);
   });
 });
 
@@ -399,7 +401,7 @@ test('loadAuthConfig and getEnv fall back to legacy project config when global i
       const env = await getEnv(undefined, { scope: 'global' });
 
       expect(config.currentEnv).toBe('legacy');
-      expect(config.envs.legacy?.baseUrl).toBe('http://localhost:13000/api');
+      expect(config.envs.legacy?.apiBaseUrl).toBe('http://localhost:13000/api');
       expect(currentEnv).toBe('legacy');
       expect(env?.name).toBe('legacy');
       expect(env?.baseUrl).toBe('http://localhost:13000/api');
@@ -407,6 +409,29 @@ test('loadAuthConfig and getEnv fall back to legacy project config when global i
       cwdSpy.mockRestore();
       await rm(workspaceDir, { recursive: true, force: true });
     }
+  });
+});
+
+test('legacy baseUrl key is still readable but normalized to apiBaseUrl when loading config', async () => {
+  await withTempCliHome(async () => {
+    const configFile = path.join(resolveCliHomeDir('global'), 'config.json');
+    await mkdir(path.dirname(configFile), { recursive: true });
+    await writeFile(configFile, JSON.stringify({
+      currentEnv: 'legacy',
+      envs: {
+        legacy: {
+          baseUrl: 'http://localhost:13000/api',
+        },
+      },
+    }, null, 2));
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    const env = await getEnv('legacy', { scope: 'global' });
+
+    expect(config.envs.legacy?.apiBaseUrl).toBe('http://localhost:13000/api');
+    expect(config.envs.legacy?.baseUrl).toBe(undefined);
+    expect(env?.apiBaseUrl).toBe('http://localhost:13000/api');
+    expect(env?.baseUrl).toBe('http://localhost:13000/api');
   });
 });
 

@@ -934,7 +934,7 @@ Prompt modes:
             : appPort
               ? { kind: 'http' }
               : {}),
-        ...(appPort ? { baseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
         ...(dockerRegistry ? { dockerRegistry } : {}),

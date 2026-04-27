@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {Command, Flags} from '@oclif/core';
 import type {Interfaces} from '@oclif/core';
 import {executeApiRequest} from './api-client.js';
@@ -117,7 +126,7 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
     });
   }
 
-  flags['base-url'] = Flags.string({
+  flags['api-base-url'] = Flags.string({
     description: 'NocoBase API base URL, for example http://localhost:13000/api',
     helpGroup: 'Global',
   });
@@ -162,7 +171,7 @@ export abstract class GeneratedApiCommand extends Command {
 
     const response = await executeApiRequest({
       envName: flags.env,
-      baseUrl: flags['base-url'],
+      baseUrl: flags['api-base-url'],
       role: flags.role,
       token: flags.token,
       flags,

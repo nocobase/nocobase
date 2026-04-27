@@ -331,7 +331,7 @@ export default class EnvAdd extends Command {
 
     const envConfig: Record<string, string | boolean | undefined> = {
       kind,
-      baseUrl: String(results.apiBaseUrl ?? ''),
+      apiBaseUrl: String(results.apiBaseUrl ?? ''),
     };
 
     for (const [flagName, configKey] of Object.entries(ENV_RUNTIME_FLAG_MAP)) {

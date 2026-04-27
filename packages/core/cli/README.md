@@ -240,7 +240,7 @@ To connect an existing app, use `nb init` and choose the existing-app setup
 path, or add the env directly:
 
 ```bash
-nb env add app1 --base-url http://localhost:13000/api
+nb env add app1 --api-base-url http://localhost:13000/api
 ```
 
 `nb env add` will start the authentication flow automatically when needed.

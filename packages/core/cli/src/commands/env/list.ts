@@ -12,6 +12,10 @@ import { listEnvs } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { renderTable } from '../../lib/ui.js';
 
+function resolveApiBaseUrl(config: { apiBaseUrl?: unknown; baseUrl?: unknown; apibaseUrl?: unknown }): string {
+  return String(config.apiBaseUrl ?? config.baseUrl ?? config.apibaseUrl ?? '').trim();
+}
+
 export default class EnvList extends Command {
   static summary = 'List configured environments';
 
@@ -26,13 +30,13 @@ export default class EnvList extends Command {
 
     if (!names.length) {
       this.log('No envs configured.');
-      this.log('Run `nb env add <name> --base-url <url>` to add one.');
+      this.log('Run `nb env add <name> --api-base-url <url>` to add one.');
       return;
     }
 
     const rows = names.map((name) => {
       const env = envs[name];
-      return [name === currentEnv ? '*' : '', name, env.baseUrl ?? '', env.auth?.type ?? '', env.runtime?.version ?? ''];
+      return [name === currentEnv ? '*' : '', name, resolveApiBaseUrl(env), env.auth?.type ?? '', env.runtime?.version ?? ''];
     });
 
     this.log(renderTable(['Current', 'Name', 'Base URL', 'Auth', 'Runtime'], rows));

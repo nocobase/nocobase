@@ -21,13 +21,17 @@ import { renderTable } from '../lib/ui.js';
 
 type RuntimeStatus = 'running' | 'stopped' | 'missing' | 'http' | 'ssh' | 'external' | '-';
 
+function resolveApiBaseUrl(config: { apiBaseUrl?: unknown; baseUrl?: unknown; apibaseUrl?: unknown }): string {
+  return String(config.apiBaseUrl ?? config.baseUrl ?? config.apibaseUrl ?? '').trim();
+}
+
 function appUrl(runtime: ManagedAppRuntime): string {
   const port = String(runtime.env.config.appPort ?? '').trim();
   if (port) {
     return `http://127.0.0.1:${port}`;
   }
 
-  const baseUrl = String(runtime.env.config.baseUrl ?? '').trim();
+  const baseUrl = resolveApiBaseUrl(runtime.env.config);
   return baseUrl.replace(/\/api\/?$/, '');
 }
 

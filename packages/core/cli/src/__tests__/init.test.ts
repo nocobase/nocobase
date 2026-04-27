@@ -359,7 +359,7 @@ test('nb init forwards download options to nb install for a new app flow', async
   expect(mocks.upsertEnv.mock.calls).toEqual([[
     'demoapp',
     {
-      baseUrl: 'http://127.0.0.1:13080/api',
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
       source: 'git',
       downloadVersion: 'beta',
       gitUrl: 'https://github.com/nocobase/nocobase.git',
@@ -974,7 +974,7 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
   mocks.getEnv.mockResolvedValue({
     name: 'local5',
     config: {
-      baseUrl: 'http://localhost:13000/api',
+      apiBaseUrl: 'http://localhost:13000/api',
     },
   });
 

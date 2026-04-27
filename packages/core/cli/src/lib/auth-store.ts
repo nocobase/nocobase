@@ -37,7 +37,10 @@ export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 
 export interface EnvConfigEntry {
   kind?: EnvKind;
+  apiBaseUrl?: string;
+  /** @deprecated Legacy config key; read-only compatibility for older config.json files. */
   baseUrl?: string;
+  /** @deprecated Legacy typo kept for read compatibility with older config.json files. */
   apibaseUrl?: string;
   auth?: TokenAuthConfig | OauthAuthConfig;
   /** How this env's app was installed or fetched. */
@@ -115,6 +118,23 @@ function normalizeStoredEnvKind(value: unknown): EnvKind | undefined {
   return undefined;
 }
 
+function normalizeOptionalString(value: unknown): string | undefined {
+  const normalized = String(value ?? '').trim();
+  return normalized || undefined;
+}
+
+export function readEnvApiBaseUrl(config?: Partial<EnvConfigEntry>): string | undefined {
+  if (!config) {
+    return undefined;
+  }
+
+  return (
+    normalizeOptionalString((config as { apiBaseUrl?: unknown }).apiBaseUrl)
+    ?? normalizeOptionalString((config as { baseUrl?: unknown }).baseUrl)
+    ?? normalizeOptionalString((config as { apibaseUrl?: unknown }).apibaseUrl)
+  );
+}
+
 export function resolveEnvKind(config?: Partial<EnvConfigEntry>): EnvKind | undefined {
   if (!config) {
     return undefined;
@@ -138,11 +158,7 @@ export function resolveEnvKind(config?: Partial<EnvConfigEntry>): EnvKind | unde
     return 'local';
   }
 
-  if (
-    String(config.baseUrl ?? '').trim()
-    || String(config.apibaseUrl ?? '').trim()
-    || config.auth
-  ) {
+  if (readEnvApiBaseUrl(config) || config.auth) {
     return 'http';
   }
 
@@ -154,9 +170,20 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     return entry;
   }
 
-  const { kind: _kind, ...rest } = entry as EnvConfigEntry & { kind?: unknown };
+  const {
+    kind: _kind,
+    apiBaseUrl: _apiBaseUrl,
+    baseUrl: _baseUrl,
+    apibaseUrl: _legacyApiBaseUrl,
+    ...rest
+  } = entry as EnvConfigEntry & { kind?: unknown };
   const normalizedKind = resolveEnvKind(entry);
-  return normalizedKind ? { ...rest, kind: normalizedKind } : rest;
+  const apiBaseUrl = readEnvApiBaseUrl(entry);
+  return {
+    ...rest,
+    ...(normalizedKind ? { kind: normalizedKind } : {}),
+    ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
+  };
 }
 
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
@@ -286,7 +313,11 @@ export class Env {
   }
 
   get baseUrl() {
-    return this.config.baseUrl;
+    return readEnvApiBaseUrl(this.config);
+  }
+
+  get apiBaseUrl() {
+    return readEnvApiBaseUrl(this.config);
   }
 
   get auth() {
@@ -419,8 +450,10 @@ export async function upsertEnv(
   await writeEnv(
     envName,
     (previous) => {
-      const { baseUrl, accessToken, ...rest } = config;
-      const baseUrlChanged = previous?.baseUrl !== baseUrl;
+      const { apiBaseUrl: _apiBaseUrl, baseUrl: _baseUrl, apibaseUrl: _legacyApiBaseUrl, accessToken, ...rest } = config;
+      const nextApiBaseUrl = readEnvApiBaseUrl(config);
+      const previousApiBaseUrl = readEnvApiBaseUrl(previous);
+      const baseUrlChanged = previousApiBaseUrl !== nextApiBaseUrl;
       const nextAuth = accessToken
         ? ({
             type: 'token',
@@ -433,7 +466,7 @@ export async function upsertEnv(
 
       return {
         ...previous,
-        baseUrl,
+        apiBaseUrl: nextApiBaseUrl,
         auth: nextAuth,
         ...rest,
         runtime: baseUrlChanged || authChanged ? undefined : previous?.runtime,
@@ -445,14 +478,15 @@ export async function upsertEnv(
 
 export async function updateEnvConnection(
   envName: string,
-  updates: { baseUrl?: string; accessToken?: string },
+  updates: { apiBaseUrl?: string; baseUrl?: string; accessToken?: string },
   options: AuthStoreOptions = {},
 ) {
   await writeEnv(
     envName,
     (previous) => {
-      const nextBaseUrl = updates.baseUrl ?? previous?.baseUrl;
-      const baseUrlChanged = previous?.baseUrl !== nextBaseUrl;
+      const nextApiBaseUrl = readEnvApiBaseUrl(updates) ?? readEnvApiBaseUrl(previous);
+      const previousApiBaseUrl = readEnvApiBaseUrl(previous);
+      const baseUrlChanged = previousApiBaseUrl !== nextApiBaseUrl;
       const nextAuth = updates.accessToken
         ? ({
             type: 'token',
@@ -465,7 +499,7 @@ export async function updateEnvConnection(
 
       return {
         ...previous,
-        ...(nextBaseUrl !== undefined ? { baseUrl: nextBaseUrl } : {}),
+        ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
         auth: nextAuth,
         runtime: baseUrlChanged || authChanged ? undefined : previous?.runtime,
       };

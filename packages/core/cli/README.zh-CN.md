@@ -202,7 +202,7 @@ nb dev --env app1
 如果要连接已有应用，可以运行 `nb init` 并选择已有应用流程，也可以直接添加 env：
 
 ```bash
-nb env add app1 --base-url http://localhost:13000/api
+nb env add app1 --api-base-url http://localhost:13000/api
 ```
 
 `nb env add` 会在需要时自动进入认证流程。
