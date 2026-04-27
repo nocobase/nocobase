@@ -1735,13 +1735,13 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect((runtime as any).findExplicitHit('roles[0].title')).toBeNull();
   });
 
-  it('moves explicit state with identified to-many rows after deleting a preceding row', () => {
+  it('moves explicit state with filterTargetKey identified to-many rows after deleting a preceding row', () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({
       roles: [
-        { title: 'Z', __is_new__: true, __index__: 'row-0' },
-        { title: 'custom', __is_new__: true, __index__: 'row-1' },
+        { code: 'admin', title: 'same-title' },
+        { code: 'editor', title: 'custom' },
       ],
     });
 
@@ -1756,7 +1756,14 @@ describe('FormValueRuntime (form assign rules)', () => {
     const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
     runtime.mount({ sync: true });
 
-    lodashSet((formStub as any).__store, ['roles', 1, 'title'], 'edited-custom');
+    const blockCtx = createFieldContext(runtime);
+    const roleRowCollection: any = { getField: () => null, filterTargetKey: 'code' };
+    const rolesField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: roleRowCollection };
+    const rootCollection: any = { getField: (name: string) => (name === 'roles' ? rolesField : null) };
+    blockCtx.defineProperty('collection', { value: rootCollection });
+    blockModel.context = blockCtx;
+
+    lodashSet((formStub as any).__store, ['roles', 1, 'title'], 'same-title');
     runtime.handleFormFieldsChange([{ name: ['roles', 1, 'title'], touched: true } as any]);
     expect((runtime as any).findExplicitHit('roles[1].title')).toBe('roles[1].title');
 
@@ -1859,11 +1866,11 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['roles', 1])).toBeUndefined();
   });
 
-  it('skips to-many row rules when item identity does not match the current row at that index', async () => {
+  it('skips to-many row rules when filterTargetKey identity does not match the current row at that index', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({
-      roles: [{ title: '', __is_new__: true, __index__: 'row-0' }],
+      roles: [{ code: 'admin', title: '' }],
     });
 
     const blockModel: any = {
@@ -1878,7 +1885,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     runtime.mount({ sync: true });
 
     const blockCtx = createFieldContext(runtime);
-    const roleRowCollection: any = { getField: () => null };
+    const roleRowCollection: any = { getField: () => null, filterTargetKey: 'code' };
     const rolesField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: roleRowCollection };
     const rootCollection: any = { getField: (name: string) => (name === 'roles' ? rolesField : null) };
     blockCtx.defineProperty('collection', { value: rootCollection });
@@ -1918,8 +1925,7 @@ describe('FormValueRuntime (form assign rules)', () => {
       value: {
         index: 0,
         length: 1,
-        __is_new__: true,
-        value: { title: 'custom', __is_new__: true, __index__: 'row-1' },
+        value: { code: 'editor', title: 'custom' },
       },
     });
     rowCtx.defineProperty('model', { value: mismatchedRow });

@@ -16,6 +16,7 @@ import { createFormValuesProxy } from './deps';
 import { createFormPatcher } from './form-patch';
 import { namePathToPathKey, pathKeyToNamePath, resolveDynamicNamePath } from './path';
 import { RuleEngine } from './rules';
+import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/SubTableFieldModel/rowIdentity';
 import type {
   FormAssignRuleItem,
   FormValueWriteMeta,
@@ -354,18 +355,28 @@ export class FormValueRuntime {
     }
   }
 
-  private getArrayItemIdentity(item: any) {
-    const tempKey = item?.__index__;
-    if (tempKey != null && tempKey !== '') {
-      return `tmp:${String(tempKey)}`;
+  private getArrayItemTargetKey(arrayPath?: NamePath): string | string[] {
+    let collection = this.model?.context?.collection;
+    let field: any;
+    for (const seg of arrayPath || []) {
+      if (typeof seg === 'number') continue;
+      if (typeof seg !== 'string' || !collection?.getField) break;
+
+      field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+      collection = field?.targetCollection;
     }
 
-    const id = item?.id;
-    if (id != null && id !== '') {
-      return `id:${String(id)}`;
+    const raw = field?.targetCollection?.filterTargetKey ?? field?.targetCollection?.filterByTk ?? field?.targetKey;
+    if (Array.isArray(raw)) {
+      const keys = raw.filter((key): key is string => typeof key === 'string' && !!key);
+      return keys.length ? keys : 'id';
     }
+    return typeof raw === 'string' && raw ? raw : 'id';
+  }
 
-    return null;
+  private getArrayItemIdentity(item: any, arrayPath?: NamePath) {
+    return getSubTableRowIdentity(item, this.getArrayItemTargetKey(arrayPath));
   }
 
   private reconcileArrayItemState(rawChangedPaths: NamePath[], changedValues: any, snapshot: any) {
@@ -378,7 +389,7 @@ export class FormValueRuntime {
 
       const nextIndexByIdentity = new Map<string, number>();
       nextValue.forEach((item, index) => {
-        const identity = this.getArrayItemIdentity(item);
+        const identity = this.getArrayItemIdentity(item, path);
         if (identity) {
           nextIndexByIdentity.set(identity, index);
         }
@@ -409,7 +420,7 @@ export class FormValueRuntime {
     const oldIndex = namePath[arrayPath.length];
     if (typeof oldIndex !== 'number') return { action: 'keep' as const };
 
-    const identity = this.getArrayItemIdentity(prevItems[oldIndex]);
+    const identity = this.getArrayItemIdentity(prevItems[oldIndex], arrayPath);
     if (!identity) return { action: 'keep' as const };
 
     const nextIndex = nextIndexByIdentity.get(identity);

@@ -17,6 +17,7 @@ import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
 import type { FormAssignRuleItem, FormValueWriteMeta, NamePath, Patch, SetOptions, ValueSource } from './types';
 import { createTxId, isEmptyValue } from './utils';
 import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
+import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/SubTableFieldModel/rowIdentity';
 
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
@@ -1503,18 +1504,24 @@ export class RuleEngine {
     }
   }
 
-  private getRuntimeRowIdentity(row: any): string | null {
-    const tempKey = row?.__index__;
-    if (tempKey != null && tempKey !== '') {
-      return `tmp:${String(tempKey)}`;
+  private getRowTargetKey(baseCtx: any, rowPath: NamePath): string | string[] {
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    let field: any;
+    for (const seg of rowPath) {
+      if (typeof seg === 'number') continue;
+      if (typeof seg !== 'string' || !seg || !collection?.getField) break;
+
+      field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+      collection = field?.targetCollection;
     }
 
-    const id = row?.id;
-    if (id != null && id !== '') {
-      return `id:${String(id)}`;
+    const raw = field?.targetCollection?.filterTargetKey ?? field?.targetCollection?.filterByTk ?? field?.targetKey;
+    if (Array.isArray(raw)) {
+      const keys = raw.filter((key): key is string => typeof key === 'string' && !!key);
+      return keys.length ? keys : 'id';
     }
-
-    return null;
+    return typeof raw === 'string' && raw ? raw : 'id';
   }
 
   private isMismatchedToManyItemContext(baseCtx: any, targetNamePath: NamePath): boolean {
@@ -1524,9 +1531,11 @@ export class RuleEngine {
     for (let i = targetNamePath.length - 1; i >= 0; i--) {
       if (typeof targetNamePath[i] !== 'number') continue;
 
-      const currentRow = this.options.getFormValueAtPath(targetNamePath.slice(0, i + 1));
-      const currentIdentity = this.getRuntimeRowIdentity(currentRow);
-      const itemIdentity = this.getRuntimeRowIdentity(item.value);
+      const rowPath = targetNamePath.slice(0, i + 1);
+      const targetKey = this.getRowTargetKey(baseCtx, rowPath);
+      const currentRow = this.options.getFormValueAtPath(rowPath);
+      const currentIdentity = getSubTableRowIdentity(currentRow, targetKey);
+      const itemIdentity = getSubTableRowIdentity(item.value, targetKey);
       return !!currentIdentity && !!itemIdentity && currentIdentity !== itemIdentity;
     }
 
