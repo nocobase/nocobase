@@ -119,7 +119,13 @@ export function getFieldName(field: any) {
 }
 
 export function getFieldTitle(field: any) {
-  return field?.title || field?.options?.title || getFieldName(field);
+  return (
+    field?.uiSchema?.title ||
+    field?.options?.uiSchema?.title ||
+    field?.title ||
+    field?.options?.title ||
+    getFieldName(field)
+  );
 }
 
 export function resolveAssociationNameFromField(field: any, fallbackCollection?: any) {

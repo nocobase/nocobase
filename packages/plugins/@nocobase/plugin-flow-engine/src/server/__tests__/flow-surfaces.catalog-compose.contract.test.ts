@@ -2373,6 +2373,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       'roles.title',
       'roles.name',
     ]);
+    expect(columns.map((item: any) => item?.props?.title)).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
     expect(columns.map((item: any) => item?.subModels?.field?.use)).toEqual(['InputFieldModel', 'InputFieldModel']);
   });
 

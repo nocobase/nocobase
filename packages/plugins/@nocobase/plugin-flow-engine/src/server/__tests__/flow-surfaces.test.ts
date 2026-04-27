@@ -4276,6 +4276,14 @@ describe('flowSurfaces resource', () => {
         (item: any) => item?.stepParams?.fieldSettings?.init?.collectionName,
       ),
     ).toEqual(['users', 'users']);
+    expect(
+      _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map((item: any) => item?.props?.title),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
+    expect(
+      _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map(
+        (item: any) => item?.stepParams?.tableColumnSettings?.title?.title,
+      ),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
     expect(rolesInnerAfterSwitch.tree.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',
@@ -4348,6 +4356,16 @@ describe('flowSurfaces resource', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.collectionName),
     ).toEqual(['users', 'users']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.props?.title),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.tableColumnSettings?.title?.title),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
     const createdRolesWrapperCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
