@@ -203,6 +203,35 @@ describe('GridModel computeOverlayRect', () => {
     });
   });
 
+  describe('Item-edge slot', () => {
+    it('should apply column-edge config to item-edge overlay', () => {
+      model.dragOverlayConfig = {
+        columnEdge: {
+          right: { width: 24, offsetLeft: 8 },
+        },
+      };
+
+      const slot: LayoutSlot = {
+        type: 'item-edge',
+        rowId: 'row1',
+        columnIndex: 0,
+        itemIndex: 0,
+        itemUid: 'item-1',
+        direction: 'right',
+        rect: { top: 100, left: 250, width: 16, height: 120 },
+      };
+
+      const result = (model as any).computeOverlayRect(slot);
+
+      expect(result).toEqual({
+        top: 100,
+        left: 258,
+        width: 24,
+        height: 120,
+      });
+    });
+  });
+
   describe('Row-gap slot', () => {
     it('should use default rect when no config provided', () => {
       const slot: LayoutSlot = {

@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Button, Form, Input, Modal, Radio, Space, Tooltip, Typography } from 'antd';
 import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
-import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
+import { FlowModel, createBlockScopedEngine, replaceUidInGridLayout } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr, getPluginT } from './locale';
@@ -184,26 +184,36 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
             arr.splice(insertIndex, idx >= 0 ? 1 : 0, newModel);
             arr.forEach((m, i) => (m.sortIndex = i));
 
-            const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-            if (gridParams?.rows && typeof gridParams.rows === 'object') {
-              const newRows = _.cloneDeep(gridParams.rows);
-              for (const rowId of Object.keys(newRows)) {
-                const columns = newRows[rowId];
-                if (Array.isArray(columns)) {
-                  for (let ci = 0; ci < columns.length; ci++) {
-                    const col = columns[ci];
-                    if (Array.isArray(col)) {
-                      for (let ii = 0; ii < col.length; ii++) {
-                        if (col[ii] === model.uid) {
-                          col[ii] = newModel.uid;
+            if (
+              typeof (parent as any).getGridLayout === 'function' &&
+              typeof (parent as any).setGridStepLayout === 'function' &&
+              typeof (parent as any).syncLayoutProps === 'function'
+            ) {
+              const layout = replaceUidInGridLayout((parent as any).getGridLayout(), model.uid, newModel.uid);
+              (parent as any).setGridStepLayout(layout);
+              (parent as any).syncLayoutProps(layout);
+            } else {
+              const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+              if (gridParams?.rows && typeof gridParams.rows === 'object') {
+                const newRows = _.cloneDeep(gridParams.rows);
+                for (const rowId of Object.keys(newRows)) {
+                  const columns = newRows[rowId];
+                  if (Array.isArray(columns)) {
+                    for (let ci = 0; ci < columns.length; ci++) {
+                      const col = columns[ci];
+                      if (Array.isArray(col)) {
+                        for (let ii = 0; ii < col.length; ii++) {
+                          if (col[ii] === model.uid) {
+                            col[ii] = newModel.uid;
+                          }
                         }
                       }
                     }
                   }
                 }
+                parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+                parent.setProps('rows', newRows);
               }
-              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
-              parent.setProps('rows', newRows);
             }
             newModel.sortIndex = insertIndex;
             await newModel.afterAddAsSubModel();

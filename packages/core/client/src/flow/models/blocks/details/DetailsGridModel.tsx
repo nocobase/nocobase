@@ -8,11 +8,11 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocobase/flow-engine';
+import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton } from '@nocobase/flow-engine';
+import { Skeleton } from 'antd';
 import React from 'react';
 import { FieldModel, GridModel } from '../../base';
 import { DetailsBlockModel } from './DetailsBlockModel';
-import { Skeleton } from 'antd';
 
 export class DetailsGridModel extends GridModel<{
   parent: DetailsBlockModel;
@@ -32,8 +32,8 @@ export class DetailsGridModel extends GridModel<{
   dragOverlayConfig: DragOverlayConfig = {
     // 列内插入
     columnInsert: {
-      before: { offsetTop: -12, height: 24 },
-      after: { offsetTop: 7, height: 24 },
+      before: { offsetTop: -6, height: 24 },
+      after: { offsetTop: 3, height: 24 },
     },
     // 列边缘
     columnEdge: {
@@ -42,8 +42,8 @@ export class DetailsGridModel extends GridModel<{
     },
     // 行间隙
     rowGap: {
-      above: { offsetTop: 0, height: 24 },
-      below: { offsetTop: -14, height: 24 },
+      above: { offsetTop: -2, height: 24 },
+      below: { offsetTop: -12, height: 24 },
     },
   };
 
