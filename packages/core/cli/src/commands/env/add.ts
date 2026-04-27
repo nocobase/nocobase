@@ -33,7 +33,6 @@ type EnvAddParsedFlags = {
   'no-intro': boolean;
   'default-api-base-url'?: string;
   'api-base-url'?: string;
-  'base-url'?: string;
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
@@ -139,7 +138,6 @@ export default class EnvAdd extends Command {
     }),
     'api-base-url': Flags.string({
       char: 'u',
-      aliases: ['base-url'],
       description:
         'Root URL for HTTP API calls, including the /api prefix (e.g. http://localhost:13000/api); prompted in a TTY when omitted',
     }),
@@ -295,7 +293,7 @@ export default class EnvAdd extends Command {
     if (name) {
       values.name = name;
     }
-    const apiFromFlag = flags['api-base-url'] ?? flags['base-url'];
+    const apiFromFlag = flags['api-base-url'];
     if (typeof apiFromFlag === 'string' && apiFromFlag.trim() !== '') {
       values.apiBaseUrl = apiFromFlag.trim();
     }

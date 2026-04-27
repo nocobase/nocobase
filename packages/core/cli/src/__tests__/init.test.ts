@@ -13,7 +13,9 @@ const mocks = vi.hoisted(() => ({
   runPromptCatalogWebUI: vi.fn(),
   runPromptCatalog: vi.fn(),
   runNpm: vi.fn(),
+  inspectSkillsStatus: vi.fn(),
   installNocoBaseSkills: vi.fn(),
+  updateNocoBaseSkills: vi.fn(),
   getEnv: vi.fn(),
   upsertEnv: vi.fn(),
   promptInfo: vi.fn(),
@@ -29,6 +31,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.NB_LOCALE = 'en-US';
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
+  mocks.updateNocoBaseSkills.mockResolvedValue({ action: 'updated', status: {} });
 });
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -85,11 +90,23 @@ vi.mock('../lib/skills-manager.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/skills-manager.js')>();
   return {
     ...actual,
+    inspectSkillsStatus: (...args: Parameters<typeof actual.inspectSkillsStatus>) => {
+      if (mocks.inspectSkillsStatus.mock.calls.length || mocks.inspectSkillsStatus.getMockImplementation()) {
+        return mocks.inspectSkillsStatus(...args);
+      }
+      return actual.inspectSkillsStatus(...args);
+    },
     installNocoBaseSkills: (...args: Parameters<typeof actual.installNocoBaseSkills>) => {
       if (mocks.installNocoBaseSkills.mock.calls.length || mocks.installNocoBaseSkills.getMockImplementation()) {
         return mocks.installNocoBaseSkills(...args);
       }
       return actual.installNocoBaseSkills(...args);
+    },
+    updateNocoBaseSkills: (...args: Parameters<typeof actual.updateNocoBaseSkills>) => {
+      if (mocks.updateNocoBaseSkills.mock.calls.length || mocks.updateNocoBaseSkills.getMockImplementation()) {
+        return mocks.updateNocoBaseSkills(...args);
+      }
+      return actual.updateNocoBaseSkills(...args);
     },
   };
 });
@@ -112,11 +129,12 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   mocks.runPromptCatalogWebUI.mockResolvedValue({
     appName: 'staging',
     hasNocobase: 'yes',
-    installSkills: false,
     apiBaseUrl: 'http://localhost:13000/api',
     authType: 'token',
     accessToken: 'secret-token',
   });
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
   mocks.runNpm.mockResolvedValue(undefined);
 
@@ -168,13 +186,14 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values).toEqual({
     appName: 'staging',
     hasNocobase: 'yes',
-    installSkills: false,
     apiBaseUrl: 'http://localhost:13000/api',
     authType: 'token',
     accessToken: 'secret-token',
   });
   expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.yes).toBe(true);
   expect(mocks.runNpm.mock.calls.length).toBe(0);
+  expect(mocks.installNocoBaseSkills).toHaveBeenCalledTimes(1);
+  expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
   expect(runCommand.mock.calls).toEqual([
     [
       'env:add',
@@ -198,11 +217,12 @@ test('nb init shows a concise fallback message when the setup browser cannot be 
   mocks.runPromptCatalogWebUI.mockResolvedValue({
     appName: 'staging',
     hasNocobase: 'yes',
-    installSkills: false,
     apiBaseUrl: 'http://localhost:13000/api',
     authType: 'token',
     accessToken: 'secret-token',
   });
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
 
   const command = Object.assign(Object.create(Init.prototype), {
@@ -240,11 +260,12 @@ test('nb init localizes the browser UI intro title', async () => {
   mocks.runPromptCatalogWebUI.mockResolvedValue({
     appName: 'staging',
     hasNocobase: 'yes',
-    installSkills: false,
     apiBaseUrl: 'http://localhost:13000/api',
     authType: 'token',
     accessToken: 'secret-token',
   });
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
 
   const command = Object.assign(Object.create(Init.prototype), {
@@ -278,7 +299,6 @@ test('nb init forwards download options to nb install for a new app flow', async
   mocks.runPromptCatalogWebUI.mockResolvedValue({
     appName: 'demoapp',
     hasNocobase: 'no',
-    installSkills: false,
     lang: 'en-US',
     appRootPath: './apps/demoapp',
     appPort: '13080',
@@ -303,6 +323,8 @@ test('nb init forwards download options to nb install for a new app flow', async
     rootPassword: 'admin123',
     rootNickname: 'Admin',
   });
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
   mocks.runNpm.mockResolvedValue(undefined);
 
@@ -419,7 +441,6 @@ test('nb init saves env config before install starts so failures still leave the
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
     appName: 'demoapp',
     hasNocobase: 'no',
-    installSkills: false,
     lang: 'en-US',
     appRootPath: './apps/demoapp',
     appPort: '13080',
@@ -495,7 +516,6 @@ test('nb init install failures include a full resume command', async () => {
     mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
       appName: 'app12',
       hasNocobase: 'no',
-      installSkills: false,
       lang: 'en-US',
       appRootPath: './app12/source/',
       appPort: '13080',
@@ -607,7 +627,6 @@ test('nb init treats arbitrary CLI --version values as otherVersion prompt value
   try {
     mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
       hasNocobase: 'no',
-      installSkills: false,
       lang: 'en-US',
       appRootPath: './app8/source/',
       appPort: '13000',
@@ -672,7 +691,6 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
         resume: true,
         yes: false,
         ui: false,
-        'install-skills': false,
         env: 'app1',
       },
     })),
@@ -695,7 +713,9 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
       ['--no-intro', '--env', 'app1', '--resume'],
     ],
   ]);
-  expect(mocks.promptStep.mock.calls).toEqual([]);
+  expect(mocks.promptStep.mock.calls).toEqual([
+    ['Installing NocoBase agent skills (nb skills install)'],
+  ]);
 });
 
 test('nb init --resume --yes forwards setup-only defaults to nb install', async () => {
@@ -711,7 +731,6 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
           resume: true,
           yes: true,
           ui: false,
-          'install-skills': false,
           env: 'app8',
           source: 'git',
           version: 'next',
@@ -757,25 +776,27 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
         ],
       ],
     ]);
-    expect(mocks.promptStep.mock.calls).toEqual([]);
+    expect(mocks.promptStep.mock.calls).toEqual([
+      ['Installing NocoBase agent skills (nb skills install)'],
+    ]);
   } finally {
     process.argv = originalArgv;
   }
 });
 
-test('nb init installs skills when --install-skills is provided', async () => {
+test('nb init installs skills automatically when they are missing', async () => {
   const { default: Init } = await import('../commands/init.js');
-  const originalArgv = process.argv;
-  process.argv = ['node', 'nb', 'init', '--install-skills'];
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
-    installSkills: true,
     hasNocobase: 'yes',
     appName: 'staging',
     apiBaseUrl: 'http://localhost:13000/api',
     authType: 'oauth',
     ...(options.values ?? {}),
   }));
+  mocks.inspectSkillsStatus.mockResolvedValue({
+    installed: false,
+  });
   mocks.installNocoBaseSkills.mockResolvedValue({
     action: 'installed',
     status: {
@@ -801,7 +822,6 @@ test('nb init installs skills when --install-skills is provided', async () => {
       flags: {
         yes: false,
         ui: false,
-        'install-skills': true,
       },
     })),
     config: { runCommand },
@@ -814,13 +834,11 @@ test('nb init installs skills when --install-skills is provided', async () => {
     },
   });
 
-  try {
-    await Init.prototype.run.call(command);
-  } finally {
-    process.argv = originalArgv;
-  }
+  await Init.prototype.run.call(command);
 
+  expect(mocks.inspectSkillsStatus).toHaveBeenCalledTimes(1);
   expect(mocks.installNocoBaseSkills.mock.calls.length).toBe(1);
+  expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
@@ -966,7 +984,6 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
     appName: 'local5',
     hasNocobase: 'no',
-    installSkills: false,
     lang: 'en-US',
     appRootPath: './nocobase',
     appPort: '13000',
@@ -1231,7 +1248,6 @@ test('nb init --yes keeps explicit --db-host external after prompt defaults are 
     mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
       appName: 'app611',
       hasNocobase: 'no',
-      installSkills: false,
       lang: 'en-US',
       appRootPath: './app611/source/',
       appPort: '13080',
@@ -1497,17 +1513,23 @@ test('nb init forwards --verbose to nb install', async () => {
   }
 });
 
-test('nb init disables skills install by default when the current workspace has a .agents directory', async () => {
+test('nb init updates skills automatically when they are already installed', async () => {
   const { default: Init } = await import('../commands/init.js');
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
-    installSkills: false,
     hasNocobase: 'yes',
     appName: 'staging',
     apiBaseUrl: 'http://localhost:13000/api',
     authType: 'oauth',
     ...(options.values ?? {}),
   }));
+  mocks.inspectSkillsStatus.mockResolvedValue({
+    installed: true,
+  });
+  mocks.updateNocoBaseSkills.mockResolvedValue({
+    action: 'updated',
+    status: {},
+  });
   mocks.runNpm.mockResolvedValue(undefined);
 
   const runCommand = vi.fn(async () => undefined);
@@ -1516,12 +1538,10 @@ test('nb init disables skills install by default when the current workspace has 
       flags: {
         yes: false,
         ui: false,
-        'install-skills': false,
       },
     })),
     config: { runCommand },
     log: vi.fn(),
-    hasAgentsDirInCwd: () => true,
     error: (message: string) => {
       throw new Error(`unexpected error: ${message}`);
     },
@@ -1530,16 +1550,79 @@ test('nb init disables skills install by default when the current workspace has 
     },
   });
 
-  try {
-    await Init.prototype.run.call(command);
-  } finally {
-  }
+  await Init.prototype.run.call(command);
 
-  expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values?.installSkills).toBe(false);
-  expect(mocks.runNpm.mock.calls.length).toBe(0);
-  expect(mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('Skipped NocoBase agent skills install.'))).toBe(true);
+  expect(mocks.inspectSkillsStatus).toHaveBeenCalledTimes(1);
+  expect(mocks.installNocoBaseSkills).not.toHaveBeenCalled();
+  expect(mocks.updateNocoBaseSkills).toHaveBeenCalledTimes(1);
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+  ]);
+});
+
+test('nb init exposes env add flags and forwards them for an existing app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  expect(Init.flags['api-base-url']).toBeDefined();
+  expect(Init.flags['auth-type']).toBeDefined();
+  expect(Init.flags['access-token']).toBeDefined();
+  expect(Init.flags.locale).toBeDefined();
+  expect(Init.flags['install-skills']).toBeUndefined();
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+  mocks.getEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'staging',
+        'api-base-url': 'http://demo.example.com/api',
+        'auth-type': 'token',
+        'access-token': 'secret-token',
+      },
+    })),
+    config: { runCommand },
+    log: vi.fn(),
+    hasAgentsDirInCwd: () => false,
+    error: (message: string) => {
+      throw new Error(`unexpected error: ${message}`);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values).toEqual(
+    expect.objectContaining({
+      appName: 'staging',
+      hasNocobase: 'yes',
+      apiBaseUrl: 'http://demo.example.com/api',
+      authType: 'token',
+      accessToken: 'secret-token',
+    }),
+  );
+  expect(runCommand.mock.calls[0]).toEqual([
+    'env:add',
+    [
+      'staging',
+      '--no-intro',
+      '--api-base-url',
+      'http://demo.example.com/api',
+      '--auth-type',
+      'token',
+      '--access-token',
+      'secret-token',
+    ],
   ]);
 });

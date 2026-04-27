@@ -31,7 +31,11 @@ import {
 } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { run } from '../lib/run-npm.ts';
-import { installNocoBaseSkills } from '../lib/skills-manager.js';
+import {
+  inspectSkillsStatus,
+  installNocoBaseSkills,
+  updateNocoBaseSkills,
+} from '../lib/skills-manager.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -40,6 +44,14 @@ import _ from 'lodash';
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
+const INIT_ENV_ADD_FLAG_NAMES = [
+  'locale',
+  'default-api-base-url',
+  'api-base-url',
+  'auth-type',
+  'access-token',
+  'token',
+] as const;
 
 const initText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.init.${key}`, values);
@@ -103,6 +115,12 @@ function hasDownloadOverride(flags: { source?: string; version?: string }): bool
     String(flags.source ?? '').trim()
     || String(flags.version ?? '').trim(),
   );
+}
+
+function explicitApiBaseUrlFlag(
+  flags: { 'api-base-url'?: string },
+): string {
+  return String(flags['api-base-url'] ?? '').trim();
 }
 
 function explicitDbHostFlag(flags: { 'db-host'?: string }): string {
@@ -240,12 +258,6 @@ Prompt modes:
       yesInitialValue: 'no',
       required: true,
     },
-    installSkills: {
-      type: 'boolean',
-      message: initText('prompts.installSkills.message'),
-      initialValue: true,
-      yesInitialValue: true,
-    },
     apiBaseUrl: existingAppOnly({
       type: 'text',
       message: initText('prompts.apiBaseUrl.message'),
@@ -317,10 +329,6 @@ Prompt modes:
       char: 'e',
       description: 'Env name for this setup. Required with --yes and --resume',
     }),
-    'install-skills': Flags.boolean({
-      description: 'Install NocoBase AI coding skills (`nocobase/skills`) for this workspace',
-      default: false,
-    }),
     ui: Flags.boolean({
       description:
         'Open the guided setup flow in a local browser form (not valid with --yes)',
@@ -340,6 +348,7 @@ Prompt modes:
       min: 0,
       max: 65535,
     }),
+    ..._.pick(EnvAdd.flags, INIT_ENV_ADD_FLAG_NAMES),
     ..._.omit(Install.flags, ['yes', 'env']),
   };
 
@@ -373,16 +382,7 @@ Prompt modes:
 
       p.intro(initTitle());
 
-      if (Boolean(normalizedFlags['install-skills'])) {
-        try {
-          p.log.step('Installing NocoBase agent skills (nb skills install)');
-          await installNocoBaseSkills();
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          p.outro(pc.red(`Skills install failed: ${message}`));
-          this.exit(1);
-        }
-      }
+      await this.syncNocoBaseSkills();
 
       try {
         await this.config.runCommand(
@@ -469,7 +469,6 @@ Prompt modes:
         'docker-platform'?: string;
         'docker-save'?: boolean;
         'npm-registry'?: string;
-        'install-skills'?: boolean;
       },
     );
 
@@ -544,7 +543,6 @@ Prompt modes:
       command: this,
     });
 
-    const installSkills = Boolean(results.installSkills);
     const hasNocobase = results.hasNocobase === 'yes';
     const existingEnv = !hasNocobase
       ? await getEnv(String(results.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
@@ -556,18 +554,7 @@ Prompt modes:
       );
     }
 
-    if (installSkills) {
-      try {
-        p.log.step('Installing NocoBase agent skills (nb skills install)');
-        await installNocoBaseSkills();
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        p.outro(pc.red(`Skills install failed: ${message}`));
-        this.exit(1);
-      }
-    } else {
-      p.log.info('Skipped NocoBase agent skills install.');
-    }
+    await this.syncNocoBaseSkills();
 
     let managedInstallResults: Record<string, string | number | boolean> | undefined;
 
@@ -656,7 +643,6 @@ Prompt modes:
         catalog: {
           appName: c.appName,
           hasNocobase: c.hasNocobase,
-          installSkills: c.installSkills,
         } satisfies PromptsCatalog,
       },
       {
@@ -727,6 +713,12 @@ Prompt modes:
 
   private buildPresetValuesFromFlags(flags: {
     env?: string;
+    locale?: string;
+    'default-api-base-url'?: string;
+    'api-base-url'?: string;
+    'auth-type'?: string;
+    'access-token'?: string;
+    token?: string;
     lang?: string;
     'app-root-path'?: string;
     'app-port'?: string;
@@ -756,13 +748,29 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
-    'install-skills'?: boolean;
   }): PromptInitialValues {
     const preset: PromptInitialValues = {};
     const argv = process.argv.slice(2);
 
     if (flags.env !== undefined && String(flags.env).trim() !== '') {
       preset.appName = String(flags.env).trim();
+    }
+    const apiBaseUrl = explicitApiBaseUrlFlag(flags);
+    if (apiBaseUrl) {
+      preset.hasNocobase = 'yes';
+      preset.apiBaseUrl = apiBaseUrl;
+    } else if (
+      flags['default-api-base-url'] !== undefined
+      && String(flags['default-api-base-url']).trim() !== ''
+    ) {
+      preset.apiBaseUrl = String(flags['default-api-base-url']).trim();
+    }
+    if (flags['auth-type'] !== undefined && String(flags['auth-type']).trim() !== '') {
+      preset.authType = String(flags['auth-type']).trim();
+    }
+    const accessToken = String(flags['access-token'] ?? flags.token ?? '');
+    if (flags['access-token'] !== undefined || flags.token !== undefined) {
+      preset.accessToken = accessToken;
     }
     if (flags.lang !== undefined && String(flags.lang).trim() !== '') {
       preset.lang = String(flags.lang).trim();
@@ -859,10 +867,8 @@ Prompt modes:
     if (explicitDbHostFlag(flags)) {
       preset.builtinDb = false;
     }
-    if (argvHasToken(argv, ['--install-skills'])) {
-      preset.installSkills = Boolean(flags['install-skills']);
-    } else if (this.hasAgentsDirInCwd()) {
-      preset.installSkills = false;
+    if (!preset.hasNocobase && hasDownloadOverride(flags)) {
+      preset.hasNocobase = 'no';
     }
 
     return preset;
@@ -870,6 +876,24 @@ Prompt modes:
 
   protected hasAgentsDirInCwd(): boolean {
     return existsSync(path.resolve(process.cwd(), '.agents'));
+  }
+
+  private async syncNocoBaseSkills(): Promise<void> {
+    try {
+      const status = await inspectSkillsStatus();
+      if (!status.installed) {
+        p.log.step('Installing NocoBase agent skills (nb skills install)');
+        await installNocoBaseSkills();
+        return;
+      }
+
+      p.log.step('Updating NocoBase agent skills (nb skills update)');
+      await updateNocoBaseSkills();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      p.outro(pc.red(`Skills sync failed: ${message}`));
+      this.exit(1);
+    }
   }
 
   private async persistManagedEnvConfig(
