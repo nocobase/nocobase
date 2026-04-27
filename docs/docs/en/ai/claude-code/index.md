@@ -63,7 +63,7 @@ Before starting, make sure you have the following environment ready:
 
 - Claude Code installed (`npm install -g @anthropic-ai/claude-code`)
 - Node.js >= 22 (for running NocoBase CLI and Skills)
-- If you already have a NocoBase instance, it needs to be version >= 2.1.0-alpha.22
+- If you already have a NocoBase instance, **AI capabilities are evolving rapidly and only the latest beta version provides the full experience. Minimum version >= 2.1.0-beta.20, latest version strongly recommended.**
 
 ## Quick Start
 

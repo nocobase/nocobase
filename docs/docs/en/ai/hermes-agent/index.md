@@ -69,7 +69,7 @@ Before starting, make sure you have the following environment ready:
 
 - A server running Hermes Agent (Linux / macOS, Python 3.10+)
 - Node.js >= 22 (for running NocoBase CLI and Skills)
-- If you already have a NocoBase instance, it needs to be version >= 2.1.0-alpha.22
+- If you already have a NocoBase instance, **AI capabilities are evolving rapidly and only the latest beta version provides the full experience. Minimum version >= 2.1.0-beta.20, latest version strongly recommended.**
 
 Installing Hermes requires just one command:
 

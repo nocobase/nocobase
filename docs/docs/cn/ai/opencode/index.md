@@ -63,7 +63,7 @@ OpenCode 通过以下方式与 NocoBase 协同工作：
 
 - 已安装 OpenCode（[安装指南](https://opencode.ai/docs/)）
 - Node.js >= 22（用于运行 NocoBase CLI 和 Skills）
-- 如果已有 NocoBase 实例，需要版本 >= 2.1.0-alpha.22
+- 如果已有 NocoBase 实例，**由于 AI 能力迭代快速，目前仅 beta 最新版本支持完整体验，最低版本要求 >= 2.1.0-beta.20，强烈建议更新到最新版本。**
 
 ## 快速开始
 
