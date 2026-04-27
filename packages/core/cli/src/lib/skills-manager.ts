@@ -64,6 +64,7 @@ type SkillsManagerOptions = {
 
 type SkillsSyncOptions = SkillsManagerOptions & {
   runFn?: typeof run;
+  verbose?: boolean;
 };
 
 function normalizePath(value: string): string {
@@ -203,7 +204,7 @@ async function prepareLocalSkillsPackage(
     ['install', '--no-save', '--ignore-scripts', '--no-package-lock', packageSpec],
     {
       cwd: cacheRoot,
-      stdio: 'inherit',
+      stdio: options.verbose ? 'inherit' : 'ignore',
       errorName: 'npm install',
     },
   );
@@ -318,7 +319,7 @@ async function reinstallManagedSkills(
   try {
     await (options.runFn ?? run)('npx', ['-y', 'skills', 'add', prepared.packageDir, '-g', '-y'], {
       cwd: globalRoot,
-      stdio: 'inherit',
+      stdio: options.verbose ? 'inherit' : 'ignore',
       errorName: 'skills add',
     });
   } finally {

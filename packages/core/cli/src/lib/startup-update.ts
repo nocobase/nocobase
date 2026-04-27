@@ -174,12 +174,12 @@ function buildNonInteractiveWarning(
   }
 
   return [
-    `Detected available updates${details.length ? ` (${details.join(', ')})` : ''}.`,
-    'Skipping the interactive startup update prompt because this terminal session is non-interactive and may be controlled by an AI agent.',
+    `Updates available${details.length ? `: ${details.join(', ')}` : '.'}`,
+    'Non-interactive session, skipped auto-update.',
     commands.length
-      ? `To update manually, run: ${commands.join(' && ')}`
-      : 'Run `nb self check` and `nb skills check` to inspect available updates.',
-    'Continuing without auto-update. You may run into compatibility issues until you update.',
+      ? `Run: ${commands.join(' && ')}`
+      : 'Check with: `nb self check` and `nb skills check`.',
+    'You may run into compatibility issues until you update.',
   ].join(' ');
 }
 
@@ -199,10 +199,10 @@ function buildDeclinedWarning(
   }
 
   return [
-    `Skipped available updates${details.length ? ` (${details.join(', ')})` : ''}.`,
+    `Skipped updates${details.length ? `: ${details.join(', ')}` : '.'}`,
     commands.length
-      ? `You can update manually with: ${commands.join(' && ')}`
-      : 'Run `nb self check` and `nb skills check` to inspect available updates.',
+      ? `Run: ${commands.join(' && ')}`
+      : 'Check with: `nb self check` and `nb skills check`.',
     'You may run into compatibility issues until you update.',
   ].join(' ');
 }

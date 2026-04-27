@@ -8,7 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { confirmAction } from '../../lib/ui.js';
+import { confirmAction, setVerboseMode } from '../../lib/ui.js';
 import { installNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsInstall extends Command {
@@ -31,10 +31,15 @@ export default class SkillsInstall extends Command {
       description: 'Output the result as JSON',
       default: false,
     }),
+    verbose: Flags.boolean({
+      description: 'Show detailed install output',
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(SkillsInstall);
+    setVerboseMode(flags.verbose);
 
     if (!flags.yes) {
       const confirmed = await confirmAction(
@@ -47,7 +52,9 @@ export default class SkillsInstall extends Command {
       }
     }
 
-    const result = await installNocoBaseSkills();
+    const result = await installNocoBaseSkills({
+      verbose: flags.verbose,
+    });
 
     if (flags.json) {
       this.log(
@@ -70,10 +77,18 @@ export default class SkillsInstall extends Command {
     }
 
     if (result.action === 'noop') {
-      this.log('NocoBase AI coding skills are already installed globally. Run `nb skills update` to refresh them.');
+      this.log(
+        flags.verbose
+          ? 'NocoBase AI coding skills are already installed globally. Run `nb skills update` to refresh them.'
+          : 'NocoBase AI coding skills are already installed globally.',
+      );
       return;
     }
 
-    this.log('Installed the NocoBase AI coding skills globally.');
+    this.log(
+      flags.verbose
+        ? 'Installed the NocoBase AI coding skills globally.'
+        : 'Installed NocoBase AI coding skills globally.',
+    );
   }
 }

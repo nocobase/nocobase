@@ -143,6 +143,12 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
       '--no-package-lock',
       '@nocobase/skills',
     ]);
+    expect(runFn.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        errorName: 'npm install',
+        stdio: 'ignore',
+      }),
+    );
     expect(runFn.mock.calls[1]?.[0]).toBe('npx');
     expect(runFn.mock.calls[1]?.[1]).toEqual([
       '-y',
@@ -152,6 +158,12 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
       '-g',
       '-y',
     ]);
+    expect(runFn.mock.calls[1]?.[2]).toEqual(
+      expect.objectContaining({
+        errorName: 'skills add',
+        stdio: 'ignore',
+      }),
+    );
 
     const state = JSON.parse(await fsp.readFile(getManagedSkillsStateFile(dir), 'utf8'));
     expect(state.installedVersion).toBe('1.0.5');
@@ -250,6 +262,12 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
       '--no-package-lock',
       '@nocobase/skills@1.0.5',
     ]);
+    expect(runFn.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        errorName: 'npm install',
+        stdio: 'ignore',
+      }),
+    );
     expect(runFn.mock.calls[1]?.[0]).toBe('npx');
     expect(runFn.mock.calls[1]?.[1]).toEqual([
       '-y',
@@ -259,6 +277,57 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
       '-g',
       '-y',
     ]);
+    expect(runFn.mock.calls[1]?.[2]).toEqual(
+      expect.objectContaining({
+        errorName: 'skills add',
+        stdio: 'ignore',
+      }),
+    );
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('skills install and update forward raw output in verbose mode', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-verbose-'));
+  const runFn = vi.fn(async (_name: string, _args: string[], options?: { cwd?: string }) => {
+    if (_name === 'npm' && options?.cwd) {
+      await fsp.mkdir(path.join(options.cwd, 'node_modules', '@nocobase', 'skills'), { recursive: true });
+    }
+  });
+  let listCalls = 0;
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
+      listCalls += 1;
+      if (listCalls === 1) {
+        return '[]';
+      }
+      return JSON.stringify([{ name: 'nocobase-env-manage', scope: 'global', path: '/tmp/a' }]);
+    }
+    if (name === 'npm' && args.join(' ') === `view ${NOCOBASE_SKILLS_PACKAGE_NAME} version --json`) {
+      return JSON.stringify('1.0.5');
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  try {
+    await installNocoBaseSkills({
+      workspaceRoot: dir,
+      commandOutputFn: commandOutputFn as any,
+      runFn: runFn as any,
+      verbose: true,
+    });
+
+    expect(runFn.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        stdio: 'inherit',
+      }),
+    );
+    expect(runFn.mock.calls[1]?.[2]).toEqual(
+      expect.objectContaining({
+        stdio: 'inherit',
+      }),
+    );
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }

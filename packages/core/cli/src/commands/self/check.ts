@@ -82,7 +82,7 @@ export default class SelfCheck extends Command {
     );
 
     if (status.updateAvailable && status.updatable) {
-      printInfo('Run `nb self update` to update the CLI.');
+      printInfo('Run `nb self update`.');
     } else if (status.updateAvailable && status.updateBlockedReason) {
       printInfo(status.updateBlockedReason);
     }

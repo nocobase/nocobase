@@ -8,7 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { confirmAction } from '../../lib/ui.js';
+import { confirmAction, setVerboseMode } from '../../lib/ui.js';
 import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsUpdate extends Command {
@@ -31,10 +31,15 @@ export default class SkillsUpdate extends Command {
       description: 'Output the result as JSON',
       default: false,
     }),
+    verbose: Flags.boolean({
+      description: 'Show detailed update output',
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(SkillsUpdate);
+    setVerboseMode(flags.verbose);
 
     if (!flags.yes) {
       const confirmed = await confirmAction(
@@ -47,7 +52,9 @@ export default class SkillsUpdate extends Command {
       }
     }
 
-    const result = await updateNocoBaseSkills();
+    const result = await updateNocoBaseSkills({
+      verbose: flags.verbose,
+    });
 
     if (flags.json) {
       this.log(
@@ -70,10 +77,18 @@ export default class SkillsUpdate extends Command {
     }
 
     if (result.action === 'noop') {
-      this.log('NocoBase AI coding skills are already up to date globally.');
+      this.log(
+        flags.verbose
+          ? 'NocoBase AI coding skills are already up to date globally.'
+          : 'NocoBase AI coding skills are up to date.',
+      );
       return;
     }
 
-    this.log('Updated the global NocoBase AI coding skills.');
+    this.log(
+      flags.verbose
+        ? 'Updated the global NocoBase AI coding skills.'
+        : 'Updated NocoBase AI coding skills globally.',
+    );
   }
 }
