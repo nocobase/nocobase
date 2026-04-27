@@ -202,7 +202,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
   });
 
   expect(resolvedProjectRoot).toBe(projectRoot);
-  expect(appResults.appRootPath).toBe(projectRoot);
+  expect(appResults.appRootPath).toBe('./downloaded-app');
   expect(runCommand.mock.calls).toEqual([
     [
       'download',
@@ -215,7 +215,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
         '--version',
         'alpha',
         '--output-dir',
-        './downloaded-app',
+        '/Users/chen/downloaded-app',
         '--npm-registry',
         'https://registry.npmmirror.com',
         '--replace',
@@ -582,6 +582,8 @@ test('downloadManagedSource resolves otherVersion before delegating to nb downlo
     'git',
     '--version',
     'next',
+    '--output-dir',
+    '/Users/chen/local/source',
     '--git-url',
     'https://github.com/nocobase/nocobase.git',
   ]);

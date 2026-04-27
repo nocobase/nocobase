@@ -109,6 +109,8 @@ describe('startup update prompt', () => {
     });
     mocks.inspectSkillsStatus.mockResolvedValue({
       updateAvailable: true,
+      installedVersion: '1.0.4',
+      latestVersion: '1.0.5',
     });
     mocks.confirm.mockResolvedValue(true);
     mocks.run.mockResolvedValue(undefined);
@@ -116,6 +118,17 @@ describe('startup update prompt', () => {
     const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
 
     expect(result).toEqual({ kind: 'updated' });
+    expect(mocks.confirm).toHaveBeenCalledWith({
+      message: [
+        'Updates are available for your NocoBase CLI and AI skills.',
+        '- NocoBase CLI: 2.1.0-beta.20 -> 2.1.0-beta.21',
+        '- NocoBase AI skills: 1.0.4 -> 1.0.5',
+        'Update now?',
+      ].join('\n'),
+      active: 'Yes',
+      inactive: 'No',
+      initialValue: true,
+    });
     expect(mocks.run.mock.calls).toEqual([
       [
         'nb',
@@ -157,7 +170,7 @@ describe('startup update prompt', () => {
     expect(result).toEqual({ kind: 'declined' });
     expect(mocks.run).not.toHaveBeenCalled();
     expect(mocks.printWarning).toHaveBeenCalledWith(
-      'Skipped available updates (CLI 2.1.0-beta.20 -> 2.1.0-beta.21). You can update manually with: nb self update --yes You may run into compatibility issues until you update.',
+      'Skipped available updates (NocoBase CLI: 2.1.0-beta.20 -> 2.1.0-beta.21). You can update manually with: nb self update --yes You may run into compatibility issues until you update.',
     );
   });
 
@@ -173,6 +186,8 @@ describe('startup update prompt', () => {
     });
     mocks.inspectSkillsStatus.mockResolvedValue({
       updateAvailable: true,
+      installedVersion: '1.0.4',
+      latestVersion: '1.0.5',
     });
 
     const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
@@ -181,7 +196,7 @@ describe('startup update prompt', () => {
     expect(mocks.confirm).not.toHaveBeenCalled();
     expect(mocks.run).not.toHaveBeenCalled();
     expect(mocks.printWarning).toHaveBeenCalledWith(
-      'Detected available updates (CLI 2.1.0-beta.20 -> 2.1.0-beta.21, NocoBase AI skills update available). Skipping the interactive startup update prompt because this terminal session is non-interactive and may be controlled by an AI agent. To update manually, run: nb self update --yes && nb skills update --yes Continuing without auto-update. You may run into compatibility issues until you update.',
+      'Detected available updates (NocoBase CLI: 2.1.0-beta.20 -> 2.1.0-beta.21, NocoBase AI skills: 1.0.4 -> 1.0.5). Skipping the interactive startup update prompt because this terminal session is non-interactive and may be controlled by an AI agent. To update manually, run: nb self update --yes && nb skills update --yes Continuing without auto-update. You may run into compatibility issues until you update.',
     );
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
   });

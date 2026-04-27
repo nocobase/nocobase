@@ -353,6 +353,7 @@ test('nb init forwards download options to nb install for a new app flow', async
       dbDatabase: 'demoapp',
       dbUser: 'nocobase',
       dbPassword: 'secret',
+      kind: 'local',
     },
     { scope: 'global' },
   ]]);
@@ -778,14 +779,18 @@ test('nb init installs skills when --install-skills is provided', async () => {
   mocks.installNocoBaseSkills.mockResolvedValue({
     action: 'installed',
     status: {
+      globalRoot: process.cwd(),
       workspaceRoot: process.cwd(),
       stateFile: '',
       installed: true,
       managedByNb: true,
       sourcePackage: 'nocobase/skills',
+      npmPackageName: '@nocobase/skills',
       installedSkillNames: ['nocobase-env-manage'],
-      latestRef: 'abc123',
-      installedRef: 'abc123',
+      latestVersion: '1.0.5',
+      installedVersion: '1.0.5',
+      latestRef: '1.0.5',
+      installedRef: '1.0.5',
       updateAvailable: false,
     },
   });

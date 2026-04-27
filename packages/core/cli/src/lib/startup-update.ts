@@ -95,22 +95,53 @@ function hasPendingUpdates(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnT
   return Boolean(selfStatus.updateAvailable || skillsStatus.updateAvailable === true);
 }
 
+function describeCliUpdate(selfStatus: SelfStatus) {
+  return selfStatus.latestVersion
+    ? `NocoBase CLI: ${selfStatus.currentVersion} -> ${selfStatus.latestVersion}`
+    : `NocoBase CLI: update available from ${selfStatus.currentVersion}`;
+}
+
+function describeSkillsUpdate() {
+  return 'NocoBase AI skills: update available';
+}
+
+function describeSkillsUpdateWithVersion(skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {
+  if (skillsStatus.installedVersion && skillsStatus.latestVersion) {
+    return `NocoBase AI skills: ${skillsStatus.installedVersion} -> ${skillsStatus.latestVersion}`;
+  }
+
+  if (skillsStatus.latestVersion) {
+    return `NocoBase AI skills: latest ${skillsStatus.latestVersion} available`;
+  }
+
+  return describeSkillsUpdate();
+}
+
 function buildPromptMessage(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {
-  const parts: string[] = [];
+  const lines: string[] = [];
+  const hasCliUpdate = selfStatus.updateAvailable;
+  const hasSkillsUpdate = skillsStatus.updateAvailable === true;
 
-  if (selfStatus.updateAvailable) {
-    parts.push(`CLI ${selfStatus.currentVersion} -> ${selfStatus.latestVersion}`);
+  if (hasCliUpdate && hasSkillsUpdate) {
+    lines.push('Updates are available for your NocoBase CLI and AI skills.');
+  } else if (hasCliUpdate) {
+    lines.push('An update is available for your NocoBase CLI.');
+  } else if (hasSkillsUpdate) {
+    lines.push('An update is available for your NocoBase AI skills.');
+  } else {
+    lines.push('A NocoBase CLI or skills update is available.');
   }
 
-  if (skillsStatus.updateAvailable === true) {
-    parts.push('NocoBase AI skills update available');
+  if (hasCliUpdate) {
+    lines.push(`- ${describeCliUpdate(selfStatus)}`);
   }
 
-  if (parts.length === 0) {
-    return 'A NocoBase update is available. Update now?';
+  if (hasSkillsUpdate) {
+    lines.push(`- ${describeSkillsUpdateWithVersion(skillsStatus)}`);
   }
 
-  return `A newer NocoBase setup is available (${parts.join(', ')}). Update now?`;
+  lines.push('Update now?');
+  return lines.join('\n');
 }
 
 function buildUpdateCommands(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {
@@ -135,15 +166,11 @@ function buildNonInteractiveWarning(
   const details: string[] = [];
 
   if (selfStatus.updateAvailable) {
-    details.push(
-      selfStatus.latestVersion
-        ? `CLI ${selfStatus.currentVersion} -> ${selfStatus.latestVersion}`
-        : `CLI update available from ${selfStatus.currentVersion}`,
-    );
+    details.push(describeCliUpdate(selfStatus));
   }
 
   if (skillsStatus.updateAvailable === true) {
-    details.push('NocoBase AI skills update available');
+    details.push(describeSkillsUpdateWithVersion(skillsStatus));
   }
 
   return [
@@ -164,15 +191,11 @@ function buildDeclinedWarning(
   const details: string[] = [];
 
   if (selfStatus.updateAvailable) {
-    details.push(
-      selfStatus.latestVersion
-        ? `CLI ${selfStatus.currentVersion} -> ${selfStatus.latestVersion}`
-        : `CLI update available from ${selfStatus.currentVersion}`,
-    );
+    details.push(describeCliUpdate(selfStatus));
   }
 
   if (skillsStatus.updateAvailable === true) {
-    details.push('NocoBase AI skills update available');
+    details.push(describeSkillsUpdateWithVersion(skillsStatus));
   }
 
   return [

@@ -14,7 +14,7 @@ import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 export default class SkillsUpdate extends Command {
   static override summary = 'Update the globally installed NocoBase AI coding skills';
   static override description =
-    'Refresh the globally installed NocoBase AI coding skills. This command only updates an existing nocobase/skills install.';
+    'Refresh the globally installed NocoBase AI coding skills. This command only updates an existing @nocobase/skills install.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
@@ -56,8 +56,10 @@ export default class SkillsUpdate extends Command {
             ok: true,
             kind: 'skills',
             action: result.action,
+            globalRoot: result.status.globalRoot,
             workspaceRoot: result.status.workspaceRoot,
             installedSkillNames: result.status.installedSkillNames,
+            installedVersion: result.status.installedVersion,
             installedRef: result.status.installedRef,
           },
           null,

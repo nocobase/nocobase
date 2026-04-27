@@ -86,6 +86,7 @@ test('env add saves builtinDb into env config when provided by install', async (
   expect(mocks.upsertEnv.mock.calls[0]).toEqual([
     'local',
     {
+      kind: 'docker',
       baseUrl: 'http://127.0.0.1:13000/api',
       source: 'docker',
       downloadVersion: 'alpha',
@@ -136,6 +137,7 @@ test('env add stores config globally by default', async () => {
   expect(mocks.upsertEnv.mock.calls[0]).toEqual([
     'local',
     {
+      kind: 'http',
       baseUrl: 'http://127.0.0.1:13000/api',
     },
     { scope: 'global' },
