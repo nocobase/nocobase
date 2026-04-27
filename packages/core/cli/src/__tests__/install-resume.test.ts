@@ -144,6 +144,49 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.envAddResults.apiBaseUrl).toBe('http://127.0.0.1:13080/api');
 });
 
+test('install --resume maps arbitrary saved download versions to otherVersion prompt values', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.getEnv.mockResolvedValue({
+    name: 'app8',
+    config: {
+      source: 'git',
+      downloadVersion: 'next',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      appRootPath: './app8/source/',
+      appPort: '13080',
+      storagePath: './app8/storage/',
+    },
+  });
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    ...(options.initialValues ?? {}),
+    ...(options.values ?? {}),
+  }));
+
+  const command = Object.create(Install.prototype);
+  const result = await (
+    Install.prototype as unknown as {
+      collectPromptResults: (
+        parsed: Record<string, unknown>,
+        yes: boolean,
+      ) => Promise<{
+        downloadResults: Record<string, unknown>;
+      }>;
+    }
+  ).collectPromptResults.call(command, {
+    resume: true,
+    env: 'app8',
+    yes: false,
+    force: false,
+    'fetch-source': false,
+    'builtin-db': false,
+  }, false);
+
+  expect(result.downloadResults.source).toBe('git');
+  expect(result.downloadResults.version).toBe('other');
+  expect(result.downloadResults.otherVersion).toBe('next');
+});
+
 test('install --resume fails with a clear message when the env is missing', async () => {
   const { default: Install } = await import('../commands/install.js');
 

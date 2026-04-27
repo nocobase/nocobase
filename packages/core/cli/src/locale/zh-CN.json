@@ -276,6 +276,7 @@
         "appNameEnvHelp": "请使用 `nb init --yes --env <envName>` 继续。",
         "resumeEnvRequired": "恢复安装时必须提供 Env name。",
         "resumeEnvHelp": "请使用 `nb init --resume --env <envName>` 继续。",
+        "resumeAfterInstallFailure": "继续这次初始化请执行：\n  {{command}}",
         "uiOpening": "本地 setup 表单即将在浏览器中打开。这个表单需要等待人工填写。如果你正在使用 AI agent，请不要停止当前进程，CLI 会继续等待表单提交结果。",
         "uiReady": "本地 setup 表单已就绪。",
         "uiReadyHelp": "如果没有自动打开浏览器，请复制下面的地址到浏览器中继续。CLI 会继续等待表单提交，请保持当前终端会话继续运行。",

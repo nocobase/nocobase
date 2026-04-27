@@ -396,6 +396,7 @@ test('install download prompt options follow CLI locale for docker registry defa
         envName: string,
         yes: boolean,
       ) => Record<string, unknown>;
+      buildPresetValuesFromFlags: (flags: Record<string, unknown>) => Record<string, unknown>;
     }
   );
 
@@ -449,6 +450,65 @@ test('install download prompt options follow CLI locale for docker registry defa
     expect(preset.source).toBe('docker');
     expect(preset.version).toBe('alpha');
     expect(preset.outputDir).toBe('./apps/en-demo');
+
+    const refPreset = installStatics.buildDownloadPresetValuesForInstall(
+      {
+        version: 'next',
+        replace: false,
+        'dev-dependencies': false,
+        build: true,
+        'build-dts': false,
+        'docker-save': false,
+      },
+      {
+        lang: 'en-US',
+        appRootPath: './apps/en-demo',
+      },
+      'en-demo',
+      false,
+    );
+    expect(refPreset.version).toBe('other');
+    expect(refPreset.otherVersion).toBe('next');
+
+    const resumePreset = installStatics.buildDownloadPresetValuesForInstall(
+      {
+        resume: true,
+        replace: false,
+        'dev-dependencies': false,
+        build: true,
+        'build-dts': false,
+        'docker-save': false,
+      },
+      {
+        lang: 'en-US',
+        appRootPath: './apps/en-demo',
+      },
+      'en-demo',
+      false,
+    );
+    expect(resumePreset.replace).toBe(true);
+  } finally {
+    process.argv = originalArgv;
+  }
+
+  process.argv = ['node', 'nb', 'install', '--no-builtin-db'];
+  try {
+    const preset = installStatics.buildPresetValuesFromFlags({
+      'builtin-db': false,
+    });
+    expect(preset.builtinDb).toBe(false);
+  } finally {
+    process.argv = originalArgv;
+  }
+
+  process.argv = ['node', 'nb', 'install', '--db-host', 'db.example.com'];
+  try {
+    const preset = installStatics.buildPresetValuesFromFlags({
+      'builtin-db': true,
+      'db-host': 'db.example.com',
+    });
+    expect(preset.dbHost).toBe('db.example.com');
+    expect(preset.builtinDb).toBe(false);
   } finally {
     process.argv = originalArgv;
   }

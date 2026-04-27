@@ -563,3 +563,19 @@ test('install does not seed built-in database host port for docker source or exp
       },
     })).toEqual({});
 });
+
+test('install does not seed a built-in database host port for external db host presets', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+
+  await expect(installStatics.buildDbPromptInitialValues({
+    flags: {},
+    downloadResults: {
+      source: 'npm',
+    },
+    dbPreset: {
+      builtinDb: false,
+      dbDialect: 'postgres',
+      dbHost: 'db.example.com',
+    },
+  })).resolves.toEqual({});
+});

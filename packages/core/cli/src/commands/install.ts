@@ -167,6 +167,12 @@ function isInstallDbDialect(value: string): value is (typeof INSTALL_DB_DIALECTS
   return (INSTALL_DB_DIALECTS as readonly string[]).includes(value);
 }
 
+function downloadVersionPromptValue(version: string): 'latest' | 'beta' | 'alpha' | 'other' {
+  return version === 'latest' || version === 'beta' || version === 'alpha'
+    ? version
+    : 'other';
+}
+
 function supportsBuiltinDbDialect(
   value: PromptValue | undefined,
 ): value is keyof typeof DEFAULT_INSTALL_BUILTIN_DB_IMAGES {
@@ -465,6 +471,7 @@ export default class Install extends Command {
       required: false,
     }),
     'builtin-db': Flags.boolean({
+      allowNo: true,
       description:
         'Create and connect a CLI-managed built-in database for the app',
       default: false,
@@ -754,7 +761,7 @@ export default class Install extends Command {
       preset.fetchSource = flags['fetch-source'];
     }
 
-    if (argvHasToken(argv, ['--builtin-db'])) {
+    if (argvHasToken(argv, ['--builtin-db', '--no-builtin-db'])) {
       preset.builtinDb = flags['builtin-db'];
     }
 
@@ -775,6 +782,7 @@ export default class Install extends Command {
       const v = String(flags['db-host'] ?? '').trim();
       if (v) {
         preset.dbHost = v;
+        preset.builtinDb = false;
       }
     }
     if (flags['db-port'] !== undefined) {
@@ -881,7 +889,14 @@ export default class Install extends Command {
 
     const downloadPreset: PromptInitialValues = {
       ...(source ? { source } : {}),
-      ...(downloadVersion ? { version: downloadVersion } : {}),
+      ...(downloadVersion
+        ? {
+            version: downloadVersionPromptValue(downloadVersion),
+            ...(downloadVersionPromptValue(downloadVersion) === 'other'
+              ? { otherVersion: downloadVersion }
+              : {}),
+          }
+        : {}),
       ...(dockerRegistry ? { dockerRegistry } : {}),
       ...(dockerPlatform ? { dockerPlatform } : {}),
       ...(gitUrl ? { gitUrl } : {}),
@@ -1107,7 +1122,7 @@ export default class Install extends Command {
    * Explicit download flags win; otherwise `-y` falls back to the docker + alpha quickstart path.
    */
   private static buildDownloadPresetValuesForInstall(
-    flags: DownloadParsedFlags,
+    flags: DownloadParsedFlags & Pick<InstallParsedFlags, 'resume'>,
     appResults: Record<string, PromptValue>,
     envName: string,
     yes: boolean,
@@ -1124,7 +1139,11 @@ export default class Install extends Command {
     }
 
     if (flags.version !== undefined) {
-      preset.version = String(flags.version).trim() || 'latest';
+      const version = String(flags.version).trim() || 'latest';
+      preset.version = downloadVersionPromptValue(version);
+      if (preset.version === 'other') {
+        preset.otherVersion = version;
+      }
     }
 
     if (flags['docker-registry'] !== undefined) {
@@ -1160,7 +1179,9 @@ export default class Install extends Command {
         typeof flags['npm-registry'] === 'string' ? flags['npm-registry'] : '';
     }
 
-    if (argvHasToken(argv, ['--replace', '-r'])) {
+    if (flags.resume && !argvHasToken(argv, ['--replace', '-r'])) {
+      preset.replace = true;
+    } else if (argvHasToken(argv, ['--replace', '-r'])) {
       preset.replace = flags.replace;
     }
 
@@ -1658,13 +1679,13 @@ export default class Install extends Command {
 
     p.log.step(`Preparing built-in ${plan.dbDialect} database`);
     await this.ensureDockerNetwork(plan.networkName);
-    await this.removeDockerContainerIfForced({
+    const existingContainerKept = await this.removeDockerContainerIfForced({
       containerName: plan.containerName,
       displayName: `built-in ${plan.dbDialect} container`,
       force: params.force,
     });
 
-    if (Install.shouldPublishBuiltinDbPort(params.downloadResults.source)) {
+    if (!existingContainerKept && Install.shouldPublishBuiltinDbPort(params.downloadResults.source)) {
       const portError = await validateAvailableTcpPort(plan.dbPort);
       if (portError) {
         throw new Error(
@@ -1859,7 +1880,7 @@ export default class Install extends Command {
       argv.push('--verbose');
     }
     Install.pushDownloadArgIfValue(argv, '--source', results.source);
-    Install.pushDownloadArgIfValue(argv, '--version', results.version);
+    Install.pushDownloadArgIfValue(argv, '--version', downloadResultsValue(results, 'version'));
     Install.pushDownloadArgIfValue(argv, '--output-dir', results.outputDir);
     Install.pushDownloadArgIfValue(argv, '--git-url', results.gitUrl);
     Install.pushDownloadArgIfValue(argv, '--docker-registry', results.dockerRegistry);
@@ -1937,14 +1958,14 @@ export default class Install extends Command {
       verbose: params.verbose,
     });
 
-    const projectRoot = Install.resolveLocalProjectRoot({
+    const downloadedProjectRoot = Install.resolveLocalProjectRoot({
       envName: params.envName,
       appResults: params.appResults,
       downloadResults: params.downloadResults,
       downloadCommandResult: result,
     });
-    params.appResults.appRootPath = projectRoot;
-    return projectRoot;
+    params.appResults.appRootPath = downloadedProjectRoot;
+    return downloadedProjectRoot;
   }
 
   private static buildLocalAppEnvVars(params: {
@@ -2552,5 +2573,8 @@ function downloadResultsValue(
   downloadResults: Record<string, PromptValue>,
   key: string,
 ): PromptValue | undefined {
+  if (key === 'version' && String(downloadResults.version ?? '').trim() === 'other') {
+    return downloadResults.otherVersion;
+  }
   return downloadResults[key];
 }
