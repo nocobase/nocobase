@@ -61,6 +61,10 @@ if (isDev && !process.env._NOCO_CLI_TSX_CHILD) {
 
 const bootstrapPath = isDev ? path.join(root, 'src/lib/bootstrap.ts') : path.join(root, 'dist/lib/bootstrap.js');
 const { ensureRuntimeFromArgv } = await import(pathToFileURL(bootstrapPath).href);
+const startupUpdatePath = isDev
+  ? path.join(root, 'src/lib/startup-update.ts')
+  : path.join(root, 'dist/lib/startup-update.js');
+const { maybeRunStartupUpdatePrompt } = await import(pathToFileURL(startupUpdatePath).href);
 const { flush, run, settings } = await import('@oclif/core');
 
 if (isDev) {
@@ -102,6 +106,17 @@ function formatCliEntryError(error, argv) {
 
 try {
   const argv = process.argv.slice(2);
+  const startupUpdate = await maybeRunStartupUpdatePrompt(argv);
+  if (startupUpdate.kind === 'updated') {
+    const result = spawnSync(process.execPath, process.argv.slice(1), {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        NB_SKIP_STARTUP_UPDATE: '1',
+      },
+    });
+    process.exit(result.status === null ? 1 : result.status);
+  }
   if (argv[0] === 'api') {
     await ensureRuntimeFromArgv(argv, {
       configFile: path.join(root, 'nocobase-ctl.config.json'),
