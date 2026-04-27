@@ -19,6 +19,7 @@ import {
   type ManagedAppRuntime,
 } from '../lib/app-runtime.js';
 import { removeEnv } from '../lib/auth-store.js';
+import { resolveConfiguredEnvPath } from '../lib/cli-home.js';
 import { commandSucceeds, run } from '../lib/run-npm.js';
 import {
   confirmAction,
@@ -30,11 +31,7 @@ import {
 } from '../lib/ui.js';
 
 function resolveConfiguredPath(value: unknown): string | undefined {
-  const text = String(value ?? '').trim();
-  if (!text) {
-    return undefined;
-  }
-  return path.isAbsolute(text) ? text : path.resolve(process.cwd(), text);
+  return resolveConfiguredEnvPath(value);
 }
 
 function assertSafeRemovalPath(target: string, label: string): void {

@@ -8,9 +8,14 @@
  */
 
 import { promises as fs } from 'node:fs';
-import path, { isAbsolute } from 'node:path';
+import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
-import { resolveCliHomeDir, resolveDefaultConfigScope } from './cli-home.js';
+import {
+  resolveCliHomeDir,
+  resolveConfiguredEnvPath,
+  resolveDefaultConfigScope,
+  resolveEnvRelativePath,
+} from './cli-home.js';
 
 export interface TokenAuthConfig {
   type: 'token';
@@ -229,22 +234,11 @@ export class Env {
   }
 
   get appRootPath() {
-    const appRootPath = this.config.appRootPath;
-    if (!appRootPath) {
-      return process.cwd();
-    }
-    if (isAbsolute(appRootPath)) {
-      return appRootPath;
-    }
-    return path.resolve(process.cwd(), appRootPath);
+    return resolveConfiguredEnvPath(this.config.appRootPath) ?? resolveEnvRelativePath('.');
   }
 
   get storagePath() {
-    const storagePath = this.config.storagePath;
-    if (isAbsolute(storagePath)) {
-      return storagePath;
-    }
-    return path.resolve(process.cwd(), storagePath);
+    return resolveConfiguredEnvPath(this.config.storagePath) ?? resolveEnvRelativePath('.');
   }
 
   get appPort() {

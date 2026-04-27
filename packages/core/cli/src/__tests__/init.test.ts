@@ -1041,6 +1041,44 @@ test('nb init forwards dynamically selected ports in --yes mode', async () => {
   }
 });
 
+test('nb init keeps absolute appRootPath and storagePath when forwarding to nb install', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const originalArgv = process.argv;
+  process.argv = ['node', 'nb', 'init', '--yes'];
+
+  try {
+    const buildInstallArgv = (
+      Init.prototype as unknown as {
+        buildInstallArgv: (
+          results: Record<string, string | number | boolean>,
+          flags: { yes?: boolean; force?: boolean; build?: boolean },
+        ) => string[];
+      }
+    ).buildInstallArgv;
+
+    const argv = buildInstallArgv.call(
+      Object.create(Init.prototype),
+      {
+        appName: 'local',
+        appRootPath: '/tmp/nb-app/source',
+        storagePath: '/tmp/nb-app/storage',
+      },
+      { yes: true },
+    );
+
+    expect(argv.slice(argv.indexOf('--app-root-path'), argv.indexOf('--app-root-path') + 2)).toEqual([
+      '--app-root-path',
+      '/tmp/nb-app/source',
+    ]);
+    expect(argv.slice(argv.indexOf('--storage-path'), argv.indexOf('--storage-path') + 2)).toEqual([
+      '--storage-path',
+      '/tmp/nb-app/storage',
+    ]);
+  } finally {
+    process.argv = originalArgv;
+  }
+});
+
 test('nb init forwards --no-builtin-db to nb install', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;

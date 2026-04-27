@@ -11,6 +11,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { afterEach, beforeEach, test, expect } from 'vitest';
 import Install from '../commands/install.js';
+import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 import { validateAvailableTcpPort } from '../lib/prompt-validators.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -87,7 +88,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
   expect(plan.dbPort).toBe('5433');
   expect(plan.image).toBe('postgres:16');
   expect(plan.builtinDbImage).toBe('postgres:16');
-  expect(plan.dataDir).toBe(path.resolve('./storage/demo', 'db', 'postgres'));
+  expect(plan.dataDir).toBe(path.resolve(resolveCliHomeRoot(), './storage/demo', 'db', 'postgres'));
   expect(plan.args).toEqual([
     'run',
     '-d',
@@ -104,7 +105,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-e',
     'POSTGRES_PASSWORD=demo_pass',
     '-v',
-    `${path.resolve('./storage/demo', 'db', 'postgres')}:/var/lib/postgresql/data`,
+    `${path.resolve(resolveCliHomeRoot(), './storage/demo', 'db', 'postgres')}:/var/lib/postgresql/data`,
     '-p',
     '5433:5432',
     'postgres:16',
@@ -229,7 +230,7 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
   expect(plan.args.includes('DB_MODE=pg')).toBe(true);
   expect(plan.args.includes('NEED_START=yes')).toBe(true);
   expect(plan.args.includes('54321:54321')).toBe(true);
-  expect(plan.args.includes(`${path.resolve('./storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
+  expect(plan.args.includes(`${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
 });
 
 test('docker app plan wires app, db, network, port, and image settings', () => {
@@ -269,7 +270,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.containerName).toBe(`${prefix}-demo-app`);
   expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
   expect(plan.appPort).toBe('13000');
-  expect(plan.storagePath).toBe(path.resolve('./storage/demo'));
+  expect(plan.storagePath).toBe(resolveEnvRelativePath('./storage/demo'));
   expect(plan.appKey.length).toBe(64);
   expect(typeof plan.timeZone).toBe('string');
   expect(plan.timeZone.length > 0).toBe(true);
@@ -403,6 +404,33 @@ test('install env add argv records when an env uses an external database', () =>
   expect(argv.includes('--no-builtin-db')).toBe(true);
   expect(argv.includes('--no-intro')).toBe(true);
   expect(argv.includes('--builtin-db')).toBe(false);
+});
+
+test('install env add argv keeps absolute appRootPath and storagePath', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const argv = installStatics.buildEnvAddArgv({
+    envName: 'absolute',
+    appResults: {
+      appRootPath: '/tmp/absolute/source',
+      appPort: '13081',
+      storagePath: '/tmp/absolute/storage',
+    },
+    downloadResults: {},
+    dbResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13081/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(argv.slice(argv.indexOf('--app-root-path'), argv.indexOf('--app-root-path') + 2)).toEqual([
+    '--app-root-path',
+    '/tmp/absolute/source',
+  ]);
+  expect(argv.slice(argv.indexOf('--storage-path'), argv.indexOf('--storage-path') + 2)).toEqual([
+    '--storage-path',
+    '/tmp/absolute/storage',
+  ]);
 });
 
 test('install env add argv records docker download settings for later upgrades', () => {

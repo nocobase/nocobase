@@ -23,11 +23,14 @@ import {
   updateEnvConnection,
   upsertEnv,
 } from '../lib/auth-store.js';
+import { resolveCliHomeRoot } from '../lib/cli-home.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NOCOBASE_CTL_HOME;
+  const previousEnvRoot = process.env.NB_ENV_ROOT;
   const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-test-'));
   process.env.NOCOBASE_CTL_HOME = tempHome;
+  delete process.env.NB_ENV_ROOT;
 
   try {
     await run();
@@ -36,6 +39,11 @@ async function withTempCliHome(run: () => Promise<void>) {
       delete process.env.NOCOBASE_CTL_HOME;
     } else {
       process.env.NOCOBASE_CTL_HOME = previous;
+    }
+    if (previousEnvRoot === undefined) {
+      delete process.env.NB_ENV_ROOT;
+    } else {
+      process.env.NB_ENV_ROOT = previousEnvRoot;
     }
     await rm(tempHome, { recursive: true, force: true });
   }
@@ -142,6 +150,36 @@ test('upsertEnv allows saving an env without a token', async () => {
     const env = await getEnv('test', { scope: 'global' });
     expect(env?.baseUrl).toBe('http://localhost:13000/api');
     expect(env?.auth).toBe(undefined);
+    expect(env?.appRootPath).toBe(resolveCliHomeRoot());
+    expect(env?.storagePath).toBe(resolveCliHomeRoot());
+  });
+});
+
+test('env relative paths resolve from NB_ENV_ROOT when provided', async () => {
+  await withTempCliHome(async () => {
+    const envRoot = await mkdtemp(path.join(os.tmpdir(), 'nocobase-env-root-'));
+    process.env.NB_ENV_ROOT = envRoot;
+
+    try {
+      await saveAuthConfig(
+        {
+          currentEnv: 'test',
+          envs: {
+            test: {
+              appRootPath: './apps/test',
+              storagePath: './storage/test',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const env = await getEnv('test', { scope: 'global' });
+      expect(env?.appRootPath).toBe(path.resolve(envRoot, './apps/test'));
+      expect(env?.storagePath).toBe(path.resolve(envRoot, './storage/test'));
+    } finally {
+      await rm(envRoot, { recursive: true, force: true });
+    }
   });
 });
 

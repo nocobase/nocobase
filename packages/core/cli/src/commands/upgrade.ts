@@ -17,6 +17,7 @@ import {
   stopDockerContainer,
   type ManagedAppRuntime,
 } from '../lib/app-runtime.js';
+import { resolveConfiguredEnvPath } from '../lib/cli-home.js';
 import { commandOutput, commandSucceeds, run } from '../lib/run-npm.js';
 import { failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../lib/ui.js';
 
@@ -175,6 +176,10 @@ function normalizeDockerPlatform(value: unknown): string | undefined {
 }
 
 function readEnvValue(env: Env, key: keyof Env['config']): string {
+  if (key === 'appRootPath' || key === 'storagePath') {
+    return trimValue(resolveConfiguredEnvPath(env.config[key]));
+  }
+
   return trimValue(env.config[key]);
 }
 

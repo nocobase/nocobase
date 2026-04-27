@@ -10,6 +10,7 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
+import { resolveCliHomeRoot } from '../lib/cli-home.js';
 
 const TEST_CWD = '/tmp/app2';
 const TEST_STORAGE_PATH = path.join(TEST_CWD, 'storage', 'test');
@@ -1684,6 +1685,10 @@ test('down confirms before removing user data', async () => {
   expect(mocks.confirmAction.mock.calls.length).toBe(1);
   expect(String(mocks.confirmAction.mock.calls[0]?.[0] ?? '')).toMatch(/Delete storage and managed database data/);
   expect(mocks.run.mock.calls.length).toBe(0);
+  expect(mocks.fsRm.mock.calls.at(-1)).toEqual([
+    path.resolve(resolveCliHomeRoot(), './docker-local/storage'),
+    { recursive: true, force: true },
+  ]);
   expect(mocks.succeedTask.mock.calls.some((call) =>
       String(call[0]).includes('Storage and managed database data deleted'),
     )).toBe(true);

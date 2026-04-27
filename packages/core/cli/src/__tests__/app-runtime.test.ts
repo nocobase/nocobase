@@ -13,6 +13,7 @@ import path from 'node:path';
 import { test, expect } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import { buildDockerAppContainerName, resolveManagedAppRuntime } from '../lib/app-runtime.js';
+import { resolveCliHomeRoot } from '../lib/cli-home.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NOCOBASE_CTL_HOME;
@@ -72,7 +73,7 @@ test('resolveManagedAppRuntime detects local, docker, and remote envs', async ()
       source: 'git',
     });
     expect(localRuntime?.kind === 'local' ? localRuntime.projectRoot : '').toBe(
-      path.resolve('./apps/git-env'),
+      path.resolve(resolveCliHomeRoot(), './apps/git-env'),
     );
 
     const remoteRuntime = await resolveManagedAppRuntime('remote');
