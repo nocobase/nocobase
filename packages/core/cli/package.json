@@ -47,6 +47,9 @@
       },
       "api": {
         "description": "Work with NocoBase API."
+      },
+      "publish": {
+        "description": "Generate, copy, and execute NocoBase publish files."
       }
     }
   },

@@ -7,7 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { promises as fs } from 'node:fs';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createWriteStream, promises as fs } from 'node:fs';
+import path from 'node:path';
+import { Readable } from 'node:stream';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
+import { pipeline } from 'node:stream/promises';
 import { resolveServerRequestTarget } from './env-auth.js';
 
 const CLI_REQUEST_SOURCE_HEADER = 'x-request-source';
@@ -51,6 +64,17 @@ export interface RawRequestOptions {
   query?: Record<string, any>;
   headers?: Record<string, any>;
   body?: unknown;
+}
+
+export interface DownloadRequestOptions extends Omit<RawRequestOptions, 'body'> {
+  outputPath: string;
+}
+
+export interface MultipartRequestOptions extends Omit<RawRequestOptions, 'body'> {
+  filePath: string;
+  fileFieldName?: string;
+  fileName?: string;
+  fields?: Record<string, any>;
 }
 
 function stripUtf8Bom(text: string) {
@@ -335,6 +359,110 @@ export async function executeRawApiRequest(options: RawRequestOptions) {
     method: options.method.toUpperCase(),
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+
+  return parseResponse(response);
+}
+
+export async function executeDownloadApiRequest(options: DownloadRequestOptions) {
+  const { baseUrl, token } = await resolveServerRequestTarget(options);
+
+  const headers = new Headers();
+  headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
+  if (token) {
+    headers.set('authorization', `Bearer ${token}`);
+  }
+  if (options.role) {
+    headers.set('x-role', options.role);
+  }
+
+  for (const [name, value] of Object.entries(options.headers ?? {})) {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+    headers.set(name, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  }
+
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}${options.path}`);
+  for (const [key, value] of Object.entries(options.query ?? {})) {
+    if (value === undefined) {
+      continue;
+    }
+    url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  }
+
+  const response = await fetch(url, {
+    method: options.method.toUpperCase(),
+    headers,
+  });
+
+  if (!response.ok || !response.body) {
+    return parseResponse(response);
+  }
+
+  await fs.mkdir(path.dirname(options.outputPath), { recursive: true });
+  try {
+    await pipeline(Readable.fromWeb(response.body as unknown as NodeReadableStream), createWriteStream(options.outputPath));
+  } catch (error) {
+    await fs.rm(options.outputPath, { force: true }).catch(() => undefined);
+    throw error;
+  }
+
+  return {
+    ok: true,
+    status: response.status,
+    data: {
+      outputPath: options.outputPath,
+      checksum: response.headers.get('x-nocobase-publish-checksum') || undefined,
+      type: response.headers.get('x-nocobase-publish-type') || undefined,
+    },
+  };
+}
+
+export async function executeMultipartApiRequest(options: MultipartRequestOptions) {
+  const { baseUrl, token } = await resolveServerRequestTarget(options);
+
+  const headers = new Headers();
+  headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
+  if (token) {
+    headers.set('authorization', `Bearer ${token}`);
+  }
+  if (options.role) {
+    headers.set('x-role', options.role);
+  }
+
+  for (const [name, value] of Object.entries(options.headers ?? {})) {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+    headers.set(name, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  }
+
+  const form = new FormData();
+  for (const [name, value] of Object.entries(options.fields ?? {})) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    form.set(name, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  }
+  const fileBuffer = await fs.readFile(options.filePath);
+  const arrayBuffer = new ArrayBuffer(fileBuffer.byteLength);
+  new Uint8Array(arrayBuffer).set(fileBuffer);
+  const blob = new Blob([arrayBuffer]);
+  form.set(options.fileFieldName || 'file', blob, options.fileName || path.basename(options.filePath));
+
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}${options.path}`);
+  for (const [key, value] of Object.entries(options.query ?? {})) {
+    if (value === undefined) {
+      continue;
+    }
+    url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  }
+
+  const response = await fetch(url, {
+    method: options.method.toUpperCase(),
+    headers,
+    body: form,
   });
 
   return parseResponse(response);

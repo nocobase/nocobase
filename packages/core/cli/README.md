@@ -147,6 +147,7 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | `nb down` | Stop and remove local runtime containers for an env. |
 | `nb env` | Manage saved CLI env connections. |
 | `nb api` | Call NocoBase API resources from the CLI. |
+| `nb publish` | Generate, copy, and execute local publish files through CLI command APIs. |
 | `nb pm` | Manage plugins for the selected NocoBase env. |
 | `nb self` | Check or update the installed NocoBase CLI. |
 | `nb skills` | Check, install, or update NocoBase AI coding skills for the current workspace. |
@@ -259,6 +260,22 @@ image without downloading updates first:
 ```bash
 nb upgrade --env app1 -s
 ```
+
+## Publish Files
+
+Use `nb publish` when moving backup or migration packages between saved envs.
+The CLI always downloads generated files to the local workspace first so they
+can be inspected and reused:
+
+```bash
+nb publish generate --type migration --env dev --rule <ruleId> --wait
+nb publish copy --type migration --from dev --to test --file <fileName>
+nb publish execute --type migration --env test --file <fileName> --wait
+```
+
+Generated files are stored under `.nocobase/publish/<type>/<env>/`. The copy
+step uploads a local file to the target env staging area and records the target
+artifact in `.nocobase/publish/manifest.json`.
 
 ## Database Commands
 
