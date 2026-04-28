@@ -113,12 +113,6 @@ If `nb init` was interrupted after the env config had already been saved, you ca
 nb init --env app1 --resume
 ```
 
-The advanced low-level equivalent is:
-
-```bash
-nb install --env app1 --resume
-```
-
 `--resume` reuses the saved workspace env config for app, source, database, and env connection settings. In interactive mode, it only asks for any missing setup-only values.
 
 In non-interactive mode, pass these setup-only flags again because they are not saved in env config:

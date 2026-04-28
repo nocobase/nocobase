@@ -108,12 +108,6 @@ nb init --env app1 --yes --source git --version fix/cli-v2
 nb init --env app1 --resume
 ```
 
-对应的底层高级命令是：
-
-```bash
-nb install --env app1 --resume
-```
-
 `--resume` 会复用工作区里已保存的 env config，包括应用、source、数据库和 env 连接相关配置。在交互模式下，只会继续补齐缺失的初始化参数。
 
 在非交互模式下，需要重新传这些只用于初始化、不会保存到 env config 的参数：
