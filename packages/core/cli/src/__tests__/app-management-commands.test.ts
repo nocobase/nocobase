@@ -1122,13 +1122,22 @@ test('ps lists all configured env runtime statuses', async () => {
   expect(mocks.listEnvs.mock.calls).toEqual([[]]);
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['docker'], ['local'], ['remote']]);
   expect(mocks.buildDockerDbContainerName.mock.calls[0]).toEqual(['docker', 'postgres', 'nb-demo']);
-  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual(['Env', 'Kind', 'Status', 'Database', 'URL']);
-  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
-    ['docker', 'docker', 'running', 'stopped', 'http://127.0.0.1:13000'],
-    ['local', 'local', 'running', '-', 'http://127.0.0.1:13001'],
-    ['remote', 'http', 'http', 'external', 'https://demo.example.com'],
+  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual([
+    'Env',
+    'Kind',
+    'App Status',
+    'Database Status',
+    'Network',
+    'App Root',
+    'Storage',
+    'URL',
   ]);
-  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toMatch(/Env\|Kind\|Status\|Database\|URL/);
+  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
+    ['docker', 'docker', 'running', 'stopped', 'nb-demo', '-', '-', 'http://127.0.0.1:13000'],
+    ['local', 'local', 'running', '-', '-', '/tmp/nocobase', '-', 'http://127.0.0.1:13001'],
+    ['remote', 'http', 'http', 'external', '-', '-', '-', 'https://demo.example.com'],
+  ]);
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toMatch(/Env\|Kind\|App Status\|Database Status\|Network\|App Root\|Storage\|URL/);
 });
 
 test('ps supports --env without listing all envs first', async () => {
@@ -1160,7 +1169,45 @@ test('ps supports --env without listing all envs first', async () => {
   expect(mocks.listEnvs.mock.calls.length).toBe(0);
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['app1']]);
   expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
-    ['app1', 'docker', 'stopped', '-', 'http://127.0.0.1:13000'],
+    ['app1', 'docker', 'stopped', '-', 'nb-demo', '-', '-', 'http://127.0.0.1:13000'],
+  ]);
+});
+
+test('ps shows managed network and storage path for local builtin-db envs', async () => {
+  const { default: Ps } = await import('../commands/app/ps.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'git',
+    projectRoot: '/tmp/local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      storagePath: '/tmp/storage/local',
+      config: {
+        appPort: 13000,
+        builtinDb: true,
+        source: 'git',
+      },
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      text: async () => 'ok',
+    })),
+  );
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+    },
+  });
+
+  await Ps.prototype.run.call(command);
+
+  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
+    ['app1', 'local', 'running', 'running', '-', '/tmp/local-app', '/tmp/storage/local', 'http://127.0.0.1:13000'],
   ]);
 });
 

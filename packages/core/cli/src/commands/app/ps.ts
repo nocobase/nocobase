@@ -12,6 +12,7 @@ import {
   buildDockerDbContainerName,
   dockerContainerExists,
   dockerContainerIsRunning,
+  defaultWorkspaceName,
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   type ManagedAppRuntime,
@@ -33,6 +34,35 @@ function appUrl(runtime: ManagedAppRuntime): string {
 
   const baseUrl = resolveApiBaseUrl(runtime.env.config);
   return baseUrl.replace(/\/api\/?$/, '');
+}
+
+function appNetwork(runtime: ManagedAppRuntime): string {
+  if (runtime.kind === 'docker') {
+    return runtime.workspaceName?.trim() || defaultWorkspaceName();
+  }
+
+  return '-';
+}
+
+function appRootPath(runtime: ManagedAppRuntime): string {
+  if (runtime.kind === 'http' || runtime.kind === 'docker') {
+    return '-';
+  }
+
+  if (runtime.kind === 'local') {
+    return String(runtime.projectRoot ?? runtime.env.appRootPath ?? '').trim() || '-';
+  }
+
+  return String(runtime.env.appRootPath ?? '').trim() || '-';
+}
+
+function storagePath(runtime: ManagedAppRuntime): string {
+  if (runtime.kind === 'http') {
+    return '-';
+  }
+
+  const value = String(runtime.env.storagePath ?? runtime.env.config.storagePath ?? '').trim();
+  return value || '-';
 }
 
 async function isLocalAppHealthy(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): Promise<boolean> {
@@ -134,7 +164,7 @@ export default class AppPs extends Command {
         if (requestedEnv) {
           this.error(formatMissingManagedAppEnvMessage(envName));
         }
-        rows.push([envName, '-', 'missing', '-', '']);
+        rows.push([envName, '-', 'missing', '-', '-', '-', '-', '']);
         continue;
       }
 
@@ -143,10 +173,13 @@ export default class AppPs extends Command {
         runtime.kind,
         await runtimeStatus(runtime),
         await dbStatus(runtime),
+        appNetwork(runtime),
+        appRootPath(runtime),
+        storagePath(runtime),
         appUrl(runtime),
       ]);
     }
 
-    this.log(renderTable(['Env', 'Kind', 'Status', 'Database', 'URL'], rows));
+    this.log(renderTable(['Env', 'Kind', 'App Status', 'Database Status', 'Network', 'App Root', 'Storage', 'URL'], rows));
   }
 }
