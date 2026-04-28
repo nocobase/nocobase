@@ -21,9 +21,9 @@ import {
   FlowModel,
   getSlotKey,
   GridCellV2,
+  GridLayoutData,
   GridLayoutPath,
   GridLayoutV2,
-  GridLayoutData,
   GridRowV2,
   isSameGridLayout,
   LayoutSlot,
@@ -402,7 +402,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     const normalizedLayout =
       layout && 'version' in layout
         ? normalizeGridLayout({ layout, itemUids: this.getItemUids(), gridUid: this.uid, logger: console })
-        : this.normalizeLayoutFromSource(layout);
+        : this.normalizeLayoutFromSource(layout as any);
     this.setGridStepLayout(normalizedLayout);
     this.syncLayoutProps(normalizedLayout);
     this.saveStepParams();
