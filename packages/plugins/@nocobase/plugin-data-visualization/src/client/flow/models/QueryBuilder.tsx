@@ -21,7 +21,7 @@ import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } f
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import isEqual from 'lodash/isEqual';
 import { useT } from '../../locale';
-import { FilterGroup, VariableFilterItem, useCompile, useDataSourceManager } from '@nocobase/client';
+import { FilterGroup, VariableFilterItem, useCompile } from '@nocobase/client';
 import { useForm as useFormilyForm } from '@formily/react';
 import {
   getFieldOptions,
@@ -117,7 +117,7 @@ const QueryBuilderInner: FC<{
   const [form] = Form.useForm();
   const ctx = useFlowSettingsContext<any>();
   const lang = ctx?.i18n?.language;
-  const dm = useDataSourceManager();
+  const dm = ctx?.model?.context?.dataSourceManager;
   const compile = useCompile();
 
   const rawQuery = stepForm.values?.query;
