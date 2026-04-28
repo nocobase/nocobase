@@ -239,4 +239,48 @@ describe('GridModel drag snapshot container', () => {
       direction: 'right',
     });
   });
+
+  it('keeps overlay coordinates relative to grid root when outer container is scrolled', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-drag-overlay-scroll',
+      props: {},
+      structure: {} as any,
+    });
+    const container = document.createElement('div');
+    container.scrollTop = 40;
+    container.scrollLeft = 12;
+    (model.gridContainerRef as any).current = container;
+
+    (model as any).dragState = {
+      sourceUid: 'item-1',
+      snapshot: {
+        rows: { 'row-1': [['item-1', 'item-2']] },
+        sizes: { 'row-1': [24] },
+      },
+      slots: [],
+      containerEl: container,
+      containerRect: { top: 100, left: 50, width: 480, height: 280 },
+      activeSlotKey: null,
+      previewLayout: undefined,
+      refreshTimer: null,
+    };
+
+    (model as any).applyPreview({
+      type: 'column',
+      rowId: 'row-1',
+      columnIndex: 0,
+      insertIndex: 1,
+      position: 'after',
+      rect: { top: 130, left: 90, width: 220, height: 60 },
+    });
+
+    expect(model.props.dragOverlayRect).toMatchObject({
+      top: 30,
+      left: 40,
+      width: 220,
+      height: 60,
+      type: 'column',
+    });
+  });
 });

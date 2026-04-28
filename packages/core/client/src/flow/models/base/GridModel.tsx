@@ -727,16 +727,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       layout: _.cloneDeep(preview.layout),
     };
 
-    const container = this.getDragContainer();
-    const scrollTop = container?.scrollTop ?? 0;
-    const scrollLeft = container?.scrollLeft ?? 0;
-
     // 计算最终的 overlay 矩形
     const rect = this.computeOverlayRect(slot);
 
     const overlay: DragOverlayState = {
-      top: rect.top - this.dragState.containerRect.top + scrollTop,
-      left: rect.left - this.dragState.containerRect.left + scrollLeft,
+      top: rect.top - this.dragState.containerRect.top,
+      left: rect.left - this.dragState.containerRect.left,
       width: rect.width,
       height: rect.height,
       type: slot.type,

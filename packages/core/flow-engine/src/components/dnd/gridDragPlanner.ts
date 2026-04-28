@@ -617,9 +617,21 @@ export const resolveDropIntent = (point: Point, slots: LayoutSlot[]): LayoutSlot
     return null;
   }
 
-  const insideSlots = slots.filter((slot) => isPointInsideRect(point, slot.rect));
-  if (insideSlots.length) {
-    return insideSlots.sort((a, b) => slotPriority[b.type] - slotPriority[a.type])[0];
+  let bestInsideSlot: LayoutSlot | null = null;
+  let bestInsidePriority = Number.NEGATIVE_INFINITY;
+  slots.forEach((slot) => {
+    if (!isPointInsideRect(point, slot.rect)) {
+      return;
+    }
+    const priority = slotPriority[slot.type];
+    if (priority > bestInsidePriority) {
+      bestInsidePriority = priority;
+      bestInsideSlot = slot;
+    }
+  });
+
+  if (bestInsideSlot) {
+    return bestInsideSlot;
   }
 
   let closest: LayoutSlot | null = null;
@@ -1144,8 +1156,13 @@ const removeItemFromGridLayout = (layout: GridLayoutV2, sourceUid: string) => {
               const childRows = removeFromRows(cell.rows);
               return childRows.length ? { cell: { ...cell, rows: childRows }, size: row.sizes?.[index] } : null;
             }
-            const items = (cell.items || []).filter((itemUid) => itemUid !== sourceUid);
-            return items.length ? { cell: { ...cell, items }, size: row.sizes?.[index] } : null;
+            const currentItems = cell.items || [];
+            const hadSourceUid = currentItems.includes(sourceUid);
+            const items = currentItems.filter((itemUid) => itemUid !== sourceUid);
+            if (hadSourceUid && !items.length) {
+              return null;
+            }
+            return { cell: { ...cell, items }, size: row.sizes?.[index] };
           })
           .filter(Boolean) as { cell: GridCellV2; size: number }[];
         const cells = cellsWithSizes.map((entry) => entry.cell);

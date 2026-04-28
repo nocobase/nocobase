@@ -1095,4 +1095,49 @@ describe('simulateLayoutForSlot', () => {
     const total = result.sizes.rowA.reduce((sum, size) => sum + size, 0);
     expect(total).toBe(24);
   });
+
+  it('preserves explicit empty v2 cells when moving another item', () => {
+    const layout: GridLayoutData = {
+      rows: {},
+      sizes: {},
+      layout: {
+        version: 2,
+        rows: [
+          {
+            id: 'rowA',
+            cells: [
+              { id: 'empty-cell', items: [] },
+              { id: 'source-cell', items: ['source'] },
+              { id: 'target-cell', items: ['target'] },
+            ],
+            sizes: [8, 8, 8],
+          },
+        ],
+      },
+    };
+
+    const slot: LayoutSlot = {
+      type: 'column-edge',
+      rowId: 'rowA',
+      columnIndex: 2,
+      direction: 'right',
+      rect,
+      path: [{ rowId: 'rowA', cellId: 'target-cell' }],
+    };
+
+    const result = simulateLayoutForSlot({
+      slot,
+      sourceUid: 'source',
+      layout,
+      generateId: (key) => key,
+    });
+
+    expect(result.layout?.rows[0].cells).toEqual([
+      { id: 'empty-cell', items: [] },
+      { id: 'target-cell', items: ['target'] },
+      { id: 'column-edge:rowA:2:right:cell', items: ['source'] },
+    ]);
+    expect(result.layout?.rows[0].sizes).toHaveLength(3);
+    expect(result.layout?.rows[0].sizes.reduce((sum, size) => sum + size, 0)).toBe(24);
+  });
 });
