@@ -16,19 +16,20 @@ CLI 支持两种常见的初始化方式：
 ## 安装
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli@alpha
 ```
 
 所有命令都支持 `nb <command> --help` 查看完整参数说明。详细安装流程请参阅[快速开始](../../ai/quick-start.md)。
 
 ## 核心概念
 
-| 概念           | 说明                                                      |
-| -------------- | --------------------------------------------------------- |
-| **Workspace**  | 当前项目目录，CLI 会在这里保存 `.nocobase` 配置           |
-| **Env**        | CLI 保存的一个 NocoBase 连接配置，`nb init` 中的 env name |
-| **Source**     | 本地应用的来源，支持 `docker`、`npm` 和 `git`             |
-| **Remote env** | 只保存已有 NocoBase 应用 API 连接的 env                   |
+| 概念                  | 说明                                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| **Workspace**         | 当前项目目录，CLI 会在这里保存 `.nocobase` 配置                                          |
+| **Env**               | CLI 保存的一个 NocoBase 连接配置，`nb init` 中的 env name                                |
+| **Source**            | 本地应用的来源，支持 `docker`、`npm` 和 `git`                                            |
+| **Remote env**        | 只保存已有 NocoBase 应用 API 连接的 env                                                  |
+| **Runtime resources** | CLI 管理的本地应用进程、Docker 应用容器、内置数据库容器、源码目录和存储目录 |
 
 ## 常用场景
 
@@ -61,7 +62,7 @@ nb init --env app1 --yes --source git --version alpha
 ### 连接已有的 NocoBase 应用
 
 ```bash
-nb env add app1 --base-url http://localhost:13000/api
+nb env add app1 --api-base-url http://localhost:13000/api
 ```
 
 `nb env add` 会在需要时自动进入认证流程。
@@ -69,17 +70,17 @@ nb env add app1 --base-url http://localhost:13000/api
 ### 启动、停止和查看日志
 
 ```bash
-nb start --env app1     # 启动应用或 Docker 容器
-nb stop --env app1      # 停止应用或 Docker 容器
-nb logs --env app1      # 查看应用日志
-nb ps                   # 查看所有 env 运行状态
+nb app start --env app1     # 启动应用或 Docker 容器
+nb app stop --env app1      # 停止应用或 Docker 容器
+nb app restart --env app1   # 重启应用或 Docker 容器
+nb app logs --env app1      # 查看应用日志
 ```
 
 ### 升级
 
 ```bash
-nb upgrade --env app1          # 更新源码/镜像并重启
-nb upgrade --env app1 -s       # 跳过代码更新，仅重启
+nb app upgrade --env app1          # 更新源码/镜像并重启
+nb app upgrade --env app1 -s       # 跳过代码更新，仅重启
 ```
 
 ### 数据库管理
@@ -94,17 +95,16 @@ nb db logs --env app1          # 查看数据库日志
 ### 清理
 
 ```bash
-nb down --env app1                    # 停止并移除容器（保留数据和配置）
-nb down --env app1 --remove-data      # 同时删除 storage 和数据库数据
-nb down --env app1 --remove-source    # 同时删除源码目录
-nb down --env app1 --remove-env       # 同时删除 CLI env 配置
+nb app down --env app1                # 停止并清理本地运行资源，保留 storage 和 env 配置
+nb app down --env app1 --all --yes    # 删除该 env 的所有本地资源、storage 和 env 配置
 ```
 
 ### 环境管理
 
 ```bash
 nb env                         # 查看当前 env
-nb env list                    # 列出所有 env
+nb env list                    # 列出所有 env 和 API 认证状态
+nb env info app1               # 查看单个 env 的详细信息
 nb env use app1                # 切换当前 env
 nb env auth app1               # 重新认证
 nb env update app1             # 更新运行时命令元数据
@@ -121,12 +121,19 @@ nb api resource list --resource users -e app1 -j    # 输出原始 JSON
 
 ## 配置文件
 
-NocoBase CLI 的配置存储在 `.nocobase/` 目录下，分两个范围：
+NocoBase CLI 的配置存储在 `.nocobase/config.json` 中。默认使用全局配置目录：
 
-- **project** — 当前工作目录下的 `.nocobase/`
-- **global** — `~/.nocobase/`（可通过环境变量 `NOCOBASE_CTL_HOME` 覆盖）
+```text
+~/.nocobase/config.json
+```
 
-如果当前目录存在 `.nocobase/`，默认使用 project 范围；否则使用 global。
+可以通过 `NB_CLI_ROOT` 调整配置和本地应用文件的根目录：
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+```
+
+设置后，配置文件会保存到 `/your/workspace/.nocobase/config.json`。没有设置 `NB_CLI_ROOT` 时，CLI 也会兼容读取旧的 project 配置（当前工作目录下的 `.nocobase/config.json`）。
 
 配置文件 `.nocobase/config.json` 的结构：
 
@@ -135,7 +142,7 @@ NocoBase CLI 的配置存储在 `.nocobase/` 目录下，分两个范围：
   "currentEnv": "local",
   "envs": {
     "local": {
-      "baseUrl": "http://localhost:13000/api",
+      "apiBaseUrl": "http://localhost:13000/api",
       "auth": { "type": "token", "accessToken": "..." },
       "appRootPath": "./nocobase",
       "appPort": "13000",
@@ -199,7 +206,7 @@ nb install -e local
 | `--root-email`, `-m`    | string  |                   | 管理员邮箱                                             |
 | `--root-password`, `-p` | string  |                   | 管理员密码                                             |
 | `--root-nickname`, `-n` | string  |                   | 管理员昵称                                             |
-| `--fetch-source`        | boolean | `false`           | 安装前先运行 `nb download` 下载源码                    |
+| `--fetch-source`        | boolean | `false`           | 安装前先运行 `nb source download` 下载源码             |
 | `--start-builtin-db`    | boolean | `false`           | 安装前先启动内置数据库                                 |
 | `--db-dialect`          | string  | `postgres`        | 数据库类型：`postgres`、`mysql`、`mariadb`、`kingbase` |
 | `--db-host`             | string  |                   | 数据库地址                                             |
@@ -208,14 +215,14 @@ nb install -e local
 | `--db-user`             | string  |                   | 数据库用户                                             |
 | `--db-password`         | string  |                   | 数据库密码                                             |
 
-安装完成后会自动以守护进程模式启动应用（`nb start -e <env> -d`），并将环境信息写入 `.nocobase/config.json`。
+安装完成后会自动以守护进程模式启动应用（`nb app start -e <env> -d`），并将环境信息写入 `.nocobase/config.json`。
 
-## nb download
+## nb source download
 
 下载 NocoBase 源码或镜像，支持 npm、Docker 和 Git 三种方式。
 
 ```bash
-nb download -s npm
+nb source download -s npm
 ```
 
 | 参数                       | 类型    | 默认值                                     | 说明                                                          |
@@ -231,7 +238,7 @@ nb download -s npm
 | `--docker-platform`        | string  |                                            | docker：平台，比如 `linux/amd64`、`linux/arm64`               |
 | `--docker-save`            | boolean | `false`                                    | docker：是否将镜像保存为 `.tar` 文件                          |
 | `--npm-registry`           | string  |                                            | npm / git：自定义 registry 地址                               |
-| `--build`                  | boolean | `true`                                     | npm / git：下载后是否运行 `nb build`                          |
+| `--build`                  | boolean | `true`                                     | npm / git：下载后是否运行 `nb source build`                   |
 | `--build-dts`              | boolean | `false`                                    | npm / git：构建时是否生成 `.d.ts` 声明文件                    |
 
 Git 模式的版本别名：`latest` → `main`，`beta` → `next`，`alpha` → `develop`。
@@ -274,8 +281,7 @@ nb env update my-app
 | 参数            | 类型    | 说明                                 |
 | --------------- | ------- | ------------------------------------ |
 | `[name]`        | string  | 环境名称，省略时使用当前环境         |
-| `--scope`, `-s` | string  | 配置存储范围：`project` 或 `global`  |
-| `--base-url`    | string  | 覆盖 API 地址（会持久化保存）        |
+| `--api-base-url` | string  | 覆盖 API 地址（会持久化保存）        |
 | `--token`, `-t` | string  | 覆盖 API Key（会持久化保存）         |
 | `--role`        | string  | 角色覆盖（作为 `X-Role` 请求头发送） |
 | `--verbose`     | boolean | 显示详细输出                         |
@@ -284,17 +290,32 @@ nb env update my-app
 
 ## nb env list
 
-列出所有已配置的环境。
+列出所有已配置的环境，并通过已保存的 Token/OAuth 凭证检查应用 API 认证状态。
 
 ```bash
 nb env list
 ```
 
-| 参数            | 类型   | 说明                                |
-| --------------- | ------ | ----------------------------------- |
-| `--scope`, `-s` | string | 配置存储范围：`project` 或 `global` |
+输出表格包含：当前环境标记（`*`）、名称、类型、App Status、URL、认证方式和运行时版本。
 
-输出表格包含：当前环境标记（`*`）、名称、API 地址、认证方式、运行时版本。
+`App Status` 表示 CLI 使用当前 env 的认证信息访问应用 API 后得到的状态，例如 `ok`、`auth failed`、`unreachable` 或 `unconfigured`。数据库运行状态请使用 `nb db ps` 查看。
+
+## nb env info
+
+查看单个环境的详细信息，包括应用、数据库、API 和认证配置。
+
+```bash
+nb env info app1
+```
+
+| 参数             | 类型    | 说明                         |
+| ---------------- | ------- | ---------------------------- |
+| `[name]`         | string  | 环境名称，省略时使用当前环境 |
+| `--env`, `-e`    | string  | 环境名称（和位置参数二选一） |
+| `--json`         | boolean | 输出 JSON                    |
+| `--show-secrets` | boolean | 明文显示 token、密码等密钥   |
+
+推荐使用位置参数形式，例如 `nb env info app1`。如果同时传入 `[name]` 和 `--env`，两者必须一致。
 
 ## nb env remove
 
@@ -308,7 +329,6 @@ nb env remove my-app
 | --------------- | ------- | ----------------------------------- |
 | `<name>`        | string  | 环境名称（必填）                    |
 | `--force`, `-f` | boolean | 跳过确认直接删除                    |
-| `--scope`, `-s` | string  | 配置存储范围：`project` 或 `global` |
 | `--verbose`     | boolean | 显示详细输出                        |
 
 ## nb env auth
@@ -319,10 +339,10 @@ nb env remove my-app
 nb env auth my-app
 ```
 
-| 参数            | 类型   | 说明                                |
-| --------------- | ------ | ----------------------------------- |
-| `<name>`        | string | 环境名称（必填）                    |
-| `--scope`, `-s` | string | 配置存储范围：`project` 或 `global` |
+| 参数          | 类型   | 说明                                           |
+| ------------- | ------ | ---------------------------------------------- |
+| `[name]`      | string | 环境名称，省略时使用当前环境                   |
+| `--env`, `-e` | string | 环境名称（隐藏兼容参数，建议使用位置参数形式） |
 
 内部使用 PKCE 流程：启动本地回调服务 → 打开浏览器授权 → 交换 token → 保存到配置文件。超时时间 5 分钟。
 
@@ -334,17 +354,16 @@ nb env auth my-app
 nb env use my-app
 ```
 
-| 参数            | 类型   | 说明                                |
-| --------------- | ------ | ----------------------------------- |
-| `<name>`        | string | 环境名称（必填）                    |
-| `--scope`, `-s` | string | 配置存储范围：`project` 或 `global` |
+| 参数     | 类型   | 说明             |
+| -------- | ------ | ---------------- |
+| `<name>` | string | 环境名称（必填） |
 
-## nb build
+## nb source build
 
 构建 NocoBase 应用。
 
 ```bash
-nb build
+nb source build
 ```
 
 | 参数            | 类型     | 说明                                                   |
@@ -353,85 +372,92 @@ nb build
 | `--cwd`, `-c`   | string   | 工作目录                                               |
 | `--no-dts`      | boolean  | 不生成 `.d.ts` 声明文件                                |
 | `--sourcemap`   | boolean  | 生成 sourcemap                                         |
+| `--verbose`     | boolean  | 显示详细输出                                           |
 
-## nb start
+## nb app start
 
 启动 NocoBase 应用或 Docker 容器。
 
 ```bash
-nb start
+nb app start
 ```
 
-| 参数                | 类型    | 说明                                |
-| ------------------- | ------- | ----------------------------------- |
-| `--env`, `-e`       | string  | 环境名称，省略时使用当前环境        |
-| `--scope`, `-s`     | string  | 配置存储范围：`project` 或 `global` |
-| `--port`, `-p`      | string  | 端口，覆盖环境配置中的端口          |
-| `--daemon`, `-d`    | boolean | 以守护进程模式运行                  |
-| `--instances`, `-i` | integer | 运行实例数                          |
-| `--launch-mode`     | string  | 启动方式：`pm2` 或 `node`           |
-| `--quickstart`      | boolean | 快速启动                            |
+| 参数                | 类型    | 说明                                                   |
+| ------------------- | ------- | ------------------------------------------------------ |
+| `--env`, `-e`       | string  | 环境名称，省略时使用当前环境                           |
+| `--quickstart`      | boolean | 快速启动应用                                           |
+| `--port`, `-p`      | string  | 端口，覆盖 env 配置中的 `appPort`                      |
+| `--daemon`, `-d`    | boolean | 以守护进程模式运行，默认开启，可用 `--no-daemon` 关闭  |
+| `--instances`, `-i` | integer | 运行实例数                                             |
+| `--launch-mode`     | string  | 启动方式：`pm2` 或 `node`                              |
+| `--verbose`         | boolean | 显示底层启动命令输出                                   |
 
-## nb stop
+## nb app stop
 
 停止 NocoBase 应用或 Docker 容器。
 
 ```bash
-nb stop
+nb app stop
 ```
 
-| 参数            | 类型   | 说明                                |
-| --------------- | ------ | ----------------------------------- |
-| `--env`, `-e`   | string | 环境名称，省略时使用当前环境        |
-| `--scope`, `-s` | string | 配置存储范围：`project` 或 `global` |
+| 参数          | 类型    | 说明                         |
+| ------------- | ------- | ---------------------------- |
+| `--env`, `-e` | string  | 环境名称，省略时使用当前环境 |
+| `--verbose`   | boolean | 显示底层停止命令输出         |
 
-## nb logs
+## nb app restart
+
+重启 NocoBase 应用或 Docker 容器。
+
+```bash
+nb app restart
+```
+
+| 参数                | 类型    | 说明                                                   |
+| ------------------- | ------- | ------------------------------------------------------ |
+| `--env`, `-e`       | string  | 环境名称，省略时使用当前环境                           |
+| `--quickstart`      | boolean | 停止后快速启动应用                                     |
+| `--port`, `-p`      | string  | 端口，覆盖 env 配置中的 `appPort`                      |
+| `--daemon`, `-d`    | boolean | 以守护进程模式运行，默认开启，可用 `--no-daemon` 关闭  |
+| `--instances`, `-i` | integer | 运行实例数                                             |
+| `--launch-mode`     | string  | 启动方式：`pm2` 或 `node`                              |
+| `--verbose`         | boolean | 显示底层停止和启动命令输出                             |
+
+## nb app logs
 
 查看应用日志。
 
 ```bash
-nb logs app1
+nb app logs --env app1
 ```
 
-| 参数          | 类型   | 说明                         |
-| ------------- | ------ | ---------------------------- |
-| `[name]`      | string | 环境名称，省略时使用当前环境 |
-| `--env`, `-e` | string | 环境名称（和位置参数二选一） |
+| 参数          | 类型    | 说明                                           |
+| ------------- | ------- | ---------------------------------------------- |
+| `--env`, `-e` | string  | 环境名称，省略时使用当前环境                   |
+| `--tail`      | integer | 跟随日志前显示的最近日志行数，默认 `100`       |
+| `--follow`, `-f` | boolean | 持续跟随新日志，默认开启，可用 `--no-follow` 关闭 |
 
-## nb ps
+## nb app down
 
-查看环境运行状态。
+停止并清理本地运行资源。storage 数据和 env 配置默认保留，删除全部内容时需要显式确认。
 
 ```bash
-nb ps
+nb app down --env app1
 ```
 
-| 参数          | 类型   | 说明                         |
-| ------------- | ------ | ---------------------------- |
-| `--env`, `-e` | string | 环境名称，省略时显示所有环境 |
+| 参数          | 类型    | 说明                                                            |
+| ------------- | ------- | --------------------------------------------------------------- |
+| `--env`, `-e` | string  | 环境名称，省略时使用当前环境                                    |
+| `--all`       | boolean | 删除该 env 的全部本地资源，包括 storage 数据和保存的 env 配置   |
+| `--yes`, `-y` | boolean | 跳过删除确认，和 `--all` 一起使用                               |
+| `--verbose`   | boolean | 显示底层停止和清理命令输出                                      |
 
-## nb down
+## nb source dev
 
-停止并移除本地运行容器。数据、源码和环境配置默认保留，可通过参数选择性删除。
-
-```bash
-nb down app1
-```
-
-| 参数              | 类型    | 说明                                    |
-| ----------------- | ------- | --------------------------------------- |
-| `[name]`          | string  | 环境名称                                |
-| `--env`, `-e`     | string  | 环境名称（和位置参数二选一）            |
-| `--remove-data`   | boolean | 删除 storage 和数据库数据（需二次确认） |
-| `--remove-source` | boolean | 删除 npm/Git 源码目录                   |
-| `--remove-env`    | boolean | 删除 CLI 环境配置                       |
-
-## nb dev
-
-启动开发模式（支持热更新）。仅支持 npm/Git 来源的环境，Docker 环境请使用 `nb logs` 查看日志。
+启动开发模式（支持热更新）。仅支持 npm/Git 来源的环境，Docker 环境请使用 `nb app logs` 查看日志。
 
 ```bash
-nb dev
+nb source dev
 ```
 
 | 参数              | 类型    | 说明             |
@@ -443,50 +469,109 @@ nb dev
 | `--server`, `-s`  | boolean | 仅启动服务端     |
 | `--inspect`, `-i` | string  | Node.js 调试端口 |
 
-## nb upgrade
+## nb app upgrade
 
 更新源码或镜像并重启 NocoBase 应用。
 
 ```bash
-nb upgrade
+nb app upgrade
 ```
 
-| 参数                       | 类型    | 说明                 |
-| -------------------------- | ------- | -------------------- |
-| `--env`, `-e`              | string  | 环境名称             |
-| `--skip-code-update`, `-s` | boolean | 跳过代码更新，仅重启 |
+| 参数                       | 类型    | 说明                                                   |
+| -------------------------- | ------- | ------------------------------------------------------ |
+| `--env`, `-e`              | string  | 环境名称，省略时使用当前环境                           |
+| `--skip-code-update`, `-s` | boolean | 使用已保存的源码或 Docker 镜像重启，不重新下载更新     |
+| `--verbose`                | boolean | 显示底层更新和重启命令输出                             |
 
-## nb pm list
+## nb db ps
+
+查看内置数据库运行状态。省略 `--env` 时显示所有已配置 env 的数据库状态。
+
+```bash
+nb db ps
+```
+
+| 参数          | 类型   | 说明                         |
+| ------------- | ------ | ---------------------------- |
+| `--env`, `-e` | string | 环境名称，省略时显示所有 env |
+
+## nb db start
+
+启动指定 env 的内置数据库容器。
+
+```bash
+nb db start --env app1
+```
+
+| 参数          | 类型    | 说明                         |
+| ------------- | ------- | ---------------------------- |
+| `--env`, `-e` | string  | 环境名称，省略时使用当前环境 |
+| `--verbose`   | boolean | 显示底层 Docker 命令输出     |
+
+## nb db stop
+
+停止指定 env 的内置数据库容器。
+
+```bash
+nb db stop --env app1
+```
+
+| 参数          | 类型    | 说明                         |
+| ------------- | ------- | ---------------------------- |
+| `--env`, `-e` | string  | 环境名称，省略时使用当前环境 |
+| `--verbose`   | boolean | 显示底层 Docker 命令输出     |
+
+## nb db logs
+
+查看指定 env 的内置数据库容器日志。
+
+```bash
+nb db logs --env app1
+```
+
+| 参数          | 类型    | 说明                                           |
+| ------------- | ------- | ---------------------------------------------- |
+| `--env`, `-e` | string  | 环境名称，省略时使用当前环境                   |
+| `--tail`      | integer | 跟随日志前显示的最近日志行数，默认 `100`       |
+| `--follow`, `-f` | boolean | 持续跟随新日志，默认开启，可用 `--no-follow` 关闭 |
+
+## nb plugin list
 
 列出所有已安装的插件。
 
 ```bash
-nb pm list
+nb plugin list
 ```
 
-## nb pm enable
+| 参数          | 类型   | 说明                         |
+| ------------- | ------ | ---------------------------- |
+| `--env`, `-e` | string | 环境名称，省略时使用当前环境 |
+
+## nb plugin enable
 
 启用一个或多个插件。
 
 ```bash
-nb pm enable @nocobase/plugin-sample
+nb plugin enable @nocobase/plugin-sample
 ```
 
 | 参数            | 类型     | 说明                                 |
 | --------------- | -------- | ------------------------------------ |
 | `<packages...>` | string[] | 插件包名（必填），支持多个，空格分隔 |
+| `--env`, `-e`   | string   | 环境名称，省略时使用当前环境         |
 
-## nb pm disable
+## nb plugin disable
 
 停用一个或多个插件。
 
 ```bash
-nb pm disable @nocobase/plugin-sample
+nb plugin disable @nocobase/plugin-sample
 ```
 
 | 参数            | 类型     | 说明                                 |
 | --------------- | -------- | ------------------------------------ |
 | `<packages...>` | string[] | 插件包名（必填），支持多个，空格分隔 |
+| `--env`, `-e`   | string   | 环境名称，省略时使用当前环境         |
 
 ## nb scaffold plugin
 
@@ -521,7 +606,7 @@ nb scaffold migration add-status-field --pkg @nocobase/plugin-sample
 
 | 参数                  | 类型    | 说明                                                 |
 | --------------------- | ------- | ---------------------------------------------------- |
-| `--base-url`          | string  | NocoBase API 地址，比如 `http://localhost:13000/api` |
+| `--api-base-url`      | string  | NocoBase API 地址，比如 `http://localhost:13000/api` |
 | `--env`, `-e`         | string  | 环境名称                                             |
 | `--token`, `-t`       | string  | API Key                                              |
 | `--role`              | string  | 角色覆盖（`X-Role` 请求头）                          |
@@ -667,7 +752,7 @@ nb api resource query --resource orders --measures '[{"field":"amount","aggregat
 
 | 参数                  | 类型    | 说明                        |
 | --------------------- | ------- | --------------------------- |
-| `--base-url`          | string  | NocoBase API 地址           |
+| `--api-base-url`      | string  | NocoBase API 地址           |
 | `--env`, `-e`         | string  | 环境名称                    |
 | `--token`, `-t`       | string  | API Key                     |
 | `--role`              | string  | 角色覆盖（`X-Role` 请求头） |
