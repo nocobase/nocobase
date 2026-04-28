@@ -13,7 +13,7 @@ import { RemoteSelect, SchemaComponent } from '@nocobase/client';
 import { Schema, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
 import { Radio, RadioGroupProps, Space, Tooltip, Typography } from 'antd';
-import { namespace, useT } from '../../../../locale';
+import { namespace, useT } from '../locale';
 
 const RadioOptions = {
   preset: { value: 'preset' },
@@ -26,8 +26,8 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
       <Tooltip
         title={t(
           type === 'skills'
-            ? "Use the AI employee's default skills for this node."
-            : "Use the AI employee's default tools for this node.",
+            ? "Use the AI employee's default skills for this task."
+            : "Use the AI employee's default tools for this task.",
         )}
       >
         <span>{t('Preset')}</span>
@@ -40,8 +40,8 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
       <Tooltip
         title={t(
           type === 'skills'
-            ? 'Select the specific skills this node is allowed to use.'
-            : 'Select the specific tools this node is allowed to use.',
+            ? 'Select the specific skills this task is allowed to use.'
+            : 'Select the specific tools this task is allowed to use.',
         )}
       >
         <span>{t('Custom')}</span>
@@ -51,17 +51,15 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
   },
 ];
 
-const Skills: React.FC = observer(() => {
+export const Skills: React.FC<{ username: string; defaultSkills: string[]; initials?: string[] }> = ({
+  username,
+  defaultSkills,
+  initials,
+}) => {
   const t = useT();
   const radioOptions = useMemo(() => getRadioOptions(t, 'skills'), [t]);
   const field = useField<ArrayField>();
-  const ctx = useFlowContext();
   const form = useForm();
-  const username = ctx.model.props.aiEmployee.username;
-  const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
-  const defaultSkills: string[] = useMemo(() => {
-    return aiEmployeesMap[username]?.skillSettings?.skills?.map((name: string) => name) ?? [];
-  }, [aiEmployeesMap, username]);
 
   const handleChange = (value: string[]) => {
     field.setValue(value.filter((skill) => defaultSkills.includes(skill)));
@@ -78,12 +76,12 @@ const Skills: React.FC = observer(() => {
   };
 
   useEffect(() => {
-    const hasInitialSkills = Array.isArray(form.initialValues?.skillSettings?.skills);
+    const hasInitialSkills = initials ?? Array.isArray(form.initialValues?.skillSettings?.skills);
     if (!hasInitialSkills) {
       form.setValuesIn('skillSettings.skills', undefined);
     }
     setRadioValue(hasInitialSkills ? RadioOptions.custom.value : RadioOptions.preset.value);
-  }, [form]);
+  }, [form, initials]);
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
@@ -113,20 +111,17 @@ const Skills: React.FC = observer(() => {
       )}
     </Space>
   );
-});
+};
 
-const Tools: React.FC = observer(() => {
+export const Tools: React.FC<{ username: string; defaultTools: string[]; initials?: string[] }> = ({
+  username,
+  defaultTools,
+  initials,
+}) => {
   const t = useT();
   const radioOptions = useMemo(() => getRadioOptions(t, 'tools'), [t]);
   const field = useField<ArrayField>();
-  const ctx = useFlowContext();
   const form = useForm();
-  const username = ctx.model.props.aiEmployee.username;
-  const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
-  const defaultTools: string[] = useMemo(() => {
-    const aiEmployee = aiEmployeesMap[username];
-    return aiEmployee?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
-  }, [aiEmployeesMap, username]);
 
   const handleChange = (value: string[]) => {
     field.setValue(value.filter((tool) => defaultTools.includes(tool)));
@@ -143,12 +138,12 @@ const Tools: React.FC = observer(() => {
   };
 
   useEffect(() => {
-    const hasInitialTools = Array.isArray(form.initialValues?.skillSettings?.tools);
+    const hasInitialTools = initials ?? Array.isArray(form.initialValues?.skillSettings?.tools);
     if (!hasInitialTools) {
       form.setValuesIn('skillSettings.tools', undefined);
     }
     setRadioValue(hasInitialTools ? RadioOptions.custom.value : RadioOptions.preset.value);
-  }, [form]);
+  }, [form, initials]);
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
@@ -178,7 +173,7 @@ const Tools: React.FC = observer(() => {
       )}
     </Space>
   );
-});
+};
 
 const renderTitleWithDescription = (t: any) => (option: { data?: { title?: string; description?: string } }) => (
   <OptionContent t={t} title={option.data?.title} description={option.data?.description} />
@@ -221,9 +216,19 @@ const OptionContent: React.FC<{
   );
 };
 
-export const SkillSettings: React.FC = () => {
+export const SkillSettings: React.FC = observer(() => {
+  const ctx = useFlowContext();
+  const username = ctx.model.props?.aiEmployee?.username ?? '';
+  const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
+  const defaultSkills: string[] = useMemo(() => {
+    return aiEmployeesMap[username]?.skillSettings?.skills?.map((name: string) => name) ?? [];
+  }, [aiEmployeesMap, username]);
+  const defaultTools: string[] = useMemo(() => {
+    return aiEmployeesMap[username]?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
+  }, [aiEmployeesMap, username]);
   return (
     <SchemaComponent
+      name={username}
       components={{ Skills, Tools }}
       schema={{
         type: 'void',
@@ -232,10 +237,14 @@ export const SkillSettings: React.FC = () => {
             title: tExpr('Skills', { ns: namespace }),
             type: 'array',
             'x-decorator': 'FormItem',
-            'x-component': 'Skills',
+            'x-component': Skills,
+            'x-component-props': {
+              username,
+              defaultSkills,
+            },
             'x-decorator-props': {
               layout: 'horizontal',
-              tooltip: tExpr('Configure the skills available to this node', {
+              tooltip: tExpr('Configure the skills available to this task', {
                 ns: namespace,
               }),
             },
@@ -244,10 +253,14 @@ export const SkillSettings: React.FC = () => {
             title: tExpr('Tools', { ns: namespace }),
             type: 'array',
             'x-decorator': 'FormItem',
-            'x-component': 'Tools',
+            'x-component': Tools,
+            'x-component-props': {
+              username,
+              defaultTools,
+            },
             'x-decorator-props': {
               layout: 'horizontal',
-              tooltip: tExpr('Configure the tools available to this node', {
+              tooltip: tExpr('Configure the tools available to this task', {
                 ns: namespace,
               }),
             },
@@ -256,4 +269,4 @@ export const SkillSettings: React.FC = () => {
       }}
     />
   );
-};
+});

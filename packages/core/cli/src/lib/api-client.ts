@@ -9,6 +9,7 @@
 
 import { promises as fs } from 'node:fs';
 import { resolveServerRequestTarget } from './env-auth.js';
+import { fetchWithPreservedAuthRedirect } from './http-request.js';
 
 const CLI_REQUEST_SOURCE_HEADER = 'x-request-source';
 const CLI_REQUEST_SOURCE_VALUE = 'cli';
@@ -282,7 +283,7 @@ export async function executeApiRequest(options: RequestOptions) {
   const url = new URL(`${normalizeBaseUrl(baseUrl)}${requestPath}`);
   query.forEach((value, key) => url.searchParams.append(key, value));
 
-  const response = await fetch(url, {
+  const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.operation.method.toUpperCase(),
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -331,7 +332,7 @@ export async function executeRawApiRequest(options: RawRequestOptions) {
     url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.method.toUpperCase(),
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),

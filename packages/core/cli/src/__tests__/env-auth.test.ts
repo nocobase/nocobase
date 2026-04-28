@@ -23,17 +23,17 @@ import {
 } from '../lib/env-auth.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
-  const previous = process.env.NOCOBASE_CTL_HOME;
+  const previous = process.env.NB_CLI_ROOT;
   const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-test-'));
-  process.env.NOCOBASE_CTL_HOME = tempHome;
+  process.env.NB_CLI_ROOT = tempHome;
 
   try {
     await run();
   } finally {
     if (previous === undefined) {
-      delete process.env.NOCOBASE_CTL_HOME;
+      delete process.env.NB_CLI_ROOT;
     } else {
-      process.env.NOCOBASE_CTL_HOME = previous;
+      process.env.NB_CLI_ROOT = previous;
     }
     await rm(tempHome, { recursive: true, force: true });
   }

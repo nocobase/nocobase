@@ -67,6 +67,38 @@ describe('flowSurfaces field binding registry', () => {
     ).toBe('DisplayPreviewFieldModel');
   });
 
+  it('should keep plain URL display fields on the core URL binding when file-manager is enabled', () => {
+    const enabledPackages = new Set(['@nocobase/plugin-file-manager']);
+    const urlField = {
+      interface: 'url',
+      type: 'text',
+    };
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'TableBlockModel',
+        field: urlField,
+        enabledPackages,
+      }),
+    ).toMatchObject({
+      wrapperUse: 'TableColumnModel',
+      fieldUse: 'DisplayURLFieldModel',
+      inferredFieldUse: 'DisplayURLFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'DetailsBlockModel',
+        field: urlField,
+        enabledPackages,
+      }),
+    ).toMatchObject({
+      wrapperUse: 'DetailsItemModel',
+      fieldUse: 'DisplayURLFieldModel',
+      inferredFieldUse: 'DisplayURLFieldModel',
+    });
+  });
+
   it('should resolve plugin-backed non-core field interfaces to their registered model strings', () => {
     const enabledPackages = new Set(['@nocobase/plugin-field-code', '@nocobase/plugin-field-formula']);
 
@@ -250,5 +282,47 @@ describe('flowSurfaces field binding registry', () => {
         },
       })?.has('CheckboxGroupFieldModel'),
     ).toBe(true);
+  });
+
+  it('should expose generic relation field component sets that back public fieldType options', () => {
+    const singleAssociationField = {
+      interface: 'm2o',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+    const multiAssociationField = {
+      interface: 'm2m',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'FormItemModel', field: singleAssociationField }) || [],
+      ),
+    ).toEqual(['RecordSelectFieldModel', 'RecordPickerFieldModel', 'SubFormFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'FormItemModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual([
+      'RecordSelectFieldModel',
+      'RecordPickerFieldModel',
+      'SubFormListFieldModel',
+      'SubTableFieldModel',
+      'PopupSubTableFieldModel',
+    ]);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'DetailsItemModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
+    expect(
+      Array.from(
+        getSupportedFieldComponentUseSet({ containerUse: 'TableColumnModel', field: multiAssociationField }) || [],
+      ),
+    ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
   });
 });

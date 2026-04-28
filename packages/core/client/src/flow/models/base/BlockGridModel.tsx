@@ -8,10 +8,20 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
-import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  DragOverlayConfig,
+  FlowSettingsButton,
+  buildSubModelGroups,
+  buildSubModelItems,
+  type SubModelItem,
+  type SubModelItemsType,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { GridModel } from './GridModel';
+
+const SELECT_SCENE_ALLOWED_OTHER_BLOCK_MODELS = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
 
 export class BlockGridModel extends GridModel {
   dragOverlayConfig: DragOverlayConfig = {
@@ -53,6 +63,36 @@ export class BlockGridModel extends GridModel {
     return this.context.filterManager;
   }
 
+  get addBlockItems(): SubModelItemsType | undefined {
+    if (this.context.view?.inputArgs?.scene !== 'select') {
+      return undefined;
+    }
+
+    return async (ctx) => {
+      const items = await buildSubModelGroups(['DataBlockModel', 'FilterBlockModel'])(ctx);
+      const allowedOtherBlockModels = SELECT_SCENE_ALLOWED_OTHER_BLOCK_MODELS.filter((modelName) =>
+        Boolean(ctx.engine.getModelClass(modelName)),
+      );
+      const otherBlockItems = (
+        await Promise.all(allowedOtherBlockModels.map((modelName) => buildSubModelItems(modelName)(ctx)))
+      )
+        .flat()
+        .sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+
+      if (otherBlockItems.length > 0) {
+        items.push({
+          key: 'select-scene-other-blocks',
+          type: 'group',
+          label: ctx.t('Other blocks'),
+          sort: 1000,
+          children: otherBlockItems,
+        } satisfies SubModelItem);
+      }
+
+      return items;
+    };
+  }
+
   serialize() {
     const data = super.serialize();
     data['filterManager'] = this.filterManager.getFilterConfigs();
@@ -60,8 +100,14 @@ export class BlockGridModel extends GridModel {
   }
 
   renderAddSubModelButton() {
+    const items = this.addBlockItems;
     return (
-      <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={this.subModelBaseClasses}>
+      <AddSubModelButton
+        model={this}
+        subModelKey="items"
+        items={items}
+        subModelBaseClasses={items ? undefined : this.subModelBaseClasses}
+      >
         <FlowSettingsButton icon={<PlusOutlined />} data-flow-add-block>
           {this.context.t('Add block')}
         </FlowSettingsButton>

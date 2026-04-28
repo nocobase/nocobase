@@ -25,6 +25,12 @@ import {
 import { getFieldInterface } from './service-helpers';
 import type { FlowSurfaceNodeSpec, FlowSurfaceNodeSubModel } from './types';
 import { FLOW_SURFACE_RESERVED_KEYS } from './planning/key-registry';
+import {
+  assertNoInternalFieldKeys,
+  normalizePublicFieldNameList,
+  normalizePublicFieldType,
+  type FlowSurfacePublicRelationFieldType,
+} from './field-type-resolver';
 
 export function buildDefinedPayload(payload: Record<string, any>) {
   return _.pickBy(payload, (value) => !_.isUndefined(value));
@@ -143,6 +149,34 @@ export function buildBlockTitleDescriptionFromSemanticChanges(changes: Record<st
         : {}),
     }),
   };
+}
+
+export function buildBlockCardSettingsFromSemanticChanges(changes: Record<string, any>) {
+  const nextCardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes) || {};
+  const hasHeightPatch = hasOwnDefined(changes, 'height') || hasOwnDefined(changes, 'heightMode');
+
+  if (hasHeightPatch) {
+    const nextHeightMode = hasOwnDefined(changes, 'heightMode')
+      ? normalizePublicBlockHeightMode(changes.heightMode)
+      : hasOwnDefined(changes, 'height')
+        ? 'specifyValue'
+        : undefined;
+
+    if (nextHeightMode) {
+      _.set(nextCardSettings, ['blockHeight', 'heightMode'], nextHeightMode);
+      if (nextHeightMode === 'specifyValue' && hasOwnDefined(changes, 'height')) {
+        _.set(nextCardSettings, ['blockHeight', 'height'], changes.height);
+      } else {
+        _.unset(nextCardSettings, ['blockHeight', 'height']);
+      }
+    }
+  }
+
+  if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
+    _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  return Object.keys(nextCardSettings).length ? nextCardSettings : undefined;
 }
 
 export function buildChartCardSettingsFromSemanticChanges(currentCardSettings: any, changes: Record<string, any>) {
@@ -301,7 +335,18 @@ export function hasDefinedValue(input: Record<string, any>, keys: string[]) {
 }
 
 export function ensureNoRawSimpleChangeKeys(changes: Record<string, any>) {
-  const rawKeys = ['props', 'decoratorProps', 'stepParams', 'flowRegistry', 'use', 'fieldUse'];
+  const rawKeys = [
+    'props',
+    'decoratorProps',
+    'stepParams',
+    'flowRegistry',
+    'use',
+    'fieldUse',
+    'fieldComponent',
+    'fieldModel',
+    'componentFields',
+    'subModels',
+  ];
   const forbidden = Object.keys(changes).filter((key) => rawKeys.includes(key));
   if (forbidden.length) {
     throwBadRequest(
@@ -340,6 +385,14 @@ export type NormalizedComposeFieldSpec = {
   associationPathName?: string;
   renderer?: string;
   type?: string;
+  fieldType?: FlowSurfacePublicRelationFieldType;
+  fields?: string[];
+  selectorFields?: string[];
+  titleField?: string;
+  openMode?: string;
+  popupSize?: string;
+  pageSize?: number;
+  showIndex?: boolean;
   target?: string;
   settings: Record<string, any>;
   popup?: Record<string, any>;
@@ -365,12 +418,22 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   if (!_.isPlainObject(input)) {
     throwBadRequest(`flowSurfaces compose field #${index + 1} must be a string or object`);
   }
-  if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps) {
-    throwBadRequest('flowSurfaces compose field only accepts public semantic field fields');
-  }
+  assertNoInternalFieldKeys(input, `flowSurfaces compose field #${index + 1}`);
+  assertNoInternalFieldKeys(input.settings, `flowSurfaces compose field #${index + 1}.settings`);
   const semanticType = String(input.type || '').trim() || undefined;
   const fieldPath = String(input.fieldPath || '').trim();
   const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();
+  const fieldType = normalizePublicFieldType(input.fieldType, `compose field #${index + 1}`);
+  const fields = normalizePublicFieldNameList(input.fields, `compose field #${index + 1}.fields`);
+  const selectorFields = normalizePublicFieldNameList(
+    input.selectorFields,
+    `compose field #${index + 1}.selectorFields`,
+  );
+  const titleField = typeof input.titleField === 'undefined' ? undefined : String(input.titleField || '').trim();
+  const openMode = typeof input.openMode === 'undefined' ? undefined : String(input.openMode || '').trim();
+  const popupSize = typeof input.popupSize === 'undefined' ? undefined : String(input.popupSize || '').trim();
+  const pageSize = typeof input.pageSize === 'undefined' ? undefined : Number(input.pageSize);
+  const showIndex = typeof input.showIndex === 'undefined' ? undefined : !!input.showIndex;
   if (!_.isUndefined(input.popup) && !_.isPlainObject(input.popup)) {
     throwBadRequest(`flowSurfaces compose field #${index + 1} popup must be an object`);
   }
@@ -397,12 +460,33 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
     associationPathName: String(input.associationPathName || '').trim() || undefined,
     ...(renderer ? { renderer } : {}),
     ...(semanticType ? { type: semanticType } : {}),
+    ...(fieldType ? { fieldType } : {}),
+    ...(!_.isUndefined(fields) ? { fields } : {}),
+    ...(!_.isUndefined(selectorFields) ? { selectorFields } : {}),
+    ...(titleField ? { titleField } : {}),
+    ...(openMode ? { openMode } : {}),
+    ...(popupSize ? { popupSize } : {}),
+    ...(!_.isUndefined(pageSize) && Number.isFinite(pageSize) ? { pageSize } : {}),
+    ...(!_.isUndefined(showIndex) ? { showIndex } : {}),
     target: typeof input.target === 'string' ? String(input.target || '').trim() || undefined : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
     __autoPopupForRelationField: input.__autoPopupForRelationField === true,
     ...(popupDefaultsMetadata ? { [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: popupDefaultsMetadata } : {}),
   };
+}
+
+export function resolveRequestedFieldComponent(values: Record<string, any> | undefined) {
+  return undefined;
+}
+
+export function resolveRequestedFieldUse(values: Record<string, any> | undefined) {
+  return resolveRequestedFieldComponent(values) || resolveRequestedFieldUseAlias(values);
+}
+
+export function resolveRequestedFieldUseAlias(values: Record<string, any> | undefined) {
+  const legacyFieldUse = String(values?.fieldUse || '').trim();
+  return legacyFieldUse || undefined;
 }
 
 export function normalizeComposeActionSpec(input: any, index: number) {
@@ -628,13 +712,19 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'disabled',
     'maxCount',
     'pattern',
-    'titleField',
     'dataIndex',
     'editable',
     'labelWidth',
     'labelWrap',
     'name',
-    'fieldComponent',
+    'fieldType',
+    'fields',
+    'selectorFields',
+    'titleField',
+    'openMode',
+    'popupSize',
+    'pageSize',
+    'showIndex',
     ...(wrapperUse === 'TableColumnModel' ? ['title'] : []),
   ]);
   const fieldChanges = _.pick(changes, [

@@ -58,7 +58,7 @@ nb init --ui
 
 `nb init` can either connect to an existing NocoBase app or install a new one.
 When creating a new app, it can also install NocoBase AI coding skills
-(`nocobase/skills`) for the current workspace.
+(`nocobase/skills`) globally.
 
 ### Non-Interactive Setup
 
@@ -113,12 +113,6 @@ If `nb init` was interrupted after the env config had already been saved, you ca
 nb init --env app1 --resume
 ```
 
-The advanced low-level equivalent is:
-
-```bash
-nb install --env app1 --resume
-```
-
 `--resume` reuses the saved workspace env config for app, source, database, and env connection settings. In interactive mode, it only asks for any missing setup-only values.
 
 In non-interactive mode, pass these setup-only flags again because they are not saved in env config:
@@ -134,37 +128,32 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | Command | Description |
 | --- | --- |
 | `nb init` | Set up NocoBase and connect it as a CLI env for coding agents. |
-| `nb install` | Advanced command used by `nb init` to install a local NocoBase app and save env config. In most cases, use `nb init` instead. |
-| `nb download` | Advanced command used by `nb init` or `nb upgrade` to fetch NocoBase from Docker, npm, or Git. It is rarely used directly. |
-| `nb start` | Start the selected local app or Docker container. |
-| `nb stop` | Stop the selected local app or Docker container. |
-| `nb dev` | Run development mode for npm/Git source envs. |
-| `nb logs` | Show app logs for npm/Git or Docker envs. |
-| `nb ps` | Show runtime status for configured envs. |
+| `nb app` | Manage app runtimes: start, stop, restart, logs, status, cleanup, and upgrades. |
+| `nb source` | Manage the local source project: download, develop, build, and test. |
 | `nb db` | Inspect or manage built-in database runtime status for local envs. |
-| `nb upgrade` | Refresh code/image and restart the selected app. |
-| `nb down` | Stop and remove local runtime containers for an env. |
 | `nb env` | Manage saved CLI env connections. |
 | `nb api` | Call NocoBase API resources from the CLI. |
-| `nb pm` | Manage plugins for the selected NocoBase env. |
+| `nb plugin` | Manage plugins for the selected NocoBase env. |
 | `nb self` | Check or update the installed NocoBase CLI. |
-| `nb skills` | Check, install, or update NocoBase AI coding skills for the current workspace. |
+| `nb skills` | Check, install, or update global NocoBase AI coding skills. |
 
 Recommended style: use `--env` explicitly for app/runtime commands. `-e` is the short form:
 
 ```bash
-nb start --env app1
-nb logs --env app1
-nb ps --env app1
+nb app start --env app1
+nb app restart --env app1
+nb app logs --env app1
+nb app ps --env app1
 nb db ps --env app1
 ```
 
 Equivalent shorthand examples:
 
 ```bash
-nb start -e app1
-nb logs -e app1
-nb upgrade -e app1
+nb app start -e app1
+nb app restart -e app1
+nb app logs -e app1
+nb app upgrade -e app1
 nb db start -e app1
 ```
 
@@ -183,7 +172,7 @@ Update the CLI when it is installed globally with npm:
 nb self update
 ```
 
-Check whether the current workspace already has the NocoBase AI coding skills:
+Check whether the global NocoBase AI coding skills are installed:
 
 ```bash
 nb skills check
@@ -205,17 +194,18 @@ Docker envs are managed through saved Docker containers and images:
 
 ```bash
 nb init --env app1 --yes --source docker --version alpha
-nb start --env app1
-nb logs --env app1
-nb stop --env app1
+nb app start --env app1
+nb app restart --env app1
+nb app logs --env app1
+nb app stop --env app1
 ```
 
 Docker downloads support platform selection:
 
 ```bash
-nb download --source docker --version alpha --docker-platform auto
-nb download --source docker --version alpha --docker-platform linux/amd64
-nb download --source docker --version alpha --docker-platform linux/arm64
+nb source download --source docker --version alpha --docker-platform auto
+nb source download --source docker --version alpha --docker-platform linux/amd64
+nb source download --source docker --version alpha --docker-platform linux/arm64
 ```
 
 ### npm and Git
@@ -224,11 +214,11 @@ npm and Git envs use a local source directory and can run development mode:
 
 ```bash
 nb init --env app1 --yes --source git --version alpha
-nb dev --env app1
+nb source dev --env app1
 ```
 
-`nb dev` only supports npm/Git source envs. Docker envs can be inspected with
-`nb logs`, and remote envs only support API/env operations.
+`nb source dev` only supports npm/Git source envs. Docker envs can be inspected with
+`nb app logs`, and remote envs only support API/env operations.
 
 ### Existing NocoBase App
 
@@ -236,7 +226,7 @@ To connect an existing app, use `nb init` and choose the existing-app setup
 path, or add the env directly:
 
 ```bash
-nb env add app1 --base-url http://localhost:13000/api
+nb env add app1 --api-base-url http://localhost:13000/api
 ```
 
 `nb env add` will start the authentication flow automatically when needed.
@@ -246,14 +236,14 @@ nb env add app1 --base-url http://localhost:13000/api
 Upgrade refreshes the saved source or image, then restarts the app:
 
 ```bash
-nb upgrade --env app1
+nb app upgrade --env app1
 ```
 
 Use `--skip-code-update` or `-s` to restart with the saved local code or Docker
 image without downloading updates first:
 
 ```bash
-nb upgrade --env app1 -s
+nb app upgrade --env app1 -s
 ```
 
 ## Database Commands
@@ -279,23 +269,19 @@ Notes:
 Bring down a local env:
 
 ```bash
-nb down --env app1
+nb app down --env app1
 ```
 
-By default, `nb down` stops the app and removes app/database containers if they
-exist. It keeps user data, source files, and CLI env config.
+By default, `nb app down` stops the app and removes app/database containers if they
+exist. For local envs, it also deletes the saved local app files. It keeps storage data and CLI env config.
 
 Use explicit flags for destructive cleanup:
 
 ```bash
-nb down --env app1 --remove-data
-nb down --env app1 --remove-source
-nb down --env app1 --remove-env
+nb app down --env app1 --all --yes
 ```
 
-- `--remove-data`: delete storage and managed database data. This requires confirmation unless `--yes` is used.
-- `--remove-source`: delete the npm/Git source directory.
-- `--remove-env`: remove the saved CLI env config.
+- `--all`: delete everything for the env, including storage data and the saved env config. This requires `--yes`.
 
 ## Environment Management
 

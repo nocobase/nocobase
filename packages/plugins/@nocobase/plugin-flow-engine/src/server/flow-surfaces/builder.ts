@@ -656,6 +656,7 @@ export function buildFieldTree(params: BuildFieldParams) {
               },
             }),
           ),
+          ...(fieldDefaults.subModels ? { subModels: _.cloneDeep(fieldDefaults.subModels) } : {}),
         },
       },
     },
@@ -1089,7 +1090,7 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
 }
 
 function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
-  if (containerUse === 'TableActionsColumnModel') {
+  if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(containerUse || '').trim())) {
     return {
       ...props,
       type: 'link',
@@ -1143,13 +1144,60 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
         enableQuickCreateEvent: true,
         weekStart: 1,
       },
+      stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'fullHeight',
+          },
+        },
+      },
+    };
+  }
+  if (use === 'KanbanBlockModel') {
+    return {
+      stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'fullHeight',
+          },
+        },
+      },
+    };
+  }
+  if (use === 'TreeBlockModel') {
+    return {
+      props: {
+        searchable: true,
+        defaultExpandAll: false,
+        includeDescendants: true,
+      },
     };
   }
   return {};
 }
 
-function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
+export function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
   switch (use) {
+    case 'PopupSubTableFieldModel':
+      return {
+        subModels: {
+          subTableColumns: [
+            {
+              use: 'PopupSubTableActionsColumnModel',
+              subModels: {
+                actions: [
+                  {
+                    use: 'PopupSubTableEditActionModel',
+                  },
+                  {
+                    use: 'PopupSubTableRemoveActionModel',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
     case 'JSFieldModel':
       return {
         stepParams: {

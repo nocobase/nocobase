@@ -50,13 +50,10 @@ import {
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
 import { FlowSurfaceBadRequestError, FlowSurfaceInternalError } from './errors';
-import {
-  MULTI_VALUE_ASSOCIATION_INTERFACES,
-  normalizeFieldContainerKind,
-  shouldUseAssociationTitleTextDisplay,
-} from './field-semantics';
+import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
 import { inferSharedFieldDefaultBindingUse } from './core-field-default-bindings';
 import { getRegisteredFieldUses, resolveRegisteredFieldBinding } from './field-binding-registry';
+import { MULTI_VALUE_ASSOCIATION_INTERFACES, SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
@@ -72,6 +69,10 @@ const OPEN_VIEW_SCENE_SCHEMA = {
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
+const BLOCK_HEIGHT_MODE_SCHEMA = {
+  type: 'string',
+  enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
+};
 const NULLABLE_NUMBER_OR_STRING_SCHEMA = {
   oneOf: [NUMBER_SCHEMA, NULLABLE_STRING_SCHEMA],
 };
@@ -295,13 +296,21 @@ const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
   },
 };
 const BLOCK_CARD_SETTINGS_GROUP = {
-  allowedPaths: ['titleDescription.title', 'titleDescription.description', 'linkageRules'],
+  allowedPaths: [
+    'titleDescription.title',
+    'titleDescription.description',
+    'blockHeight.heightMode',
+    'blockHeight.height',
+    'linkageRules',
+  ],
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['titleDescription', 'linkageRules'],
+  eventBindingSteps: ['titleDescription', 'blockHeight', 'linkageRules'],
   pathSchemas: {
     'titleDescription.title': STRING_SCHEMA,
     'titleDescription.description': STRING_SCHEMA,
+    'blockHeight.heightMode': BLOCK_HEIGHT_MODE_SCHEMA,
+    'blockHeight.height': NUMBER_SCHEMA,
     linkageRules: ARRAY_SCHEMA,
   },
 };
@@ -332,6 +341,36 @@ const CALENDAR_SETTINGS_GROUP = {
     'weekStart.weekStart': NUMBER_SCHEMA,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
     'linkageRules.value': ARRAY_SCHEMA,
+  },
+};
+const TREE_BLOCK_PROP_SCHEMAS = {
+  searchable: BOOLEAN_SCHEMA,
+  defaultExpandAll: BOOLEAN_SCHEMA,
+  includeDescendants: BOOLEAN_SCHEMA,
+  fieldNames: OBJECT_SCHEMA,
+  pageSize: NUMBER_SCHEMA,
+};
+const TREE_SETTINGS_GROUP = {
+  allowedPaths: [
+    'searchable.searchable',
+    'defaultExpandAll.defaultExpandAll',
+    'includeDescendants.includeDescendants',
+    'titleField.titleField',
+    'pageSize.pageSize',
+    'dataScope.filter',
+    'defaultSorting.sort',
+  ],
+  clearable: true,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['treeSettings', 'dataScope', 'defaultSorting'],
+  pathSchemas: {
+    'searchable.searchable': BOOLEAN_SCHEMA,
+    'defaultExpandAll.defaultExpandAll': BOOLEAN_SCHEMA,
+    'includeDescendants.includeDescendants': BOOLEAN_SCHEMA,
+    'titleField.titleField': STRING_SCHEMA,
+    'pageSize.pageSize': NUMBER_SCHEMA,
+    'dataScope.filter': FILTER_GROUP_SCHEMA,
+    'defaultSorting.sort': ARRAY_SCHEMA,
   },
 };
 const KANBAN_SETTINGS_GROUP = {
@@ -437,6 +476,7 @@ const REGISTERED_FILTER_FIELD_USE_SET = getRegisteredFieldUses('filter');
 const EDITABLE_FIELD_USE_SET = new Set([
   ...JS_EDITABLE_FIELD_USE_SET,
   'RecordSelectFieldModel',
+  'RecordPickerFieldModel',
   'JsonFieldModel',
   'TextareaFieldModel',
   'IconFieldModel',
@@ -455,10 +495,14 @@ const EDITABLE_FIELD_USE_SET = new Set([
   'CollectionSelectorFieldModel',
   'RichTextFieldModel',
   'InputFieldModel',
+  'SubFormListFieldModel',
+  'SubTableFieldModel',
+  'PopupSubTableFieldModel',
 ]);
 const DISPLAY_FIELD_USE_SET = new Set([
   ...JS_DISPLAY_FIELD_USE_SET,
   'DisplaySubItemFieldModel',
+  'DisplaySubListFieldModel',
   'DisplaySubTableFieldModel',
   'DisplayHtmlFieldModel',
   'DisplayNumberFieldModel',
@@ -490,7 +534,6 @@ const APPROVAL_DETAILS_FIELD_COMPONENT_WRAPPER_USE_SET = new Set([
   'ApplyTaskCardDetailsItemModel',
   'ApprovalTaskCardDetailsItemModel',
 ]);
-const SINGLE_VALUE_ASSOCIATION_INTERFACES = new Set(['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy']);
 const KNOWN_FIELD_NODE_USES = new Set<string>([
   ...EDITABLE_FIELD_USE_SET,
   ...DISPLAY_FIELD_USE_SET,
@@ -856,8 +899,6 @@ TAB_NODE_CONTRACT.domains.stepParams = groupedDomain({
 
 const TABLE_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['height', 'heightMode'],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'tableSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -971,7 +1012,6 @@ const CALENDAR_BLOCK_CONTRACT = createContract({
     'quickCreatePopupSettings',
     'eventPopupSettings',
   ],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'calendarSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -982,6 +1022,27 @@ const CALENDAR_BLOCK_CONTRACT = createContract({
 CALENDAR_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   calendarSettings: CALENDAR_SETTINGS_GROUP,
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
+});
+
+const TREE_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ['searchable', 'defaultExpandAll', 'includeDescendants', 'fieldNames', 'pageSize'],
+  stepParams: ['resourceSettings', 'treeSettings', 'cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+TREE_BLOCK_CONTRACT.domains.props = keyedDomain(
+  ['searchable', 'defaultExpandAll', 'includeDescendants', 'fieldNames', 'pageSize'],
+  'deep',
+  TREE_BLOCK_PROP_SCHEMAS,
+);
+TREE_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: RESOURCE_SETTINGS_GROUP,
+  treeSettings: TREE_SETTINGS_GROUP,
   cardSettings: BLOCK_CARD_SETTINGS_GROUP,
 });
 
@@ -1006,7 +1067,6 @@ const KANBAN_BLOCK_CONTRACT = createContract({
     'pageSize',
     'columnWidth',
   ],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'kanbanSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1023,7 +1083,6 @@ KANBAN_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const LIST_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: [],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'listSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1064,7 +1123,6 @@ LIST_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const GRID_CARD_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: [],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'GridCardSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1232,22 +1290,12 @@ IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const CHART_CARD_SETTINGS_GROUP = {
-  allowedPaths: [
-    'titleDescription.title',
-    'titleDescription.description',
-    'blockHeight.heightMode',
-    'blockHeight.height',
-    'linkageRules',
-  ],
+  allowedPaths: BLOCK_CARD_SETTINGS_GROUP.allowedPaths,
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['titleDescription', 'blockHeight', 'linkageRules'],
+  eventBindingSteps: BLOCK_CARD_SETTINGS_GROUP.eventBindingSteps,
   pathSchemas: {
-    'titleDescription.title': STRING_SCHEMA,
-    'titleDescription.description': STRING_SCHEMA,
-    'blockHeight.heightMode': STRING_SCHEMA,
-    'blockHeight.height': NUMBER_SCHEMA,
-    linkageRules: ARRAY_SCHEMA,
+    ...BLOCK_CARD_SETTINGS_GROUP.pathSchemas,
   },
 };
 
@@ -1313,8 +1361,7 @@ JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 
 const MAP_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['height', 'heightMode', 'mapField', 'marker', 'lineSort', 'zoom'],
-  decoratorProps: ['height', 'heightMode'],
+  props: ['mapField', 'marker', 'lineSort', 'zoom'],
   stepParams: ['resourceSettings', 'createMapBlock', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -2494,6 +2541,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
   ['CalendarBlockModel', CALENDAR_BLOCK_CONTRACT],
+  ['TreeBlockModel', TREE_BLOCK_CONTRACT],
   ['KanbanBlockModel', KANBAN_BLOCK_CONTRACT],
   ['CreateFormModel', CREATE_FORM_BLOCK_CONTRACT],
   ['EditFormModel', EDIT_FORM_BLOCK_CONTRACT],
@@ -2670,7 +2718,7 @@ function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: Readonly
   }
 }
 
-function canUseNestedApprovalAssociationFieldComponent(input: {
+function canUseNestedAssociationFieldComponent(input: {
   field?: any;
   dataSourceKey?: string;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
@@ -2696,7 +2744,10 @@ export function getSupportedFieldComponentUseSet(input: {
     return baseAllowedFieldUses;
   }
 
-  const wrapperUse = getApprovalFieldWrapperUse(input.containerUse) || String(input.containerUse || '').trim();
+  const wrapperUse =
+    getApprovalFieldWrapperUse(input.containerUse) ||
+    getFieldWrapperUseForContainer(input.containerUse) ||
+    String(input.containerUse || '').trim();
   const inferredFieldUse = inferFieldUseByContainer(input.containerUse, input.field, {
     enabledPackages: input.enabledPackages,
     dataSourceKey: input.dataSourceKey,
@@ -2709,7 +2760,7 @@ export function getSupportedFieldComponentUseSet(input: {
         [
           'RecordSelectFieldModel',
           'RecordPickerFieldModel',
-          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
           inferredFieldUse,
         ].filter(Boolean),
       );
@@ -2719,8 +2770,34 @@ export function getSupportedFieldComponentUseSet(input: {
         [
           'RecordSelectFieldModel',
           'RecordPickerFieldModel',
-          canUseNestedApprovalAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
-          canUseNestedApprovalAssociationFieldComponent(input) ? 'PatternSubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'PopupSubTableFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+  }
+
+  if (wrapperUse === 'FormItemModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormFieldModel' : undefined,
+          inferredFieldUse,
+        ].filter(Boolean),
+      );
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        [
+          'RecordSelectFieldModel',
+          'RecordPickerFieldModel',
+          canUseNestedAssociationFieldComponent(input) ? 'SubFormListFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'SubTableFieldModel' : undefined,
+          canUseNestedAssociationFieldComponent(input) ? 'PopupSubTableFieldModel' : undefined,
           inferredFieldUse,
         ].filter(Boolean),
       );
@@ -2738,6 +2815,36 @@ export function getSupportedFieldComponentUseSet(input: {
         ),
       );
     }
+  }
+
+  if (wrapperUse === 'DetailsItemModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(['DisplayTextFieldModel', 'DisplaySubItemFieldModel', inferredFieldUse].filter(Boolean));
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        ['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel', inferredFieldUse].filter(
+          Boolean,
+        ),
+      );
+    }
+  }
+
+  if (wrapperUse === 'FormAssociationItemModel' || wrapperUse === 'TableColumnModel') {
+    if (SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(['DisplayTextFieldModel', inferredFieldUse].filter(Boolean));
+    }
+    if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      return new Set(
+        ['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel', inferredFieldUse].filter(
+          Boolean,
+        ),
+      );
+    }
+  }
+
+  if (inferredFieldUse) {
+    return new Set([inferredFieldUse]);
   }
 
   return baseAllowedFieldUses;
@@ -2834,6 +2941,7 @@ export function resolveSupportedFieldCapability(input: {
   containerUse: string;
   field?: any;
   requestedFieldUse?: string;
+  requestedFieldUseMode?: 'fieldUse' | 'fieldType';
   requestedWrapperUse?: string;
   allowUnresolvedFieldUse?: boolean;
   requestedRenderer?: string;
@@ -2911,6 +3019,7 @@ export function resolveSupportedFieldCapability(input: {
     input.requestedFieldUse &&
     inferredFieldUse &&
     input.requestedFieldUse !== inferredFieldUse &&
+    input.requestedFieldUseMode !== 'fieldType' &&
     KNOWN_FIELD_NODE_USES.has(input.requestedFieldUse)
   ) {
     throw new FlowSurfaceBadRequestError(
@@ -2918,7 +3027,16 @@ export function resolveSupportedFieldCapability(input: {
     );
   }
 
-  const allowedFieldUses = getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
+  const allowedFieldUses =
+    input.requestedFieldUseMode === 'fieldType' && input.field
+      ? getSupportedFieldComponentUseSet({
+          containerUse: input.containerUse,
+          field: input.field,
+          enabledPackages: input.enabledPackages,
+          dataSourceKey: input.dataSourceKey,
+          getCollection: input.getCollection,
+        })
+      : getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
   if (!allowedFieldUses?.has(fieldUse)) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces fieldUse '${fieldUse}' is not allowed under '${input.containerUse}'`,
@@ -3007,6 +3125,7 @@ export function getAvailableActionCatalogItems(
 const COLLECTION_RESOURCE_REQUIRED = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'TreeBlockModel',
   'KanbanBlockModel',
   'CreateFormModel',
   'EditFormModel',

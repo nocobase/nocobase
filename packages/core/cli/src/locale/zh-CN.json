@@ -73,6 +73,8 @@
         },
         "scope": {
           "message": "这个连接要保存到哪里？",
+          "autoLabel": "自动",
+          "autoHint": "当前仓库已有 .nocobase 时保存到项目内，否则保存到全局",
           "projectLabel": "项目内",
           "projectHint": "保存在当前仓库的 .nocobase 中",
           "globalLabel": "全局",
@@ -268,7 +270,7 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" 已存在于当前 workspace 中，请换一个 env name。"
+        "envExists": "Env \"{{envName}}\" 已存在，请换一个 env name。"
       },
       "messages": {
         "title": "初始化你的 NocoBase AI 工作区",
@@ -276,6 +278,7 @@
         "appNameEnvHelp": "请使用 `nb init --yes --env <envName>` 继续。",
         "resumeEnvRequired": "恢复安装时必须提供 Env name。",
         "resumeEnvHelp": "请使用 `nb init --resume --env <envName>` 继续。",
+        "resumeAfterInstallFailure": "继续这次初始化请执行：\n  {{command}}",
         "uiOpening": "本地 setup 表单即将在浏览器中打开。这个表单需要等待人工填写。如果你正在使用 AI agent，请不要停止当前进程，CLI 会继续等待表单提交结果。",
         "uiReady": "本地 setup 表单已就绪。",
         "uiReadyHelp": "如果没有自动打开浏览器，请复制下面的地址到浏览器中继续。CLI 会继续等待表单提交，请保持当前终端会话继续运行。",

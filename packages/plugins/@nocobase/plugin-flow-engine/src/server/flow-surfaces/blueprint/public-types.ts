@@ -109,6 +109,14 @@ export type FlowSurfaceApplyBlueprintFieldObjectSpec = {
   associationPathName?: string;
   renderer?: string;
   type?: string;
+  fieldType?: string;
+  fields?: string[];
+  selectorFields?: string[];
+  titleField?: string;
+  openMode?: string;
+  popupSize?: string;
+  pageSize?: number;
+  showIndex?: boolean;
   label?: string;
   target?: string;
   settings?: Record<string, any>;
@@ -181,7 +189,8 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'iframe'
   | 'chart'
   | 'actionPanel'
-  | 'jsBlock';
+  | 'jsBlock'
+  | 'tree';
 
 export type FlowSurfaceApplyBlueprintBlockSpec = {
   key?: string;

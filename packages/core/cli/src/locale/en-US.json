@@ -73,6 +73,8 @@
         },
         "scope": {
           "message": "Where should this connection be saved?",
+          "autoLabel": "Auto",
+          "autoHint": "project if this repo already has .nocobase, otherwise global",
           "projectLabel": "Project",
           "projectHint": ".nocobase in this repo",
           "globalLabel": "Global",
@@ -268,7 +270,7 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" already exists in this workspace. Choose another env name."
+        "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
         "title": "Set Up Your NocoBase AI Workspace",
@@ -276,6 +278,7 @@
         "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
         "resumeEnvHelp": "Use `nb init --resume --env <envName>` to continue.",
+        "resumeAfterInstallFailure": "Resume this setup with:\n  {{command}}",
         "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
         "uiReady": "Local setup form is ready.",
         "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",

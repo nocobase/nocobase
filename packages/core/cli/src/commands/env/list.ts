@@ -7,10 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Command, Flags } from '@oclif/core';
+import { Command } from '@oclif/core';
 import { listEnvs } from '../../lib/auth-store.js';
-import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { renderTable } from '../../lib/ui.js';
+
+function resolveApiBaseUrl(config: { apiBaseUrl?: unknown; baseUrl?: unknown; apibaseUrl?: unknown }): string {
+  return String(config.apiBaseUrl ?? config.baseUrl ?? config.apibaseUrl ?? '').trim();
+}
 
 export default class EnvList extends Command {
   static summary = 'List configured environments';
@@ -19,29 +23,20 @@ export default class EnvList extends Command {
     '<%= config.bin %> <%= command.id %>',
   ];
 
-  static override flags = {
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope',
-      options: ['project', 'global'],
-    }),
-  };
-
   async run(): Promise<void> {
-    const { flags } = await this.parse(EnvList);
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
-    const { currentEnv, envs } = await listEnvs({ scope });
+    await this.parse(EnvList);
+    const { currentEnv, envs } = await listEnvs({ scope: resolveDefaultConfigScope() });
     const names = Object.keys(envs).sort();
 
     if (!names.length) {
-      this.log(`No envs configured${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
-      this.log('Run `nb env add <name> --base-url <url>` to add one.');
+      this.log('No envs configured.');
+      this.log('Run `nb env add <name> --api-base-url <url>` to add one.');
       return;
     }
 
     const rows = names.map((name) => {
       const env = envs[name];
-      return [name === currentEnv ? '*' : '', name, env.baseUrl ?? '', env.auth?.type ?? '', env.runtime?.version ?? ''];
+      return [name === currentEnv ? '*' : '', name, resolveApiBaseUrl(env), env.auth?.type ?? '', env.runtime?.version ?? ''];
     });
 
     this.log(renderTable(['Current', 'Name', 'Base URL', 'Auth', 'Runtime'], rows));

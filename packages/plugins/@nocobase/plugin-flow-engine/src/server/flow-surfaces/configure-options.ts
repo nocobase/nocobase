@@ -14,6 +14,7 @@ import type {
   FlowSurfaceContainerKind,
 } from './types';
 import { normalizeApprovalSemanticUse } from './approval';
+import { FLOW_SURFACE_PUBLIC_RELATION_FIELD_TYPES } from './field-type-resolver';
 
 const stringOption = (
   description?: string,
@@ -83,6 +84,17 @@ const SORTING = arrayOption('Sorting rule array', {
   ],
 });
 
+const CONNECT_FIELDS = objectOption('Tree connect data block targets', {
+  example: {
+    targets: [
+      {
+        targetId: 'target-block-uid',
+        filterPaths: ['id'],
+      },
+    ],
+  },
+});
+
 const OPEN_VIEW = objectOption('Popup or drawer open configuration', {
   example: {
     dataSourceKey: 'main',
@@ -96,9 +108,28 @@ const DISPLAY_STYLE = stringOption('Display style', {
   example: 'tag',
 });
 
-const FIELD_COMPONENT = stringOption('Field component model use', {
-  example: 'DisplayTextFieldModel',
+const FIELD_TYPE = stringOption('Public relation field presentation type', {
+  enum: [...FLOW_SURFACE_PUBLIC_RELATION_FIELD_TYPES],
+  example: 'popupSubTable',
 });
+
+const RELATION_FIELDS = arrayOption('Relation target fields', {
+  example: ['title', 'name'],
+});
+
+const SELECTOR_FIELDS = arrayOption('Record picker selector fields', {
+  example: ['title', 'code'],
+});
+
+const RELATION_FIELD_TYPE_OPTIONS: FlowSurfaceConfigureOptions = {
+  fieldType: FIELD_TYPE,
+  fields: RELATION_FIELDS,
+  selectorFields: SELECTOR_FIELDS,
+  openMode: stringOption('Popup open mode', { example: 'drawer' }),
+  popupSize: stringOption('Popup size', { example: 'medium' }),
+  pageSize: numberOption('Page size', { example: 10 }),
+  showIndex: booleanOption('Whether to show index', { example: true }),
+};
 
 const CONFIRM = objectOption('Confirmation dialog configuration. You can also pass a boolean directly.', {
   example: {
@@ -239,6 +270,21 @@ const CALENDAR_OPTIONS: FlowSurfaceConfigureOptions = {
   ),
   quickCreatePopup: OPEN_VIEW,
   eventPopup: OPEN_VIEW,
+};
+
+const TREE_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  ...COMMON_HEIGHT_OPTIONS,
+  resource: COMMON_RESOURCE,
+  searchable: booleanOption('Whether search is enabled', { example: true }),
+  defaultExpandAll: booleanOption('Whether all tree nodes are expanded by default', { example: false }),
+  includeDescendants: booleanOption('Whether child nodes are included when filtering', { example: true }),
+  titleField: stringOption('Tree node title field', { example: 'title' }),
+  fieldNames: objectOption('Tree field names', { example: { title: 'title', key: 'id', children: 'children' } }),
+  pageSize: numberOption('Root records per page', { example: 200 }),
+  dataScope: FILTER_GROUP,
+  sorting: SORTING,
+  connectFields: CONNECT_FIELDS,
 };
 
 const KANBAN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -418,7 +464,7 @@ const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   editable: booleanOption('Whether editable', { example: false }),
   dataIndex: stringOption('Data index'),
   titleField: stringOption('Association display title field', { example: 'title' }),
-  fieldComponent: FIELD_COMPONENT,
+  ...RELATION_FIELD_TYPE_OPTIONS,
   clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
   openView: OPEN_VIEW,
   code: JS_CODE,
@@ -435,7 +481,7 @@ const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   disabled: booleanOption('Whether disabled', { example: false }),
   pattern: stringOption('Display mode'),
   titleField: stringOption('Association display title field', { example: 'title' }),
-  fieldComponent: FIELD_COMPONENT,
+  ...RELATION_FIELD_TYPE_OPTIONS,
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   clickToOpen: booleanOption('Whether clicking can open details', { example: true }),
@@ -456,7 +502,7 @@ const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
   maxCount: numberOption('Maximum count', { example: 5 }),
   name: stringOption('Field name override'),
-  fieldComponent: FIELD_COMPONENT,
+  ...RELATION_FIELD_TYPE_OPTIONS,
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
@@ -481,7 +527,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   pattern: stringOption('Input mode'),
   titleField: stringOption('Association display title field', { example: 'title' }),
   name: stringOption('Field name override'),
-  fieldComponent: FIELD_COMPONENT,
+  ...RELATION_FIELD_TYPE_OPTIONS,
   labelWidth: stringOption('Label width', { example: '120px' }),
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   clickToOpen: booleanOption('Whether clicking can open details', { example: false }),
@@ -809,6 +855,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'CalendarBlockModel':
       options = cloneOptions(CALENDAR_OPTIONS);
+      break;
+    case 'TreeBlockModel':
+      options = cloneOptions(TREE_OPTIONS);
       break;
     case 'KanbanBlockModel':
       options = cloneOptions(KANBAN_OPTIONS);

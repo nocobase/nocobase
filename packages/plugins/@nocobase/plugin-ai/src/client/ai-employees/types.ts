@@ -36,6 +36,8 @@ export type AIEmployee = {
 };
 
 export type SkillSettings = {
+  toolsVersion?: number;
+  skillsVersion?: number;
   tools?: string[];
   skills?: string[];
 };

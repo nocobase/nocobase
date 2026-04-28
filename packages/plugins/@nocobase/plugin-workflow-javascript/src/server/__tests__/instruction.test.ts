@@ -8,6 +8,7 @@
  */
 
 import Path from 'path';
+import http from 'node:http';
 
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
@@ -281,16 +282,46 @@ describe('workflow > instructions > script', () => {
     });
 
     it('can require npm module: axios', async () => {
+      const server = http.createServer((req, res) => {
+        if (req.url === '/axios-test') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+          return;
+        }
+
+        res.writeHead(404);
+        res.end();
+      });
+
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        server.close();
+        throw new Error('Failed to get test server address');
+      }
+
       const script = `
         const axios = require('axios');
-        const result = await axios.get('https://docs-cn.nocobase.com/api/cache/cache/');
+        const result = await axios.get('http://127.0.0.1:${address.port}/axios-test');
         return result.status;
       `;
       const args = [];
-      const result = await ScriptInstruction.run(script, args, { logger });
+      try {
+        const result = await ScriptInstruction.run(script, args, { logger });
 
-      expect(result.status).toBe(JOB_STATUS.RESOLVED);
-      expect(result.result).toBe(200);
+        expect(result.status).toBe(JOB_STATUS.RESOLVED);
+        expect(result.result).toBe(200);
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+            resolve();
+          });
+        });
+      }
     });
 
     it.skip('can require nocobase module: @nocobase/utils', async () => {

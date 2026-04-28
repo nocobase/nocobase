@@ -9,7 +9,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildApprovalActionDefaults } from '../flow-surfaces/approval/builder';
-import { buildActionTree, buildPopupPageTree, buildStandaloneFieldNode } from '../flow-surfaces/builder';
+import {
+  buildActionTree,
+  buildFieldTree,
+  buildPopupPageTree,
+  buildStandaloneFieldNode,
+} from '../flow-surfaces/builder';
 
 describe('flowSurfaces builder translation defaults', () => {
   it('should persist translatable core default strings', () => {
@@ -87,6 +92,75 @@ describe('flowSurfaces builder translation defaults', () => {
     expect(saveDraftDefaults).toMatchObject({
       props: {
         title: '{{t("Save draft", { ns: "@nocobase/plugin-workflow-approval" })}}',
+      },
+    });
+  });
+});
+
+describe('flowSurfaces builder action style defaults', () => {
+  it('should align record action button defaults with their container initializers', () => {
+    const tableEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'TableActionsColumnModel',
+    });
+    const listEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'ListItemModel',
+    });
+    const gridCardEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'GridCardItemModel',
+    });
+    const detailsEditAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'DetailsBlockModel',
+    });
+
+    expect(tableEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+    expect(listEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+    expect(gridCardEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+    });
+    expect(detailsEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'default',
+      icon: 'EditOutlined',
+    });
+  });
+});
+
+describe('flowSurfaces builder relation field defaults', () => {
+  it('should create PopupSubTableFieldModel with default actions column and edit/remove actions', () => {
+    const fieldTree = buildFieldTree({
+      wrapperUse: 'FormItemModel',
+      fieldUse: 'PopupSubTableFieldModel',
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+
+    expect(fieldTree.model).toMatchObject({
+      use: 'FormItemModel',
+      subModels: {
+        field: {
+          use: 'PopupSubTableFieldModel',
+          subModels: {
+            subTableColumns: [
+              {
+                use: 'PopupSubTableActionsColumnModel',
+                subModels: {
+                  actions: [{ use: 'PopupSubTableEditActionModel' }, { use: 'PopupSubTableRemoveActionModel' }],
+                },
+              },
+            ],
+          },
+        },
       },
     });
   });

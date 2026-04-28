@@ -28,6 +28,7 @@ import {
 import { FlowSurfaceBadRequestError } from '../errors';
 import { CREATABLE_STANDALONE_FIELD_USES, FIELD_WRAPPER_USES } from '../node-use-sets';
 import type { FlowSurfaceApplySpec, FlowSurfaceMutateOp, FlowSurfaceNodeSpec, FlowSurfaceWriteTarget } from '../types';
+import { getPublicFieldTypeForUse } from '../field-type-resolver';
 import {
   didItemRefsChange,
   emitLayoutOp,
@@ -795,6 +796,7 @@ function createFieldNode(
     _.get(innerField, ['stepParams', 'fieldSettings', 'init']) ||
     _.get(desiredNode, ['stepParams', 'fieldSettings', 'init']);
   const defaultTargetUid = _.get(desiredNode, ['stepParams', 'filterFormItemSettings', 'init', 'defaultTargetUid']);
+  const fieldType = getPublicFieldTypeForUse(innerField?.stepParams?.fieldBinding?.use || innerField?.use);
   if (!fieldInit?.fieldPath) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces apply field '${desiredNode.use}' requires stepParams.fieldSettings.init.fieldPath`,
@@ -815,7 +817,7 @@ function createFieldNode(
       dataSourceKey: fieldInit.dataSourceKey,
       collectionName: fieldInit.collectionName,
       ...(requestedRenderer ? { renderer: requestedRenderer } : {}),
-      ...(fieldCapability.fieldUse ? { fieldUse: fieldCapability.fieldUse } : {}),
+      ...(fieldType ? { fieldType } : {}),
       ...(defaultTargetUid ? { defaultTargetUid } : {}),
       ...(popup ? { popup } : {}),
     },

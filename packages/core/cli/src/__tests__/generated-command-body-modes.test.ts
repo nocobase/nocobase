@@ -155,5 +155,5 @@ test('createGeneratedFlags should group body, raw JSON body, and global flags se
   expect(flags.body.helpGroup).toBe('Raw JSON Body');
   expect(flags['body-file'].helpGroup).toBe('Raw JSON Body');
   expect(flags.env.helpGroup).toBe('Global');
-  expect(flags['base-url'].helpGroup).toBe('Global');
+  expect(flags['api-base-url'].helpGroup).toBe('Global');
 });

@@ -38,6 +38,11 @@ server {
         add_header Cache-Control "public";
         access_log off;
         autoindex off;
+
+        location ~* \.md$ {
+            default_type text/markdown;
+            add_header Content-Disposition "inline";
+        }
     }
 
     location {{publicPath}}static/plugins/ {

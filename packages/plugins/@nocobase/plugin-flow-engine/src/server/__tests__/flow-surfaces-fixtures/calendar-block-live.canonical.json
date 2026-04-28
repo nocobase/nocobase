@@ -17,6 +17,11 @@
       "weekStart": 1
     },
     "stepParams": {
+      "cardSettings": {
+        "blockHeight": {
+          "heightMode": "fullHeight"
+        }
+      },
       "resourceSettings": {
         "init": {
           "dataSourceKey": "main",

@@ -7,8 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MULTI_VALUE_ASSOCIATION_INTERFACES, SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { normalizeFieldContainerKind } from './field-semantics';
 import { getFieldInterface, resolveFieldTargetCollection } from './service-helpers';
+
+export { MULTI_VALUE_ASSOCIATION_INTERFACES, SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 
 export type FlowSurfaceFieldBindingScope = 'display' | 'editable' | 'filter';
 
@@ -116,7 +119,7 @@ const FIELD_BINDING_RULE_DEFINITIONS = [
   {
     scope: 'display',
     modelClassName: 'DisplayPreviewFieldModel',
-    interfaces: ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
+    interfaces: ['attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
     ownerPlugin: FILE_MANAGER_PLUGIN,
     isDefault: true,
     when: ({ field, targetCollection }) =>

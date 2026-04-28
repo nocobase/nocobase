@@ -12,7 +12,6 @@ export function getSystemPrompt({
   personal,
   task,
   environment,
-  dataSources,
   knowledgeBase,
   availableSkills,
   availableAIEmployees,
@@ -21,7 +20,6 @@ export function getSystemPrompt({
   personal?: string;
   task: { background: string; context?: string };
   environment: { database: string; locale: string; currentDateTime?: string; timezone?: string };
-  dataSources?: string;
   knowledgeBase?: string;
   availableSkills?: { name: string; description: string; content?: string }[];
   availableAIEmployees?: {

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Command } from '@oclif/core';
 import { setCurrentEnv } from '../../lib/auth-store.js';
-import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 
 export default class EnvUse extends Command {
   static override summary = 'Switch the current environment';
@@ -17,14 +17,6 @@ export default class EnvUse extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> local',
   ];
-
-  static override flags = {
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope',
-      options: ['project', 'global'],
-    }),
-  };
 
   static override args = {
     name: Args.string({
@@ -34,9 +26,8 @@ export default class EnvUse extends Command {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(EnvUse);
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
-    await setCurrentEnv(args.name, { scope });
-    this.log(`Current env: ${args.name}${scope ? ` (${formatCliHomeScope(scope)} scope)` : ''}`);
+    const { args } = await this.parse(EnvUse);
+    await setCurrentEnv(args.name, { scope: resolveDefaultConfigScope() });
+    this.log(`Current env: ${args.name}`);
   }
 }

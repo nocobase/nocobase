@@ -43,6 +43,7 @@ type SelfManagerOptions = {
 type SelfUpdateOptions = SelfManagerOptions & {
   runFn?: typeof run;
   targetVersion?: string;
+  verbose?: boolean;
 };
 
 type ParsedVersion = {
@@ -332,7 +333,7 @@ export async function updateSelf(options: SelfUpdateOptions = {}): Promise<{
 
   const packageSpec = getSelfUpdatePackageSpec(status);
   await (options.runFn ?? run)('npm', ['install', '-g', packageSpec], {
-    stdio: 'inherit',
+    stdio: options.verbose ? 'inherit' : 'ignore',
     errorName: 'npm install',
   });
 

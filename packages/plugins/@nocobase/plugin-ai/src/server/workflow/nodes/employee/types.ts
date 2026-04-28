@@ -16,6 +16,7 @@ export type AIEmployeeInstructionConfig = {
   skillSettings?: {
     skills?: string[];
     tools?: { name: string }[];
+    [key: string]: any;
   };
   webSearch?: boolean;
   model: {

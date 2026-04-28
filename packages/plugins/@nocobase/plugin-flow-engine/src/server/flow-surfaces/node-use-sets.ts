@@ -12,6 +12,7 @@ import { APPROVAL_DETAILS_BLOCK_USES, APPROVAL_FIELD_WRAPPER_USES, APPROVAL_FORM
 export const COLLECTION_BLOCK_USES = new Set([
   'TableBlockModel',
   'CalendarBlockModel',
+  'TreeBlockModel',
   'KanbanBlockModel',
   'CreateFormModel',
   'EditFormModel',

@@ -14,7 +14,7 @@ import { toKebabCase, toLogicalActionName, toLogicalResourceName, toResourceSegm
 import { collectOperations, type OpenApiDocument } from './openapi.js';
 import type { StoredRuntime } from './runtime-store.js';
 
-const RESERVED_FLAG_NAMES = new Set(['base-url', 'env', 'token', 'json-output', 'body', 'body-file']);
+const RESERVED_FLAG_NAMES = new Set(['api-base-url', 'base-url', 'env', 'token', 'json-output', 'body', 'body-file']);
 
 function matchesPattern(value: string, pattern: string) {
   if (!value) {

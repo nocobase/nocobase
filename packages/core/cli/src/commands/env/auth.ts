@@ -9,7 +9,7 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName } from '../../lib/auth-store.js';
-import { type CliHomeScope, formatCliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { authenticateEnvWithOauth } from '../../lib/env-auth.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 
@@ -19,7 +19,6 @@ export default class EnvAuth extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> prod',
-    '<%= config.bin %> <%= command.id %> --scope global',
   ];
 
   static override args = {
@@ -37,16 +36,10 @@ export default class EnvAuth extends Command {
       description:
         'Environment name (same as the optional positional argument; for compatibility with -e/--env on other commands)',
     }),
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope',
-      options: ['project', 'global'],
-    }),
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvAuth);
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
     const nameArg = args.name?.trim();
     const nameFlag = flags.env?.trim() || undefined;
     if (nameArg && nameFlag && nameArg !== nameFlag) {
@@ -54,18 +47,18 @@ export default class EnvAuth extends Command {
         `Environment name was provided both as the argument ("${nameArg}") and as --env ("${nameFlag}"). Please use only one.`,
       );
     }
-    const envName = nameArg || nameFlag || (await getCurrentEnvName({ scope }));
+    const envName = nameArg || nameFlag || (await getCurrentEnvName({ scope: resolveDefaultConfigScope() }));
 
-    startTask(`Starting browser sign-in for "${envName}"${scope ? ` (${formatCliHomeScope(scope)} scope)` : ''}...`);
+    startTask(`Starting browser sign-in for "${envName}"...`);
 
     try {
       await authenticateEnvWithOauth({
         envName,
-        scope,
+        scope: resolveDefaultConfigScope(),
       });
-      succeedTask(`Signed in to "${envName}"${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
+      succeedTask(`Signed in to "${envName}".`);
     } catch (error) {
-      failTask(`Sign-in failed for "${envName}"${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
+      failTask(`Sign-in failed for "${envName}".`);
       throw error;
     }
   }

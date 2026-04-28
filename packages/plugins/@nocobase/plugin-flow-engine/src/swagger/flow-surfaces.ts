@@ -122,9 +122,36 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'chart',
   'actionPanel',
   'jsBlock',
+  'tree',
 ];
 const APPROVAL_BLUEPRINT_BLOCK_TYPE_ENUM = [...APPROVAL_BLOCK_PUBLIC_KEYS];
 const COMPOSE_BLOCK_TYPE_ENUM = [...APPLY_BLUEPRINT_BLOCK_TYPE_ENUM, ...APPROVAL_BLOCK_PUBLIC_KEYS];
+const RELATION_FIELD_TYPE_ENUM = [
+  'text',
+  'select',
+  'picker',
+  'subForm',
+  'subFormList',
+  'subDetails',
+  'subDetailsList',
+  'subTable',
+  'popupSubTable',
+];
+const RELATION_FIELD_TYPE_SCHEMA = {
+  type: 'string',
+  enum: RELATION_FIELD_TYPE_ENUM,
+  description: 'Public relation field UI presentation type. This is not the collection field data type/interface.',
+};
+const RELATION_TARGET_FIELDS_SCHEMA = {
+  type: 'array',
+  items: { type: 'string' },
+  description: 'Relation target record fields used as sub-table columns or embedded sub-form/detail fields.',
+};
+const RELATION_SELECTOR_FIELDS_SCHEMA = {
+  type: 'array',
+  items: { type: 'string' },
+  description: 'Record picker selector table fields. Do not mix with fields on the same field object.',
+};
 const ADD_CHILD_TREE_TABLE_NOTE =
   '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled.';
 const APPLY_BLUEPRINT_ADD_CHILD_NOTE =
@@ -835,7 +862,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. It can also import a form template through `template`, using `reference` or `copy` mode for the target form grid. `fieldUse` is only kept as a compatibility check and is no longer an arbitrary creation entry. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically. Under approval forms, direct field creation preserves the `PatternFormFieldModel` inner node semantics and does not allow standalone `jsItem`.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. Relation fields can request a public `fieldType` such as `picker`, `subTable`, or `popupSubTable`, with optional flat `fields`, `selectorFields`, and `titleField`. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` or internal field model keys. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically. Under approval forms, direct field creation preserves the `PatternFormFieldModel` inner node semantics and does not allow standalone `jsItem`.',
     ),
     requestBody: {
       required: true,
@@ -969,7 +996,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultFilter`, `defaultActionSettings`, or `template`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` items may use block-level `defaultFilter` to backfill the auto-created default filter action; backend runtime compatibility remains tolerant of omitted or empty values. Legacy `defaultActionSettings.filter.defaultFilter` is still supported for compatibility and wins when both are provided. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultFilter`, `defaultActionSettings`, `template`, or inline `fields` / `fieldsLayout`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Inline fields use the same public field semantics as compose/addField, including relation `fieldType`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` items may use block-level `defaultFilter` to backfill the auto-created default filter action; backend runtime compatibility remains tolerant of omitted or empty values. Legacy `defaultActionSettings.filter.defaultFilter` is still supported for compatibility and wins when both are provided. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -2159,6 +2186,14 @@ const schemas = {
           fieldPath: {
             type: 'string',
           },
+          fieldType: RELATION_FIELD_TYPE_SCHEMA,
+          fields: RELATION_TARGET_FIELDS_SCHEMA,
+          selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
+          titleField: { type: 'string' },
+          openMode: { type: 'string', example: 'drawer' },
+          popupSize: { type: 'string', example: 'medium' },
+          pageSize: { type: 'number', example: 10 },
+          showIndex: { type: 'boolean', example: true },
           renderer: {
             type: 'string',
             enum: ['js'],
@@ -3443,6 +3478,14 @@ const schemas = {
           associationPathName: { type: 'string' },
           renderer: { type: 'string' },
           type: { type: 'string' },
+          fieldType: RELATION_FIELD_TYPE_SCHEMA,
+          fields: RELATION_TARGET_FIELDS_SCHEMA,
+          selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
+          titleField: { type: 'string' },
+          openMode: { type: 'string', example: 'drawer' },
+          popupSize: { type: 'string', example: 'medium' },
+          pageSize: { type: 'number', example: 10 },
+          showIndex: { type: 'boolean', example: true },
           label: { type: 'string' },
           target: {
             type: 'string',
@@ -4361,6 +4404,11 @@ const schemas = {
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeFieldSpec'),
+      },
+      fieldsLayout: ref('FlowSurfaceComposeLayout'),
       settings: ANY_OBJECT_SCHEMA,
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
@@ -4452,10 +4500,14 @@ const schemas = {
       collectionName: {
         type: 'string',
       },
-      fieldUse: {
-        type: 'string',
-        description: 'Optional compatibility check. The server infers the actual field use from catalog capabilities.',
-      },
+      fieldType: RELATION_FIELD_TYPE_SCHEMA,
+      fields: RELATION_TARGET_FIELDS_SCHEMA,
+      selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
+      titleField: { type: 'string' },
+      openMode: { type: 'string', example: 'drawer' },
+      popupSize: { type: 'string', example: 'medium' },
+      pageSize: { type: 'number', example: 10 },
+      showIndex: { type: 'boolean', example: true },
       defaultTargetUid: {
         type: 'string',
       },
@@ -4630,6 +4682,11 @@ const schemas = {
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceComposeFieldSpec'),
+      },
+      fieldsLayout: ref('FlowSurfaceComposeLayout'),
       settings: ANY_OBJECT_SCHEMA,
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
@@ -4674,9 +4731,14 @@ const schemas = {
       collectionName: {
         type: 'string',
       },
-      fieldUse: {
-        type: 'string',
-      },
+      fieldType: RELATION_FIELD_TYPE_SCHEMA,
+      fields: RELATION_TARGET_FIELDS_SCHEMA,
+      selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
+      titleField: { type: 'string' },
+      openMode: { type: 'string', example: 'drawer' },
+      popupSize: { type: 'string', example: 'medium' },
+      pageSize: { type: 'number', example: 10 },
+      showIndex: { type: 'boolean', example: true },
       defaultTargetUid: {
         type: 'string',
       },
