@@ -548,6 +548,7 @@ const APPROVAL_CONFIRM_ACTION_USES = new Set([
   'ApplyFormWithdrawModel',
 ]);
 const APPROVAL_ASSIGN_ACTION_USES = new Set(['ApplyFormSubmitModel', 'ApplyFormSaveDraftModel']);
+const UPDATE_ASSIGN_ACTION_USES = new Set(['UpdateRecordActionModel', 'BulkUpdateActionModel']);
 const APPROVAL_COMMENT_ACTION_USES = new Set([
   'ProcessFormApproveModel',
   'ProcessFormRejectModel',
@@ -597,6 +598,16 @@ type FlowSurfaceStepParamMirror = {
   key: string;
   stepParamsPath: string[];
 };
+
+const UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH = [
+  'stepParams',
+  'assignSettings',
+  'assignFieldValues',
+  'assignedValues',
+] as const;
+const UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH = ['stepParams', 'apply', 'apply', 'assignedValues'] as const;
+const UPDATE_ACTION_ASSIGN_SETTINGS_STEP_PATH = ['assignSettings', 'assignFieldValues', 'assignedValues'] as const;
+const UPDATE_ACTION_APPLY_STEP_PATH = ['apply', 'apply', 'assignedValues'] as const;
 
 const TABLE_COLUMN_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
   { domain: 'props', key: 'title', stepParamsPath: ['tableColumnSettings', 'title', 'title'] },
@@ -10164,20 +10175,18 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     nextPayload: Record<string, any>,
   ) {
-    if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(current?.use)) {
+    if (!UPDATE_ASSIGN_ACTION_USES.has(current?.use)) {
       return;
     }
 
-    const assignSettingsAssignedValuesPath = ['stepParams', 'assignSettings', 'assignFieldValues', 'assignedValues'];
-    const applyAssignedValuesPath = ['stepParams', 'apply', 'apply', 'assignedValues'];
-    const hasAssignSettingsAssignedValues = _.has(values, assignSettingsAssignedValuesPath);
-    const hasApplyAssignedValues = _.has(values, applyAssignedValuesPath);
+    const hasAssignSettingsAssignedValues = _.has(values, UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH);
+    const hasApplyAssignedValues = _.has(values, UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH);
     if (!hasAssignSettingsAssignedValues && !hasApplyAssignedValues) {
       return;
     }
 
-    const assignSettingsAssignedValues = _.cloneDeep(_.get(values, assignSettingsAssignedValuesPath));
-    const applyAssignedValues = _.cloneDeep(_.get(values, applyAssignedValuesPath));
+    const assignSettingsAssignedValues = _.cloneDeep(_.get(values, UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH));
+    const applyAssignedValues = _.cloneDeep(_.get(values, UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH));
     if (
       hasAssignSettingsAssignedValues &&
       hasApplyAssignedValues &&
@@ -10190,8 +10199,8 @@ export class FlowSurfacesService {
 
     const assignedValues = hasAssignSettingsAssignedValues ? assignSettingsAssignedValues : applyAssignedValues;
     const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
-    _.set(nextStepParams, ['assignSettings', 'assignFieldValues', 'assignedValues'], _.cloneDeep(assignedValues));
-    _.set(nextStepParams, ['apply', 'apply', 'assignedValues'], _.cloneDeep(assignedValues));
+    _.set(nextStepParams, UPDATE_ACTION_ASSIGN_SETTINGS_STEP_PATH, _.cloneDeep(assignedValues));
+    _.set(nextStepParams, UPDATE_ACTION_APPLY_STEP_PATH, _.cloneDeep(assignedValues));
     nextPayload.stepParams = nextStepParams;
   }
 
@@ -14694,7 +14703,7 @@ export class FlowSurfacesService {
         stepParams.submitSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
-      } else if (['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
+      } else if (UPDATE_ASSIGN_ACTION_USES.has(use)) {
         stepParams.assignSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
@@ -14711,7 +14720,7 @@ export class FlowSurfacesService {
             assignedValues: assignValues,
           },
         };
-      } else if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
+      } else if (!UPDATE_ASSIGN_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support assignValues`);
       } else {
         stepParams.assignSettings = {
@@ -14738,7 +14747,7 @@ export class FlowSurfacesService {
       };
     }
     if (hasOwnDefined(changes, 'updateMode')) {
-      if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
+      if (!UPDATE_ASSIGN_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support updateMode`);
       }
       stepParams.assignSettings = {
