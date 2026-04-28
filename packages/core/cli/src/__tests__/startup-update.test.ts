@@ -42,7 +42,7 @@ vi.mock('../lib/run-npm.js', () => ({
 }));
 
 describe('startup update prompt', () => {
-  const originalHome = process.env.NB_CLI_HOME;
+  const originalHome = process.env.NB_CLI_ROOT;
   const originalSkip = process.env.NB_SKIP_STARTUP_UPDATE;
 
   beforeEach(async () => {
@@ -51,21 +51,21 @@ describe('startup update prompt', () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
     const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'nb-startup-update-'));
-    process.env.NB_CLI_HOME = temp;
+    process.env.NB_CLI_ROOT = temp;
     delete process.env.NB_SKIP_STARTUP_UPDATE;
     mocks.isInteractiveTerminal.mockReturnValue(true);
   });
 
   afterEach(async () => {
     const fs = await import('node:fs/promises');
-    if (process.env.NB_CLI_HOME) {
-      await fs.rm(process.env.NB_CLI_HOME, { recursive: true, force: true });
+    if (process.env.NB_CLI_ROOT) {
+      await fs.rm(process.env.NB_CLI_ROOT, { recursive: true, force: true });
     }
 
     if (originalHome === undefined) {
-      delete process.env.NB_CLI_HOME;
+      delete process.env.NB_CLI_ROOT;
     } else {
-      process.env.NB_CLI_HOME = originalHome;
+      process.env.NB_CLI_ROOT = originalHome;
     }
 
     if (originalSkip === undefined) {

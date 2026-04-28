@@ -61,7 +61,11 @@ vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();
   return {
     ...actual,
-    validateAvailableTcpPort: vi.fn(async () => 'Port 53414 is already in use.'),
+    validateAvailableTcpPort: vi.fn(async (value) => {
+      return String(value ?? '').trim() === '53414'
+        ? 'Port 53414 is already in use.'
+        : await actual.validateAvailableTcpPort(value);
+    }),
   };
 });
 

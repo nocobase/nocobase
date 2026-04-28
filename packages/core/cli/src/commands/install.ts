@@ -733,11 +733,20 @@ export default class Install extends Command {
   }
 
   private static buildDbPromptsCatalog(
+    envName: string,
     downloadResults: Record<string, PromptValue>,
     options?: { resume?: boolean },
   ): PromptsCatalog {
     const source = String(downloadResults.source ?? '').trim();
     return {
+      seedEnv: {
+        type: 'run',
+        run: (values) => {
+          if (envName) {
+            (values as Record<string, PromptValue>).env = envName;
+          }
+        },
+      },
       seedDownloadSource: {
         type: 'run',
         run: (values) => {
@@ -2694,7 +2703,7 @@ export default class Install extends Command {
       ...(resumePreset?.dbPreset ?? {}),
       ...Install.buildDbPresetValuesFromFlags(parsed),
     };
-    const dbResults = await runPromptCatalog(Install.buildDbPromptsCatalog(downloadResults, {
+    const dbResults = await runPromptCatalog(Install.buildDbPromptsCatalog(envName, downloadResults, {
       resume: parsed.resume,
     }), {
       initialValues: {

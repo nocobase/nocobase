@@ -11,8 +11,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
 import {
-  LEGACY_NOCOBASE_CTL_HOME_ENV,
-  NB_CLI_HOME_ENV,
+  NB_CLI_ROOT_ENV,
   resolveCliHomeDir,
   resolveConfiguredEnvPath,
   resolveDefaultConfigScope,
@@ -224,7 +223,7 @@ function shouldFallbackToLegacyProjectScope(options: AuthStoreOptions = {}) {
     return false;
   }
 
-  return !process.env[NB_CLI_HOME_ENV] && !process.env[LEGACY_NOCOBASE_CTL_HOME_ENV];
+  return !process.env[NB_CLI_ROOT_ENV];
 }
 
 async function loadExactAuthConfig(options: AuthStoreOptions = {}): Promise<AuthConfig> {
