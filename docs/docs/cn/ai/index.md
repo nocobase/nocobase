@@ -92,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: NocoBase 的命令行工具，安装即就绪——内置 AI Skills，让你的 AI 助手直接上手操作 NocoBase。
-        link: /api/cli/cli
+        link: /api/cli
       - title: NocoBase Skills
         details: 可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的能力和规范。
         link: /ai-builder#nocobase-skills

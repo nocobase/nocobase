@@ -122,7 +122,7 @@ NocoBase CLI 在初始化过程中（`nb init`）会自动安装 Skills，不需
 ## 相关链接
 
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
-- [NocoBase CLI 参考](../api/cli/cli) — 所有命令的完整参数说明
+- [NocoBase CLI 参考](../api/cli/) — 所有命令的完整参数说明
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [安全与审计](./security) — 鉴权方式、权限控制和操作审计
 - [AI 员工](../ai-employees/index.md) — NocoBase 的智能体能力，支持在业务界面中协作和执行操作
