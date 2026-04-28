@@ -303,20 +303,31 @@ AIEmployeeShortcutModel.registerFlow({
   steps: {
     migration: {
       handler: async (ctx) => {
-        console.log('cgyrock', 'migration', ctx.model?.stepParams?.shortcutSettings?.editTasks);
         for (const task of ctx.model?.stepParams?.shortcutSettings?.editTasks?.tasks ?? []) {
-          const { skillsVersion, toolsVersion, skills, tools } = task.skillSettings;
+          const { skillsVersion, toolsVersion, skills, tools } = task.skillSettings ?? {};
           if (skillsVersion == null) {
             if (_.isArray(skills) && skills.length === 0) {
               task.skillSettings.skills = undefined;
             }
-            task.skillSettings.skillsVersion = 2;
+            if (task.skillSettings) {
+              task.skillSettings.skillsVersion = 2;
+            } else {
+              task.skillSettings = {
+                skillsVersion: 2,
+              };
+            }
           }
           if (toolsVersion == null) {
             if (_.isArray(tools) && tools.length === 0) {
               task.skillSettings.tools = undefined;
             }
-            task.skillSettings.toolsVersion = 2;
+            if (task.skillSettings) {
+              task.skillSettings.toolsVersion = 2;
+            } else {
+              task.skillSettings = {
+                toolsVersion: 2,
+              };
+            }
           }
         }
       },
@@ -470,12 +481,24 @@ AIEmployeeShortcutModel.registerFlow({
       beforeParamsSave(_ctx, params) {
         for (const task of params.tasks ?? []) {
           if (task.skillSettings) {
-            const { skillsVersion, toolsVersion } = task.skillSettings;
+            const { skillsVersion, toolsVersion } = task.skillSettings ?? {};
             if (skillsVersion == null) {
-              task.skillSettings.skillsVersion = 2;
+              if (task.skillSettings) {
+                task.skillSettings.skillsVersion = 2;
+              } else {
+                task.skillSettings = {
+                  skillsVersion: 2,
+                };
+              }
             }
             if (toolsVersion == null) {
-              task.skillSettings.toolsVersion = 2;
+              if (task.skillSettings) {
+                task.skillSettings.toolsVersion = 2;
+              } else {
+                task.skillSettings = {
+                  toolsVersion: 2,
+                };
+              }
             }
           }
         }
