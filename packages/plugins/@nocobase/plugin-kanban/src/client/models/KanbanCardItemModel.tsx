@@ -165,6 +165,10 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
       get: () => cardScopeKey,
       cache: false,
     });
+    grid.context.defineProperty('flowSettingsEnabled', {
+      get: () => !!this.context.flowSettingsEnabled,
+      cache: false,
+    });
 
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const clickEnabled = this.props.enableCardClick !== false;

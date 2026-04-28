@@ -1317,6 +1317,8 @@ describe('KanbanBlockModel.filterCollection', () => {
       props: {
         options: [{ label: 'Status sort', value: 'status_sort', scopeKey: 'status' }],
         allowClear: true,
+        tooltip:
+          '{{t("Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.", {"ns":"kanban"})}}',
       },
     });
   });

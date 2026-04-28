@@ -21,6 +21,7 @@ import {
   createInitialColumnState,
   dedupeColumnItemsByRecordKey,
   getRuntimeRecordKey,
+  isKanbanDesignSettingsHost,
   normalizeKanbanRuntimeRecord,
   reuseKanbanRecordReferences,
   type ColumnState,
@@ -304,7 +305,13 @@ const ColumnPanelComponent = ({
           displayItems.map((record, index) => {
             const recordKey = getRuntimeRecordKey(record, model.collection);
             const cardRenderKey = recordKey || `${column.key}:${index}`;
-            const enableDesignSettings = Boolean(model.context.flowSettingsEnabled);
+            const enableDesignSettings = isKanbanDesignSettingsHost({
+              host: designSettingsHost,
+              columnKey: column.key,
+              record,
+              index,
+              collection: model.collection,
+            });
 
             if (!dragEnabled || !recordKey) {
               return (
@@ -391,8 +398,9 @@ const ColumnPanelComponent = ({
               fontWeight: 500,
             }}
           >
-            {`${column.label}（${displayCount}）`}
+            {column.label}
           </span>
+          <span style={{ flexShrink: 0, color: 'rgba(0, 0, 0, 0.45)' }}>{displayCount}</span>
         </div>
         {model.getQuickCreateEnabled() ? (
           <Tooltip title={model.translate('Add new')}>
