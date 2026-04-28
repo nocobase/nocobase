@@ -36,6 +36,25 @@
     "dirname": "nb",
     "topicSeparator": " ",
     "topics": {
+      "app": {
+        "description": "Manage NocoBase app runtimes: start, stop, restart, logs, status, and upgrades."
+      },
+      "source": {
+        "description": "Work with the local NocoBase source project: download, develop, build, and test."
+      },
+      "scaffold": {
+        "description": "Generate NocoBase plugin development scaffolds."
+      },
+      "plugin": {
+        "description": "Manage plugins in the selected NocoBase env."
+      },
+      "pm": {
+        "description": "Manage plugins in the selected NocoBase env.",
+        "hidden": true
+      },
+      "db": {
+        "description": "Manage the built-in database for the selected env."
+      },
       "env": {
         "description": "Manage NocoBase project environments and update command runtimes."
       },
@@ -44,6 +63,10 @@
       },
       "skills": {
         "description": "Inspect or synchronize NocoBase AI coding skills for the current workspace."
+      },
+      "examples": {
+        "description": "Internal example commands for prompt and UI experiments.",
+        "hidden": true
       },
       "api": {
         "description": "Work with NocoBase API."

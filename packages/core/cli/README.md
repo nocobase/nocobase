@@ -134,40 +134,32 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | Command | Description |
 | --- | --- |
 | `nb init` | Set up NocoBase and connect it as a CLI env for coding agents. |
-| `nb install` | Advanced command used by `nb init` to install a local NocoBase app and save env config. In most cases, use `nb init` instead. |
-| `nb download` | Advanced command used by `nb init` or `nb upgrade` to fetch NocoBase from Docker, npm, or Git. It is rarely used directly. |
-| `nb start` | Start the selected local app or Docker container. |
-| `nb stop` | Stop the selected local app or Docker container. |
-| `nb restart` | Stop, then start the selected local app or Docker container. |
-| `nb dev` | Run development mode for npm/Git source envs. |
-| `nb logs` | Show app logs for npm/Git or Docker envs. |
-| `nb ps` | Show runtime status for configured envs. |
+| `nb app` | Manage app runtimes: start, stop, restart, logs, status, cleanup, and upgrades. |
+| `nb source` | Manage the local source project: download, develop, build, and test. |
 | `nb db` | Inspect or manage built-in database runtime status for local envs. |
-| `nb upgrade` | Refresh code/image and restart the selected app. |
-| `nb down` | Stop and remove local runtime containers for an env. |
 | `nb env` | Manage saved CLI env connections. |
 | `nb api` | Call NocoBase API resources from the CLI. |
-| `nb pm` | Manage plugins for the selected NocoBase env. |
+| `nb plugin` | Manage plugins for the selected NocoBase env. |
 | `nb self` | Check or update the installed NocoBase CLI. |
 | `nb skills` | Check, install, or update global NocoBase AI coding skills. |
 
 Recommended style: use `--env` explicitly for app/runtime commands. `-e` is the short form:
 
 ```bash
-nb start --env app1
-nb restart --env app1
-nb logs --env app1
-nb ps --env app1
+nb app start --env app1
+nb app restart --env app1
+nb app logs --env app1
+nb app ps --env app1
 nb db ps --env app1
 ```
 
 Equivalent shorthand examples:
 
 ```bash
-nb start -e app1
-nb restart -e app1
-nb logs -e app1
-nb upgrade -e app1
+nb app start -e app1
+nb app restart -e app1
+nb app logs -e app1
+nb app upgrade -e app1
 nb db start -e app1
 ```
 
@@ -208,18 +200,18 @@ Docker envs are managed through saved Docker containers and images:
 
 ```bash
 nb init --env app1 --yes --source docker --version alpha
-nb start --env app1
-nb restart --env app1
-nb logs --env app1
-nb stop --env app1
+nb app start --env app1
+nb app restart --env app1
+nb app logs --env app1
+nb app stop --env app1
 ```
 
 Docker downloads support platform selection:
 
 ```bash
-nb download --source docker --version alpha --docker-platform auto
-nb download --source docker --version alpha --docker-platform linux/amd64
-nb download --source docker --version alpha --docker-platform linux/arm64
+nb source download --source docker --version alpha --docker-platform auto
+nb source download --source docker --version alpha --docker-platform linux/amd64
+nb source download --source docker --version alpha --docker-platform linux/arm64
 ```
 
 ### npm and Git
@@ -228,11 +220,11 @@ npm and Git envs use a local source directory and can run development mode:
 
 ```bash
 nb init --env app1 --yes --source git --version alpha
-nb dev --env app1
+nb source dev --env app1
 ```
 
-`nb dev` only supports npm/Git source envs. Docker envs can be inspected with
-`nb logs`, and remote envs only support API/env operations.
+`nb source dev` only supports npm/Git source envs. Docker envs can be inspected with
+`nb app logs`, and remote envs only support API/env operations.
 
 ### Existing NocoBase App
 
@@ -250,14 +242,14 @@ nb env add app1 --api-base-url http://localhost:13000/api
 Upgrade refreshes the saved source or image, then restarts the app:
 
 ```bash
-nb upgrade --env app1
+nb app upgrade --env app1
 ```
 
 Use `--skip-code-update` or `-s` to restart with the saved local code or Docker
 image without downloading updates first:
 
 ```bash
-nb upgrade --env app1 -s
+nb app upgrade --env app1 -s
 ```
 
 ## Database Commands

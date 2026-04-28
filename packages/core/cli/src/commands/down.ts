@@ -105,6 +105,7 @@ function formatDownFailure(envName: string, message: string): string {
 }
 
 export default class Down extends Command {
+  static override hidden = false;
   static override description =
     'Stop NocoBase and remove local runtime containers for the selected env. Data, source files, and env config are kept unless explicitly requested.';
 

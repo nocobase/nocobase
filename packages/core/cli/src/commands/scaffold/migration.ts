@@ -14,7 +14,7 @@ export default class ScaffoldMigration extends Command {
   static override args = {
     name: Args.string({description: 'migration name', required: true}),
   }
-  static override description = 'Run the legacy NocoBase scaffold migration (forwards to `npm run scaffold:migration` in the repo root)';
+  static override description = 'Generate a plugin migration file.';
   static override examples = [
     '<%= config.bin %> <%= command.id %> migration-name --pkg @nocobase/plugin-acl',
     '<%= config.bin %> <%= command.id %> migration-name --pkg @nocobase/plugin-acl --on afterLoad',

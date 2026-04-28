@@ -567,7 +567,7 @@ Prompt modes:
         p.log.step('Saving the local env config');
         await this.persistManagedEnvConfig(results, normalizedFlags);
         managedInstallResults = results;
-        p.log.step('Running nb install');
+        p.log.step('Running nb init');
         await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
       }
     } catch (error: unknown) {

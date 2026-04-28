@@ -12,7 +12,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
-import Download, { defaultDockerRegistryForLang } from '../commands/download.js';
+import Download, { defaultDockerRegistryForLang } from '../commands/source/download.js';
 import Init from '../commands/init.js';
 import EnvAdd from '../commands/env/add.js';
 import Install from '../commands/install.js';

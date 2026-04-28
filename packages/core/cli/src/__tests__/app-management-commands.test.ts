@@ -256,7 +256,7 @@ function createCommandHarness(parseResult: { args?: Record<string, any>; flags?:
 }
 
 test('start enables daemon by default for npm/git envs', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -294,7 +294,7 @@ test('start enables daemon by default for npm/git envs', async () => {
 });
 
 test('start explains when the requested env does not exist', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -307,7 +307,7 @@ test('start explains when the requested env does not exist', async () => {
 });
 
 test('start reports when the local app is already running', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -341,7 +341,7 @@ test('start reports when the local app is already running', async () => {
 });
 
 test('start supports --no-daemon for npm/git envs', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -376,7 +376,7 @@ test('start supports --no-daemon for npm/git envs', async () => {
 });
 
 test('start foreground mode explains how to restart when the local app is already running', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -406,13 +406,13 @@ test('start foreground mode explains how to restart when the local app is alread
   await Start.prototype.run.call(command);
 
   expect(mocks.printInfo.mock.calls).toEqual([
-    ['NocoBase is already running for "local" at http://127.0.0.1:13000. Use `nb stop --env local` before starting it again in the foreground.'],
+    ['NocoBase is already running for "local" at http://127.0.0.1:13000. Use `nb app stop --env local` before starting it again in the foreground.'],
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('start enables raw startup output when --verbose is set', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -439,7 +439,7 @@ test('start enables raw startup output when --verbose is set', async () => {
 });
 
 test('start shows product-style local failure guidance instead of raw command errors', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -468,7 +468,7 @@ test('start shows product-style local failure guidance instead of raw command er
 });
 
 test('start accepts docker envs without treating the default daemon flag as explicit input', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -501,7 +501,7 @@ test('start accepts docker envs without treating the default daemon flag as expl
 });
 
 test('start rejects local-only flags for docker envs', async () => {
-  const { default: Start } = await import('../commands/start.js');
+  const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -523,7 +523,7 @@ test('start rejects local-only flags for docker envs', async () => {
 });
 
 test('stop routes docker envs to docker stop', async () => {
-  const { default: Stop } = await import('../commands/stop.js');
+  const { default: Stop } = await import('../commands/app/stop.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -555,7 +555,7 @@ test('stop routes docker envs to docker stop', async () => {
 });
 
 test('stop explains when the requested env does not exist', async () => {
-  const { default: Stop } = await import('../commands/stop.js');
+  const { default: Stop } = await import('../commands/app/stop.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -568,7 +568,7 @@ test('stop explains when the requested env does not exist', async () => {
 });
 
 test('upgrade explains when the requested env does not exist', async () => {
-  const { default: Upgrade } = await import('../commands/upgrade.js');
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -581,7 +581,7 @@ test('upgrade explains when the requested env does not exist', async () => {
 });
 
 test('pm list explains when the requested env does not exist', async () => {
-  const { default: PmList } = await import('../commands/pm/list.js');
+  const { default: PmList } = await import('../commands/plugin/list.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -594,7 +594,7 @@ test('pm list explains when the requested env does not exist', async () => {
 });
 
 test('stop enables raw shutdown output when --verbose is set', async () => {
-  const { default: Stop } = await import('../commands/stop.js');
+  const { default: Stop } = await import('../commands/app/stop.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -626,7 +626,7 @@ test('stop enables raw shutdown output when --verbose is set', async () => {
 });
 
 test('stop shows product-style local failure guidance', async () => {
-  const { default: Stop } = await import('../commands/stop.js');
+  const { default: Stop } = await import('../commands/app/stop.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -654,7 +654,7 @@ test('stop shows product-style local failure guidance', async () => {
 });
 
 test('restart runs stop before start and forwards startup flags', async () => {
-  const { default: Restart } = await import('../commands/restart.js');
+  const { default: Restart } = await import('../commands/app/restart.js');
   const runCommand = vi.fn(async () => undefined);
   const command = createCommandHarness({
     flags: {
@@ -672,13 +672,13 @@ test('restart runs stop before start and forwards startup flags', async () => {
   await Restart.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([
-    ['stop', ['--env', 'local', '--verbose']],
-    ['start', ['--env', 'local', '--verbose', '--quickstart', '--port', '14000', '--no-daemon', '--instances', '2', '--launch-mode', 'pm2']],
+    ['app:stop', ['--env', 'local', '--verbose']],
+    ['app:start', ['--env', 'local', '--verbose', '--quickstart', '--port', '14000', '--no-daemon', '--instances', '2', '--launch-mode', 'pm2']],
   ]);
 });
 
 test('restart does not forward default daemon flag unless the user provides it', async () => {
-  const { default: Restart } = await import('../commands/restart.js');
+  const { default: Restart } = await import('../commands/app/restart.js');
   const runCommand = vi.fn(async () => undefined);
   const command = createCommandHarness({
     flags: {
@@ -690,13 +690,13 @@ test('restart does not forward default daemon flag unless the user provides it',
   await Restart.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([
-    ['stop', ['--env', 'docker-local']],
-    ['start', ['--env', 'docker-local']],
+    ['app:stop', ['--env', 'docker-local']],
+    ['app:start', ['--env', 'docker-local']],
   ]);
 });
 
 test('logs supports --env and --no-follow for local app logs', async () => {
-  const { default: Logs } = await import('../commands/logs.js');
+  const { default: Logs } = await import('../commands/app/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'app1',
@@ -731,7 +731,7 @@ test('logs supports --env and --no-follow for local app logs', async () => {
 });
 
 test('logs reads docker app logs', async () => {
-  const { default: Logs } = await import('../commands/logs.js');
+  const { default: Logs } = await import('../commands/app/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -762,7 +762,7 @@ test('logs reads docker app logs', async () => {
 });
 
 test('logs explains when the requested env does not exist', async () => {
-  const { default: Logs } = await import('../commands/logs.js');
+  const { default: Logs } = await import('../commands/app/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -775,7 +775,7 @@ test('logs explains when the requested env does not exist', async () => {
 });
 
 test('logs explains http envs do not have local runtime logs', async () => {
-  const { default: Logs } = await import('../commands/logs.js');
+  const { default: Logs } = await import('../commands/app/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'http',
     envName: 'remote',
@@ -793,7 +793,7 @@ test('logs explains http envs do not have local runtime logs', async () => {
 });
 
 test('ps lists all configured env runtime statuses', async () => {
-  const { default: Ps } = await import('../commands/ps.js');
+  const { default: Ps } = await import('../commands/app/ps.js');
   mocks.listEnvs.mockResolvedValue({
     currentEnv: 'local',
     envs: {
@@ -875,7 +875,7 @@ test('ps lists all configured env runtime statuses', async () => {
 });
 
 test('ps supports --env without listing all envs first', async () => {
-  const { default: Ps } = await import('../commands/ps.js');
+  const { default: Ps } = await import('../commands/app/ps.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'app1',
@@ -908,7 +908,7 @@ test('ps supports --env without listing all envs first', async () => {
 });
 
 test('ps explains when the requested env does not exist', async () => {
-  const { default: Ps } = await import('../commands/ps.js');
+  const { default: Ps } = await import('../commands/app/ps.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -1174,7 +1174,7 @@ test('db logs explains when the env does not use a built-in database', async () 
 });
 
 test('test recreates the built-in test database before running tests', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
   const command = createCommandHarness({
     args: {
       paths: [],
@@ -1262,7 +1262,7 @@ test('test recreates the built-in test database before running tests', async () 
 });
 
 test('test injects DB_* and STORAGE_PATH into nocobase test', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
   const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
 
   const command = createCommandHarness({
@@ -1317,7 +1317,7 @@ test('test injects DB_* and STORAGE_PATH into nocobase test', async () => {
 });
 
 test('test respects explicit server and client mode flags', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
   const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
 
   const serverCommand = createCommandHarness({
@@ -1409,7 +1409,7 @@ test('test respects explicit server and client mode flags', async () => {
 });
 
 test('test falls back to an available port when the default test port is busy', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
   const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
   mocks.validateAvailableTcpPort.mockResolvedValueOnce('already in use');
   mocks.findAvailableTcpPort.mockResolvedValueOnce('5544');
@@ -1447,7 +1447,7 @@ test('test falls back to an available port when the default test port is busy', 
 });
 
 test('test waits for the MySQL test database port to become ready before running tests', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
   const runNocoBaseCommandMock = (await import('../lib/run-npm.js')).runNocoBaseCommand as unknown as ReturnType<typeof vi.fn>;
 
   mocks.commandSucceeds
@@ -1501,7 +1501,7 @@ test('test waits for the MySQL test database port to become ready before running
 });
 
 test('test forwards a custom built-in database image', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
 
   const command = createCommandHarness({
     flags: {
@@ -1540,7 +1540,7 @@ test('test forwards a custom built-in database image', async () => {
 });
 
 test('test rejects conflicting server and client flags', async () => {
-  const { default: Test } = await import('../commands/test.js');
+  const { default: Test } = await import('../commands/source/test.js');
 
   const command = createCommandHarness({
     flags: {
@@ -1770,8 +1770,15 @@ test('down explains http envs do not have local runtime resources', async () => 
   await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/Can't bring down "remote" from this machine\..*only has an API connection/s);
 });
 
+test('app down stays available as a hidden compatibility alias', async () => {
+  const { default: AppDown } = await import('../commands/app/down.js');
+
+  expect(AppDown.hidden).toBe(true);
+  expect(AppDown.description).toBeDefined();
+});
+
 test('upgrade refreshes local npm envs, then restarts them with quickstart', async () => {
-  const { default: Upgrade } = await import('../commands/upgrade.js');
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local',
@@ -1809,7 +1816,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
   await Upgrade.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([[
-    'download',
+    'source:download',
     [
       '-y',
       '--no-intro',
@@ -1878,7 +1885,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
 });
 
 test('upgrade skips download for local app-path envs and still restarts with quickstart', async () => {
-  const { default: Upgrade } = await import('../commands/upgrade.js');
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'local-app',
@@ -1925,7 +1932,7 @@ test('upgrade skips download for local app-path envs and still restarts with qui
 });
 
 test('upgrade refreshes docker envs by pulling the image and recreating the container', async () => {
-  const { default: Upgrade } = await import('../commands/upgrade.js');
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -1970,7 +1977,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
   await Upgrade.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([[
-    'download',
+    'source:download',
     [
       '-y',
       '--no-intro',
@@ -2037,7 +2044,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
 });
 
 test('upgrade can restart docker envs without pulling a new image', async () => {
-  const { default: Upgrade } = await import('../commands/upgrade.js');
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -2095,7 +2102,7 @@ test('upgrade can restart docker envs without pulling a new image', async () => 
 });
 
 test('pm enable routes docker envs to docker exec nocobase pm enable', async () => {
-  const { default: PmEnable } = await import('../commands/pm/enable.js');
+  const { default: PmEnable } = await import('../commands/plugin/enable.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -2123,7 +2130,7 @@ test('pm enable routes docker envs to docker exec nocobase pm enable', async () 
 });
 
 test('pm disable routes local envs to the local nocobase command', async () => {
-  const { default: PmDisable } = await import('../commands/pm/disable.js');
+  const { default: PmDisable } = await import('../commands/plugin/disable.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'dev',
@@ -2151,7 +2158,7 @@ test('pm disable routes local envs to the local nocobase command', async () => {
 });
 
 test('dev runs local npm/git source envs with saved env settings', async () => {
-  const { default: Dev } = await import('../commands/dev.js');
+  const { default: Dev } = await import('../commands/source/dev.js');
   const runtime = {
     kind: 'local',
     envName: 'dev',
@@ -2188,7 +2195,7 @@ test('dev runs local npm/git source envs with saved env settings', async () => {
 });
 
 test('dev uses an explicit port instead of the saved app port', async () => {
-  const { default: Dev } = await import('../commands/dev.js');
+  const { default: Dev } = await import('../commands/source/dev.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'dev',
@@ -2220,7 +2227,7 @@ test('dev uses an explicit port instead of the saved app port', async () => {
 });
 
 test('dev explains when the app is already running on the target port', async () => {
-  const { default: Dev } = await import('../commands/dev.js');
+  const { default: Dev } = await import('../commands/source/dev.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'dev',
@@ -2245,12 +2252,12 @@ test('dev explains when the app is already running on the target port', async ()
     },
   });
 
-  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb stop --env dev.*dev port/s);
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb app stop --env dev.*dev port/s);
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('dev rejects docker envs with source-oriented guidance', async () => {
-  const { default: Dev } = await import('../commands/dev.js');
+  const { default: Dev } = await import('../commands/source/dev.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -2271,7 +2278,7 @@ test('dev rejects docker envs with source-oriented guidance', async () => {
 });
 
 test('dev rejects http envs because they have no local source directory', async () => {
-  const { default: Dev } = await import('../commands/dev.js');
+  const { default: Dev } = await import('../commands/source/dev.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'http',
     envName: 'remote',
@@ -2289,7 +2296,7 @@ test('dev rejects http envs because they have no local source directory', async 
 });
 
 test('dev explains when the requested env does not exist', async () => {
-  const { default: Dev } = await import('../commands/dev.js');
+  const { default: Dev } = await import('../commands/source/dev.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
 
   const command = createCommandHarness({
@@ -2302,7 +2309,7 @@ test('dev explains when the requested env does not exist', async () => {
 });
 
 test('pm list keeps API fallback for http envs', async () => {
-  const { default: PmList } = await import('../commands/pm/list.js');
+  const { default: PmList } = await import('../commands/plugin/list.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'http',
     envName: 'remote',

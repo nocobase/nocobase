@@ -263,7 +263,7 @@ test('hidden required fields are rendered disabled so browser validation does no
 
 test('reflow returns default values for fields that become visible later', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
-  const { default: Download } = await import('../commands/download.js');
+  const { default: Download } = await import('../commands/source/download.js');
 
   let uiUrl = '';
   const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
@@ -341,7 +341,7 @@ test('reflow returns default values for fields that become visible later', async
 
 test('web UI renders disabled radio options for unavailable version presets', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
-  const { default: Download } = await import('../commands/download.js');
+  const { default: Download } = await import('../commands/source/download.js');
 
   let uiUrl = '';
   const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
@@ -415,7 +415,7 @@ test('web UI renders disabled radio options for unavailable version presets', as
 
 test('reflow reveals otherVersion and recomputes outputDir from the final version', async () => {
   const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
-  const { default: Download } = await import('../commands/download.js');
+  const { default: Download } = await import('../commands/source/download.js');
 
   const presetState = reflowWebFormState(Download.prompts, {
     source: 'git',

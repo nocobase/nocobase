@@ -8,6 +8,8 @@
  */
 
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const SUPPORTED_CLI_LOCALES = ['en-US', 'zh-CN'] as const;
 export type CliLocale = typeof SUPPORTED_CLI_LOCALES[number];
@@ -57,8 +59,21 @@ function loadLocaleMessages(locale: CliLocale): LocaleMessages {
     return localeCache[locale] as LocaleMessages;
   }
 
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const fallbackPath = path.resolve(moduleDir, '..', 'locale', `${locale}.json`);
   const fileUrl = new URL(`../locale/${locale}.json`, import.meta.url);
-  const parsed = JSON.parse(readFileSync(fileUrl, 'utf8')) as LocaleMessages;
+  let parsed: LocaleMessages;
+
+  try {
+    parsed = JSON.parse(readFileSync(fileUrl, 'utf8')) as LocaleMessages;
+  } catch (error: unknown) {
+    const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+    if (code !== 'ENOENT') {
+      throw error;
+    }
+    parsed = JSON.parse(readFileSync(fallbackPath, 'utf8')) as LocaleMessages;
+  }
+
   localeCache[locale] = parsed;
   return parsed;
 }

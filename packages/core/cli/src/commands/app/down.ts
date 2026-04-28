@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import AppUpgrade from './app/upgrade.js';
+import Down from '../down.js';
 
-export default class Upgrade extends AppUpgrade {
+export default class AppDown extends Down {
   static override hidden = true;
 }

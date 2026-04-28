@@ -408,8 +408,9 @@ type ResumePresetValues = {
 };
 
 export default class Install extends Command {
+  static override hidden = true;
   static override description =
-    'Install NocoBase: database, storage, admin user, and `nocobase-v1 install`. Optionally run `nb download` first; distribution and image details are configured on `nb download`, not here. Use `--resume` to continue an interrupted setup from the saved workspace env config.';
+    'Install NocoBase: database, storage, admin user, and `nocobase-v1 install`. Optionally run `nb source download` first; distribution and image details are configured on `nb source download`, not here. Use `--resume` to continue an interrupted setup from the saved workspace env config.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env app1',
@@ -984,7 +985,7 @@ export default class Install extends Command {
           [
             `Cannot continue setup for "${env.name}" in non-interactive resume mode yet.`,
             `These setup-only flags are not saved in the env config: ${missingFlags.join(', ')}`,
-            `Run \`nb install --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
+            `Run \`nb init --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
           ].join('\n'),
         );
       }
@@ -1975,7 +1976,7 @@ export default class Install extends Command {
         : 'Downloading local NocoBase app files',
     );
     return await this.config.runCommand(
-      'download',
+      'source:download',
       argv,
     ) as DownloadCommandResult | undefined;
   }
