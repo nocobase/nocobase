@@ -236,22 +236,19 @@ nb db logs --env app1
 关闭并清理某个本地 env：
 
 ```bash
-nb down --env app1
+nb app down --env app1
 ```
 
-默认情况下，`nb down` 会停止应用，并在存在时移除应用容器和数据库容器。它不会删除用户数据、源码文件和 CLI env 配置。
+默认情况下，`nb app down` 会停止应用，并在存在时移除应用容器和数据库容器。它不会删除用户数据、源码文件和 CLI env 配置。
+对于本地 env，它还会删除已保存的本地 app 目录。默认仍会保留 storage 数据和 CLI env 配置。
 
 如需执行破坏性清理，需要显式指定参数：
 
 ```bash
-nb down --env app1 --remove-data
-nb down --env app1 --remove-source
-nb down --env app1 --remove-env
+nb app down --env app1 --all --yes
 ```
 
-- `--remove-data`：删除 storage 和托管数据库数据。除非使用 `--yes`，否则需要二次确认。
-- `--remove-source`：删除 npm/Git 源码目录。
-- `--remove-env`：删除已保存的 CLI env 配置。
+- `--all`：删除该 env 的所有内容，包括 storage 数据和已保存的 CLI env 配置。必须同时传 `--yes`。
 
 ## Env 管理
 

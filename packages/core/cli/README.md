@@ -275,23 +275,19 @@ Notes:
 Bring down a local env:
 
 ```bash
-nb down --env app1
+nb app down --env app1
 ```
 
-By default, `nb down` stops the app and removes app/database containers if they
-exist. It keeps user data, source files, and CLI env config.
+By default, `nb app down` stops the app and removes app/database containers if they
+exist. For local envs, it also deletes the saved local app files. It keeps storage data and CLI env config.
 
 Use explicit flags for destructive cleanup:
 
 ```bash
-nb down --env app1 --remove-data
-nb down --env app1 --remove-source
-nb down --env app1 --remove-env
+nb app down --env app1 --all --yes
 ```
 
-- `--remove-data`: delete storage and managed database data. This requires confirmation unless `--yes` is used.
-- `--remove-source`: delete the npm/Git source directory.
-- `--remove-env`: remove the saved CLI env config.
+- `--all`: delete everything for the env, including storage data and the saved env config. This requires `--yes`.
 
 ## Environment Management
 
