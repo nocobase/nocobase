@@ -9934,6 +9934,7 @@ export class FlowSurfacesService {
 
     this.syncFilterActionSettingsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
+    this.syncUpdateActionAssignedValuesForUpdateSettings(current, normalizedValues, nextPayload);
     const popupActionContext =
       options.popupActionContext ||
       (await this.resolveRecordContextPopupActionContextForHost(current, options.transaction));
@@ -10156,6 +10157,42 @@ export class FlowSurfacesService {
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
     }
+  }
+
+  private syncUpdateActionAssignedValuesForUpdateSettings(
+    current: any,
+    values: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(current?.use)) {
+      return;
+    }
+
+    const assignSettingsAssignedValuesPath = ['stepParams', 'assignSettings', 'assignFieldValues', 'assignedValues'];
+    const applyAssignedValuesPath = ['stepParams', 'apply', 'apply', 'assignedValues'];
+    const hasAssignSettingsAssignedValues = _.has(values, assignSettingsAssignedValuesPath);
+    const hasApplyAssignedValues = _.has(values, applyAssignedValuesPath);
+    if (!hasAssignSettingsAssignedValues && !hasApplyAssignedValues) {
+      return;
+    }
+
+    const assignSettingsAssignedValues = _.cloneDeep(_.get(values, assignSettingsAssignedValuesPath));
+    const applyAssignedValues = _.cloneDeep(_.get(values, applyAssignedValuesPath));
+    if (
+      hasAssignSettingsAssignedValues &&
+      hasApplyAssignedValues &&
+      !_.isEqual(assignSettingsAssignedValues, applyAssignedValues)
+    ) {
+      throwBadRequest(
+        "flowSurfaces updateSettings update action values 'stepParams.assignSettings.assignFieldValues.assignedValues' and 'stepParams.apply.apply.assignedValues' must match",
+      );
+    }
+
+    const assignedValues = hasAssignSettingsAssignedValues ? assignSettingsAssignedValues : applyAssignedValues;
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    _.set(nextStepParams, ['assignSettings', 'assignFieldValues', 'assignedValues'], _.cloneDeep(assignedValues));
+    _.set(nextStepParams, ['apply', 'apply', 'assignedValues'], _.cloneDeep(assignedValues));
+    nextPayload.stepParams = nextStepParams;
   }
 
   private normalizeCanonicalBlockHeaderWriteForUpdateSettings(current: any, values: Record<string, any>) {
@@ -14550,6 +14587,13 @@ export class FlowSurfacesService {
     return _.cloneDeep(value);
   }
 
+  private normalizeActionAssignValues(actionName: string, value: any) {
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} assignValues must be an object`);
+    }
+    return _.cloneDeep(value);
+  }
+
   private async configureActionNode(
     target: FlowSurfaceWriteTarget,
     use: string,
@@ -14659,11 +14703,12 @@ export class FlowSurfacesService {
       }
     }
     if (hasOwnDefined(changes, 'assignValues')) {
+      const assignValues = this.normalizeActionAssignValues('configure', changes.assignValues);
       if (APPROVAL_ASSIGN_ACTION_USES.has(use)) {
         stepParams.clickSettings = {
           ...(stepParams.clickSettings || {}),
           assignFieldValues: {
-            assignedValues: changes.assignValues,
+            assignedValues: assignValues,
           },
         };
       } else if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
@@ -14672,12 +14717,12 @@ export class FlowSurfacesService {
         stepParams.assignSettings = {
           ...(stepParams.assignSettings || {}),
           assignFieldValues: {
-            assignedValues: changes.assignValues,
+            assignedValues: assignValues,
           },
         };
         stepParams.apply = {
           apply: {
-            assignedValues: changes.assignValues,
+            assignedValues: assignValues,
           },
         };
       }

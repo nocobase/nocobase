@@ -99,6 +99,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     };
   }
 
+  function expectAssignedValuesMirrors(actionTree: any, assignedValues: Record<string, any>) {
+    expect(actionTree.stepParams?.assignSettings?.assignFieldValues?.assignedValues).toEqual(assignedValues);
+    expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
     ({ app, flowRepo, rootAgent } = context);
@@ -4484,6 +4489,15 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
+            key: 'archiveSelected',
+            type: 'bulkUpdate',
+            settings: {
+              assignValues: {
+                status: 'inactive',
+              },
+            },
+          },
+          {
             key: 'refresh-with-popup',
             type: 'refresh',
             popup: {
@@ -4505,7 +4519,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(addActionsRes.status).toBe(200);
     const addActionsData = getData(addActionsRes);
-    expect(addActionsData.successCount).toBe(3);
+    expect(addActionsData.successCount).toBe(4);
     expect(addActionsData.errorCount).toBe(1);
     expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
     expect(addActionsData.actions[1].result.popupPageUid).toBeUndefined();
@@ -4514,11 +4528,22 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(addActionsData.actions[2].result.popupPageUid).toBeUndefined();
     expect(addActionsData.actions[2].result.popupTabUid).toBeUndefined();
     expect(addActionsData.actions[2].result.popupGridUid).toBeUndefined();
-    expectStructuredError(addActionsData.actions[3].error, {
+    expect(addActionsData.actions[3].result.popupPageUid).toBeUndefined();
+    expect(addActionsData.actions[3].result.popupTabUid).toBeUndefined();
+    expect(addActionsData.actions[3].result.popupGridUid).toBeUndefined();
+    expectStructuredError(addActionsData.actions[4].error, {
       status: 400,
       type: 'bad_request',
     });
-    expect(addActionsData.actions[3].error.message).toContain(`type 'refresh' does not support popup`);
+    expect(addActionsData.actions[4].error.message).toContain(`type 'refresh' does not support popup`);
+
+    const bulkUpdateReadback = await getSurface(rootAgent, {
+      uid: addActionsData.actions[3].result.uid,
+    });
+    expect(bulkUpdateReadback.tree.use).toBe('BulkUpdateActionModel');
+    expectAssignedValuesMirrors(bulkUpdateReadback.tree, {
+      status: 'inactive',
+    });
 
     const { actionSurface: implicitAddNewSurface, popupBlock: implicitAddNewPopupBlock } = await readPrimaryPopupBlock(
       addActionsData.actions[1].result.uid,
@@ -4590,12 +4615,21 @@ describe('flowSurfaces catalog + compose contract', () => {
               },
             },
           },
+          {
+            key: 'markCurrentActive',
+            type: 'updateRecord',
+            settings: {
+              assignValues: {
+                status: 'active',
+              },
+            },
+          },
         ],
       },
     });
     expect(addRecordActionsRes.status).toBe(200);
     const addRecordActionsData = getData(addRecordActionsRes);
-    expect(addRecordActionsData.successCount).toBe(4);
+    expect(addRecordActionsData.successCount).toBe(5);
     expect(addRecordActionsData.errorCount).toBe(0);
     expect(addRecordActionsData.recordActions[0].result.popupGridUid).toBeTruthy();
     expect(addRecordActionsData.recordActions[2].result.popupPageUid).toBeUndefined();
@@ -4604,6 +4638,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(addRecordActionsData.recordActions[3].result.popupPageUid).toBeUndefined();
     expect(addRecordActionsData.recordActions[3].result.popupTabUid).toBeUndefined();
     expect(addRecordActionsData.recordActions[3].result.popupGridUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[4].result.popupPageUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[4].result.popupTabUid).toBeUndefined();
+    expect(addRecordActionsData.recordActions[4].result.popupGridUid).toBeUndefined();
 
     const { actionSurface: implicitEditSurface, popupBlock: implicitEditPopupBlock } = await readPrimaryPopupBlock(
       addRecordActionsData.recordActions[2].result.uid,
@@ -4623,6 +4660,14 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'reference',
     });
     expect(implicitViewWithLayoutPopupBlock?.use).toBe('DetailsBlockModel');
+
+    const updateRecordReadback = await getSurface(rootAgent, {
+      uid: addRecordActionsData.recordActions[4].result.uid,
+    });
+    expect(updateRecordReadback.tree.use).toBe('UpdateRecordActionModel');
+    expectAssignedValuesMirrors(updateRecordReadback.tree, {
+      status: 'active',
+    });
 
     const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -5634,6 +5679,73 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
+  it('should compose update actions with assignValues settings and mirror assignedValues', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose assign values page',
+      tabTitle: 'Compose assign values tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status'],
+            actions: [
+              {
+                key: 'bulkArchive',
+                type: 'bulkUpdate',
+                settings: {
+                  assignValues: {
+                    status: 'inactive',
+                  },
+                },
+              },
+            ],
+            recordActions: [
+              {
+                key: 'markActive',
+                type: 'updateRecord',
+                settings: {
+                  assignValues: {
+                    status: 'active',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const composed = getData(composeRes);
+    const tableBlock = getComposeBlock(composed, 'employeesTable');
+    const bulkUpdateAction = tableBlock.actions.find((item: any) => item.type === 'bulkUpdate');
+    const updateRecordAction = tableBlock.recordActions.find((item: any) => item.type === 'updateRecord');
+    expect(bulkUpdateAction?.uid).toBeTruthy();
+    expect(updateRecordAction?.uid).toBeTruthy();
+
+    const bulkUpdateReadback = await getSurface(rootAgent, { uid: bulkUpdateAction.uid });
+    const updateRecordReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expect(bulkUpdateReadback.tree.use).toBe('BulkUpdateActionModel');
+    expect(updateRecordReadback.tree.use).toBe('UpdateRecordActionModel');
+    expectAssignedValuesMirrors(bulkUpdateReadback.tree, {
+      status: 'inactive',
+    });
+    expectAssignedValuesMirrors(updateRecordReadback.tree, {
+      status: 'active',
+    });
+  });
+
   it('should reject partial responsive grid card columns in simple configure', async () => {
     const page = await createPage(rootAgent, {
       title: 'Configure grid card columns validation',
@@ -5901,5 +6013,21 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(updateActionReadback.tree.stepParams?.apply?.apply?.assignedValues).toMatchObject({
       status: 'active',
     });
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: { uid: updateRecordAction.uid },
+            changes: {
+              assignValues: {},
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const updateActionClearedReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectAssignedValuesMirrors(updateActionClearedReadback.tree, {});
   });
 });

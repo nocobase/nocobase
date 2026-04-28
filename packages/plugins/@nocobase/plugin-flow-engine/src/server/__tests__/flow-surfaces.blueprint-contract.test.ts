@@ -77,6 +77,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
     return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
   }
 
+  function expectAssignedValuesMirrors(actionTree: any, assignedValues: Record<string, any>) {
+    expect(actionTree.stepParams?.assignSettings?.assignFieldValues?.assignedValues).toEqual(assignedValues);
+    expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
+  }
+
   async function readPrimaryPopupBlockFromAction(actionUid: string) {
     const actionReadback = await getSurface(rootAgent, {
       uid: actionUid,
@@ -3358,6 +3363,71 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'ViewActionModel',
       'EditActionModel',
     ]);
+  });
+
+  it('should applyBlueprint update actions with assignValues settings and mirror assignedValues', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint assign values page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Employees',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+                actions: [
+                  {
+                    type: 'bulkUpdate',
+                    settings: {
+                      assignValues: {
+                        status: 'inactive',
+                      },
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    type: 'updateRecord',
+                    settings: {
+                      assignValues: {
+                        status: 'active',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const bulkUpdateAction = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'BulkUpdateActionModel',
+    )[0];
+    const updateRecordAction = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'UpdateRecordActionModel',
+    )[0];
+    expect(bulkUpdateAction?.uid).toBeTruthy();
+    expect(updateRecordAction?.uid).toBeTruthy();
+    expectAssignedValuesMirrors(bulkUpdateAction, {
+      status: 'inactive',
+    });
+    expectAssignedValuesMirrors(updateRecordAction, {
+      status: 'active',
+    });
   });
 
   it('should auto-inject submit into applyBlueprint create and edit forms and keep it first', async () => {
