@@ -16,7 +16,7 @@ import { Generating } from './Generating';
 import { Alert } from 'antd';
 import { CodeInternal } from './Code';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatMessagesStore } from '../stores/chat-messages';
+import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatBoxStore } from '../stores/chat-box';
 
@@ -56,8 +56,9 @@ export const Form = (props: any) => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const responseLoading = chat.use.responseLoading();
 
   // const { resendMessages, messagesService, updateMessage } = useChatMessageActions();
   const { children, node, message } = props;

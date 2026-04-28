@@ -16,8 +16,8 @@ import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { JOB_STATUS, JobStatusOptionsMap } from '@nocobase/plugin-workflow/client';
-import { useChatMessagesStore } from '../stores/chat-messages';
 import { FilterOutlined } from '@ant-design/icons';
+import { useChat } from '../hooks/useChat';
 
 type UseWorkflowTasksListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
@@ -39,8 +39,9 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
     getWorkflowTaskBySession,
   } = useWorkflowTasks();
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const setReadonly = useChatBoxStore.use.setReadonly();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const setResponseLoading = chat.use.setResponseLoading();
   const [pendingConversation, setPendingConversation] = useState<string>();
 
   useEffect(() => {

@@ -19,7 +19,8 @@ import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-eng
 import { isLeader } from '../built-in/utils';
 import { useLocation } from 'react-router-dom';
 import { useWorkflowTasks } from './hooks/useWorkflowTasks';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -37,9 +38,11 @@ export const ChatButton: React.FC = observer(() => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const open = useChatBoxStore.use.open();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const setOpen = useChatBoxStore.use.setOpen();
   const setReadonly = useChatBoxStore.use.setReadonly();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const setResponseLoading = chat.use.setResponseLoading();
   const [badgeAnimating, setBadgeAnimating] = useState(false);
   const prevUnreadCountRef = useRef(0);
   const badgeAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

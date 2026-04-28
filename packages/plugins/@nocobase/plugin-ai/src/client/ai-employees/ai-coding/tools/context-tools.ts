@@ -121,7 +121,9 @@ export const getContextApisTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks() {
-      this.flowContext = useChatMessagesStore.use.flowContext();
+      const currentConversation = useChatConversationsStore.use.currentConversation();
+      const chat = useChat(currentConversation);
+      this.flowContext = chat.use.flowContext();
       return this;
     },
   },
@@ -135,7 +137,9 @@ export const getContextEnvsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks() {
-      this.flowContext = useChatMessagesStore.use.flowContext();
+      const currentConversation = useChatConversationsStore.use.currentConversation();
+      const chat = useChat(currentConversation);
+      this.flowContext = chat.use.flowContext();
       return this;
     },
   },
@@ -152,7 +156,9 @@ export const getContextVarsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks() {
-      this.flowContext = useChatMessagesStore.use.flowContext();
+      const currentConversation = useChatConversationsStore.use.currentConversation();
+      const chat = useChat(currentConversation);
+      this.flowContext = chat.use.flowContext();
       return this;
     },
   },
@@ -321,7 +327,9 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
       }
     },
     useHooks() {
-      this.flowContext = useChatMessagesStore.use.flowContext();
+      const currentConversation = useChatConversationsStore.use.currentConversation();
+      const chat = useChat(currentConversation);
+      this.flowContext = chat.use.flowContext();
       return this;
     },
   },

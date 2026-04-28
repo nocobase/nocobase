@@ -18,7 +18,7 @@ import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatMessagesStore } from '../stores/chat-messages';
+import { useChat } from '../hooks/useChat';
 import { ConversationsList, useConversationsList } from './ConversationsList';
 import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
 
@@ -44,13 +44,14 @@ export const Conversations: React.FC = memo(() => {
   const expanded = useChatBoxStore.use.expanded();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const conversationSegmented = useChatConversationsStore.use.conversationSegmented();
   const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
-  const setMessages = useChatMessagesStore.use.setMessages();
+  const setMessages = chat.use.setMessages();
 
   const { messagesService } = useChatMessageActions();
 
