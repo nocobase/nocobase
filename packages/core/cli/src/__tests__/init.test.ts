@@ -619,6 +619,45 @@ test('nb init forwards otherVersion as the final --version value to nb install',
   expect(argv[argv.indexOf('--version') + 1]).toBe('fix/cli-v2');
 });
 
+test('nb init forwards api connection settings to nb install', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'db-host'?: string },
+        options?: { nonInteractive?: boolean; resume?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      appName: 'demoapp',
+      apiBaseUrl: 'http://demo.example.com/api',
+      authType: 'token',
+      accessToken: 'secret-token',
+    },
+    {
+      yes: true,
+      force: false,
+      build: true,
+      verbose: false,
+    },
+  );
+
+  expect(argv).toEqual(expect.arrayContaining([
+    '--api-base-url',
+    'http://demo.example.com/api',
+    '--auth-type',
+    'token',
+    '--access-token',
+    'secret-token',
+  ]));
+});
+
 test('nb init treats arbitrary CLI --version values as otherVersion prompt values', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;
@@ -1461,6 +1500,7 @@ test('nb init resolves dynamic port defaults without showing fallback warnings',
     buildDbPromptInitialValues.mockRestore();
   }
 });
+
 
 test('nb init preserves argument values that contain spaces when building install argv', async () => {
   const { default: Init } = await import('../commands/init.js');

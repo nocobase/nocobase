@@ -71,6 +71,11 @@ export interface EnvConfigEntry {
   appKey?: string;
   /** Application timezone (TZ). */
   timezone?: string;
+  /** Initial root/admin user settings saved for install resume flows. */
+  rootUsername?: string;
+  rootEmail?: string;
+  rootPassword?: string;
+  rootNickname?: string;
   /** Whether this env was created with a CLI-managed built-in database. */
   builtinDb?: boolean;
   /** Docker image used for the CLI-managed built-in database container. */

@@ -233,6 +233,26 @@ Prompt modes:
   ];
 
   static prompts: PromptsCatalog = {
+    seedResume: {
+      type: 'run',
+      run: (values, command) => {
+        const record = values as Record<string, PromptValue>;
+        if (record.resume === undefined) {
+          const flags = (command as Init | undefined)?.parsedFlagsForPromptSeeds;
+          record.resume = Boolean(flags?.resume);
+        }
+      },
+    },
+    seedEnvName: {
+      type: 'run',
+      run: (values) => {
+        const record = values as Record<string, PromptValue>;
+        const appName = String(record.appName ?? '').trim();
+        if (appName && record.env === undefined) {
+          record.env = appName;
+        }
+      },
+    },
     appName: {
       type: 'text',
       message: initText('prompts.appName.message'),
@@ -319,6 +339,12 @@ Prompt modes:
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
+  private parsedFlagsForPromptSeeds?:
+    | {
+      resume?: boolean;
+    }
+    | undefined;
+
   static flags = {
     yes: Flags.boolean({
       char: 'y',
@@ -362,6 +388,9 @@ Prompt modes:
     applyCliLocale((parsedResult.flags as { locale?: string }).locale);
     const flags = parsedResult.flags;
     const normalizedFlags = { ...flags };
+    this.parsedFlagsForPromptSeeds = {
+      resume: Boolean(normalizedFlags.resume),
+    };
 
     if (normalizedFlags.ui && normalizedFlags.yes) {
       this.error('--ui cannot be used with --yes.');
@@ -478,6 +507,25 @@ Prompt modes:
         'npm-registry'?: string;
       },
     );
+
+    if (normalizedFlags.resume) {
+      const resumeEnvName = String(normalizedFlags.env ?? '').trim();
+      if (resumeEnvName) {
+        const resumeEnv = await getEnv(resumeEnvName, {
+          scope: resolveDefaultConfigScope(),
+        });
+        if (resumeEnv) {
+          const savedAppPort = String(resumeEnv.config.appPort ?? '').trim();
+          const savedDbPort = String(resumeEnv.config.dbPort ?? '').trim();
+          if (savedAppPort) {
+            presetValues.resumeSavedAppPort = savedAppPort;
+          }
+          if (savedDbPort) {
+            presetValues.resumeSavedDbPort = savedDbPort;
+          }
+        }
+      }
+    }
 
     if (normalizedFlags.yes && !String(presetValues.appName ?? '').trim()) {
       const formatted = formatSkippedAppNameRequiredMessage();
@@ -931,6 +979,9 @@ Prompt modes:
     const dbDatabase = String(results.dbDatabase ?? '').trim();
     const dbUser = String(results.dbUser ?? '').trim();
     const dbPassword = String(results.dbPassword ?? '');
+    const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
+    const authType = String(results.authType ?? '').trim() || 'oauth';
+    const accessToken = String(results.accessToken ?? '');
     const builtinDb =
       explicitDbHostFlag(flags)
         ? false
@@ -948,7 +999,8 @@ Prompt modes:
             : appPort
               ? { kind: 'http' }
               : {}),
-        ...(appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(authType === 'token' && accessToken ? { accessToken } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
         ...(dockerRegistry ? { dockerRegistry } : {}),
@@ -1002,6 +1054,9 @@ Prompt modes:
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
+    const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
+    const authType = String(results.authType ?? '').trim();
+    const accessToken = String(results.accessToken ?? '');
 
     argv.push('--env', envName);
     if (options?.resume) {
@@ -1010,6 +1065,18 @@ Prompt modes:
 
     if (Boolean(flags.verbose)) {
       argv.push('--verbose');
+    }
+
+    if (apiBaseUrl) {
+      argv.push('--api-base-url', apiBaseUrl);
+    }
+
+    if (authType) {
+      argv.push('--auth-type', authType);
+    }
+
+    if (authType === 'token' && accessToken) {
+      argv.push('--access-token', accessToken);
     }
 
     const lang = String(results.lang ?? '').trim();
