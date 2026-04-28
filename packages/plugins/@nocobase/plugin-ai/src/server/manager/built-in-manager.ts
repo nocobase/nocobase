@@ -86,7 +86,7 @@ export class BuiltInManager {
     const setups = this.builtInEmployees.filter((x) => !existedUsername.includes(x.username));
     if (setups.length) {
       this.plugin.log.info('setup built-in employees');
-      for (const { username, description, profile, skillSettings } of setups) {
+      for (const { username, description, profile, skillSettings, category } of setups) {
         let p = profile[language];
         if (!p) {
           p = profile[DEFAULT_LANGUAGE];
@@ -110,6 +110,7 @@ export class BuiltInManager {
             knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
             enabled: true,
             builtIn: true,
+            category: category ?? 'general',
           },
         });
         this.plugin.log.info(`setup [${username}] ${description}`);

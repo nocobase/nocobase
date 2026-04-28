@@ -113,6 +113,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
       },
       skillSettings,
       builtIn: row.builtIn,
+      category: row.category,
     };
   });
   await next();

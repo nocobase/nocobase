@@ -26,6 +26,8 @@
   "Add skill": "添加技能",
   "Ask": "询问",
   "Allow": "允许",
+  "General": "通用",
+  "Specific": "专用",
   "General skills": "通用技能",
   "Shared by all AI employees. Read-only.": "所有 AI 员工共享，只读。",
   "Employee-specific skills": "员工专属技能",

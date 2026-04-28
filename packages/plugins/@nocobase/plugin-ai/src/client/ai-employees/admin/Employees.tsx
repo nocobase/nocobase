@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Space, Tabs } from 'antd';
-import { ExtendCollectionsProvider, SchemaComponent, useAPIClient } from '@nocobase/client';
+import { Avatar as AntdAvatar, Select, Space, Tabs } from 'antd';
+import { ExtendCollectionsProvider, SchemaComponent, useAPIClient, useTableBlockContext } from '@nocobase/client';
 import { useT } from '../../locale';
 import { useField } from '@formily/react';
 import { Field } from '@formily/core';
@@ -103,12 +103,36 @@ const Enabled: React.FC = (props) => {
   return field.value && <CheckOutlined style={{ color: '#52c41a' }} />;
 };
 
+const CategoryFilter: React.FC = () => {
+  const t = useT();
+  const { service } = useTableBlockContext();
+  const category = service?.params?.[0]?.filter?.category || 'general';
+
+  return (
+    <Select
+      value={category}
+      style={{ width: 100 }}
+      options={[
+        { label: t('General'), value: 'general' },
+        { label: t('Specific'), value: 'specific' },
+      ]}
+      onChange={(value) => {
+        service?.run({
+          ...service?.params?.[0],
+          page: 1,
+          filter: { category: value },
+        });
+      }}
+    />
+  );
+};
+
 export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
       <SchemaComponent
-        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch }}
+        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter }}
         scope={{
           t,
           useCreateFormProps,
@@ -132,6 +156,11 @@ export const Employees: React.FC = () => {
               'x-decorator-props': {
                 collection: 'aiEmployees',
                 action: 'list',
+                params: {
+                  filter: {
+                    category: 'general',
+                  },
+                },
                 rowKey: 'username',
                 dragSort: true,
                 dragSortBy: 'sort',
@@ -146,6 +175,11 @@ export const Employees: React.FC = () => {
                     },
                   },
                   properties: {
+                    categoryFilter: {
+                      type: 'void',
+                      'x-align': 'left',
+                      'x-component': 'CategoryFilter',
+                    },
                     refresh: {
                       title: "{{t('Refresh')}}",
                       'x-component': 'Action',
