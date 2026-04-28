@@ -57,6 +57,16 @@ export const FormItem = ({
   labelWidth,
   ...rest
 }: ExtendedFormItemProps & ChildExtraProps) => {
+  const normalizeLabelWidth = (value?: number | string) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    if (typeof value === 'number') {
+      return `${value}px`;
+    }
+    return /^\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+  };
+
   // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
   const childProps = Object.fromEntries(
     Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
@@ -72,6 +82,32 @@ export const FormItem = ({
           return child;
         });
   const { label, labelWrap, colon = true, layout } = rest;
+  const normalizedLabelWidth = normalizeLabelWidth(labelWidth);
+  const isHorizontalLayout = layout === 'horizontal';
+  const labelColStyle = {
+    ...(rest.labelCol?.style || {}),
+    ...(normalizedLabelWidth
+      ? {
+          width: normalizedLabelWidth,
+        }
+      : {}),
+    ...(isHorizontalLayout && normalizedLabelWidth
+      ? {
+          flex: `0 1 ${normalizedLabelWidth}`,
+          maxWidth: normalizedLabelWidth,
+          minWidth: 0,
+        }
+      : {}),
+  };
+  const wrapperColStyle = {
+    ...(rest.wrapperCol?.style || {}),
+    ...(isHorizontalLayout
+      ? {
+          flex: '1 1 0',
+          minWidth: 0,
+        }
+      : {}),
+  };
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const renderLabel = () => {
     if (!showLabel) return null;
@@ -118,7 +154,8 @@ export const FormItem = ({
   return (
     <Form.Item
       {...rest}
-      labelCol={{ style: { width: labelWidth } }}
+      labelCol={{ ...rest.labelCol, style: labelColStyle }}
+      wrapperCol={{ ...rest.wrapperCol, style: wrapperColStyle }}
       layout={layout}
       label={renderLabel()}
       colon={false}
