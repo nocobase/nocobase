@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export { AuthErrorCode } from './constants';
 export * from './actions';
 export * from './auth';
 export * from './auth-manager';

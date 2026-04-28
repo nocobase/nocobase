@@ -10,7 +10,8 @@
 import { Cache } from '@nocobase/cache';
 import { Collection, Model } from '@nocobase/database';
 import jwt from 'jsonwebtoken';
-import { Auth, AuthConfig, AuthError, AuthErrorCode } from '../auth';
+import { AuthErrorCode } from '../constants';
+import { Auth, AuthConfig, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
