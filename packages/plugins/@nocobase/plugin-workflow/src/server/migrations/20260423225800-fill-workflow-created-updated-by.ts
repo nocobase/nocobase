@@ -11,7 +11,7 @@ import { Op } from 'sequelize';
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<2.1.0-beta.20';
+  appVersion = '<2.1.0-beta.23';
 
   async up() {
     const { db } = this.context;
@@ -21,25 +21,11 @@ export default class extends Migration {
       await WorkflowModel.update(
         {
           createdById: 1,
-        },
-        {
-          where: {
-            createdById: {
-              [Op.is]: null,
-            },
-          },
-          silent: true,
-          transaction,
-        },
-      );
-
-      await WorkflowModel.update(
-        {
           updatedById: 1,
         },
         {
           where: {
-            updatedById: {
+            createdById: {
               [Op.is]: null,
             },
           },
