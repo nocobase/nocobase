@@ -340,6 +340,7 @@ export class XlsxImporter extends EventEmitter {
     let chunkRows: string[][];
     while ((chunkRows = chunks.shift()) !== undefined) {
       await this.handleChuckRows(chunkRows, options, { handingRowIndex, context: options?.context });
+      handingRowIndex += chunkRows.length;
       imported += chunkRows.length;
       this.emit('progress', {
         total,
@@ -354,7 +355,13 @@ export class XlsxImporter extends EventEmitter {
     return (this.repository instanceof RelationRepository ? this.repository.targetModel : this.repository.model) as any;
   }
 
-  async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions, columns: ImportColumn[]) {
+  async handleRowValuesWithColumns(
+    row: any,
+    rowValues: any,
+    options: RunOptions,
+    columns: ImportColumn[],
+    rowIndex = 1,
+  ) {
     for (let index = 0; index < columns.length; index++) {
       const column = columns[index];
       const field = this.options.collection.getField(column.dataIndex[0]);
@@ -391,7 +398,7 @@ export class XlsxImporter extends EventEmitter {
         rowValues[dataKey] = str == null ? null : await interfaceInstance.toValue(this.trimString(str), ctx);
       } catch (error) {
         throw new ImportValidationError('Failed to parse field {{field}} in row {{rowIndex}}: {{message}}', {
-          rowIndex: options?.context?.handingRowIndex || 1,
+          rowIndex,
           field: dataKey,
           message: error.message,
         });
@@ -418,7 +425,7 @@ export class XlsxImporter extends EventEmitter {
       context: any;
     },
   ) {
-    let { handingRowIndex = 1 } = options;
+    const { handingRowIndex: chunkStartRowIndex = 1 } = options;
 
     // If no external transaction is provided, create a per-chunk transaction so that
     // each chunk commits independently and doesn't accumulate in a single large transaction.
@@ -442,10 +449,15 @@ export class XlsxImporter extends EventEmitter {
     // (including errors thrown by toValue() during row parsing, before performInsert)
     // always triggers a rollback of the per-chunk transaction.
     const rows = [];
+    // Tracks which row in the current chunk is being parsed, so DB-level errors that
+    // surface after parsing can still report a meaningful row index.
+    let inChunkRowIndex = 0;
     try {
-      for (const row of chunkRows) {
+      for (let i = 0; i < chunkRows.length; i++) {
+        inChunkRowIndex = i;
+        const row = chunkRows[i];
         const rowValues = {};
-        await this.handleRowValuesWithColumns(row, rowValues, chunkRunOptions, columns);
+        await this.handleRowValuesWithColumns(row, rowValues, chunkRunOptions, columns, chunkStartRowIndex + i);
         rows.push({
           ...(this.options.rowDefaultValues || {}),
           ...rowValues,
@@ -462,7 +474,6 @@ export class XlsxImporter extends EventEmitter {
         'Record insertion completed in {time}ms',
       );
       await new Promise((resolve) => setTimeout(resolve, 5));
-      handingRowIndex += chunkRows.length;
       if (!externalTransaction) {
         await transaction?.commit();
       }
@@ -483,19 +494,22 @@ export class XlsxImporter extends EventEmitter {
         throw new Error(`${translate('Unique constraint error, fields:')} ${JSON.stringify(error.fields)}`);
       }
 
+      // For DB-level errors raised by bulkCreate we cannot know which row triggered
+      // the failure, so we report the first row of the chunk. Parse-time errors below
+      // bubble up via ImportValidationError above with their own precise rowIndex.
+      const failedRowIndex = chunkStartRowIndex + inChunkRowIndex;
       if (error.params?.rowIndex) {
-        handingRowIndex += error.params.rowIndex;
-        error.params.rowIndex = handingRowIndex;
+        error.params.rowIndex = failedRowIndex;
       }
-      this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
-        rowIndex: handingRowIndex,
-        rowData: rows[handingRowIndex],
+      this.logger?.error(`Import error at row ${failedRowIndex}: ${error.message}`, {
+        rowIndex: failedRowIndex,
+        rowData: chunkRows[inChunkRowIndex],
         originalError: error.stack || error.toString(),
       });
 
-      throw new ImportError(`Import failed at row ${handingRowIndex}`, {
-        rowIndex: handingRowIndex,
-        rowData: rows[handingRowIndex - (this.options.explain ? 2 : 1)],
+      throw new ImportError(`Import failed at row ${failedRowIndex}`, {
+        rowIndex: failedRowIndex,
+        rowData: chunkRows[inChunkRowIndex],
         cause: error,
       });
     }
