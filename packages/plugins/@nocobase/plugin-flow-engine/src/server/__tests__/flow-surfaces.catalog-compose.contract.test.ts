@@ -681,6 +681,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       enableQuickCreateEvent: true,
       weekStart: 1,
     });
+    expect(calendarReadback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'fullHeight',
+    });
 
     const quickCreateAction = calendarReadback.tree.subModels?.quickCreateAction;
     const eventViewAction = calendarReadback.tree.subModels?.eventViewAction;
@@ -932,6 +935,35 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(invalidCollectionRes.status).toBe(400);
     expect(readErrorMessage(invalidCollectionRes)).toContain(`must contain at least one date field`);
+  });
+
+  it('should let explicit calendar block height settings override the full-height creation default', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar explicit height page',
+      tabTitle: 'Calendar explicit height tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'calendar_events',
+      },
+      settings: {
+        height: 420,
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+
+    expect(readback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
+      heightMode: 'specifyValue',
+      height: 420,
+    });
   });
 
   it('should create configure and batch-add flow-model tree blocks', async () => {
@@ -1640,9 +1672,6 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const calendarReadback = await getSurface(rootAgent, {
       uid: calendar.uid,
-    });
-    expect(calendarReadback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
-      heightMode: 'fullHeight',
     });
     expect(calendarReadback.tree.subModels?.quickCreateAction).toMatchObject({
       uid: quickCreateActionUid,
