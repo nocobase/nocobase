@@ -20,7 +20,7 @@ describe('BlockGridModel dragOverlayConfig', () => {
     model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
   });
 
-  it('shifts block insert overlays toward the block interior', () => {
+  it('applies block insert overlay offsets from dragOverlayConfig', () => {
     const beforeSlot: LayoutSlot = {
       type: 'column',
       rowId: 'row1',
@@ -38,7 +38,7 @@ describe('BlockGridModel dragOverlayConfig', () => {
       rect: { top: 300, left: 50, width: 200, height: 48 },
     };
 
-    expect((model as any).computeOverlayRect(beforeSlot).top).toBe(124);
-    expect((model as any).computeOverlayRect(afterSlot).top).toBe(276);
+    expect((model as any).computeOverlayRect(beforeSlot).top).toBe(88);
+    expect((model as any).computeOverlayRect(afterSlot).top).toBe(312);
   });
 });
