@@ -338,6 +338,11 @@ Prompt modes:
       description: 'Show detailed command output',
       default: false,
     }),
+    'skip-skills': Flags.boolean({
+      description: 'Skip installing or updating NocoBase AI coding skills during init',
+      hidden: true,
+      default: false,
+    }),
     'ui-host': Flags.string({
       description:
         'Host for the local --ui setup server (default: 127.0.0.1)',
@@ -382,7 +387,9 @@ Prompt modes:
 
       p.intro(initTitle());
 
-      await this.syncNocoBaseSkills();
+      await this.syncNocoBaseSkills({
+        skip: Boolean(normalizedFlags['skip-skills']),
+      });
 
       try {
         await this.config.runCommand(
@@ -554,7 +561,9 @@ Prompt modes:
       );
     }
 
-    await this.syncNocoBaseSkills();
+    await this.syncNocoBaseSkills({
+      skip: Boolean(normalizedFlags['skip-skills']),
+    });
 
     let managedInstallResults: Record<string, string | number | boolean> | undefined;
 
@@ -878,7 +887,12 @@ Prompt modes:
     return existsSync(path.resolve(process.cwd(), '.agents'));
   }
 
-  private async syncNocoBaseSkills(): Promise<void> {
+  private async syncNocoBaseSkills(options?: { skip?: boolean }): Promise<void> {
+    if (options?.skip) {
+      p.log.step('Skipped NocoBase agent skills sync.');
+      return;
+    }
+
     try {
       const status = await inspectSkillsStatus();
       if (!status.installed) {

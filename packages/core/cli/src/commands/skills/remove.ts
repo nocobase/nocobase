@@ -9,12 +9,12 @@
 
 import { Command, Flags } from '@oclif/core';
 import { confirmAction, setVerboseMode } from '../../lib/ui.js';
-import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
+import { removeNocoBaseSkills } from '../../lib/skills-manager.js';
 
-export default class SkillsUpdate extends Command {
-  static override summary = 'Update the globally installed NocoBase AI coding skills';
+export default class SkillsRemove extends Command {
+  static override summary = 'Remove the globally installed NocoBase AI coding skills';
   static override description =
-    'Refresh the globally installed NocoBase AI coding skills. This command only updates an existing @nocobase/skills install.';
+    'Remove the skills installed from nocobase/skills globally. This only removes the skills managed by `nb`.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
@@ -24,7 +24,7 @@ export default class SkillsUpdate extends Command {
   static override flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip the update confirmation prompt',
+      description: 'Skip the remove confirmation prompt',
       default: false,
     }),
     json: Flags.boolean({
@@ -32,27 +32,27 @@ export default class SkillsUpdate extends Command {
       default: false,
     }),
     verbose: Flags.boolean({
-      description: 'Show detailed update output',
+      description: 'Show detailed remove output',
       default: false,
     }),
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(SkillsUpdate);
+    const { flags } = await this.parse(SkillsRemove);
     setVerboseMode(flags.verbose);
 
     if (!flags.yes) {
       const confirmed = await confirmAction(
-        'Update the globally installed NocoBase AI coding skills?',
+        'Remove the globally installed NocoBase AI coding skills?',
         { defaultValue: true },
       );
       if (!confirmed) {
-        this.log('Skipped skills update.');
+        this.log('Skipped skills removal.');
         return;
       }
     }
 
-    const result = await updateNocoBaseSkills({
+    const result = await removeNocoBaseSkills({
       verbose: flags.verbose,
     });
 
@@ -63,7 +63,6 @@ export default class SkillsUpdate extends Command {
             ok: true,
             kind: 'skills',
             action: result.action,
-            reason: result.action === 'noop' ? result.reason : undefined,
             globalRoot: result.status.globalRoot,
             workspaceRoot: result.status.workspaceRoot,
             installedSkillNames: result.status.installedSkillNames,
@@ -78,27 +77,18 @@ export default class SkillsUpdate extends Command {
     }
 
     if (result.action === 'noop') {
-      if (result.reason === 'not-installed') {
-        this.log(
-          flags.verbose
-            ? 'NocoBase AI coding skills are not installed globally. Run `nb skills install` first.'
-            : 'Skipped skills update because NocoBase AI coding skills are not installed.',
-        );
-        return;
-      }
-
       this.log(
         flags.verbose
-          ? 'NocoBase AI coding skills are already up to date globally.'
-          : 'NocoBase AI coding skills are up to date.',
+          ? 'NocoBase AI coding skills are not installed globally.'
+          : 'NocoBase AI coding skills are not installed.',
       );
       return;
     }
 
     this.log(
       flags.verbose
-        ? 'Updated the global NocoBase AI coding skills.'
-        : 'Updated NocoBase AI coding skills globally.',
+        ? 'Removed the global NocoBase AI coding skills.'
+        : 'Removed NocoBase AI coding skills globally.',
     );
   }
 }

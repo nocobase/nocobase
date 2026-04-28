@@ -784,6 +784,48 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
   }
 });
 
+test('nb init skips skills sync when --skip-skills is provided in flags mode', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    apiBaseUrl: 'http://localhost:13000/api',
+    authType: 'oauth',
+    ...(options.values ?? {}),
+  }));
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        'skip-skills': true,
+      },
+    })),
+    config: { runCommand },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(`unexpected error: ${message}`);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.inspectSkillsStatus).not.toHaveBeenCalled();
+  expect(mocks.installNocoBaseSkills).not.toHaveBeenCalled();
+  expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
+  expect(mocks.promptStep).toHaveBeenCalledWith('Skipped NocoBase agent skills sync.');
+  expect(runCommand.mock.calls[0]).toEqual([
+    'env:add',
+    ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+  ]);
+});
+
 test('nb init installs skills automatically when they are missing', async () => {
   const { default: Init } = await import('../commands/init.js');
 
@@ -1568,6 +1610,8 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
   expect(Init.flags['auth-type']).toBeDefined();
   expect(Init.flags['access-token']).toBeDefined();
   expect(Init.flags.locale).toBeDefined();
+  expect(Init.flags['skip-skills']).toBeDefined();
+  expect(Init.flags['skip-skills'].hidden).toBe(true);
   expect(Init.flags['install-skills']).toBeUndefined();
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
