@@ -67,9 +67,11 @@ interface DragState {
   containerEl: HTMLDivElement | null;
   containerRect: Rect;
   pointerOrigin?: { x: number; y: number };
+  pointerPosition?: { x: number; y: number };
   activeSlotKey: string | null;
   previewLayout?: GridLayoutData;
   refreshTimer?: ReturnType<typeof setTimeout> | null;
+  cleanupListeners?: () => void;
   generatedIds: Map<string, string>;
 }
 
@@ -115,6 +117,53 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   ];
   private dragState?: DragState;
   private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
+
+  private updateDragPointerPosition = (event: Event) => {
+    if (!this.dragState) {
+      return;
+    }
+
+    const point = getClientPoint(event);
+    if (!point) {
+      return;
+    }
+
+    this.dragState.pointerPosition = point;
+  };
+
+  private handleDragScroll = () => {
+    if (!this.dragState) {
+      return;
+    }
+
+    this.scheduleSnapshotRefresh();
+  };
+
+  private bindDragDocumentListeners() {
+    const ownerDocument = this.getDragContainer()?.ownerDocument || (typeof document === 'undefined' ? null : document);
+    if (!ownerDocument) {
+      return undefined;
+    }
+
+    const options: AddEventListenerOptions = { capture: true, passive: true };
+    const removeOptions: EventListenerOptions = { capture: true };
+    const ownerWindow = ownerDocument.defaultView;
+
+    ownerDocument.addEventListener('pointermove', this.updateDragPointerPosition, options);
+    ownerDocument.addEventListener('mousemove', this.updateDragPointerPosition, options);
+    ownerDocument.addEventListener('touchmove', this.updateDragPointerPosition, options);
+    ownerDocument.addEventListener('scroll', this.handleDragScroll, options);
+    ownerWindow?.addEventListener('scroll', this.handleDragScroll, options);
+
+    return () => {
+      ownerDocument.removeEventListener('pointermove', this.updateDragPointerPosition, removeOptions);
+      ownerDocument.removeEventListener('mousemove', this.updateDragPointerPosition, removeOptions);
+      ownerDocument.removeEventListener('touchmove', this.updateDragPointerPosition, removeOptions);
+      ownerDocument.removeEventListener('scroll', this.handleDragScroll, removeOptions);
+      ownerWindow?.removeEventListener('scroll', this.handleDragScroll, removeOptions);
+    };
+  }
+
   protected deriveRowOrder(rows: Record<string, string[][]>, provided?: string[]) {
     const order: string[] = [];
     const used = new Set<string>();
@@ -458,6 +507,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     if (!this.dragState) {
       return null;
     }
+    if (this.dragState.pointerPosition) {
+      return this.dragState.pointerPosition;
+    }
+
     const origin = this.dragState.pointerOrigin;
     if (origin) {
       return {
@@ -513,7 +566,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       return;
     }
     if (this.dragState.refreshTimer) {
-      clearTimeout(this.dragState.refreshTimer);
+      return;
     }
     this.dragState.refreshTimer = setTimeout(() => {
       if (!this.dragState) {
@@ -521,7 +574,22 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       }
       this.dragState.refreshTimer = null;
       this.updateLayoutSnapshot();
+      this.refreshPreviewFromPointer();
     }, 16);
+  }
+
+  private refreshPreviewFromPointer() {
+    if (!this.dragState) {
+      return;
+    }
+
+    const point = this.dragState.pointerPosition || this.dragState.pointerOrigin;
+    if (!point) {
+      return;
+    }
+
+    const slot = this.resolveDragSlot(point);
+    this.applyPreview(slot);
   }
 
   /**
@@ -698,6 +766,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       refreshTimer: null,
       generatedIds: new Map(),
     };
+    this.dragState.cleanupListeners = this.bindDragDocumentListeners();
     this.setProps('dragOverlayRect', null);
     this.updateLayoutSnapshot();
     this.scheduleSnapshotRefresh();
@@ -731,6 +800,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       clearTimeout(this.dragState.refreshTimer);
     }
 
+    this.dragState.cleanupListeners?.();
     this.dragState = undefined;
     this.setProps('dragOverlayRect', null);
   }
