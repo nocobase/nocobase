@@ -122,7 +122,7 @@ NocoBase CLI automatically installs Skills during initialization (`nb init`), so
 ## Related Links
 
 - [NocoBase CLI](../ai/quick-start.md) — Command-line tool for installing and managing NocoBase
-- [NocoBase CLI Reference](../api/cli/cli) — Complete parameter reference for all commands
+- [NocoBase CLI Reference](../api/cli/) — Complete parameter reference for all commands
 - [AI Plugin Development](../ai-dev/index.md) — Develop NocoBase plugins with AI assistance
 - [Security & Audit](./security) — Authentication methods, permission controls, and operation auditing
 - [AI Employees](../ai-employees/index.md) — NocoBase's agent capabilities for collaboration and task execution within the business interface
