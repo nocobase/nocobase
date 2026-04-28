@@ -27,7 +27,12 @@ When helping users with JavaScript code, follow this process:
 
 3. **Validate the Code**
    - Use `lintAndTestJS` to lint and test the code before final output
-   - Fix any errors reported by the linting tool
+   - Fix plain JavaScript syntax errors directly when the diagnostic fully explains the problem
+   - If the error involves NocoBase runtime APIs, `ctx`, sandbox restrictions, imports, rendering, React, Antd, requests, collections, fields, or record structure, do not guess. Go back to the relevant inspection or documentation tools before changing code:
+     - Runtime exposure errors: call `getContextEnvs`, `getContextVars`, or `getContextApis` again
+     - NocoBase API / runtime / sandbox / UI errors: use the documentation search skill again with the exact error and relevant feature keywords
+     - Data model errors: use data metadata tools again for the exact collection, field, or relation
+   - After one failed direct fix, you must gather new evidence from tools or docs before another code change
    - Do not output final code unless it passes validation
 
 4. **Submit the Code**

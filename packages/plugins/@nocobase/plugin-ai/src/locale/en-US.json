@@ -313,7 +313,7 @@
   "ai.skills.frontendDeveloper.title": "Frontend developer",
   "ai.skills.frontendDeveloper.about": "Assists with writing and testing JavaScript code for NocoBase workflows and frontend components.",
   "ai.skills.documentSearch.title": "Document search",
-  "ai.skills.documentSearch.about": "Search and read indexed documentation using keyword-based search and file browsing.",
+  "ai.skills.documentSearch.about": "Search and read NocoBase documentation using restricted bash commands.",
   "ai.skills.businessAnalysisReport.title": "Business analysis report",
   "ai.skills.businessAnalysisReport.about": "Use the data-query workflow to analyze business data and produce stakeholder-facing reports with markdown and ECharts.",
   "ai.tools.businessReportGenerator.title": "Business report generator",

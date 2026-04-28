@@ -50,18 +50,32 @@ Follow this exact order. Do NOT skip ahead to coding.
 
 2. Documentation lookup before writing any code
    - Use `document-search` skill guidance.
-   - You MUST call:
-     - `searchDocs`
-     - `readDocEntry`
+   - You MUST call `searchDocs`.
    - Always search docs before coding when the task involves any of the following:
      - RunJS / workflow / JS Block / JS Field / JS Item / JS Action / Event Flow / Linkage Rules
      - `ctx` APIs, runtime constraints, rendering, routing, requests, imports, React, Antd
      - any NocoBase-specific feature, component, schema, collection behavior, or API usage
    - Do not rely on memory, prior experience, or "common NocoBase patterns" as a substitute for this step.
    - Minimum requirement:
-     - search for the relevant module / keywords
-     - read the most relevant matching entry or entries
+     - use a compact Bash script that first searches file paths / filenames, then reads focused snippets from the best matches
+     - run broader content search only when path search is insufficient or ambiguous
      - extract the concrete constraints or APIs you will rely on
+     - start narrow; prefer returning an initial answer once focused snippets confirm the needed constraints
+   - Prefer one combined `searchDocs` call over multiple small calls. Good pattern:
+     ```bash
+     printf '## Candidate files\n'
+     rg --files interface-builder | grep -Ei 'runjs|js-|event|linkage' | head -50
+
+     printf '\n## JS Block\n'
+     sed -n '1,180p' interface-builder/blocks/other-blocks/js-block.md
+
+     printf '\n## RunJS\n'
+     sed -n '1,180p' interface-builder/runjs.md
+     ```
+   - Avoid broad full-tree scans such as `find .` or `rg ... .`. Pick likely top-level directories first, then search inside them.
+   - Do not pipe output into `rg`; use `grep` for pipeline filtering, and call `rg --files <dir>` or `rg -n <pattern> <dir>` with explicit path arguments.
+   - Use `rg -g '*.md' -g '*.mdx'`; do not use unsupported `rg --include` options.
+   - Stop searching once the snippets directly confirm the API or constraint needed for the code. Do not read adjacent overview, quickstart, definition, lifecycle, or development pages just for extra background unless the user asks for more depth.
    - Only after this step may you decide how to implement the solution.
 
 3. Data inspection when data model is involved
@@ -84,7 +98,15 @@ Follow this exact order. Do NOT skip ahead to coding.
 
 6. Validate before output (REQUIRED)
    - `lintAndTestJS` must pass before output.
-   - If validation fails, fix the code and validate again.
+   - If validation fails, do not guess or repeatedly patch from memory.
+   - Treat every validation failure as new evidence and classify it before changing code:
+     - Unknown or missing `ctx` member / runtime API / library exposure → call `getContextApis`, `getContextVars`, or `getContextEnvs` again, then search docs for that exact API or error.
+     - Unsupported syntax, sandbox restriction, import/render/request error, React/Antd usage error → call `searchDocs` again with the exact diagnostic text and the related feature keywords.
+     - Collection, field, relation, filter, or record-shape error → call the data metadata tools again for the exact collection or field involved.
+     - Plain JavaScript syntax or type error that is fully explained by the diagnostic → fix directly, then validate again.
+   - After one failed direct fix, you MUST go back to runtime inspection, documentation lookup, or metadata lookup before another code change.
+   - When calling `searchDocs` after validation failure, use a compact Bash script that searches the exact error text and nearby concepts, then reads focused snippets from likely matches.
+   - If the tools and docs still do not confirm the fix, stop and ask the user instead of trying another unverified implementation.
 
 # Coding Rules
 

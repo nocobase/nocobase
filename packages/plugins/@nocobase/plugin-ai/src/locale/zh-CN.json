@@ -316,7 +316,7 @@
   "ai.skills.frontendDeveloper.title": "前端开发",
   "ai.skills.frontendDeveloper.about": "协助编写和测试 nocobase 工作流和前端组件的 Javascript 代码。",
   "ai.skills.documentSearch.title": "文档检索",
-  "ai.skills.documentSearch.about": "使用基于关键字的搜索和文件浏览搜索和读取索引文档。",
+  "ai.skills.documentSearch.about": "使用受限 Bash 命令搜索和读取 NocoBase 文档。",
   "ai.skills.businessAnalysisReport.title": "业务分析报告",
   "ai.skills.businessAnalysisReport.about": "使用 data-query 工作流分析业务数据，并输出面向业务干系人的 Markdown + ECharts 报告。",
   "ai.tools.businessReportGenerator.title": "业务报告生成器",

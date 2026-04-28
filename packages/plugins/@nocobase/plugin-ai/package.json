@@ -47,6 +47,7 @@
     "echarts": "^5.5.0",
     "echarts-for-react": "3.0.2",
     "elkjs": "^0.10.0",
+    "just-bash": "^2.14.3",
     "jsonrepair": "3.13.1",
     "langchain": "^1.2.24",
     "nodejs-snowflake": "^2.0.1",
