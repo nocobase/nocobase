@@ -252,6 +252,7 @@ test('nb init shows a concise fallback message when the setup browser cannot be 
   expect(mocks.promptWarn).toHaveBeenCalledWith(
     'We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process.',
   );
+  expect(mocks.promptInfo).toHaveBeenCalledWith('Browser open error: open failed');
 });
 
 test('nb init localizes the browser UI intro title', async () => {

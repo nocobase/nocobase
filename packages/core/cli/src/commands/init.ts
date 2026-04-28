@@ -198,6 +198,13 @@ function logInitUiBrowserOpenFallback() {
   p.log.warn(translateCli('commands.init.messages.uiOpenBrowserFallback'));
 }
 
+function formatBrowserOpenError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
 export default class Init extends Command {
   static override summary =
     'Set up NocoBase so coding agents can connect and work with it';
@@ -574,8 +581,9 @@ Prompt modes:
         onServerStart: ({ url }) => {
           logInitUiReady(this, url);
         },
-        onOpenBrowserError: (_url, _err) => {
+        onOpenBrowserError: (_url, err) => {
           logInitUiBrowserOpenFallback();
+          p.log.info(`Browser open error: ${formatBrowserOpenError(err)}`);
         },
       });
     }
