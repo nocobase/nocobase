@@ -13,7 +13,6 @@ import {
   escapeT,
   FlowContext,
   MultiRecordResource,
-  replaceUidInGridLayout,
   SingleRecordResource,
   type FlowEngine,
   type FlowModel,
@@ -29,6 +28,7 @@ import {
   parseResourceListResponse,
 } from '../utils/templateCompatibility';
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
+import { replaceGridLayoutUid } from '../utils/replaceGridLayoutUid';
 import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
@@ -1119,15 +1119,7 @@ ReferenceBlockModel.registerFlow({
             arr.forEach((m, idx) => (m.sortIndex = idx));
 
             // 替换 Grid layout 中的 uid，保持原位置
-            if (
-              typeof (parent as any).getGridLayout === 'function' &&
-              typeof (parent as any).setGridStepLayout === 'function' &&
-              typeof (parent as any).syncLayoutProps === 'function'
-            ) {
-              const layout = replaceUidInGridLayout((parent as any).getGridLayout(), oldModel.uid, newModel.uid);
-              (parent as any).setGridStepLayout(layout);
-              (parent as any).syncLayoutProps(layout);
-            } else {
+            if (!replaceGridLayoutUid(parent, oldModel.uid, newModel.uid)) {
               const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
               if (gridParams?.rows && typeof gridParams.rows === 'object') {
                 const newRows = _.cloneDeep(gridParams.rows);

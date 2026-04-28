@@ -17,8 +17,8 @@ export class BlockGridModel extends GridModel {
   dragOverlayConfig: DragOverlayConfig = {
     // 列内插入
     columnInsert: {
-      before: { offsetTop: -12 },
-      after: { offsetTop: 12 },
+      before: { offsetTop: 24 },
+      after: { offsetTop: -24 },
     },
     // 列边缘
     columnEdge: {

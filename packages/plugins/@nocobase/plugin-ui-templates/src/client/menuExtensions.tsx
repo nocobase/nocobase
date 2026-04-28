@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Button, Form, Input, Modal, Radio, Space, Tooltip, Typography } from 'antd';
 import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
-import { FlowModel, createBlockScopedEngine, replaceUidInGridLayout } from '@nocobase/flow-engine';
+import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr, getPluginT } from './locale';
@@ -23,6 +23,7 @@ import {
   type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
 import { patchGridOptionsFromTemplateRoot } from './utils/templateCopy';
+import { replaceGridLayoutUid } from './utils/replaceGridLayoutUid';
 
 type MenuItem = {
   key: string;
@@ -184,15 +185,7 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
             arr.splice(insertIndex, idx >= 0 ? 1 : 0, newModel);
             arr.forEach((m, i) => (m.sortIndex = i));
 
-            if (
-              typeof (parent as any).getGridLayout === 'function' &&
-              typeof (parent as any).setGridStepLayout === 'function' &&
-              typeof (parent as any).syncLayoutProps === 'function'
-            ) {
-              const layout = replaceUidInGridLayout((parent as any).getGridLayout(), model.uid, newModel.uid);
-              (parent as any).setGridStepLayout(layout);
-              (parent as any).syncLayoutProps(layout);
-            } else {
+            if (!replaceGridLayoutUid(parent, model.uid, newModel.uid)) {
               const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
               if (gridParams?.rows && typeof gridParams.rows === 'object') {
                 const newRows = _.cloneDeep(gridParams.rows);
