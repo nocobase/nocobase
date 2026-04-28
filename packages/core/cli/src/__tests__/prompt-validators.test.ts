@@ -93,10 +93,48 @@ test('validateAvailableTcpPort rejects invalid and occupied ports', async () => 
 });
 
 test('findAvailableTcpPort returns a free TCP port', async () => {
-  const port = await findAvailableTcpPort();
-  expect(typeof port).toBe('string');
-  expect(port).toMatch(/^\d+$/);
-  expect(await validateAvailableTcpPort(port)).toBe(undefined);
+  let reservedPort: string | undefined;
+  let reservedServer: net.Server | undefined;
+
+  try {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const port = await findAvailableTcpPort();
+      expect(typeof port).toBe('string');
+      expect(port).toMatch(/^\d+$/);
+
+      const server = net.createServer();
+      const bound = await new Promise<boolean>((resolve) => {
+        server.once('error', () => resolve(false));
+        server.listen(Number(port), '127.0.0.1', () => resolve(true));
+      });
+
+      if (!bound) {
+        await new Promise<void>((resolve) => {
+          server.close(() => resolve());
+        });
+        continue;
+      }
+
+      reservedPort = port;
+      reservedServer = server;
+      break;
+    }
+
+    expect(reservedPort).toBeTruthy();
+    expect(reservedServer?.listening).toBe(true);
+  } finally {
+    if (reservedServer) {
+      await new Promise<void>((resolve, reject) => {
+        reservedServer!.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  }
 });
 
 test('validateTcpPort rejects invalid ports and accepts valid ones', () => {

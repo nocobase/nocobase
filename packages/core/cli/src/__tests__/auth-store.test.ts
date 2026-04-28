@@ -26,19 +26,19 @@ import {
 import { resolveCliHomeDir, resolveCliHomeRoot } from '../lib/cli-home.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
-  const previous = process.env.NOCOBASE_CTL_HOME;
+  const previous = process.env.NB_CLI_HOME;
   const previousEnvRoot = process.env.NB_ENV_ROOT;
   const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-test-'));
-  process.env.NOCOBASE_CTL_HOME = tempHome;
+  process.env.NB_CLI_HOME = tempHome;
   delete process.env.NB_ENV_ROOT;
 
   try {
     await run();
   } finally {
     if (previous === undefined) {
-      delete process.env.NOCOBASE_CTL_HOME;
+      delete process.env.NB_CLI_HOME;
     } else {
-      process.env.NOCOBASE_CTL_HOME = previous;
+      process.env.NB_CLI_HOME = previous;
     }
     if (previousEnvRoot === undefined) {
       delete process.env.NB_ENV_ROOT;
@@ -107,6 +107,31 @@ test('loadAuthConfig maps the legacy dockerResourcePrefix field to workspace nam
     const config = await loadAuthConfig({ scope: 'global' });
     expect(config.name).toBe('nb-legacy');
   });
+});
+
+test('resolveCliHomeRoot still falls back to legacy NOCOBASE_CTL_HOME', async () => {
+  const previousNew = process.env.NB_CLI_HOME;
+  const previousLegacy = process.env.NOCOBASE_CTL_HOME;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-legacy-'));
+
+  delete process.env.NB_CLI_HOME;
+  process.env.NOCOBASE_CTL_HOME = tempHome;
+
+  try {
+    expect(resolveCliHomeRoot('global')).toBe(tempHome);
+  } finally {
+    if (previousNew === undefined) {
+      delete process.env.NB_CLI_HOME;
+    } else {
+      process.env.NB_CLI_HOME = previousNew;
+    }
+    if (previousLegacy === undefined) {
+      delete process.env.NOCOBASE_CTL_HOME;
+    } else {
+      process.env.NOCOBASE_CTL_HOME = previousLegacy;
+    }
+    await rm(tempHome, { recursive: true, force: true });
+  }
 });
 
 test('upsertEnv preserves runtime metadata when connection settings are unchanged', async () => {
@@ -377,39 +402,63 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
 });
 
 test('loadAuthConfig and getEnv fall back to legacy project config when global is empty', async () => {
-  await withTempCliHome(async () => {
-    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
-    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceDir);
+  const previousHome = process.env.NB_CLI_HOME;
+  const previousEnvRoot = process.env.NB_ENV_ROOT;
+  const previousLegacyHome = process.env.NOCOBASE_CTL_HOME;
+  const globalHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-global-home-'));
+  const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceDir);
+  const homedirSpy = vi.spyOn(os, 'homedir').mockReturnValue(globalHome);
 
-    try {
-      await mkdir(path.join(workspaceDir, '.nocobase'), { recursive: true });
+  delete process.env.NB_CLI_HOME;
+  delete process.env.NB_ENV_ROOT;
+  delete process.env.NOCOBASE_CTL_HOME;
 
-      await saveAuthConfig(
-        {
-          currentEnv: 'legacy',
-          envs: {
-            legacy: {
-              baseUrl: 'http://localhost:13000/api',
-            },
+  try {
+    await mkdir(path.join(workspaceDir, '.nocobase'), { recursive: true });
+
+    await saveAuthConfig(
+      {
+        currentEnv: 'legacy',
+        envs: {
+          legacy: {
+            baseUrl: 'http://localhost:13000/api',
           },
         },
-        { scope: 'project' },
-      );
+      },
+      { scope: 'project' },
+    );
 
-      const config = await loadAuthConfig({ scope: 'global' });
-      const currentEnv = await getCurrentEnvName({ scope: 'global' });
-      const env = await getEnv(undefined, { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+    const currentEnv = await getCurrentEnvName({ scope: 'global' });
+    const env = await getEnv(undefined, { scope: 'global' });
 
-      expect(config.currentEnv).toBe('legacy');
-      expect(config.envs.legacy?.apiBaseUrl).toBe('http://localhost:13000/api');
-      expect(currentEnv).toBe('legacy');
-      expect(env?.name).toBe('legacy');
-      expect(env?.baseUrl).toBe('http://localhost:13000/api');
-    } finally {
-      cwdSpy.mockRestore();
-      await rm(workspaceDir, { recursive: true, force: true });
+    expect(config.currentEnv).toBe('legacy');
+    expect(config.envs.legacy?.apiBaseUrl).toBe('http://localhost:13000/api');
+    expect(currentEnv).toBe('legacy');
+    expect(env?.name).toBe('legacy');
+    expect(env?.baseUrl).toBe('http://localhost:13000/api');
+  } finally {
+    cwdSpy.mockRestore();
+    homedirSpy.mockRestore();
+    if (previousHome === undefined) {
+      delete process.env.NB_CLI_HOME;
+    } else {
+      process.env.NB_CLI_HOME = previousHome;
     }
-  });
+    if (previousEnvRoot === undefined) {
+      delete process.env.NB_ENV_ROOT;
+    } else {
+      process.env.NB_ENV_ROOT = previousEnvRoot;
+    }
+    if (previousLegacyHome === undefined) {
+      delete process.env.NOCOBASE_CTL_HOME;
+    } else {
+      process.env.NOCOBASE_CTL_HOME = previousLegacyHome;
+    }
+    await rm(globalHome, { recursive: true, force: true });
+    await rm(workspaceDir, { recursive: true, force: true });
+  }
 });
 
 test('legacy baseUrl key is still readable but normalized to apiBaseUrl when loading config', async () => {
@@ -463,7 +512,7 @@ test('write operations keep using legacy project config when env only exists the
       await setCurrentEnv('legacy', { scope: 'global' });
 
       const projectConfig = await loadAuthConfig({ scope: 'project' });
-      const globalConfigPath = path.join(process.env.NOCOBASE_CTL_HOME!, '.nocobase', 'config.json');
+      const globalConfigPath = path.join(process.env.NB_CLI_HOME!, '.nocobase', 'config.json');
 
       expect(projectConfig.currentEnv).toBe('legacy');
       expect(projectConfig.envs.legacy?.auth).toEqual({

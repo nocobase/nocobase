@@ -15,6 +15,8 @@ export const CLI_HOME_DIRNAME = '.nocobase';
 export type CliHomeScope = 'auto' | 'project' | 'global';
 export const NB_CONFIG_SCOPE_ENV = 'NB_CONFIG_SCOPE';
 export const NB_ENV_ROOT_ENV = 'NB_ENV_ROOT';
+export const NB_CLI_HOME_ENV = 'NB_CLI_HOME';
+export const LEGACY_NOCOBASE_CTL_HOME_ENV = 'NOCOBASE_CTL_HOME';
 
 export function resolveDefaultConfigScope(): Exclude<CliHomeScope, 'auto'> {
   const raw = String(process.env[NB_CONFIG_SCOPE_ENV] ?? '').trim().toLowerCase();
@@ -22,8 +24,12 @@ export function resolveDefaultConfigScope(): Exclude<CliHomeScope, 'auto'> {
 }
 
 function resolveGlobalCliHomeRoot() {
-  if (process.env.NOCOBASE_CTL_HOME) {
-    return process.env.NOCOBASE_CTL_HOME;
+  if (process.env[NB_CLI_HOME_ENV]) {
+    return process.env[NB_CLI_HOME_ENV];
+  }
+
+  if (process.env[LEGACY_NOCOBASE_CTL_HOME_ENV]) {
+    return process.env[LEGACY_NOCOBASE_CTL_HOME_ENV];
   }
 
   return os.homedir();

@@ -34,7 +34,7 @@ test('resolveSkillsWorkspaceRoot defaults to the global CLI home', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-root-'));
 
   try {
-    vi.stubEnv('NOCOBASE_CTL_HOME', dir);
+    vi.stubEnv('NB_CLI_HOME', dir);
 
     expect(resolveSkillsWorkspaceRoot(path.join(dir, 'workspace', 'packages', 'core', 'cli'))).toBe(
       path.join(dir, '.nocobase'),
@@ -48,7 +48,7 @@ test('resolveGlobalSkillsRoot defaults to the global CLI home', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-global-skills-root-'));
 
   try {
-    vi.stubEnv('NOCOBASE_CTL_HOME', dir);
+    vi.stubEnv('NB_CLI_HOME', dir);
 
     expect(resolveGlobalSkillsRoot()).toBe(path.join(dir, '.nocobase'));
   } finally {
