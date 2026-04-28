@@ -10,13 +10,15 @@
 import { useCompile, withDynamicSchemaProps } from '@nocobase/client';
 import { useDebounceFn } from 'ahooks';
 import { Tree as AntdTree, Empty, Input, Spin, theme } from 'antd';
-import React, { FC, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import React, { FC, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { TreeProps as AntdTreeProps, TreeDataNode } from 'antd';
 import type { BasicDataNode, DataNode } from 'rc-tree/lib/interface';
 
 import { BlockName } from '../constants';
 import { useTreeTranslation } from '../locale';
+
+const INTERNAL_TITLE_KEY = '__tree_node_title__';
 
 const getParentKey = (
   key: React.Key,
@@ -75,7 +77,8 @@ export interface TreeProps<T extends BasicDataNode = DataNode> extends AntdTreeP
   onSearch?: (value: string) => void;
   loading?: boolean;
   FilterComponent?: React.ComponentType<FilterComponentProps>;
-  renderNodeTitle?: (value: any, node: T) => React.ReactNode;
+  renderNodeTitle?: (value: any, node: T, fallbackTitle?: React.ReactNode) => React.ReactNode;
+  searchExtra?: React.ReactNode;
 }
 
 const DefaultFilterComponent: FC<FilterComponentProps> = ({ value, onChange }) => {
@@ -98,6 +101,7 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
       expandedKeys: propsExpandedKeys,
       autoExpandParent: propsAutoExpandParent = true,
       renderNodeTitle,
+      searchExtra,
       ...treeProps
     } = props;
 
@@ -105,13 +109,40 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
     const fieldKeyName = useMemo(() => fieldNames?.key || 'key', [fieldNames?.key]);
     const fieldChildrenName = useMemo(() => fieldNames?.children || 'children', [fieldNames?.children]);
     const fieldTitleName = useMemo(() => fieldNames?.title || 'title', [fieldNames?.title]);
-    const resolvedTreeData = useMemo(() => treeData || [], [treeData]);
-    const dataList = useMemo(
-      () => (searchable || defaultExpandAll ? flatTreeData(resolvedTreeData, fieldNames) : null),
-      [defaultExpandAll, fieldNames, resolvedTreeData, searchable],
+    const renderedFieldNames = useMemo(
+      () => ({
+        ...fieldNames,
+        title: INTERNAL_TITLE_KEY,
+      }),
+      [fieldNames],
     );
+    const resolvedTreeData = useMemo(() => treeData || [], [treeData]);
+    const dataList = useMemo(() => flatTreeData(resolvedTreeData, fieldNames), [fieldNames, resolvedTreeData]);
     const allKeys = useMemo(() => dataList?.map((item) => item[fieldKeyName]), [dataList, fieldKeyName]);
-    const [expandedKeys, setExpandedKeys] = useState<React.Key[]>(propsExpandedKeys);
+    const allKeySet = useMemo(() => new Set(allKeys), [allKeys]);
+    const normalizeExpandedKeys = useCallback(
+      (keys?: readonly React.Key[]) => {
+        if (!keys) {
+          return [];
+        }
+        if (!allKeySet.size) {
+          return [...keys];
+        }
+        return keys.filter((key) => allKeySet.has(key));
+      },
+      [allKeySet],
+    );
+    const getInitialExpandedKeys = useCallback(
+      () => normalizeExpandedKeys(propsExpandedKeys ?? propsDefaultExpandedKeys),
+      [normalizeExpandedKeys, propsDefaultExpandedKeys, propsExpandedKeys],
+    );
+    const [expandedKeys, setExpandedKeysState] = useState<React.Key[]>(getInitialExpandedKeys);
+    const expandedKeysRef = useRef(expandedKeys);
+    const expandedKeysInitializedRef = useRef(false);
+    const expandedKeysBeforeSearchRef = useRef<React.Key[] | null>(null);
+    const hasUserExpandedRef = useRef(false);
+    const previousDefaultExpandAllRef = useRef(defaultExpandAll);
+    const isExpandedKeysControlled = propsExpandedKeys !== undefined;
 
     const [inputValue, setInputValue] = useState('');
     const [searchValue, setSearchValue] = useState('');
@@ -119,6 +150,14 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
     const [autoExpandParent, setAutoExpandParent] = useState(propsAutoExpandParent);
     const { token } = theme.useToken();
     const hasCustomTitleHandling = Boolean(renderNodeTitle);
+    const setExpandedKeys = useCallback(
+      (keys?: readonly React.Key[]) => {
+        const normalizedKeys = normalizeExpandedKeys(keys);
+        expandedKeysRef.current = normalizedKeys;
+        setExpandedKeysState(normalizedKeys);
+      },
+      [normalizeExpandedKeys],
+    );
 
     const resolveNodeTitleText = useCallback(
       (item: TreeDataNode) => {
@@ -161,28 +200,33 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
           const afterStr = strTitle.slice(index + String(deferredSearchValue).length);
           let title: React.ReactNode;
 
-          if (index > -1) {
-            title = (
+          const highlightedTitle =
+            index > -1 ? (
               <span>
                 {beforeStr}
                 <span style={{ color: token.colorPrimary }}>{deferredSearchValue}</span>
                 {afterStr}
               </span>
-            );
+            ) : null;
+
+          if (index > -1) {
+            title = hasCustomTitleHandling
+              ? renderNodeTitle?.(item[fieldTitleName], item as DataNode, highlightedTitle) || highlightedTitle
+              : highlightedTitle;
           } else {
             title = hasCustomTitleHandling ? resolveNodeTitle(item) : <span>{strTitle}</span>;
           }
 
           if (item[fieldChildrenName]) {
             return {
-              [fieldTitleName]: title,
+              [INTERNAL_TITLE_KEY]: title,
               [fieldKeyName]: item[fieldKeyName],
               [fieldChildrenName]: loop(item[fieldChildrenName]),
             };
           }
 
           return {
-            [fieldTitleName]: title,
+            [INTERNAL_TITLE_KEY]: title,
             [fieldKeyName]: item[fieldKeyName],
           };
         });
@@ -195,17 +239,19 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
       fieldKeyName,
       fieldChildrenName,
       hasCustomTitleHandling,
+      renderNodeTitle,
       resolveNodeTitle,
       resolveNodeTitleText,
       token.colorPrimary,
     ]);
     const onExpand: TreeProps['onExpand'] = useCallback(
       (newExpandedKeys, info) => {
+        hasUserExpandedRef.current = true;
         setExpandedKeys(newExpandedKeys);
         setAutoExpandParent(false);
         propsOnExpand?.(newExpandedKeys, info);
       },
-      [propsOnExpand],
+      [propsOnExpand, setExpandedKeys],
     );
 
     const onSearch = useDebounceFn(
@@ -228,42 +274,88 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
 
     useEffect(() => {
       if (deferredSearchValue) {
+        if (!expandedKeysBeforeSearchRef.current) {
+          expandedKeysBeforeSearchRef.current = expandedKeysRef.current;
+        }
+
         const newExpandedKeys = dataList
           .map((item) => {
             if (String(item[fieldTitleName]).indexOf(deferredSearchValue) > -1) {
-              return getParentKey(item[fieldKeyName], treeData, fieldNames);
+              return getParentKey(item[fieldKeyName], resolvedTreeData, fieldNames);
             }
             return null;
           })
           .filter((item, i, self): item is React.Key => !!(item && self.indexOf(item) === i));
         setExpandedKeys(newExpandedKeys);
-      } else {
-        if (defaultExpandAll) {
-          setExpandedKeys(allKeys);
-        } else {
-          setExpandedKeys(propsExpandedKeys || propsDefaultExpandedKeys);
-        }
+        setAutoExpandParent(true);
+        return;
       }
-      setAutoExpandParent(true);
+
+      if (expandedKeysBeforeSearchRef.current) {
+        setExpandedKeys(expandedKeysBeforeSearchRef.current);
+        expandedKeysBeforeSearchRef.current = null;
+        setAutoExpandParent(false);
+        return;
+      }
+
+      if (isExpandedKeysControlled) {
+        setExpandedKeys(propsExpandedKeys);
+        setAutoExpandParent(propsAutoExpandParent);
+        expandedKeysInitializedRef.current = true;
+        return;
+      }
+
+      const defaultExpandAllChanged = previousDefaultExpandAllRef.current !== defaultExpandAll;
+      previousDefaultExpandAllRef.current = defaultExpandAll;
+
+      if (!expandedKeysInitializedRef.current || defaultExpandAllChanged) {
+        setExpandedKeys(defaultExpandAll ? allKeys : propsDefaultExpandedKeys);
+        setAutoExpandParent(true);
+        expandedKeysInitializedRef.current = true;
+        hasUserExpandedRef.current = false;
+        return;
+      }
+
+      if (defaultExpandAll && !hasUserExpandedRef.current) {
+        setExpandedKeys(allKeys);
+        setAutoExpandParent(true);
+      } else {
+        setExpandedKeys(expandedKeysRef.current);
+        setAutoExpandParent(false);
+      }
     }, [
       deferredSearchValue,
-      treeData,
       fieldTitleName,
       fieldKeyName,
-      fieldChildrenName,
       dataList,
       defaultExpandAll,
       fieldNames,
       allKeys,
       propsExpandedKeys,
+      propsAutoExpandParent,
       propsDefaultExpandedKeys,
+      resolvedTreeData,
+      isExpandedKeysControlled,
+      setExpandedKeys,
     ]);
 
     return (
       <div>
-        {searchable && (
-          <div style={{ marginBottom: token.marginXS }}>
-            <FilterComponent value={inputValue} onChange={onFilterChange} />
+        {(searchable || searchExtra) && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: token.marginXS,
+              marginBottom: token.marginXS,
+            }}
+          >
+            {searchable && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <FilterComponent value={inputValue} onChange={onFilterChange} />
+              </div>
+            )}
+            {searchExtra && <div style={{ flexShrink: 0 }}>{searchExtra}</div>}
           </div>
         )}
         {!loading ? (
@@ -271,7 +363,7 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
             <AntdTree
               {...treeProps}
               onExpand={onExpand}
-              fieldNames={fieldNames}
+              fieldNames={renderedFieldNames}
               expandedKeys={expandedKeys}
               autoExpandParent={autoExpandParent}
               treeData={searchedTreeData}

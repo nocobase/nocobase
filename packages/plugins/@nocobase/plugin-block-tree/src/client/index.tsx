@@ -12,7 +12,13 @@ import { useTreeProps } from './schema';
 import { Tree } from './component';
 import { treeSettings } from './settings';
 import { treeInitializerItem } from './initializer';
-import { treeConnectDataBlocks, TreeBlockModel, TreeFilterBlockMenuModel } from './models';
+import {
+  treeConnectDataBlocks,
+  TreeActionGroupModel,
+  TreeBlockModel,
+  TreeFilterBlockMenuModel,
+  TreeTitleFieldSettingsModel,
+} from './models';
 export * from './component';
 
 export class PluginBlockTreeClient extends Plugin {
@@ -21,8 +27,10 @@ export class PluginBlockTreeClient extends Plugin {
       treeConnectDataBlocks,
     });
     this.flowEngine.registerModels({
+      TreeActionGroupModel,
       TreeBlockModel,
       TreeFilterBlockMenuModel,
+      TreeTitleFieldSettingsModel,
     });
     this.app.addComponents({ Tree });
     this.app.schemaSettingsManager.add(treeSettings);

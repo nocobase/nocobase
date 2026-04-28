@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { AddChildActionModel, PopupActionModel } from '@nocobase/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TreeBlockModel } from '../TreeBlockModel';
 
@@ -401,5 +402,66 @@ describe('TreeBlockModel', () => {
 
     expect(destroyModel).toHaveBeenCalledWith('field-model-uid');
     expect(removeModelWithSubModels).not.toHaveBeenCalled();
+  });
+
+  it('injects cached add-child formData before the popup opens during route replay', async () => {
+    const engine = new FlowEngine();
+    const openView = vi.fn((ctx) => {
+      expect(ctx.inputArgs.formData).toEqual({
+        parent: { id: 'parent-1', title: 'Parent' },
+        parentId: 'parent-1',
+      });
+    });
+    engine.registerModels({ AddChildActionModel, PopupActionModel });
+    engine.registerActions({
+      openView: {
+        name: 'openView',
+        handler: openView,
+      },
+    });
+
+    const cachedFormData = {
+      parent: { id: 'parent-1', title: 'Parent' },
+      parentId: 'parent-1',
+    };
+    const blockModel = engine.createModel({
+      uid: 'tree-block',
+      use: 'FlowModel',
+    });
+    const collection = {
+      name: 'tree',
+      dataSourceKey: 'main',
+    };
+    blockModel.context.defineProperty('blockModel', {
+      value: {
+        collection,
+        dataSource: {
+          getAssociation: vi.fn(() => ({ resourceName: 'tree.children' })),
+        },
+        getTreeAddChildFormDataInputKey: TreeBlockModel.prototype.getTreeAddChildFormDataInputKey,
+        getTreeAddChildFormData: vi.fn((actionUid, sourceId) => {
+          return actionUid === 'add-child' && sourceId === 'parent-1' ? cachedFormData : undefined;
+        }),
+      },
+    });
+    blockModel.context.defineProperty('collection', { value: collection });
+
+    const action = engine.createModel<AddChildActionModel>({
+      uid: 'add-child',
+      use: 'AddChildActionModel',
+      parentId: 'tree-block',
+      stepParams: {
+        popupSettings: {
+          openView: {},
+        },
+      },
+    });
+
+    await action.dispatchEvent('click', {
+      sourceId: 'parent-1',
+      triggerByRouter: true,
+    });
+
+    expect(openView).toHaveBeenCalledTimes(1);
   });
 });

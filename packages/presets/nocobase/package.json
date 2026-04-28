@@ -132,6 +132,7 @@
     "@nocobase/plugin-block-list",
     "@nocobase/plugin-block-grid-card",
     "@nocobase/plugin-block-markdown",
+    "@nocobase/plugin-block-tree",
     "@nocobase/plugin-calendar",
     "@nocobase/plugin-client",
     "@nocobase/plugin-collection-sql",
