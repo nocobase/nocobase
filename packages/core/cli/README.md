@@ -115,7 +115,7 @@ nb init --env app1 --resume
 
 `--resume` reuses the saved workspace env config for app, source, database, and env connection settings. In interactive mode, it only asks for any missing setup-only values.
 
-In non-interactive mode, pass these setup-only flags again because they are not saved in env config:
+In non-interactive resume mode, `nb init --resume --yes` uses default initialization values unless these flags are passed explicitly:
 
 - `--lang`
 - `--root-username`
@@ -128,7 +128,7 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | Command | Description |
 | --- | --- |
 | `nb init` | Set up NocoBase and connect it as a CLI env for coding agents. |
-| `nb app` | Manage app runtimes: start, stop, restart, logs, status, cleanup, and upgrades. |
+| `nb app` | Manage app runtimes: start, stop, restart, logs, cleanup, and upgrades. |
 | `nb source` | Manage the local source project: download, develop, build, and test. |
 | `nb db` | Inspect or manage built-in database runtime status for local envs. |
 | `nb env` | Manage saved CLI env connections. |
@@ -137,13 +137,13 @@ In non-interactive mode, pass these setup-only flags again because they are not 
 | `nb self` | Check or update the installed NocoBase CLI. |
 | `nb skills` | Check, install, or update global NocoBase AI coding skills. |
 
-Recommended style: use `--env` explicitly for app/runtime commands. `-e` is the short form:
+Recommended style: pass the env name explicitly when operating on a specific env. Runtime commands accept `--env`, and `nb env info` also accepts a positional env name:
 
 ```bash
 nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
-nb app ps --env app1
+nb env info app1
 nb db ps --env app1
 ```
 
@@ -291,10 +291,16 @@ Show the current env:
 nb env
 ```
 
-List configured envs:
+List configured envs with token-verified API status:
 
 ```bash
 nb env list
+```
+
+Show details for one env:
+
+```bash
+nb env info app1
 ```
 
 Switch the current env:

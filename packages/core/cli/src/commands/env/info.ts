@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Command, Flags } from '@oclif/core';
+import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { renderTable } from '../../lib/ui.js';
 import { appRootPath, dbStatus, runtimeStatus, storagePath } from './shared.js';
 
-type AppInfoValue = string | boolean | number | null | undefined;
+type EnvInfoValue = string | boolean | number | null | undefined;
 
-type AppInfoGroup = Record<string, AppInfoValue>;
+type EnvInfoGroup = Record<string, EnvInfoValue>;
 
-function normalizeJsonValue(value: AppInfoValue): string | boolean | number {
+function normalizeJsonValue(value: EnvInfoValue): string | boolean | number {
   if (value === undefined || value === null || value === '') {
     return '-';
   }
@@ -28,7 +28,7 @@ function normalizeJsonValue(value: AppInfoValue): string | boolean | number {
   return String(value);
 }
 
-function normalizeValue(value: AppInfoValue): string {
+function normalizeValue(value: EnvInfoValue): string {
   if (value === undefined || value === null || value === '') {
     return '-';
   }
@@ -40,7 +40,7 @@ function normalizeValue(value: AppInfoValue): string {
   return String(value);
 }
 
-function maskSecret(value: AppInfoValue, showSecrets: boolean): string {
+function maskSecret(value: EnvInfoValue, showSecrets: boolean): string {
   const normalized = normalizeValue(value);
   if (normalized === '-') {
     return normalized;
@@ -49,27 +49,35 @@ function maskSecret(value: AppInfoValue, showSecrets: boolean): string {
   return showSecrets ? normalized : '********';
 }
 
-function createGroupTable(title: string, values: AppInfoGroup): string {
+function createGroupTable(title: string, values: EnvInfoGroup): string {
   const rows = Object.entries(values).map(([field, value]) => [field, normalizeValue(value)]);
   return `${title}\n${renderTable(['Field', 'Value'], rows)}`;
 }
 
-function serializeGroup(values: AppInfoGroup): Record<string, string | boolean | number> {
+function serializeGroup(values: EnvInfoGroup): Record<string, string | boolean | number> {
   return Object.fromEntries(
     Object.entries(values).map(([field, value]) => [field, normalizeJsonValue(value)]),
   );
 }
 
-export default class AppInfo extends Command {
+export default class EnvInfo extends Command {
   static override hidden = false;
   static override description =
-    'Show grouped details for the selected NocoBase app env, including app, database, API, and auth settings.';
+    'Show grouped details for the selected NocoBase env, including app, database, API, and auth settings.';
 
   static override examples = [
+    '<%= config.bin %> <%= command.id %> app1',
+    '<%= config.bin %> <%= command.id %> app1 --json',
+    '<%= config.bin %> <%= command.id %> app1 --show-secrets',
     '<%= config.bin %> <%= command.id %> --env app1',
-    '<%= config.bin %> <%= command.id %> --env app1 --json',
-    '<%= config.bin %> <%= command.id %> --env app1 --show-secrets',
   ];
+
+  static override args = {
+    name: Args.string({
+      description: 'CLI env name to inspect. Defaults to the current env when omitted',
+      required: false,
+    }),
+  };
 
   static override flags = {
     env: Flags.string({
@@ -87,8 +95,15 @@ export default class AppInfo extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(AppInfo);
-    const requestedEnv = flags.env?.trim() || undefined;
+    const { args, flags } = await this.parse(EnvInfo);
+    const envNameArg = args.name?.trim() || undefined;
+    const envNameFlag = flags.env?.trim() || undefined;
+    if (envNameArg && envNameFlag && envNameArg !== envNameFlag) {
+      this.error(
+        `Environment name was provided both as the argument ("${envNameArg}") and as --env ("${envNameFlag}"). Please use only one.`,
+      );
+    }
+    const requestedEnv = envNameArg || envNameFlag;
     const showSecrets = flags['show-secrets'];
     const runtime = await resolveManagedAppRuntime(requestedEnv);
 
@@ -97,7 +112,7 @@ export default class AppInfo extends Command {
     }
 
     const auth = runtime.env.auth;
-    const appGroup: AppInfoGroup = {
+    const appGroup: EnvInfoGroup = {
       appRootPath: appRootPath(runtime),
       storagePath: storagePath(runtime),
       appPort: runtime.env.config.appPort,
@@ -109,7 +124,7 @@ export default class AppInfo extends Command {
       timezone: runtime.env.config.timezone,
     };
 
-    const dbGroup: AppInfoGroup = {
+    const dbGroup: EnvInfoGroup = {
       databaseStatus: await dbStatus(runtime),
       builtinDb: runtime.env.config.builtinDb,
       dbDialect: runtime.env.config.dbDialect,
@@ -121,7 +136,7 @@ export default class AppInfo extends Command {
       dbPassword: maskSecret(runtime.env.config.dbPassword, showSecrets),
     };
 
-    const authGroup: AppInfoGroup = {
+    const authGroup: EnvInfoGroup = {
       type: auth?.type,
       expiresAt: auth?.type === 'oauth' ? auth.expiresAt : undefined,
       scope: auth?.type === 'oauth' ? auth.scope : undefined,
@@ -132,7 +147,7 @@ export default class AppInfo extends Command {
       refreshToken: maskSecret(auth?.type === 'oauth' ? auth.refreshToken : undefined, showSecrets),
     };
 
-    const apiGroup: AppInfoGroup = {
+    const apiGroup: EnvInfoGroup = {
       apiBaseUrl: runtime.env.apiBaseUrl,
       'auth.type': authGroup.type,
       'auth.expiresAt': authGroup.expiresAt,

@@ -67,6 +67,7 @@ const mocks = vi.hoisted(() => ({
   fsRm: vi.fn(),
   fsMkdir: vi.fn(),
   fsReaddir: vi.fn(),
+  executeRawApiRequest: vi.fn(),
   childSpawnCalls: [] as Array<{
     command: string;
     args: string[];
@@ -183,6 +184,10 @@ vi.mock('../lib/auth-store.js', () => ({
   listEnvs: mocks.listEnvs,
 }));
 
+vi.mock('../lib/api-client.js', () => ({
+  executeRawApiRequest: mocks.executeRawApiRequest,
+}));
+
 beforeEach(() => {
   mocks.formatMissingManagedAppEnvMessage.mockImplementation((envName?: string) =>
     envName
@@ -257,6 +262,11 @@ beforeEach(() => {
   mocks.listEnvs.mockResolvedValue({
     currentEnv: 'local',
     envs: {},
+  });
+  mocks.executeRawApiRequest.mockResolvedValue({
+    ok: true,
+    status: 200,
+    data: {},
   });
   mocks.promptConfirm.mockResolvedValue(true);
   mocks.isInteractiveTerminal.mockReturnValue(true);
@@ -1049,14 +1059,24 @@ test('logs explains http envs do not have local runtime logs', async () => {
   await expect((() => Logs.prototype.run.call(command))()).rejects.toThrow(/Can't show runtime logs for "remote" from this machine\..*only has an API connection/s);
 });
 
-test('ps lists all configured env runtime statuses', async () => {
-  const { default: Ps } = await import('../commands/app/ps.js');
+test('env list combines configured envs with API auth status', async () => {
+  const { default: EnvList } = await import('../commands/env/list.js');
   mocks.listEnvs.mockResolvedValue({
     currentEnv: 'local',
     envs: {
-      docker: {},
-      local: {},
-      remote: {},
+      docker: {
+        apiBaseUrl: 'http://127.0.0.1:13000/api',
+        auth: { type: 'token' },
+        runtime: { version: '1.0.0' },
+      },
+      local: {
+        apiBaseUrl: 'http://127.0.0.1:13001/api',
+        auth: { type: 'oauth' },
+        runtime: { version: '2.0.0' },
+      },
+      remote: {
+        baseUrl: 'https://demo.example.com/api',
+      },
     },
   });
   mocks.resolveManagedAppRuntime.mockImplementation(async (envName: string) => {
@@ -1104,115 +1124,66 @@ test('ps lists all configured env runtime statuses', async () => {
       },
     };
   });
-  mocks.dockerContainerIsRunning.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({
-      ok: true,
-      text: async () => 'ok',
-    })),
-  );
+  mocks.executeRawApiRequest
+    .mockResolvedValueOnce({ ok: true, status: 200, data: { data: { id: 1 } } })
+    .mockResolvedValueOnce({ ok: false, status: 401, data: { errors: [{ code: 'INVALID_TOKEN' }] } })
+    .mockRejectedValueOnce(new Error('fetch failed'));
 
   const command = createCommandHarness({
     flags: {},
   });
 
-  await Ps.prototype.run.call(command);
+  await EnvList.prototype.run.call(command);
 
-  expect(mocks.listEnvs.mock.calls).toEqual([[]]);
+  expect(mocks.listEnvs.mock.calls).toEqual([[{ scope: 'global' }]]);
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['docker'], ['local'], ['remote']]);
-  expect(mocks.buildDockerDbContainerName.mock.calls[0]).toEqual(['docker', 'postgres', 'nb-demo']);
+  expect(mocks.executeRawApiRequest.mock.calls).toEqual([
+    [
+      {
+        envName: 'docker',
+        scope: 'global',
+        method: 'GET',
+        path: '/auth:check',
+        timeoutMs: 2000,
+      },
+    ],
+    [
+      {
+        envName: 'local',
+        scope: 'global',
+        method: 'GET',
+        path: '/auth:check',
+        timeoutMs: 2000,
+      },
+    ],
+    [
+      {
+        envName: 'remote',
+        scope: 'global',
+        method: 'GET',
+        path: '/auth:check',
+        timeoutMs: 2000,
+      },
+    ],
+  ]);
   expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual([
-    'Env',
+    'Current',
+    'Name',
     'Kind',
     'App Status',
-    'Database Status',
-    'Network',
-    'App Root',
-    'Storage',
     'URL',
+    'Auth',
+    'Runtime',
   ]);
   expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
-    ['docker', 'docker', 'running', 'stopped', 'nb-demo', '-', '-', 'http://127.0.0.1:13000'],
-    ['local', 'local', 'running', '-', '-', '/tmp/nocobase', '-', 'http://127.0.0.1:13001'],
-    ['remote', 'http', 'http', 'external', '-', '-', '-', 'https://demo.example.com'],
-  ]);
-  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toMatch(/Env\|Kind\|App Status\|Database Status\|Network\|App Root\|Storage\|URL/);
-});
-
-test('ps supports --env without listing all envs first', async () => {
-  const { default: Ps } = await import('../commands/app/ps.js');
-  mocks.resolveManagedAppRuntime.mockResolvedValue({
-    kind: 'docker',
-    envName: 'app1',
-    source: 'docker',
-    containerName: 'nb-demo-app1-app',
-    workspaceName: 'nb-demo',
-    env: {
-      config: {
-        appPort: 13000,
-        builtinDb: false,
-      },
-    },
-  });
-  mocks.dockerContainerExists.mockResolvedValue(true);
-  mocks.dockerContainerIsRunning.mockResolvedValue(false);
-
-  const command = createCommandHarness({
-    flags: {
-      env: 'app1',
-    },
-  });
-
-  await Ps.prototype.run.call(command);
-
-  expect(mocks.listEnvs.mock.calls.length).toBe(0);
-  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['app1']]);
-  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
-    ['app1', 'docker', 'stopped', '-', 'nb-demo', '-', '-', 'http://127.0.0.1:13000'],
+    ['', 'docker', 'docker', 'ok', 'http://127.0.0.1:13000', 'token', '1.0.0'],
+    ['*', 'local', 'local', 'auth failed', 'http://127.0.0.1:13001', 'oauth', '2.0.0'],
+    ['', 'remote', 'http', 'unreachable', 'https://demo.example.com', '', ''],
   ]);
 });
 
-test('ps shows managed network and storage path for local builtin-db envs', async () => {
-  const { default: Ps } = await import('../commands/app/ps.js');
-  mocks.resolveManagedAppRuntime.mockResolvedValue({
-    kind: 'local',
-    envName: 'app1',
-    source: 'git',
-    projectRoot: '/tmp/local-app',
-    workspaceName: 'nb-demo',
-    env: {
-      storagePath: '/tmp/storage/local',
-      config: {
-        appPort: 13000,
-        builtinDb: true,
-        source: 'git',
-      },
-    },
-  });
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({
-      ok: true,
-      text: async () => 'ok',
-    })),
-  );
-
-  const command = createCommandHarness({
-    flags: {
-      env: 'app1',
-    },
-  });
-
-  await Ps.prototype.run.call(command);
-
-  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
-    ['app1', 'local', 'running', 'running', '-', '/tmp/local-app', '/tmp/storage/local', 'http://127.0.0.1:13000'],
-  ]);
-});
-
-test('info shows grouped app details with secrets masked by default', async () => {
-  const { default: Info } = await import('../commands/app/info.js');
+test('env info shows grouped app details with secrets masked by default', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'app1',
@@ -1257,14 +1228,16 @@ test('info shows grouped app details with secrets masked by default', async () =
   );
 
   const command = createCommandHarness({
+    args: {
+      name: 'app1',
+    },
     flags: {
-      env: 'app1',
       json: false,
       'show-secrets': false,
     },
   });
 
-  await Info.prototype.run.call(command);
+  await EnvInfo.prototype.run.call(command);
 
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('App');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('appRootPath');
@@ -1279,8 +1252,8 @@ test('info shows grouped app details with secrets masked by default', async () =
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('auth.accessToken');
 });
 
-test('info supports json output with grouped sections', async () => {
-  const { default: Info } = await import('../commands/app/info.js');
+test('env info supports json output with grouped sections', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'http',
     envName: 'remote',
@@ -1298,6 +1271,7 @@ test('info supports json output with grouped sections', async () => {
   });
 
   const command = createCommandHarness({
+    args: {},
     flags: {
       env: 'remote',
       json: true,
@@ -1305,7 +1279,7 @@ test('info supports json output with grouped sections', async () => {
     },
   });
 
-  await Info.prototype.run.call(command);
+  await EnvInfo.prototype.run.call(command);
 
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toEqual({
     ok: true,
@@ -1349,17 +1323,66 @@ test('info supports json output with grouped sections', async () => {
   });
 });
 
-test('ps explains when the requested env does not exist', async () => {
-  const { default: Ps } = await import('../commands/app/ps.js');
-  mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
-
-  const command = createCommandHarness({
-    flags: {
-      env: 'local53',
+test('env info supports positional env name and shows grouped details', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {
+      apiBaseUrl: 'https://demo.example.com/api',
+      auth: {
+        type: 'token',
+        accessToken: 'secret-token',
+      },
+      config: {
+        kind: 'http',
+      },
     },
   });
 
-  await expect((() => Ps.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
+  const command = createCommandHarness({
+    args: {
+      name: 'remote',
+    },
+    flags: {
+      json: true,
+      'show-secrets': false,
+    },
+  });
+
+  await EnvInfo.prototype.run.call(command);
+
+  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['remote']]);
+  expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toMatchObject({
+    ok: true,
+    kind: 'http',
+    env: 'remote',
+    api: {
+      apiBaseUrl: 'https://demo.example.com/api',
+      auth: {
+        type: 'token',
+        accessToken: '********',
+      },
+    },
+  });
+});
+
+test('env info explains when the requested env does not exist', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
+
+  const command = createCommandHarness({
+    args: {
+      name: 'local53',
+    },
+    flags: {
+      json: false,
+      'show-secrets': false,
+    },
+  });
+
+  await expect((() => EnvInfo.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
 test('db ps lists all configured database runtime statuses', async () => {

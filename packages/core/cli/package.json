@@ -37,7 +37,7 @@
     "topicSeparator": " ",
     "topics": {
       "app": {
-        "description": "Manage NocoBase app runtimes: start, stop, restart, logs, status, and upgrades."
+        "description": "Manage NocoBase app runtimes: start, stop, restart, logs, and upgrades."
       },
       "source": {
         "description": "Work with the local NocoBase source project: download, develop, build, and test."
@@ -56,7 +56,7 @@
         "description": "Manage the built-in database for the selected env."
       },
       "env": {
-        "description": "Manage NocoBase project environments and update command runtimes."
+        "description": "Manage NocoBase project environments, status, details, and command runtimes."
       },
       "self": {
         "description": "Inspect or update the NocoBase CLI itself."

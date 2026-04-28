@@ -8,16 +8,14 @@
  */
 
 import { Command } from '@oclif/core';
+import { resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { listEnvs } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { renderTable } from '../../lib/ui.js';
-
-function resolveApiBaseUrl(config: { apiBaseUrl?: unknown; baseUrl?: unknown; apibaseUrl?: unknown }): string {
-  return String(config.apiBaseUrl ?? config.baseUrl ?? config.apibaseUrl ?? '').trim();
-}
+import { apiStatus, appUrl, resolveApiBaseUrl } from './shared.js';
 
 export default class EnvList extends Command {
-  static summary = 'List configured environments';
+  static summary = 'List configured environments and API auth status';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -25,7 +23,8 @@ export default class EnvList extends Command {
 
   async run(): Promise<void> {
     await this.parse(EnvList);
-    const { currentEnv, envs } = await listEnvs({ scope: resolveDefaultConfigScope() });
+    const scope = resolveDefaultConfigScope();
+    const { currentEnv, envs } = await listEnvs({ scope });
     const names = Object.keys(envs).sort();
 
     if (!names.length) {
@@ -34,11 +33,26 @@ export default class EnvList extends Command {
       return;
     }
 
-    const rows = names.map((name) => {
+    const rows: string[][] = [];
+    for (const name of names) {
       const env = envs[name];
-      return [name === currentEnv ? '*' : '', name, resolveApiBaseUrl(env), env.auth?.type ?? '', env.runtime?.version ?? ''];
-    });
+      const runtime = await resolveManagedAppRuntime(name);
+      const statusConfig = {
+        ...env,
+        ...(runtime?.env.config ?? {}),
+      };
 
-    this.log(renderTable(['Current', 'Name', 'Base URL', 'Auth', 'Runtime'], rows));
+      rows.push([
+        name === currentEnv ? '*' : '',
+        name,
+        runtime?.kind ?? env.kind ?? '-',
+        await apiStatus(name, statusConfig, { scope }),
+        runtime ? appUrl(runtime) : resolveApiBaseUrl(env),
+        env.auth?.type ?? '',
+        env.runtime?.version ?? '',
+      ]);
+    }
+
+    this.log(renderTable(['Current', 'Name', 'Kind', 'App Status', 'URL', 'Auth', 'Runtime'], rows));
   }
 }

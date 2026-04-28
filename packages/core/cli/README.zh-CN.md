@@ -110,7 +110,7 @@ nb init --env app1 --resume
 
 `--resume` 会复用工作区里已保存的 env config，包括应用、source、数据库和 env 连接相关配置。在交互模式下，只会继续补齐缺失的初始化参数。
 
-在非交互模式下，需要重新传这些只用于初始化、不会保存到 env config 的参数：
+在非交互恢复模式下，如果没有显式传入这些参数，`nb init --resume --yes` 会使用默认初始化值：
 
 - `--lang`
 - `--root-username`
@@ -130,13 +130,13 @@ nb init --env app1 --resume
 | `nb api` | 通过 CLI 调用 NocoBase API 资源。 |
 | `nb plugin` | 管理选中 NocoBase env 的插件。 |
 
-推荐在应用和运行时相关命令里显式使用 `--env`；`-e` 是它的简写：
+推荐在操作指定 env 时显式传入 env 名称。运行时命令支持 `--env`，`nb env info` 也支持位置参数：
 
 ```bash
 nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
-nb app ps --env app1
+nb env info app1
 nb db ps --env app1
 ```
 
@@ -252,10 +252,16 @@ nb app down --env app1 --all --yes
 nb env
 ```
 
-查看已配置的 env：
+查看已配置的 env 及 Token 验证后的 API 状态：
 
 ```bash
 nb env list
+```
+
+查看某个 env 的详情：
+
+```bash
+nb env info app1
 ```
 
 切换当前 env：
