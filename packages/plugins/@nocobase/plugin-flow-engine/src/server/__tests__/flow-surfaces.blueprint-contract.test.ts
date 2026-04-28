@@ -841,6 +841,88 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   });
 
+  it('should accept sort as a compatibility alias for sorting in applyBlueprint block settings', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees sort alias blueprint',
+          },
+        },
+        page: {
+          title: 'Employees sort alias blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sort: ['-createdAt', 'nickname'],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(tableBlock?.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+      {
+        field: 'nickname',
+        direction: 'asc',
+      },
+    ]);
+
+    const conflictRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees sort conflict blueprint',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sort: ['-createdAt'],
+                  sorting: [
+                    {
+                      field: 'createdAt',
+                      direction: 'asc',
+                    },
+                  ],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(conflictRes.status).toBe(400);
+    expect(readErrorMessage(conflictRes)).toContain('sort');
+    expect(readErrorMessage(conflictRes)).toContain('sorting');
+  });
+
   it('should reject empty block-level defaultFilter groups in applyBlueprint data blocks', async () => {
     for (const block of [
       {

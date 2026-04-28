@@ -19,6 +19,7 @@ import {
   backfillFlowSurfaceFilterActionDefaultFilter,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from '../public-data-surface-default-filter';
+import { normalizeFlowSurfacePublicSortingAlias } from '../public-compatibility';
 import {
   FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
   attachFlowSurfaceApplyBlueprintPopupDefaults,
@@ -1256,11 +1257,16 @@ function compileBlocks(
     if (!key) {
       throwBadRequest(`${blockContext} key '${localKey}' is missing after block key compilation`);
     }
-    const settings = resolveAssetSettings(block.settings, block, assets, blockContext);
+    const blockType = readOptionalString(block.type);
+    let settings = resolveAssetSettings(block.settings, block, assets, blockContext);
     if (readOptionalString(block.title) && _.isUndefined(settings.title)) {
       settings.title = readOptionalString(block.title);
     }
-    const blockType = readOptionalString(block.type);
+    settings = normalizeFlowSurfacePublicSortingAlias({
+      context: `${blockContext}.settings`,
+      type: blockType,
+      settings,
+    });
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
       blockType,

@@ -135,6 +135,7 @@ import {
   getConfigureOptionsForResolvedNode,
   getConfigureOptionsForUse,
 } from './configure-options';
+import { normalizeFlowSurfacePublicSortingAlias } from './public-compatibility';
 import {
   buildCatalogCollectionCycleKey,
   buildFilterFieldMeta,
@@ -2217,9 +2218,20 @@ export class FlowSurfacesService {
     }
 
     const resourceBindings = this.buildPopupBlockResourceBindings(input.blockUse, input.popupProfile);
-    const requestedBinding =
+    let requestedBinding =
       input.semanticResource?.binding ||
       this.classifyPopupRawResourceInit(input.popupProfile, input.resourceInit || {});
+    const useLegacyAssociationPopupCurrentRecord =
+      !input.semanticResource &&
+      requestedBinding === 'currentCollection' &&
+      this.shouldNormalizeLegacyAssociationPopupRecordBlockResource({
+        blockUse: input.blockUse,
+        popupProfile: input.popupProfile,
+        resourceInit: input.resourceInit || {},
+      });
+    if (useLegacyAssociationPopupCurrentRecord) {
+      requestedBinding = 'currentRecord';
+    }
     if (
       !this.isCatalogBlockVisibleForPopupProfile(input.blockUse, input.popupProfile) &&
       requestedBinding &&
@@ -2247,6 +2259,18 @@ export class FlowSurfacesService {
       });
     }
 
+    if (useLegacyAssociationPopupCurrentRecord) {
+      return this.compilePopupSemanticResourceInit({
+        actionName: input.actionName,
+        blockUse: input.blockUse,
+        popupProfile: input.popupProfile,
+        resourceBindings,
+        resource: {
+          binding: 'currentRecord',
+        },
+      });
+    }
+
     return this.assertPopupRawResourceInit({
       actionName: input.actionName,
       blockUse: input.blockUse,
@@ -2254,6 +2278,34 @@ export class FlowSurfacesService {
       resourceBindings,
       resourceInit: input.resourceInit || {},
     });
+  }
+
+  private shouldNormalizeLegacyAssociationPopupRecordBlockResource(input: {
+    blockUse: string;
+    popupProfile: FlowSurfacePopupBlockProfile;
+    resourceInit: Record<string, any>;
+  }) {
+    if (!['DetailsBlockModel', 'EditFormModel'].includes(input.blockUse)) {
+      return false;
+    }
+    if (
+      input.popupProfile.popupKind !== 'associationPopup' ||
+      !input.popupProfile.hasCurrentRecord ||
+      !input.popupProfile.hasAssociationContext
+    ) {
+      return false;
+    }
+    const normalized = normalizeSimpleResourceInit(input.resourceInit) || {};
+    const popupDataSourceKey = input.popupProfile.dataSourceKey || 'main';
+    const resourceDataSourceKey = normalized.dataSourceKey || 'main';
+    return (
+      !!input.popupProfile.collectionName &&
+      resourceDataSourceKey === popupDataSourceKey &&
+      normalized.collectionName === input.popupProfile.collectionName &&
+      !hasConfiguredFlowContextValue(normalized.filterByTk) &&
+      !hasConfiguredFlowContextValue(normalized.associationName) &&
+      !hasConfiguredFlowContextValue(normalized.sourceId)
+    );
   }
 
   private compilePopupSemanticResourceInit(input: {
@@ -5223,85 +5275,91 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(values.changes) || !Object.keys(values.changes).length) {
       throwBadRequest('flowSurfaces configure requires a non-empty changes object');
     }
-    ensureNoRawSimpleChangeKeys(values.changes);
+    let changes = values.changes;
+    ensureNoRawSimpleChangeKeys(changes);
 
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
+    changes = normalizeFlowSurfacePublicSortingAlias({
+      context: 'flowSurfaces configure changes',
+      use: current?.use,
+      settings: changes,
+    });
 
     if (resolved.kind === 'page' && resolved.pageRoute) {
-      return this.configurePage(target, values.changes, options);
+      return this.configurePage(target, changes, options);
     }
     if (resolved.kind === 'tab' && resolved.tabRoute) {
-      return this.configureTab(target, values.changes, options);
+      return this.configureTab(target, changes, options);
     }
     if (current?.use === 'TableBlockModel') {
-      return this.configureTableBlock(target, values.changes, options);
+      return this.configureTableBlock(target, changes, options);
     }
     if (current?.use === 'CalendarBlockModel') {
-      return this.configureCalendarBlock(target, current, values.changes, options);
+      return this.configureCalendarBlock(target, current, changes, options);
     }
     if (current?.use === 'TreeBlockModel') {
-      return this.configureTreeBlock(target, current, values.changes, options);
+      return this.configureTreeBlock(target, current, changes, options);
     }
     if (current?.use === 'KanbanBlockModel') {
-      return this.configureKanbanBlock(target, current, values.changes, options);
+      return this.configureKanbanBlock(target, current, changes, options);
     }
     if (SIMPLE_FORM_BLOCK_USES.has(current?.use || '')) {
-      return this.configureFormBlock(target, current.use, values.changes, options);
+      return this.configureFormBlock(target, current.use, changes, options);
     }
     if (DETAILS_BLOCK_USES.has(current?.use || '')) {
-      return this.configureDetailsBlock(target, values.changes, options);
+      return this.configureDetailsBlock(target, changes, options);
     }
     if (current?.use === 'FilterFormBlockModel') {
-      return this.configureFilterFormBlock(target, values.changes, options);
+      return this.configureFilterFormBlock(target, changes, options);
     }
     if (LIST_BLOCK_USES.has(current?.use || '')) {
-      return this.configureListBlock(target, values.changes, options);
+      return this.configureListBlock(target, changes, options);
     }
     if (GRID_CARD_BLOCK_USES.has(current?.use || '')) {
-      return this.configureGridCardBlock(target, values.changes, options);
+      return this.configureGridCardBlock(target, changes, options);
     }
     if (JS_BLOCK_USES.has(current?.use || '')) {
-      return this.configureJSBlock(target, values.changes, options);
+      return this.configureJSBlock(target, changes, options);
     }
     if (current?.use === 'MarkdownBlockModel') {
-      return this.configureMarkdownBlock(target, values.changes, options);
+      return this.configureMarkdownBlock(target, changes, options);
     }
     if (current?.use === 'IframeBlockModel') {
-      return this.configureIframeBlock(target, values.changes, options);
+      return this.configureIframeBlock(target, changes, options);
     }
     if (current?.use === 'ChartBlockModel') {
-      return this.configureChartBlock(target, values.changes, options);
+      return this.configureChartBlock(target, changes, options);
     }
     if (current?.use === 'ActionPanelBlockModel') {
-      return this.configureActionPanelBlock(target, values.changes, options);
+      return this.configureActionPanelBlock(target, changes, options);
     }
     if (current?.use === 'MapBlockModel') {
-      return this.configureMapBlock(target, values.changes, options);
+      return this.configureMapBlock(target, changes, options);
     }
     if (current?.use === 'CommentsBlockModel') {
-      return this.configureCommentsBlock(target, values.changes, options);
+      return this.configureCommentsBlock(target, changes, options);
     }
     if (current?.use === 'TableActionsColumnModel') {
-      return this.configureActionColumn(target, values.changes, options);
+      return this.configureActionColumn(target, changes, options);
     }
     if (FIELD_WRAPPER_USES.has(current?.use || '')) {
-      return this.configureFieldWrapper(target, current, values.changes, options);
+      return this.configureFieldWrapper(target, current, changes, options);
     }
     if (STANDALONE_FIELD_NODE_USES.has(current?.use || '')) {
       if (current?.use === 'JSColumnModel') {
-        return this.configureJSColumn(target, values.changes, options);
+        return this.configureJSColumn(target, changes, options);
       }
       if (current?.use === 'DividerItemModel') {
-        return this.configureDividerItem(target, values.changes, options);
+        return this.configureDividerItem(target, changes, options);
       }
-      return this.configureJSItem(target, values.changes, options);
+      return this.configureJSItem(target, changes, options);
     }
     if (isFieldNodeUse(current?.use)) {
-      return this.configureFieldNode(target, values.changes, options);
+      return this.configureFieldNode(target, changes, options);
     }
     if (ACTION_BUTTON_USES.has(current?.use || '')) {
-      return this.configureActionNode(target, current.use, values.changes, {
+      return this.configureActionNode(target, current.use, changes, {
         ...options,
         current,
       });

@@ -5679,6 +5679,117 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
+  it('should accept sort as a compatibility alias for sorting in compose and configure settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose sort alias page',
+      tabTitle: 'Compose sort alias tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'table',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            settings: {
+              sort: ['-createdAt', 'username'],
+            },
+            fields: ['username'],
+          },
+          {
+            key: 'list',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            settings: {
+              sort: [
+                {
+                  field: 'nickname',
+                  direction: 'asc',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+
+    const composed = getData(composeRes);
+    const tableUid = getComposeBlock(composed, 'table').uid;
+    const listUid = getComposeBlock(composed, 'list').uid;
+
+    const tableInitial = await getSurface(rootAgent, { uid: tableUid });
+    expect(tableInitial.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+      {
+        field: 'username',
+        direction: 'asc',
+      },
+    ]);
+
+    const listInitial = await getSurface(rootAgent, { uid: listUid });
+    expect(listInitial.tree.stepParams?.listSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'nickname',
+        direction: 'asc',
+      },
+    ]);
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: tableUid },
+        changes: {
+          sort: [
+            {
+              field: 'nickname',
+              direction: 'desc',
+            },
+          ],
+        },
+      },
+    });
+    expect(configureRes.status).toBe(200);
+
+    const tableUpdated = await getSurface(rootAgent, { uid: tableUid });
+    expect(tableUpdated.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'nickname',
+        direction: 'desc',
+      },
+    ]);
+
+    const conflictRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: tableUid },
+        changes: {
+          sort: ['-createdAt'],
+          sorting: [
+            {
+              field: 'createdAt',
+              direction: 'asc',
+            },
+          ],
+        },
+      },
+    });
+    expect(conflictRes.status).toBe(400);
+    expect(readErrorMessage(conflictRes)).toContain('sort');
+    expect(readErrorMessage(conflictRes)).toContain('sorting');
+  });
+
   it('should compose update actions with assignValues settings and mirror assignedValues', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose assign values page',
