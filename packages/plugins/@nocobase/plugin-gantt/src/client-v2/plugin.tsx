@@ -11,11 +11,11 @@ import { Plugin } from '@nocobase/client-v2';
 
 export class PluginGanttClient extends Plugin {
   async load() {
-    this.flowEngine.registerModelLoaders({
-      GanttBlockModel: {
-        loader: () => import('./models/GanttBlockModel'),
-      },
-    });
+    // this.flowEngine.registerModelLoaders({
+    //   GanttBlockModel: {
+    //     loader: () => import('./models/GanttBlockModel'),
+    //   },
+    // });
   }
 }
 
