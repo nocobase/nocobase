@@ -13,12 +13,12 @@ Le module d'authentification des utilisateurs de NocoBase se compose principalem
 
 En outre, NocoBase propose également d'autres plugins pour diverses méthodes d'authentification des utilisateurs :
 
-- [`@nocobase/plugin-auth-sms`](/auth-verification/auth-sms/) - Fournit la fonction de connexion par vérification SMS
-- [`@nocobase/plugin-auth-saml`](/auth-verification/auth-saml/) - Fournit la fonction de connexion SSO SAML
-- [`@nocobase/plugin-auth-oidc`](/auth-verification/auth-oidc/) - Fournit la fonction de connexion SSO OIDC
-- [`@nocobase/plugin-auth-cas`](/auth-verification/auth-cas/) - Fournit la fonction de connexion SSO CAS
-- [`@nocobase/plugin-auth-ldap`](/auth-verification/auth-ldap/) - Fournit la fonction de connexion SSO LDAP
-- [`@nocobase/plugin-auth-wecom`](/auth-verification/auth-wecom/) - Fournit la fonction de connexion WeCom
-- [`@nocobase/plugin-auth-dingtalk`](/auth-verification/auth-dingtalk/) - Fournit la fonction de connexion DingTalk
+- [`@nocobase/plugin-auth-sms`](/auth-verification/auth-sms/index.md) - Fournit la fonction de connexion par vérification SMS
+- [`@nocobase/plugin-auth-saml`](/auth-verification/auth-saml/index.md) - Fournit la fonction de connexion SSO SAML
+- [`@nocobase/plugin-auth-oidc`](/auth-verification/auth-oidc/index.md) - Fournit la fonction de connexion SSO OIDC
+- [`@nocobase/plugin-auth-cas`](/auth-verification/auth-cas/index.md) - Fournit la fonction de connexion SSO CAS
+- [`@nocobase/plugin-auth-ldap`](/auth-verification/auth-ldap/index.md) - Fournit la fonction de connexion SSO LDAP
+- [`@nocobase/plugin-auth-wecom`](/auth-verification/auth-wecom/index.md) - Fournit la fonction de connexion WeCom
+- [`@nocobase/plugin-auth-dingtalk`](/auth-verification/auth-dingtalk/index.md) - Fournit la fonction de connexion DingTalk
 
 Grâce aux plugins ci-dessus, une fois que l'administrateur a configuré la méthode d'authentification correspondante, les utilisateurs peuvent se connecter directement au système en utilisant l'identité utilisateur fournie par des plateformes telles que Google Workspace, Microsoft Azure, et peuvent également s'intégrer à des outils de plateforme comme Auth0, Logto, Keycloak. En outre, les développeurs peuvent également étendre facilement d'autres méthodes d'authentification dont ils ont besoin grâce aux interfaces de base que nous fournissons.

@@ -18,7 +18,7 @@ When users operate NocoBase through AI Agents via the [NocoBase CLI](../ai/quick
 
 AI Agents connect to NocoBase primarily through two authentication methods:
 
-- **API key authentication**: Generate an API Key via the [API keys](/auth-verification/api-keys/) plugin, configure it in the CLI environment, and subsequent requests use it to access the API directly
+- **API key authentication**: Generate an API Key via the [API keys](/auth-verification/api-keys/index.md) plugin, configure it in the CLI environment, and subsequent requests use it to access the API directly
 - **OAuth authentication**: Complete a one-time OAuth login via the browser, then access the API as the current user
 
 Both methods work with `nb` commands. The difference lies in the identity source, applicable scenarios, and risk control strategies.

@@ -56,6 +56,27 @@
   },
   {
     "type": "custom-link",
+    "label": "ファイルプレビュー",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Officeファイルプレビュー",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "拡張開発",
     "link": "/file-manager/development/index"
   }

@@ -233,6 +233,6 @@ After lead conversion, your customer and opportunity records are ready. Next, he
 
 ## Related Pages
 
-- [CRM Guide Overview](./)
+- [CRM Guide Overview](./index.md)
 - [Opportunities and Quotations](./guide-opportunities)
 - [Customer Management](./guide-customers-emails)

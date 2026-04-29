@@ -209,7 +209,7 @@ yarn nocobase install -f
 
 通过 `defineCollection` 定义的表是服务端内部表，默认**不会出现**在「数据源管理」的列表中，也不会出现在「添加区块」时的数据表选择列表里。
 
-**推荐做法**：在 NocoBase 界面的「[数据源管理](../../data-sources/data-source-main/)」中添加对应的数据表，配置好字段和接口类型后，表就会自动出现在区块的数据表选择列表里。
+**推荐做法**：在 NocoBase 界面的「[数据源管理](../../data-sources/data-source-main/index.md)」中添加对应的数据表，配置好字段和接口类型后，表就会自动出现在区块的数据表选择列表里。
 
 ![添加区块时能选中自己的](https://static-docs.nocobase.com/20260409143839.png)
 

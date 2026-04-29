@@ -117,5 +117,5 @@ Activate the Plugin
 
 ## User Guide
 
-- Primary Database: Refer to the [Main data source](/data-sources/data-source-main/)
+- Primary Database: Refer to the [Main data source](/data-sources/data-source-main/index.md)
 - External Database: See [Data Source / External Database](/data-sources/data-source-manager/external-database)

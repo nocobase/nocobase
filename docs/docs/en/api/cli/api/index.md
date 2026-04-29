@@ -6,7 +6,7 @@ keywords: "nb api,NocoBase CLI,API,resource,OpenAPI"
 
 # nb api
 
-Call NocoBase APIs from the CLI. `nb api` includes generic [`nb api resource`](./resource/) CRUD commands and dynamic commands generated from the current app's OpenAPI Schema.
+Call NocoBase APIs from the CLI. `nb api` includes generic [`nb api resource`](./resource/index.md) CRUD commands and dynamic commands generated from the current app's OpenAPI Schema.
 
 ## Usage
 
@@ -18,7 +18,7 @@ nb api <command>
 
 | Command | Description |
 | --- | --- |
-| [`nb api resource`](./resource/) | Run generic CRUD and aggregate queries against any NocoBase resource |
+| [`nb api resource`](./resource/index.md) | Run generic CRUD and aggregate queries against any NocoBase resource |
 | [`nb api dynamic commands`](./dynamic.md) | Topic and operation commands generated from OpenAPI Schema |
 
 ## Common Parameters

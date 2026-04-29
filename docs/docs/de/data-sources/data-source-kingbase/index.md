@@ -121,5 +121,5 @@ Aktivieren Sie das Plugin
 
 ## Benutzerhandbuch
 
-- Primäre Datenbank: Siehe [Hauptdatenquelle](/data-sources/data-source-main/)
+- Primäre Datenbank: Siehe [Hauptdatenquelle](/data-sources/data-source-main/index.md)
 - Externe Datenbank: Siehe [Datenquelle / Externe Datenbank](/data-sources/data-source-manager/external-database)

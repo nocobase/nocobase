@@ -147,7 +147,7 @@ keywords: "产品管理,报价,订单管理,审批流程,多币种,NocoBase CRM"
 
 ## 相关页面
 
-- [CRM 操作指南](./)
+- [CRM 操作指南](./index.md)
 - [商机管理](./guide-opportunities) — 报价从商机视角的操作
 - [客户、联系人与邮件](./guide-customers-emails)
 - [仪表盘](./guide-overview) — 订单数据穿透

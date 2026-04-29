@@ -29,7 +29,7 @@ nb api resource query --resource <resource> [flags]
 | `--offset` | integer | 跳过行数 |
 | `--timezone` | string | 查询格式化使用的时区 |
 
-同时支持 [`nb api resource`](./) 的通用连接参数。
+同时支持 [`nb api resource`](./index.md) 的通用连接参数。
 
 ## 示例
 

@@ -28,4 +28,4 @@ Solo los tipos de autenticación activados se mostrarán en la página de inicio
 
 Al añadir diferentes tipos de autenticadores, puede habilitar los métodos de autenticación correspondientes en el sistema.
 
-Además de los tipos de autenticación que ofrecen los plugins existentes, los desarrolladores también pueden extender los tipos de autenticación de usuario. Para más detalles, consulte la [Guía del desarrollador](./dev/).
+Además de los tipos de autenticación que ofrecen los plugins existentes, los desarrolladores también pueden extender los tipos de autenticación de usuario. Para más detalles, consulte la [Guía del desarrollador](./dev/index.md).

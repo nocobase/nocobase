@@ -30,7 +30,7 @@ nb api resource list --resource <resource> [flags]
 | `--page-size` | integer | 每页条数 |
 | `--paginate` / `--no-paginate` | boolean | 是否分页 |
 
-同时支持 [`nb api resource`](./) 的通用连接参数。
+同时支持 [`nb api resource`](./index.md) 的通用连接参数。
 
 ## 示例
 

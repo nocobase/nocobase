@@ -24,7 +24,7 @@ nb api resource destroy --resource <resource> [flags]
 | `--filter-by-tk` | string | 主键值，复合或多个 key 可以传 JSON 数组 |
 | `--filter` | string | JSON 对象形式的过滤条件 |
 
-同时支持 [`nb api resource`](./) 的通用连接参数。
+同时支持 [`nb api resource`](./index.md) 的通用连接参数。
 
 ## 示例
 

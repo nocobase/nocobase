@@ -6,7 +6,7 @@ keywords: "nb api,NocoBase CLI,API,resource,OpenAPI"
 
 # nb api
 
-通过 CLI 调用 NocoBase API。`nb api` 包含通用的 [`nb api resource`](./resource/) CRUD 命令，也包含根据当前应用 OpenAPI Schema 动态生成的命令。
+通过 CLI 调用 NocoBase API。`nb api` 包含通用的 [`nb api resource`](./resource/index.md) CRUD 命令，也包含根据当前应用 OpenAPI Schema 动态生成的命令。
 
 ## 用法
 
@@ -18,7 +18,7 @@ nb api <command>
 
 | 命令 | 说明 |
 | --- | --- |
-| [`nb api resource`](./resource/) | 对任意 NocoBase 资源执行通用 CRUD 和聚合查询 |
+| [`nb api resource`](./resource/index.md) | 对任意 NocoBase 资源执行通用 CRUD 和聚合查询 |
 | [`nb api 动态命令`](./dynamic.md) | 根据应用 OpenAPI Schema 生成的 topic 和 operation 命令 |
 
 ## 通用参数

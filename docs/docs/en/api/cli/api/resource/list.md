@@ -30,7 +30,7 @@ nb api resource list --resource <resource> [flags]
 | `--page-size` | integer | Records per page |
 | `--paginate` / `--no-paginate` | boolean | Whether to paginate |
 
-Also supports common connection parameters from [`nb api resource`](./).
+Also supports common connection parameters from [`nb api resource`](./index.md).
 
 ## Examples
 

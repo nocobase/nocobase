@@ -31,15 +31,15 @@ The root command mainly displays help and dispatches execution to command groups
 
 | Topic | Description |
 | --- | --- |
-| [`nb api`](./api/) | Work with NocoBase API. |
-| [`nb app`](./app/) | Manage NocoBase app runtimes: start, stop, restart, logs, and upgrades. |
-| [`nb db`](./db/) | Manage the built-in database for the selected env. |
-| [`nb env`](./env/) | Manage NocoBase project environments, status, details, and command runtimes. |
-| [`nb plugin`](./plugin/) | Manage plugins in the selected NocoBase env. |
-| [`nb scaffold`](./scaffold/) | Generate NocoBase plugin development scaffolds. |
-| [`nb self`](./self/) | Inspect or update the NocoBase CLI itself. |
-| [`nb skills`](./skills/) | Inspect or synchronize NocoBase AI coding skills for the current workspace. |
-| [`nb source`](./source/) | Work with the local NocoBase source project: download, develop, build, and test. |
+| [`nb api`](./api/index.md) | Work with NocoBase API. |
+| [`nb app`](./app/index.md) | Manage NocoBase app runtimes: start, stop, restart, logs, and upgrades. |
+| [`nb db`](./db/index.md) | Manage the built-in database for the selected env. |
+| [`nb env`](./env/index.md) | Manage NocoBase project environments, status, details, and command runtimes. |
+| [`nb plugin`](./plugin/index.md) | Manage plugins in the selected NocoBase env. |
+| [`nb scaffold`](./scaffold/index.md) | Generate NocoBase plugin development scaffolds. |
+| [`nb self`](./self/index.md) | Inspect or update the NocoBase CLI itself. |
+| [`nb skills`](./skills/index.md) | Inspect or synchronize NocoBase AI coding skills for the current workspace. |
+| [`nb source`](./source/index.md) | Work with the local NocoBase source project: download, develop, build, and test. |
 
 ## Commands
 

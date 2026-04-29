@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/ai-dev"
+  },
+  {
+    "type": "custom-link",
+    "label": "実践：ウォーターマークプラグインの開発",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "サポートされている機能",
+    "link": "/ai-dev/capabilities"
+  }
+]

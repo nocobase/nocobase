@@ -83,11 +83,11 @@ NocoBase 2.0 基于以下技术构建：
 - [系统要求](/get-started/system-requirements) — 环境配置要求
 
 ### 更多教程
-- [NocoBase 1.x 教程](/tutorials/v1/) — 以任务管理系统为案例的进阶教程
+- [NocoBase 1.x 教程](/tutorials/v1/index.md) — 以任务管理系统为案例的进阶教程
 
 ### 方案参考
-- [工单系统方案](/solution/ticket-system/) — AI 驱动的智能工单管理方案
-- [CRM 系统方案](/solution/crm/) — 客户关系管理基座
+- [工单系统方案](/solution/ticket-system/index.md) — AI 驱动的智能工单管理方案
+- [CRM 系统方案](/solution/crm/index.md) — 客户关系管理基座
 - [AI 员工](/ai-employees/quick-start) — 为系统接入 AI 能力
 
 准备好了吗？从 [第 1 章：认识 NocoBase](./01-getting-started/) 开始吧！

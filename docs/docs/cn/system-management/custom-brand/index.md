@@ -16,7 +16,7 @@ keywords: "自定义品牌,品牌配置,favicon,关于菜单,登录页品牌,系
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-位置 1 可通过[系统设置](/system-management/system-settings/)中的 Logo 选项进行配置；位置 2 和 3 可以通过本插件进行配置。
+位置 1 可通过[系统设置](/system-management/system-settings/index.md)中的 Logo 选项进行配置；位置 2 和 3 可以通过本插件进行配置。
 
 ## 使用说明
 

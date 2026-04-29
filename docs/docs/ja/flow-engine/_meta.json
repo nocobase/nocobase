@@ -51,6 +51,11 @@
       },
       {
         "type": "custom-link",
+        "label": "AddSubModelButton",
+        "link": "/flow-engine/add-sub-model"
+      },
+      {
+        "type": "custom-link",
         "label": "FlowModelの永続化",
         "link": "/flow-engine/flow-model-repository"
       },
@@ -71,19 +76,24 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
-        "link": "/flow-engine/flow-model-vs-react-component"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
         "label": "RunJSプラグインの拡張ポイント",
         "link": "/flow-engine/runjs-extension-points"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Schema",
+        "link": "/flow-engine/ui-schema"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "定義",
+    "label": "Definitions",
     "items": [
       {
         "type": "custom-link",

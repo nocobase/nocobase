@@ -25,7 +25,7 @@ nb api resource create --resource <resource> --values <json> [flags]
 | `--whitelist` | string[] | 允许写入的字段，可重复传入或传 JSON 数组 |
 | `--blacklist` | string[] | 禁止写入的字段，可重复传入或传 JSON 数组 |
 
-同时支持 [`nb api resource`](./) 的通用连接参数。
+同时支持 [`nb api resource`](./index.md) 的通用连接参数。
 
 ## 示例
 

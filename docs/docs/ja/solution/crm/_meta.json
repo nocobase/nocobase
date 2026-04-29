@@ -15,6 +15,16 @@
     "label": "インストール"
   },
   {
+    "type": "dir",
+    "name": "guide",
+    "label": "操作ガイド"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "更新履歴"
+  },
+  {
     "type": "file",
     "name": "v1",
     "label": "旧版 CRM (v1)"

@@ -24,7 +24,7 @@ nb api resource destroy --resource <resource> [flags]
 | `--filter-by-tk` | string | Primary key value; composite or multiple keys can be passed as a JSON array |
 | `--filter` | string | Filter conditions as a JSON object |
 
-Also supports common connection parameters from [`nb api resource`](./).
+Also supports common connection parameters from [`nb api resource`](./index.md).
 
 ## Examples
 

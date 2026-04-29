@@ -121,5 +121,5 @@ Active el plugin
 
 ## Guía de uso
 
-- Base de datos principal: Consulte la [fuente de datos principal](/data-sources/data-source-main/)
+- Base de datos principal: Consulte la [fuente de datos principal](/data-sources/data-source-main/index.md)
 - Base de datos externa: Consulte [Fuente de datos / Base de datos externa](/data-sources/data-source-manager/external-database)

@@ -26,7 +26,7 @@ nb api resource get --resource <resource> [flags]
 | `--appends` | string[] | Association fields to append; repeatable or pass a JSON array |
 | `--except` | string[] | Fields to exclude; repeatable or pass a JSON array |
 
-Also supports common connection parameters from [`nb api resource`](./).
+Also supports common connection parameters from [`nb api resource`](./index.md).
 
 ## Examples
 

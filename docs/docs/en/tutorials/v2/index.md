@@ -83,11 +83,11 @@ If you're evaluating no-code/low-code platforms:
 - [System Requirements](/get-started/system-requirements) — Hardware and software requirements
 
 ### More Tutorials
-- [NocoBase 1.x Tutorials](/tutorials/v1/) — Task management system tutorial with advanced topics
+- [NocoBase 1.x Tutorials](/tutorials/v1/index.md) — Task management system tutorial with advanced topics
 
 ### Solutions
-- [Ticket System Solution](/solution/ticket-system/) — AI-powered intelligent ticket management
-- [CRM Solution](/solution/crm/) — Customer relationship management
+- [Ticket System Solution](/solution/ticket-system/index.md) — AI-powered intelligent ticket management
+- [CRM Solution](/solution/crm/index.md) — Customer relationship management
 - [AI Employees](/ai-employees/quick-start) — Add AI capabilities to your system
 
 Ready? Let's start with [Chapter 1: Getting Started](./01-getting-started/)!

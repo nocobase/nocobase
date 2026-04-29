@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "操作ガイド"
+  },
+  {
+    "type": "file",
+    "name": "guide-overview",
+    "label": "システム紹介とダッシュボード"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "リード管理"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "商談管理"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "製品、見積と注文"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "顧客、連絡先とメール"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "ロールと権限"
+  }
+]

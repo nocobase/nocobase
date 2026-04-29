@@ -25,7 +25,7 @@ nb api resource create --resource <resource> --values <json> [flags]
 | `--whitelist` | string[] | Fields allowed to write; repeatable or pass a JSON array |
 | `--blacklist` | string[] | Fields forbidden to write; repeatable or pass a JSON array |
 
-Also supports common connection parameters from [`nb api resource`](./).
+Also supports common connection parameters from [`nb api resource`](./index.md).
 
 ## Examples
 

@@ -29,7 +29,7 @@ nb api resource update --resource <resource> --values <json> [flags]
 | `--update-association-values` | string[] | 需要同时更新的关联字段，可重复传入或传 JSON 数组 |
 | `--force-update` / `--no-force-update` | boolean | 是否强制写入未变化的值 |
 
-同时支持 [`nb api resource`](./) 的通用连接参数。
+同时支持 [`nb api resource`](./index.md) 的通用连接参数。
 
 ## 示例
 

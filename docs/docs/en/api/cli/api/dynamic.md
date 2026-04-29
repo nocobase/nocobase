@@ -6,7 +6,7 @@ keywords: "nb api dynamic commands,NocoBase CLI,OpenAPI,swagger"
 
 # nb api dynamic commands
 
-In addition to [`nb api resource`](./resource/), `nb api` includes commands generated from the NocoBase app's OpenAPI Schema. These commands are generated and cached the first time you run [`nb env add`](../env/add.md) or [`nb env update`](../env/update.md).
+In addition to [`nb api resource`](./resource/index.md), `nb api` includes commands generated from the NocoBase app's OpenAPI Schema. These commands are generated and cached the first time you run [`nb env add`](../env/add.md) or [`nb env update`](../env/update.md).
 
 ## Common Groups
 
@@ -44,4 +44,4 @@ Dynamic commands with request bodies support:
 ## Related Commands
 
 - [`nb env update`](../env/update.md)
-- [`nb api resource`](./resource/)
+- [`nb api resource`](./resource/index.md)

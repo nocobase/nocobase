@@ -6,7 +6,7 @@ keywords: "nb api 动态命令,NocoBase CLI,OpenAPI,swagger"
 
 # nb api 动态命令
 
-除了 [`nb api resource`](./resource/) 之外，`nb api` 下还有一组根据 NocoBase 应用 OpenAPI Schema 动态生成的命令。这些命令在首次运行 [`nb env add`](../env/add.md) 或 [`nb env update`](../env/update.md) 时生成并缓存。
+除了 [`nb api resource`](./resource/index.md) 之外，`nb api` 下还有一组根据 NocoBase 应用 OpenAPI Schema 动态生成的命令。这些命令在首次运行 [`nb env add`](../env/add.md) 或 [`nb env update`](../env/update.md) 时生成并缓存。
 
 ## 常见分组
 
@@ -44,4 +44,4 @@ nb api <topic> --help
 ## 相关命令
 
 - [`nb env update`](../env/update.md)
-- [`nb api resource`](./resource/)
+- [`nb api resource`](./resource/index.md)

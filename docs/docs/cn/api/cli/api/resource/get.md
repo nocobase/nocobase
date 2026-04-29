@@ -26,7 +26,7 @@ nb api resource get --resource <resource> [flags]
 | `--appends` | string[] | 要追加的关联字段，可重复传入或传 JSON 数组 |
 | `--except` | string[] | 要排除的字段，可重复传入或传 JSON 数组 |
 
-同时支持 [`nb api resource`](./) 的通用连接参数。
+同时支持 [`nb api resource`](./index.md) 的通用连接参数。
 
 ## 示例
 

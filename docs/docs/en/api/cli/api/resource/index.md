@@ -51,5 +51,5 @@ nb api resource list --resource posts.comments --source-id 1 --fields id --field
 
 ## Related Commands
 
-- [`nb api`](../)
+- [`nb api`](../index.md)
 - [`nb env update`](../../env/update.md)

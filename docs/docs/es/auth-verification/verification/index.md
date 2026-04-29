@@ -23,7 +23,7 @@ A partir de la versión `1.6.0-alpha.30`, la función original de **código de v
 **El Centro de Gestión de Verificación permite gestionar e integrar diversos métodos de verificación de identidad de usuario.** Por ejemplo:
 
 - Código de verificación por SMS — Proporcionado por el plugin de verificación por defecto. Consulte: [Verificación: SMS](./sms)
-- Autenticador TOTP — Consulte: [Verificación: Autenticador TOTP](../verification-totp/)
+- Autenticador TOTP — Consulte: [Verificación: Autenticador TOTP](../verification-totp/index.md)
 
 Los desarrolladores también pueden extender otros tipos de verificación a través de plugins. Consulte: [Extensión de tipos de verificación](./dev/type)
 

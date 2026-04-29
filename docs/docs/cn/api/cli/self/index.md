@@ -31,5 +31,5 @@ nb self update --yes
 
 ## 相关命令
 
-- [`nb skills`](../skills/)
+- [`nb skills`](../skills/index.md)
 - [`nb app upgrade`](../app/upgrade.md)

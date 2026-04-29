@@ -16,7 +16,7 @@ El **plugin** de **WeChat Work** le permite sincronizar datos de usuarios y depa
 
 Primero, necesita crear una aplicación personalizada en la consola de administración de WeChat Work y obtener el **ID de la empresa** (Corp ID), el **AgentId** y el **Secret**.
 
-Consulte [Autenticación de usuario - WeChat Work](/auth-verification/auth-wecom/).
+Consulte [Autenticación de usuario - WeChat Work](/auth-verification/auth-wecom/index.md).
 
 ## Agregar una fuente de datos de sincronización en NocoBase
 

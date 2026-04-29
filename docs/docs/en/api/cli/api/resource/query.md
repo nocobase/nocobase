@@ -29,7 +29,7 @@ nb api resource query --resource <resource> [flags]
 | `--offset` | integer | Number of rows to skip |
 | `--timezone` | string | Timezone used for query formatting |
 
-Also supports common connection parameters from [`nb api resource`](./).
+Also supports common connection parameters from [`nb api resource`](./index.md).
 
 ## Examples
 

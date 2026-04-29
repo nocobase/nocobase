@@ -35,4 +35,4 @@ nb skills remove --yes
 ## 相关命令
 
 - [`nb init`](../init.md)
-- [`nb self`](../self/)
+- [`nb self`](../self/index.md)

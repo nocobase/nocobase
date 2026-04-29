@@ -31,5 +31,5 @@ nb self update --yes
 
 ## Related Commands
 
-- [`nb skills`](../skills/)
+- [`nb skills`](../skills/index.md)
 - [`nb app upgrade`](../app/upgrade.md)
