@@ -30,7 +30,9 @@ export class FlowSurfaceContractGuard {
       if (!Object.keys(nextValue).length) {
         return {};
       }
-      return contract.mergeStrategy === 'replace' ? _.cloneDeep(nextValue) : _.merge({}, currentValue || {}, nextValue);
+      return contract.mergeStrategy === 'replace'
+        ? _.cloneDeep(nextValue)
+        : mergeFlowSurfaceSettingsValue(currentValue || {}, nextValue);
     }
     if (contract.groups) {
       const unknownGroups = Object.keys(nextValue).filter((key) => !contract.allowedKeys.includes(key));
@@ -87,7 +89,7 @@ export class FlowSurfaceContractGuard {
         next[groupKey] =
           groupContract.mergeStrategy === 'replace'
             ? _.cloneDeep(normalizedValue)
-            : _.merge({}, currentValue?.[groupKey] || {}, normalizedValue);
+            : mergeFlowSurfaceSettingsValue(currentValue?.[groupKey] || {}, normalizedValue);
       });
       return next;
     }
@@ -117,7 +119,7 @@ export class FlowSurfaceContractGuard {
       next[key] =
         contract.mergeStrategy === 'replace' || !_.isPlainObject(value) || !Object.keys(value).length
           ? _.cloneDeep(value)
-          : _.merge({}, currentValue?.[key] || {}, value);
+          : mergeFlowSurfaceSettingsValue(currentValue?.[key] || {}, value);
     });
     return next;
   }
@@ -271,6 +273,15 @@ export class FlowSurfaceContractGuard {
       _.castArray(value as any).forEach((child) => this.validateNodeTreeAgainstContract(child));
     });
   }
+}
+
+function mergeFlowSurfaceSettingsValue(currentValue: any, nextValue: any) {
+  return _.mergeWith({}, currentValue || {}, nextValue, (_current, next) => {
+    if (Array.isArray(next)) {
+      return _.cloneDeep(next);
+    }
+    return undefined;
+  });
 }
 
 function matchesContractPath(pattern: string, path: string) {
