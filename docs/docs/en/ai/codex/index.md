@@ -77,7 +77,6 @@ Help me install NocoBase CLI and complete initialization: https://docs.nocobase.
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 

@@ -24,13 +24,12 @@ Help me install NocoBase CLI and complete initialization: https://docs.nocobase.
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
 Your browser will automatically open a visual configuration page that guides you through installing NocoBase Skills, configuring the database, and starting the application. For detailed steps, see [Quick Start](../ai/quick-start.md).
 
-## From a Single Sentence to a Complete System
+## Replace Manual Configuration with Conversation
 
 After installation, you can use natural language to operate NocoBase directly from your AI assistant. Here are a few real-world scenarios, from creating a single table to building an entire system, to give you a feel for AI Builder's capabilities.
 

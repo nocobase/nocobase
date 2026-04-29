@@ -92,11 +92,11 @@ features:
     items:
       - title: NocoBase CLI
         details: NocoBase 的命令行工具，安装即就绪——内置 AI Skills，让你的 AI 助手直接上手操作 NocoBase。
-        link: /api/cli
+        link: /api/cli/
       - title: NocoBase Skills
         details: 可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的能力和规范。
         link: /ai-builder#nocobase-skills
       - title: NocoBase MCP
         details: Model Context Protocol 接入，让 AI Agent 通过标准化协议与 NocoBase 交互。
-        link: /ai/mcp
+        link: /ai/mcp/
 ---

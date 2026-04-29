@@ -26,7 +26,6 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
