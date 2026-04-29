@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -16,9 +25,16 @@ import {
   executeMultipartApiRequest,
   executeRawApiRequest,
 } from './api-client.js';
+import { resolveCliHomeDir } from './cli-home.js';
 
 export type PublishType = 'backup' | 'migration' | 'database';
 export type PublishAction = 'generate' | 'upload' | 'execute';
+
+export interface PublishApiResponse {
+  ok: boolean;
+  status: number;
+  data: any;
+}
 
 export interface PublishManifestEntry {
   type: PublishType;
@@ -50,21 +66,36 @@ export function assertPublishCapability(capabilities: any, type: PublishType, ac
   }
 }
 
-export function publishRootDir(cwd = process.cwd()) {
-  return path.resolve(cwd, '.nocobase', 'publish');
+export function getPublishResponseData(response: PublishApiResponse) {
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`);
+  }
+
+  let data = response.data;
+  if (data && typeof data === 'object' && 'data' in data) {
+    data = data.data;
+  }
+  if (data && typeof data === 'object' && data.status === 'ok' && 'data' in data) {
+    data = data.data;
+  }
+  return data;
 }
 
-export function defaultPublishDir(type: PublishType, env: string, cwd = process.cwd()) {
-  return path.join(publishRootDir(cwd), type, env);
+export function publishRootDir(cliHomeDir = resolveCliHomeDir('global')) {
+  return path.join(cliHomeDir, 'publish');
 }
 
-export function manifestPath(cwd = process.cwd()) {
-  return path.join(publishRootDir(cwd), 'manifest.json');
+export function defaultPublishDir(type: PublishType, env: string, cliHomeDir = resolveCliHomeDir('global')) {
+  return path.join(publishRootDir(cliHomeDir), type, env);
 }
 
-export async function readManifest(cwd = process.cwd()): Promise<PublishManifest> {
+export function manifestPath(cliHomeDir = resolveCliHomeDir('global')) {
+  return path.join(publishRootDir(cliHomeDir), 'manifest.json');
+}
+
+export async function readManifest(cliHomeDir = resolveCliHomeDir('global')): Promise<PublishManifest> {
   try {
-    const content = await fsp.readFile(manifestPath(cwd), 'utf8');
+    const content = await fsp.readFile(manifestPath(cliHomeDir), 'utf8');
     const manifest = JSON.parse(content) as PublishManifest;
     return {
       version: 1,
@@ -78,14 +109,14 @@ export async function readManifest(cwd = process.cwd()): Promise<PublishManifest
   }
 }
 
-export async function writeManifest(manifest: PublishManifest, cwd = process.cwd()) {
-  const filePath = manifestPath(cwd);
+export async function writeManifest(manifest: PublishManifest, cliHomeDir = resolveCliHomeDir('global')) {
+  const filePath = manifestPath(cliHomeDir);
   await fsp.mkdir(path.dirname(filePath), { recursive: true });
   await fsp.writeFile(filePath, JSON.stringify(manifest, null, 2));
 }
 
-export async function upsertManifestEntry(entry: PublishManifestEntry, cwd = process.cwd()) {
-  const manifest = await readManifest(cwd);
+export async function upsertManifestEntry(entry: PublishManifestEntry, cliHomeDir = resolveCliHomeDir('global')) {
+  const manifest = await readManifest(cliHomeDir);
   const index = manifest.artifacts.findIndex((item) => {
     return item.type === entry.type
       && item.fileName === entry.fileName
@@ -97,7 +128,7 @@ export async function upsertManifestEntry(entry: PublishManifestEntry, cwd = pro
   } else {
     manifest.artifacts.push(entry);
   }
-  await writeManifest(manifest, cwd);
+  await writeManifest(manifest, cliHomeDir);
   return entry;
 }
 
@@ -106,9 +137,9 @@ export async function findManifestEntry(options: {
   fileName: string;
   targetEnv?: string;
   sourceEnv?: string;
-  cwd?: string;
+  cliHomeDir?: string;
 }) {
-  const manifest = await readManifest(options.cwd);
+  const manifest = await readManifest(options.cliHomeDir);
   return manifest.artifacts.find((entry) => {
     if (entry.type !== options.type || entry.fileName !== options.fileName) {
       return false;
@@ -128,6 +159,7 @@ export function resolveLocalPublishFile(options: {
   file: string;
   sourceEnv?: string;
   cwd?: string;
+  cliHomeDir?: string;
 }) {
   if (path.isAbsolute(options.file) || options.file.includes('/') || options.file.includes('\\')) {
     return path.resolve(options.cwd || process.cwd(), options.file);
@@ -135,7 +167,7 @@ export function resolveLocalPublishFile(options: {
   if (!options.sourceEnv) {
     throw new Error('Missing --from when --file is a file name. Use a path or provide --from.');
   }
-  return path.join(defaultPublishDir(options.type, options.sourceEnv, options.cwd), options.file);
+  return path.join(defaultPublishDir(options.type, options.sourceEnv, options.cliHomeDir), options.file);
 }
 
 export async function checksumFile(filePath: string) {

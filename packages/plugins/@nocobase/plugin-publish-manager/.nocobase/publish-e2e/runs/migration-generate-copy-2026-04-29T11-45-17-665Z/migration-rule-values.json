@@ -1,0 +1,12 @@
+{
+  "name": "publish-e2e-dev-dev-2026-04-29T11-45-17-676Z",
+  "description": "Created by publish CLI E2E runner",
+  "rules": {
+    "userDefined": {
+      "globalRule": "schema-only"
+    },
+    "systemDefined": {
+      "globalRule": "skip"
+    }
+  }
+}

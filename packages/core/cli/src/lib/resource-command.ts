@@ -7,8 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
+import fs from 'node:fs';
 import { executeResourceRequest, type ResourceAction, type ResourceRequestArgs } from './resource-request.js';
 import { setVerboseMode } from './ui.js';
 
@@ -48,6 +58,42 @@ function parseObjectFlag(value: string | undefined, flagName: string) {
   }
 
   return parsed;
+}
+
+function parseObjectFileFlag(value: string | undefined, flagName: string) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  let content: string;
+  try {
+    content = fs.readFileSync(value, 'utf8');
+  } catch (error: any) {
+    throw new Error(`Unable to read --${flagName}: ${error?.message ?? 'read failed'}`);
+  }
+
+  const parsed = parseJson<Record<string, any>>(content, flagName);
+  if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+    throw new Error(`--${flagName} must contain a JSON object`);
+  }
+
+  return parsed;
+}
+
+function parseValuesInput(flags: Record<string, any>) {
+  if (flags.values && flags['values-file']) {
+    throw new Error('Use either --values or --values-file, not both');
+  }
+
+  const values = flags['values-file']
+    ? parseObjectFileFlag(flags['values-file'], 'values-file')
+    : parseObjectFlag(flags.values, 'values');
+
+  if (!values) {
+    throw new Error('Missing --values or --values-file');
+  }
+
+  return values;
 }
 
 function parseJsonArrayFlag(value: string | undefined, flagName: string) {
@@ -209,7 +255,9 @@ export const createFlags = {
   ...resourceAssociationFlags,
   values: Flags.string({
     description: 'Record values used by create as a JSON object.',
-    required: true,
+  }),
+  'values-file': Flags.string({
+    description: 'Path to a JSON object file used by create.',
   }),
   whitelist: Flags.string({
     description: 'Fields allowed to be written. Repeat the flag or pass a JSON array.',
@@ -232,7 +280,9 @@ export const updateFlags = {
   }),
   values: Flags.string({
     description: 'Record values used by update as a JSON object.',
-    required: true,
+  }),
+  'values-file': Flags.string({
+    description: 'Path to a JSON object file used by update.',
   }),
   whitelist: Flags.string({
     description: 'Fields allowed to be written. Repeat the flag or pass a JSON array.',
@@ -330,7 +380,7 @@ export function buildGetArgs(flags: Record<string, any>): ResourceRequestArgs {
 export function buildCreateArgs(flags: Record<string, any>): ResourceRequestArgs {
   return {
     ...pickSharedArgs(flags),
-    values: parseObjectFlag(flags.values, 'values'),
+    values: parseValuesInput(flags),
     whitelist: parseStringArrayFlags(flags.whitelist, 'whitelist'),
     blacklist: parseStringArrayFlags(flags.blacklist, 'blacklist'),
   };
@@ -345,7 +395,7 @@ export function buildUpdateArgs(flags: Record<string, any>): ResourceRequestArgs
       | Array<string | number>
       | undefined,
     filter: parseObjectFlag(flags.filter, 'filter'),
-    values: parseObjectFlag(flags.values, 'values'),
+    values: parseValuesInput(flags),
     whitelist: parseStringArrayFlags(flags.whitelist, 'whitelist'),
     blacklist: parseStringArrayFlags(flags.blacklist, 'blacklist'),
     updateAssociationValues: parseStringArrayFlags(flags['update-association-values'], 'update-association-values'),

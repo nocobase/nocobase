@@ -7,25 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import path from 'node:path';
 import {
   assertPublishCapability,
   assertPublishType,
   defaultPublishDir,
+  getPublishResponseData,
   publishCapabilities,
   publishDownload,
   publishGenerate,
   upsertManifestEntry,
 } from '../../lib/publish.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
-
-function getResponseData(response: { ok: boolean; status: number; data: any }) {
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`);
-  }
-  return response.data?.data ?? response.data;
-}
 
 export default class PublishGenerate extends Command {
   static override summary = 'Generate a publish file on an environment and download it locally';
@@ -54,7 +57,7 @@ export default class PublishGenerate extends Command {
       description: 'Migration title when --type migration is used',
     }),
     output: Flags.string({
-      description: 'Local output path. Defaults to .nocobase/publish/<type>/<env>/<fileName>',
+      description: 'Local output path. Defaults to the global CLI home publish workspace.',
     }),
     wait: Flags.boolean({
       description: 'Wait for generation to finish. The MVP API returns after generation completes.',
@@ -72,10 +75,10 @@ export default class PublishGenerate extends Command {
 
     startTask(`Generating ${type} publish file on ${flags.env}`);
     try {
-      const capabilities = getResponseData(await publishCapabilities({ env: flags.env }));
+      const capabilities = getPublishResponseData(await publishCapabilities({ env: flags.env }));
       assertPublishCapability(capabilities, type, 'generate');
 
-      const generated = getResponseData(await publishGenerate({
+      const generated = getPublishResponseData(await publishGenerate({
         env: flags.env,
         type,
         ruleId: flags.rule,
@@ -85,7 +88,7 @@ export default class PublishGenerate extends Command {
         ? path.resolve(process.cwd(), flags.output)
         : path.join(defaultPublishDir(type, flags.env), generated.fileName);
 
-      const downloaded = getResponseData(await publishDownload({
+      const downloaded = getPublishResponseData(await publishDownload({
         env: flags.env,
         type,
         artifactId: generated.artifactId,

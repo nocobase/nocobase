@@ -7,25 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import path from 'node:path';
 import {
   assertPublishCapability,
   assertPublishType,
   checksumFile,
+  getPublishResponseData,
   publishCapabilities,
   publishUpload,
   resolveLocalPublishFile,
   upsertManifestEntry,
 } from '../../lib/publish.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
-
-function getResponseData(response: { ok: boolean; status: number; data: any }) {
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`);
-  }
-  return response.data?.data ?? response.data;
-}
 
 export default class PublishCopy extends Command {
   static override summary = 'Upload a local publish file to a target environment staging area';
@@ -50,7 +53,7 @@ export default class PublishCopy extends Command {
       required: true,
     }),
     file: Flags.string({
-      description: 'Local publish file path, or file name under .nocobase/publish/<type>/<from>/',
+      description: 'Local publish file path, or file name under the global CLI home publish workspace.',
       required: true,
     }),
   };
@@ -67,11 +70,11 @@ export default class PublishCopy extends Command {
 
     startTask(`Uploading ${fileName} to ${flags.to}`);
     try {
-      const capabilities = getResponseData(await publishCapabilities({ env: flags.to }));
+      const capabilities = getPublishResponseData(await publishCapabilities({ env: flags.to }));
       assertPublishCapability(capabilities, type, 'upload');
 
       const checksum = await checksumFile(filePath);
-      const uploaded = getResponseData(await publishUpload({
+      const uploaded = getPublishResponseData(await publishUpload({
         env: flags.to,
         type,
         sourceEnv: flags.from,

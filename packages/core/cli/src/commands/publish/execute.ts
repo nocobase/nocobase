@@ -7,23 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import path from 'node:path';
 import {
   assertPublishCapability,
   assertPublishType,
   findManifestEntry,
+  getPublishResponseData,
   publishCapabilities,
   publishExecute,
 } from '../../lib/publish.js';
 import { confirmAction, failTask, startTask, succeedTask } from '../../lib/ui.js';
-
-function getResponseData(response: { ok: boolean; status: number; data: any }) {
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`);
-  }
-  return response.data?.data ?? response.data;
-}
 
 export default class PublishExecute extends Command {
   static override summary = 'Execute a staged publish file on a target environment';
@@ -124,10 +127,10 @@ export default class PublishExecute extends Command {
 
     startTask(`Executing ${type} artifact on ${flags.env}`);
     try {
-      const capabilities = getResponseData(await publishCapabilities({ env: flags.env }));
+      const capabilities = getPublishResponseData(await publishCapabilities({ env: flags.env }));
       assertPublishCapability(capabilities, type, 'execute');
 
-      const executed = getResponseData(await publishExecute({
+      const executed = getPublishResponseData(await publishExecute({
         env: flags.env,
         type,
         artifactId,
