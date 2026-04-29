@@ -1597,7 +1597,7 @@ export class FlowSurfacesService {
       return undefined;
     }
     const table = _.castArray(fieldNode?.subModels?.['grid-block']?.subModels?.items || []).find(
-      (item: any) => item?.use === 'TableBlockModel',
+      (item: any) => item?.use === 'TableSelectModel' || item?.use === 'TableBlockModel',
     );
     return _.castArray(table?.subModels?.columns || [])
       .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
@@ -10250,8 +10250,21 @@ export class FlowSurfacesService {
       return undefined;
     }
 
-    const assignSettingsAssignedValues = _.cloneDeep(_.get(values, UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH));
-    const applyAssignedValues = _.cloneDeep(_.get(values, UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH));
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    const clearsAssignSettingsAssignedValues =
+      hasAssignSettingsAssignedValues &&
+      _.isPlainObject(_.get(values, UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH)) &&
+      !Object.keys(_.get(values, UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH)).length;
+    const clearsApplyAssignedValues =
+      hasApplyAssignedValues &&
+      _.isPlainObject(_.get(values, UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH)) &&
+      !Object.keys(_.get(values, UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH)).length;
+    const assignSettingsAssignedValues = clearsAssignSettingsAssignedValues
+      ? {}
+      : _.cloneDeep(_.get(nextStepParams, UPDATE_ACTION_ASSIGN_SETTINGS_STEP_PATH));
+    const applyAssignedValues = clearsApplyAssignedValues
+      ? {}
+      : _.cloneDeep(_.get(nextStepParams, UPDATE_ACTION_APPLY_STEP_PATH));
     if (
       hasAssignSettingsAssignedValues &&
       hasApplyAssignedValues &&
@@ -10263,7 +10276,11 @@ export class FlowSurfacesService {
     }
 
     const assignedValues = hasAssignSettingsAssignedValues ? assignSettingsAssignedValues : applyAssignedValues;
-    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    if (!_.isPlainObject(assignedValues)) {
+      throwBadRequest(
+        "flowSurfaces updateSettings update action values 'stepParams.assignSettings.assignFieldValues.assignedValues' requires an object payload",
+      );
+    }
     _.set(nextStepParams, UPDATE_ACTION_ASSIGN_SETTINGS_STEP_PATH, _.cloneDeep(assignedValues));
     _.set(nextStepParams, UPDATE_ACTION_APPLY_STEP_PATH, _.cloneDeep(assignedValues));
     nextPayload.stepParams = nextStepParams;
@@ -10317,6 +10334,7 @@ export class FlowSurfacesService {
       const existingItem = existingItemsByFieldPath.get(fieldPath);
       await this.repository.upsertModel(
         this.buildUpdateActionAssignFormItemTree({
+          existingItem,
           uid: existingItem?.uid,
           fieldUid: existingItem?.subModels?.field?.uid,
           parentId: assignFormGridUid,
@@ -10359,6 +10377,7 @@ export class FlowSurfacesService {
   }
 
   private buildUpdateActionAssignFormItemTree(input: {
+    existingItem?: any;
     uid?: string;
     fieldUid?: string;
     parentId: string;
@@ -10380,29 +10399,26 @@ export class FlowSurfacesService {
       input.collectionName,
       input.fieldPath,
     );
+    const existingItem = input.existingItem || {};
+    const existingField = existingItem?.subModels?.field || {};
+    const itemStepParams = _.cloneDeep(existingItem.stepParams || {});
+    _.set(itemStepParams, ['fieldSettings', 'init'], init);
+    _.set(itemStepParams, ['fieldSettings', 'assignValue', 'value'], _.cloneDeep(input.value));
+
+    const fieldStepParams = _.cloneDeep(existingField.stepParams || {});
+    _.set(fieldStepParams, ['fieldSettings', 'init'], init);
     return {
       uid: input.uid || uid(),
       parentId: input.parentId,
       subKey: 'items',
       subType: 'array',
       use: 'AssignFormItemModel',
-      stepParams: {
-        fieldSettings: {
-          init,
-          assignValue: {
-            value: _.cloneDeep(input.value),
-          },
-        },
-      },
+      stepParams: itemStepParams,
       subModels: {
         field: {
           uid: input.fieldUid || uid(),
-          use: fieldUse,
-          stepParams: {
-            fieldSettings: {
-              init,
-            },
-          },
+          use: existingField.use || fieldUse,
+          stepParams: fieldStepParams,
         },
       },
     };
@@ -18909,6 +18925,8 @@ export class FlowSurfacesService {
 
     if (input.fieldUse === 'RecordPickerFieldModel') {
       await this.applyRecordPickerFieldTypeSettings(input);
+    } else if (input.fieldUse === 'PopupSubTableFieldModel') {
+      await this.ensureRelationSelectorGridTable(input);
     }
   }
 
@@ -18944,6 +18962,15 @@ export class FlowSurfacesService {
         { transaction: input.transaction },
       );
     }
+    await this.ensureRelationSelectorGridTable(input);
+  }
+
+  private async ensureRelationSelectorGridTable(input: {
+    fieldUid: string;
+    targetCollection: any;
+    selectorFields?: string[];
+    transaction?: any;
+  }) {
     if (!input.selectorFields) {
       return;
     }
@@ -18972,30 +18999,69 @@ export class FlowSurfacesService {
     if (!grid?.uid) {
       return;
     }
-    const existingTable = _.castArray(grid?.subModels?.items || []).find(
-      (item: any) => item?.use === 'TableBlockModel',
-    );
+    const gridItems = _.castArray(grid?.subModels?.items || []);
+    const existingTable =
+      gridItems.find((item: any) => item?.use === 'TableSelectModel') ||
+      gridItems.find((item: any) => item?.use === 'TableBlockModel');
     const tableUid = existingTable?.uid || uid();
-    if (!existingTable?.uid) {
-      await this.repository.upsertModel(
-        {
-          uid: tableUid,
-          parentId: grid.uid,
-          subKey: 'items',
-          subType: 'array',
-          use: 'TableBlockModel',
-          stepParams: {
-            resourceSettings: {
-              init: {
-                dataSourceKey: input.targetCollection?.dataSourceKey || 'main',
-                collectionName: getCollectionName(input.targetCollection),
-              },
+    for (const item of gridItems) {
+      if (item?.uid && item.uid !== tableUid) {
+        await this.removeNodeTreeWithBindings(item.uid, input.transaction);
+      }
+    }
+    await this.repository.upsertModel(
+      {
+        ..._.omit(_.cloneDeep(existingTable || {}), [
+          'uid',
+          'use',
+          'subModels',
+          'sortIndex',
+          'parentId',
+          'subKey',
+          'subType',
+        ]),
+        uid: tableUid,
+        parentId: grid.uid,
+        subKey: 'items',
+        subType: 'array',
+        use: 'TableSelectModel',
+        stepParams: _.merge({}, _.cloneDeep(existingTable?.stepParams || {}), {
+          resourceSettings: {
+            init: {
+              dataSourceKey: input.targetCollection?.dataSourceKey || 'main',
+              collectionName: getCollectionName(input.targetCollection),
             },
           },
+        }),
+      },
+      { transaction: input.transaction },
+    );
+    const layout = {
+      rows: {
+        row1: [[tableUid]],
+      },
+      sizes: {
+        row1: [24],
+      },
+      rowOrder: ['row1'],
+    };
+    await this.repository.patch(
+      {
+        uid: grid.uid,
+        props: {
+          ...(grid.props || {}),
+          ...layout,
         },
-        { transaction: input.transaction },
-      );
-    }
+        stepParams: {
+          ...(grid.stepParams || {}),
+          [GRID_SETTINGS_FLOW_KEY]: {
+            ...(grid.stepParams?.[GRID_SETTINGS_FLOW_KEY] || {}),
+            [GRID_SETTINGS_LAYOUT_STEP_KEY]: layout,
+          },
+        },
+      },
+      { transaction: input.transaction },
+    );
     await this.replaceFieldSubModelArray({
       parentUid: tableUid,
       subKey: 'columns',

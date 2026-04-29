@@ -4381,6 +4381,11 @@ describe('flowSurfaces resource', () => {
         (item: any) => item.use,
       ),
     ).toEqual(['PopupSubTableEditActionModel', 'PopupSubTableRemoveActionModel']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.['grid-block']?.subModels?.items || []).map(
+        (item: any) => item?.use,
+      ),
+    ).toEqual(['TableSelectModel']);
 
     const addFieldsData = getData(
       await rootAgent.resource('flowSurfaces').addFields({
@@ -4427,6 +4432,11 @@ describe('flowSurfaces resource', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['roles.title']);
+    expect(
+      _.castArray(defaultedSwitchReadback.tree.subModels?.['grid-block']?.subModels?.items || []).map(
+        (item: any) => item?.use,
+      ),
+    ).toEqual(['TableSelectModel']);
 
     const defaultRolesField = await addField(rootAgent, formUid, 'roles');
     const switchRes = await rootAgent.resource('flowSurfaces').configure({
@@ -4456,6 +4466,11 @@ describe('flowSurfaces resource', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['roles.title']);
+    expect(
+      _.castArray(switchedRolesInner.tree.subModels?.['grid-block']?.subModels?.items || []).map(
+        (item: any) => item?.use,
+      ),
+    ).toEqual(['TableSelectModel']);
 
     const configureInnerTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
       values: {

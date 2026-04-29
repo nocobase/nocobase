@@ -121,6 +121,12 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   }
 
+  function findAssignFormGridItem(actionTree: any, fieldPath: string) {
+    return _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []).find(
+      (candidate: any) => candidate?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath,
+    );
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
     ({ app, flowRepo, rootAgent } = context);
@@ -5906,6 +5912,89 @@ describe('flowSurfaces catalog + compose contract', () => {
     expectAssignFormGridItems(updateRecordAssignSettingsReadback.tree, {
       nickname: 'VIP',
       status: 'inactive',
+    });
+
+    const updateViaPartialAssignSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          assignSettings: {
+            assignFieldValues: {
+              assignedValues: {
+                status: 'pending',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(updateViaPartialAssignSettings.status, readErrorMessage(updateViaPartialAssignSettings)).toBe(200);
+
+    const updateRecordPartialReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectAssignedValuesMirrors(updateRecordPartialReadback.tree, {
+      nickname: 'VIP',
+      status: 'pending',
+    });
+    expectAssignFormGridItems(updateRecordPartialReadback.tree, {
+      nickname: 'VIP',
+      status: 'pending',
+    });
+
+    const statusAssignItem = findAssignFormGridItem(updateRecordPartialReadback.tree, 'status');
+    expect(statusAssignItem?.uid).toBeTruthy();
+    expect(statusAssignItem?.subModels?.field?.uid).toBeTruthy();
+    await flowRepo.patch({
+      uid: statusAssignItem.uid,
+      stepParams: _.merge({}, statusAssignItem.stepParams || {}, {
+        editItemSettings: {
+          marker: 'preserve-item-settings',
+        },
+      }),
+    });
+    await flowRepo.patch({
+      uid: statusAssignItem.subModels.field.uid,
+      stepParams: _.merge({}, statusAssignItem.subModels.field.stepParams || {}, {
+        preservedFieldSettings: {
+          marker: 'preserve-field-settings',
+        },
+      }),
+    });
+
+    const updatePreservedItem = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          assignSettings: {
+            assignFieldValues: {
+              assignedValues: {
+                status: 'reviewed',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(updatePreservedItem.status, readErrorMessage(updatePreservedItem)).toBe(200);
+
+    const updateRecordPreservedReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectAssignedValuesMirrors(updateRecordPreservedReadback.tree, {
+      nickname: 'VIP',
+      status: 'reviewed',
+    });
+    expectAssignFormGridItems(updateRecordPreservedReadback.tree, {
+      nickname: 'VIP',
+      status: 'reviewed',
+    });
+    const preservedStatusItem = findAssignFormGridItem(updateRecordPreservedReadback.tree, 'status');
+    expect(preservedStatusItem?.stepParams?.editItemSettings).toEqual({
+      marker: 'preserve-item-settings',
+    });
+    expect(preservedStatusItem?.subModels?.field?.stepParams?.preservedFieldSettings).toEqual({
+      marker: 'preserve-field-settings',
     });
 
     const updateViaApplyMirror = await rootAgent.resource('flowSurfaces').updateSettings({

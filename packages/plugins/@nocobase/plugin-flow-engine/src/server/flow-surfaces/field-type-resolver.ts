@@ -266,7 +266,7 @@ export function resolveRelationFieldType(input: {
     (shouldApplyDefaults && (usesNestedRelationFields(fieldUse) || fieldType === 'picker')
       ? [defaultTargetField]
       : undefined);
-  const selectorFields = fieldType === 'picker' ? fields : undefined;
+  const selectorFields = ['picker', 'popupSubTable'].includes(fieldType) ? fields : undefined;
   const titleField = _.isUndefined(input.titleField)
     ? defaultTargetField
     : String(input.titleField || '').trim() || undefined;

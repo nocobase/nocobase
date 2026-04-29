@@ -2540,6 +2540,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['TriggerBlockGridModel', GRID_NODE_CONTRACT],
   ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
+  ['TableSelectModel', TABLE_BLOCK_CONTRACT],
   ['CalendarBlockModel', CALENDAR_BLOCK_CONTRACT],
   ['TreeBlockModel', TREE_BLOCK_CONTRACT],
   ['KanbanBlockModel', KANBAN_BLOCK_CONTRACT],
