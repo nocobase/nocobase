@@ -1475,7 +1475,6 @@ If information is missing, clearly state it in the summary.</Important>`;
       return [];
     }
     const availableAIEmployees = (await listAccessibleAIEmployees(this.ctx))
-
       .map((employee) => serializeEmployeeSummary(this.ctx, employee))
       .filter((it) => it.username !== this.employee.username);
     return availableAIEmployees;
