@@ -14,7 +14,7 @@ import echarts from './charts';
 
 export class PluginDataVisualizationEChartsClient extends Plugin {
   async load() {
-    const plugin = this.app.pm.get(PluginDataVisualizationClient);
+    const plugin = this.app.pm.get(PluginDataVisualizationClient as any) as PluginDataVisualizationClient;
     if (!plugin) {
       return;
     }

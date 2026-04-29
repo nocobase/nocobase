@@ -21,3 +21,7 @@ export function useChartsTranslation() {
     nsMode: 'fallback',
   });
 }
+
+export function useT() {
+  return useChartsTranslation()[0];
+}

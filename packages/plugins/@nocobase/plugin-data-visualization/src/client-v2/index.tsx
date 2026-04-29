@@ -11,4 +11,3 @@ export { default } from './plugin';
 export * from './plugin';
 export * from './chart';
 export * from './hooks';
-export * from './models';
