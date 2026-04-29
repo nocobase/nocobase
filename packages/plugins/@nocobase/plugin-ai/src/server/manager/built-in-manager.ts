@@ -110,7 +110,7 @@ export class BuiltInManager {
             knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
             enabled: true,
             builtIn: true,
-            category: category ?? 'general',
+            category: category ?? 'business',
           },
         });
         this.plugin.log.info(`setup [${username}] ${description}`);

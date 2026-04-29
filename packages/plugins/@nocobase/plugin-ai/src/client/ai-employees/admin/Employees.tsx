@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Select, Space, Tabs } from 'antd';
+import { Avatar as AntdAvatar, Radio, Tabs } from 'antd';
 import { ExtendCollectionsProvider, SchemaComponent, useAPIClient, useTableBlockContext } from '@nocobase/client';
 import { useT } from '../../locale';
 import { useField } from '@formily/react';
@@ -106,21 +106,28 @@ const Enabled: React.FC = (props) => {
 const CategoryFilter: React.FC = () => {
   const t = useT();
   const { service } = useTableBlockContext();
-  const category = service?.params?.[0]?.filter?.category || 'general';
+  const category = service?.params?.[0]?.filter?.category || 'business';
+  const options = [
+    { label: t('Business'), value: 'business' },
+    { label: t('Developer'), value: 'developer' },
+  ];
 
   return (
-    <Select
+    <Radio.Group
       value={category}
-      style={{ width: 100 }}
-      options={[
-        { label: t('General'), value: 'general' },
-        { label: t('Specific'), value: 'specific' },
-      ]}
-      onChange={(value) => {
+      optionType="button"
+      options={options}
+      onChange={(e) => {
+        if (e.target.value === category) {
+          return;
+        }
         service?.run({
           ...service?.params?.[0],
           page: 1,
-          filter: { category: value },
+          filter: {
+            ...service?.params?.[0]?.filter,
+            category: e.target.value,
+          },
         });
       }}
     />
@@ -158,7 +165,7 @@ export const Employees: React.FC = () => {
                 action: 'list',
                 params: {
                   filter: {
-                    category: 'general',
+                    category: 'business',
                   },
                 },
                 rowKey: 'username',

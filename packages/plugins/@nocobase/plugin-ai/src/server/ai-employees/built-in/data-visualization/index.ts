@@ -11,7 +11,7 @@ import profile from './profile';
 
 export default {
   username: 'dara',
-  category: 'specific',
+  category: 'developer',
   description: 'Data visualization specialist',
   profile,
   skillSettings: {

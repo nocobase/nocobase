@@ -48,7 +48,7 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
         },
       ]
     : aiEmployees
-        .filter((it) => it.category === 'general')
+        .filter((it) => it.category === 'business')
         .map((employee) => {
           const isSelected = currentEmployee?.username === employee.username;
           return {

@@ -11,7 +11,7 @@ import profile from './profile';
 
 export default {
   username: 'orin',
-  category: 'specific',
+  category: 'developer',
   description: 'AI employee for data modeling',
   profile,
   skillSettings: {

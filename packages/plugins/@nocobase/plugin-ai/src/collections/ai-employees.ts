@@ -104,7 +104,7 @@ export default {
       name: 'category',
       type: 'string',
       allowNull: false,
-      defaultValue: 'general', // general, specific
+      defaultValue: 'business', // business, developer
     },
   ],
 };

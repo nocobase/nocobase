@@ -21,7 +21,7 @@ export default class extends Migration {
 
     await repo.update({
       values: {
-        category: 'specific',
+        category: 'developer',
       },
       filter: {
         builtIn: true,
@@ -31,6 +31,6 @@ export default class extends Migration {
       },
     });
 
-    this.app.logger.info('Update AI employee orin, nathan, dara`s category to "specific"');
+    this.app.logger.info('Update AI employee orin, nathan, dara`s category to "developer"');
   }
 }
