@@ -75,8 +75,8 @@ function buildScripts(route: string, entry: SchemaEntry): string {
   const langMap: Record<string, string> = { cn: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
   const inLanguage = langMap[lang] || 'en-US';
   const baseUrl = lang === 'en'
-    ? 'https://v2.docs.nocobase.com'
-    : `https://v2.docs.nocobase.com/${lang}`;
+    ? 'https://docs.nocobase.com'
+    : `https://docs.nocobase.com/${lang}`;
 
   const tag = (obj: object) => `<script type="application/ld+json">${JSON.stringify(obj)}</script>`;
 

@@ -110,7 +110,7 @@ ping コマンドで異なる地域のサーバーの遅延をテストします
 - デメリット：この方式はシンプルですが、高負荷時や静的ファイルの処理でパフォーマンスが弱く、開発・テスト向きです。
 - アドバイス：この方式はできるだけ避けてください。
 
-> 参考：「[インストールドキュメント](https://v2.docs.nocobase.com/cn/get-started/quickstart)」
+> 参考：「[インストールドキュメント](https://docs.nocobase.com/cn/get-started/quickstart)」
 
 リバースプロキシなしの場合、トップページの読み込みは約 6.1 秒
 ![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
@@ -120,7 +120,7 @@ ping コマンドで異なる地域のサーバーの遅延をテストします
 - メリット：リバースプロキシサーバーは、並行接続の効率的な処理、静的ファイルの配信、ロードバランシングが可能で、HTTP/2 の設定も簡単です。
 - アドバイス：本番環境では、アプリケーションデプロイ完了後（ソースデプロイ / create-nocobase-app / Docker イメージ）、Nginx または Caddy をリバースプロキシとして使用してください。
 
-> 参考：「[デプロイドキュメント](https://v2.docs.nocobase.com/cn/get-started/deployment/production)」
+> 参考：「[デプロイドキュメント](https://docs.nocobase.com/cn/get-started/deployment/production)」
 
 Nginx プロキシ使用後、トップページの読み込みは約 3〜4 秒
 ![20250409131541](https://static-docs.nocobase.com/20250409131541.png)
