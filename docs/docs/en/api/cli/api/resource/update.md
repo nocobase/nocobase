@@ -29,7 +29,7 @@ nb api resource update --resource <resource> --values <json> [flags]
 | `--update-association-values` | string[] | Association fields to update at the same time; repeatable or pass a JSON array |
 | `--force-update` / `--no-force-update` | boolean | Whether to force writing unchanged values |
 
-Also supports common connection parameters from [`nb api resource`](./).
+Also supports common connection parameters from [`nb api resource`](./index.md).
 
 ## Examples
 

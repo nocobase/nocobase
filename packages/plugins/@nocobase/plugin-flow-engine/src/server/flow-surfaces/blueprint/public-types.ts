@@ -111,7 +111,6 @@ export type FlowSurfaceApplyBlueprintFieldObjectSpec = {
   type?: string;
   fieldType?: string;
   fields?: string[];
-  selectorFields?: string[];
   titleField?: string;
   openMode?: string;
   popupSize?: string;

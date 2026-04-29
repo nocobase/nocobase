@@ -26,7 +26,6 @@ Help me install NocoBase CLI and complete initialization: https://docs.nocobase.
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
@@ -98,6 +97,6 @@ Detailed descriptions and sample prompts for each capability -> [Supported Capab
 - [Tutorial: Building a Watermark Plugin](./watermark-plugin) -- A complete hands-on AI development case study, from one sentence to a working plugin
 - [Supported Capabilities](./capabilities) -- Everything AI can help you do, with sample prompts
 - [NocoBase CLI](../ai/quick-start.md) -- Command-line tool for installing and managing NocoBase
-- [NocoBase CLI Reference](../api/cli/) -- Complete parameter documentation for all commands
+- [NocoBase CLI Reference](../api/cli/index.md) -- Complete parameter documentation for all commands
 - [Plugin Development](../plugin-development/index.md) -- The complete guide to NocoBase plugin development
 - [AI Builder](../ai-builder/index.md) -- Build NocoBase applications with AI (no coding required)

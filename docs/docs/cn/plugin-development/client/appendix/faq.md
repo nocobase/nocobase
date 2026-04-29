@@ -98,7 +98,7 @@ this.flowEngine.registerModelLoaders({
 
 通过 `defineCollection` 定义的表是服务端内部表，默认不会出现在 UI 的数据表列表中。
 
-**推荐做法**：在 NocoBase 界面的「[数据源管理](../../../data-sources/data-source-main/)」中添加对应的数据表，配置好字段和接口类型后，表就会自动出现在区块的数据表选择列表里。
+**推荐做法**：在 NocoBase 界面的「[数据源管理](../../../data-sources/data-source-main/index.md)」中添加对应的数据表，配置好字段和接口类型后，表就会自动出现在区块的数据表选择列表里。
 
 如果确实需要在插件代码里注册（比如示例插件里的演示场景），可以通过 `addCollection` 手动注册，详见 [做一个前后端联动的数据管理插件](../examples/fullstack-plugin)。注意必须通过 `eventBus` 模式注册，不能直接在 `load()` 里调用——`ensureLoaded()` 会在 `load()` 之后清空并重新设置所有 collection。
 

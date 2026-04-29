@@ -165,7 +165,7 @@ test('nb init continues from the browser UI result and runs env:add for an exist
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.promptIntro).toHaveBeenCalledWith('Set Up Your NocoBase AI Workspace');
+  expect(mocks.promptIntro).toHaveBeenCalledWith('Set Up NocoBase for Coding Agents');
   expect(mocks.runPromptCatalogWebUI.mock.calls.length).toBe(1);
   expect(mocks.promptInfo).toHaveBeenCalledWith(
     'A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.',
@@ -291,7 +291,7 @@ test('nb init localizes the browser UI intro title', async () => {
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.promptIntro).toHaveBeenCalledWith('初始化你的 NocoBase AI 工作区');
+  expect(mocks.promptIntro).toHaveBeenCalledWith('配置供 Coding Agents 使用的 NocoBase');
 });
 
 test('nb init forwards download options to nb install for a new app flow', async () => {
@@ -1652,7 +1652,7 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
   expect(Init.flags['access-token']).toBeDefined();
   expect(Init.flags.locale).toBeDefined();
   expect(Init.flags['skip-skills']).toBeDefined();
-  expect(Init.flags['skip-skills'].hidden).toBe(true);
+  expect(Init.flags['skip-skills'].hidden).not.toBe(true);
   expect(Init.flags['install-skills']).toBeUndefined();
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({

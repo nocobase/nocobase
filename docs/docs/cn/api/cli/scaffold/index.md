@@ -30,5 +30,5 @@ nb scaffold migration migration-name --pkg @nocobase/plugin-acl
 
 ## 相关命令
 
-- [`nb plugin`](../plugin/)
+- [`nb plugin`](../plugin/index.md)
 - [插件开发](../../../plugin-development/index.md)

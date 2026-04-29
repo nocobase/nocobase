@@ -24,13 +24,12 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你可以用自然语
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
 浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。详细步骤请参阅[快速开始](../ai/quick-start.md)。
 
-## 从一句话到一整套系统
+## 用对话代替手动配置
 
 NocoBase CLI 安装完成后，你可以直接在 AI 助手里用自然语言操作 NocoBase。下面是几个真实场景，从建一张表到搭一整套系统，感受一下 AI 搭建的能力。
 
@@ -122,7 +121,7 @@ NocoBase CLI 在初始化过程中（`nb init`）会自动安装 Skills，不需
 ## 相关链接
 
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
-- [NocoBase CLI 参考](../api/cli/) — 所有命令的完整参数说明
+- [NocoBase CLI 参考](../api/cli/index.md) — 所有命令的完整参数说明
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [安全与审计](./security) — 鉴权方式、权限控制和操作审计
 - [AI 员工](../ai-employees/index.md) — NocoBase 的智能体能力，支持在业务界面中协作和执行操作

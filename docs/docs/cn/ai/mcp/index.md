@@ -62,7 +62,7 @@ x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users
 
 ### API Key 认证
 
-通过 [API keys](/auth-verification/api-keys/) 插件创建的 API key 来调用 MCP 服务接口，权限由 API key 所绑定的角色决定。
+通过 [API keys](/auth-verification/api-keys/index.md) 插件创建的 API key 来调用 MCP 服务接口，权限由 API key 所绑定的角色决定。
 
 ### OAuth 认证
 

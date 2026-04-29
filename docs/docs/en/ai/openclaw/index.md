@@ -85,16 +85,15 @@ Help me install NocoBase CLI and complete initialization: https://docs.nocobase.
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
 The browser will automatically open a visual configuration page, guiding you to install NocoBase Skills, configure the database, and start the application. For detailed steps, see [Quick Start](../quick-start.md).
 
-After installation is complete, run `nb ps` to confirm the environment status:
+After installation is complete, run `nb env list` to confirm the environment status:
 
 ```bash
-nb ps
+nb env list
 ```
 
 Confirm the output shows the configured environment and its running status.

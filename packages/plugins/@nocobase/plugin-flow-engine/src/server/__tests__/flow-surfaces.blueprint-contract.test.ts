@@ -77,6 +77,28 @@ describe('flowSurfaces applyBlueprint contract', () => {
     return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
   }
 
+  function expectAssignedValuesMirrors(actionTree: any, assignedValues: Record<string, any>) {
+    expect(actionTree.stepParams?.assignSettings?.assignFieldValues?.assignedValues).toEqual(assignedValues);
+    expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
+  }
+
+  function expectAssignFormGridItems(actionTree: any, assignedValues: Record<string, any>) {
+    const items = _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []);
+    expect(items).toHaveLength(Object.keys(assignedValues).length);
+    Object.entries(assignedValues).forEach(([fieldPath, value]) => {
+      const item = items.find((candidate: any) => candidate?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath);
+      expect(item).toBeTruthy();
+      expect(item?.use).toBe('AssignFormItemModel');
+      expect(item?.stepParams?.fieldSettings?.assignValue?.value).toEqual(value);
+      expect(item?.subModels?.field?.uid).toBeTruthy();
+      expect(item?.subModels?.field?.stepParams?.fieldSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+        fieldPath,
+      });
+    });
+  }
+
   async function readPrimaryPopupBlockFromAction(actionUid: string) {
     const actionReadback = await getSurface(rootAgent, {
       uid: actionUid,
@@ -834,6 +856,143 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(calendarFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
       calendarBlockDefaultFilter,
     );
+  });
+
+  it('should accept sort as a compatibility alias for sorting in applyBlueprint block settings', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees sort alias blueprint',
+          },
+        },
+        page: {
+          title: 'Employees sort alias blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sort: ['-createdAt', 'nickname'],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(tableBlock?.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+      {
+        field: 'nickname',
+        direction: 'asc',
+      },
+    ]);
+
+    const conflictRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees sort conflict blueprint',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sort: ['-createdAt'],
+                  sorting: [
+                    {
+                      field: 'createdAt',
+                      direction: 'asc',
+                    },
+                  ],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(conflictRes.status).toBe(400);
+    expect(readErrorMessage(conflictRes)).toContain('sort');
+    expect(readErrorMessage(conflictRes)).toContain('sorting');
+  });
+
+  it('should normalize public sort direction aliases in applyBlueprint block settings', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees sort direction alias blueprint',
+          },
+        },
+        page: {
+          title: 'Employees sort direction alias blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sort: [
+                    {
+                      field: 'createdAt',
+                      direction: 'ascending',
+                    },
+                    {
+                      field: 'nickname',
+                      direction: 'descending',
+                    },
+                  ],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(tableBlock?.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'asc',
+      },
+      {
+        field: 'nickname',
+        direction: 'desc',
+      },
+    ]);
   });
 
   it('should reject empty block-level defaultFilter groups in applyBlueprint data blocks', async () => {
@@ -3358,6 +3517,77 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'ViewActionModel',
       'EditActionModel',
     ]);
+  });
+
+  it('should applyBlueprint update actions with assignValues settings and mirror assignedValues', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint assign values page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Employees',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+                actions: [
+                  {
+                    type: 'bulkUpdate',
+                    settings: {
+                      assignValues: {
+                        status: 'inactive',
+                      },
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    type: 'updateRecord',
+                    settings: {
+                      assignValues: {
+                        status: 'active',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const bulkUpdateAction = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'BulkUpdateActionModel',
+    )[0];
+    const updateRecordAction = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'UpdateRecordActionModel',
+    )[0];
+    expect(bulkUpdateAction?.uid).toBeTruthy();
+    expect(updateRecordAction?.uid).toBeTruthy();
+    expectAssignedValuesMirrors(bulkUpdateAction, {
+      status: 'inactive',
+    });
+    expectAssignFormGridItems(bulkUpdateAction, {
+      status: 'inactive',
+    });
+    expectAssignedValuesMirrors(updateRecordAction, {
+      status: 'active',
+    });
+    expectAssignFormGridItems(updateRecordAction, {
+      status: 'active',
+    });
   });
 
   it('should auto-inject submit into applyBlueprint create and edit forms and keep it first', async () => {

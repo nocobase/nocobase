@@ -117,14 +117,9 @@ const RELATION_FIELDS = arrayOption('Relation target fields', {
   example: ['title', 'name'],
 });
 
-const SELECTOR_FIELDS = arrayOption('Record picker selector fields', {
-  example: ['title', 'code'],
-});
-
 const RELATION_FIELD_TYPE_OPTIONS: FlowSurfaceConfigureOptions = {
   fieldType: FIELD_TYPE,
   fields: RELATION_FIELDS,
-  selectorFields: SELECTOR_FIELDS,
   openMode: stringOption('Popup open mode', { example: 'drawer' }),
   popupSize: stringOption('Popup size', { example: 'medium' }),
   pageSize: numberOption('Page size', { example: 10 }),

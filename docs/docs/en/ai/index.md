@@ -92,11 +92,11 @@ features:
     items:
       - title: NocoBase CLI
         details: The command-line tool for NocoBase — install and you're ready to go, with built-in AI Skills that let your AI assistant directly operate NocoBase.
-        link: /api/cli
+        link: /api/cli/
       - title: NocoBase Skills
         details: Domain knowledge packages installable into AI Agents, enabling AI to understand NocoBase's capabilities and conventions.
         link: /ai-builder#nocobase-skills
       - title: NocoBase MCP
         details: Model Context Protocol integration, enabling AI Agents to interact with NocoBase through a standardized protocol.
-        link: /ai/mcp
+        link: /ai/mcp/
 ---

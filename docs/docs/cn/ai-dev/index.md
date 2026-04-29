@@ -26,7 +26,6 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
@@ -98,6 +97,6 @@ nb init --ui
 - [实战：开发水印插件](./watermark-plugin) — 完整的 AI 开发插件实战案例，从一句话到可用插件
 - [支持的能力](./capabilities) — AI 能帮你做的所有事情，附提示词示例
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
-- [NocoBase CLI 参考](../api/cli/) — 所有命令的完整参数说明
+- [NocoBase CLI 参考](../api/cli/index.md) — 所有命令的完整参数说明
 - [插件开发](../plugin-development/index.md) — NocoBase 插件开发的完整指南
 - [AI 搭建快速开始](../ai-builder/index.md) — 用 AI 搭建 NocoBase 应用（无需写代码）

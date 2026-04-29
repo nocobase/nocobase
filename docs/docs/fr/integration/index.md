@@ -16,8 +16,8 @@ NocoBase met à votre disposition de puissantes capacités API pour l'intégrati
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-- **[Clés API](/integration/api-keys/)** : Utilisez des clés API pour une authentification sécurisée et un accès programmatique aux ressources NocoBase.
-- **[Documentation API](/integration/api-doc/)** : Une documentation API intégrée pour explorer et tester les points de terminaison.
+- **[Clés API](/integration/api-keys/index.md)** : Utilisez des clés API pour une authentification sécurisée et un accès programmatique aux ressources NocoBase.
+- **[Documentation API](/integration/api-doc/index.md)** : Une documentation API intégrée pour explorer et tester les points de terminaison.
 
 ### Authentification unique (SSO)
 
@@ -25,7 +25,7 @@ Intégrez-vous aux systèmes d'identité d'entreprise pour une authentification 
 
 ![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
-- **[Intégration SSO](/integration/sso/)** : Prise en charge de l'authentification SAML, OIDC, CAS, LDAP et des plateformes tierces.
+- **[Intégration SSO](/integration/sso/index.md)** : Prise en charge de l'authentification SAML, OIDC, CAS, LDAP et des plateformes tierces.
 - Gestion centralisée des utilisateurs et contrôle d'accès.
 - Expérience d'authentification fluide entre les systèmes.
 
@@ -35,8 +35,8 @@ Connectez les flux de travail NocoBase à des systèmes externes :
 
 ![auth_sso-2025-11-24-12-02-01](https://static-docs.nocobase.com/auth_sso-2025-11-24-12-02-01.png)
 
-- **[Webhook de flux de travail](/integration/workflow-webhook/)** : Recevez des événements de systèmes externes pour déclencher des flux de travail.
-- **[Requête HTTP de flux de travail](/integration/workflow-http-request/)** : Envoyez des requêtes HTTP à des API externes depuis des flux de travail.
+- **[Webhook de flux de travail](/integration/workflow-webhook/index.md)** : Recevez des événements de systèmes externes pour déclencher des flux de travail.
+- **[Requête HTTP de flux de travail](/integration/workflow-http-request/index.md)** : Envoyez des requêtes HTTP à des API externes depuis des flux de travail.
 - Automatisez les processus métier sur différentes plateformes.
 
 ### Sources de données externes
@@ -45,7 +45,7 @@ Connectez-vous à des bases de données et systèmes de données externes :
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[Bases de données externes](/data-sources/)** : Connectez-vous directement aux bases de données MySQL, PostgreSQL, MariaDB, MSSQL, Oracle et KingbaseES.
+- **[Bases de données externes](/data-sources/index.md)** : Connectez-vous directement aux bases de données MySQL, PostgreSQL, MariaDB, MSSQL, Oracle et KingbaseES.
 - NocoBase reconnaît les structures de tables de bases de données externes et vous permet d'effectuer directement des opérations CRUD sur ces données.
 - Interface de gestion de données unifiée.
 
@@ -55,7 +55,7 @@ Intégrez du contenu externe dans NocoBase :
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-- **[Bloc Iframe](/integration/block-iframe/)** : Intégrez des pages web et des applications externes.
+- **[Bloc Iframe](/integration/block-iframe/index.md)** : Intégrez des pages web et des applications externes.
 - **Blocs JS** : Exécutez du code JavaScript personnalisé pour des intégrations avancées.
 
 ## Scénarios d'intégration courants

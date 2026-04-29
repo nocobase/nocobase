@@ -35,4 +35,4 @@ nb skills remove --yes
 ## Related Commands
 
 - [`nb init`](../init.md)
-- [`nb self`](../self/)
+- [`nb self`](../self/index.md)

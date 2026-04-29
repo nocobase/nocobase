@@ -47,6 +47,16 @@
             "type": "custom-link",
             "label": "チャート",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Calendar",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kanban",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },
@@ -59,6 +69,11 @@
             "type": "custom-link",
             "label": "フォーム",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "ツリー",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -483,8 +498,18 @@
           },
           {
             "type": "custom-link",
+            "label": "カスタムリクエスト",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

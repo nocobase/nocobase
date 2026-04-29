@@ -16,8 +16,8 @@ NocoBase bietet leistungsstarke API-Funktionen, um die Integration mit externen 
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-- **[API-Schlüssel](/integration/api-keys/)**: Verwenden Sie API-Schlüssel für die sichere Authentifizierung, um programmgesteuert auf NocoBase-Ressourcen zuzugreifen.
-- **[API-Dokumentation](/integration/api-doc/)**: Integrierte API-Dokumentation zum Erkunden und Testen von Endpunkten.
+- **[API-Schlüssel](/integration/api-keys/index.md)**: Verwenden Sie API-Schlüssel für die sichere Authentifizierung, um programmgesteuert auf NocoBase-Ressourcen zuzugreifen.
+- **[API-Dokumentation](/integration/api-doc/index.md)**: Integrierte API-Dokumentation zum Erkunden und Testen von Endpunkten.
 
 ### Single Sign-On (SSO)
 
@@ -25,7 +25,7 @@ Integrieren Sie sich mit Unternehmens-Identitätssystemen, um eine einheitliche 
 
 ![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
-- **[SSO-Integration](/integration/sso/)**: Unterstützung für SAML, OIDC, CAS, LDAP und die Authentifizierung über Drittanbieterplattformen.
+- **[SSO-Integration](/integration/sso/index.md)**: Unterstützung für SAML, OIDC, CAS, LDAP und die Authentifizierung über Drittanbieterplattformen.
 - Zentralisierte Benutzerverwaltung und Zugriffskontrolle.
 - Nahtloses Authentifizierungserlebnis über Systeme hinweg.
 
@@ -35,8 +35,8 @@ Verbinden Sie NocoBase-Workflows mit externen Systemen:
 
 ![auth_sso-2025-11-24-12-02-01](https://static-docs.nocobase.com/auth_sso-2025-11-24-12-02-01.png)
 
-- **[Workflow-Webhook](/integration/workflow-webhook/)**: Empfangen Sie Ereignisse von externen Systemen, um Workflows auszulösen.
-- **[Workflow-HTTP-Anfrage](/integration/workflow-http-request/)**: Senden Sie HTTP-Anfragen von Workflows an externe APIs.
+- **[Workflow-Webhook](/integration/workflow-webhook/index.md)**: Empfangen Sie Ereignisse von externen Systemen, um Workflows auszulösen.
+- **[Workflow-HTTP-Anfrage](/integration/workflow-http-request/index.md)**: Senden Sie HTTP-Anfragen von Workflows an externe APIs.
 - Automatisieren Sie Geschäftsprozesse plattformübergreifend.
 
 ### Externe Datenquellen
@@ -45,7 +45,7 @@ Verbinden Sie sich mit externen Datenbanken und Datensystemen:
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[Externe Datenbanken](/data-sources/)**: Stellen Sie eine direkte Verbindung zu MySQL-, PostgreSQL-, MariaDB-, MSSQL-, Oracle- und KingbaseES-Datenbanken her.
+- **[Externe Datenbanken](/data-sources/index.md)**: Stellen Sie eine direkte Verbindung zu MySQL-, PostgreSQL-, MariaDB-, MSSQL-, Oracle- und KingbaseES-Datenbanken her.
 - Erkennen Sie externe Datenbanktabellenstrukturen und führen Sie CRUD-Operationen direkt in NocoBase für externe Daten durch.
 - Einheitliche Datenverwaltungsoberfläche.
 
@@ -55,7 +55,7 @@ Betten Sie externe Inhalte in NocoBase ein:
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-- **[Iframe-Block](/integration/block-iframe/)**: Betten Sie externe Webseiten und Anwendungen ein.
+- **[Iframe-Block](/integration/block-iframe/index.md)**: Betten Sie externe Webseiten und Anwendungen ein.
 - **JS-Blöcke**: Führen Sie benutzerdefinierten JavaScript-Code für erweiterte Integrationen aus.
 
 ## Häufige Integrationsszenarien

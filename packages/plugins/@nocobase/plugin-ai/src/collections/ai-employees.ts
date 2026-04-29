@@ -101,6 +101,12 @@ export default {
       allowNull: false,
       defaultValue: false,
     },
+    {
+      name: 'category',
+      type: 'string',
+      allowNull: false,
+      defaultValue: 'business', // business, developer
+    },
   ],
 };
 

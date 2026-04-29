@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "changelog",
+    "label": "更新履歴"
+  },
+  {
+    "type": "file",
     "name": "more",
     "label": "その他の内容"
   }

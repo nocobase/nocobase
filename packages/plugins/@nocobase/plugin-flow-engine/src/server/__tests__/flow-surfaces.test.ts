@@ -697,6 +697,24 @@ describe('flowSurfaces resource', () => {
       `resourceInit does not match popup binding 'currentRecord'`,
     );
 
+    const invalidAssociationSemanticBinding = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: associationPopupAction.uid,
+        },
+        type: 'details',
+        resource: {
+          binding: 'associatedRecords',
+          associationField: 'employee',
+        },
+      },
+    });
+    expect(invalidAssociationSemanticBinding.status).toBe(400);
+    expect(readErrorMessage(invalidAssociationSemanticBinding)).toContain(
+      `does not support resource.binding='associatedRecords'`,
+    );
+    expect(readErrorMessage(invalidAssociationSemanticBinding)).toContain('currentRecord');
+
     const associationPopupSurface = await getSurface(rootAgent, {
       uid: associationPopupAction.uid,
     });
@@ -864,6 +882,7 @@ describe('flowSurfaces resource', () => {
     expect(tableReadback.tree.stepParams?.tableSettings?.quickEdit).toMatchObject({
       editable: true,
     });
+    expect(tableReadback.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([]);
 
     const validCreateFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -880,12 +899,20 @@ describe('flowSurfaces resource', () => {
               colon: false,
             },
             assignRules: {
-              value: [],
+              value: [
+                {
+                  key: 'preserve-until-cleared',
+                },
+              ],
             },
           },
           eventSettings: {
             linkageRules: {
-              value: [],
+              value: [
+                {
+                  key: 'preserve-linkage-until-cleared',
+                },
+              ],
             },
           },
         },
@@ -934,9 +961,46 @@ describe('flowSurfaces resource', () => {
       labelWrap: false,
       colon: false,
     });
-    expect(createFormReadback.tree.stepParams?.eventSettings?.linkageRules).toMatchObject({
-      value: [],
+    expect(createFormReadback.tree.stepParams?.formModelSettings?.assignRules).toMatchObject({
+      value: [
+        {
+          key: 'preserve-until-cleared',
+        },
+      ],
     });
+    expect(createFormReadback.tree.stepParams?.eventSettings?.linkageRules).toMatchObject({
+      value: [
+        {
+          key: 'preserve-linkage-until-cleared',
+        },
+      ],
+    });
+
+    const clearCreateFormArrays = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(clearCreateFormArrays.status).toBe(200);
+    const createFormAfterClear = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    expect(createFormAfterClear.tree.stepParams?.formModelSettings?.assignRules?.value).toEqual([]);
+    expect(createFormAfterClear.tree.stepParams?.eventSettings?.linkageRules?.value).toEqual([]);
 
     const validEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -4381,6 +4445,21 @@ describe('flowSurfaces resource', () => {
         (item: any) => item.use,
       ),
     ).toEqual(['PopupSubTableEditActionModel', 'PopupSubTableRemoveActionModel']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.['grid-block']?.subModels?.items || []).map(
+        (item: any) => item?.use,
+      ),
+    ).toEqual(['TableSelectModel']);
+    const createdRolesNormalLoad = await flowRepo.findModelById(createdRolesField.fieldUid);
+    expect(createdRolesNormalLoad.subModels?.['grid-block']).toBeUndefined();
+    const createdRolesSelectorGrid = await flowRepo.findModelByParentId(createdRolesField.fieldUid, {
+      subKey: 'grid-block',
+    });
+    expect(createdRolesSelectorGrid?.use).toBe('BlockGridModel');
+    expect(_.castArray(createdRolesSelectorGrid?.subModels?.items || []).map((item: any) => item?.use)).toEqual([
+      'TableSelectModel',
+    ]);
+    expect(await getFlowModelSelfAsyncFlag(db, createdRolesSelectorGrid.uid)).toBe(true);
 
     const addFieldsData = getData(
       await rootAgent.resource('flowSurfaces').addFields({
@@ -4427,6 +4506,11 @@ describe('flowSurfaces resource', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['roles.title']);
+    expect(
+      _.castArray(defaultedSwitchReadback.tree.subModels?.['grid-block']?.subModels?.items || []).map(
+        (item: any) => item?.use,
+      ),
+    ).toEqual(['TableSelectModel']);
 
     const defaultRolesField = await addField(rootAgent, formUid, 'roles');
     const switchRes = await rootAgent.resource('flowSurfaces').configure({
@@ -4456,6 +4540,11 @@ describe('flowSurfaces resource', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['roles.title']);
+    expect(
+      _.castArray(switchedRolesInner.tree.subModels?.['grid-block']?.subModels?.items || []).map(
+        (item: any) => item?.use,
+      ),
+    ).toEqual(['TableSelectModel']);
 
     const configureInnerTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -4579,7 +4668,7 @@ describe('flowSurfaces resource', () => {
 
     const pickerField = await addField(rootAgent, formUid, 'roles', {
       fieldType: 'picker',
-      selectorFields: ['title'],
+      fields: ['title'],
       openMode: 'drawer',
       popupSize: 'medium',
     });
@@ -4617,17 +4706,17 @@ describe('flowSurfaces resource', () => {
       size: 'large',
     });
 
-    const clearPickerSelectorFieldsRes = await rootAgent.resource('flowSurfaces').configure({
+    const clearPickerFieldsRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
           uid: pickerField.wrapperUid,
         },
         changes: {
-          selectorFields: [],
+          fields: [],
         },
       },
     });
-    expect(clearPickerSelectorFieldsRes.status).toBe(200);
+    expect(clearPickerFieldsRes.status).toBe(200);
     pickerReadback = await getSurface(rootAgent, {
       uid: pickerField.fieldUid,
     });
@@ -4640,7 +4729,7 @@ describe('flowSurfaces resource', () => {
     const customPickerField = await addField(rootAgent, employeeFormUid, 'department', {
       fieldType: 'picker',
       titleField: 'location',
-      selectorFields: ['location'],
+      fields: ['location'],
     });
     let customPickerReadback = await getSurface(rootAgent, {
       uid: customPickerField.fieldUid,
@@ -4667,7 +4756,19 @@ describe('flowSurfaces resource', () => {
       ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['location']);
 
-    const pickerWithFieldsRes = await rootAgent.resource('flowSurfaces').addField({
+    const defaultPickerField = await addField(rootAgent, formUid, 'roles', {
+      fieldType: 'picker',
+    });
+    const defaultPickerReadback = await getSurface(rootAgent, {
+      uid: defaultPickerField.fieldUid,
+    });
+    expect(
+      _.castArray(
+        defaultPickerReadback.tree.subModels?.['grid-block']?.subModels?.items?.[0]?.subModels?.columns || [],
+      ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title']);
+
+    const pickerWithNameFieldRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
         target: {
           uid: formUid,
@@ -4677,8 +4778,35 @@ describe('flowSurfaces resource', () => {
         fields: ['title'],
       },
     });
-    expect(pickerWithFieldsRes.status).toBe(400);
-    expect(readErrorMessage(pickerWithFieldsRes)).toContain(`fieldType 'picker' does not support fields`);
+    expect(pickerWithNameFieldRes.status, readErrorMessage(pickerWithNameFieldRes)).toBe(200);
+    const pickerWithNameReadback = await getSurface(rootAgent, {
+      uid: pickerWithNameFieldRes.body?.data?.fieldUid,
+    });
+    expect(
+      _.castArray(
+        pickerWithNameReadback.tree.subModels?.['grid-block']?.subModels?.items?.[0]?.subModels?.columns || [],
+      ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title']);
+
+    const configurePickerFieldsRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: pickerWithNameFieldRes.body?.data?.wrapperUid,
+        },
+        changes: {
+          fields: ['name'],
+        },
+      },
+    });
+    expect(configurePickerFieldsRes.status, readErrorMessage(configurePickerFieldsRes)).toBe(200);
+    const configuredPickerReadback = await getSurface(rootAgent, {
+      uid: pickerWithNameFieldRes.body?.data?.fieldUid,
+    });
+    expect(
+      _.castArray(
+        configuredPickerReadback.tree.subModels?.['grid-block']?.subModels?.items?.[0]?.subModels?.columns || [],
+      ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['name']);
 
     const subTableField = await addField(rootAgent, formUid, 'roles', {
       fieldType: 'popupSubTable',
@@ -4723,21 +4851,6 @@ describe('flowSurfaces resource', () => {
         (item: any) => item?.use === 'TableColumnModel',
       ),
     ).toEqual([]);
-
-    const subTableWithSelectorFieldsRes = await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        fieldPath: 'roles',
-        fieldType: 'popupSubTable',
-        selectorFields: ['title'],
-      },
-    });
-    expect(subTableWithSelectorFieldsRes.status).toBe(400);
-    expect(readErrorMessage(subTableWithSelectorFieldsRes)).toContain(
-      `fieldType 'popupSubTable' does not support selectorFields`,
-    );
 
     const textWithFieldsRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -9801,6 +9914,17 @@ async function getSurface(rootAgent: any, target: Record<string, any>) {
       }),
     ),
   );
+}
+
+async function getFlowModelSelfAsyncFlag(db: Database, uid: string) {
+  const node = await db.getRepository('flowModelTreePath').findOne({
+    filter: {
+      ancestor: uid,
+      descendant: uid,
+      depth: 0,
+    },
+  });
+  return node?.get('async');
 }
 
 async function getBlockGridUid(rootAgent: any, blockUid: string) {

@@ -610,6 +610,125 @@ describe('flowSurfaces association contract', () => {
     });
   });
 
+  it('should normalize legacy association-field popup details and edit forms to currentRecord', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Association legacy popup page',
+      tabTitle: 'Association legacy popup tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'table',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username', 'roles'],
+            },
+          ],
+        },
+      }),
+    );
+
+    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const rolesField = tableFields.find((item: any) => item.fieldPath === 'roles');
+    expect(rolesField?.fieldUid).toBeTruthy();
+
+    const rolesFieldReadback = await getSurface(rootAgent, { uid: rolesField.fieldUid });
+    if (rolesFieldReadback.tree.popup?.template?.uid) {
+      getData(
+        await rootAgent.resource('flowSurfaces').convertTemplateToCopy({
+          values: {
+            target: {
+              uid: rolesField.fieldUid,
+            },
+          },
+        }),
+      );
+    }
+
+    const legacyDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: rolesField.fieldUid,
+          },
+          type: 'details',
+          resource: {
+            dataSourceKey: 'main',
+            collectionName: 'roles',
+          },
+        },
+      }),
+    );
+
+    const legacyDetailsReadback = await getSurface(rootAgent, { uid: legacyDetails.uid });
+    expect(legacyDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const editAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: legacyDetails.uid,
+          },
+          type: 'edit',
+        },
+      }),
+    );
+
+    const legacyEditForm = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: editAction.uid,
+          },
+          type: 'editForm',
+          resource: {
+            dataSourceKey: 'main',
+            collectionName: 'roles',
+          },
+        },
+      }),
+    );
+
+    const legacyEditFormReadback = await getSurface(rootAgent, { uid: legacyEditForm.uid });
+    expect(legacyEditFormReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const legacyTableRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: rolesField.fieldUid,
+        },
+        type: 'table',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'roles',
+        },
+      },
+    });
+    expect(legacyTableRes.status).toBe(400);
+    expect(readErrorMessage(legacyTableRes)).toContain('currentCollection');
+  });
+
   it('should preserve users.roles sourceId on nested record-action popups inside association tables', async () => {
     const page = await createPage(rootAgent, {
       title: 'Nested users roles popup page',

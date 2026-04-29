@@ -209,7 +209,7 @@ If you need to migrate existing data during plugin upgrades -- such as renaming 
 
 Collections defined via `defineCollection` are internal server-side tables and by default **will not appear** in the "Data Source Management" list, nor in the data table selection list when "Adding a Block."
 
-**Recommended approach**: Add the corresponding data table in the NocoBase "[Data Source Management](../../data-sources/data-source-main/)" interface. After configuring the fields and interface types, the table will automatically appear in the block's data table selection list.
+**Recommended approach**: Add the corresponding data table in the NocoBase "[Data Source Management](../../data-sources/data-source-main/index.md)" interface. After configuring the fields and interface types, the table will automatically appear in the block's data table selection list.
 
 ![Selectable when adding a block](https://static-docs.nocobase.com/20260409143839.png)
 
@@ -228,4 +228,3 @@ After defining a Collection, NocoBase will automatically generate corresponding 
 - [ResourceManager](./resource-manager.md) -- Custom REST API and action handlers
 - [Building a Fullstack Data Management Plugin](../client/examples/fullstack-plugin.md) -- Complete example with defineCollection + addCollection
 - [Project Directory Structure](../project-structure.md) -- `src/server/collections` directory conventions
-

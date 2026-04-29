@@ -26,6 +26,35 @@ import {
   validateTcpPort,
   validateEnvKey,
 } from '../lib/prompt-validators.js';
+import { clearExternalDbValidationCache } from '../lib/db-connection-check.js';
+
+const mockPgConnect = vi.fn();
+const mockPgQuery = vi.fn();
+const mockPgEnd = vi.fn();
+const mockMysqlCreateConnection = vi.fn();
+const mockMariaDbCreateConnection = vi.fn();
+
+vi.mock('pg', () => ({
+  default: {
+    Client: vi.fn(() => ({
+      connect: mockPgConnect,
+      query: mockPgQuery,
+      end: mockPgEnd,
+    })),
+  },
+}));
+
+vi.mock('mysql2/promise', () => ({
+  default: {
+    createConnection: mockMysqlCreateConnection,
+  },
+}));
+
+vi.mock('mariadb', () => ({
+  default: {
+    createConnection: mockMariaDbCreateConnection,
+  },
+}));
 
 async function withTempProjectCwd(run: () => Promise<void>) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-project-'));
@@ -51,6 +80,12 @@ afterEach(() => {
     return;
   }
   process.env.NB_LOCALE = originalNbLocale;
+  clearExternalDbValidationCache();
+  mockPgConnect.mockReset();
+  mockPgQuery.mockReset();
+  mockPgEnd.mockReset();
+  mockMysqlCreateConnection.mockReset();
+  mockMariaDbCreateConnection.mockReset();
 });
 
 test('validateApiBaseUrl accepts http and https URLs', () => {
@@ -346,6 +381,78 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(rootNicknamePrompt.initialValue).toBe(undefined);
   expect(rootNicknamePrompt.yesInitialValue).toBe('Super Admin');
   expect(rootNicknamePrompt.required).toBe(true);
+});
+
+test('install external db validators skip connection checks until config is complete', async () => {
+  const dbHostPrompt = Install.dbPrompts.dbHost;
+
+  expect(await dbHostPrompt.validate?.('db.example.com', {
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: 'db.example.com',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: '',
+  })).toBe(undefined);
+
+  expect(mockPgConnect).not.toHaveBeenCalled();
+});
+
+test('install external db validators do not run for built-in database config', async () => {
+  const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+
+  expect(await dbPasswordPrompt.validate?.('secret', {
+    builtinDb: true,
+    dbDialect: 'postgres',
+    dbHost: 'postgres',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+  })).toBe(undefined);
+
+  expect(mockPgConnect).not.toHaveBeenCalled();
+});
+
+test('install external db validators check connectivity once config is complete', async () => {
+  const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+  mockPgConnect.mockResolvedValue(undefined);
+  mockPgQuery.mockResolvedValue([{ '?column?': 1 }]);
+  mockPgEnd.mockResolvedValue(undefined);
+
+  const result = await dbPasswordPrompt.validate?.('secret', {
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: 'db.example.com',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+  });
+
+  expect(result).toBe(undefined);
+  expect(mockPgConnect).toHaveBeenCalledTimes(1);
+  expect(mockPgQuery).toHaveBeenCalledWith('SELECT 1');
+  expect(mockPgEnd).toHaveBeenCalledTimes(1);
+});
+
+test('install external db validators surface readable auth errors', async () => {
+  const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+  mockPgConnect.mockRejectedValue(Object.assign(new Error('password authentication failed'), { code: '28P01' }));
+  mockPgEnd.mockResolvedValue(undefined);
+
+  const result = await dbPasswordPrompt.validate?.('bad-secret', {
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: 'db.example.com',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'bad-secret',
+  });
+
+  expect(result ?? '').toMatch(/username and password/i);
 });
 
 test('docker registry defaults follow CLI locale', () => {

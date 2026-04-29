@@ -12,6 +12,6 @@
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-現在使用している言語環境に翻訳が不足している場合は、「[ローカライズ管理](/system-management/localization/)」プラグインを使用して、翻訳を追加したり修正したりできます。
+現在使用している言語環境に翻訳が不足している場合は、「[ローカライズ管理](/system-management/localization/index.md)」プラグインを使用して、翻訳を追加したり修正したりできます。
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

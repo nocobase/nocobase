@@ -16,13 +16,13 @@ Through 7 hands-on chapters, you'll master the core concepts and workflow of Noc
 
 | # | Chapter | Key Topics |
 |---|---------|------------|
-| 1 | [Getting Started — Up and Running in 5 Minutes](./01-getting-started/) | Docker install, UI Editor vs Usage mode |
-| 2 | [Data Modeling — Building the Skeleton](./02-data-modeling/) | Collections, Fields, Relations |
-| 3 | [Building Pages — Making Data Visible](./03-building-pages/) | Blocks, Table block, Filtering & Sorting |
-| 4 | [Forms & Details — Entering Data](./04-forms-and-details/) | Form blocks, Field linkage |
-| 5 | [Users & Permissions — Who Sees What](./05-roles-and-permissions/) | Roles, Menu permissions, Data permissions |
-| 6 | [Workflows — Automation](./06-workflows/) | Notifications, Triggers |
-| 7 | [Dashboard — The Big Picture](./07-dashboard/) | Charts, Markdown blocks |
+| 1 | [Getting Started — Up and Running in 5 Minutes](./01-getting-started) | Docker install, UI Editor vs Usage mode |
+| 2 | [Data Modeling — Building the Skeleton](./02-data-modeling) | Collections, Fields, Relations |
+| 3 | [Building Pages — Making Data Visible](./03-building-pages) | Blocks, Table block, Filtering & Sorting |
+| 4 | [Forms & Details — Entering Data](./04-forms-and-details) | Form blocks, Field linkage |
+| 5 | [Users & Permissions — Who Sees What](./05-roles-and-permissions) | Roles, Menu permissions, Data permissions |
+| 6 | [Workflows — Automation](./06-workflows) | Notifications, Triggers |
+| 7 | [Dashboard — The Big Picture](./07-dashboard) | Charts, Markdown blocks |
 
 ## Data Model Preview
 
@@ -83,11 +83,11 @@ If you're evaluating no-code/low-code platforms:
 - [System Requirements](/get-started/system-requirements) — Hardware and software requirements
 
 ### More Tutorials
-- [NocoBase 1.x Tutorials](/tutorials/v1/) — Task management system tutorial with advanced topics
+- [NocoBase 1.x Tutorials](/tutorials/v1/index.md) — Task management system tutorial with advanced topics
 
 ### Solutions
-- [Ticket System Solution](/solution/ticket-system/) — AI-powered intelligent ticket management
-- [CRM Solution](/solution/crm/) — Customer relationship management
+- [Ticket System Solution](/solution/ticket-system/index.md) — AI-powered intelligent ticket management
+- [CRM Solution](/solution/crm/index.md) — Customer relationship management
 - [AI Employees](/ai-employees/quick-start) — Add AI capabilities to your system
 
-Ready? Let's start with [Chapter 1: Getting Started](./01-getting-started/)!
+Ready? Let's start with [Chapter 1: Getting Started](./01-getting-started)!

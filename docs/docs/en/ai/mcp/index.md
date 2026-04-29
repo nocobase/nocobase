@@ -62,7 +62,7 @@ For more packages and related API documentation, refer to the [API Documentation
 
 ### API Key Authentication
 
-Call the MCP service endpoint using an API key created through the [API keys](/auth-verification/api-keys/) plugin. Permissions are determined by the role bound to the API key.
+Call the MCP service endpoint using an API key created through the [API keys](/auth-verification/api-keys/index.md) plugin. Permissions are determined by the role bound to the API key.
 
 ### OAuth Authentication
 

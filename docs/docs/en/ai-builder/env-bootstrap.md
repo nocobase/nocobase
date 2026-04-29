@@ -33,7 +33,7 @@ What NocoBase instances do I have? Which environment am I currently in?
 ```
 CLI mode
 ```
-nb ps
+nb env list
 ```
 
 ### Scenario B: Adding an existing environment
@@ -75,7 +75,7 @@ Help me upgrade the current instance to the latest version
 ```
 CLI mode
 ```
-nb upgrade
+nb app upgrade
 ```
 
 ### Scenario E: Stopping an instance
@@ -86,7 +86,7 @@ Help me stop the current instance
 ```
 CLI mode
 ```
-nb stop
+nb app stop
 ```
 
 ### Scenario E: Starting an instance
@@ -97,7 +97,7 @@ Help me start the current instance
 ```
 CLI mode
 ```
-nb start
+nb app start
 ```
 
 ## FAQ

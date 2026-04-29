@@ -16,25 +16,25 @@ NocoBase prend en charge les protocoles et méthodes d'authentification suivants
 
 ### Protocoles SSO d'entreprise
 
-- **[SAML 2.0](/auth-verification/auth-saml/)** : Un standard ouvert basé sur XML, largement utilisé pour l'authentification d'identité en entreprise. Idéal pour l'intégration avec les fournisseurs d'identité (IdP) d'entreprise.
+- **[SAML 2.0](/auth-verification/auth-saml/index.md)** : Un standard ouvert basé sur XML, largement utilisé pour l'authentification d'identité en entreprise. Idéal pour l'intégration avec les fournisseurs d'identité (IdP) d'entreprise.
 
-- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/)** : Une couche d'authentification moderne basée sur OAuth 2.0, offrant des mécanismes d'authentification et d'autorisation. Prend en charge l'intégration avec les principaux fournisseurs d'identité (comme Google, Azure AD, etc.).
+- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/index.md)** : Une couche d'authentification moderne basée sur OAuth 2.0, offrant des mécanismes d'authentification et d'autorisation. Prend en charge l'intégration avec les principaux fournisseurs d'identité (comme Google, Azure AD, etc.).
 
-- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/)** : Protocole SSO développé par l'Université de Yale, largement adopté dans les établissements d'enseignement supérieur.
+- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/index.md)** : Protocole SSO développé par l'Université de Yale, largement adopté dans les établissements d'enseignement supérieur.
 
-- **[LDAP](/auth-verification/auth-ldap/)** : Protocole léger d'accès aux annuaires, utilisé pour accéder et maintenir les services d'information d'annuaire distribués. Convient aux scénarios nécessitant une intégration avec Active Directory ou d'autres serveurs LDAP.
+- **[LDAP](/auth-verification/auth-ldap/index.md)** : Protocole léger d'accès aux annuaires, utilisé pour accéder et maintenir les services d'information d'annuaire distribués. Convient aux scénarios nécessitant une intégration avec Active Directory ou d'autres serveurs LDAP.
 
 ### Authentification via des plateformes tierces
 
-- **[WeCom (WeChat Work)](/auth-verification/auth-wecom/)** : Prend en charge la connexion par code QR WeCom et l'authentification transparente au sein de l'application.
+- **[WeCom (WeChat Work)](/auth-verification/auth-wecom/index.md)** : Prend en charge la connexion par code QR WeCom et l'authentification transparente au sein de l'application.
 
-- **[DingTalk](/auth-verification/auth-dingtalk/)** : Prend en charge la connexion par code QR DingTalk et l'authentification transparente au sein de l'application.
+- **[DingTalk](/auth-verification/auth-dingtalk/index.md)** : Prend en charge la connexion par code QR DingTalk et l'authentification transparente au sein de l'application.
 
 ### Autres méthodes d'authentification
 
-- **[Vérification par SMS](/auth-verification/auth-sms/)** : Authentification par code de vérification envoyé par SMS sur téléphone mobile.
+- **[Vérification par SMS](/auth-verification/auth-sms/index.md)** : Authentification par code de vérification envoyé par SMS sur téléphone mobile.
 
-- **[Nom d'utilisateur/Mot de passe](/auth-verification/auth/)** : La méthode d'authentification de base intégrée à NocoBase.
+- **[Nom d'utilisateur/Mot de passe](/auth-verification/auth/index.md)** : La méthode d'authentification de base intégrée à NocoBase.
 
 ## Étapes d'intégration
 
@@ -134,6 +134,6 @@ NocoBase prend en charge la configuration simultanée de plusieurs méthodes d'a
 
 ## Ressources associées
 
-- [Documentation sur l'authentification](/auth-verification/auth/)
-- [Authentification par clés API](/integration/api-keys/)
-- [Gestion des utilisateurs et des permissions](/plugins/@nocobase/plugin-users/)
+- [Documentation sur l'authentification](/auth-verification/auth/index.md)
+- [Authentification par clés API](/integration/api-keys/index.md)
+- [Gestion des utilisateurs et des permissions](/plugins/@nocobase/plugin-users/index.md)

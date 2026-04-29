@@ -68,6 +68,10 @@ const mocks = vi.hoisted(() => ({
   fsMkdir: vi.fn(),
   fsReaddir: vi.fn(),
   executeRawApiRequest: vi.fn(),
+  getEnv: vi.fn(),
+  checkExternalDbConnection: vi.fn(),
+  readExternalDbConnectionConfig: vi.fn(),
+  formatDbCheckAddress: vi.fn(),
   childSpawnCalls: [] as Array<{
     command: string;
     args: string[];
@@ -182,11 +186,22 @@ vi.mock('node:fs/promises', async (importOriginal) => {
 vi.mock('../lib/auth-store.js', () => ({
   removeEnv: mocks.removeEnv,
   listEnvs: mocks.listEnvs,
+  getEnv: mocks.getEnv,
 }));
 
 vi.mock('../lib/api-client.js', () => ({
   executeRawApiRequest: mocks.executeRawApiRequest,
 }));
+
+vi.mock('../lib/db-connection-check.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/db-connection-check.js')>();
+  return {
+    ...actual,
+    checkExternalDbConnection: mocks.checkExternalDbConnection,
+    readExternalDbConnectionConfig: mocks.readExternalDbConnectionConfig,
+    formatDbCheckAddress: mocks.formatDbCheckAddress,
+  };
+});
 
 beforeEach(() => {
   mocks.formatMissingManagedAppEnvMessage.mockImplementation((envName?: string) =>
@@ -268,6 +283,23 @@ beforeEach(() => {
     status: 200,
     data: {},
   });
+  mocks.getEnv.mockResolvedValue(undefined);
+  mocks.checkExternalDbConnection.mockResolvedValue(undefined);
+  mocks.readExternalDbConnectionConfig.mockImplementation((values: Record<string, unknown>) => {
+    const host = String(values.dbHost ?? '').trim();
+    const port = Number.parseInt(String(values.dbPort ?? '').trim(), 10);
+    const database = String(values.dbDatabase ?? '').trim();
+    const user = String(values.dbUser ?? '').trim();
+    const password = String(values.dbPassword ?? '');
+    const dialect = String(values.dbDialect ?? '').trim();
+    if (!host || !port || !database || !user || !password || !dialect) {
+      return undefined;
+    }
+    return { dialect, host, port, database, user, password };
+  });
+  mocks.formatDbCheckAddress.mockImplementation((config: { host: string; port: number; database: string }) =>
+    `${config.host}:${config.port}/${config.database}`,
+  );
   mocks.promptConfirm.mockResolvedValue(true);
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.removeEnv.mockResolvedValue({
@@ -1636,6 +1668,99 @@ test('db logs explains when the env does not use a built-in database', async () 
 
   await expect((() => DbLogs.prototype.run.call(command))()).rejects.toThrow(/does not use a CLI-managed built-in database.*read logs from here.*recreate the env with the built-in database option enabled/s);
   expect(mocks.run.mock.calls.length).toBe(0);
+});
+
+test('db check validates a saved env database config', async () => {
+  const { default: DbCheck } = await import('../commands/db/check.js');
+  mocks.getEnv.mockResolvedValue({
+    name: 'app1',
+    config: {
+      dbDialect: 'postgres',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+      json: false,
+    },
+  });
+
+  await DbCheck.prototype.run.call(command);
+
+  expect(mocks.getEnv.mock.calls).toEqual([['app1']]);
+  expect(mocks.checkExternalDbConnection.mock.calls[0]?.[0]).toMatchObject({
+    dialect: 'postgres',
+    host: '127.0.0.1',
+    port: 5432,
+    database: 'nocobase',
+    user: 'nocobase',
+  });
+  expect(command.log.mock.calls[0]?.[0]).toContain('Database check passed for env "app1"');
+});
+
+test('db check validates explicit --db-* flags without an env', async () => {
+  const { default: DbCheck } = await import('../commands/db/check.js');
+  const command = createCommandHarness({
+    flags: {
+      'db-dialect': 'mysql',
+      'db-host': 'db.example.com',
+      'db-port': '3306',
+      'db-database': 'demo',
+      'db-user': 'root',
+      'db-password': 'secret',
+      json: false,
+    },
+  });
+
+  await DbCheck.prototype.run.call(command);
+
+  expect(mocks.getEnv).not.toHaveBeenCalled();
+  expect(mocks.checkExternalDbConnection.mock.calls[0]?.[0]).toMatchObject({
+    dialect: 'mysql',
+    host: 'db.example.com',
+    port: 3306,
+    database: 'demo',
+    user: 'root',
+  });
+  expect(command.log.mock.calls[0]?.[0]).toContain('Database check passed (mysql db.example.com:3306/demo).');
+});
+
+test('db check reports connection failures', async () => {
+  const { default: DbCheck } = await import('../commands/db/check.js');
+  mocks.checkExternalDbConnection.mockResolvedValue('authentication failed');
+
+  const command = createCommandHarness({
+    flags: {
+      'db-dialect': 'postgres',
+      'db-host': '127.0.0.1',
+      'db-port': '5432',
+      'db-database': 'demo',
+      'db-user': 'root',
+      'db-password': 'bad',
+      json: false,
+    },
+  });
+
+  await expect((() => DbCheck.prototype.run.call(command))()).rejects.toThrow(/authentication failed/);
+});
+
+test('db check requires complete database settings', async () => {
+  const { default: DbCheck } = await import('../commands/db/check.js');
+  const command = createCommandHarness({
+    flags: {
+      'db-dialect': 'postgres',
+      'db-host': '127.0.0.1',
+      json: false,
+    },
+  });
+
+  await expect((() => DbCheck.prototype.run.call(command))()).rejects.toThrow(/Missing database settings for connectivity check/);
 });
 
 test('test recreates the built-in test database before running tests', async () => {

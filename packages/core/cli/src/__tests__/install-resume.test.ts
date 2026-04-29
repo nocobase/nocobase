@@ -12,6 +12,7 @@ import { beforeEach, test, vi, expect } from 'vitest';
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   getEnv: vi.fn(),
+  validateExternalDbConfig: vi.fn(async () => undefined),
   promptInfo: vi.fn(),
   promptStep: vi.fn(),
   promptWarn: vi.fn(),
@@ -22,6 +23,8 @@ const mocks = vi.hoisted(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.validateExternalDbConfig.mockReset();
+  mocks.validateExternalDbConfig.mockResolvedValue(undefined);
 });
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
@@ -68,6 +71,10 @@ vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
     }),
   };
 });
+
+vi.mock('../lib/db-connection-check.ts', () => ({
+  validateExternalDbConfig: mocks.validateExternalDbConfig,
+}));
 
 test('install saves env config immediately after collecting prompt results for fresh installs', async () => {
   const { default: Install } = await import('../commands/install.js');
@@ -278,6 +285,62 @@ test('install syncs token env connection after the app becomes ready without oau
   expect(runCommand.mock.calls).toEqual([
     ['env:update', ['app1']],
   ]);
+});
+
+test('install run validates external db config before saving env config', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const collectPromptResults = vi.fn(async () => ({
+    envName: 'app1',
+    envResults: {},
+    appResults: {
+      appPort: '13080',
+      storagePath: './app1/storage/',
+      fetchSource: false,
+    },
+    downloadResults: {},
+    dbResults: {
+      builtinDb: false,
+      dbDialect: 'postgres',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    },
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
+      authType: 'oauth',
+    },
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: false,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults,
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand: vi.fn(async () => undefined) },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(mocks.validateExternalDbConfig).toHaveBeenCalledTimes(1);
+  expect(saveInstalledEnv).toHaveBeenCalledTimes(1);
+  expect(mocks.validateExternalDbConfig.mock.invocationCallOrder[0]).toBeLessThan(
+    saveInstalledEnv.mock.invocationCallOrder[0],
+  );
 });
 
 test('install --resume reuses the saved workspace env config for prompt values', async () => {

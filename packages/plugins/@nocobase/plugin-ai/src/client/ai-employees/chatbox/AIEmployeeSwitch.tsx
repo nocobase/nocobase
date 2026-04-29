@@ -43,26 +43,28 @@ export const AIEmployeeSwitcher: React.FC<{ disabled?: boolean }> = observer(({ 
           style: { cursor: 'default', padding: '16px 12px', height: 'auto', minHeight: 0 },
         },
       ]
-    : aiEmployees.map((employee) => {
-        const isSelected = currentEmployee?.username === employee.username;
-        return {
-          key: employee.username,
-          label: (
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <AIEmployeeListItem aiEmployee={employee} />
-              {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
-            </span>
-          ),
-          onClick: () =>
-            switchAIEmployee(employee, {
-              clear: {
-                sender: false,
-                attachments: false,
-                contextItems: false,
-              },
-            }),
-        };
-      });
+    : aiEmployees
+        .filter((it) => it.category === 'business')
+        .map((employee) => {
+          const isSelected = currentEmployee?.username === employee.username;
+          return {
+            key: employee.username,
+            label: (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <AIEmployeeListItem aiEmployee={employee} />
+                {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
+              </span>
+            ),
+            onClick: () =>
+              switchAIEmployee(employee, {
+                clear: {
+                  sender: false,
+                  attachments: false,
+                  contextItems: false,
+                },
+              }),
+          };
+        });
 
   const hasEmployees = aiEmployees.length > 0;
   const currentLabel = currentEmployee ? currentEmployee.nickname : `${t('Select an')} ${t('AI employee')}`;

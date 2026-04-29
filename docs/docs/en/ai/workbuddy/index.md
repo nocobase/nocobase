@@ -30,12 +30,12 @@ Core features:
 
 In short, traditional AI tools give you suggestions and leave you to do the work; WorkBuddy does the work for you.
 
-| Traditional AI Chat | WorkBuddy |
-|---|---|
-| Can only chat, gives suggestions | Can actually execute tasks |
-| Requires manual file operations | Automatically operates local files |
-| Single-step simple tasks | Multi-step complex tasks, auto-decomposed |
-| Outputs text replies | Delivers verifiable results |
+| Traditional AI Chat              | WorkBuddy                                 |
+| -------------------------------- | ----------------------------------------- |
+| Can only chat, gives suggestions | Can actually execute tasks                |
+| Requires manual file operations  | Automatically operates local files        |
+| Single-step simple tasks         | Multi-step complex tasks, auto-decomposed |
+| Outputs text replies             | Delivers verifiable results               |
 
 ## Why Choose WorkBuddy
 
@@ -92,16 +92,15 @@ Help me install NocoBase CLI and complete initialization: https://docs.nocobase.
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
 The browser will automatically open a visual configuration page, guiding you to install NocoBase Skills, configure the database, and start the application. For detailed steps, see [Quick Start](../quick-start.md).
 
-After installation is complete, run `nb ps` to confirm the environment status:
+After installation is complete, run `nb env list` to confirm the environment status:
 
 ```bash
-nb ps
+nb env list
 ```
 
 Confirm the output shows the configured environment and its running status.

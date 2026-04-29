@@ -40,5 +40,5 @@ nb env auth app1
 ## Related Commands
 
 - [`nb init`](../init.md)
-- [`nb api`](../api/)
-- [`nb app`](../app/)
+- [`nb api`](../api/index.md)
+- [`nb app`](../app/index.md)

@@ -9,7 +9,7 @@ sidebar: false
 
 NocoBase 全面支持 AI Agent 协同——你可以用自然语言完成数据建模、页面搭建、工作流编排、权限配置，甚至开发自定义插件。无论你使用 Claude Code、Codex、Cursor 还是其他 AI 工具，都可以通过以下两个基础组件与 NocoBase 协同工作：
 
-1. **[NocoBase CLI](../api/cli/)**——是用于在本地工作区初始化、连接和管理 NocoBase 应用的命令行工具。它可以帮你准备 NocoBase 应用、保存 CLI env 配置，并提供启动、停止、查看日志、升级和清理等日常管理命令，让 AI Agent 可以连接并使用 NocoBase。
+1. **[NocoBase CLI](../api/cli/index.md)**——是用于在本地工作区初始化、连接和管理 NocoBase 应用的命令行工具。它可以帮你准备 NocoBase 应用、保存 CLI env 配置，并提供启动、停止、查看日志、升级和清理等日常管理命令，让 AI Agent 可以连接并使用 NocoBase。
 
 CLI 支持两种常见的初始化方式：
 
@@ -46,19 +46,17 @@ npm install -g @nocobase/cli@beta
 nb --version // 确认安装成功
 ```
 
-#### 第二步：创建工作目录
-
-> 工作目录名字可以自定义，但建议不要有空格等特殊字符，以免后续操作出问题。后续 CLI 相关的命令都需要在这个目录里执行。
-
-```bash
-mkdir my-nocobase && cd my-nocobase
-```
-
-#### 第三步：初始化
+#### 第二步：初始化
 
 ```bash
 nb init --ui
 ```
+
+:::tip 配置文件存储位置
+
+初始化产生的配置文件和应用数据默认保存在用户主目录下，详见 [NB_CLI_ROOT 环境变量](../api/cli/index.md#环境变量)。
+
+:::
 
 浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：
 
@@ -68,16 +66,15 @@ nb init --ui
 4. **配置数据库** — 使用内置数据库或配置外部数据库（PostgreSQL、MySQL、MariaDB）
 5. **创建管理员账号** — 设置管理员邮箱和密码
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260424121223.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
 
 安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），用你刚才设置的管理员账号登录即可。
 
 （如果你更习惯在命令行里操作，也可以直接运行 `nb init` 进入交互式向导，或 `nb init --env=app -y` 一键使用默认配置。）
 
-#### 第四步：让 AI Agent 开始工作
+#### 第三步：让 AI Agent 开始工作
 
-1. 进入 CLI 已经初始化的工作目录（如 `my-nocobase`）
-2. 在这个目录下新开或者重启 AI Agent 的会话（如果是桌面端 GUI 的 AI Agent 工具，则需要将 CLI 初始化的目录添加为工作目录），然后就可以让 AI Agent 开始操作 NocoBase 了。
+新开或重启 AI Agent 的会话，就可以让 AI Agent 开始操作 NocoBase 了。CLI 配置保存在全局目录（默认 `~/.nocobase/`），AI Agent 可以在任意目录下访问。
 
 </Tab>
 <Tab label="用 AI Agent 安装并连接" value="ai-install">
@@ -88,13 +85,7 @@ nb init --ui
 帮我安装 NocoBase CLI 并完成初始化：https://docs.nocobase.com/cn/ai/ai-quick-start.md （请直接访问链接内容）
 ```
 
-配置完成后，在 CLI 初始化的目录里（默认是在当前目录下新建的 `my-nocobase` 目录，如果你不确定，你也可以询问 AI Agent NocoBase CLI 初始化后的目录在哪里）重启你的 AI Agent 会话。比如：
-
-```bash
-cd my-nocobase && codex
-```
-
-如果你用的是图形化 AI 工具（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。
+配置完成后，重启你的 AI Agent 会话，就可以开始操作 NocoBase 了。
 
 </Tab>
 </Tabs>
@@ -113,31 +104,30 @@ npm install -g @nocobase/cli@beta
 nb --version // 确认安装成功
 ```
 
-#### 第二步：创建工作目录
-
-```bash
-mkdir my-nocobase && cd my-nocobase
-```
-
-#### 第三步：初始化并连接
+#### 第二步：初始化并连接
 
 ```bash
 nb init --ui
 ```
+
+:::tip 配置文件存储位置
+
+初始化产生的配置文件默认保存在用户主目录下，详见 [NB_CLI_ROOT 环境变量](../api/cli/index.md#环境变量)。
+
+:::
 
 浏览器会自动打开可视化配置页面。在第一步「开始配置」中选择「连接已有应用」，然后：
 
 1. **填写 API 地址** — 输入你已有 NocoBase 实例的 API 地址（比如：`http://localhost:13000/api`）
 2. **选择认证方式** — 选择 [认证方式](../ai-builder/security)（快速上手推荐 OAuth）
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/20260426213800.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
 
 无需配置安装方式、数据库和管理员账号，向导会跳过这些步骤。
 
-#### 第四步：让 AI Agent 开始工作
+#### 第三步：让 AI Agent 开始工作
 
-1. 进入 CLI 已经初始化的工作目录（如 `my-nocobase`）
-2. 在这个目录下新开或者重启 AI Agent 的会话（如果是桌面端 GUI 的 AI Agent 工具，则需要将 CLI 初始化的目录添加为工作目录），然后就可以让 AI Agent 开始操作 NocoBase 了。
+新开或重启 AI Agent 的会话，就可以让 AI Agent 开始操作 NocoBase 了。CLI 配置保存在全局目录（默认 `~/.nocobase/`），AI Agent 可以在任意目录下访问。
 
 </Tab>
 <Tab label="用 AI Agent 连接" value="ai-connect">
@@ -148,13 +138,7 @@ nb init --ui
 帮我安装 NocoBase CLI 并完成初始化：https://docs.nocobase.com/cn/ai/ai-quick-start.md （请直接访问链接内容）
 ```
 
-配置完成后，在 CLI 初始化的目录里重启你的 AI Agent 会话。比如：
-
-```bash
-cd my-nocobase && codex
-```
-
-如果你用的是图形化 AI 工具（比如 Claude Code Desktop、Cursor、Codex App 等），需要把 CLI 初始化的目录（如 `my-nocobase`）添加为工具的工作目录，这样 AI Agent 才能访问到 CLI 配置和 NocoBase 的运行环境等信息。
+配置完成后，重启你的 AI Agent 会话，就可以开始操作 NocoBase 了。
 
 </Tab>
 </Tabs>
@@ -167,7 +151,7 @@ cd my-nocobase && codex
 
 ### 开始 AI 搭建
 
-用自然语言描述需求，AI 帮你完成数据建模、页面搭建、工作流编排——从一句话到一整套业务系统。请参阅 [AI 搭建快速开始](../ai-builder/index.md#从一句话到一整套系统)。
+用自然语言描述需求，AI 帮你完成数据建模、页面搭建、工作流编排——用对话代替手动配置。请参阅 [AI 搭建快速开始](../ai-builder/index.md#用对话代替手动配置)。
 
 ### 继续 AI 开发插件
 
@@ -179,7 +163,7 @@ cd my-nocobase && codex
 
 ### NocoBase CLI 命令参考
 
-如果你已经有 NocoBase 应用在运行，或者已经初始化成功过，想要继续开发、调试或者管理应用，所有 `nb` 命令的完整参数说明请参阅 [NocoBase CLI 命令参考](../api/cli/)。
+如果你已经有 NocoBase 应用在运行，或者已经初始化成功过，想要继续开发、调试或者管理应用，所有 `nb` 命令的完整参数说明请参阅 [NocoBase CLI 命令参考](../api/cli/index.md)。
 
 ## 相关链接
 
@@ -187,5 +171,5 @@ cd my-nocobase && codex
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
 - [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断
-- [NocoBase CLI 命令参考](../api/cli/) — 所有命令的完整参数说明
+- [NocoBase CLI 命令参考](../api/cli/index.md) — 所有命令的完整参数说明
 - [安装方式和版本对比](../get-started/quickstart) — NocoBase 的不同安装方式和版本通道

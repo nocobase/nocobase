@@ -63,7 +63,7 @@ HTTP リクエストノードは、**ワークフロー**における主要な**
 
 ### 1. **プラグイン**が有効になっていることを確認する
 
-HTTP リクエストノードは**ワークフロー**の**プラグイン**の組み込み機能です。**[ワークフロー](/plugins/@nocobase/plugin-workflow/)** **プラグイン**が有効になっていることを確認してください。
+HTTP リクエストノードは**ワークフロー**の**プラグイン**の組み込み機能です。**[ワークフロー](/plugins/@nocobase/plugin-workflow/index.md)** **プラグイン**が有効になっていることを確認してください。
 
 ### 2. **ワークフロー**に HTTP リクエストノードを追加する
 
@@ -322,8 +322,8 @@ if (!$node.data.data || !$node.data.data.id) {
 
 ## 関連リソース
 
-- [**ワークフロー** **プラグイン**ドキュメント](/plugins/@nocobase/plugin-workflow/)
+- [**ワークフロー** **プラグイン**ドキュメント](/plugins/@nocobase/plugin-workflow/index.md)
 - [**ワークフロー**: HTTP リクエストノード](/workflow/nodes/request)
-- [**ワークフロー**: Webhook トリガー](/integration/workflow-webhook/)
-- [API キー認証](/integration/api-keys/)
-- [API ドキュメント**プラグイン**](/plugins/@nocobase/plugin-api-doc/)
+- [**ワークフロー**: Webhook トリガー](/integration/workflow-webhook/index.md)
+- [API キー認証](/integration/api-keys/index.md)
+- [API ドキュメント**プラグイン**](/plugins/@nocobase/plugin-api-doc/index.md)

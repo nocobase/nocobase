@@ -88,7 +88,7 @@ Pour les middlewares d'équilibrage de charge fournis par d'autres fournisseurs 
 
 ## Configuration des variables d'environnement
 
-Tous les nœuds du cluster doivent utiliser la même configuration de variables d'environnement. En plus des [variables d'environnement](/api/cli/env) de base de NocoBase, vous devez également configurer les variables d'environnement suivantes, liées aux middlewares.
+Tous les nœuds du cluster doivent utiliser la même configuration de variables d'environnement. En plus des [variables d'environnement](../api/app/env) de base de NocoBase, vous devez également configurer les variables d'environnement suivantes, liées aux middlewares.
 
 ### Mode multi-cœur
 

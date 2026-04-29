@@ -98,7 +98,7 @@ If you're using `registerModels` (non-lazy-loading approach), confirm the model 
 
 Tables defined via `defineCollection` are server-internal tables and do not appear in the UI data source list by default.
 
-**Recommended approach**: Add the corresponding data table in the NocoBase interface under "[Data Source Management](../../../data-sources/data-source-main/)," configure the fields and interface types, and the table will automatically appear in the block's data source selection list.
+**Recommended approach**: Add the corresponding data table in the NocoBase interface under "[Data Source Management](../../../data-sources/data-source-main/index.md)," configure the fields and interface types, and the table will automatically appear in the block's data source selection list.
 
 If you do need to register it in plugin code (e.g., for demo scenarios in example plugins), you can manually register it via `addCollection`. See [Building a Full-Stack Data Management Plugin](../examples/fullstack-plugin) for details. Note that you must register via the `eventBus` pattern — you cannot call it directly in `load()`, because `ensureLoaded()` will clear and re-set all collections after `load()`.
 

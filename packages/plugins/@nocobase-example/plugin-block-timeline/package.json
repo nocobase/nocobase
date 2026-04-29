@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-block-timeline",
   "displayName": "Plugin example: Block timeline",
   "description": "This plugin demonstrates how to use the block timeline feature to create a timeline for a block.",
-  "version": "2.1.0-beta.23",
+  "version": "2.1.0-beta.24",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

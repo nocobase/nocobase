@@ -34,7 +34,7 @@ API-Schlüssel bieten mehrere Sicherheitsvorteile: Identitätsprüfung, Nutzungs
 
 ### 2.1 Plugin "Authentifizierung: API-Schlüssel" aktivieren
 
-Stellen Sie sicher, dass das integrierte [Authentifizierung: API-Schlüssel](/plugins/@nocobase/plugin-api-keys/)-Plugin aktiviert ist. Nach der Aktivierung erscheint eine neue Konfigurationsseite für API-Schlüssel in den Systemeinstellungen.
+Stellen Sie sicher, dass das integrierte [Authentifizierung: API-Schlüssel](/plugins/@nocobase/plugin-api-keys/index.md)-Plugin aktiviert ist. Nach der Aktivierung erscheint eine neue Konfigurationsseite für API-Schlüssel in den Systemeinstellungen.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
@@ -97,7 +97,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 3.1 Das API-Dokumentations-Plugin verwenden
 
-Öffnen Sie das [API-Dokumentations-Plugin](/plugins/@nocobase/plugin-api-doc/), um die Anfragemethoden, URLs, Parameter und Header für jeden API-Endpunkt anzuzeigen.
+Öffnen Sie das [API-Dokumentations-Plugin](/plugins/@nocobase/plugin-api-doc/index.md), um die Anfragemethoden, URLs, Parameter und Header für jeden API-Endpunkt anzuzeigen.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -290,5 +290,5 @@ Diese Anleitung hat den vollständigen Workflow zur Verwendung von API-Schlüsse
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 
 **Weitere Ressourcen:**
-- [Dokumentation des API-Schlüssel-Plugins](/plugins/@nocobase/plugin-api-keys/)
-- [API-Dokumentations-Plugin](/plugins/@nocobase/plugin-api-doc/)
+- [Dokumentation des API-Schlüssel-Plugins](/plugins/@nocobase/plugin-api-keys/index.md)
+- [API-Dokumentations-Plugin](/plugins/@nocobase/plugin-api-doc/index.md)

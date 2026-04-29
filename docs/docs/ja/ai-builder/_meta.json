@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "クイックスタート",
+    "link": "/ai-builder"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "セキュリティと監査"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "環境管理"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "データモデリング"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "UI 設定"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "ワークフロー管理"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "権限設定"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "ソリューション"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "プラグイン管理"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "リリース管理"
+  }
+]

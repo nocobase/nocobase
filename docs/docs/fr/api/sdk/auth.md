@@ -24,7 +24,7 @@ Le `token` de l'API.
 
 ### `authenticator`
 
-L'authentificateur utilisé pour l'authentification de l'utilisateur actuel. Référez-vous à [Authentification de l'utilisateur](/auth-verification/auth/).
+L'authentificateur utilisé pour l'authentification de l'utilisateur actuel. Référez-vous à [Authentification de l'utilisateur](/auth-verification/auth/index.md).
 
 ## Méthodes de classe
 

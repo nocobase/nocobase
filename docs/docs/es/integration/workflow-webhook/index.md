@@ -55,7 +55,7 @@ Cuando los datos cambian en sistemas externos (como CRM o ERP), los Webhooks env
 
 ### 1. Instalar el plugin
 
-Localice e instale el plugin **[Flujo de trabajo: Disparador de Webhook](/plugins/@nocobase/plugin-workflow-webhook/)** en el gestor de plugins.
+Localice e instale el plugin **[Flujo de trabajo: Disparador de Webhook](/plugins/@nocobase/plugin-workflow-webhook/index.md)** en el gestor de plugins.
 
 > Nota: Este es un plugin comercial que requiere compra o suscripción por separado.
 
@@ -246,7 +246,7 @@ if (branch === 'main') {
 
 ## Recursos relacionados
 
-- [Documentación del plugin de flujos de trabajo](/plugins/@nocobase/plugin-workflow/)
+- [Documentación del plugin de flujos de trabajo](/plugins/@nocobase/plugin-workflow/index.md)
 - [Flujo de trabajo: Disparador de Webhook](/workflow/triggers/webhook)
-- [Flujo de trabajo: Nodo de solicitud HTTP](/integration/workflow-http-request/)
-- [Autenticación con claves API](/integration/api-keys/)
+- [Flujo de trabajo: Nodo de solicitud HTTP](/integration/workflow-http-request/index.md)
+- [Autenticación con claves API](/integration/api-keys/index.md)

@@ -9,7 +9,7 @@ sidebar: false
 
 NocoBase fully supports AI Agent collaboration — you can use natural language to complete data modeling, page building, workflow orchestration, permission configuration, and even custom plugin development. Whether you use Claude Code, Codex, Cursor, or other AI tools, you can work with NocoBase through these two foundational components:
 
-1. **[NocoBase CLI](../api/cli/)** — A command-line tool for initializing, connecting to, and managing NocoBase applications in your local workspace. It helps you prepare NocoBase applications, save CLI env configurations, and provides daily management commands such as start, stop, view logs, upgrade, and clean up — enabling AI Agents to connect and use NocoBase.
+1. **[NocoBase CLI](../api/cli/index.md)** — A command-line tool for initializing, connecting to, and managing NocoBase applications in your local workspace. It helps you prepare NocoBase applications, save CLI env configurations, and provides daily management commands such as start, stop, view logs, upgrade, and clean up — enabling AI Agents to connect and use NocoBase.
 
 CLI supports two common initialization methods:
 
@@ -46,19 +46,17 @@ npm install -g @nocobase/cli@beta
 nb --version // Confirm successful installation
 ```
 
-#### Step 2: Create a Working Directory
-
-> You can customize the working directory name, but avoid spaces or special characters to prevent issues later. All subsequent CLI commands need to be run in this directory.
-
-```bash
-mkdir my-nocobase && cd my-nocobase
-```
-
-#### Step 3: Initialize
+#### Step 2: Initialize
 
 ```bash
 nb init --ui
 ```
+
+:::tip Configuration file storage
+
+Configuration files and application data are stored in your home directory by default. See [NB_CLI_ROOT environment variable](../api/cli/index.md#environment-variables) for details.
+
+:::
 
 The browser will automatically open a visual configuration page, guiding you through 5 steps:
 
@@ -68,16 +66,15 @@ The browser will automatically open a visual configuration page, guiding you thr
 4. **Configure Database** — Use the built-in database or configure an external database (PostgreSQL, MySQL, MariaDB)
 5. **Create Admin Account** — Set the admin email and password
 
-![nocobase cli visual wizard](https://static-docs.nocobase.com/20260424121223.png)
+![nocobase cli visual wizard](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
 
 After installation is complete, open your browser and visit `http://localhost:13000` (default port), then log in with the admin account you just set up.
 
 (If you prefer working in the command line, you can also run `nb init` to enter the interactive wizard, or `nb init --env=app -y` to use default configuration with one command.)
 
-#### Step 4: Let AI Agent Start Working
+#### Step 3: Let AI Agent Start Working
 
-1. Enter the working directory that CLI has already initialized (e.g., `my-nocobase`)
-2. Start a new or restart the AI Agent session in this directory (if using a desktop GUI AI Agent tool, add the CLI-initialized directory as the working directory), then you can let the AI Agent start operating NocoBase.
+Start a new or restart the AI Agent session, and you can let the AI Agent start operating NocoBase. CLI configuration is stored in a global directory (default `~/.nocobase/`), accessible from any directory.
 
 </Tab>
 <Tab label="Install and Connect with AI Agent" value="ai-install">
@@ -88,13 +85,7 @@ Copy the prompt below to your AI assistant (Claude Code, Codex, Cursor, Trae, et
 Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/ai/ai-quick-start.md (please read the linked content directly)
 ```
 
-After configuration is complete, restart your AI Agent session in the CLI-initialized directory (by default, this is a newly created `my-nocobase` directory under the current directory; if you're not sure, you can ask the AI Agent where the NocoBase CLI initialized directory is). For example:
-
-```bash
-cd my-nocobase && codex
-```
-
-If you're using a graphical AI tool (such as Claude Code Desktop, Cursor, Codex App, etc.), you need to add the CLI-initialized directory (e.g., `my-nocobase`) as the tool's working directory, so the AI Agent can access the CLI configuration and NocoBase runtime environment.
+After configuration is complete, restart your AI Agent session and you can start operating NocoBase.
 
 </Tab>
 </Tabs>
@@ -113,31 +104,30 @@ npm install -g @nocobase/cli@beta
 nb --version // Confirm successful installation
 ```
 
-#### Step 2: Create a Working Directory
-
-```bash
-mkdir my-nocobase && cd my-nocobase
-```
-
-#### Step 3: Initialize and Connect
+#### Step 2: Initialize and Connect
 
 ```bash
 nb init --ui
 ```
+
+:::tip Configuration file storage
+
+Configuration files are stored in your home directory by default. See [NB_CLI_ROOT environment variable](../api/cli/index.md#environment-variables) for details.
+
+:::
 
 The browser will automatically open a visual configuration page. In the first step "Start Configuration", select "Connect to Existing Application", then:
 
 1. **Enter API Address** — Input the API address of your existing NocoBase instance (e.g., `http://localhost:13000/api`)
 2. **Select Authentication Method** — Choose an [authentication method](../ai-builder/security) (OAuth is recommended for quick setup)
 
-![nocobase cli visual wizard](https://static-docs.nocobase.com/20260426213800.png)
+![nocobase cli visual wizard](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
 
 No need to configure installation method, database, or admin account — the wizard will skip those steps.
 
-#### Step 4: Let AI Agent Start Working
+#### Step 3: Let AI Agent Start Working
 
-1. Enter the working directory that CLI has already initialized (e.g., `my-nocobase`)
-2. Start a new or restart the AI Agent session in this directory (if using a desktop GUI AI Agent tool, add the CLI-initialized directory as the working directory), then you can let the AI Agent start operating NocoBase.
+Start a new or restart the AI Agent session, and you can let the AI Agent start operating NocoBase. CLI configuration is stored in a global directory (default `~/.nocobase/`), accessible from any directory.
 
 </Tab>
 <Tab label="Connect with AI Agent" value="ai-connect">
@@ -148,13 +138,7 @@ Copy the prompt below to your AI assistant. It will complete CLI installation an
 Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/ai/ai-quick-start.md (please read the linked content directly)
 ```
 
-After configuration is complete, restart your AI Agent session in the CLI-initialized directory. For example:
-
-```bash
-cd my-nocobase && codex
-```
-
-If you're using a graphical AI tool (such as Claude Code Desktop, Cursor, Codex App, etc.), you need to add the CLI-initialized directory (e.g., `my-nocobase`) as the tool's working directory, so the AI Agent can access the CLI configuration and NocoBase runtime environment.
+After configuration is complete, restart your AI Agent session and you can start operating NocoBase.
 
 </Tab>
 </Tabs>
@@ -167,7 +151,7 @@ If you need to manage existing NocoBase instances (such as test or production en
 
 ### Start AI Building
 
-Describe your requirements in natural language, and AI helps you complete data modeling, page building, and workflow orchestration — from a single sentence to a complete business system. See [AI Building Quick Start](../ai-builder/index.md#from-a-single-sentence-to-a-complete-system).
+Describe your requirements in natural language, and AI helps you complete data modeling, page building, and workflow orchestration — replace manual configuration with conversation. See [AI Building Quick Start](../ai-builder/index.md#replace-manual-configuration-with-conversation).
 
 ### Continue with AI Plugin Development
 
@@ -179,7 +163,7 @@ Collaborate with AI employees directly in the NocoBase interface — data analys
 
 ### NocoBase CLI Command Reference
 
-If you already have a NocoBase application running, or have successfully completed initialization and want to continue developing, debugging, or managing your application, see [NocoBase CLI Command Reference](../api/cli/) for full parameter documentation of all `nb` commands.
+If you already have a NocoBase application running, or have successfully completed initialization and want to continue developing, debugging, or managing your application, see [NocoBase CLI Command Reference](../api/cli/index.md) for full parameter documentation of all `nb` commands.
 
 ## Related Links
 
@@ -187,5 +171,5 @@ If you already have a NocoBase application running, or have successfully complet
 - [AI Plugin Development](../ai-dev/index.md) — Develop NocoBase plugins with AI assistance
 - [AI Employees](../ai-employees/index.md) — Collaborate with AI in the business interface
 - [Environment Management](../ai-builder/env-bootstrap) — Environment checks, adding environments, upgrades, and troubleshooting
-- [NocoBase CLI Command Reference](../api/cli/) — Full parameter documentation for all commands
+- [NocoBase CLI Command Reference](../api/cli/index.md) — Full parameter documentation for all commands
 - [Installation Methods and Version Comparison](../get-started/quickstart) — Different installation methods and version channels for NocoBase

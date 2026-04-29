@@ -243,6 +243,6 @@ Once a quotation has been approved, it can be converted into a formal order. Nex
 
 ## Related Pages
 
-- [CRM User Guide](./)
+- [CRM User Guide](./index.md)
 - [Lead Management](./guide-leads)
 - [Order Management](./guide-products-orders)

@@ -79,16 +79,15 @@ Claude Code 通过以下方式与 NocoBase 协同工作：
 
 ```bash
 npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
 nb init --ui
 ```
 
 浏览器会自动打开可视化配置页面，引导你安装 NocoBase Skills、配置数据库并启动应用。详细步骤请参阅[快速开始](../quick-start.md)。
 
-安装完成后，运行 `nb ps` 确认环境运行状态：
+安装完成后，运行 `nb env list` 确认环境运行状态：
 
 ```bash
-nb ps
+nb env list
 ```
 
 确认输出中有已配置的环境，以及运行状态。

@@ -18,7 +18,7 @@ keywords: 'AI 搭建,安全,权限,认证,Token,OAuth,操作记录,审计'
 
 AI Agent 连接 NocoBase，主要有两种认证方式：
 
-- **API key 认证**：通过 [API keys](/auth-verification/api-keys/) 插件生成 API Key，配置到 CLI 环境中，后续请求直接使用它访问 API
+- **API key 认证**：通过 [API keys](/auth-verification/api-keys/index.md) 插件生成 API Key，配置到 CLI 环境中，后续请求直接使用它访问 API
 - **OAuth 认证**：通过浏览器完成一次 OAuth 登录认证，之后以当前用户身份访问 API
 
 两种方式都可以配合 `nb` 命令使用，区别在于身份来源、适用场景和风险控制策略不同。

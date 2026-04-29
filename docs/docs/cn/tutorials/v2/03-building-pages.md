@@ -72,7 +72,7 @@
 
 ![03-building-pages-2026-03-17-15-03-04](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-03-04.png)
 
-> 表单的详细配置（字段联动、编辑表单、详情弹窗等）我们在[第 4 章](/tutorials/v2/04-forms-and-details/)深入讲解，这里先能录入数据就够了。
+> 表单的详细配置（字段联动、编辑表单、详情弹窗等）我们在[第 4 章](/tutorials/v2/04-forms-and-details)深入讲解，这里先能录入数据就够了。
 
 ## 3.4 配置显示列
 
@@ -241,4 +241,3 @@
 - [区块概述](/interface-builder/blocks) — 所有区块类型说明
 - [表格区块](/interface-builder/blocks/data-blocks/table) — 表格区块详细配置
 - [筛选区块](/interface-builder/blocks/filter-blocks/form) — 筛选表单配置
-

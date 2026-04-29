@@ -31,15 +31,15 @@ nb [command]
 
 | 命令组 | 说明 |
 | --- | --- |
-| [`nb api`](./api/) | 通过 CLI 调用 NocoBase API。 |
-| [`nb app`](./app/) | 管理应用运行态：启动、停止、重启、日志和升级。 |
-| [`nb db`](./db/) | 管理选中 env 的内置数据库。 |
-| [`nb env`](./env/) | 管理 NocoBase 项目环境、状态、详情和运行时命令。 |
-| [`nb plugin`](./plugin/) | 管理选中 NocoBase env 的插件。 |
-| [`nb scaffold`](./scaffold/) | 生成 NocoBase 插件开发脚手架。 |
-| [`nb self`](./self/) | 检查或更新 NocoBase CLI 本身。 |
-| [`nb skills`](./skills/) | 检查或同步当前工作区的 NocoBase AI coding skills。 |
-| [`nb source`](./source/) | 管理本地源码工程：下载、开发、构建和测试。 |
+| [`nb api`](./api/index.md) | 通过 CLI 调用 NocoBase API。 |
+| [`nb app`](./app/index.md) | 管理应用运行态：启动、停止、重启、日志和升级。 |
+| [`nb db`](./db/index.md) | 管理选中 env 的内置数据库。 |
+| [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、状态、详情和运行时命令。 |
+| [`nb plugin`](./plugin/index.md) | 管理选中 NocoBase env 的插件。 |
+| [`nb scaffold`](./scaffold/index.md) | 生成 NocoBase 插件开发脚手架。 |
+| [`nb self`](./self/index.md) | 检查或更新 NocoBase CLI 本身。 |
+| [`nb skills`](./skills/index.md) | 检查或同步当前工作区的 NocoBase AI coding skills。 |
+| [`nb source`](./source/index.md) | 管理本地源码工程：下载、开发、构建和测试。 |
 
 ## 命令（Commands）
 
