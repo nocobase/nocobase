@@ -18,13 +18,15 @@
 
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { afterEach, expect, test } from 'vitest';
 import {
   assertPublishCapability,
+  buildMigrationRuleValues,
   defaultPublishDir,
   findManifestEntry,
   getPublishResponseData,
+  listLocalPublishFiles,
   readManifest,
   resolveLocalPublishFile,
   upsertManifestEntry,
@@ -90,6 +92,43 @@ test('manifest upsert records uploaded artifact id by type/source/target/file', 
   });
 });
 
+test('listLocalPublishFiles merges cached files and manifest metadata', async () => {
+  const root = await makeTempDir();
+  const cliHomeDir = path.join(root, '.nocobase');
+  const filePath = path.join(defaultPublishDir('backup', 'dev', cliHomeDir), 'backup_1.nbdata');
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, 'backup file');
+  await upsertManifestEntry(
+    {
+      type: 'backup',
+      sourceEnv: 'dev',
+      targetEnv: 'test',
+      fileName: 'backup_1.nbdata',
+      localPath: filePath,
+      checksum: 'sha256:test',
+      uploadedArtifactId: 'artifact_1',
+    },
+    cliHomeDir,
+  );
+
+  await expect(listLocalPublishFiles({
+    type: 'backup',
+    env: 'dev',
+    cliHomeDir,
+  })).resolves.toMatchObject([
+    {
+      scope: 'local',
+      type: 'backup',
+      env: 'dev',
+      fileName: 'backup_1.nbdata',
+      localPath: filePath,
+      exists: true,
+      checksum: 'sha256:test',
+      uploadedArtifactId: 'artifact_1',
+    },
+  ]);
+});
+
 test('resolveLocalPublishFile requires --from for cached file names', async () => {
   const root = await makeTempDir();
   const cliHomeDir = path.join(root, '.nocobase');
@@ -143,6 +182,26 @@ test('getPublishResponseData unwraps NocoBase resource envelopes', () => {
     types: {
       backup: {
         generate: true,
+      },
+    },
+  });
+});
+
+test('buildMigrationRuleValues creates global-only migration rules', () => {
+  expect(buildMigrationRuleValues({
+    name: 'dev-to-test',
+    description: 'release',
+    userRule: 'schema-only',
+    systemRule: 'overwrite-first',
+  })).toEqual({
+    name: 'dev-to-test',
+    description: 'release',
+    rules: {
+      userDefined: {
+        globalRule: 'schema-only',
+      },
+      systemDefined: {
+        globalRule: 'overwrite-first',
       },
     },
   });

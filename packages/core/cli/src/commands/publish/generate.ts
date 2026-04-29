@@ -34,9 +34,9 @@ export default class PublishGenerate extends Command {
   static override summary = 'Generate a publish file on an environment and download it locally';
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> --type migration --env dev --rule <ruleId> --wait',
+    '<%= config.bin %> <%= command.id %> --type migration --env dev --migration-rule <ruleId> --wait',
     '<%= config.bin %> <%= command.id %> --type backup --env dev --wait',
-    '<%= config.bin %> <%= command.id %> --type migration --env dev --rule <ruleId> --output ./dev-to-test.nbdata --wait',
+    '<%= config.bin %> <%= command.id %> --type migration --env dev --migration-rule <ruleId> --output ./dev-to-test.nbdata --wait',
   ];
 
   static override flags = {
@@ -51,6 +51,9 @@ export default class PublishGenerate extends Command {
       required: true,
     }),
     rule: Flags.string({
+      description: 'Migration rule ID when --type migration is used. Kept as a compatibility alias for --migration-rule.',
+    }),
+    'migration-rule': Flags.string({
       description: 'Migration rule ID when --type migration is used',
     }),
     title: Flags.string({
@@ -68,9 +71,10 @@ export default class PublishGenerate extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(PublishGenerate);
     const type = assertPublishType(flags.type);
+    const migrationRuleId = flags['migration-rule'] || flags.rule;
 
-    if (type === 'migration' && !flags.rule) {
-      this.error('--rule is required when --type migration is used');
+    if (type === 'migration' && !migrationRuleId) {
+      this.error('--migration-rule is required when --type migration is used');
     }
 
     startTask(`Generating ${type} publish file on ${flags.env}`);
@@ -81,7 +85,7 @@ export default class PublishGenerate extends Command {
       const generated = getPublishResponseData(await publishGenerate({
         env: flags.env,
         type,
-        ruleId: flags.rule,
+        ruleId: migrationRuleId,
         title: flags.title,
       }));
       const outputPath = flags.output

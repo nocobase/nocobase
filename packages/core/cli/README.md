@@ -259,12 +259,17 @@ The CLI always downloads generated files to the local workspace first so they
 can be inspected and reused:
 
 ```bash
-nb publish generate --type migration --env dev --rule <ruleId> --wait
+nb publish migration-rule list --env dev
+nb publish migration-rule create --env dev --name dev-to-test --user-rule schema-only --system-rule overwrite-first
+nb publish generate --type migration --env dev --migration-rule <ruleId> --wait
+nb publish file list --scope local --type migration --env dev
+nb publish file pull --type backup --env dev --file <backupFileName>
 nb publish copy --type migration --from dev --to test --file <fileName>
 nb publish execute --type migration --env test --file <fileName> --wait
 ```
 
-Generated files are stored under `.nocobase/publish/<type>/<env>/`. The copy
+Generated and pulled files are stored under the global CLI home
+`.nocobase/publish/<type>/<env>/`. The copy
 step uploads a local file to the target env staging area and records the target
 artifact in `.nocobase/publish/manifest.json`.
 

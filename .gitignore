@@ -47,6 +47,7 @@ CLAUDE.md
 AGENTS.md
 openspec/
 /.nocobase
+packages/plugins/@nocobase/plugin-publish-manager/.nocobase/
 
 
 .agents

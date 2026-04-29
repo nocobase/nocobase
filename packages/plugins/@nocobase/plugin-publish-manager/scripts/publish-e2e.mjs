@@ -10,6 +10,9 @@ const scenarios = {
   smoke: {
     description: 'Check that publish commands are available.',
   },
+  discovery: {
+    description: 'List local/remote publish files and migration rules without executing publish changes.',
+  },
   'backup-generate-copy': {
     description: 'Generate a backup publish file and upload it to a target env staging area.',
   },
@@ -25,7 +28,7 @@ const scenarios = {
 };
 
 const migrationUserRules = ['schema-only', 'overwrite'];
-const migrationSystemRules = ['skip', 'overwrite-first'];
+const migrationSystemRules = ['overwrite-first', 'schema-only'];
 
 function printHelp() {
   console.log(`Publish CLI E2E runner
@@ -35,20 +38,21 @@ Usage:
 
 Scenarios:
   smoke                 ${scenarios.smoke.description}
+  discovery             ${scenarios.discovery.description}
   backup-generate-copy  ${scenarios['backup-generate-copy'].description}
   backup-self-restore   ${scenarios['backup-self-restore'].description}
   migration-generate-copy ${scenarios['migration-generate-copy'].description}
   migration-self-run      ${scenarios['migration-self-run'].description}
 
 Options:
-  --bin <command>             CLI command to run. Default: nbx
+  --bin <command>             CLI command to run. Default: nb
   --from <env>                Source env. Default: PUBLISH_E2E_SOURCE_ENV or dev
   --to <env>                  Target env. Default: PUBLISH_E2E_TARGET_ENV or dev
   --file <fileNameOrPath>     Reuse an existing local publish file and skip generate.
   --rule-id <id>              Reuse an existing migration rule and skip rule creation.
   --migration-user-rule <mode>    User-created table global rule. Default: schema-only
                               Allowed: ${migrationUserRules.join(', ')}
-  --migration-system-rule <mode>  System table global rule. Default: skip
+  --migration-system-rule <mode>  System table global rule. Default: overwrite-first
                               Allowed: ${migrationSystemRules.join(', ')}
   --allow-destructive         Actually run destructive execute steps.
   --yes                      Alias of --allow-destructive.
@@ -61,14 +65,14 @@ Options:
 
 function parseArgs(argv) {
   const args = {
-    bin: 'nbx',
+    bin: 'nb',
     scenario: 'backup-generate-copy',
     from: DEFAULT_SOURCE_ENV,
     to: DEFAULT_TARGET_ENV,
     file: undefined,
     ruleId: undefined,
     migrationUserRule: 'schema-only',
-    migrationSystemRule: 'skip',
+    migrationSystemRule: 'overwrite-first',
     allowDestructive: false,
     dryRun: false,
     runDir: undefined,
@@ -169,6 +173,28 @@ function unwrapResponseData(payload) {
   return data;
 }
 
+function firstArray(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (Array.isArray(value?.files)) {
+    return value.files;
+  }
+  if (Array.isArray(value?.migrationRules)) {
+    return value.migrationRules;
+  }
+  if (Array.isArray(value?.data)) {
+    return value.data;
+  }
+  if (Array.isArray(value?.data?.files)) {
+    return value.data.files;
+  }
+  if (Array.isArray(value?.data?.migrationRules)) {
+    return value.data.migrationRules;
+  }
+  return [];
+}
+
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
@@ -184,6 +210,10 @@ function resolveCliHomeDir() {
 
 function defaultPublishDir(type, envName) {
   return path.join(resolveCliHomeDir(), 'publish', type, envName);
+}
+
+function defaultRunDir(scenario, timestamp) {
+  return path.join(resolveCliHomeDir(), 'publish-e2e', 'runs', `${scenario}-${timestamp}`);
 }
 
 async function findLatestBackupFile(envName) {
@@ -226,8 +256,7 @@ class ScenarioRunner {
     this.options = options;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     this.runDir = path.resolve(
-      process.cwd(),
-      options.runDir || path.join('.nocobase', 'publish-e2e', 'runs', `${options.scenario}-${timestamp}`),
+      options.runDir ? path.resolve(process.cwd(), options.runDir) : defaultRunDir(options.scenario, timestamp),
     );
     this.summary = {
       scenario: options.scenario,
@@ -275,7 +304,7 @@ class ScenarioRunner {
 
     console.log(`[run] ${line}`);
     const result = await new Promise((resolve) => {
-      const child = spawn(this.options.bin, args, {
+      const child = spawn(line, {
         cwd: process.cwd(),
         shell: true,
         windowsHide: true,
@@ -333,6 +362,8 @@ class ScenarioRunner {
     try {
       if (this.options.scenario === 'smoke') {
         await this.runSmoke();
+      } else if (this.options.scenario === 'discovery') {
+        await this.runDiscovery();
       } else if (this.options.scenario === 'backup-generate-copy') {
         await this.runBackupGenerateCopy();
       } else if (this.options.scenario === 'backup-self-restore') {
@@ -359,9 +390,94 @@ class ScenarioRunner {
 
   async runSmoke() {
     await this.runCommand('publish-help', ['publish', '--help']);
+    await this.runCommand('publish-file-help', ['publish', 'file', '--help']);
+    await this.runCommand('publish-file-list-help', ['publish', 'file', 'list', '--help']);
+    await this.runCommand('publish-file-pull-help', ['publish', 'file', 'pull', '--help']);
+    await this.runCommand('publish-migration-rule-help', ['publish', 'migration-rule', '--help']);
+    await this.runCommand('publish-migration-rule-create-help', ['publish', 'migration-rule', 'create', '--help']);
     await this.runCommand('publish-generate-help', ['publish', 'generate', '--help']);
     await this.runCommand('publish-copy-help', ['publish', 'copy', '--help']);
     await this.runCommand('publish-execute-help', ['publish', 'execute', '--help']);
+  }
+
+  async runDiscovery() {
+    const localBackup = await this.runCommand('file-list-local-backup', [
+      'publish',
+      'file',
+      'list',
+      '--scope',
+      'local',
+      '--type',
+      'backup',
+      '--env',
+      this.options.from,
+      '--json',
+    ]);
+    this.summary.artifacts.localBackupFiles = localBackup.skipped
+      ? '<local-backup-file-count>'
+      : firstArray(parseJsonOutput(localBackup.stdout)).length;
+
+    const remoteBackup = await this.runCommand('file-list-remote-backup', [
+      'publish',
+      'file',
+      'list',
+      '--scope',
+      'remote',
+      '--type',
+      'backup',
+      '--env',
+      this.options.from,
+      '--page-size',
+      '2',
+      '--json',
+    ]);
+    this.summary.artifacts.remoteBackupFiles = remoteBackup.skipped
+      ? '<remote-backup-file-count>'
+      : firstArray(parseJsonOutput(remoteBackup.stdout)).length;
+
+    const remoteMigration = await this.runCommand('file-list-remote-migration', [
+      'publish',
+      'file',
+      'list',
+      '--scope',
+      'remote',
+      '--type',
+      'migration',
+      '--env',
+      this.options.from,
+      '--page-size',
+      '2',
+      '--json',
+    ]);
+    this.summary.artifacts.remoteMigrationFiles = remoteMigration.skipped
+      ? '<remote-migration-file-count>'
+      : firstArray(parseJsonOutput(remoteMigration.stdout)).length;
+
+    const rules = await this.runCommand('migration-rule-list', [
+      'publish',
+      'migration-rule',
+      'list',
+      '--env',
+      this.options.from,
+      '--page-size',
+      '5',
+      '--json',
+    ]);
+    const ruleRows = rules.skipped ? [] : firstArray(parseJsonOutput(rules.stdout));
+    this.summary.artifacts.migrationRules = ruleRows.length;
+    if (ruleRows[0]?.id) {
+      const rule = await this.runCommand('migration-rule-get', [
+        'publish',
+        'migration-rule',
+        'get',
+        '--env',
+        this.options.from,
+        '--id',
+        String(ruleRows[0].id),
+        '--json',
+      ]);
+      this.summary.artifacts.firstMigrationRule = parseJsonOutput(rule.stdout);
+    }
   }
 
   async runBackupGenerateCopy() {
@@ -456,19 +572,21 @@ class ScenarioRunner {
     }
 
     const values = this.buildMigrationRuleValues();
-    const valuesFile = path.join(this.runDir, 'migration-rule-values.json');
-    await writeJson(valuesFile, values);
     const create = await this.runCommand('migration-rule-create', [
-      'api',
-      'resource',
+      'publish',
+      'migration-rule',
       'create',
       '--env',
       this.options.from,
-      '--resource',
-      'migrationRules',
-      '--values-file',
-      valuesFile,
-      '--json-output',
+      '--name',
+      values.name,
+      '--description',
+      values.description,
+      '--user-rule',
+      this.options.migrationUserRule,
+      '--system-rule',
+      this.options.migrationSystemRule,
+      '--json',
     ]);
     if (create.skipped) {
       const ruleId = '<created-migration-rule-id>';
@@ -485,6 +603,17 @@ class ScenarioRunner {
     this.summary.artifacts.ruleId = String(ruleId);
     this.summary.artifacts.ruleSource = 'created';
     this.summary.artifacts.ruleValues = values;
+    const get = await this.runCommand('migration-rule-get', [
+      'publish',
+      'migration-rule',
+      'get',
+      '--env',
+      this.options.from,
+      '--id',
+      String(ruleId),
+      '--json',
+    ]);
+    this.summary.artifacts.rule = parseJsonOutput(get.stdout);
     return String(ruleId);
   }
 
@@ -507,7 +636,7 @@ class ScenarioRunner {
         'migration',
         '--env',
         this.options.from,
-        '--rule',
+        '--migration-rule',
         ruleId,
         '--title',
         `publish-e2e-${this.options.from}-to-${this.options.to}`,
