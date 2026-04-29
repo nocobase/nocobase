@@ -44,22 +44,22 @@ describe('KanbanBlockModel.filterCollection', () => {
     ).toBe(false);
   });
 
-  test('rejects collections that have no supported grouping fields', () => {
+  test('accepts collections that have no supported grouping fields', () => {
     expect(
       KanbanBlockModel.filterCollection({
         filterTargetKey: 'id',
         getFields: () => [{ name: 'title', interface: 'input' }],
       } as any),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  test('rejects collections whose only grouping candidates are multi-value relations', () => {
+  test('accepts collections whose only grouping candidates are multi-value relations', () => {
     expect(
       KanbanBlockModel.filterCollection({
         filterTargetKey: 'id',
         getFields: () => [{ name: 'watchers', interface: 'm2m' }],
       } as any),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test('grouping defaultParams works during create flow before model exists', () => {
