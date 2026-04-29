@@ -13,7 +13,7 @@ import { Card, Spin, theme, Tooltip, Select, InputNumber } from 'antd';
 import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CodeEditor,

@@ -16,7 +16,7 @@ pkg: "@nocobase/plugin-system-settings"
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
 
-إذا كانت اللغة التي تستخدمها غير مترجمة بالكامل، يمكنك استخدام إضافة "[إدارة الترجمة](/system-settings/localization-management/)" لإضافة أو تعديل الترجمات.
+إذا كانت اللغة التي تستخدمها غير مترجمة بالكامل، يمكنك استخدام إضافة "[إدارة الترجمة](/system-settings/localization-management/index.md)" لإضافة أو تعديل الترجمات.
 
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

@@ -23,7 +23,7 @@ pkg: '@nocobase/plugin-verification'
 **Le Centre de gestion de la vérification prend en charge la gestion et l'intégration de diverses méthodes de vérification d'identité utilisateur.** Par exemple :
 
 - Code de vérification par SMS – Fourni par défaut par le **plugin** de vérification. Référez-vous à : [Vérification : SMS](./sms)
-- Authentificateur TOTP – Référez-vous à : [Vérification : Authentificateur TOTP](../verification-totp/)
+- Authentificateur TOTP – Référez-vous à : [Vérification : Authentificateur TOTP](../verification-totp/index.md)
 
 Les développeurs peuvent également étendre d'autres types de vérification sous forme de **plugins**. Référez-vous à : [Extension des types de vérification](./dev/type)
 

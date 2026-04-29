@@ -7,16 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ClickableFieldModel, FieldModel } from '@nocobase/client';
+import { ClickableFieldModel } from '@nocobase/client';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import React from 'react';
+import { tExpr } from '../locale';
 
 export class DisplaySimpleFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    console.log('当前记录：', this.context.record);
-    console.log('当前记录 index：', this.context.recordIndex);
+    console.log('current record：', this.context.record);
+    console.log('current record index：', this.context.recordIndex);
     return <span>[{value}]</span>;
   }
 }
+
+DisplaySimpleFieldModel.define({
+  label: tExpr('Simple field'),
+});
 
 DisplayItemModel.bindModelToInterface('DisplaySimpleFieldModel', ['input']);

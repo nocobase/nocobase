@@ -12,7 +12,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 Das SMS-Authentifizierungs-Plugin ermöglicht es Benutzern, sich per SMS zu registrieren und bei NocoBase anzumelden.
 
-> Dieses Plugin muss in Verbindung mit der SMS-Verifizierungscode-Funktion verwendet werden, die vom [`@nocobase/plugin-verification` Plugin](/auth-verification/verification/) bereitgestellt wird.
+> Dieses Plugin muss in Verbindung mit der SMS-Verifizierungscode-Funktion verwendet werden, die vom [`@nocobase/plugin-verification` Plugin](/auth-verification/verification/index.md) bereitgestellt wird.
 
 ## SMS-Authentifizierung hinzufügen
 

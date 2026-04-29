@@ -88,7 +88,7 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/ai-employees/knowledge-base/index"
+        "link": "/ai-employees/knowledge-base/"
       },
       {
         "type": "custom-link",
@@ -154,16 +154,6 @@
         ]
       }
     ]
-  },
-  {
-    "type": "custom-link",
-    "label": "NocoBase MCP",
-    "link": "/ai-employees/mcp"
-  },
-  {
-    "type": "custom-link",
-    "label": "NocoBase Skills",
-    "link": "/ai-employees/skills"
   },
   {
     "type": "custom-link",

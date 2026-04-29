@@ -147,7 +147,7 @@ After an order is completed, the full sales cycle is closed. Next, learn about m
 
 ## Related Pages
 
-- [CRM User Guide](./)
+- [CRM User Guide](./index.md)
 - [Opportunity Management](./guide-opportunities) — Quotations from the opportunity perspective
 - [Customers, Contacts & Emails](./guide-customers-emails)
 - [Dashboard](./guide-overview) — Order data drill-through

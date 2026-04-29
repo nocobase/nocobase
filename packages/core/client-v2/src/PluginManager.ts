@@ -7,12 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Application } from './Application';
-import type { Plugin } from './Plugin';
+import type { BaseApplication } from './BaseApplication';
+import type { Plugin, PluginOptions } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
-export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
-export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin<Opts>, PluginOptions<Opts>];
+export type PluginClass<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> = new (
+  options: PluginOptions<Opts>,
+  app: TApp,
+) => Plugin<PluginOptions<Opts>, TApp>;
+export type PluginType<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> =
+  | PluginClass<Opts, TApp>
+  | [PluginClass<Opts, TApp>, PluginOptions<Opts>];
+export type PluginClassLike<TApp extends BaseApplication<any> = BaseApplication<any>> = PluginClass<any, TApp>;
+export type PluginTypeLike<TApp extends BaseApplication<any> = BaseApplication<any>> = PluginType<any, TApp>;
 export type PluginData = {
   name: string;
   packageName: string;
@@ -21,31 +28,36 @@ export type PluginData = {
   type: 'local' | 'upload' | 'npm';
 };
 
-export class PluginManager {
-  protected pluginInstances: Map<typeof Plugin, Plugin> = new Map();
-  protected pluginsAliases: Record<string, Plugin> = {};
+export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
+  protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();
+  protected pluginsAliases: Record<string, Plugin<any, TApp>> = {};
   private initPlugins: Promise<void>;
 
   constructor(
-    protected _plugins: PluginType[],
-    protected loadRemotePlugins: boolean,
-    protected app: Application,
+    protected _plugins: PluginType<any, TApp>[] | undefined,
+    protected loadRemotePlugins: boolean | undefined,
+    protected app: TApp,
   ) {
     this.app = app;
-    this.initPlugins = this.init(_plugins);
+    this.initPlugins = this.init(_plugins || []);
+    this.loadRemotePlugins = loadRemotePlugins;
   }
 
   /**
    * @internal
    */
-  async init(_plugins: PluginType[]) {
+  async init(_plugins: PluginType<any, TApp>[]) {
     await this.initStaticPlugins(_plugins);
     if (this.loadRemotePlugins) {
       await this.initRemotePlugins();
     }
   }
 
-  private async initStaticPlugins(_plugins: PluginType[] = []) {
+  protected getRemotePluginsRequestUrl() {
+    return 'pm:listEnabledV2';
+  }
+
+  private async initStaticPlugins(_plugins: PluginType<any, TApp>[] = []) {
     for await (const plugin of _plugins) {
       const pluginClass = Array.isArray(plugin) ? plugin[0] : plugin;
       const opts = Array.isArray(plugin) ? plugin[1] : undefined;
@@ -53,8 +65,8 @@ export class PluginManager {
     }
   }
 
-  private async initRemotePlugins() {
-    const res = await this.app.apiClient.request({ url: 'pm:listEnabledV2' });
+  protected async initRemotePlugins() {
+    const res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
     const pluginList: PluginData[] = res?.data?.data || [];
     const plugins = await getPlugins({
       requirejs: this.app.requirejs,
@@ -63,11 +75,11 @@ export class PluginManager {
     });
     for await (const [name, pluginClass] of plugins) {
       const info = pluginList.find((item) => item.name === name);
-      await this.add(pluginClass, info);
+      await this.add(pluginClass as any, info);
     }
   }
 
-  async add<T = any>(plugin: typeof Plugin, opts: PluginOptions<T> = {}) {
+  async add<T = any>(plugin: PluginClass<T, TApp>, opts: PluginOptions<T> = {}) {
     const instance = this.getInstance(plugin, opts);
 
     this.pluginInstances.set(plugin, instance);
@@ -83,7 +95,7 @@ export class PluginManager {
     await instance.afterAdd();
   }
 
-  get<T extends typeof Plugin>(PluginClass: T): InstanceType<T>;
+  get<T extends PluginClass<any, TApp>>(PluginClass: T): InstanceType<T>;
   get<T extends {}>(name: string): T;
   get(nameOrPluginClass: any) {
     if (typeof nameOrPluginClass === 'string') {
@@ -92,7 +104,7 @@ export class PluginManager {
     return this.pluginInstances.get(nameOrPluginClass.default || nameOrPluginClass);
   }
 
-  private getInstance<T>(plugin: typeof Plugin, opts?: T) {
+  protected getInstance<T>(plugin: PluginClass<T, TApp>, opts: PluginOptions<T> = {}) {
     return new plugin(opts, this.app);
   }
 

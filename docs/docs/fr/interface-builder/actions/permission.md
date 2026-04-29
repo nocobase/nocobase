@@ -1,45 +1,76 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
+---
+title: "Autorisations des actions"
+description: "Autorisations des actions : configurez la visibilité et les autorisations d'exécution des actions, prend en charge le contrôle par rôle et par portée des données."
+keywords: "autorisations des actions, permission, autorisations de rôle, visibilité, construction d'interface, NocoBase"
+---
 
-# Permissions d'action
+# Autorisations des actions
 
 ## Introduction
 
-Dans NocoBase 2.0, les permissions d'action sont principalement contrôlées par les permissions de ressources de collection :
+Dans NocoBase 2.0, les autorisations des actions sont actuellement principalement contrôlées par les autorisations de ressources de la collection :
 
-- **Permission de ressource de collection** : Elle permet de contrôler de manière uniforme les permissions d'action de base (Créer, Afficher, Mettre à jour, Supprimer) des différents rôles pour une collection. Cette permission s'applique à l'ensemble de la collection sous la source de données, garantissant que les permissions d'action d'un rôle pour cette collection restent cohérentes sur les différentes pages, fenêtres modales et blocs.
+- **Autorisations de ressources de la collection** : permettent de contrôler de manière unifiée les autorisations de base des différents rôles sur la collection : créer (Create), consulter (View), mettre à jour (Update), supprimer (Delete), etc. Ces autorisations s'appliquent à l'ensemble de la collection sous une source de données et garantissent que les rôles disposent d'autorisations cohérentes pour les opérations correspondantes sur cette collection dans différents blocs, pages ou fenêtres contextuelles.
+<!-- - **Autorisation indépendante d'action** : permet d'affiner le contrôle des actions visibles pour différents rôles, adaptée à la gestion des autorisations d'actions spécifiques telles que : déclencher un workflow, requête personnalisée, lien externe, etc. Ce type d'autorisation s'applique au contrôle des autorisations au niveau de l'action, ce qui permet à différents rôles d'exécuter des actions spécifiques sans affecter la configuration des autorisations globales de la collection. -->
 
-### Permission de ressource de collection
+### Autorisations de ressources de la collection
 
-Dans le système de permissions de NocoBase, les permissions d'action des collections sont généralement divisées selon les dimensions CRUD afin d'assurer la cohérence et la standardisation de la gestion des permissions. Par exemple :
+Dans le système d'autorisations de NocoBase, les autorisations d'action sur les collections sont essentiellement divisées selon les dimensions CRUD, afin de garantir la cohérence et la conformité de la gestion des autorisations. Par exemple :
 
-- **Permission de création (Create)** : Elle contrôle toutes les actions liées à la création pour la collection, y compris les actions d'ajout, de duplication, etc. Dès qu'un rôle possède la permission de création pour cette collection, toutes les actions de création (ajout, duplication, etc.) seront visibles sur toutes les pages et dans toutes les fenêtres modales.
-- **Permission de suppression (Delete)** : Elle contrôle l'action de suppression pour cette collection. La permission reste cohérente, qu'il s'agisse d'une suppression en masse dans un bloc de tableau ou d'une suppression d'un enregistrement unique dans un bloc de détails.
-- **Permission de mise à jour (Update)** : Elle contrôle les actions de type mise à jour pour cette collection, telles que les actions d'édition et de mise à jour d'enregistrements.
-- **Permission de visualisation (View)** : Elle contrôle la visibilité des données de cette collection. Les blocs de données associés (tableau, liste, détails, etc.) ne sont visibles que si le rôle possède la permission de visualisation pour cette collection.
+- **Autorisation de création (Create)** : contrôle toutes les opérations de création liées à cette collection, y compris la création et la copie. Tant qu'un rôle possède l'autorisation de création sur cette collection, les opérations de création et de copie sont visibles dans toutes les pages et fenêtres contextuelles.
+- **Autorisation de suppression (Delete)** : contrôle l'opération de suppression sur cette collection, qu'il s'agisse de la suppression par lots dans un bloc de tableau ou de la suppression d'un enregistrement unique dans un bloc de détails ; les autorisations restent cohérentes.
+- **Autorisation de mise à jour (Update)** : contrôle les opérations de type mise à jour sur cette collection, telles que la modification ou la mise à jour d'un enregistrement.
+- **Autorisation de consultation (View)** : contrôle la visibilité des données de cette collection ; les blocs de données associés (tableau, liste, détails, etc.) ne sont visibles que si le rôle dispose de l'autorisation de consultation sur cette collection.
 
-Cette méthode de gestion des permissions universelle est adaptée au contrôle standardisé des permissions de données. Elle garantit que pour la `même collection`, la `même action` dispose de règles de permission `cohérentes` sur les `différentes pages, fenêtres modales et blocs`, offrant ainsi uniformité et maintenabilité.
+Ce mode général de gestion des autorisations convient au contrôle des autorisations de données standardisées, et garantit que les `mêmes opérations` sur la `même collection` ont des `règles d'autorisation cohérentes` dans `différentes pages, fenêtres contextuelles et blocs`, avec une bonne uniformité et maintenabilité.
 
-#### Permissions globales
+#### Autorisations globales
 
-Les permissions d'action globales s'appliquent à toutes les collections sous la source de données et sont classées par type de ressource comme suit :
+Les autorisations d'action globales s'appliquent à toutes les collections de cette source de données, divisées par type de ressource comme suit :
 
 ![20250306204756](https://static-docs.nocobase.com/20250306204756.png)
 
-#### Permissions d'action spécifiques à une collection
+#### Autorisations d'action sur une collection spécifique
 
-Les permissions d'action spécifiques à une collection priment sur les permissions générales de la source de données. Elles affinent davantage les permissions d'action et permettent des configurations de permissions personnalisées pour l'accès aux ressources d'une collection spécifique. Ces permissions sont divisées en deux aspects :
+Les autorisations d'action sur une collection spécifique priment sur les autorisations générales de la source de données et permettent d'affiner les autorisations d'action en configurant des autorisations personnalisées pour l'accès aux ressources d'une collection spécifique. Ces autorisations se divisent en deux aspects :
 
-1. Permissions d'action : Les permissions d'action incluent les actions d'ajout, de visualisation, d'édition, de suppression, d'exportation et d'importation. Ces permissions sont configurées selon la dimension de la portée des données :
+1. Autorisations d'action : les autorisations d'action incluent les opérations d'ajout, de consultation, de modification, de suppression, d'export et d'import. Ces autorisations sont configurées selon la dimension de la portée des données :
 
-   - Toutes les données : Permet aux utilisateurs d'effectuer des actions sur tous les enregistrements de la collection.
-   - Mes données : Limite les utilisateurs à n'effectuer des actions que sur les enregistrements de données qu'ils ont créés.
+   - Toutes les données : autorise l'utilisateur à exécuter des actions sur tous les enregistrements de la collection.
+   - Ses propres données : limite l'utilisateur à exécuter des actions uniquement sur les enregistrements qu'il a lui-même créés.
 
-2. Permissions de champ : Les permissions de champ permettent de configurer les permissions pour chaque champ dans différentes actions. Par exemple, certains champs peuvent être configurés pour être en lecture seule et non modifiables.
+2. Autorisations de champ : les autorisations de champ permettent de configurer les autorisations sur chaque champ pour différentes opérations. Par exemple, certains champs peuvent être configurés pour autoriser uniquement la consultation et non la modification.
 
 ![20250306205042](https://static-docs.nocobase.com/20250306205042.png)
 
+<!-- ### Autorisation indépendante d'action
+
+> **Remarque** : cette fonctionnalité est **prise en charge depuis la version v1.6.0-beta.13**.
+
+Contrairement aux autorisations d'action unifiées, l'autorisation indépendante d'action ne contrôle que l'action elle-même, ce qui permet à une même action d'avoir des configurations d'autorisations différentes selon les emplacements.
+
+Ce type d'autorisation convient aux actions personnalisées, par exemple :
+
+L'action de déclenchement de workflow peut nécessiter d'appeler différents workflows selon les pages ou les blocs, ce qui nécessite un contrôle d'autorisations indépendant.
+Les actions personnalisées à différents emplacements exécutent une logique métier spécifique, adaptée à une gestion d'autorisations distincte.
+
+Les actions suivantes prennent actuellement en charge la configuration d'autorisations indépendantes :
+
+- Fenêtre contextuelle (contrôle la visibilité et les autorisations d'action de la fenêtre contextuelle)
+- Lien (limite l'accès des rôles aux liens externes ou internes)
+- Déclencher un workflow (appeler différents workflows selon la page)
+- Actions du panneau d'actions (par exemple : scan de code, action de fenêtre contextuelle, déclenchement de workflow, lien externe)
+- Requête personnalisée (envoyer une requête à un tiers)
+
+Grâce à la configuration d'autorisations d'action indépendantes, vous pouvez gérer plus finement les autorisations d'action des différents rôles, ce qui rend le contrôle des autorisations plus flexible.
+
+![20250306215749](https://static-docs.nocobase.com/20250306215749.png)
+
+Si aucun rôle n'est défini, l'action est par défaut visible par tous les rôles.
+
+![20250306215854](https://static-docs.nocobase.com/20250306215854.png) -->
+
 ## Documentation associée
 
-[Configurer les permissions]
+[Configurer les autorisations]
+<!-- (/users-and-permissions) -->

@@ -45,6 +45,7 @@
   "Popup settings": "Popup settings",
   "Popup size": "Popup size",
   "Quick create": "Quick create",
+  "Quick create popup settings": "Quick create popup settings",
   "Select a grouping field first": "Select a grouping field first",
   "Select group values": "Select group values",
   "The order of the selected values determines the kanban column order": "The order of the selected values determines the kanban column order",
@@ -57,6 +58,7 @@
   "Style": "Style",
   "Title field": "Title field",
   "Unknown": "Unknown",
+  "Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.": "Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.",
   "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected",
   "View record": "View record"
 }

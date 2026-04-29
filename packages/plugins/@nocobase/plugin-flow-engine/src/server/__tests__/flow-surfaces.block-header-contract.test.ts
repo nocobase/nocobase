@@ -97,7 +97,34 @@ describe('flowSurfaces block header contracts', () => {
     }
   });
 
-  it('should publish map height configure options and persist them through decoratorProps writes', async () => {
+  it('should expose canonical blockHeight paths and reject legacy raw block height props', () => {
+    const blockHeightCases = [
+      'TableBlockModel',
+      'CalendarBlockModel',
+      'TreeBlockModel',
+      'KanbanBlockModel',
+      'ListBlockModel',
+      'GridCardBlockModel',
+      'MapBlockModel',
+    ];
+
+    for (const use of blockHeightCases) {
+      const contract = getNodeContract(use);
+      const propsAllowedKeys = contract.domains.props?.allowedKeys || [];
+      const decoratorAllowedKeys = contract.domains.decoratorProps?.allowedKeys || [];
+      const cardSettingsAllowedPaths = contract.domains.stepParams?.groups?.cardSettings?.allowedPaths || [];
+
+      expect(cardSettingsAllowedPaths).toEqual(
+        expect.arrayContaining(['blockHeight.heightMode', 'blockHeight.height']),
+      );
+      expect(propsAllowedKeys).not.toContain('height');
+      expect(propsAllowedKeys).not.toContain('heightMode');
+      expect(decoratorAllowedKeys).not.toContain('height');
+      expect(decoratorAllowedKeys).not.toContain('heightMode');
+    }
+  });
+
+  it('should publish map height configure options and persist them through blockHeight cardSettings', async () => {
     const options = getConfigureOptionsForUse('MapBlockModel');
     expect(options.heightMode.enum).toEqual(['defaultHeight', 'specifyValue', 'fullHeight']);
     expect(options.heightMode.example).toBe('specifyValue');
@@ -120,15 +147,14 @@ describe('flowSurfaces block header contracts', () => {
     expect(updateSettings).toHaveBeenCalledWith(
       {
         target: { uid: 'block-1' },
-        decoratorProps: {
-          height: 420,
-          heightMode: 'fullHeight',
-        },
         stepParams: {
           cardSettings: {
             titleDescription: {
               title: 'Map block title',
               description: 'Map block description',
+            },
+            blockHeight: {
+              heightMode: 'fullHeight',
             },
           },
           createMapBlock: {
@@ -142,36 +168,221 @@ describe('flowSurfaces block header contracts', () => {
     );
   });
 
-  it('should mirror and refresh raw map height props in decoratorProps during updateSettings normalization', () => {
+  it('should persist affected block height configure changes through blockHeight cardSettings', async () => {
     const service = new FlowSurfacesService({ db: {} } as any);
-    const nextPayload = {
-      props: {
-        height: 360,
-        heightMode: 'specifyValue',
-      },
-      decoratorProps: {
-        height: 240,
-        heightMode: 'defaultHeight',
-      },
-    };
-
-    (service as any).syncMapHeightChromeForUpdateSettings(
+    vi.spyOn(service as any, 'getCalendarBlockResourceInit').mockReturnValue({
+      dataSourceKey: 'main',
+      collectionName: 'events',
+    });
+    vi.spyOn(service as any, 'assertCalendarCollectionCompatible').mockReturnValue({
+      collection: {},
+      collectionName: 'events',
+    });
+    vi.spyOn(service as any, 'normalizeCalendarFieldNamesForCollection').mockReturnValue({});
+    vi.spyOn(service as any, 'ensureCalendarBlockPopupHosts').mockResolvedValue(undefined);
+    vi.spyOn(service as any, 'repository', 'get').mockReturnValue({
+      findModelById: vi.fn().mockResolvedValue({
+        uid: 'calendar-1',
+        props: {},
+        stepParams: {},
+      }),
+    } as any);
+    const updateSettings = vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'block-1' } as any);
+    const cases: Array<{
+      method: string;
+      args: any[];
+    }> = [
       {
-        use: 'MapBlockModel',
+        method: 'configureTableBlock',
+        args: [{ uid: 'table-1' }, { title: 'Table', height: 500 }, {}],
       },
-      nextPayload,
+      {
+        method: 'configureCalendarBlock',
+        args: [
+          { uid: 'calendar-1' },
+          { uid: 'calendar-1', props: {}, stepParams: {} },
+          { title: 'Calendar', height: 500 },
+          {},
+        ],
+      },
+      {
+        method: 'configureTreeBlock',
+        args: [{ uid: 'tree-1' }, { uid: 'tree-1', props: {}, stepParams: {} }, { title: 'Tree', height: 500 }, {}],
+      },
+      {
+        method: 'configureListBlock',
+        args: [{ uid: 'list-1' }, { title: 'List', height: 500 }, {}],
+      },
+      {
+        method: 'configureGridCardBlock',
+        args: [{ uid: 'grid-card-1' }, { title: 'Grid card', height: 500 }, {}],
+      },
+      {
+        method: 'configureMapBlock',
+        args: [{ uid: 'map-1' }, { title: 'Map', height: 500 }, {}],
+      },
+    ];
+
+    for (const testCase of cases) {
+      updateSettings.mockClear();
+      await (service as any)[testCase.method](...testCase.args);
+
+      expect(updateSettings).toHaveBeenCalledTimes(1);
+      expect(updateSettings.mock.calls[0][0]).toMatchObject({
+        stepParams: {
+          cardSettings: {
+            titleDescription: {
+              title: expect.any(String),
+            },
+            blockHeight: {
+              heightMode: 'specifyValue',
+              height: 500,
+            },
+          },
+        },
+      });
+      expect(updateSettings.mock.calls[0][0]).not.toHaveProperty('decoratorProps');
+    }
+  });
+
+  it('should persist kanban block height configure changes without overwriting item cardSettings', async () => {
+    const service = new FlowSurfacesService({ db: {} } as any);
+    vi.spyOn(service as any, 'getKanbanBlockResourceInit').mockReturnValue({
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+    });
+    vi.spyOn(service as any, 'assertKanbanCollectionCompatible').mockReturnValue({
+      collection: {},
+      collectionName: 'tasks',
+      dataSourceKey: 'main',
+    });
+    vi.spyOn(service as any, 'getKanbanDefaultGroupFieldName').mockReturnValue('status');
+    vi.spyOn(service as any, 'getKanbanGroupField').mockReturnValue({ name: 'status', interface: 'select' });
+    vi.spyOn(service as any, 'isKanbanGroupField').mockReturnValue(true);
+    vi.spyOn(service as any, 'isKanbanAssociationGroupField').mockReturnValue(false);
+    vi.spyOn(service as any, 'repository', 'get').mockReturnValue({
+      findModelById: vi.fn().mockResolvedValue({
+        uid: 'kanban-1',
+        props: {},
+        stepParams: {},
+        subModels: { item: { uid: 'kanban-item-1' } },
+      }),
+    } as any);
+    vi.spyOn(service as any, 'ensureKanbanBlockPopupHosts').mockResolvedValue(undefined);
+    const updateSettings = vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'kanban-1' } as any);
+
+    await (service as any).configureKanbanBlock(
+      { uid: 'kanban-1' },
+      {
+        uid: 'kanban-1',
+        props: {},
+        stepParams: {
+          cardSettings: {
+            linkageRules: [{ id: 'keep-block-linkage' }],
+          },
+        },
+        subModels: {
+          item: {
+            uid: 'kanban-item-1',
+            stepParams: {
+              cardSettings: {
+                click: {
+                  enableCardClick: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        title: 'Kanban',
+        height: 500,
+      },
+      {},
     );
 
-    expect(nextPayload).toMatchObject({
-      props: {
-        height: 360,
-        heightMode: 'specifyValue',
-      },
-      decoratorProps: {
-        height: 360,
-        heightMode: 'specifyValue',
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings.mock.calls[0][0]).toMatchObject({
+      target: { uid: 'kanban-1' },
+      stepParams: {
+        cardSettings: {
+          titleDescription: {
+            title: 'Kanban',
+          },
+          blockHeight: {
+            heightMode: 'specifyValue',
+            height: 500,
+          },
+        },
       },
     });
+    expect(updateSettings.mock.calls[0][0]).not.toHaveProperty('decoratorProps');
+    expect(updateSettings.mock.calls[0][0].stepParams.cardSettings).not.toHaveProperty('click');
+  });
+
+  it('should accept raw canonical blockHeight writes and clear stale fixed height for default modes', async () => {
+    const patch = vi.fn().mockResolvedValue(undefined);
+    const service = new FlowSurfacesService({
+      db: {
+        getCollection: () => ({
+          repository: {
+            findModelById: vi.fn().mockResolvedValue({
+              uid: 'table-1',
+              use: 'TableBlockModel',
+              props: {},
+              decoratorProps: {},
+              stepParams: {
+                cardSettings: {
+                  titleDescription: {
+                    title: 'Existing title',
+                  },
+                  blockHeight: {
+                    heightMode: 'specifyValue',
+                    height: 500,
+                  },
+                  linkageRules: [{ id: 'keep-linkage' }],
+                },
+              },
+            }),
+            patch,
+            findNodesById: vi.fn().mockResolvedValue([]),
+          },
+        }),
+        getRepository: () => null,
+      },
+    } as any);
+    const resolve = vi.fn().mockResolvedValue({ uid: 'table-1', kind: 'node' });
+    vi.spyOn(service, 'locator', 'get').mockReturnValue({ resolve } as any);
+
+    await service.updateSettings({
+      target: { uid: 'table-1' },
+      stepParams: {
+        cardSettings: {
+          blockHeight: {
+            heightMode: 'defaultHeight',
+            height: 500,
+          },
+        },
+      },
+    });
+
+    expect(patch).toHaveBeenCalledWith(
+      {
+        uid: 'table-1',
+        stepParams: {
+          cardSettings: {
+            titleDescription: {
+              title: 'Existing title',
+            },
+            blockHeight: {
+              heightMode: 'defaultHeight',
+            },
+            linkageRules: [{ id: 'keep-linkage' }],
+          },
+        },
+      },
+      { transaction: undefined },
+    );
   });
 
   it('should route configure to map and comments block handlers', async () => {

@@ -27,7 +27,7 @@ Es handelt sich um ein integriertes Plugin, das keine separate Installation erfo
 
 ## Verwendung
 
-Wenn die Anwendung initialisiert und installiert wird, wird standardmäßig eine Datenquelle zur Speicherung von NocoBase-Daten bereitgestellt, die als Hauptdatenbank bezeichnet wird. Weitere Informationen finden Sie in der Dokumentation zur [Hauptdatenbank](/data-sources/data-source-main/).
+Wenn die Anwendung initialisiert und installiert wird, wird standardmäßig eine Datenquelle zur Speicherung von NocoBase-Daten bereitgestellt, die als Hauptdatenbank bezeichnet wird. Weitere Informationen finden Sie in der Dokumentation zur [Hauptdatenbank](/data-sources/data-source-main/index.md).
 
 ### Externe Datenquellen
 
@@ -39,4 +39,4 @@ Externe Datenbanken werden als Datenquellen unterstützt. Weitere Informationen 
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-Sie können auch Daten aus HTTP-API-Quellen anbinden. Weitere Informationen finden Sie in der Dokumentation zur [REST API Datenquelle](/data-sources/data-source-rest-api/).
+Sie können auch Daten aus HTTP-API-Quellen anbinden. Weitere Informationen finden Sie in der Dokumentation zur [REST API Datenquelle](/data-sources/data-source-rest-api/index.md).

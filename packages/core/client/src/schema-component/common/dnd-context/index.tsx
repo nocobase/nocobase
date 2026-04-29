@@ -11,8 +11,8 @@ import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersectio
 import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../../';
-import { createDesignable, useDesignable } from '../../hooks';
+import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
+import { createDesignable, useDesignable } from '../../hooks/useDesignable';
 
 const useDragEnd = (onDragEnd) => {
   const { refresh } = useDesignable();

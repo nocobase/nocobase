@@ -4,7 +4,7 @@ Esta documentação foi traduzida automaticamente por IA.
 
 # Roteador
 
-O cliente NocoBase oferece um gerenciador de roteamento flexível que permite estender páginas e páginas de configuração de **plugins** usando `router.add()` e `pluginSettingsRouter.add()`.
+O cliente NocoBase oferece um gerenciador de roteamento flexível que permite estender páginas e páginas de configuração de **plugins** usando `router.add()` e `pluginSettingsManager`.
 
 ## Rotas de Página Padrão Registradas
 
@@ -78,49 +78,54 @@ Se a página for pesada ou não for necessária na renderização inicial, dê p
 
 ## Extensão de Páginas de Configuração de Plugins
 
-Adicione páginas de configuração de plugins usando `pluginSettingsRouter.add()`. Assim como nas rotas de páginas comuns, as páginas de configuração também devem usar `componentLoader` para registro sob demanda.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // Título da página de configuração
-      icon: 'ApiOutlined', // Ícone do menu da página de configuração
-      // Importação dinâmica: o módulo da página só é carregado quando esta página de configuração é realmente acessada
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
       componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-Exemplo de roteamento multinível
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Rota de nível superior
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      element: <Outlet />,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // Rotas filhas
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      // Importação dinâmica: o módulo da página só é carregado quando esta página de configuração é realmente acessada
-      componentLoader: () => import('./settings/Demo1Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      componentLoader: () => import('./settings/Demo2Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }

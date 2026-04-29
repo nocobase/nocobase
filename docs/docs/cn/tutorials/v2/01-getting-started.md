@@ -1,6 +1,6 @@
 # 第 1 章：认识 NocoBase — 5 分钟跑起来
 
-在这个系列里，我们会从零开始，用 NocoBase 搭建一个**极简的工单系统（HelpDesk）**。整个系统只需要 **2 张[数据表](/data-sources/main/collection)**，不写一行代码，即可实现工单提交、分类管理、变更追踪、权限控制和数据[仪表盘](/data-visualization)。
+在这个系列里，我们会从零开始，用 NocoBase 搭建一个**极简的工单系统（HelpDesk）**。整个系统只需要 **2 张[数据表](/data-sources/data-modeling/collection)**，不写一行代码，即可实现工单提交、分类管理、变更追踪、权限控制和数据[仪表盘](/data-visualization)。
 
 本章先通过 [Docker](/get-started/installation/docker) 一键部署 NocoBase，完成首次登录，了解[配置模式与使用模式](/get-started/how-nocobase-works)的区别，并预览工单系统的全貌。
 
@@ -107,7 +107,7 @@ NocoBase 的界面有两种模式：
 
 ![01-getting-started-2026-03-11-08-19-24](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-19-24.png)
 
-如上图所示：[菜单](/interface-builder/menus)、表格操作栏、[页面](/interface-builder/pages)下方都出现了橙色的提示，点击可以进行下一步的创建选项。
+如上图所示：菜单、表格操作栏、页面下方都出现了橙色的提示，点击可以进行下一步的创建选项。
 
 > **记住这个规律**：在 NocoBase 里，想修改画面，就进入配置模式，找到它右上角的小图标，点击即可。
 
@@ -142,7 +142,7 @@ NocoBase 的界面由三个区域组成：
 
 - ✅ 提交工单：[用户](/users-permissions/user)填写标题、描述、选择分类和优先级
 - ✅ 工单列表：按状态、分类筛选，一目了然
-- ✅ [权限](/users-permissions/role)控制：普通用户只看自己的工单，管理员看全部
+- ✅ [权限](/users-permissions/acl/role)控制：普通用户只看自己的工单，管理员看全部
 - ✅ 数据看板：实时统计工单分布和趋势
 - ✅ 数据操作日志（内置）
 

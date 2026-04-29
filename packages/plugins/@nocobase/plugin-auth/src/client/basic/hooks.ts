@@ -12,11 +12,28 @@ import React, { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from '@formily/react';
 
+function shouldUseHardRedirect(target: string) {
+  try {
+    const url = new URL(target, window.location.origin);
+    return /(?:^|\/)v2(?:\/|$)/.test(url.pathname);
+  } catch (_error) {
+    return /(?:^|\/)v2(?:\/|$)/.test(target);
+  }
+}
+
 export function useRedirect(next = '/admin') {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
   return useCallback(() => {
-    navigate(searchParams.get('redirect') || next, { replace: true });
+    const target = searchParams.get('redirect') || next;
+
+    if (shouldUseHardRedirect(target)) {
+      window.location.replace(target);
+      return;
+    }
+
+    navigate(target, { replace: true });
   }, [navigate, next, searchParams]);
 }
 

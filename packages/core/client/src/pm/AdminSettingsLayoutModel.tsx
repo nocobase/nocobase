@@ -7,11 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
-import React from 'react';
+import { AdminSettingsLayoutModel as BaseAdminSettingsLayoutModel } from '@nocobase/client-v2';
 
-export class AdminSettingsLayoutModel extends FlowModel {
-  render() {
-    return <>{this.props.children}</>;
-  }
-}
+export class AdminSettingsLayoutModel extends BaseAdminSettingsLayoutModel {}

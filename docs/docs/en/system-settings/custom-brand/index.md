@@ -20,7 +20,7 @@ On the bottom of the login page:
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
 
-The logo at position number 1 can be configured via the [System Settings](/system-settings/) under the Logo option. Positions number 2 and 3 can be customized using this plugin.
+The logo at position number 1 can be configured via the [System Settings](/system-settings/index.md) under the Logo option. Positions number 2 and 3 can be customized using this plugin.
 
 ## User Guide
 

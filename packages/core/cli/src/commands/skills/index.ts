@@ -10,7 +10,7 @@
 import { Command, loadHelpClass } from '@oclif/core';
 
 export default class Skills extends Command {
-  static summary = 'Inspect or synchronize NocoBase AI coding skills for this workspace';
+  static summary = 'Inspect or synchronize global NocoBase AI coding skills';
 
   async run(): Promise<void> {
     await this.parse(Skills);

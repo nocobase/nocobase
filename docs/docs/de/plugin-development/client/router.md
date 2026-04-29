@@ -4,7 +4,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 # Router
 
-Der NocoBase-Client bietet einen flexiblen Router-Manager, der es Ihnen ermöglicht, Seiten und Plugin-Einstellungsseiten mithilfe von `router.add()` und `pluginSettingsRouter.add()` zu erweitern.
+Der NocoBase-Client bietet einen flexiblen Router-Manager, der es Ihnen ermöglicht, Seiten und Plugin-Einstellungsseiten mithilfe von `router.add()` und `pluginSettingsManager` zu erweitern.
 
 ## Registrierte Standard-Seitenrouten
 
@@ -78,49 +78,54 @@ Wenn eine Seite umfangreicher ist oder nicht beim ersten Rendern benötigt wird,
 
 ## Erweitern von Plugin-Einstellungsseiten
 
-Sie können Plugin-Einstellungsseiten mit `pluginSettingsRouter.add()` hinzufügen. Wie bei normalen Routen sollte auch hier `componentLoader` verwendet werden.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // Titel der Einstellungsseite
-      icon: 'ApiOutlined', // Menüsymbol der Einstellungsseite
-      // Dynamischer Import: Das Seitenmodul wird erst geladen, wenn diese Einstellungsseite betreten wird
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
       componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-Mehrstufiges Routing-Beispiel
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Hauptroute
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      element: <Outlet />,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // Unterrouten
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      // Dynamischer Import: Das Seitenmodul wird erst geladen, wenn diese Einstellungsseite betreten wird
-      componentLoader: () => import('./settings/Demo1Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      componentLoader: () => import('./settings/Demo2Page'),
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }

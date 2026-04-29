@@ -47,11 +47,13 @@ export const LazyCardRenderer = memo(
     });
     const recordRef = useRef(record);
     const indexRef = useRef(index);
+    const enableDesignSettingsRef = useRef(enableDesignSettings);
     const hasRenderedContentRef = useRef(false);
     const cardRenderKey = getKanbanCardRenderKey({ columnKey, record, index });
 
     recordRef.current = record;
     indexRef.current = index;
+    enableDesignSettingsRef.current = enableDesignSettings;
     if (inView) {
       hasRenderedContentRef.current = true;
     }
@@ -74,6 +76,10 @@ export const LazyCardRenderer = memo(
       });
       nextItemModel.context.defineProperty('index', {
         get: () => indexRef.current,
+        cache: false,
+      });
+      nextItemModel.context.defineProperty('flowSettingsEnabled', {
+        get: () => !!enableDesignSettingsRef.current,
         cache: false,
       });
       nextItemModel.context.defineProperty('onCardClick', {

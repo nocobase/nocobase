@@ -119,7 +119,7 @@ const FIELD_BINDING_RULE_DEFINITIONS = [
   {
     scope: 'display',
     modelClassName: 'DisplayPreviewFieldModel',
-    interfaces: ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
+    interfaces: ['attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
     ownerPlugin: FILE_MANAGER_PLUGIN,
     isDefault: true,
     when: ({ field, targetCollection }) =>

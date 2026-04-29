@@ -36,7 +36,6 @@ export type FlowSurfaceComposeNormalizedFieldSpec = {
   type?: string;
   fieldType?: string;
   fields?: string[];
-  selectorFields?: string[];
   titleField?: string;
   openMode?: string;
   popupSize?: string;
@@ -216,7 +215,7 @@ export function resolveComposeFieldContainerSource(
 export function resolveComposeTargetKey(
   targetKey: string,
   keyMap: Record<string, FlowSurfaceComposeTargetKey | undefined>,
-  kind: 'field' | 'layout',
+  kind: 'field' | 'layout' | 'tree connectFields',
 ) {
   const key = String(targetKey || '').trim();
   if (!key) {
@@ -253,7 +252,6 @@ function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedF
     ...(fieldSpec.type ? { type: fieldSpec.type } : {}),
     ...(fieldSpec.fieldType ? { fieldType: fieldSpec.fieldType } : {}),
     ...(typeof fieldSpec.fields !== 'undefined' ? { fields: fieldSpec.fields } : {}),
-    ...(typeof fieldSpec.selectorFields !== 'undefined' ? { selectorFields: fieldSpec.selectorFields } : {}),
     ...(fieldSpec.titleField ? { titleField: fieldSpec.titleField } : {}),
     ...(fieldSpec.openMode ? { openMode: fieldSpec.openMode } : {}),
     ...(fieldSpec.popupSize ? { popupSize: fieldSpec.popupSize } : {}),

@@ -233,6 +233,6 @@ AI 生成的分析洞察和跟进建议。
 
 ## 相关页面
 
-- [CRM 操作指南总览](./)
+- [CRM 操作指南总览](./index.md)
 - [商机与报价](./guide-opportunities)
 - [客户管理](./guide-customers-emails)

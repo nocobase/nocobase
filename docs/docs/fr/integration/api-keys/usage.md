@@ -34,7 +34,7 @@ Les clés API offrent de multiples avantages en matière de sécurité : vérifi
 
 ### 2.1 Activer le plugin d'authentification : Clés API
 
-Assurez-vous que le [plugin d'authentification : Clés API](/plugins/@nocobase/plugin-api-keys/) intégré est activé. Une fois activé, une nouvelle page de configuration des clés API apparaîtra dans les paramètres du système.
+Assurez-vous que le [plugin d'authentification : Clés API](/plugins/@nocobase/plugin-api-keys/index.md) intégré est activé. Une fois activé, une nouvelle page de configuration des clés API apparaîtra dans les paramètres du système.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
@@ -97,7 +97,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 3.1 Utiliser le plugin de documentation API
 
-Ouvrez le [plugin de documentation API](/plugins/@nocobase/plugin-api-doc/) pour consulter les méthodes de requête, les URL, les paramètres et les en-têtes pour chaque point d'accès API.
+Ouvrez le [plugin de documentation API](/plugins/@nocobase/plugin-api-doc/index.md) pour consulter les méthodes de requête, les URL, les paramètres et les en-têtes pour chaque point d'accès API.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -290,5 +290,5 @@ Ce guide a couvert le flux de travail complet pour l'utilisation des clés API d
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 
 **Ressources supplémentaires :**
--   [Documentation du plugin Clés API](/plugins/@nocobase/plugin-api-keys/)
--   [Plugin de documentation API](/plugins/@nocobase/plugin-api-doc/)
+-   [Documentation du plugin Clés API](/plugins/@nocobase/plugin-api-keys/index.md)
+-   [Plugin de documentation API](/plugins/@nocobase/plugin-api-doc/index.md)

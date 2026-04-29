@@ -91,6 +91,11 @@ export type FlowSurfaceComposeRuntimeDeps = {
     targetUid: string | undefined,
     settings?: FlowSurfaceComposeObject,
   ) => Promise<void>;
+  resolveBlockSettings?: (
+    settings: FlowSurfaceComposeObject,
+    state: FlowSurfaceComposeRuntimeState,
+    block: FlowSurfaceComposeRuntimeBlockState,
+  ) => FlowSurfaceComposeObject | Promise<FlowSurfaceComposeObject>;
   createField: (
     payload: Record<string, unknown>,
     spec: FlowSurfaceComposeNormalizedFieldSpec,
@@ -263,7 +268,10 @@ async function applyBlockSettings(deps: FlowSurfaceComposeRuntimeDeps, state: Fl
     if (!hasInlineSettings(block.spec.settings)) {
       continue;
     }
-    await applyNodeSettings('compose block', block.result.uid, block.spec.settings);
+    const settings = deps.resolveBlockSettings
+      ? await deps.resolveBlockSettings(block.spec.settings || {}, state, block)
+      : block.spec.settings;
+    await applyNodeSettings('compose block', block.result.uid, settings);
   }
 }
 

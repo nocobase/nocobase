@@ -261,6 +261,7 @@ describe('KanbanCardItemModel.cardSettings', () => {
       context: {
         index: 0,
         record: { id: 1, title: 'Task 1' },
+        flowSettingsEnabled: true,
         onCardClick: undefined,
       },
       props: {},
@@ -276,5 +277,7 @@ describe('KanbanCardItemModel.cardSettings', () => {
     expect(fieldKeyRegistration?.[1]?.get()).toBe('fork-card-a-1');
     const fieldIndexRegistration = defineProperty.mock.calls.find(([key]) => key === 'fieldIndex');
     expect(fieldIndexRegistration?.[1]?.get()).toEqual(['fork-card-a-1:0']);
+    const flowSettingsRegistration = defineProperty.mock.calls.find(([key]) => key === 'flowSettingsEnabled');
+    expect(flowSettingsRegistration?.[1]?.get()).toBe(true);
   });
 });

@@ -151,6 +151,34 @@ export function buildBlockTitleDescriptionFromSemanticChanges(changes: Record<st
   };
 }
 
+export function buildBlockCardSettingsFromSemanticChanges(changes: Record<string, any>) {
+  const nextCardSettings = buildBlockTitleDescriptionFromSemanticChanges(changes) || {};
+  const hasHeightPatch = hasOwnDefined(changes, 'height') || hasOwnDefined(changes, 'heightMode');
+
+  if (hasHeightPatch) {
+    const nextHeightMode = hasOwnDefined(changes, 'heightMode')
+      ? normalizePublicBlockHeightMode(changes.heightMode)
+      : hasOwnDefined(changes, 'height')
+        ? 'specifyValue'
+        : undefined;
+
+    if (nextHeightMode) {
+      _.set(nextCardSettings, ['blockHeight', 'heightMode'], nextHeightMode);
+      if (nextHeightMode === 'specifyValue' && hasOwnDefined(changes, 'height')) {
+        _.set(nextCardSettings, ['blockHeight', 'height'], changes.height);
+      } else {
+        _.unset(nextCardSettings, ['blockHeight', 'height']);
+      }
+    }
+  }
+
+  if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
+    _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  return Object.keys(nextCardSettings).length ? nextCardSettings : undefined;
+}
+
 export function buildChartCardSettingsFromSemanticChanges(currentCardSettings: any, changes: Record<string, any>) {
   const nextCardSettings = _.cloneDeep(currentCardSettings || {});
 
@@ -359,7 +387,6 @@ export type NormalizedComposeFieldSpec = {
   type?: string;
   fieldType?: FlowSurfacePublicRelationFieldType;
   fields?: string[];
-  selectorFields?: string[];
   titleField?: string;
   openMode?: string;
   popupSize?: string;
@@ -397,10 +424,6 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();
   const fieldType = normalizePublicFieldType(input.fieldType, `compose field #${index + 1}`);
   const fields = normalizePublicFieldNameList(input.fields, `compose field #${index + 1}.fields`);
-  const selectorFields = normalizePublicFieldNameList(
-    input.selectorFields,
-    `compose field #${index + 1}.selectorFields`,
-  );
   const titleField = typeof input.titleField === 'undefined' ? undefined : String(input.titleField || '').trim();
   const openMode = typeof input.openMode === 'undefined' ? undefined : String(input.openMode || '').trim();
   const popupSize = typeof input.popupSize === 'undefined' ? undefined : String(input.popupSize || '').trim();
@@ -434,7 +457,6 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
     ...(semanticType ? { type: semanticType } : {}),
     ...(fieldType ? { fieldType } : {}),
     ...(!_.isUndefined(fields) ? { fields } : {}),
-    ...(!_.isUndefined(selectorFields) ? { selectorFields } : {}),
     ...(titleField ? { titleField } : {}),
     ...(openMode ? { openMode } : {}),
     ...(popupSize ? { popupSize } : {}),
@@ -691,7 +713,6 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'name',
     'fieldType',
     'fields',
-    'selectorFields',
     'titleField',
     'openMode',
     'popupSize',

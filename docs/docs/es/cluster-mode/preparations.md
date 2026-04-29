@@ -88,7 +88,7 @@ Para el middleware de balanceo de carga proporcionado por otros proveedores de s
 
 ## Configuración de variables de entorno
 
-Todos los nodos del clúster deben utilizar la misma configuración de variables de entorno. Además de las [variables de entorno](/api/cli/env) básicas de NocoBase, también es necesario configurar las siguientes variables de entorno relacionadas con el middleware.
+Todos los nodos del clúster deben utilizar la misma configuración de variables de entorno. Además de las [variables de entorno](../api/app/env) básicas de NocoBase, también es necesario configurar las siguientes variables de entorno relacionadas con el middleware.
 
 ### Modo multinúcleo
 

@@ -11,8 +11,8 @@ import { DragOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
-import { useSchemaInitializerRender } from '../../../application';
-import { DragHandler } from '../../../schema-component';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { DragHandler } from '../../../schema-component/common/sortable-item/SortableItem';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const TableRowActionDesigner = (props: any) => {

@@ -16,13 +16,13 @@
 
 | # | 章节 | 要点 |
 |---|------|------|
-| 1 | [认识 NocoBase — 5 分钟跑起来](./01-getting-started/) | Docker 安装、配置模式 vs 使用模式 |
-| 2 | [数据建模 — 给工单系统搭骨架](./02-data-modeling/) | Collection/Field、关联关系 |
-| 3 | [搭建页面 — 让数据看得见](./03-building-pages/) | Block、表格区块、筛选排序 |
-| 4 | [表单与详情 — 让数据填得进](./04-forms-and-details/) | 表单区块、字段联动、记录历史 |
-| 5 | [用户与权限 — 谁能看什么](./05-roles-and-permissions/) | 角色、菜单权限、数据权限 |
-| 6 | [工作流 — 让系统自己动起来](./06-workflows/) | 自动通知、状态变更触发 |
-| 7 | [仪表盘 — 一眼看全局](./07-dashboard/) | 饼图/折线图/柱状图、Markdown 区块 |
+| 1 | [认识 NocoBase — 5 分钟跑起来](./01-getting-started) | Docker 安装、配置模式 vs 使用模式 |
+| 2 | [数据建模 — 给工单系统搭骨架](./02-data-modeling) | Collection/Field、关联关系 |
+| 3 | [搭建页面 — 让数据看得见](./03-building-pages) | Block、表格区块、筛选排序 |
+| 4 | [表单与详情 — 让数据填得进](./04-forms-and-details) | 表单区块、字段联动、记录历史 |
+| 5 | [用户与权限 — 谁能看什么](./05-roles-and-permissions) | 角色、菜单权限、数据权限 |
+| 6 | [工作流 — 让系统自己动起来](./06-workflows) | 自动通知、状态变更触发 |
+| 7 | [仪表盘 — 一眼看全局](./07-dashboard) | 饼图/折线图/柱状图、Markdown 区块 |
 
 ## 数据模型预览
 
@@ -83,11 +83,11 @@ NocoBase 2.0 基于以下技术构建：
 - [系统要求](/get-started/system-requirements) — 环境配置要求
 
 ### 更多教程
-- [NocoBase 1.x 教程](/tutorials/v1/) — 以任务管理系统为案例的进阶教程
+- [NocoBase 1.x 教程](/tutorials/v1/index.md) — 以任务管理系统为案例的进阶教程
 
 ### 方案参考
-- [工单系统方案](/solution/ticket-system/) — AI 驱动的智能工单管理方案
-- [CRM 系统方案](/solution/crm/) — 客户关系管理基座
+- [工单系统方案](/solution/ticket-system/index.md) — AI 驱动的智能工单管理方案
+- [CRM 系统方案](/solution/crm/index.md) — 客户关系管理基座
 - [AI 员工](/ai-employees/quick-start) — 为系统接入 AI 能力
 
-准备好了吗？从 [第 1 章：认识 NocoBase](./01-getting-started/) 开始吧！
+准备好了吗？从 [第 1 章：认识 NocoBase](./01-getting-started) 开始吧！

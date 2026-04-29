@@ -6,7 +6,7 @@
       {
         "type": "custom-link",
         "label": "Logs du serveur",
-        "link": "/log-and-monitor/logger"
+        "link": "/log-and-monitor/logger/"
       },
       {
         "type": "custom-link",
@@ -22,7 +22,7 @@
       {
         "type": "custom-link",
         "label": "Manuel d'utilisation",
-        "link": "/log-and-monitor/telemetry"
+        "link": "/log-and-monitor/telemetry/"
       },
       {
         "type": "custom-link",

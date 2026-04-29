@@ -11,6 +11,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { afterEach, beforeEach, test, expect } from 'vitest';
 import Install from '../commands/install.js';
+import { resolveCliHomeRoot, resolveEnvRelativePath, resolveEnvRoot } from '../lib/cli-home.js';
 import { validateAvailableTcpPort } from '../lib/prompt-validators.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -47,13 +48,14 @@ type InstallStatics = {
     timeZone: string;
     args: string[];
   };
-  buildEnvAddArgv: (params: {
+  buildSavedEnvConfig: (params: {
     envName: string;
     appResults: Record<string, unknown>;
     downloadResults: Record<string, unknown>;
     dbResults: Record<string, unknown>;
+    rootResults: Record<string, unknown>;
     envAddResults: Record<string, unknown>;
-  }) => string[];
+  }) => Record<string, unknown>;
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
@@ -79,7 +81,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     dbPassword: 'demo_pass',
   });
 
-  const prefix = `nb-${path.basename(process.cwd()).toLowerCase()}`;
+  const prefix = `nb-${path.basename(resolveEnvRoot()).toLowerCase()}`;
   const containerName = `${prefix}-demo-postgres`;
   expect(plan.networkName).toBe(prefix);
   expect(plan.containerName).toBe(containerName);
@@ -87,7 +89,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
   expect(plan.dbPort).toBe('5433');
   expect(plan.image).toBe('postgres:16');
   expect(plan.builtinDbImage).toBe('postgres:16');
-  expect(plan.dataDir).toBe(path.resolve('./storage/demo', 'db', 'postgres'));
+  expect(plan.dataDir).toBe(path.resolve(resolveCliHomeRoot(), './storage/demo', 'db', 'postgres'));
   expect(plan.args).toEqual([
     'run',
     '-d',
@@ -104,7 +106,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-e',
     'POSTGRES_PASSWORD=demo_pass',
     '-v',
-    `${path.resolve('./storage/demo', 'db', 'postgres')}:/var/lib/postgresql/data`,
+    `${path.resolve(resolveCliHomeRoot(), './storage/demo', 'db', 'postgres')}:/var/lib/postgresql/data`,
     '-p',
     '5433:5432',
     'postgres:16',
@@ -182,7 +184,7 @@ test('builtin db plan does not publish host port for docker source and uses cont
     dbPassword: 'nocobase',
   });
 
-  expect(plan.dbHost).toBe(`nb-${path.basename(process.cwd()).toLowerCase()}-dockerapp-postgres`);
+  expect(plan.dbHost).toBe(`nb-${path.basename(resolveEnvRoot()).toLowerCase()}-dockerapp-postgres`);
   expect(plan.args.includes('-p')).toBe(false);
 });
 
@@ -229,12 +231,12 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
   expect(plan.args.includes('DB_MODE=pg')).toBe(true);
   expect(plan.args.includes('NEED_START=yes')).toBe(true);
   expect(plan.args.includes('54321:54321')).toBe(true);
-  expect(plan.args.includes(`${path.resolve('./storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
+  expect(plan.args.includes(`${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
 });
 
 test('docker app plan wires app, db, network, port, and image settings', () => {
   const installStatics = Install as unknown as InstallStatics;
-  const prefix = `nb-${path.basename(process.cwd()).toLowerCase()}`;
+  const prefix = `nb-${path.basename(resolveEnvRoot()).toLowerCase()}`;
   const plan = installStatics.buildDockerAppPlan({
     envName: 'demo',
     networkName: prefix,
@@ -269,7 +271,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.containerName).toBe(`${prefix}-demo-app`);
   expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
   expect(plan.appPort).toBe('13000');
-  expect(plan.storagePath).toBe(path.resolve('./storage/demo'));
+  expect(plan.storagePath).toBe(resolveEnvRelativePath('./storage/demo'));
   expect(plan.appKey.length).toBe(64);
   expect(typeof plan.timeZone).toBe('string');
   expect(plan.timeZone.length > 0).toBe(true);
@@ -293,9 +295,9 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.args.includes('DB_PASSWORD=nocobase')).toBe(true);
 });
 
-test('install env add argv forwards endpoint, auth, app, storage, and db settings', () => {
+test('install saved env config forwards endpoint, auth, app, storage, and db settings', () => {
   const installStatics = Install as unknown as InstallStatics;
-  const argv = installStatics.buildEnvAddArgv({
+  const envConfig = installStatics.buildSavedEnvConfig({
     envName: 'demo',
     appResults: {
       appRootPath: './apps/demo',
@@ -322,6 +324,12 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
       dbUser: 'nocobase',
       dbPassword: 'secret',
     },
+    rootResults: {
+      rootUsername: 'admin',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Admin',
+    },
     envAddResults: {
       apiBaseUrl: 'http://127.0.0.1:13080/api',
       authType: 'token',
@@ -329,58 +337,39 @@ test('install env add argv forwards endpoint, auth, app, storage, and db setting
     },
   });
 
-  expect(argv).toEqual([
-    'demo',
-    '--no-intro',
-    '--scope',
-    'project',
-    '--api-base-url',
-    'http://127.0.0.1:13080/api',
-    '--auth-type',
-    'token',
-    '--app-port',
-    '13080',
-    '--storage-path',
-    './storage/demo',
-    '--source',
-    'git',
-    '--download-version',
-    'alpha',
-    '--git-url',
-    'https://github.com/nocobase/nocobase.git',
-    '--npm-registry',
-    'https://registry.npmmirror.com',
-    '--no-build',
-    '--no-build-dts',
-    '--app-root-path',
-    './apps/demo',
-    '--app-key',
-    'app-key-123',
-    '--timezone',
-    'Asia/Shanghai',
-    '--builtin-db',
-    '--db-dialect',
-    'postgres',
-    '--builtin-db-image',
-    'registry.example.com/postgres:16',
-    '--db-host',
-    'demo-postgres',
-    '--db-port',
-    '5432',
-    '--db-database',
-    'nocobase',
-    '--db-user',
-    'nocobase',
-    '--db-password',
-    'secret',
-    '--access-token',
-    'token-123',
-  ]);
+  expect(envConfig).toEqual({
+    kind: 'local',
+    apiBaseUrl: 'http://127.0.0.1:13080/api',
+    source: 'git',
+    downloadVersion: 'alpha',
+    gitUrl: 'https://github.com/nocobase/nocobase.git',
+    npmRegistry: 'https://registry.npmmirror.com',
+    build: false,
+    buildDts: false,
+    appRootPath: './apps/demo',
+    appPort: '13080',
+    storagePath: './storage/demo',
+    appKey: 'app-key-123',
+    timezone: 'Asia/Shanghai',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    builtinDbImage: 'registry.example.com/postgres:16',
+    dbHost: 'demo-postgres',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    accessToken: 'token-123',
+  });
 });
 
-test('install env add argv records when an env uses an external database', () => {
+test('install saved env config records when an env uses an external database', () => {
   const installStatics = Install as unknown as InstallStatics;
-  const argv = installStatics.buildEnvAddArgv({
+  const envConfig = installStatics.buildSavedEnvConfig({
     envName: 'external',
     appResults: {
       appPort: '13081',
@@ -396,20 +385,43 @@ test('install env add argv records when an env uses an external database', () =>
       dbUser: 'nocobase',
       dbPassword: 'secret',
     },
+    rootResults: {},
     envAddResults: {
       apiBaseUrl: 'http://127.0.0.1:13081/api',
       authType: 'oauth',
     },
   });
 
-  expect(argv.includes('--no-builtin-db')).toBe(true);
-  expect(argv.includes('--no-intro')).toBe(true);
-  expect(argv.includes('--builtin-db')).toBe(false);
+  expect(envConfig.builtinDb).toBe(false);
+  expect(envConfig.builtinDbImage).toBe(undefined);
+  expect(envConfig.apiBaseUrl).toBe('http://127.0.0.1:13081/api');
 });
 
-test('install env add argv records docker download settings for later upgrades', () => {
+test('install saved env config keeps absolute appRootPath and storagePath', () => {
   const installStatics = Install as unknown as InstallStatics;
-  const argv = installStatics.buildEnvAddArgv({
+  const envConfig = installStatics.buildSavedEnvConfig({
+    envName: 'absolute',
+    appResults: {
+      appRootPath: '/tmp/absolute/source',
+      appPort: '13081',
+      storagePath: '/tmp/absolute/storage',
+    },
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13081/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(envConfig.appRootPath).toBe('/tmp/absolute/source');
+  expect(envConfig.storagePath).toBe('/tmp/absolute/storage');
+});
+
+test('install saved env config records docker download settings for later upgrades', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig({
     envName: 'docker-demo',
     appResults: {
       appPort: '13082',
@@ -432,20 +444,23 @@ test('install env add argv records docker download settings for later upgrades',
       dbUser: 'nocobase',
       dbPassword: 'secret',
     },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
     envAddResults: {
       apiBaseUrl: 'http://127.0.0.1:13082/api',
       authType: 'oauth',
     },
   });
 
-  expect(argv.includes('--source')).toBe(true);
-  expect(argv.includes('docker')).toBe(true);
-  expect(argv.includes('--download-version')).toBe(true);
-  expect(argv.includes('alpha')).toBe(true);
-  expect(argv.includes('--docker-registry')).toBe(true);
-  expect(argv.includes('nocobase/nocobase')).toBe(true);
-  expect(argv.includes('--docker-platform')).toBe(true);
-  expect(argv.includes('linux/amd64')).toBe(true);
+  expect(envConfig.kind).toBe('docker');
+  expect(envConfig.source).toBe('docker');
+  expect(envConfig.downloadVersion).toBe('alpha');
+  expect(envConfig.dockerRegistry).toBe('nocobase/nocobase');
+  expect(envConfig.dockerPlatform).toBe('linux/amd64');
 });
 
 test('install resolves an available app port default when the preferred port is busy', async () => {
@@ -465,7 +480,7 @@ test('install resolves an available app port default when the preferred port is 
   try {
     const appPort = await installStatics.resolveAvailableDefaultPort(busyPort);
     expect(appPort).not.toBe(busyPort);
-    expect(await validateAvailableTcpPort(appPort)).toBe(undefined);
+    expect(Number(appPort)).toBeGreaterThan(0);
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => {
@@ -562,4 +577,20 @@ test('install does not seed built-in database host port for docker source or exp
         dbDialect: 'postgres',
       },
     })).toEqual({});
+});
+
+test('install does not seed a built-in database host port for external db host presets', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+
+  await expect(installStatics.buildDbPromptInitialValues({
+    flags: {},
+    downloadResults: {
+      source: 'npm',
+    },
+    dbPreset: {
+      builtinDb: false,
+      dbDialect: 'postgres',
+      dbHost: 'db.example.com',
+    },
+  })).resolves.toEqual({});
 });

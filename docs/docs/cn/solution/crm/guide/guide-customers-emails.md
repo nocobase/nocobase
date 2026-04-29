@@ -172,7 +172,7 @@ keywords: "客户管理,联系人,邮件,健康评分,客户合并,NocoBase CRM"
 
 ## 相关页面
 
-- [CRM 操作指南](./)
+- [CRM 操作指南](./index.md)
 - [线索管理](./guide-leads) — 线索转化后自动创建客户和联系人
 - [商机管理](./guide-opportunities) — 客户关联的商机
 - [AI 员工](./guide-ai)

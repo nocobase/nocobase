@@ -10,6 +10,7 @@
 import { getCurrentEnvName, getEnv, setEnvRuntime, updateEnvConnection } from './auth-store.js';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveAccessToken } from './env-auth.js';
+import { fetchWithPreservedAuthRedirect } from './http-request.js';
 import { generateRuntime } from './runtime-generator.js';
 import { hasRuntimeSync, saveRuntime } from './runtime-store.js';
 import { confirmAction, printInfo, printVerbose, printWarningBlock, setVerboseMode, stopTask, updateTask } from './ui.js';
@@ -117,7 +118,7 @@ async function requestJson(url: string, options: { method?: string; token?: stri
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await fetchWithPreservedAuthRedirect(url, {
       method: options.method ?? 'GET',
       headers,
     });
@@ -177,7 +178,7 @@ async function waitForServiceReady(baseUrl: string, token?: string, role?: strin
   let notified = false;
 
   while (Date.now() - startedAt < APP_RETRY_TIMEOUT) {
-    const response = await fetch(healthCheckUrl, {
+    const response = await fetchWithPreservedAuthRedirect(healthCheckUrl, {
       method: 'GET',
       headers:
         token || role
@@ -299,8 +300,10 @@ function collectErrorEntries(data: any) {
   return [];
 }
 
-function hasInvalidTokenError(data: any) {
-  return collectErrorEntries(data).some((entry) => entry?.code === 'INVALID_TOKEN');
+function hasAuthenticationError(data: any) {
+  return collectErrorEntries(data).some((entry) =>
+    entry?.code === 'INVALID_TOKEN' || entry?.code === 'EMPTY_TOKEN',
+  );
 }
 
 function isNetworkFetchFailure(response: { status: number; data: any }) {
@@ -311,7 +314,7 @@ export function formatSwaggerSchemaError(
   response: { status: number; data: any },
   context: { baseUrl: string; token?: string; role?: string; envName?: string; commandToken?: string },
 ) {
-  if (hasInvalidTokenError(response.data)) {
+  if (hasAuthenticationError(response.data)) {
     const entries = collectErrorEntries(response.data);
     const details = entries
       .map((entry) => {
@@ -328,7 +331,7 @@ export function formatSwaggerSchemaError(
       `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
       `Base URL: ${context.baseUrl}`,
       details,
-      'Update the API key with `nb env add <name> --base-url <url> --auth-type token --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--token <api-key>`.',
+      'Update the API key with `nb env add <name> --api-base-url <url> --auth-type token --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--token <api-key>`.',
       commandHint,
     ].join('\n');
   }
@@ -340,7 +343,7 @@ export function formatSwaggerSchemaError(
       `Base URL: ${context.baseUrl}`,
       `Network error: ${rawMessage}`,
       'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
-      'If you recently changed the server address, update it with `nb env add <name> --base-url <url>` and retry `nb env update`.',
+      'If you recently changed the server address, update it with `nb env add <name> --api-base-url <url>` and retry `nb env update`.',
       'Use `nb env list` to inspect the current env configuration.',
     ].join('\n');
   }
@@ -352,7 +355,7 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
   if (!commandToken) {
     return [
       'No env is configured for runtime commands.',
-      'Run `nb env add <name> --base-url <url>` first.',
+      'Run `nb env add <name> --api-base-url <url>` first.',
       'If you configure multiple environments later, switch with `nb env use <name>`.',
     ].join('\n');
   }
@@ -361,7 +364,7 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
     `Unable to resolve runtime command \`${commandToken}\`.`,
     'No env is configured, so the CLI cannot load runtime commands from `swagger:get`.',
     'If this is a built-in command or a typo, run `nb --help` to inspect available commands.',
-    'If this should be an application runtime command, run `nb env add <name> --base-url <url>` and then `nb env update`.',
+    'If this should be an application runtime command, run `nb env add <name> --api-base-url <url>` and then `nb env update`.',
   ].join('\n');
 }
 
@@ -378,7 +381,7 @@ export async function ensureRuntimeFromArgv(argv: string[], options: { configFil
   try {
     const envName = readFlag(argv, 'env') ?? (await getCurrentEnvName());
     const env = await getEnv(envName);
-    const baseUrl = readFlag(argv, 'base-url') ?? env?.baseUrl;
+    const baseUrl = readFlag(argv, 'api-base-url') ?? env?.baseUrl;
     const role = readFlag(argv, 'role');
     const token = await resolveAccessToken({
       envName,
@@ -460,7 +463,7 @@ export async function updateEnvRuntime(options: {
         env
           ? `Env "${envName}" is missing a base URL.`
           : `Env "${envName}" is not configured. Run \`nb env add ${envName}\` first.`,
-        env ? 'Update it with `nb env add <name> --base-url <url>` first.' : '',
+        env ? 'Update it with `nb env add <name> --api-base-url <url>` first.' : '',
       ]
         .filter(Boolean)
         .join('\n'),
@@ -477,7 +480,7 @@ export async function updateEnvRuntime(options: {
       await updateEnvConnection(
         envName,
         {
-          baseUrl: options.baseUrl,
+          apiBaseUrl: options.baseUrl,
           accessToken: options.token,
         },
         { scope: options.scope },

@@ -82,6 +82,7 @@
     ]
   },
   "devDependencies": {
+    "@alicloud/cdn20180510": "^4.2.2",
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",

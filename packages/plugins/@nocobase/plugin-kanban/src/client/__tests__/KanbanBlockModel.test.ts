@@ -44,22 +44,22 @@ describe('KanbanBlockModel.filterCollection', () => {
     ).toBe(false);
   });
 
-  test('rejects collections that have no supported grouping fields', () => {
+  test('accepts collections that have no supported grouping fields', () => {
     expect(
       KanbanBlockModel.filterCollection({
         filterTargetKey: 'id',
         getFields: () => [{ name: 'title', interface: 'input' }],
       } as any),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  test('rejects collections whose only grouping candidates are multi-value relations', () => {
+  test('accepts collections whose only grouping candidates are multi-value relations', () => {
     expect(
       KanbanBlockModel.filterCollection({
         filterTargetKey: 'id',
         getFields: () => [{ name: 'watchers', interface: 'm2m' }],
       } as any),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test('grouping defaultParams works during create flow before model exists', () => {
@@ -585,6 +585,7 @@ describe('KanbanBlockModel.filterCollection', () => {
       model: {
         getSortFieldCandidates: () => [{ label: 'Status sort', value: 'status_sort' }],
         getGroupField: () => ({ name: 'status' }),
+        translate: (key: string, options?: any) => (options?.ns === 'kanban' ? `kanban:${key}` : key),
       },
     } as any);
     expect(flow.steps.defaultSorting).toMatchObject({
@@ -595,7 +596,12 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(inlineDragSortMode).toMatchObject({
       type: 'select',
       key: 'dragSortBy',
-      props: { options: [{ label: 'Status sort', value: 'status_sort' }], allowClear: true },
+      props: {
+        options: [{ label: 'Status sort', value: 'status_sort' }],
+        allowClear: true,
+        tooltip:
+          'kanban:Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.',
+      },
     });
     expect(
       flow.steps.dragSortBy.hideInSettings({
@@ -1298,26 +1304,6 @@ describe('KanbanBlockModel.filterCollection', () => {
       ],
       'x-component': 'Select',
       'x-decorator': 'FormItem',
-    });
-  });
-
-  test('drag sort field ui mode stays a simple select with scoped sort options', () => {
-    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
-    const step: any = flow?.steps?.dragSortBy;
-    const uiMode = step.uiMode({
-      model: {
-        getSortFieldCandidates: () => [{ label: 'Status sort', value: 'status_sort', scopeKey: 'status' }],
-        getGroupField: () => ({ name: 'status', title: 'Status', uiSchema: { title: 'Status' } }),
-      },
-    } as any);
-
-    expect(uiMode).toEqual({
-      type: 'select',
-      key: 'dragSortBy',
-      props: {
-        options: [{ label: 'Status sort', value: 'status_sort', scopeKey: 'status' }],
-        allowClear: true,
-      },
     });
   });
 });

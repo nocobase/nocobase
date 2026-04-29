@@ -9,10 +9,8 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { ACLPane } from '../acl/ACLShortcut';
 import { ADMIN_SETTINGS_PATH } from '../application';
 import { Plugin } from '../application/Plugin';
-import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 import { PluginManager } from './PluginManager';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';

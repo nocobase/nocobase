@@ -1,30 +1,58 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
+---
+title: "Vue d'ensemble du développement de plugin client"
+description: "Vue d'ensemble du développement de plugin client NocoBase : fil conducteur Plugin → Router → Component → Context → FlowEngine, table d'index rapide pour localiser les chapitres."
+keywords: "plugin client,Plugin,Router,Component,Context,FlowEngine,FlowModel,NocoBase"
+---
 
 # Vue d'ensemble
 
-Le développement de plugins côté client NocoBase offre diverses fonctionnalités et capacités pour vous aider à personnaliser et à étendre les fonctionnalités front-end de NocoBase. Vous trouverez ci-dessous les principales capacités et les chapitres associés au développement de plugins côté client NocoBase :
+Les plugins client de NocoBase peuvent faire beaucoup de choses : enregistrer de nouvelles pages, écrire des composants personnalisés, appeler les API du back-end, ajouter des blocs et des champs, voire étendre les boutons d'action. Toutes ces capacités s'organisent autour d'un point d'entrée de plugin unifié.
 
-| Module                        | Description                                                               | Chapitre associé                                      |
-|-------------------------------|---------------------------------------------------------------------------|-------------------------------------------------------|
-| **Classe de plugin**          | Créez et gérez des plugins côté client pour étendre les fonctionnalités front-end. | [plugin.md](plugin.md)                                |
-| **Gestion des routes**        | Personnalisez le routage front-end, implémentez la navigation et les redirections de pages. | [router.md](router.md)                                |
-| **Opérations sur les ressources** | Gérez les ressources front-end, traitez la récupération et les opérations de données. | [resource.md](resource.md)                            |
-| **Gestion des requêtes**      | Personnalisez les requêtes HTTP, gérez les appels API et la transmission de données. | [request.md](request.md)                              |
-| **Gestion du contexte**       | Obtenez et utilisez le contexte de l'application, accédez à l'état global et aux services. | [context.md](context.md)                              |
-| **Contrôle d'accès (ACL)**    | Implémentez le contrôle d'accès front-end, contrôlez les autorisations d'accès aux pages et aux fonctionnalités. | [acl.md](acl.md)                                      |
-| **Gestionnaire de sources de données** | Gérez et utilisez plusieurs sources de données, implémentez la commutation et l'accès aux sources de données. | [data-source-manager.md](data-source-manager.md)      |
-| **Styles et thèmes**          | Personnalisez les styles et les thèmes, réalisez la personnalisation et l'embellissement de l'interface utilisateur. | [styles-themes.md](styles-themes.md)                  |
-| **Support multilingue (i18n)** | Intégrez le support multilingue, réalisez l'internationalisation et la localisation. | [i18n.md](i18n.md)                                    |
-| **Journalisation**            | Personnalisez les formats et les méthodes de sortie des journaux, améliorez les capacités de débogage et de surveillance. | [logger.md](logger.md)                                |
-| **Écriture de cas de test**   | Écrivez et exécutez des cas de test pour garantir la stabilité et la précision fonctionnelle des plugins. | [test.md](test.md)                                    |
+Si vous avez déjà de l'expérience React, vous prendrez vite vos marques — la majorité des scénarios consiste à écrire des composants React classiques, en s'appuyant sur les capacités contextuelles fournies par NocoBase (envoi de requêtes, i18n) pour s'intégrer avec NocoBase. C'est uniquement quand vous avez besoin que votre composant apparaisse dans l'interface de configuration visuelle de NocoBase qu'il faut comprendre [FlowEngine](./flow-engine/index.md).
 
-Extensions UI
+:::warning Attention
 
-| Module                      | Description                                                                                                                                     | Chapitre associé                                                               |
-|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| **Configuration UI**        | Utilisez le FlowEngine et les modèles de flux pour implémenter la configuration dynamique et l'orchestration des propriétés des composants, en prenant en charge la personnalisation visuelle des pages et interactions complexes. | [FlowEngine](../../flow-engine/index.md) et [modèle de flux](../../flow-engine/flow-model.md) |
-| **Extensions de blocs**     | Personnalisez les blocs de page, créez des modules et des mises en page UI réutilisables.                                                     | [blocs](../../ui-development-block/index.md)                                  |
-| **Extensions de champs**    | Personnalisez les types de champs, implémentez l'affichage et l'édition de données complexes.                                                   | [champs](../../ui-development-field/index.md)                                 |
-| **Extensions d'actions**    | Personnalisez les types d'actions, implémentez la logique complexe et la gestion des interactions.                                              | [actions](../../ui-development-action/index.md)                               |
+NocoBase est en train de migrer de `client` (v1) vers `client-v2` ; `client-v2` est encore en développement actif. Le contenu présenté ici est destiné à être expérimenté ; il n'est pas recommandé pour la production. Pour les nouveaux plugins, utilisez le répertoire `src/client-v2/` et l'API de `@nocobase/client-v2`.
+
+:::
+
+## Parcours d'apprentissage
+
+Nous vous recommandons d'aborder le développement de plugin client dans l'ordre suivant, du plus simple au plus complexe :
+
+```
+Plugin (entrée) → Router (page) → Component (composant) → Context (contexte) → FlowEngine (extension UI)
+```
+
+Notamment :
+
+1. **[Plugin](./plugin)** : la classe d'entrée du plugin, où vous enregistrez routes, modèles et autres ressources dans les méthodes du cycle de vie comme `load()`.
+2. **[Router](./router)** : enregistrer des routes de page via `router.add()`, et enregistrer des pages de configuration de plugin via `pluginSettingsManager`.
+3. **[Component](./component/index.md)** : ce qui est monté sur une route est un composant React. Par défaut, on écrit en React + Antd ; ce n'est pas différent du développement front-end classique.
+4. **[Context](./ctx/index.md)** : dans le plugin, on récupère le contexte via `this.context` ; dans un composant, via `useFlowContext()`. Le contexte permet d'accéder aux capacités fournies par NocoBase — envoi de requêtes (`ctx.api`), i18n (`ctx.t`), logging (`ctx.logger`), etc.
+5. **[FlowEngine](./flow-engine/index.md)** : si votre composant doit apparaître dans les menus « Ajouter un bloc / champ / action » et permettre une configuration visuelle par l'utilisateur, vous devez l'envelopper avec un FlowModel.
+
+Les quatre premières étapes couvrent la majorité des cas. Vous n'avez besoin de la cinquième que pour une intégration profonde avec le système de configuration UI de NocoBase. Si vous hésitez sur l'approche à utiliser, voir [Component vs FlowModel](./component-vs-flow-model).
+
+## Index rapide
+
+| Je veux…                                                  | Aller voir                                              |
+| --------------------------------------------------------- | ------------------------------------------------------- |
+| Comprendre la structure de base d'un plugin client        | [Plugin](./plugin)                                      |
+| Ajouter une page indépendante                             | [Router - routage](./router)                            |
+| Ajouter une page de configuration de plugin               | [Router - routage](./router)                            |
+| Écrire un composant React classique                       | [Développement de Component](./component/index.md)      |
+| Appeler l'API back-end, utiliser les capacités intégrées de NocoBase | [Context → Capacités courantes](./ctx/common-capabilities) |
+| Personnaliser le style des composants                     | [Styles et thèmes](./component/styles-themes)           |
+| Ajouter un nouveau bloc                                   | [FlowEngine → Extensions de bloc](./flow-engine/block)  |
+| Ajouter un nouveau composant de champ                     | [FlowEngine → Extensions de champ](./flow-engine/field) |
+| Ajouter un nouveau bouton d'action                        | [FlowEngine → Extensions d'action](./flow-engine/action) |
+| Hésiter entre Component et FlowModel                      | [Component vs FlowModel](./component-vs-flow-model)     |
+| Voir un plugin complet en action                          | [Exemples pratiques](./examples/index.md)               |
+
+## Liens connexes
+
+- [Écrire votre premier plugin](../write-your-first-plugin) — Créer un plugin fonctionnel à partir de zéro
+- [Vue d'ensemble du développement serveur](../server) — Un plugin client a en général besoin d'un complément côté serveur
+- [Documentation complète de FlowEngine](../../flow-engine/index.md) — Référence complète de FlowModel, Flow et Context
+- [Structure du projet](../project-structure) — Où placer les fichiers du plugin

@@ -110,7 +110,7 @@ listen 443 ssl http2;
 - 缺点：这种方式虽然简单，但在处理高并发或静态文件时性能较弱，适合开发和测试；
 - 建议：请尽量避免此方式。
 
-> 参考"[安装文档](https://v2.docs.nocobase.com/cn/get-started/quickstart)"
+> 参考"[安装文档](https://docs.nocobase.com/cn/get-started/quickstart)"
 
 不使用反向代理，首页加载约为6.1秒
 ![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
@@ -120,7 +120,7 @@ listen 443 ssl http2;
 - 优点：反向代理服务器能够高效处理并发连接、服务静态文件、实现负载均衡，并且配置 HTTP/2 也很简单；
 - 建议：在生产环境中，应用部署完成之后（源码部署 / create-nocobase-app / Docker 镜像），使用 Nginx 或 Caddy 作为反向代理。
 
-> 参考"[部署文档](https://v2.docs.nocobase.com/cn/get-started/deployment/production)"
+> 参考"[部署文档](https://docs.nocobase.com/cn/get-started/deployment/production)"
 
 使用Nginx代理后，首页加载约为3-4秒
 ![20250409131541](https://static-docs.nocobase.com/20250409131541.png)

@@ -14,6 +14,6 @@ keywords: "语言设置,启用语言,默认语言,个人语言偏好,多语言,i
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-如果当前使用的语言环境缺少翻译，可以使用「[本地化管理](/system-management/localization/)」插件进行翻译和补充。
+如果当前使用的语言环境缺少翻译，可以使用「[本地化管理](/system-management/localization/index.md)」插件进行翻译和补充。
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

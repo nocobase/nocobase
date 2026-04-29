@@ -9,7 +9,7 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
-import { matchRoutes, useParams } from 'react-router';
+import { matchRoutes } from 'react-router';
 import {
   type BrowserRouterProps,
   createBrowserRouter,
@@ -22,9 +22,10 @@ import {
   RouterProvider,
   useRouteError,
 } from 'react-router-dom';
-import { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
 import { BlankComponent, RouterContextCleaner } from './components';
 import { RouterBridge } from './components/RouterBridge';
+import { Router } from '@remix-run/router';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -39,7 +40,8 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
   renderComponent?: RenderComponentType;
   routes?: Record<string, RouteType>;
 };
-export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
+export type RenderableComponentType<T = any> = React.JSXElementConstructor<T> | React.ExoticComponent<T>;
+export type ComponentTypeAndString<T = any> = RenderableComponentType<T> | string;
 export type ComponentLoaderResult =
   | { default?: ComponentTypeAndString; Component?: ComponentTypeAndString }
   | ComponentTypeAndString;
@@ -50,12 +52,13 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   skipAuthCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
+export type RouterComponentType = React.FC<{ BaseLayout?: ComponentType }>;
 
-export class RouterManager {
+export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
-  public app: Application;
-  public router;
+  public app: TApp;
+  public router!: Router;
   get basename() {
     return this.router.basename;
   }
@@ -66,7 +69,7 @@ export class RouterManager {
     return this.router.navigate;
   }
 
-  constructor(options: RouterOptions = {}, app: Application) {
+  constructor(options: RouterOptions = {}, app: TApp) {
     this.options = options;
     this.app = app;
     this.routes = options.routes || {};
@@ -97,7 +100,7 @@ export class RouterManager {
           };
         }
         return {
-          default: loadedComponent as ComponentType<any>,
+          default: loadedComponent,
         };
       }),
     );
@@ -182,13 +185,13 @@ export class RouterManager {
   }
 
   matchRoutes(pathname: string) {
-    const routes = Object.values(this.routes);
+    const routes = this.getRoutesTree();
     // @ts-ignore
     return matchRoutes<RouteType>(routes, pathname, this.basename);
   }
 
   isSkippedAuthCheckRoute(pathname: string) {
-    const matchedRoutes = this.matchRoutes(pathname);
+    const matchedRoutes = this.matchRoutes(pathname) || [];
     return matchedRoutes.some((match) => {
       return match?.route?.skipAuthCheck === true;
     });
@@ -207,7 +210,7 @@ export class RouterManager {
 
     const routes = this.getRoutesTree();
 
-    const BaseLayoutContext = createContext<ComponentType>(null);
+    const BaseLayoutContext = createContext<ComponentType>((props) => props.children);
 
     const Provider = () => {
       const BaseLayout = useContext(BaseLayoutContext);
@@ -239,7 +242,7 @@ export class RouterManager {
       opts,
     );
 
-    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
+    const RenderRouter: RouterComponentType = ({ BaseLayout = BlankComponent }) => {
       return (
         <BaseLayoutContext.Provider value={BaseLayout}>
           <RouterContextCleaner>
@@ -278,8 +281,4 @@ export class RouterManager {
   remove(name: string) {
     delete this.routes[name];
   }
-}
-
-export function createRouterManager(options?: RouterOptions, app?: Application) {
-  return new RouterManager(options, app);
 }

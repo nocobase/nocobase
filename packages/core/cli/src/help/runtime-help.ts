@@ -21,4 +21,8 @@ export default class RuntimeHelp extends Help {
   protected get sortedCommands() {
     return super.sortedCommands.filter((command) => !isTopicIndexCommand(command.id, this.config.topics));
   }
+
+  protected get sortedTopics() {
+    return super.sortedTopics.filter((topic) => !topic.hidden);
+  }
 }

@@ -13,12 +13,12 @@ El módulo de autenticación de usuarios de NocoBase se compone principalmente d
 
 Además, NocoBase ofrece otros `plugins` con diversos métodos de autenticación de usuarios:
 
-- [`@nocobase/plugin-auth-sms`](/auth-verification/auth-sms/) - Ofrece la funcionalidad de inicio de sesión mediante verificación por SMS.
-- [`@nocobase/plugin-auth-saml`](/auth-verification/auth-saml/) - Ofrece la funcionalidad de inicio de sesión único (SSO) con SAML.
-- [`@nocobase/plugin-auth-oidc`](/auth-verification/auth-oidc/) - Ofrece la funcionalidad de inicio de sesión único (SSO) con OIDC.
-- [`@nocobase/plugin-auth-cas`](/auth-verification/auth-cas/) - Ofrece la funcionalidad de inicio de sesión único (SSO) con CAS.
-- [`@nocobase/plugin-auth-ldap`](/auth-verification/auth-ldap/) - Ofrece la funcionalidad de inicio de sesión único (SSO) con LDAP.
-- [`@nocobase/plugin-auth-wecom`](/auth-verification/auth-wecom/) - Ofrece la funcionalidad de inicio de sesión con WeCom.
-- [`@nocobase/plugin-auth-dingtalk`](/auth-verification/auth-dingtalk/) - Ofrece la funcionalidad de inicio de sesión con DingTalk.
+- [`@nocobase/plugin-auth-sms`](/auth-verification/auth-sms/index.md) - Ofrece la funcionalidad de inicio de sesión mediante verificación por SMS.
+- [`@nocobase/plugin-auth-saml`](/auth-verification/auth-saml/index.md) - Ofrece la funcionalidad de inicio de sesión único (SSO) con SAML.
+- [`@nocobase/plugin-auth-oidc`](/auth-verification/auth-oidc/index.md) - Ofrece la funcionalidad de inicio de sesión único (SSO) con OIDC.
+- [`@nocobase/plugin-auth-cas`](/auth-verification/auth-cas/index.md) - Ofrece la funcionalidad de inicio de sesión único (SSO) con CAS.
+- [`@nocobase/plugin-auth-ldap`](/auth-verification/auth-ldap/index.md) - Ofrece la funcionalidad de inicio de sesión único (SSO) con LDAP.
+- [`@nocobase/plugin-auth-wecom`](/auth-verification/auth-wecom/index.md) - Ofrece la funcionalidad de inicio de sesión con WeCom.
+- [`@nocobase/plugin-auth-dingtalk`](/auth-verification/auth-dingtalk/index.md) - Ofrece la funcionalidad de inicio de sesión con DingTalk.
 
 Gracias a estos `plugins`, una vez que el administrador configura el método de autenticación correspondiente, los usuarios pueden iniciar sesión directamente en el sistema utilizando las identidades de usuario proporcionadas por plataformas como Google Workspace o Microsoft Azure. También es posible integrar herramientas de plataformas como Auth0, Logto y Keycloak. Además, los desarrolladores pueden ampliar fácilmente otras formas de autenticación que necesiten, utilizando las interfaces básicas que proporcionamos.

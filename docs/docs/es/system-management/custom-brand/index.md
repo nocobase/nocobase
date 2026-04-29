@@ -14,7 +14,7 @@ En la parte inferior de la página de inicio de sesión:
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-La posición 1 se puede configurar a través de la opción "Logo" en [Configuración del sistema](/system-management/system-settings/). Las posiciones 2 y 3 se pueden configurar utilizando este **plugin**.
+La posición 1 se puede configurar a través de la opción "Logo" en [Configuración del sistema](/system-management/system-settings/index.md). Las posiciones 2 y 3 se pueden configurar utilizando este **plugin**.
 
 ## Instrucciones de uso
 

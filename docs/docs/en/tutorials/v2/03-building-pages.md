@@ -25,8 +25,8 @@ First, we need to create an entry point for "Tickets" in the system.
 
 1. Click the **[UI Editor](/get-started/how-nocobase-works)** toggle in the top-right corner to enter design mode (the entire page will show orange editable borders).
 2. Click the **"Add menu item"** button (`+` icon) in the top navigation bar, select **"Add group"**, and name it **"Tickets"**.
-3. The "Tickets" [menu](/interface-builder/menus) appears immediately in the top navigation bar. **Click on it** — a sidebar menu will expand on the left.
-4. In the sidebar, click the orange **"Add menu item"** button, select **"Modern page (v2)"**, and add two sub-[pages](/interface-builder/pages) one by one:
+3. The "Tickets" menu appears immediately in the top navigation bar. **Click on it** — a sidebar menu will expand on the left.
+4. In the sidebar, click the orange **"Add menu item"** button, select **"Modern page (v2)"**, and add two sub-pages one by one:
    - **All Tickets** — displays all tickets
    - **Categories** — manages category data
 
@@ -42,7 +42,7 @@ Now go to the "All Tickets" page and add a Table block:
 
 1. On the blank page, click **"Add block"**.
 2. Select **Data blocks -> Table**.
-3. In the [collection](/data-sources/main/collection) list that pops up, select **"Tickets"** (the table we created in the last chapter).
+3. In the [collection](/data-sources/data-modeling/collection) list that pops up, select **"Tickets"** (the table we created in the last chapter).
 
 ![03-building-pages-2026-03-13-08-44-07](https://static-docs.nocobase.com/03-building-pages-2026-03-13-08-44-07.png)
 
@@ -70,11 +70,11 @@ An empty table with no data isn't very useful for testing. Let's quickly add an 
 
 ![03-building-pages-2026-03-17-15-03-04](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-03-04.png)
 
-> We'll cover form configuration in detail (field linkage, edit forms, detail popups, etc.) in [Chapter 4](/tutorials/v2/04-forms-and-details/). For now, just being able to enter data is enough.
+> We'll cover form configuration in detail (field linkage, edit forms, detail popups, etc.) in [Chapter 4](/tutorials/v2/04-forms-and-details). For now, just being able to enter data is enough.
 
 ## 3.4 Configuring Display Columns
 
-By default, a table won't automatically show all [fields](/data-sources/field). We need to manually choose which columns to display:
+By default, a table won't automatically show all [fields](/data-sources/data-modeling/collection-fields). We need to manually choose which columns to display:
 
 1. On the right side of the Table block header, click **"Fields"**.
 2. Check the fields you want to show:
@@ -238,4 +238,3 @@ Being able to "see" data isn't enough — users also need to **submit new ticket
 - [Blocks Overview](/interface-builder/blocks) — All block types explained
 - [Table Block](/interface-builder/blocks/data-blocks/table) — Table block configuration guide
 - [Filter Block](/interface-builder/blocks/filter-blocks/form) — Filter form setup
-

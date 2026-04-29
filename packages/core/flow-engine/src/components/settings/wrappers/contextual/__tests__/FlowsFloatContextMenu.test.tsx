@@ -17,6 +17,7 @@ import { FlowEngineProvider } from '../../../../../provider';
 import { FieldModelRenderer } from '../../../../FieldModelRenderer';
 import { FlowModelRenderer } from '../../../../FlowModelRenderer';
 import { FlowsFloatContextMenu } from '../FlowsFloatContextMenu';
+import { TOOLBAR_DRAG_ACTIVITY_EVENT } from '../../../../dnd';
 
 const mockColorTextTertiary = '#8c8c8c';
 
@@ -151,15 +152,34 @@ const setupDrawerPopup = () => {
   return { drawerWrapper, drawerContent };
 };
 
+const setupOverflowPopup = () => {
+  const appContainer = createAppContainer();
+  const popupRoot = document.createElement('div');
+  popupRoot.className = 'ant-menu-submenu-popup';
+  popupRoot.style.zIndex = '1000';
+  appContainer.appendChild(popupRoot);
+  mockRect(appContainer, { top: 40, left: 60, width: 1200, height: 800 });
+  mockRect(popupRoot, { top: 96, left: 420, width: 260, height: 240 });
+  return { appContainer, popupRoot };
+};
+
 const getHost = (element: HTMLElement) => element.closest('[data-has-float-menu="true"]') as HTMLDivElement;
 const queryOverlay = (container: HTMLElement, uid: string) =>
   container.querySelector(`[data-model-uid="${uid}"]`) as HTMLDivElement | null;
 
-const createModel = (engine: FlowEngine, uid: string) => {
+const createModel = (engine: FlowEngine, uid: string, themeToken?: Record<string, number | undefined>) => {
   const model = new FlowModel({ uid, flowEngine: engine });
-  model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
+  model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8, ...themeToken } });
   model.render = vi.fn().mockReturnValue(<div data-testid={`${uid}-content`}>{uid}</div>);
   return model;
+};
+
+const ToolbarDragItem = ({ model }: { model: FlowModel }) => {
+  return (
+    <button type="button" aria-label="toolbar-drag">
+      drag
+    </button>
+  );
 };
 
 describe('FlowsFloatContextMenu', () => {
@@ -314,6 +334,49 @@ describe('FlowsFloatContextMenu', () => {
     });
   });
 
+  it('renders overflow popup toolbar above popup roots while keeping dropdown popup bound to local icons container', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'overflow-popup-model', { zIndexPopupBase: 1000 });
+    const { appContainer, popupRoot } = setupOverflowPopup();
+
+    const { findByTestId } = renderWithProviders(
+      engine,
+      <FlowModelRenderer model={model} showFlowSettings={{ toolbarPosition: 'above' }} />,
+      { container: popupRoot },
+    );
+
+    const content = await findByTestId('overflow-popup-model-content');
+    const host = getHost(content);
+    mockRect(host, { top: 128, left: 436, width: 180, height: 40 });
+
+    expect(getComputedStyle(popupRoot).zIndex).toBe('1000');
+    expect(appContainer.querySelector('[data-model-uid="overflow-popup-model"]')).toBeNull();
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector(
+        '[data-model-uid="overflow-popup-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    await waitFor(() => {
+      expect(overlay.className).toContain('nb-toolbar-visible');
+      expect(getComputedStyle(overlay).zIndex).toBe('1001');
+      expect(overlay.parentElement).toBe(popupRoot);
+    });
+
+    const dropdown = within(overlay).getByTestId('dropdown');
+    expect(dropdown.getAttribute('data-popup-container')).toContain('nb-toolbar-container-icons');
+  });
+
   it('portals field toolbar to the nearest popup root and treats inset values as rect adjustments', async () => {
     const engine = new FlowEngine();
     await engine.flowSettings.forceEnable();
@@ -395,6 +458,112 @@ describe('FlowsFloatContextMenu', () => {
       expect(insetOverlay.parentElement).toBe(drawerWrapper);
       expect(insetOverlay.style.right).toBe('');
       expect(insetOverlay.style.bottom).toBe('');
+    });
+  });
+
+  it('falls back to popup base 1000 when themeToken.zIndexPopupBase is missing', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'fallback-zindex-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 20, left: 40, width: 1200, height: 800 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model}>
+        <div data-testid="fallback-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const host = getHost(getByTestId('fallback-content'));
+    mockRect(host, { top: 56, left: 84, width: 160, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector(
+        '[data-model-uid="fallback-zindex-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    await waitFor(() => {
+      expect(overlay.className).toContain('nb-toolbar-visible');
+      expect(getComputedStyle(overlay).zIndex).toBe('1001');
+    });
+  });
+
+  it('keeps toolbar visible while a toolbar drag item is active', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'drag-toolbar-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 20, left: 40, width: 1200, height: 800 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu
+        model={model}
+        extraToolbarItems={[
+          {
+            key: 'toolbar-drag',
+            component: ToolbarDragItem,
+            sort: 100,
+          },
+        ]}
+      >
+        <div data-testid="drag-toolbar-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const host = getHost(getByTestId('drag-toolbar-content'));
+    mockRect(host, { top: 56, left: 84, width: 160, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector('[data-model-uid="drag-toolbar-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const icons = overlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('toolbar-drag')).toBeTruthy();
+      expect(overlay.className).toContain('nb-toolbar-visible');
+    });
+
+    fireEvent.mouseLeave(host, { relatedTarget: icons });
+    fireEvent.mouseEnter(icons, { relatedTarget: host });
+
+    const dragButton = within(overlay).getByLabelText('toolbar-drag');
+    dragButton.ownerDocument.dispatchEvent(
+      new CustomEvent(TOOLBAR_DRAG_ACTIVITY_EVENT, {
+        detail: { active: true, modelUid: model.uid },
+      }),
+    );
+    fireEvent.mouseLeave(icons, { relatedTarget: document.createElement('div') });
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'drag-toolbar-model')?.className).toContain('nb-toolbar-visible');
+    });
+
+    dragButton.ownerDocument.dispatchEvent(
+      new CustomEvent(TOOLBAR_DRAG_ACTIVITY_EVENT, {
+        detail: { active: false, modelUid: model.uid },
+      }),
+    );
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'drag-toolbar-model')).toBeNull();
     });
   });
 

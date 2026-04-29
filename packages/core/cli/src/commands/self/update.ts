@@ -8,7 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { confirmAction } from '../../lib/ui.js';
+import { confirmAction, setVerboseMode } from '../../lib/ui.js';
 import {
   formatSelfUpdateUnavailableMessage,
   formatUnsupportedSelfUpdateMessage,
@@ -42,10 +42,15 @@ export default class SelfUpdate extends Command {
       description: 'Output the result as JSON',
       default: false,
     }),
+    verbose: Flags.boolean({
+      description: 'Show detailed update output',
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(SelfUpdate);
+    setVerboseMode(flags.verbose);
     const status = await inspectSelfStatus({
       channel: flags.channel as SelfChannel | 'auto',
     });
@@ -71,6 +76,7 @@ export default class SelfUpdate extends Command {
 
     const result = await updateSelf({
       channel: flags.channel as SelfChannel | 'auto',
+      verbose: flags.verbose,
     });
 
     if (flags.json) {
@@ -94,12 +100,18 @@ export default class SelfUpdate extends Command {
     }
 
     if (result.action === 'noop') {
-      this.log(`NocoBase CLI is already up to date at ${result.status.currentVersion}.`);
+      this.log(
+        flags.verbose
+          ? `NocoBase CLI is already up to date at ${result.status.currentVersion}.`
+          : `NocoBase CLI is up to date: ${result.status.currentVersion}.`,
+      );
       return;
     }
 
     this.log(
-      `Updated NocoBase CLI from ${result.status.currentVersion} using ${result.packageSpec}${result.targetVersion ? ` (latest ${result.status.channel} resolves to ${result.targetVersion})` : ''}.`,
+      flags.verbose
+        ? `Updated NocoBase CLI from ${result.status.currentVersion} using ${result.packageSpec}${result.targetVersion ? ` (latest ${result.status.channel} resolves to ${result.targetVersion})` : ''}.`
+        : `Updated NocoBase CLI: ${result.status.currentVersion} -> ${result.targetVersion}.`,
     );
   }
 }

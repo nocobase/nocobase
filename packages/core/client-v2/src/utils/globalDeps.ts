@@ -13,6 +13,7 @@ import * as formilyCore from '@formily/core';
 import * as formilyReact from '@formily/react';
 import * as formilyReactive from '@formily/reactive';
 import * as formilyShared from '@formily/shared';
+import * as nocobaseClientUtils from '@nocobase/utils/client';
 import * as nocobaseFlowEngine from '@nocobase/flow-engine';
 import * as antd from 'antd';
 import * as i18next from 'i18next';
@@ -55,6 +56,8 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@formily/shared', () => formilyShared);
 
   // nocobase
+  requirejs.define('@nocobase/utils', () => nocobaseClientUtils);
+  requirejs.define('@nocobase/utils/client', () => nocobaseClientUtils);
   requirejs.define('@nocobase/client-v2', () => nocobaseClientV2);
   requirejs.define('@nocobase/client-v2/client-v2', () => nocobaseClientV2);
   requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);

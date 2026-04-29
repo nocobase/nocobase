@@ -43,6 +43,6 @@
   {
     "type": "custom-link",
     "label": "Chiffrement des champs",
-    "link": "/data-sources/field-encryption"
+    "link": "/data-sources/field-encryption/"
   }
 ]

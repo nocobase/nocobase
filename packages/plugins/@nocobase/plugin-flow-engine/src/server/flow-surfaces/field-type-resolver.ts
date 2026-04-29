@@ -67,6 +67,7 @@ const FIELD_USE_TO_PUBLIC_FIELD_TYPE: Record<string, FlowSurfacePublicRelationFi
 };
 
 const FIELD_TYPES_WITH_FIELDS = new Set<FlowSurfacePublicRelationFieldType>([
+  'picker',
   'subForm',
   'subFormList',
   'subDetails',
@@ -74,8 +75,6 @@ const FIELD_TYPES_WITH_FIELDS = new Set<FlowSurfacePublicRelationFieldType>([
   'subTable',
   'popupSubTable',
 ]);
-
-const FIELD_TYPES_WITH_SELECTOR_FIELDS = new Set<FlowSurfacePublicRelationFieldType>(['picker']);
 
 const FIELD_TYPES_WITH_TABLE_PROPS = new Set<FlowSurfacePublicRelationFieldType>(['subTable', 'popupSubTable']);
 
@@ -167,7 +166,6 @@ export function resolveRelationFieldType(input: {
   dataSourceKey: string;
   getCollection: (dataSourceKey: string, collectionName: string) => any;
   fields?: any;
-  selectorFields?: any;
   titleField?: any;
   openMode?: any;
   popupSize?: any;
@@ -249,15 +247,8 @@ export function resolveRelationFieldType(input: {
   }
 
   const explicitFields = normalizePublicFieldNameList(input.fields, `${input.context}.fields`);
-  const explicitSelectorFields = normalizePublicFieldNameList(input.selectorFields, `${input.context}.selectorFields`);
-  if (explicitFields && explicitSelectorFields) {
-    throwBadRequest(`flowSurfaces ${input.context} cannot mix fields and selectorFields on the same field`);
-  }
   if (explicitFields && !FIELD_TYPES_WITH_FIELDS.has(fieldType)) {
     throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support fields`);
-  }
-  if (explicitSelectorFields && !FIELD_TYPES_WITH_SELECTOR_FIELDS.has(fieldType)) {
-    throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support selectorFields`);
   }
   if ((!_.isUndefined(input.openMode) || !_.isUndefined(input.popupSize)) && fieldType !== 'picker') {
     throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support openMode or popupSize`);
@@ -271,21 +262,17 @@ export function resolveRelationFieldType(input: {
   const shouldApplyDefaults = input.applyDefaults !== false;
   const defaultTargetField = shouldApplyDefaults ? pickCollectionFallbackFieldName(targetCollection) : undefined;
   const fields =
-    explicitFields ?? (shouldApplyDefaults && usesNestedRelationFields(fieldUse) ? [defaultTargetField] : undefined);
-  const selectorFields =
-    explicitSelectorFields ??
-    (shouldApplyDefaults && fieldType === 'picker' && _.isUndefined(input.selectorFields)
+    explicitFields ??
+    (shouldApplyDefaults && (usesNestedRelationFields(fieldUse) || fieldType === 'picker')
       ? [defaultTargetField]
       : undefined);
+  const selectorFields = ['picker', 'popupSubTable'].includes(fieldType) ? fields : undefined;
   const titleField = _.isUndefined(input.titleField)
     ? defaultTargetField
     : String(input.titleField || '').trim() || undefined;
 
   if (fields?.length) {
     assertTargetFieldNamesExist(targetCollection, fields, `${input.context}.fields`);
-  }
-  if (selectorFields?.length) {
-    assertTargetFieldNamesExist(targetCollection, selectorFields, `${input.context}.selectorFields`);
   }
   if (titleField && !resolveFieldFromCollection(targetCollection, titleField)) {
     throwBadRequest(

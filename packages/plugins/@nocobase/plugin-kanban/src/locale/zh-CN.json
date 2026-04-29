@@ -45,6 +45,7 @@
   "Popup settings": "弹窗设置",
   "Popup size": "弹窗尺寸",
   "Quick create": "快捷新增",
+  "Quick create popup settings": "快速创建弹窗设置",
   "Select a grouping field first": "请先选择分组字段",
   "Select group values": "选择分组值",
   "The order of the selected values determines the kanban column order": "看板的列顺序基于值选择的顺序确定",
@@ -57,6 +58,7 @@
   "Style": "样式",
   "Title field": "标题字段",
   "Unknown": "未知",
+  "Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.": "请选择与当前分组字段匹配的排序字段，其他排序字段不能用于拖拽排序。",
   "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "用于看板卡片的排序，只能选择与分组字段相对应的排序字段",
   "View record": "查看记录"
 }

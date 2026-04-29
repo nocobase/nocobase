@@ -14,7 +14,7 @@ import { useRequest } from '../api-client';
 import { useStyles as useMarkdownStyles } from '../schema-component/antd/markdown/style';
 import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { useStyles } from './style';
-import { useGlobalTheme } from '../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 
 const PLUGIN_STATICS_PATH = '/static/plugins/';
 

@@ -53,6 +53,22 @@
   },
   {
     "type": "custom-link",
+    "label": "外部データテーブル (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "MySQL Federatedの有効化",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "埋め込みコンテンツ",
     "items": [
       {

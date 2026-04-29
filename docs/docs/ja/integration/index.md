@@ -16,8 +16,8 @@ NocoBaseは、外部アプリケーションやサービスと連携するため
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-- **[APIキー](/integration/api-keys/)**: APIキーを使った安全な認証で、NocoBaseリソースにプログラムからアクセスできます。
-- **[APIドキュメント](/integration/api-doc/)**: エンドポイントの探索やテストに使える、組み込みのAPIドキュメントです。
+- **[APIキー](/integration/api-keys/index.md)**: APIキーを使った安全な認証で、NocoBaseリソースにプログラムからアクセスできます。
+- **[APIドキュメント](/integration/api-doc/index.md)**: エンドポイントの探索やテストに使える、組み込みのAPIドキュメントです。
 
 ### シングルサインオン (SSO)
 
@@ -25,7 +25,7 @@ NocoBaseは、外部アプリケーションやサービスと連携するため
 
 ![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
-- **[SSO連携](/integration/sso/)**: SAML、OIDC、CAS、LDAP、およびサードパーティプラットフォーム認証に対応しています。
+- **[SSO連携](/integration/sso/index.md)**: SAML、OIDC、CAS、LDAP、およびサードパーティプラットフォーム認証に対応しています。
 - ユーザー管理とアクセス制御の一元化
 - システムをまたいだシームレスな認証体験
 
@@ -35,8 +35,8 @@ NocoBaseのワークフローを外部システムと接続します。
 
 ![auth_sso-2025-11-24-12-02-01](https://static-docs.nocobase.com/auth_sso-2025-11-24-12-02-01.png)
 
-- **[ワークフロー Webhook](/integration/workflow-webhook/)**: 外部システムからのイベントを受信してワークフローをトリガーします。
-- **[ワークフロー HTTPリクエスト](/integration/workflow-http-request/)**: ワークフローから外部APIへHTTPリクエストを送信します。
+- **[ワークフロー Webhook](/integration/workflow-webhook/index.md)**: 外部システムからのイベントを受信してワークフローをトリガーします。
+- **[ワークフロー HTTPリクエスト](/integration/workflow-http-request/index.md)**: ワークフローから外部APIへHTTPリクエストを送信します。
 - プラットフォームをまたいだビジネスプロセスの自動化
 
 ### 外部データソース
@@ -45,7 +45,7 @@ NocoBaseのワークフローを外部システムと接続します。
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[外部データベース](/data-sources/)**: MySQL、PostgreSQL、MariaDB、MSSQL、Oracle、KingbaseESデータベースに直接接続できます。
+- **[外部データベース](/data-sources/index.md)**: MySQL、PostgreSQL、MariaDB、MSSQL、Oracle、KingbaseESデータベースに直接接続できます。
 - 外部データベースのテーブル構造を認識し、NocoBase内で外部データに対するCRUD操作を直接実行できます。
 - 統一されたデータ管理インターフェース
 
@@ -55,7 +55,7 @@ NocoBase内に外部コンテンツを埋め込みます。
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-- **[Iframeブロック](/integration/block-iframe/)**: 外部のウェブページやアプリケーションを埋め込みます。
+- **[Iframeブロック](/integration/block-iframe/index.md)**: 外部のウェブページやアプリケーションを埋め込みます。
 - **JSブロック**: カスタムJavaScriptコードを実行して高度な連携を実現します。
 
 ## よくある連携シナリオ

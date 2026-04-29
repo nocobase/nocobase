@@ -14,7 +14,7 @@ The **WeChat Work** plugin supports synchronizing user and department data from 
 
 First, you need to create a custom application in the WeChat Work admin console and obtain the **Corp ID**, **AgentId**, and **Secret**.
 
-Refer to [User Authentication - WeChat Work](/auth-verification/auth-wecom/).
+Refer to [User Authentication - WeChat Work](/auth-verification/auth-wecom/index.md).
 
 ## Add a synchronization data source in NocoBase
 

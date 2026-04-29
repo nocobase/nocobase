@@ -39,8 +39,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 });
 
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { RouteModel } from '../../../../flow/models/base/RouteModel';
-import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
+import { AdminLayoutRouteCoordinator, RouteModel } from '@nocobase/client-v2';
 
 const flushPromises = async (times = 3) => {
   for (let i = 0; i < times; i += 1) {
@@ -51,6 +50,13 @@ const flushPromises = async (times = 3) => {
 const createEngine = () => {
   const engine = new FlowEngine();
   engine.registerModels({ RouteModel });
+  engine.context.defineProperty('routeRepository', {
+    value: {
+      getRouteBySchemaUid: (pageUid: string) => {
+        return engine.context.routeMap?.[pageUid];
+      },
+    },
+  });
   return engine;
 };
 
@@ -64,10 +70,12 @@ describe('AdminLayoutRouteCoordinator', () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
     const loadSpy = vi.spyOn(engine, 'loadModel');
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
 
     coordinator.syncRoute({
@@ -88,10 +96,12 @@ describe('AdminLayoutRouteCoordinator', () => {
       },
     });
     const coordinator = new AdminLayoutRouteCoordinator(engine);
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
 
     expect(navigateToSpy).toHaveBeenCalledTimes(2);
@@ -102,18 +112,21 @@ describe('AdminLayoutRouteCoordinator', () => {
     const coordinator = new AdminLayoutRouteCoordinator(engine);
     const removeSpy = vi.spyOn(engine, 'removeModelWithSubModels');
     coordinator.setLayoutContentElement(document.createElement('div'));
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
 
-    const routeModel = engine.getModel<RouteModel>('page-1') as RouteModel;
+    const routeModel = engine.getModel<RouteModel>('page-1');
     const routeDestroySpy = vi.fn();
     routeModel.dispatchEvent = vi.fn(async (_eventName: string, args: any) => {
       args.destroyRef.current = routeDestroySpy;
       args.onOpen?.();
-    }) as any;
+      return [];
+    });
 
     const popupModel = engine.createModel<FlowModel>({
       uid: 'popup-1',
@@ -122,7 +135,8 @@ describe('AdminLayoutRouteCoordinator', () => {
     const popupDestroySpy = vi.fn();
     popupModel.dispatchEvent = vi.fn(async (_eventName: string, args: any) => {
       args.destroyRef.current = popupDestroySpy;
-    }) as any;
+      return [];
+    });
 
     coordinator.syncRoute({
       params: { name: 'page-1' },
@@ -145,20 +159,22 @@ describe('AdminLayoutRouteCoordinator', () => {
   it('should stop opening stale views when route switched to another page', async () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+      'page-2': { title: 'Page 2' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
     coordinator.registerPage('page-2', {
       active: true,
-      currentRoute: { title: 'Page 2' },
     });
 
-    const page1RouteModel = engine.getModel<RouteModel>('page-1') as RouteModel;
-    const page2RouteModel = engine.getModel<RouteModel>('page-2') as RouteModel;
-    page1RouteModel.dispatchEvent = vi.fn() as any;
-    page2RouteModel.dispatchEvent = vi.fn() as any;
+    const page1RouteModel = engine.getModel<RouteModel>('page-1');
+    const page2RouteModel = engine.getModel<RouteModel>('page-2');
+    page1RouteModel.dispatchEvent = vi.fn(async () => []);
+    page2RouteModel.dispatchEvent = vi.fn(async () => []);
 
     let resolveLoad: (model: FlowModel) => void;
     const loadPromise = new Promise<FlowModel>((resolve) => {
@@ -190,7 +206,10 @@ describe('AdminLayoutRouteCoordinator', () => {
       use: 'FlowModel',
     });
     const popupDispatchSpy = vi.fn();
-    popupModel.dispatchEvent = popupDispatchSpy as any;
+    popupModel.dispatchEvent = vi.fn(async (...args) => {
+      popupDispatchSpy(...args);
+      return [];
+    });
 
     if (!resolveLoad) {
       throw new Error('resolveLoad should be initialized');
@@ -205,14 +224,16 @@ describe('AdminLayoutRouteCoordinator', () => {
   it('should not open views after page is unregistered while model loading is in flight', async () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
 
-    const page1RouteModel = engine.getModel<RouteModel>('page-1') as RouteModel;
-    page1RouteModel.dispatchEvent = vi.fn() as any;
+    const page1RouteModel = engine.getModel<RouteModel>('page-1');
+    page1RouteModel.dispatchEvent = vi.fn(async () => []);
 
     let resolveLoad: (model: FlowModel) => void;
     const loadPromise = new Promise<FlowModel>((resolve) => {
@@ -238,7 +259,10 @@ describe('AdminLayoutRouteCoordinator', () => {
       use: 'FlowModel',
     });
     const popupDispatchSpy = vi.fn();
-    popupModel.dispatchEvent = popupDispatchSpy as any;
+    popupModel.dispatchEvent = vi.fn(async (...args) => {
+      popupDispatchSpy(...args);
+      return [];
+    });
 
     if (!resolveLoad) {
       throw new Error('resolveLoad should be initialized');
@@ -256,18 +280,21 @@ describe('AdminLayoutRouteCoordinator', () => {
     const globalElement = document.createElement('div');
     const pageElement = document.createElement('div');
     coordinator.setLayoutContentElement(globalElement);
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
       layoutContentElement: pageElement,
     });
 
-    const routeModel = engine.getModel<RouteModel>('page-1') as RouteModel;
+    const routeModel = engine.getModel<RouteModel>('page-1');
     const dispatchSpy = vi.fn(async (_eventName: string, args: any) => {
       args.destroyRef.current = vi.fn();
+      return [];
     });
-    routeModel.dispatchEvent = dispatchSpy as any;
+    routeModel.dispatchEvent = dispatchSpy;
 
     coordinator.syncRoute({
       params: { name: 'page-1' },
@@ -279,22 +306,24 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(dispatchSpy.mock.calls[0][1]?.target).toBe(pageElement);
   });
 
-  it('should expose live currentRoute from route model context after page meta updates', () => {
+  it('should expose live currentRoute from route model context after route repository updates', () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1' },
+    };
 
     coordinator.registerPage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
 
-    const routeModel = engine.getModel<RouteModel>('page-1') as RouteModel;
+    const routeModel = engine.getModel<RouteModel>('page-1');
 
     expect(routeModel.context.currentRoute.title).toBe('Page 1');
 
-    coordinator.syncPageMeta('page-1', {
-      currentRoute: { title: 'Page 1 updated' },
-    });
+    engine.context.routeMap = {
+      'page-1': { title: 'Page 1 updated' },
+    };
 
     expect(routeModel.context.currentRoute.title).toBe('Page 1 updated');
   });

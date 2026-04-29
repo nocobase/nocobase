@@ -27,7 +27,7 @@ C'est un plugin intégré, aucune installation séparée n'est requise.
 
 ## Utilisation
 
-Lors de l'initialisation et de l'installation de l'application, une source de données est fournie par défaut pour stocker les données NocoBase. Celle-ci est appelée la base de données principale. Pour plus d'informations, consultez la documentation sur la [Base de données principale](/data-sources/data-source-main/).
+Lors de l'initialisation et de l'installation de l'application, une source de données est fournie par défaut pour stocker les données NocoBase. Celle-ci est appelée la base de données principale. Pour plus d'informations, consultez la documentation sur la [Base de données principale](/data-sources/data-source-main/index.md).
 
 ### Sources de données externes
 
@@ -39,4 +39,4 @@ Les bases de données externes sont prises en charge comme sources de données. 
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-Vous pouvez également accéder aux données provenant de sources d'API HTTP. Pour plus d'informations, consultez la documentation sur la [source de données REST API](/data-sources/data-source-rest-api/).
+Vous pouvez également accéder aux données provenant de sources d'API HTTP. Pour plus d'informations, consultez la documentation sur la [source de données REST API](/data-sources/data-source-rest-api/index.md).

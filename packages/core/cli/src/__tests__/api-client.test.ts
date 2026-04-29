@@ -74,3 +74,54 @@ test('executeRawApiRequest preserves custom headers and adds the CLI request sou
   expect(requestHeaders?.get('x-data-source')).toBe('test');
   expect(requestHeaders?.get('content-type')).toBe('application/json');
 });
+
+test('executeApiRequest preserves authorization across same-url http to https redirects', async () => {
+  const calls: Array<{ url: string; auth: string | null; redirect?: RequestRedirect }> = [];
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const headers = init?.headers as Headers;
+    calls.push({
+      url,
+      auth: headers?.get('authorization') ?? null,
+      redirect: init?.redirect,
+    });
+
+    if (url.startsWith('http://')) {
+      return new Response(null, {
+        status: 308,
+        headers: {
+          location: url.replace('http://', 'https://'),
+        },
+      });
+    }
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  const response = await executeApiRequest({
+    flags: {},
+    operation: {
+      method: 'get',
+      pathTemplate: '/users:list',
+      parameters: [],
+    },
+  });
+
+  expect(response.ok).toBe(true);
+  expect(calls).toEqual([
+    {
+      url: 'http://localhost:13000/api/users:list',
+      auth: 'Bearer test-token',
+      redirect: 'manual',
+    },
+    {
+      url: 'https://localhost:13000/api/users:list',
+      auth: 'Bearer test-token',
+      redirect: 'manual',
+    },
+  ]);
+});

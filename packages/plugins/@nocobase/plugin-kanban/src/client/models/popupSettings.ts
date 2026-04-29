@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { openView } from '@nocobase/client';
+import { openView } from '@nocobase/client-v2';
 
 export const normalizeKanbanPopupTargetUid = (value?: string) => {
   if (!value?.trim()) {

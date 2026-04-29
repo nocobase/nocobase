@@ -15,29 +15,27 @@ import { isArray } from 'lodash';
 import template from 'lodash/template';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  DataBlockProvider,
-  TableFieldResource,
-  WithoutTableFieldResource,
-  useCollectionManager,
-  useCollectionParentRecord,
-  useCollectionRecord,
-  useCollectionRecordData,
-  useDataBlockProps,
-  useDataBlockRequest,
-  useDataBlockResource,
-  useDesignable,
-  useRecord,
-} from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
 import {
   CollectionProvider_deprecated,
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
+import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
+import {
+  useCollectionParentRecord,
+  useCollectionRecord,
+  useCollectionRecordData,
+} from '../data-source/collection-record/CollectionRecordProvider';
+import { DataBlockProvider, useDataBlockProps } from '../data-source/data-block/DataBlockProvider';
+import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
+import { useDataBlockResource } from '../data-source/data-block/DataBlockResourceProvider';
 import { RefreshComponentProvider, useRefreshComponent } from '../formily/NocoBaseRecursionField';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
+import { useRecord } from '../record-provider';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
+import { TableFieldResource, WithoutTableFieldResource } from './TableFieldProvider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
 

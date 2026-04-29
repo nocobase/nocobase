@@ -289,7 +289,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
       'zh-CN': 'cn/',
       'en-US': '',
       'ja-JP': 'ja/',
-      'ko-KR': 'ko/',
       'es-ES': 'es/',
       'pt-PT': 'pt/',
       'de-DE': 'de',

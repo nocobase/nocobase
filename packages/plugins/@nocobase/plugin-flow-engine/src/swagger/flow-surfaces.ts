@@ -145,12 +145,8 @@ const RELATION_FIELD_TYPE_SCHEMA = {
 const RELATION_TARGET_FIELDS_SCHEMA = {
   type: 'array',
   items: { type: 'string' },
-  description: 'Relation target record fields used as sub-table columns or embedded sub-form/detail fields.',
-};
-const RELATION_SELECTOR_FIELDS_SCHEMA = {
-  type: 'array',
-  items: { type: 'string' },
-  description: 'Record picker selector table fields. Do not mix with fields on the same field object.',
+  description:
+    'Relation target record fields. For picker fields, these become selector table columns; for nested relation fields, these become sub-table columns or embedded sub-form/detail fields.',
 };
 const ADD_CHILD_TREE_TABLE_NOTE =
   '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled.';
@@ -862,7 +858,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. Relation fields can request a public `fieldType` such as `picker`, `subTable`, or `popupSubTable`, with optional flat `fields`, `selectorFields`, and `titleField`. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` or internal field model keys. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically. Under approval forms, direct field creation preserves the `PatternFormFieldModel` inner node semantics and does not allow standalone `jsItem`.',
+      'Automatically derives the wrapper/inner-field combination from the container use and the field interface. Relation fields can request a public `fieldType` such as `picker`, `subTable`, or `popupSubTable`, with optional flat `fields` and `titleField`. For picker fields, `fields` configures selector table columns; for nested relation fields, `fields` configures nested fields/columns. Direct add does not accept raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry` or internal field model keys. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable fields can also pass `popup` directly to append a local popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. If local openView is enabled but no popup content is provided, the server fills in the popup page/tab/grid shell automatically. Under approval forms, direct field creation preserves the `PatternFormFieldModel` inner node semantics and does not allow standalone `jsItem`.',
     ),
     requestBody: {
       required: true,
@@ -2188,7 +2184,6 @@ const schemas = {
           },
           fieldType: RELATION_FIELD_TYPE_SCHEMA,
           fields: RELATION_TARGET_FIELDS_SCHEMA,
-          selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
           titleField: { type: 'string' },
           openMode: { type: 'string', example: 'drawer' },
           popupSize: { type: 'string', example: 'medium' },
@@ -3480,7 +3475,6 @@ const schemas = {
           type: { type: 'string' },
           fieldType: RELATION_FIELD_TYPE_SCHEMA,
           fields: RELATION_TARGET_FIELDS_SCHEMA,
-          selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
           titleField: { type: 'string' },
           openMode: { type: 'string', example: 'drawer' },
           popupSize: { type: 'string', example: 'medium' },
@@ -4502,7 +4496,6 @@ const schemas = {
       },
       fieldType: RELATION_FIELD_TYPE_SCHEMA,
       fields: RELATION_TARGET_FIELDS_SCHEMA,
-      selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
       titleField: { type: 'string' },
       openMode: { type: 'string', example: 'drawer' },
       popupSize: { type: 'string', example: 'medium' },
@@ -4733,7 +4726,6 @@ const schemas = {
       },
       fieldType: RELATION_FIELD_TYPE_SCHEMA,
       fields: RELATION_TARGET_FIELDS_SCHEMA,
-      selectorFields: RELATION_SELECTOR_FIELDS_SCHEMA,
       titleField: { type: 'string' },
       openMode: { type: 'string', example: 'drawer' },
       popupSize: { type: 'string', example: 'medium' },

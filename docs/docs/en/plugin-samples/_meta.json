@@ -6,12 +6,12 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/plugin-samples"
+        "link": "/plugin-samples/"
       },
       {
         "type": "custom-link",
         "label": "SchemaInitializer",
-        "link": "/plugin-samples/schema-initializer"
+        "link": "/plugin-samples/schema-initializer/"
       }
     ]
   }

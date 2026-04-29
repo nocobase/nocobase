@@ -84,6 +84,17 @@ const SORTING = arrayOption('Sorting rule array', {
   ],
 });
 
+const CONNECT_FIELDS = objectOption('Tree connect data block targets', {
+  example: {
+    targets: [
+      {
+        targetId: 'target-block-uid',
+        filterPaths: ['id'],
+      },
+    ],
+  },
+});
+
 const OPEN_VIEW = objectOption('Popup or drawer open configuration', {
   example: {
     dataSourceKey: 'main',
@@ -106,14 +117,9 @@ const RELATION_FIELDS = arrayOption('Relation target fields', {
   example: ['title', 'name'],
 });
 
-const SELECTOR_FIELDS = arrayOption('Record picker selector fields', {
-  example: ['title', 'code'],
-});
-
 const RELATION_FIELD_TYPE_OPTIONS: FlowSurfaceConfigureOptions = {
   fieldType: FIELD_TYPE,
   fields: RELATION_FIELDS,
-  selectorFields: SELECTOR_FIELDS,
   openMode: stringOption('Popup open mode', { example: 'drawer' }),
   popupSize: stringOption('Popup size', { example: 'medium' }),
   pageSize: numberOption('Page size', { example: 10 }),
@@ -273,6 +279,7 @@ const TREE_OPTIONS: FlowSurfaceConfigureOptions = {
   pageSize: numberOption('Root records per page', { example: 200 }),
   dataScope: FILTER_GROUP,
   sorting: SORTING,
+  connectFields: CONNECT_FIELDS,
 };
 
 const KANBAN_OPTIONS: FlowSurfaceConfigureOptions = {

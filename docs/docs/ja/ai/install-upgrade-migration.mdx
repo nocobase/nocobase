@@ -1,0 +1,407 @@
+---
+title: "インストールとアップグレードの移行ガイド：NocoBase CLI の使用"
+description: "旧版の Docker、create-nocobase-app、Git ソースコードによるインストール・アップグレード方式から、新しい NocoBase CLI ワークフローへの移行ガイド。"
+keywords: "NocoBase CLI,インストール移行,アップグレード移行,nb init,nb app upgrade,Docker,create-nocobase-app,Git ソースコード"
+---
+
+# インストールとアップグレードの移行ガイド：NocoBase CLI の使用
+
+:::danger
+CLI のインストールとアプリケーション管理機能はまだ開発中です。現時点ではローカル開発、テスト環境、AI Agent 接続シーンに適しており、本番環境のインストール・アップグレード・運用保守に直接使用することは推奨しません。
+:::
+
+新しい NocoBase CLI (`nb`) は、インストール、接続、起動、停止、ログ確認、アップグレード、クリーンアップなどの操作を統一のコマンド体系にまとめています。旧ドキュメントで Docker、create-nocobase-app、Git ソースコードごとに個別に維持していたフローと比較して、CLI はローカル開発、テスト環境の保守、AI Agent の接続と連携により適しています。
+
+本ドキュメントは以下のシーンに適用されます：
+
+- 旧ドキュメントに従って NocoBase をインストール・アップグレードしていて、新しい CLI 方式に切り替えたい場合。
+- 旧方式でデプロイ済みの NocoBase があり、CLI で管理・接続したい場合。
+- AI Agent 用に接続・管理可能な NocoBase 環境を準備する必要がある場合。
+
+## 旧方式と新方式の違い
+
+旧方式ではインストールソースごとにドキュメントが分かれており、各ソースでダウンロード、設定、インストール、起動、アップグレードのコマンドを個別に実行する必要がありました。
+
+**旧インストールドキュメント**
+
+- [Docker インストール](/get-started/installation/docker)
+- [create-nocobase-app インストール](/get-started/installation/create-nocobase-app)
+- [Git ソースコードインストール](/get-started/installation/git)
+
+**旧アップグレードドキュメント**
+
+- [Docker インストールのアップグレード](/get-started/upgrading/docker)
+- [create-nocobase-app インストールのアップグレード](/get-started/upgrading/create-nocobase-app)
+- [Git ソースコードインストールのアップグレード](/get-started/upgrading/git)
+
+新方式では `nb init` をエントリポイントとし、1 つの CLI env でアプリケーションのソース、実行ディレクトリ、ストレージディレクトリ、データベース、API 接続情報を記録します。以降は Docker、npm、Git いずれのソースでも、同じ `nb app`、`nb source`、`nb db` コマンドで管理できます。
+
+| シーン | 旧方式 | 新 CLI 方式 |
+| --- | --- | --- |
+| インストールエントリ | `docker compose`、`create-nocobase-app`、`git clone` | `nb init` または `nb init --ui` |
+| アプリケーション実行管理 | ディレクトリ移動、compose 修正、yarn/pm2 コマンドの実行 | `nb app start/stop/restart/logs/down` |
+| アップグレード | インストール方式ごとに異なるコマンド | `nb app upgrade -e <env>` |
+| 開発モード | `yarn dev` | `nb source dev -e <env>` |
+| データベース状態 | コンテナやデータベースサービスを手動確認 | `nb db ps -e <env>` |
+| 環境状態と詳細の確認 | パス、ポート、アクセス URL を手動記録 | `nb env list`、`nb env info <env>` |
+| 既存アプリケーションの接続 | 旧インストールドキュメントでは統一的にカバーされていない | `nb init --ui` または `nb init --api-base-url` |
+
+## CLI のインストール
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version
+```
+
+インストール後にヘルプを確認できます：
+
+```bash
+nb --help
+nb init --help
+```
+
+## 新しい方式で NocoBase をインストールする
+
+### 推奨：ビジュアルウィザードの使用
+
+```bash
+nb init --ui
+```
+
+ウィザードが以下の選択を案内します：
+
+- 新規アプリケーションの作成または既存アプリケーションへの接続
+- インストールソース：Docker、npm、Git
+- NocoBase バージョン
+- 組み込みデータベースまたは外部データベースの使用
+- 管理者アカウントとパスワード
+
+### ターミナル対話式ウィザードの使用
+
+```bash
+nb init
+```
+
+### 非対話式コマンドの使用
+
+デフォルトのインストール方式は Docker で、組み込みの PostgreSQL データベースを使用します：
+
+```bash
+nb init --yes --env app1
+```
+
+Docker で特定バージョンを指定してインストール：
+
+```bash
+nb init --yes --env app1 --source docker --version beta
+```
+
+npm でインストール：
+
+```bash
+nb init --yes --env app1 --source npm --version beta --app-port 13080
+```
+
+Git ソースコードでインストール：
+
+```bash
+nb init --yes --env app1 --source git --version beta
+```
+
+Git ソースコードで組み込みデータベースの種類を指定してインストール：
+
+```bash
+nb init --yes --env app1 --source git --version beta --db-dialect mysql
+```
+
+既存の NocoBase アプリケーションに接続：
+
+```bash
+# デフォルトで OAuth 認証を使用
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# token 認証を使用
+nb init --yes --env app1 \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+:::tip
+`--env` は CLI 内の環境名です。以降の起動、アップグレード、ログ確認などのコマンドで `-e app1` を指定して対象アプリケーションを選択できます。
+:::
+
+## 新しい方式でアップグレードする
+
+旧方式では Docker、create-nocobase-app、Git ソースコードのアップグレードコマンドが異なっていましたが、新しい CLI では統一されています：
+
+```bash
+nb app upgrade -e app1
+```
+
+現在ダウンロード済みのソースコードまたはイメージのみでアップグレードプロセスを実行し、新しいコードやイメージを取得しない場合：
+
+```bash
+nb app upgrade -e app1 --skip-code-update
+```
+
+または省略形：
+
+```bash
+nb app upgrade -e app1 -s
+```
+
+## よく使うメンテナンスコマンド
+
+| 操作 | コマンド |
+| --- | --- |
+| アプリケーションの起動 | `nb app start -e app1` |
+| アプリケーションの停止 | `nb app stop -e app1` |
+| アプリケーションの再起動 | `nb app restart -e app1` |
+| ログの確認 | `nb app logs -e app1` |
+| env と API 認証状態の確認 | `nb env list` |
+| env 詳細の確認 | `nb env info app1` |
+| 組み込みデータベース状態の確認 | `nb db ps -e app1` |
+| アプリケーションのアップグレード | `nb app upgrade -e app1` |
+| 停止して実行リソースをクリーンアップ | `nb app down -e app1` |
+
+`nb app down` はデフォルトでアプリケーションを停止し、CLI が管理する実行コンテナとローカルアプリケーションファイルを削除しますが、storage データと env 設定は保持されます。すべてを削除する場合は明示的な確認が必要です：
+
+```bash
+nb app down -e app1 --all --yes
+```
+
+:::warning 注意
+`--all --yes` を指定すると、この env の storage データと CLI env 設定が削除されます。バックアップ済みで、この環境が不要であることを確認した場合にのみ使用してください。
+:::
+
+## 日常の開発コマンド
+
+`nb source` はローカルソースコードプロジェクトの管理に使用され、主に npm と Git ソースの env に適用されます。
+
+| 操作 | コマンド |
+| --- | --- |
+| 開発モードでアプリケーションを実行 | `nb source dev -e app1` |
+| ソースコードのビルド | `nb source build --cwd /your/workspace/app1/source` |
+| テストの実行 | `nb source test --cwd /your/workspace/app1/source` |
+| ソースコード/イメージのダウンロードまたは更新 | `nb source download --source git --version beta` |
+
+:::tip
+Docker env は通常 `nb app start`、`nb app logs`、`nb app upgrade` で管理し、`nb source dev` は使用しません。
+:::
+
+## NB_CLI_ROOT とディレクトリ構造
+
+CLI は `NB_CLI_ROOT` に対応するディレクトリにグローバル設定とローカルアプリケーションファイルを保存します。
+
+デフォルトでは `NB_CLI_ROOT` は現在のユーザーのホームディレクトリ、つまり Node.js の `os.homedir()` が返すパスです。例えば macOS では通常 `/Users/<user>` です。したがって、追加の設定をしない場合、`nb init --yes --env app1` で生成されるファイルは通常以下の場所に配置されます：
+
+```text
+~
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+`NB_CLI_ROOT` を明示的に指定することもできます：
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+```
+
+設定後、設定ファイルとデフォルトのアプリケーションディレクトリはすべてこのディレクトリに配置されます：
+
+```text
+/your/workspace
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+各項目の説明：
+
+- `.nocobase/config.json` には env、現在の環境、API アドレス、ソースコードパス、storage パス、データベース設定などの情報が保存されます。
+- `<envName>/source` は CLI が管理するソースコードまたはアプリケーションディレクトリです。
+- `<envName>/storage` は CLI が管理するアプリケーションストレージディレクトリです。
+
+:::warning 注意
+アプリケーションの初期化後は、同じ `NB_CLI_ROOT` を使い続けてください。後から `NB_CLI_ROOT` を変更すると、CLI は新しいディレクトリで `.nocobase/config.json` を検索し、相対パス形式の `appRootPath` や `storagePath` も新しいディレクトリを基準に解決されるため、アプリケーションが見つからなかったり、誤ったディレクトリに読み書きされる可能性があります。
+:::
+
+CLI は現在グローバル設定スコープのみを使用しています。設定やローカルアプリケーションファイルの保存場所を変更する必要がある場合は、`NB_CLI_ROOT` を設定してください。
+
+アプリケーションの確認と特定には、`nb env list` と `nb env info` を優先的に使用してください：
+
+```bash
+# 設定済み env と API 認証状態を確認
+nb env list
+
+# 特定の env の詳細情報を確認
+nb env info app1
+```
+
+`nb env list` は概要の確認に使用します。`App Status` は保存済みの Token/OAuth 認証情報でアプリケーション API にアクセスした結果の認証状態を表示し、データベース状態は表示しません。組み込みデータベースの実行状態を確認するには、以下を使用してください：
+
+```bash
+nb db ps -e app1
+```
+
+デフォルトの env を切り替える場合にのみ、以下を使用します：
+
+```bash
+nb env use app1
+```
+
+## 旧方式から CLI への移行
+
+移行には 2 つの戦略があります：**既存アプリケーションへの接続**、または **ローカルアプリケーションディレクトリを CLI 管理下に置く**。旧アプリケーションがすでに安定稼働している場合は、リスクが最も低い「既存アプリケーションへの接続」を先に使用することを推奨します。
+
+### 方式 1：既存アプリケーションへの接続
+
+Docker、create-nocobase-app、Git ソースコード、またはサーバーデプロイで稼働中の NocoBase に適用されます。
+
+```bash
+# デフォルトで OAuth 認証を使用
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# token 認証を使用
+nb init --yes --env "app$RANDOM" \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+この方式では API 接続のみを保存し、CLI は旧アプリケーションの起動、停止、アップグレード、ソースコードディレクトリ、storage ディレクトリを引き継ぎません。AI Agent や CLI API コマンドから既存アプリケーションに接続する用途に適しています。
+
+認証を更新する必要がある場合：
+
+```bash
+nb env auth app1
+```
+
+### 方式 2：新規 CLI env を作成してファイルを移行
+
+以降 `nb app` と `nb source` でローカルアプリケーションを管理したいシーンに適用されます。
+
+移行前に以下を完了してください：
+
+1. 旧アプリケーションを停止する。
+2. 旧データベースをバックアップする。
+3. 旧 `storage` ディレクトリをバックアップする。
+4. 旧アプリケーションの重要な環境変数を記録する。例：`APP_KEY`、`TZ`、`DB_*`、`DB_UNDERSCORED`。
+
+#### 旧 Docker インストールからの移行
+
+旧 Docker 方式では通常、アプリケーションデータはプロジェクトディレクトリの `storage` に配置されます：
+
+```text
+/old-docker-project
+├── docker-compose.yml
+└── storage
+```
+
+まず新しい `NB_CLI_ROOT` を決定し、CLI で新しい Docker env を作成することを推奨します。以下の例では `NB_CLI_ROOT` を `/your/workspace` とします。
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app2 --source docker --version beta
+nb app stop -e app2
+```
+
+新しい env はデフォルトで以下のディレクトリを使用します：
+
+```text
+/your/workspace
+└── app2
+    ├── source
+    └── storage
+```
+
+次に旧 `storage` を `/your/workspace/app2/storage` にコピーし、データベース接続と `APP_KEY` などの設定が旧環境と一致していることを確認します。
+
+コピーが完了しデータベース設定を確認したら、アプリケーションを起動します：
+
+```bash
+nb app start -e app2
+nb app logs -e app2
+```
+
+#### 旧 create-nocobase-app または Git ソースコードインストールからの移行
+
+旧 npm/Git 方式では通常、ソースコード、`.env`、`storage` が同じプロジェクトディレクトリに配置されます：
+
+```text
+/old-nocobase
+├── .env
+├── package.json
+├── packages
+└── storage
+```
+
+まず新しい `NB_CLI_ROOT` を決定し、新しい npm または Git env を作成することを推奨します。以下の例では `NB_CLI_ROOT` を `/your/workspace` とします。
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app3 --source git --version beta
+nb app stop -e app3
+```
+
+次に必要に応じて移行します：
+
+- 旧プロジェクトのカスタムプラグインソースコードを `/your/workspace/app3/source` の対応するディレクトリに移行する。
+- 旧プロジェクトの `storage` を `/your/workspace/app3/storage` にコピーする。
+- 旧 `.env` の重要な設定を CLI env の設定または初期化パラメータに同期する。
+- 元のデータベースを使用する場合は、初期化時に組み込みデータベースを無効にし、旧データベースの接続情報を入力する。
+
+外部データベースで初期化する例：
+
+```bash
+nb init --yes --env app3 --source git --version beta \
+  --no-builtin-db \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
+```
+
+移行完了後、起動してログを確認します：
+
+```bash
+nb app start -e app3
+nb app logs -e app3
+```
+
+:::warning 注意
+バックアップなしで `source`、`storage` を直接上書きしたり、本番データベースに接続してアップグレードを実行しないでください。正式な移行の前に、テスト環境で一通りリハーサルすることを推奨します。
+:::
+
+## 旧コマンド移行早見表
+
+| 旧コマンド | 新 CLI コマンド |
+| --- | --- |
+| `docker compose up -d app` | `nb app start -e app1` |
+| `docker compose stop app` | `nb app stop -e app1` |
+| `docker compose logs -f app` | `nb app logs -e app1` |
+| `docker compose pull app && docker compose up -d app` | `nb app upgrade -e app1` |
+| `yarn create nocobase-app my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `npx create-nocobase-app@beta my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `git clone ... -b next --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version beta` |
+| `git clone ... -b develop --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version alpha` |
+| `yarn dev` | `nb source dev -e app1` |
+| `yarn nocobase upgrade` | `nb app upgrade -e app1` |
+| `yarn nocobase upgrade --skip-code-update` | `nb app upgrade -e app1 -s` |
+| 複数アプリケーションのアドレスを手動記録 | `nb env list`、`nb env info app1` |
+| 既存アプリケーションへの手動接続 | `nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api` |
+
+## 関連リンク
+
+- [AI Agent 接続ガイド](/ai/quick-start)
+- [NocoBase CLI コマンドリファレンス](/api/cli)
+- [インストール方式とバージョン比較](/get-started/quickstart)
+- [プラグインのインストールとアップグレード](/get-started/install-upgrade-plugins)

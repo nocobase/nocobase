@@ -12,6 +12,6 @@ Cuando se habilitan varios idiomas, los usuarios pueden establecer su preferenci
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-Si el entorno de idioma que está utilizando carece de traducciones, puede usar el plugin «[Gestión de localización](/system-management/localization/)» para añadir o editar traducciones.
+Si el entorno de idioma que está utilizando carece de traducciones, puede usar el plugin «[Gestión de localización](/system-management/localization/index.md)» para añadir o editar traducciones.
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

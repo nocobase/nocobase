@@ -34,7 +34,7 @@ Las claves API ofrecen múltiples ventajas de seguridad: verificación de identi
 
 ### 2.1 Active el plugin de autenticación: Claves API
 
-Asegúrese de que el [plugin de autenticación: Claves API](/plugins/@nocobase/plugin-api-keys/) integrado esté activado. Una vez habilitado, aparecerá una nueva página de configuración de claves API en los ajustes del sistema.
+Asegúrese de que el [plugin de autenticación: Claves API](/plugins/@nocobase/plugin-api-keys/index.md) integrado esté activado. Una vez habilitado, aparecerá una nueva página de configuración de claves API en los ajustes del sistema.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
@@ -97,7 +97,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 3.1 Uso del plugin de documentación API
 
-Abra el [plugin de documentación API](/plugins/@nocobase/plugin-api-doc/) para ver los métodos de solicitud, URLs, parámetros y encabezados de cada punto final de la API.
+Abra el [plugin de documentación API](/plugins/@nocobase/plugin-api-doc/index.md) para ver los métodos de solicitud, URLs, parámetros y encabezados de cada punto final de la API.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -291,5 +291,5 @@ Esta guía ha cubierto el flujo de trabajo completo para usar claves API en Noco
 
 
 **Recursos adicionales:**
-- [Documentación del plugin de claves API](/plugins/@nocobase/plugin-api-keys/)
-- [Plugin de documentación API](/plugins/@nocobase/plugin-api-doc/)
+- [Documentación del plugin de claves API](/plugins/@nocobase/plugin-api-keys/index.md)
+- [Plugin de documentación API](/plugins/@nocobase/plugin-api-doc/index.md)

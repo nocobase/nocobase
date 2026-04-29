@@ -14,7 +14,7 @@
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-位置1は、[システム設定](/system-management/system-settings/)の「ロゴ」オプションで設定できます。位置2と3は、このプラグインで設定可能です。
+位置1は、[システム設定](/system-management/system-settings/index.md)の「ロゴ」オプションで設定できます。位置2と3は、このプラグインで設定可能です。
 
 ## 使用方法
 

@@ -19,6 +19,7 @@ import {
   backfillFlowSurfaceFilterActionDefaultFilter,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from '../public-data-surface-default-filter';
+import { normalizeFlowSurfacePublicSortingAlias } from '../public-compatibility';
 import {
   FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
   attachFlowSurfaceApplyBlueprintPopupDefaults,
@@ -114,7 +115,6 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
   'type',
   'fieldType',
   'fields',
-  'selectorFields',
   'titleField',
   'openMode',
   'popupSize',
@@ -981,6 +981,68 @@ function resolveTargetBlockKey(value: any, localBlockKeys: Map<string, string>, 
   throwBadRequest(`${context} must be a string block key`);
 }
 
+function collectTreeConnectTargetKeys(settings: any, context: string) {
+  if (!_.isPlainObject(settings?.connectFields)) {
+    return [];
+  }
+  if (_.isUndefined(settings.connectFields.targets)) {
+    return [];
+  }
+  if (!Array.isArray(settings.connectFields.targets)) {
+    throwBadRequest(`${context}.settings.connectFields.targets must be an array`);
+  }
+  const seenTargets = new Set<string>();
+  return settings.connectFields.targets
+    .map((target: any, targetIndex: number) => {
+      if (!_.isPlainObject(target)) {
+        throwBadRequest(`${context}.settings.connectFields.targets[${targetIndex}] must be an object`);
+      }
+      if (_.isUndefined(target.target) || target.target === null || target.target === '') {
+        return '';
+      }
+      if (typeof target.target !== 'string') {
+        throwBadRequest(`${context}.settings.connectFields.targets[${targetIndex}].target must be a string block key`);
+      }
+      const normalizedTarget = normalizeFlowSurfaceComposeKey(
+        target.target,
+        `${context}.settings.connectFields.targets[${targetIndex}].target`,
+      );
+      if (seenTargets.has(normalizedTarget)) {
+        throwBadRequest(
+          `${context}.settings.connectFields.targets[${targetIndex}].target duplicate target '${normalizedTarget}' in tree connectFields`,
+        );
+      }
+      seenTargets.add(normalizedTarget);
+      return normalizedTarget;
+    })
+    .filter(Boolean);
+}
+
+function compileTreeConnectSettingsTargets(
+  settings: Record<string, any>,
+  localBlockKeys: Map<string, string>,
+  context: string,
+) {
+  if (!_.isPlainObject(settings?.connectFields) || !Array.isArray(settings.connectFields.targets)) {
+    return settings;
+  }
+  const nextSettings = _.cloneDeep(settings);
+  nextSettings.connectFields.targets = nextSettings.connectFields.targets.map((target: any, targetIndex: number) => {
+    if (!_.isPlainObject(target) || _.isUndefined(target.target) || target.target === null || target.target === '') {
+      return target;
+    }
+    return {
+      ...target,
+      target: resolveTargetBlockKey(
+        target.target,
+        localBlockKeys,
+        `${context}.settings.connectFields.targets[${targetIndex}].target`,
+      ),
+    };
+  });
+  return nextSettings;
+}
+
 function compileField(
   input: string | FlowSurfaceApplyBlueprintFieldObjectSpec,
   index: number,
@@ -1012,10 +1074,6 @@ function compileField(
   const syntheticType = readOptionalString(input.type);
   const fieldType = normalizePublicFieldType((input as any).fieldType, `${context}[${index}]`);
   const fields = normalizePublicFieldNameList((input as any).fields, `${context}[${index}].fields`);
-  const selectorFields = normalizePublicFieldNameList(
-    (input as any).selectorFields,
-    `${context}[${index}].selectorFields`,
-  );
   if (!fieldPath && !syntheticType) {
     throwBadRequest(`${context}[${index}] requires field or type`);
   }
@@ -1045,7 +1103,6 @@ function compileField(
     type: syntheticType,
     fieldType,
     fields,
-    selectorFields,
     titleField: readOptionalString((input as any).titleField),
     openMode: readOptionalString((input as any).openMode),
     popupSize: readOptionalString((input as any).popupSize),
@@ -1144,6 +1201,9 @@ function compileBlocks(
     assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintTreeMainContent(block, `${context}[${index}]`);
     const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
+    collectTreeConnectTargetKeys(block.settings, `${context}[${index}]`).forEach((targetKey) => {
+      referencedBlockKeys.add(targetKey);
+    });
     fields.forEach((field: any, fieldIndex: number) => {
       if (typeof field?.target !== 'string' || !field.target.trim()) {
         return;
@@ -1191,11 +1251,16 @@ function compileBlocks(
     if (!key) {
       throwBadRequest(`${blockContext} key '${localKey}' is missing after block key compilation`);
     }
-    const settings = resolveAssetSettings(block.settings, block, assets, blockContext);
+    const blockType = readOptionalString(block.type);
+    let settings = resolveAssetSettings(block.settings, block, assets, blockContext);
     if (readOptionalString(block.title) && _.isUndefined(settings.title)) {
       settings.title = readOptionalString(block.title);
     }
-    const blockType = readOptionalString(block.type);
+    settings = normalizeFlowSurfacePublicSortingAlias({
+      context: `${blockContext}.settings`,
+      type: blockType,
+      settings,
+    });
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
       blockType,
@@ -1266,7 +1331,9 @@ function compileBlocks(
       type: blockType,
       resource: buildBlockResource(block, blockContext),
       template,
-      settings: Object.keys(settings).length ? settings : undefined,
+      settings: Object.keys(settings).length
+        ? compileTreeConnectSettingsTargets(settings, blockKeysByLocalKey, blockContext)
+        : undefined,
       fields: blockType === 'calendar' || blockType === 'tree' ? undefined : fields,
       fieldsLayout:
         blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree' ? undefined : fieldsLayout,

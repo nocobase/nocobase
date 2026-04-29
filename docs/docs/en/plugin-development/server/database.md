@@ -1,6 +1,12 @@
+---
+title: "Database"
+description: "NocoBase Database: Collection, Model, Repository, FieldType, FilterOperator, dataSource.db, app.db."
+keywords: "Database,Collection,Model,Repository,Sequelize,dataSource.db,NocoBase"
+---
+
 # Database
 
-`Database` is an important component of database-type data sources (`DataSource`). Each database-type data source has a corresponding `Database` instance, accessible via `dataSource.db`. The main data source's database instance also provides the convenient `app.db` alias. Familiarizing yourself with `db`'s common methods is fundamental to writing server-side plugins.
+`Database` is a core component of database-type data sources (`DataSource`). Each database-type data source has a corresponding `Database` instance, accessible via `dataSource.db`. The main data source's database instance also has a convenient alias `app.db`. Familiarizing yourself with `db`'s common methods is fundamental to writing server-side plugins.
 
 ## Database Components
 
@@ -17,22 +23,22 @@ A typical `Database` consists of the following parts:
 
 ### Things Suitable for the beforeLoad Stage
 
-At this stage, database operations are not allowed. Suitable for static class registration or event listening.
+At this stage, database operations cannot be performed yet. It is suitable for static class registration or event listening.
 
-- `db.registerFieldTypes()` — Custom field types  
-- `db.registerModels()` — Register custom model classes  
-- `db.registerRepositories()` — Register custom repository classes  
-- `db.registerOperators()` — Register custom filter operators  
-- `db.on()` — Listen to database-related events  
+- `db.registerFieldTypes()` - Register custom field types
+- `db.registerModels()` - Register custom model classes
+- `db.registerRepositories()` - Register custom repository classes
+- `db.registerOperators()` - Register custom filter operators
+- `db.on()` - Listen to database-related events
 
 ### Things Suitable for the load Stage
 
 At this stage, all preceding class definitions and events have been loaded, so loading data tables won't have missing or omitted dependencies.
 
-- `db.defineCollection()` — Define new data tables
-- `db.extendCollection()` — Extend existing data table configurations
+- `db.defineCollection()` - Define new data tables
+- `db.extendCollection()` - Extend existing data table configurations
 
-For defining plugin built-in tables, it's more recommended to place them in the `./src/server/collections` directory. See [Collections](./collections.md).
+However, for defining plugin built-in tables, it's more recommended to place them in the `./src/server/collections` directory. See [Collections](./collections.md).
 
 ## Data Operations
 
@@ -45,7 +51,7 @@ const repo = db.getRepository('users');
 const user = await repo.findOne({ filter: { id: 1 } });
 ```
 
-The Repository layer is usually used to encapsulate business logic, such as pagination, filtering, permission checks, etc.
+The Repository layer is typically used to encapsulate business logic, such as pagination, filtering, permission checks, etc.
 
 ### Operations via Model
 
@@ -120,3 +126,10 @@ The Model layer directly corresponds to ORM entities, suitable for lower-level d
 | `beforeRemoveCollection`       | No                          |
 | `afterRemoveCollection`        | No                          |
 
+## Related Links
+
+- [Collections](./collections.md) - Define or extend data table structures with code
+- [DataSourceManager](./data-source-manager.md) - Manage multiple data sources and their database instances
+- [Context](./context.md) - Access the `db` instance in requests
+- [Plugin](./plugin.md) - Plugin class lifecycle, member methods, and the `app` object
+- [Event](./event.md) - Application-level and database-level event listening and handling

@@ -5,8 +5,14 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "システム要件",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "インストール方法とバージョン比較"
   },
   {
     "type": "custom-link",
@@ -66,6 +72,22 @@
       },
       {
         "type": "custom-link",
+        "label": "イントラネット環境へのデプロイ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
         "label": "静的リソースのプロキシ",
         "items": [
           {
@@ -112,5 +134,10 @@
     "type": "custom-link",
     "label": "プラグインのインストールとアップグレード",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "翻訳への貢献",
+    "link": "/get-started/translations"
   }
 ]

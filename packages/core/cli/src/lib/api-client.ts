@@ -8,7 +8,9 @@
  */
 
 import { promises as fs } from 'node:fs';
+import type { AuthStoreOptions } from './auth-store.js';
 import { resolveServerRequestTarget } from './env-auth.js';
+import { fetchWithPreservedAuthRedirect } from './http-request.js';
 
 const CLI_REQUEST_SOURCE_HEADER = 'x-request-source';
 const CLI_REQUEST_SOURCE_VALUE = 'cli';
@@ -37,6 +39,7 @@ export interface RequestOptions {
   baseUrl?: string;
   token?: string;
   role?: string;
+  scope?: AuthStoreOptions['scope'];
   flags: Record<string, any>;
   operation: RequestOperation;
 }
@@ -46,6 +49,8 @@ export interface RawRequestOptions {
   baseUrl?: string;
   token?: string;
   role?: string;
+  scope?: AuthStoreOptions['scope'];
+  timeoutMs?: number;
   method: string;
   path: string;
   query?: Record<string, any>;
@@ -282,7 +287,7 @@ export async function executeApiRequest(options: RequestOptions) {
   const url = new URL(`${normalizeBaseUrl(baseUrl)}${requestPath}`);
   query.forEach((value, key) => url.searchParams.append(key, value));
 
-  const response = await fetch(url, {
+  const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.operation.method.toUpperCase(),
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -331,11 +336,25 @@ export async function executeRawApiRequest(options: RawRequestOptions) {
     url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
   }
 
-  const response = await fetch(url, {
-    method: options.method.toUpperCase(),
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  const controller = options.timeoutMs && options.timeoutMs > 0 ? new AbortController() : undefined;
+  const timeout = controller
+    ? setTimeout(() => {
+        controller.abort();
+      }, options.timeoutMs)
+    : undefined;
 
-  return parseResponse(response);
+  try {
+    const response = await fetchWithPreservedAuthRedirect(url.toString(), {
+      method: options.method.toUpperCase(),
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller?.signal,
+    });
+
+    return parseResponse(response);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
 }

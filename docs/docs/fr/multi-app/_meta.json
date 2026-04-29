@@ -6,7 +6,7 @@
       {
         "type": "custom-link",
         "label": "Vue d'ensemble",
-        "link": "/multi-app/multi-app"
+        "link": "/multi-app/multi-app/"
       },
       {
         "type": "custom-link",
@@ -23,6 +23,6 @@
   {
     "type": "custom-link",
     "label": "Multi-space",
-    "link": "/multi-app/multi-space"
+    "link": "/multi-app/multi-space/"
   }
 ]

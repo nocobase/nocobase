@@ -27,6 +27,26 @@ import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
 import type { FlowSettingsContext } from '../../../../flowContext';
+
+const findExtraMenuItemByKey = (
+  items: FlowModelExtraMenuItem[],
+  targetKey: string,
+): FlowModelExtraMenuItem | undefined => {
+  for (const item of items) {
+    const itemKey = String(item?.key ?? '');
+    if (itemKey === targetKey) {
+      return item;
+    }
+    if (item.children?.length) {
+      const matched = findExtraMenuItemByKey(item.children, targetKey);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+  return undefined;
+};
+
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -473,7 +493,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return;
       }
 
-      const extra = extraMenuItems.find((it) => it?.key === originalKey || it?.key === cleanKey);
+      const extra =
+        findExtraMenuItemByKey(extraMenuItems, originalKey) || findExtraMenuItemByKey(extraMenuItems, cleanKey);
+      if (extra?.disabled) {
+        return;
+      }
       if (extra?.onClick) {
         closeDropdown();
         extra.onClick();

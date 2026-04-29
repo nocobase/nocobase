@@ -8,13 +8,13 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { confirmAction } from '../../lib/ui.js';
+import { confirmAction, setVerboseMode } from '../../lib/ui.js';
 import { installNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsInstall extends Command {
-  static override summary = 'Install the NocoBase AI coding skills for this workspace';
+  static override summary = 'Install the NocoBase AI coding skills globally';
   static override description =
-    'Install the NocoBase AI coding skills for the current workspace. If they are already installed, this command does not update them.';
+    'Install the NocoBase AI coding skills globally. If they are already installed, this command does not update them.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
@@ -31,14 +31,19 @@ export default class SkillsInstall extends Command {
       description: 'Output the result as JSON',
       default: false,
     }),
+    verbose: Flags.boolean({
+      description: 'Show detailed install output',
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(SkillsInstall);
+    setVerboseMode(flags.verbose);
 
     if (!flags.yes) {
       const confirmed = await confirmAction(
-        'Install the NocoBase AI coding skills for this workspace?',
+        'Install the NocoBase AI coding skills globally?',
         { defaultValue: true },
       );
       if (!confirmed) {
@@ -47,7 +52,9 @@ export default class SkillsInstall extends Command {
       }
     }
 
-    const result = await installNocoBaseSkills();
+    const result = await installNocoBaseSkills({
+      verbose: flags.verbose,
+    });
 
     if (flags.json) {
       this.log(
@@ -56,8 +63,10 @@ export default class SkillsInstall extends Command {
             ok: true,
             kind: 'skills',
             action: result.action,
+            globalRoot: result.status.globalRoot,
             workspaceRoot: result.status.workspaceRoot,
             installedSkillNames: result.status.installedSkillNames,
+            installedVersion: result.status.installedVersion,
             installedRef: result.status.installedRef,
           },
           null,
@@ -68,10 +77,18 @@ export default class SkillsInstall extends Command {
     }
 
     if (result.action === 'noop') {
-      this.log('NocoBase AI coding skills are already installed for this workspace. Run `nb skills update` to refresh them.');
+      this.log(
+        flags.verbose
+          ? 'NocoBase AI coding skills are already installed globally. Run `nb skills update` to refresh them.'
+          : 'NocoBase AI coding skills are already installed globally.',
+      );
       return;
     }
 
-    this.log('Installed the NocoBase AI coding skills for this workspace.');
+    this.log(
+      flags.verbose
+        ? 'Installed the NocoBase AI coding skills globally.'
+        : 'Installed NocoBase AI coding skills globally.',
+    );
   }
 }

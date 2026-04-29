@@ -24,7 +24,7 @@ APIの`token`です。
 
 ### `authenticator`
 
-現在のユーザー認証に使用されるオーセンティケーターです。[ユーザー認証](/auth-verification/auth/)をご参照ください。
+現在のユーザー認証に使用されるオーセンティケーターです。[ユーザー認証](/auth-verification/auth/index.md)をご参照ください。
 
 ## クラスメソッド
 
