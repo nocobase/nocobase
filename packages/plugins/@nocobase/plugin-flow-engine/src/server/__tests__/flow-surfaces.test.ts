@@ -4579,7 +4579,7 @@ describe('flowSurfaces resource', () => {
 
     const pickerField = await addField(rootAgent, formUid, 'roles', {
       fieldType: 'picker',
-      selectorFields: ['title'],
+      fields: ['title'],
       openMode: 'drawer',
       popupSize: 'medium',
     });
@@ -4617,17 +4617,17 @@ describe('flowSurfaces resource', () => {
       size: 'large',
     });
 
-    const clearPickerSelectorFieldsRes = await rootAgent.resource('flowSurfaces').configure({
+    const clearPickerFieldsRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
           uid: pickerField.wrapperUid,
         },
         changes: {
-          selectorFields: [],
+          fields: [],
         },
       },
     });
-    expect(clearPickerSelectorFieldsRes.status).toBe(200);
+    expect(clearPickerFieldsRes.status).toBe(200);
     pickerReadback = await getSurface(rootAgent, {
       uid: pickerField.fieldUid,
     });
@@ -4640,7 +4640,7 @@ describe('flowSurfaces resource', () => {
     const customPickerField = await addField(rootAgent, employeeFormUid, 'department', {
       fieldType: 'picker',
       titleField: 'location',
-      selectorFields: ['location'],
+      fields: ['location'],
     });
     let customPickerReadback = await getSurface(rootAgent, {
       uid: customPickerField.fieldUid,
@@ -4667,7 +4667,19 @@ describe('flowSurfaces resource', () => {
       ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['location']);
 
-    const pickerWithFieldsRes = await rootAgent.resource('flowSurfaces').addField({
+    const defaultPickerField = await addField(rootAgent, formUid, 'roles', {
+      fieldType: 'picker',
+    });
+    const defaultPickerReadback = await getSurface(rootAgent, {
+      uid: defaultPickerField.fieldUid,
+    });
+    expect(
+      _.castArray(
+        defaultPickerReadback.tree.subModels?.['grid-block']?.subModels?.items?.[0]?.subModels?.columns || [],
+      ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title']);
+
+    const pickerWithNameFieldRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
         target: {
           uid: formUid,
@@ -4677,8 +4689,35 @@ describe('flowSurfaces resource', () => {
         fields: ['title'],
       },
     });
-    expect(pickerWithFieldsRes.status).toBe(400);
-    expect(readErrorMessage(pickerWithFieldsRes)).toContain(`fieldType 'picker' does not support fields`);
+    expect(pickerWithNameFieldRes.status, readErrorMessage(pickerWithNameFieldRes)).toBe(200);
+    const pickerWithNameReadback = await getSurface(rootAgent, {
+      uid: pickerWithNameFieldRes.body?.data?.fieldUid,
+    });
+    expect(
+      _.castArray(
+        pickerWithNameReadback.tree.subModels?.['grid-block']?.subModels?.items?.[0]?.subModels?.columns || [],
+      ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title']);
+
+    const configurePickerFieldsRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: pickerWithNameFieldRes.body?.data?.wrapperUid,
+        },
+        changes: {
+          fields: ['name'],
+        },
+      },
+    });
+    expect(configurePickerFieldsRes.status, readErrorMessage(configurePickerFieldsRes)).toBe(200);
+    const configuredPickerReadback = await getSurface(rootAgent, {
+      uid: pickerWithNameFieldRes.body?.data?.fieldUid,
+    });
+    expect(
+      _.castArray(
+        configuredPickerReadback.tree.subModels?.['grid-block']?.subModels?.items?.[0]?.subModels?.columns || [],
+      ).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['name']);
 
     const subTableField = await addField(rootAgent, formUid, 'roles', {
       fieldType: 'popupSubTable',
@@ -4723,21 +4762,6 @@ describe('flowSurfaces resource', () => {
         (item: any) => item?.use === 'TableColumnModel',
       ),
     ).toEqual([]);
-
-    const subTableWithSelectorFieldsRes = await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        fieldPath: 'roles',
-        fieldType: 'popupSubTable',
-        selectorFields: ['title'],
-      },
-    });
-    expect(subTableWithSelectorFieldsRes.status).toBe(400);
-    expect(readErrorMessage(subTableWithSelectorFieldsRes)).toContain(
-      `fieldType 'popupSubTable' does not support selectorFields`,
-    );
 
     const textWithFieldsRes = await rootAgent.resource('flowSurfaces').addField({
       values: {

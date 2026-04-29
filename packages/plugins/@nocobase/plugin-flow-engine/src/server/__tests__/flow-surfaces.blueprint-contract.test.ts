@@ -82,6 +82,23 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
   }
 
+  function expectAssignFormGridItems(actionTree: any, assignedValues: Record<string, any>) {
+    const items = _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []);
+    expect(items).toHaveLength(Object.keys(assignedValues).length);
+    Object.entries(assignedValues).forEach(([fieldPath, value]) => {
+      const item = items.find((candidate: any) => candidate?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath);
+      expect(item).toBeTruthy();
+      expect(item?.use).toBe('AssignFormItemModel');
+      expect(item?.stepParams?.fieldSettings?.assignValue?.value).toEqual(value);
+      expect(item?.subModels?.field?.uid).toBeTruthy();
+      expect(item?.subModels?.field?.stepParams?.fieldSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+        fieldPath,
+      });
+    });
+  }
+
   async function readPrimaryPopupBlockFromAction(actionUid: string) {
     const actionReadback = await getSurface(rootAgent, {
       uid: actionUid,
@@ -3507,7 +3524,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expectAssignedValuesMirrors(bulkUpdateAction, {
       status: 'inactive',
     });
+    expectAssignFormGridItems(bulkUpdateAction, {
+      status: 'inactive',
+    });
     expectAssignedValuesMirrors(updateRecordAction, {
+      status: 'active',
+    });
+    expectAssignFormGridItems(updateRecordAction, {
       status: 'active',
     });
   });

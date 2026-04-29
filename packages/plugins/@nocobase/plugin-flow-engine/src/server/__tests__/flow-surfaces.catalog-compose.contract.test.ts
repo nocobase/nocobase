@@ -104,6 +104,23 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
   }
 
+  function expectAssignFormGridItems(actionTree: any, assignedValues: Record<string, any>) {
+    const items = _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []);
+    expect(items).toHaveLength(Object.keys(assignedValues).length);
+    Object.entries(assignedValues).forEach(([fieldPath, value]) => {
+      const item = items.find((candidate: any) => candidate?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath);
+      expect(item).toBeTruthy();
+      expect(item?.use).toBe('AssignFormItemModel');
+      expect(item?.stepParams?.fieldSettings?.assignValue?.value).toEqual(value);
+      expect(item?.subModels?.field?.uid).toBeTruthy();
+      expect(item?.subModels?.field?.stepParams?.fieldSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+        fieldPath,
+      });
+    });
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
     ({ app, flowRepo, rootAgent } = context);
@@ -2959,7 +2976,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           fieldType: 'picker',
           defaults: expect.objectContaining({
             titleField: 'title',
-            selectorFields: ['title'],
+            fields: ['title'],
           }),
         }),
         expect.objectContaining({
@@ -5852,9 +5869,116 @@ describe('flowSurfaces catalog + compose contract', () => {
     expectAssignedValuesMirrors(bulkUpdateReadback.tree, {
       status: 'inactive',
     });
+    expectAssignFormGridItems(bulkUpdateReadback.tree, {
+      status: 'inactive',
+    });
     expectAssignedValuesMirrors(updateRecordReadback.tree, {
       status: 'active',
     });
+    expectAssignFormGridItems(updateRecordReadback.tree, {
+      status: 'active',
+    });
+
+    const updateViaAssignSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          assignSettings: {
+            assignFieldValues: {
+              assignedValues: {
+                nickname: 'VIP',
+                status: 'inactive',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(updateViaAssignSettings.status, readErrorMessage(updateViaAssignSettings)).toBe(200);
+
+    const updateRecordAssignSettingsReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectAssignedValuesMirrors(updateRecordAssignSettingsReadback.tree, {
+      nickname: 'VIP',
+      status: 'inactive',
+    });
+    expectAssignFormGridItems(updateRecordAssignSettingsReadback.tree, {
+      nickname: 'VIP',
+      status: 'inactive',
+    });
+
+    const updateViaApplyMirror = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: bulkUpdateAction.uid,
+        },
+        stepParams: {
+          apply: {
+            apply: {
+              assignedValues: {
+                status: 'archived',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(updateViaApplyMirror.status, readErrorMessage(updateViaApplyMirror)).toBe(200);
+
+    const bulkUpdateApplyReadback = await getSurface(rootAgent, { uid: bulkUpdateAction.uid });
+    expectAssignedValuesMirrors(bulkUpdateApplyReadback.tree, {
+      status: 'archived',
+    });
+    expectAssignFormGridItems(bulkUpdateApplyReadback.tree, {
+      status: 'archived',
+    });
+
+    const conflictingAssignedValues = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          assignSettings: {
+            assignFieldValues: {
+              assignedValues: {
+                status: 'active',
+              },
+            },
+          },
+          apply: {
+            apply: {
+              assignedValues: {
+                status: 'inactive',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(conflictingAssignedValues.status).toBe(400);
+    expect(readErrorMessage(conflictingAssignedValues)).toContain('assignedValues');
+
+    const clearAssignedValues = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          assignSettings: {
+            assignFieldValues: {
+              assignedValues: {},
+            },
+          },
+        },
+      },
+    });
+    expect(clearAssignedValues.status, readErrorMessage(clearAssignedValues)).toBe(200);
+
+    const updateRecordClearedReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectAssignedValuesMirrors(updateRecordClearedReadback.tree, {});
+    expectAssignFormGridItems(updateRecordClearedReadback.tree, {});
   });
 
   it('should reject partial responsive grid card columns in simple configure', async () => {
@@ -6124,6 +6248,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(updateActionReadback.tree.stepParams?.apply?.apply?.assignedValues).toMatchObject({
       status: 'active',
     });
+    expectAssignFormGridItems(updateActionReadback.tree, {
+      status: 'active',
+    });
 
     expect(
       (
@@ -6140,5 +6267,6 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const updateActionClearedReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
     expectAssignedValuesMirrors(updateActionClearedReadback.tree, {});
+    expectAssignFormGridItems(updateActionClearedReadback.tree, {});
   });
 });

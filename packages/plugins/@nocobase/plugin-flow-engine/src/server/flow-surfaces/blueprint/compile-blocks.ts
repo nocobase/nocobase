@@ -115,7 +115,6 @@ const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
   'type',
   'fieldType',
   'fields',
-  'selectorFields',
   'titleField',
   'openMode',
   'popupSize',
@@ -1075,10 +1074,6 @@ function compileField(
   const syntheticType = readOptionalString(input.type);
   const fieldType = normalizePublicFieldType((input as any).fieldType, `${context}[${index}]`);
   const fields = normalizePublicFieldNameList((input as any).fields, `${context}[${index}].fields`);
-  const selectorFields = normalizePublicFieldNameList(
-    (input as any).selectorFields,
-    `${context}[${index}].selectorFields`,
-  );
   if (!fieldPath && !syntheticType) {
     throwBadRequest(`${context}[${index}] requires field or type`);
   }
@@ -1108,7 +1103,6 @@ function compileField(
     type: syntheticType,
     fieldType,
     fields,
-    selectorFields,
     titleField: readOptionalString((input as any).titleField),
     openMode: readOptionalString((input as any).openMode),
     popupSize: readOptionalString((input as any).popupSize),
