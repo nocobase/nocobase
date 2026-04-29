@@ -69,6 +69,15 @@ const getAggregation = (collection: any, measure?: string, aggregation?: string)
   return NUMBER_TYPES.has(field?.type) || NUMBER_INTERFACES.has(field?.interface) ? 'sum' : 'count';
 };
 
+const toChartTypePath = (chartType?: string) => {
+  if (!chartType) {
+    return undefined;
+  }
+  const [group, ...rest] = chartType.split('.');
+  const name = rest.join('.');
+  return group && name ? [group, name] : undefined;
+};
+
 const getFieldProps = (collection: any, names: string[]) => {
   return names.reduce(
     (props, name) => {
@@ -248,9 +257,10 @@ ChartBlockModel.registerFlow({
         const model = ctx.model as ChartBlockModel;
         const plugin = ctx.app.pm.get(PluginDataVisualizationClient) as PluginDataVisualizationClient;
         const measure = model.props.measureField || getDefaultMeasure(model.collection);
+        const chartType = model.props.chartType || plugin?.charts.getDefaultChartType?.();
 
         return {
-          chartType: model.props.chartType || plugin?.charts.getDefaultChartType?.(),
+          chartType: toChartTypePath(chartType),
           dimensionField: model.props.dimensionField || getDefaultDimension(model.collection),
           measureField: measure,
           aggregation: getAggregation(model.collection, measure, model.props.aggregation),
@@ -259,7 +269,7 @@ ChartBlockModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.setProps({
-          chartType: Array.isArray(params.chartType) ? params.chartType[params.chartType.length - 1] : params.chartType,
+          chartType: Array.isArray(params.chartType) ? params.chartType.join('.') : params.chartType,
           dimensionField: params.dimensionField,
           measureField: params.measureField,
           aggregation: params.aggregation,

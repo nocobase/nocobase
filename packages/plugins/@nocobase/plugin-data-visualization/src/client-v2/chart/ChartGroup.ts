@@ -45,10 +45,11 @@ export class ChartGroup {
       .sort(([, a], [, b]) => (a.sort || 0) - (b.sort || 0))
       .map(([group, { title, charts }]) => ({
         label: title,
+        value: group,
         children: charts.map((chart) => ({
           key: `${group}.${chart.name}`,
           label: chart.title,
-          value: `${group}.${chart.name}`,
+          value: chart.name,
         })),
       }));
   }
@@ -71,7 +72,9 @@ export class ChartGroup {
   }
 
   getDefaultChartType() {
-    return this.getChartTypes()[0]?.children?.[0]?.value;
+    const group = this.getChartTypes()[0];
+    const chart = group?.children?.[0];
+    return group && chart ? `${group.value}.${chart.value}` : undefined;
   }
 }
 

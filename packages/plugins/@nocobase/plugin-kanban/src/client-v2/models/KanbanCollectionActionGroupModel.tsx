@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AIEmployeeActionModel } from '@nocobase/plugin-ai/client';
 import { ActionGroupModel, ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
@@ -29,9 +28,7 @@ export class KanbanCollectionActionGroupModel extends ActionGroupModel {
     const items = [];
 
     for (const modelName of ALLOWED_KANBAN_COLLECTION_ACTIONS) {
-      const ModelClass = (
-        modelName === 'AIEmployeeActionModel' ? AIEmployeeActionModel : ctx.engine.getModelClass(modelName)
-      ) as typeof ActionModel | undefined;
+      const ModelClass = ctx.engine.getModelClass(modelName) as typeof ActionModel | undefined;
       if (!ModelClass) {
         continue;
       }

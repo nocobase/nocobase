@@ -19,12 +19,13 @@ import ru from 'date-fns/locale/ru';
 import zhCN from 'date-fns/locale/zh-CN';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 import { useApp } from '@nocobase/client-v2';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { parseExpression } from 'cron-parser';
 import { useTranslation } from '../../../locale';
 import GlobalStyle from '../../calendar/global.style';
 import { useCalenderHeight } from '../../calendar/hook';
 import useBaseStyle from '../../calendar/style';
-import { theme } from 'antd';
+import { Tag, theme } from 'antd';
 import {
   CALENDAR_RANGE_FILTER_GROUP,
   createCalendarRangeFilter,
@@ -45,7 +46,7 @@ type LocalizerFormatContext = {
 interface Event {
   id: string;
   colorFieldValue: string;
-  title: string;
+  title: React.ReactNode;
   rawTitle?: string;
   start: Date;
   end: Date;
@@ -56,6 +57,36 @@ const LOCALES = {
   'zh-CN': zhCN,
   'en-US': enUS,
   'ru-RU': ru,
+};
+
+const getDatePickerLabels = (props: Record<string, any>) => {
+  const dateFormat = getDefaultFormat(props) as string;
+  const value = str2moment(props.value, props) as dayjs.Dayjs;
+  const labels = value && value.isValid() ? value.format(dateFormat) : props.value;
+  return Array.isArray(labels) ? labels.join('~') : labels;
+};
+
+const getLabelFormatValue = (
+  labelUiSchema: Record<string, any> | undefined,
+  value: any,
+  isTag = false,
+  targetTitleCollectionField?: any,
+  TitleRenderer?: React.ComponentType<any>,
+) => {
+  if (TitleRenderer) {
+    return <TitleRenderer value={value} collectionField={targetTitleCollectionField} />;
+  }
+  if (Array.isArray(labelUiSchema?.enum) && value) {
+    const option = labelUiSchema.enum.find((item: any) => item.value === value);
+    if (isTag) {
+      return <Tag color={option?.color}>{option?.label}</Tag>;
+    }
+    return option?.label;
+  }
+  if (labelUiSchema?.['x-component'] === 'DatePicker') {
+    return getDatePickerLabels({ ...labelUiSchema?.['x-component-props'], value });
+  }
+  return value;
 };
 
 const useCalendarEvents = (
@@ -131,7 +162,17 @@ const useCalendarEvents = (
           return out;
         }
 
-        const title = get(item, fieldNames.title);
+        const targetTitleCollectionField = getCollectionField(fieldNames.title);
+        const targetTitle = targetTitleCollectionField?.interface
+          ? plugin.getTitleFieldInterface(targetTitleCollectionField.interface)
+          : null;
+        const title = getLabelFormatValue(
+          labelUiSchema,
+          get(item, fieldNames.title),
+          true,
+          targetTitleCollectionField,
+          targetTitle?.TitleRenderer,
+        );
 
         events.push({
           id: get(item, fieldNames.id || 'id'),
@@ -225,6 +266,7 @@ type CalendarBlockProps = {
 };
 
 export const CalendarBlock = observer((props: CalendarBlockProps) => {
+  const { t } = useTranslation();
   const height = useCalenderHeight();
   const [date, setDate] = useState<Date>(new Date());
   const [view, setView] = useState<View>(props.defaultView || 'month');
@@ -437,7 +479,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
 
   const eventPropGetter = (event: Event) => {
     if (!event.colorFieldValue) {
-      return undefined;
+      return {};
     }
 
     const fontColor = props.getFontColor?.(event.colorFieldValue);
@@ -501,7 +543,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
                   record,
                 });
               }}
-              formats={formats}
+              formats={formats as any}
               components={components}
               culture={locale}
               localizer={localizer}
