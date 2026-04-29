@@ -209,23 +209,59 @@ function truncateOutput(output: string) {
 }
 
 function validateDocsScript(script: string) {
-  if (new RegExp(String.raw`(^|[\n;&|])\s*find\s+(?:\.\/?|/docs/nocobase/?)(?:\s|$)`).test(script)) {
+  const commandText = maskQuotedText(script);
+
+  if (new RegExp(String.raw`(^|[\n;&|])\s*find\s+(?:\.\/?|/docs/nocobase/?)(?:\s|$)`).test(commandText)) {
     return getDocsSearchHint('Broad full-tree scans with "find ." are not allowed.');
   }
 
-  if (new RegExp(String.raw`(^|[\n;&|])\s*rg\b[^\n;&|]*\s(?:\.\/?|/docs/nocobase/?)\s*(?:[|;&\n]|$)`).test(script)) {
+  if (
+    new RegExp(String.raw`(^|[\n;&|])\s*rg\b[^\n;&|]*\s(?:\.\/?|/docs/nocobase/?)\s*(?:[|;&\n]|$)`).test(commandText)
+  ) {
     return getDocsSearchHint('Broad full-tree content searches with "rg ... ." are not allowed.');
   }
 
-  if (/[|]\s*rg\b/.test(script)) {
+  if (/[|]\s*rg\b/.test(commandText)) {
     return getDocsSearchHint('Piping output into rg is not supported reliably by this docs shell.');
   }
 
-  if (hasFindWithMultipleRoots(script)) {
+  if (hasFindWithMultipleRoots(commandText)) {
     return getDocsSearchHint('find with multiple starting directories is too slow for docs search.');
   }
 
   return null;
+}
+
+function maskQuotedText(script: string) {
+  let result = '';
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+
+  for (const char of script) {
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\' && quote === '"') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = null;
+        result += char;
+        continue;
+      }
+      result += ' ';
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      result += char;
+      continue;
+    }
+
+    result += char;
+  }
+
+  return result;
 }
 
 function getDocsSearchHint(reason: string) {
