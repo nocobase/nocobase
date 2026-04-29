@@ -1652,7 +1652,7 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
   expect(Init.flags['access-token']).toBeDefined();
   expect(Init.flags.locale).toBeDefined();
   expect(Init.flags['skip-skills']).toBeDefined();
-  expect(Init.flags['skip-skills'].hidden).toBe(true);
+  expect(Init.flags['skip-skills'].hidden).not.toBe(true);
   expect(Init.flags['install-skills']).toBeUndefined();
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({

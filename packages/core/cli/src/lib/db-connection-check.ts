@@ -29,7 +29,7 @@ function trimPromptValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-function readExternalDbConnectionConfig(values: PromptCatalogValues): ExternalDbConnectionConfig | undefined {
+export function readExternalDbConnectionConfig(values: PromptCatalogValues): ExternalDbConnectionConfig | undefined {
   const builtinDb = values.builtinDb === undefined ? true : Boolean(values.builtinDb);
   if (builtinDb) {
     return undefined;
@@ -62,6 +62,10 @@ function readExternalDbConnectionConfig(values: PromptCatalogValues): ExternalDb
     user,
     password,
   };
+}
+
+export function formatDbCheckAddress(config: Pick<ExternalDbConnectionConfig, 'host' | 'port' | 'database'>): string {
+  return `${config.host}:${config.port}/${config.database}`;
 }
 
 function buildValidationCacheKey(config: ExternalDbConnectionConfig): string {
@@ -190,12 +194,7 @@ async function performExternalDbConnectionCheck(config: ExternalDbConnectionConf
   }
 }
 
-export async function validateExternalDbConfig(values: PromptCatalogValues): Promise<string | undefined> {
-  const config = readExternalDbConnectionConfig(values);
-  if (!config) {
-    return undefined;
-  }
-
+export async function checkExternalDbConnection(config: ExternalDbConnectionConfig): Promise<string | undefined> {
   const cacheKey = buildValidationCacheKey(config);
   const cached = externalDbValidationCache.get(cacheKey);
   if (cached) {
@@ -205,6 +204,15 @@ export async function validateExternalDbConfig(values: PromptCatalogValues): Pro
   const pending = performExternalDbConnectionCheck(config);
   externalDbValidationCache.set(cacheKey, pending);
   return await pending;
+}
+
+export async function validateExternalDbConfig(values: PromptCatalogValues): Promise<string | undefined> {
+  const config = readExternalDbConnectionConfig(values);
+  if (!config) {
+    return undefined;
+  }
+
+  return await checkExternalDbConnection(config);
 }
 
 export function clearExternalDbValidationCache(): void {
