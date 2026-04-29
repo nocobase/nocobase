@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Space, Tabs } from 'antd';
-import { ExtendCollectionsProvider, SchemaComponent, useAPIClient } from '@nocobase/client';
+import { Avatar as AntdAvatar, Radio, Tabs } from 'antd';
+import { ExtendCollectionsProvider, SchemaComponent, useAPIClient, useTableBlockContext } from '@nocobase/client';
 import { useT } from '../../locale';
 import { useField } from '@formily/react';
 import { Field } from '@formily/core';
@@ -103,12 +103,43 @@ const Enabled: React.FC = (props) => {
   return field.value && <CheckOutlined style={{ color: '#52c41a' }} />;
 };
 
+const CategoryFilter: React.FC = () => {
+  const t = useT();
+  const { service } = useTableBlockContext();
+  const category = service?.params?.[0]?.filter?.category || 'business';
+  const options = [
+    { label: t('Business'), value: 'business' },
+    { label: t('Developer'), value: 'developer' },
+  ];
+
+  return (
+    <Radio.Group
+      value={category}
+      optionType="button"
+      options={options}
+      onChange={(e) => {
+        if (e.target.value === category) {
+          return;
+        }
+        service?.run({
+          ...service?.params?.[0],
+          page: 1,
+          filter: {
+            ...service?.params?.[0]?.filter,
+            category: e.target.value,
+          },
+        });
+      }}
+    />
+  );
+};
+
 export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
       <SchemaComponent
-        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch }}
+        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter }}
         scope={{
           t,
           useCreateFormProps,
@@ -132,6 +163,11 @@ export const Employees: React.FC = () => {
               'x-decorator-props': {
                 collection: 'aiEmployees',
                 action: 'list',
+                params: {
+                  filter: {
+                    category: 'business',
+                  },
+                },
                 rowKey: 'username',
                 dragSort: true,
                 dragSortBy: 'sort',
@@ -146,6 +182,11 @@ export const Employees: React.FC = () => {
                     },
                   },
                   properties: {
+                    categoryFilter: {
+                      type: 'void',
+                      'x-align': 'left',
+                      'x-component': 'CategoryFilter',
+                    },
                     refresh: {
                       title: "{{t('Refresh')}}",
                       'x-component': 'Action',
