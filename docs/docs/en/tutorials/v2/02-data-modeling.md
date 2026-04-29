@@ -218,7 +218,7 @@ With that, both tables' basic fields are configured. Now let's link them togethe
 
 ## 2.4 Back to Tickets: Adding Relation Fields
 
-> **Relation fields can be a bit abstract at first.** If it doesn't click right away, feel free to skip ahead to [Chapter 3: Building Pages](./03-building-pages/) and see how data is displayed in practice, then come back here to add the relation fields.
+> **Relation fields can be a bit abstract at first.** If it doesn't click right away, feel free to skip ahead to [Chapter 3: Building Pages](./03-building-pages) and see how data is displayed in practice, then come back here to add the relation fields.
 
 Tickets need to be linked to a category, a submitter, and an assignee. These are called **relation fields** — instead of storing text directly (like "Title" does), they store the ID of a record in another table, and use that ID to look up the corresponding record.
 

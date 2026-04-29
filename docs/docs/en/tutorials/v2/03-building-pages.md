@@ -70,7 +70,7 @@ An empty table with no data isn't very useful for testing. Let's quickly add an 
 
 ![03-building-pages-2026-03-17-15-03-04](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-03-04.png)
 
-> We'll cover form configuration in detail (field linkage, edit forms, detail popups, etc.) in [Chapter 4](/tutorials/v2/04-forms-and-details/). For now, just being able to enter data is enough.
+> We'll cover form configuration in detail (field linkage, edit forms, detail popups, etc.) in [Chapter 4](/tutorials/v2/04-forms-and-details). For now, just being able to enter data is enough.
 
 ## 3.4 Configuring Display Columns
 
@@ -238,4 +238,3 @@ Being able to "see" data isn't enough — users also need to **submit new ticket
 - [Blocks Overview](/interface-builder/blocks) — All block types explained
 - [Table Block](/interface-builder/blocks/data-blocks/table) — Table block configuration guide
 - [Filter Block](/interface-builder/blocks/filter-blocks/form) — Filter form setup
-
