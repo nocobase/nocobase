@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Overview",
-    "link": "/notification-manager"
+    "link": "/notification-manager/"
   },
   {
     "type": "custom-link",
@@ -11,12 +11,12 @@
       {
         "type": "custom-link",
         "label": "In-app message",
-        "link": "/notification-manager/notification-in-app-message"
+        "link": "/notification-manager/notification-in-app-message/"
       },
       {
         "type": "custom-link",
         "label": "Email",
-        "link": "/notification-manager/notification-email"
+        "link": "/notification-manager/notification-email/"
       }
     ]
   },

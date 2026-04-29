@@ -6,7 +6,7 @@
       {
         "type": "custom-link",
         "label": "插件开发概述",
-        "link": "/plugin-development"
+        "link": "/plugin-development/"
       },
       {
         "type": "custom-link",
@@ -32,7 +32,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/plugin-development/server"
+        "link": "/plugin-development/server/"
       },
       {
         "type": "custom-link",
@@ -128,7 +128,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/plugin-development/client"
+        "link": "/plugin-development/client/"
       },
       {
         "type": "custom-link",
@@ -147,7 +147,7 @@
           {
             "type": "custom-link",
             "label": "概述",
-            "link": "/plugin-development/client/component"
+            "link": "/plugin-development/client/component/"
           },
           {
             "type": "custom-link",
@@ -168,7 +168,7 @@
           {
             "type": "custom-link",
             "label": "概述",
-            "link": "/plugin-development/client/ctx"
+            "link": "/plugin-development/client/ctx/"
           },
           {
             "type": "custom-link",
@@ -184,7 +184,7 @@
           {
             "type": "custom-link",
             "label": "概述",
-            "link": "/plugin-development/client/flow-engine"
+            "link": "/plugin-development/client/flow-engine/"
           },
           {
             "type": "custom-link",
@@ -215,7 +215,7 @@
           {
             "type": "custom-link",
             "label": "概述",
-            "link": "/plugin-development/client/examples"
+            "link": "/plugin-development/client/examples/"
           },
           {
             "type": "custom-link",

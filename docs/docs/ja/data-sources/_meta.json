@@ -134,7 +134,7 @@
       {
         "type": "custom-link",
         "label": "概要",
-        "link": "/data-sources/data-modeling/collection-fields"
+        "link": "/data-sources/data-modeling/collection-fields/"
       },
       {
         "type": "custom-link",
@@ -276,7 +276,7 @@
           {
             "type": "custom-link",
             "label": "概要",
-            "link": "/data-sources/data-modeling/collection-fields/datetime"
+            "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
             "type": "custom-link",
@@ -430,27 +430,27 @@
           {
             "type": "custom-link",
             "label": "概要",
-            "link": "/data-sources/data-modeling/collection-fields/associations"
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
           },
           {
             "type": "custom-link",
             "label": "1対1",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
           },
           {
             "type": "custom-link",
             "label": "1対多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
           },
           {
             "type": "custom-link",
             "label": "多対1",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
           },
           {
             "type": "custom-link",
             "label": "多対多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
           },
           {
             "type": "custom-link",
@@ -468,7 +468,7 @@
       {
         "type": "custom-link",
         "label": "概要",
-        "link": "/data-sources/development"
+        "link": "/data-sources/development/"
       }
     ]
   }

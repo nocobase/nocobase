@@ -103,7 +103,7 @@
           {
             "type": "custom-link",
             "label": "Extentd authentication type",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",
