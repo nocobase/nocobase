@@ -231,13 +231,13 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     TableCustomColumnModel: 'TableCustomColumnModel',
   };
 
-  static filterCollection(collection: any) {
-    if (!super.filterCollection(collection)) {
-      return false;
-    }
+  // static filterCollection(collection: any) {
+  //   if (!super.filterCollection(collection)) {
+  //     return false;
+  //   }
 
-    return !!collection?.getFields?.()?.some?.((field: any) => isKanbanGroupField(field));
-  }
+  //   return !!collection?.getFields?.()?.some?.((field: any) => isKanbanGroupField(field));
+  // }
 
   get resource() {
     return super.resource as MultiRecordResource;
