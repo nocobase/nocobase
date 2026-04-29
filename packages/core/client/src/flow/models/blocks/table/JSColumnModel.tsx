@@ -30,6 +30,27 @@ import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { CodeEditor } from '../../../components/code-editor';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 
+function getRecordRenderSignature(record: any) {
+  if (!record || typeof record !== 'object') {
+    return String(record);
+  }
+
+  try {
+    const seen = new WeakSet();
+    return JSON.stringify(record, (_key, value) => {
+      if (value && typeof value === 'object') {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      return value;
+    });
+  } catch (error) {
+    return String(record);
+  }
+}
+
 export class JSColumnModel extends TableCustomColumnModel {
   // Stable per‑instance render component to avoid remounts across re-renders
   private _RenderComponent?: React.ComponentType;
@@ -113,7 +134,13 @@ export class JSColumnModel extends TableCustomColumnModel {
         // 使用记录主键作为 fork key，避免分页后 index 复用导致 fork 复用
         const tk = this.context.collection?.getFilterByTK?.(record);
         const forkKey = tk ?? record?.id ?? index;
+        const recordSignature = getRecordRenderSignature(record);
         const fork = this.createFork({}, String(forkKey));
+        const previousRecordSignature = (fork as any).__recordRenderSignature;
+        if (previousRecordSignature !== recordSignature) {
+          (fork as any).__recordRenderSignature = recordSignature;
+          fork.invalidateFlowCache('beforeRender');
+        }
         const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
           () => fork.context.collection,
           fork.context.t('Current record'),
@@ -137,7 +164,7 @@ export class JSColumnModel extends TableCustomColumnModel {
         fork.context.defineProperty('recordIndex', {
           get: () => index,
         });
-        return <MemoFlowModelRenderer key={fork.uid} model={fork} />;
+        return <MemoFlowModelRenderer key={`${fork.uid}:${recordSignature}`} model={fork} />;
       },
     };
   }
@@ -264,7 +291,8 @@ JSColumnModel.registerFlow({
 
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+            get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
+            cache: false,
           });
           const navigator = createSafeNavigator();
           await ctx.runjs(
