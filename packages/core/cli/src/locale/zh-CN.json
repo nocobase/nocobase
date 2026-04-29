@@ -280,7 +280,7 @@
         "envExists": "Env \"{{envName}}\" 已存在，请换一个 env name。"
       },
       "messages": {
-        "title": "初始化你的 NocoBase AI 工作区",
+        "title": "配置供 Coding Agents 使用的 NocoBase",
         "appNameRequiredWhenSkipped": "跳过 prompts 时必须提供 Env name。",
         "appNameEnvHelp": "请使用 `nb init --yes --env <envName>` 继续。",
         "resumeEnvRequired": "恢复安装时必须提供 Env name。",
@@ -310,24 +310,24 @@
         }
       },
       "webUi": {
-        "pageTitle": "初始化你的 NocoBase AI 工作区",
-        "documentHeading": "初始化你的 NocoBase AI 工作区",
-        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的应用后再完成连接，让 Coding Agents 可以在当前工作区中结合 NocoBase 协同工作。",
+        "pageTitle": "配置供 Coding Agents 使用的 NocoBase",
+        "documentHeading": "配置供 Coding Agents 使用的 NocoBase",
+        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
         "gettingStarted": {
           "title": "开始设置",
-          "description": "选择你的配置路径。"
+          "description": "选择连接已有应用，或安装一个新应用。"
         },
         "connectExistingApp": {
           "title": "连接已有应用",
-          "description": "添加现有应用连接。"
+          "description": "保存现有应用连接。"
         },
         "createNewApp": {
-          "title": "创建新应用",
-          "description": "设置项目基础信息。"
+          "title": "安装新应用",
+          "description": "设置应用基础信息和安装选项。"
         },
         "downloadAppFiles": {
           "title": "下载应用文件",
-          "description": "选择来源和下载选项。"
+          "description": "选择获取应用文件的方式。"
         },
         "configureDatabase": {
           "title": "配置数据库",

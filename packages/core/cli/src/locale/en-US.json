@@ -280,7 +280,7 @@
         "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
-        "title": "Set Up Your NocoBase AI Workspace",
+        "title": "Set Up NocoBase for Coding Agents",
         "appNameRequiredWhenSkipped": "Env name is required when prompts are skipped.",
         "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
@@ -310,24 +310,24 @@
         }
       },
       "webUi": {
-        "pageTitle": "Set Up Your NocoBase AI Workspace",
-        "documentHeading": "Set Up Your NocoBase AI Workspace",
-        "documentHint": "Connect an existing NocoBase app, or install a new one and connect it, so coding agents can work with NocoBase in this workspace.",
+        "pageTitle": "Set Up NocoBase for Coding Agents",
+        "documentHeading": "Set Up NocoBase for Coding Agents",
+        "documentHint": "Connect an existing NocoBase app, or install a new one, so coding agents can access and work with NocoBase.",
         "gettingStarted": {
           "title": "Getting started",
-          "description": "Pick your setup path."
+          "description": "Choose whether to connect an existing app or install a new one."
         },
         "connectExistingApp": {
           "title": "Connect an existing app",
-          "description": "Add your app connection."
+          "description": "Save your app connection."
         },
         "createNewApp": {
-          "title": "Create a new app",
-          "description": "Set project basics."
+          "title": "Install a new app",
+          "description": "Set app basics and install options."
         },
         "downloadAppFiles": {
           "title": "Download app files",
-          "description": "Choose source and options."
+          "description": "Choose how to get the app files."
         },
         "configureDatabase": {
           "title": "Configure the database",
