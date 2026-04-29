@@ -9,7 +9,7 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName, removeEnv } from '../../lib/auth-store.js';
-import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { confirmAction, isInteractiveTerminal, printVerbose, setVerboseMode } from '../../lib/ui.js';
 
 export default class EnvRemove extends Command {
@@ -30,11 +30,6 @@ export default class EnvRemove extends Command {
       description: 'Show detailed progress output',
       default: false,
     }),
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope',
-      options: ['project', 'global'],
-    }),
   };
 
   static override args = {
@@ -47,8 +42,7 @@ export default class EnvRemove extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvRemove);
     setVerboseMode(flags.verbose);
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
-    const currentEnv = await getCurrentEnvName({ scope });
+    const currentEnv = await getCurrentEnvName({ scope: resolveDefaultConfigScope() });
 
     if (args.name === currentEnv && !flags.force) {
       if (!isInteractiveTerminal()) {
@@ -63,9 +57,9 @@ export default class EnvRemove extends Command {
     }
 
     printVerbose(`Removing env "${args.name}"`);
-    const result = await removeEnv(args.name, { scope });
+    const result = await removeEnv(args.name, { scope: resolveDefaultConfigScope() });
 
-    this.log(`Removed env "${result.removed}"${scope ? ` from ${formatCliHomeScope(scope)} scope` : ''}.`);
+    this.log(`Removed env "${result.removed}".`);
 
     if (result.hasEnvs) {
       this.log(`Current env: ${result.currentEnv}`);

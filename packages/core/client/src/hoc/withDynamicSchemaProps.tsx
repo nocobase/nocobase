@@ -10,8 +10,8 @@
 import { useExpressionScope } from '@formily/react';
 import _ from 'lodash';
 import React, { ComponentType, Suspense, useMemo } from 'react';
-import { useDesignable } from '../schema-component';
 import { Spin } from 'antd';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 
 const useDefaultDynamicComponentProps = () => undefined;
 

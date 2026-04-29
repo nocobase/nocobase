@@ -43,10 +43,20 @@ export class PackageUrls {
 
   static async get(packageName: string, lane: PluginClientLane = 'client') {
     const cacheKey = this.getCacheKey(packageName, lane);
-    if (!this.items[cacheKey]) {
-      this.items[cacheKey] = await this.fetch(packageName, lane);
+    const cached = this.items[cacheKey];
+    if (cached) {
+      return cached;
     }
-    return this.items[cacheKey];
+
+    const nextUrl = await this.fetch(packageName, lane);
+
+    if (nextUrl?.includes('?hash=')) {
+      this.items[cacheKey] = nextUrl;
+    } else {
+      delete this.items[cacheKey];
+    }
+
+    return nextUrl;
   }
 
   static async hasClientEntry(packageName: string, lane: PluginClientLane) {

@@ -10,16 +10,17 @@
 import { css } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import { ConfigProvider, Divider } from 'antd';
-import { get } from 'lodash';
+import get from 'lodash/get';
 import React, { useContext } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { UserCenter } from '../route-switch/antd/admin-layout/UserCenterButton';
 import { Help } from '../user/Help';
-import { PinnedPluginListContext } from './context';
+import { getPinnedPluginListKeys, PinnedPluginListContext, type PinnedPluginListItems } from './context';
 
-export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
+export const PinnedPluginListProvider: React.FC<{ items: PinnedPluginListItems }> = (props) => {
   const { children, items } = props;
   const ctx = useContext(PinnedPluginListContext);
+
   return (
     <PinnedPluginListContext.Provider value={{ items: { ...ctx.items, ...items } }}>
       {children}
@@ -90,20 +91,30 @@ const dividerTheme = {
 
 export const PinnedPluginList = React.memo((props: { onClick?: () => void }) => {
   const { allowAll, snippets } = useACLRoleContext();
+  const ctx = useContext(PinnedPluginListContext);
+  const { components } = useContext(SchemaOptionsContext);
+
   const getSnippetsAllow = (aclKey) => {
     return allowAll || aclKey === '*' || snippets?.includes(aclKey);
   };
-  const ctx = useContext(PinnedPluginListContext);
-  const { components } = useContext(SchemaOptionsContext);
 
   return (
     <div className={pinnedPluginListClassName}>
       <div onClick={props.onClick}>
-        {Object.keys(ctx.items)
-          .sort((a, b) => ctx.items[a].order - ctx.items[b].order)
-          .filter((key) => getSnippetsAllow(ctx.items[key].snippet))
+        {getPinnedPluginListKeys(ctx.items)
+          .filter((key) => getSnippetsAllow(ctx.items[key]?.snippet))
           .map((key) => {
-            const Action = get(components, ctx.items[key].component);
+            const component = ctx.items[key]?.component;
+            if (!component) {
+              return null;
+            }
+
+            if (typeof component !== 'string') {
+              const Action = component;
+              return <Action key={key} />;
+            }
+
+            const Action = get(components, component);
             return Action ? <Action key={key} /> : null;
           })}
       </div>

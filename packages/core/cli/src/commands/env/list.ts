@@ -7,43 +7,52 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Command, Flags } from '@oclif/core';
+import { Command } from '@oclif/core';
+import { resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { listEnvs } from '../../lib/auth-store.js';
-import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { renderTable } from '../../lib/ui.js';
+import { apiStatus, appUrl, resolveApiBaseUrl } from './shared.js';
 
 export default class EnvList extends Command {
-  static summary = 'List configured environments';
+  static summary = 'List configured environments and API auth status';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
   ];
 
-  static override flags = {
-    scope: Flags.string({
-      char: 's',
-      description: 'Config scope',
-      options: ['project', 'global'],
-    }),
-  };
-
   async run(): Promise<void> {
-    const { flags } = await this.parse(EnvList);
-    const scope = flags.scope as Exclude<CliHomeScope, 'auto'> | undefined;
+    await this.parse(EnvList);
+    const scope = resolveDefaultConfigScope();
     const { currentEnv, envs } = await listEnvs({ scope });
     const names = Object.keys(envs).sort();
 
     if (!names.length) {
-      this.log(`No envs configured${scope ? ` in ${formatCliHomeScope(scope)} scope` : ''}.`);
-      this.log('Run `nb env add <name> --base-url <url>` to add one.');
+      this.log('No envs configured.');
+      this.log('Run `nb env add <name> --api-base-url <url>` to add one.');
       return;
     }
 
-    const rows = names.map((name) => {
+    const rows: string[][] = [];
+    for (const name of names) {
       const env = envs[name];
-      return [name === currentEnv ? '*' : '', name, env.baseUrl ?? '', env.auth?.type ?? '', env.runtime?.version ?? ''];
-    });
+      const runtime = await resolveManagedAppRuntime(name);
+      const statusConfig = {
+        ...env,
+        ...(runtime?.env.config ?? {}),
+      };
 
-    this.log(renderTable(['Current', 'Name', 'Base URL', 'Auth', 'Runtime'], rows));
+      rows.push([
+        name === currentEnv ? '*' : '',
+        name,
+        runtime?.kind ?? env.kind ?? '-',
+        await apiStatus(name, statusConfig, { scope }),
+        runtime ? appUrl(runtime) : resolveApiBaseUrl(env),
+        env.auth?.type ?? '',
+        env.runtime?.version ?? '',
+      ]);
+    }
+
+    this.log(renderTable(['Current', 'Name', 'Kind', 'App Status', 'URL', 'Auth', 'Runtime'], rows));
   }
 }

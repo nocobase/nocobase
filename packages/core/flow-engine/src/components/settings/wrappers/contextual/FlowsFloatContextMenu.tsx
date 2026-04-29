@@ -27,9 +27,9 @@ import {
 } from './useFloatToolbarPortal';
 import { useFloatToolbarVisibility } from './useFloatToolbarVisibility';
 
-const TOOLBAR_Z_INDEX = 999;
-
 type ToolbarPosition = 'inside' | 'above' | 'below';
+const TOOLBAR_ITEM_WIDTH = 19;
+const DEFAULT_POPUP_BASE_Z_INDEX = 1000;
 
 interface BaseFloatContextMenuProps {
   children?: React.ReactNode;
@@ -65,6 +65,10 @@ interface BaseFloatContextMenuProps {
    */
   extraToolbarItems?: ToolbarItemConfig[];
   /**
+   * @default true
+   */
+  showDynamicFlowsEditor?: boolean;
+  /**
    * @default 'inside'
    */
   toolbarPosition?: ToolbarPosition;
@@ -97,12 +101,14 @@ const toolbarContainerStyles = ({
   showBackground,
   showBorder,
   ctx,
+  toolbarZIndex,
 }: {
   showBackground: boolean;
   showBorder: boolean;
   ctx: any;
+  toolbarZIndex: number;
 }) => css`
-  z-index: ${TOOLBAR_Z_INDEX};
+  z-index: ${toolbarZIndex};
   opacity: 0;
   pointer-events: none;
   overflow: visible;
@@ -294,6 +300,7 @@ const renderToolbarItems = (
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
   extraToolbarItems?: ToolbarItemConfig[],
+  showDynamicFlowsEditor = true,
   onSettingsMenuOpenChange?: (open: boolean) => void,
   getPopupContainer?: (triggerNode?: HTMLElement) => HTMLElement,
 ) => {
@@ -304,6 +311,9 @@ const renderToolbarItems = (
 
   return allToolbarItems
     .filter((itemConfig: ToolbarItemConfig) => {
+      if (itemConfig.key === 'dynamic-flows-editor' && showDynamicFlowsEditor === false) {
+        return false;
+      }
       return itemConfig.visible ? itemConfig.visible(model) : true;
     })
     .map((itemConfig: ToolbarItemConfig) => {
@@ -332,6 +342,7 @@ const buildToolbarContainerClassName = ({
   showBackground,
   showBorder,
   ctx,
+  toolbarZIndex,
   portalRenderSnapshot,
   isToolbarVisible,
   className,
@@ -339,12 +350,13 @@ const buildToolbarContainerClassName = ({
   showBackground: boolean;
   showBorder: boolean;
   ctx: any;
+  toolbarZIndex: number;
   portalRenderSnapshot: ToolbarPortalRenderSnapshot | null;
   isToolbarVisible: boolean;
   className?: string;
 }) =>
   [
-    toolbarContainerStyles({ showBackground, showBorder, ctx }),
+    toolbarContainerStyles({ showBackground, showBorder, ctx, toolbarZIndex }),
     'nb-toolbar-portal',
     portalRenderSnapshot?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
     isToolbarVisible ? 'nb-toolbar-visible' : '',
@@ -356,11 +368,13 @@ const buildToolbarContainerClassName = ({
 const buildToolbarContainerStyle = (
   portalRect: ToolbarPortalRect,
   toolbarStyle?: React.CSSProperties,
+  toolbarItemCount = 0,
 ): React.CSSProperties => ({
   top: `${portalRect.top}px`,
   left: `${portalRect.left}px`,
   width: `${portalRect.width}px`,
   height: `${portalRect.height}px`,
+  minWidth: toolbarItemCount ? `${TOOLBAR_ITEM_WIDTH * toolbarItemCount}px` : undefined,
   ...omitToolbarPortalInsetStyle(toolbarStyle),
 });
 
@@ -514,6 +528,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showDragHandle = false,
     settingsMenuLevel,
     extraToolbarItems,
+    showDynamicFlowsEditor = true,
     toolbarStyle,
     toolbarPosition = 'inside',
   }: ModelProvidedProps) => {
@@ -575,6 +590,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
               flowEngine,
               settingsMenuLevel,
               extraToolbarItems,
+              showDynamicFlowsEditor,
               handleSettingsMenuOpenChange,
               getPopupContainer,
             )
@@ -588,6 +604,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         settingsMenuLevel,
         showCopyUidButton,
         showDeleteButton,
+        showDynamicFlowsEditor,
       ],
     );
 
@@ -625,15 +642,17 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
+    const toolbarZIndex = (model.context.themeToken?.zIndexPopupBase || DEFAULT_POPUP_BASE_Z_INDEX) + 1;
     const toolbarContainerClassName = buildToolbarContainerClassName({
       showBackground,
       showBorder,
       ctx: model.context,
+      toolbarZIndex,
       portalRenderSnapshot,
       isToolbarVisible,
       className,
     });
-    const toolbarContainerStyle = buildToolbarContainerStyle(portalRect, toolbarStyle);
+    const toolbarContainerStyle = buildToolbarContainerStyle(portalRect, toolbarStyle, toolbarItems.length);
 
     const toolbarNode = shouldRenderToolbar ? (
       <div

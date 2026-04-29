@@ -14,9 +14,24 @@ export class PluginCustomTableBlockResourceServer extends Plugin {
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    this.app.acl.allow('todoItems', ['list', 'get', 'create', 'update', 'destroy'], 'loggedIn');
+  }
 
-  async install() {}
+  async install() {
+    const repo = this.db.getRepository('todoItems');
+    const count = await repo.count();
+    if (count === 0) {
+      await repo.createMany({
+        records: [
+          { title: 'Learn NocoBase plugin development', completed: true, priority: 'high' },
+          { title: 'Build a custom block', completed: false, priority: 'high' },
+          { title: 'Write documentation', completed: false, priority: 'medium' },
+          { title: 'Add unit tests', completed: false, priority: 'low' },
+        ],
+      });
+    }
+  }
 
   async afterEnable() {}
 

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/ai-dev"
+  },
+  {
+    "type": "custom-link",
+    "label": "实战：开发水印插件",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "支持的能力",
+    "link": "/ai-dev/capabilities"
+  }
+]

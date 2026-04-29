@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Card } from 'antd';
 import { FlowContext, FlowContextProvider } from '@nocobase/flow-engine';
-import { TextAreaWithContextSelector } from '../../../../../../src/flow/components/TextAreaWithContextSelector';
+import { TextAreaWithContextSelector } from '@nocobase/client-v2';
 
 export default () => {
   const [value, setValue] = useState<string>('Hello, {{ ctx.user.name }}');

@@ -14,7 +14,7 @@ export default class ScaffoldPlugin extends Command {
   static override args = {
     pkg: Args.string({description: 'plugin package name', required: true}),
   }
-  static override description = 'Run the legacy NocoBase scaffold plugin (forwards to `npm run scaffold:plugin` in the repo root)';
+  static override description = 'Generate a NocoBase plugin scaffold.';
   static override examples = [
     '<%= config.bin %> <%= command.id %> @nocobase-example/plugin-hello',
     '<%= config.bin %> <%= command.id %> @nocobase-example/plugin-hello --force-recreate',

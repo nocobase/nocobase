@@ -8,10 +8,12 @@
  */
 
 import fsp from 'node:fs/promises';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, test, vi, expect } from 'vitest';
 import Install from '../commands/install.js';
+import { resolveConfiguredEnvPath } from '../lib/cli-home.js';
 import { findAvailableTcpPort } from '../lib/prompt-validators.js';
 
 const mocks = vi.hoisted(() => ({
@@ -106,7 +108,62 @@ test('startBuiltinDb removes the existing db container before docker run when --
   ]);
 });
 
-test('downloadLocalApp delegates npm/git downloads through nb download and returns project root', async () => {
+test('startBuiltinDb reuses an existing db container without rechecking its published port', async () => {
+  const storagePath = await useTempStorageDir();
+  const dbPort = await findAvailableTcpPort();
+  const server = await new Promise<net.Server>((resolve, reject) => {
+    const listener = net.createServer();
+    listener.once('error', reject);
+    listener.listen(Number(dbPort), '127.0.0.1', () => resolve(listener));
+  });
+  const command = Object.assign(Object.create(Install.prototype), {
+    ensureDockerNetwork: vi.fn(async () => undefined),
+    dockerContainerExists: vi.fn(async () => true),
+  });
+
+  try {
+    const plan = await (
+      Install.prototype as unknown as {
+        startBuiltinDb: (params: {
+          envName: string;
+          appResults: Record<string, unknown>;
+          downloadResults: Record<string, unknown>;
+          dbResults: Record<string, unknown>;
+          force?: boolean;
+        }) => Promise<{ containerName: string; args: string[] }>;
+      }
+    ).startBuiltinDb.call(command, {
+      envName: 'demo',
+      appResults: {
+        storagePath,
+      },
+      downloadResults: {
+        source: 'git',
+      },
+      dbResults: {
+        dbDialect: 'postgres',
+        dbHost: '127.0.0.1',
+        dbPort,
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+      },
+    });
+
+    expect(plan.containerName).toContain('demo-postgres');
+    expect(mocks.run.mock.calls.length).toBe(0);
+    expect(mocks.promptInfo.mock.calls).toEqual([
+      [`Built-in postgres container already exists: ${plan.containerName}`],
+      [`Built-in postgres database is ready at 127.0.0.1:${dbPort}`],
+    ]);
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
+
+test('downloadLocalApp delegates npm/git downloads through nb source download and returns project root', async () => {
   const projectRoot = await useTempStorageDir();
   const runCommand = vi.fn(async () => ({
     projectRoot,
@@ -146,10 +203,10 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
   });
 
   expect(resolvedProjectRoot).toBe(projectRoot);
-  expect(appResults.appRootPath).toBe(projectRoot);
+  expect(appResults.appRootPath).toBe('./downloaded-app');
   expect(runCommand.mock.calls).toEqual([
     [
-      'download',
+      'source:download',
       [
         '-y',
         '--no-intro',
@@ -159,7 +216,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
         '--version',
         'alpha',
         '--output-dir',
-        './downloaded-app',
+        resolveConfiguredEnvPath('./downloaded-app'),
         '--npm-registry',
         'https://registry.npmmirror.com',
         '--replace',
@@ -440,7 +497,7 @@ test('startBuiltinDb forwards command stdio to docker run', async () => {
   ]);
 });
 
-test('downloadManagedSource delegates docker downloads through nb download', async () => {
+test('downloadManagedSource delegates docker downloads through nb source download', async () => {
   const runCommand = vi.fn(async () => ({
     resolved: {
       source: 'docker',
@@ -472,7 +529,7 @@ test('downloadManagedSource delegates docker downloads through nb download', asy
 
   expect(runCommand.mock.calls).toEqual([
     [
-      'download',
+      'source:download',
       [
         '-y',
         '--no-intro',
@@ -488,5 +545,47 @@ test('downloadManagedSource delegates docker downloads through nb download', asy
         '--replace',
       ],
     ],
+  ]);
+});
+
+test('downloadManagedSource resolves otherVersion before delegating to nb source download', async () => {
+  const runCommand = vi.fn(async () => ({
+    resolved: {
+      source: 'git',
+    },
+  }));
+  const command = Object.assign(Object.create(Install.prototype), {
+    config: {
+      runCommand,
+    },
+  });
+
+  await (
+    Install.prototype as unknown as {
+      downloadManagedSource: (params: {
+        downloadResults: Record<string, unknown>;
+        verbose?: boolean;
+      }) => Promise<unknown>;
+    }
+  ).downloadManagedSource.call(command, {
+    downloadResults: {
+      source: 'git',
+      version: 'other',
+      otherVersion: 'next',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+    },
+  });
+
+  expect(runCommand.mock.calls[0]?.[1]).toEqual([
+    '-y',
+    '--no-intro',
+    '--source',
+    'git',
+    '--version',
+    'next',
+    '--output-dir',
+    resolveConfiguredEnvPath('./local/source/'),
+    '--git-url',
+    'https://github.com/nocobase/nocobase.git',
   ]);
 });

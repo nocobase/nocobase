@@ -10,13 +10,16 @@
 import {
   ActionContextProvider,
   css,
+  DataSourceApplicationProvider,
   parseCollectionName,
   SchemaComponent,
+  SchemaComponentOptions,
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItem,
   useActionContext,
   useAPIClient,
+  useApp,
   useCollectionFilterOptions,
   useCollectionManager_deprecated,
   useCompile,
@@ -53,6 +56,23 @@ function defaultFilter() {
 function getDocumentBody() {
   return document.body;
 }
+
+const AggregateVariableSchemaRenderer = ({ initialValues, action }: { initialValues?: any; action: string }) => {
+  const app = useApp();
+  const schemaComponentContextValue = React.useContext(SchemaComponentContext);
+
+  return (
+    <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
+      <SchemaComponentOptions components={app.components} scope={app.scopes}>
+        <SchemaComponentContext.Provider value={{ ...schemaComponentContextValue, designable: false }}>
+          <SchemaComponent schema={getAggregateVariableSchema(initialValues, action)} />
+        </SchemaComponentContext.Provider>
+      </SchemaComponentOptions>
+    </DataSourceApplicationProvider>
+  );
+};
+
+AggregateVariableSchemaRenderer.displayName = 'AggregateVariableSchemaRenderer';
 
 const FieldsSelect = observer(
   (props: any) => {
@@ -390,9 +410,7 @@ export const variableInitializer = new SchemaInitializer({
           <>
             <SchemaInitializerItem title={t('Aggregate variable')} onClick={handleClick} />
             <ActionContextProvider value={{ visible, setVisible }}>
-              <SchemaComponentContext.Provider value={{ designable: false }}>
-                <SchemaComponent schema={getAggregateVariableSchema(undefined, 'create')} />
-              </SchemaComponentContext.Provider>
+              <AggregateVariableSchemaRenderer action="create" />
             </ActionContextProvider>
           </>
         );
@@ -408,9 +426,7 @@ export const VariableEditor: FC<{
 }> = ({ visible, setVisible, initialValues }) => {
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <SchemaComponentContext.Provider value={{ designable: false }}>
-        <SchemaComponent schema={getAggregateVariableSchema(initialValues, 'update')} />
-      </SchemaComponentContext.Provider>
+      <AggregateVariableSchemaRenderer initialValues={initialValues} action="update" />
     </ActionContextProvider>
   );
 };

@@ -12,10 +12,13 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useDesignable, useFieldModeOptions, useIsAddNewForm, useCompile } from '../../../../schema-component';
+import { useCompile } from '../../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { useFieldModeOptions } from '../../../../schema-component/hooks/useFieldModeOptions';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import {
   useIsAssociationField,
+  useIsAddNewForm,
   useIsFieldReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';

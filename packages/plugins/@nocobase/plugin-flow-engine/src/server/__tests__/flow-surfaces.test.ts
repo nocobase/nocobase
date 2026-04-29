@@ -4270,12 +4270,35 @@ describe('flowSurfaces resource', () => {
       _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map(
         (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
       ),
-    ).toEqual(['title', 'name']);
+    ).toEqual(['roles.title', 'roles.name']);
+    expect(
+      _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.collectionName,
+      ),
+    ).toEqual(['users', 'users']);
+    expect(
+      _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map((item: any) => item?.props?.title),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
+    expect(
+      _.castArray(rolesInnerAfterSwitch.tree.subModels?.columns || []).map(
+        (item: any) => item?.stepParams?.tableColumnSettings?.title?.title,
+      ),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
     expect(rolesInnerAfterSwitch.tree.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',
       fieldPath: 'roles',
     });
+    const rolesWrapperCatalogAfterSwitch = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: rolesField.wrapperUid,
+          },
+        },
+      }),
+    );
+    expect(rolesWrapperCatalogAfterSwitch.node.relation.current.fields).toEqual(['title', 'name']);
   });
 
   it('should create and switch generic relation fields with fieldType semantics', async () => {
@@ -4327,7 +4350,32 @@ describe('flowSurfaces resource', () => {
       _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title', 'name']);
+    ).toEqual(['roles.title', 'roles.name']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.fieldSettings?.init?.collectionName),
+    ).toEqual(['users', 'users']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.props?.title),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
+    expect(
+      _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns || [])
+        .filter((item: any) => item?.use === 'TableColumnModel')
+        .map((item: any) => item?.stepParams?.tableColumnSettings?.title?.title),
+    ).toEqual(['{{t("Role name")}}', '{{t("Role UID")}}']);
+    const createdRolesWrapperCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: createdRolesField.wrapperUid,
+          },
+        },
+      }),
+    );
+    expect(createdRolesWrapperCatalog.node.relation.current.fields).toEqual(['title', 'name']);
     expect(
       _.castArray(createdRolesInnerReadback.tree.subModels?.subTableColumns?.[0]?.subModels?.actions || []).map(
         (item: any) => item.use,
@@ -4378,7 +4426,7 @@ describe('flowSurfaces resource', () => {
       _.castArray(defaultedSwitchReadback.tree.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title']);
+    ).toEqual(['roles.title']);
 
     const defaultRolesField = await addField(rootAgent, formUid, 'roles');
     const switchRes = await rootAgent.resource('flowSurfaces').configure({
@@ -4407,7 +4455,7 @@ describe('flowSurfaces resource', () => {
       _.castArray(switchedRolesInner.tree.subModels?.subTableColumns || [])
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title']);
+    ).toEqual(['roles.title']);
 
     const configureInnerTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -4464,6 +4512,46 @@ describe('flowSurfaces resource', () => {
     });
     expect(invalidScalarFieldRes.status).toBe(400);
     expect(readErrorMessage(invalidScalarFieldRes)).toContain(`fieldType is only supported for relation fields`);
+  });
+
+  it('should persist relation fieldType child paths like frontend nested field menus', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Relation fieldType nested child path page',
+      tabTitle: 'Relation fieldType nested child path tab',
+    });
+
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const tasksField = await addField(rootAgent, formUid, 'tasks', {
+      fieldType: 'popupSubTable',
+      fields: ['employee.department.title'],
+    });
+    const tasksReadback = await getSurface(rootAgent, {
+      uid: tasksField.fieldUid,
+    });
+    const nestedColumnInit = _.castArray(tasksReadback.tree.subModels?.subTableColumns || []).find(
+      (item: any) => item?.use === 'TableColumnModel',
+    )?.stepParams?.fieldSettings?.init;
+    expect(nestedColumnInit).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'tasks.employee.department.title',
+      associationPathName: 'tasks.employee.department',
+    });
+
+    const tasksCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tasksField.wrapperUid,
+          },
+        },
+      }),
+    );
+    expect(tasksCatalog.node.relation.current.fields).toEqual(['employee.department.title']);
   });
 
   it('should validate and configure relation fieldType options consistently', async () => {
@@ -4677,7 +4765,7 @@ describe('flowSurfaces resource', () => {
       _.castArray(subFormReadback.tree.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
       ),
-    ).toEqual(['location']);
+    ).toEqual(['department.location']);
 
     const detailsSubDetailsField = await addField(rootAgent, employeeDetailsUid, 'department', {
       fieldType: 'subDetails',
@@ -4688,6 +4776,11 @@ describe('flowSurfaces resource', () => {
       uid: detailsSubDetailsField.fieldUid,
     });
     expect(subDetailsReadback.tree.use).toBe('DisplaySubItemFieldModel');
+    expect(
+      _.castArray(subDetailsReadback.tree.subModels?.grid?.subModels?.items || []).map(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+      ),
+    ).toEqual(['department.location']);
 
     const detailsSubDetailsListField = await addField(rootAgent, detailsUid, 'roles', {
       fieldType: 'subDetailsList',
@@ -4697,6 +4790,11 @@ describe('flowSurfaces resource', () => {
       uid: detailsSubDetailsListField.fieldUid,
     });
     expect(subDetailsListReadback.tree.use).toBe('DisplaySubListFieldModel');
+    expect(
+      _.castArray(subDetailsListReadback.tree.subModels?.grid?.subModels?.items || []).map(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+      ),
+    ).toEqual(['roles.title']);
 
     const formSubFormListField = await addField(rootAgent, formUid, 'roles', {
       fieldType: 'subFormList',
@@ -4706,6 +4804,11 @@ describe('flowSurfaces resource', () => {
       uid: formSubFormListField.fieldUid,
     });
     expect(subFormListReadback.tree.use).toBe('SubFormListFieldModel');
+    expect(
+      _.castArray(subFormListReadback.tree.subModels?.grid?.subModels?.items || []).map(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
+      ),
+    ).toEqual(['roles.title']);
 
     const detailsTextField = await addField(rootAgent, detailsUid, 'roles', {
       fieldType: 'text',

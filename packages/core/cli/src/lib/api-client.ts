@@ -7,21 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { pipeline } from 'node:stream/promises';
+import type { AuthStoreOptions } from './auth-store.js';
 import { resolveServerRequestTarget } from './env-auth.js';
+import { fetchWithPreservedAuthRedirect } from './http-request.js';
 
 const CLI_REQUEST_SOURCE_HEADER = 'x-request-source';
 const CLI_REQUEST_SOURCE_VALUE = 'cli';
@@ -50,6 +43,7 @@ export interface RequestOptions {
   baseUrl?: string;
   token?: string;
   role?: string;
+  scope?: AuthStoreOptions['scope'];
   flags: Record<string, any>;
   operation: RequestOperation;
 }
@@ -59,6 +53,8 @@ export interface RawRequestOptions {
   baseUrl?: string;
   token?: string;
   role?: string;
+  scope?: AuthStoreOptions['scope'];
+  timeoutMs?: number;
   method: string;
   path: string;
   query?: Record<string, any>;
@@ -306,7 +302,7 @@ export async function executeApiRequest(options: RequestOptions) {
   const url = new URL(`${normalizeBaseUrl(baseUrl)}${requestPath}`);
   query.forEach((value, key) => url.searchParams.append(key, value));
 
-  const response = await fetch(url, {
+  const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.operation.method.toUpperCase(),
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -355,13 +351,27 @@ export async function executeRawApiRequest(options: RawRequestOptions) {
     url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
   }
 
-  const response = await fetch(url, {
-    method: options.method.toUpperCase(),
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  const controller = options.timeoutMs && options.timeoutMs > 0 ? new AbortController() : undefined;
+  const timeout = controller
+    ? setTimeout(() => {
+        controller.abort();
+      }, options.timeoutMs)
+    : undefined;
 
-  return parseResponse(response);
+  try {
+    const response = await fetchWithPreservedAuthRedirect(url.toString(), {
+      method: options.method.toUpperCase(),
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller?.signal,
+    });
+
+    return parseResponse(response);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
 }
 
 export async function executeDownloadApiRequest(options: DownloadRequestOptions) {
@@ -391,7 +401,7 @@ export async function executeDownloadApiRequest(options: DownloadRequestOptions)
     url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.method.toUpperCase(),
     headers,
   });
@@ -459,7 +469,7 @@ export async function executeMultipartApiRequest(options: MultipartRequestOption
     url.searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.method.toUpperCase(),
     headers,
     body: form,

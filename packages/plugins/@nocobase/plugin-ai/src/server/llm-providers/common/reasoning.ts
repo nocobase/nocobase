@@ -13,32 +13,18 @@ import type OpenAI from 'openai';
 
 export const REASONING_MAP_KEY = '__nb_reasoning_map';
 
-export const getToolCallsKey = (toolCalls: Array<{ id?: string; name?: string; function?: { name?: string } }> = []) =>
-  toolCalls
-    .map((toolCall) => {
-      const id = toolCall?.id ?? '';
-      const name = toolCall?.name ?? toolCall?.function?.name ?? '';
-      return `${id}:${name}`;
-    })
-    .join('|');
-
 export const collectReasoningMap = (messages: BaseMessage[]) => {
   const reasoningMap = new Map<string, string>();
-  for (const message of messages ?? []) {
+  for (let i = 0; i < messages.length; i++) {
+    const message = (messages ?? [])[i];
     if (!AIMessage.isInstance(message)) {
-      continue;
-    }
-    if (!message.tool_calls?.length) {
       continue;
     }
     const reasoningContent = message.additional_kwargs?.reasoning_content;
     if (typeof reasoningContent !== 'string' || !reasoningContent) {
       continue;
     }
-    const key = getToolCallsKey(message.tool_calls as any[]);
-    if (key) {
-      reasoningMap.set(key, reasoningContent);
-    }
+    reasoningMap.set(String(i), reasoningContent);
   }
   return reasoningMap;
 };
@@ -47,24 +33,19 @@ export const patchRequestMessagesReasoning = (request: any, reasoningMap?: Map<s
   if (!reasoningMap?.size || !Array.isArray(request?.messages)) {
     return;
   }
-  const lastMessage = request.messages.at(-1);
-  if (lastMessage?.role !== 'tool') {
-    return;
-  }
-  for (const message of request.messages) {
-    if (message?.role !== 'assistant') {
-      continue;
-    }
-    if (!Array.isArray(message.tool_calls) || message.tool_calls.length === 0) {
-      continue;
-    }
-    if (message.reasoning_content) {
-      continue;
-    }
-    const key = getToolCallsKey(message.tool_calls);
-    const reasoningContent = key ? reasoningMap.get(key) : undefined;
-    if (reasoningContent) {
-      message.reasoning_content = reasoningContent;
+  if (request.messages.some((msg: any) => msg.role === 'tool')) {
+    for (let i = 0; i < request.messages.length; i++) {
+      const message = request.messages[i];
+      if (message?.role !== 'assistant') {
+        continue;
+      }
+      if (message.reasoning_content) {
+        continue;
+      }
+      const reasoningContent = reasoningMap.get(String(i));
+      if (reasoningContent) {
+        message.reasoning_content = reasoningContent;
+      }
     }
   }
 };

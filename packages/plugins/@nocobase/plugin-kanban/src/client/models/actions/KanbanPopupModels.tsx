@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddNewActionModel, ViewActionModel } from '@nocobase/client';
+import { AddNewActionModel, ViewActionModel } from '@nocobase/client-v2';
 import { tExpr } from '@nocobase/flow-engine';
 
 export const createKanbanQuickCreateActionOptions = (uid?: string) => {

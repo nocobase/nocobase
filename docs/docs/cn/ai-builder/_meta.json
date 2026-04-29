@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速开始",
+    "link": "/ai-builder"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "安全与审计"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "环境管理"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "数据建模"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "界面配置"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "工作流管理"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "权限配置"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "解决方案"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "插件管理"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "发布管理"
+  }
+]

@@ -1,6 +1,18 @@
+---
+title: "Telemetry"
+description: "NocoBase server telemetry: metrics, traces, observability, Telemetry API."
+keywords: "Telemetry,metrics,traces,observability,NocoBase"
+---
+
 # Telemetry
 
-The telemetry module of NocoBase is encapsulated based on <a href="https://opentelemetry.io/" target="_blank">OpenTelemetry</a>. This article introduces how to use the telemetry module to collect Trace and Metric data to enhance the observability of the NocoBase system.
+:::warning Note
+
+This feature is currently experimental.
+
+:::
+
+NocoBase's Telemetry module is encapsulated based on <a href="https://opentelemetry.io/" target="_blank">OpenTelemetry</a>, used for collecting Trace and Metric data to enhance the observability of NocoBase.
 
 ## Instrumentation
 
@@ -12,9 +24,7 @@ const counter = meter.createCounter('event_counter', {});
 counter.add(1);
 ```
 
-References:
-
-- <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-meter" target="_blank">https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-meter</a>
+For detailed usage, see <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-meter" target="_blank">OpenTelemetry - Acquiring a Meter</a>.
 
 ### Traces
 
@@ -24,9 +34,7 @@ tracer.startActiveSpan();
 tracer.startSpan();
 ```
 
-References:
-
-- <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-tracer" target="_blank">https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-tracer</a>
+For detailed usage, see <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-tracer" target="_blank">OpenTelemetry - Acquiring a Tracer</a>.
 
 ### Libraries
 
@@ -43,14 +51,14 @@ class InstrumentationPlugin extends Plugin {
 }
 ```
 
-:::warning
-In NocoBase, the initialization location of the telemetry module is `app.beforeLoad`. Therefore, not all instrumentation libraries are suitable for NocoBase.  
-For example, <a href="https://www.npmjs.com/package/@opentelemetry/instrumentation-koa" target="_blank">instrumentation-koa</a> needs to be introduced before `Koa` is instantiated, but although NocoBase's `Application` is based on `Koa`, the telemetry module is initialized after the `Application` is instantiated, so it cannot be applied.
+:::warning Note
+
+In NocoBase, the initialization location of the telemetry module is `app.beforeLoad`. Therefore, not all instrumentation libraries are suitable for NocoBase.
+For example, <a href="https://www.npmjs.com/package/@opentelemetry/instrumentation-koa" target="_blank">instrumentation-koa</a> needs to be introduced before `Koa` is instantiated, but although NocoBase's `Application` is based on `Koa`, the telemetry module is initialized after the `Application` is instantiated, so it cannot be used.
+
 :::
 
-References:
-
-- <a href="https://opentelemetry.io/docs/instrumentation/js/libraries/" target="_blank">https://opentelemetry.io/docs/instrumentation/js/libraries/</a>
+For detailed usage, see <a href="https://opentelemetry.io/docs/instrumentation/js/libraries/" target="_blank">OpenTelemetry - Libraries</a>.
 
 ## Collection
 
@@ -99,6 +107,12 @@ class TraceSpanProcessorPlugin extends Plugin {
 }
 ```
 
-References:
+For detailed usage, see <a href="https://opentelemetry.io/docs/instrumentation/js/exporters" target="_blank">OpenTelemetry - Exporters</a>.
 
-- <a href="https://opentelemetry.io/docs/instrumentation/js/exporters" target="_blank">https://opentelemetry.io/docs/instrumentation/js/exporters</a>
+## Related Links
+
+- [Logger](./logger.md) — Using logging alongside telemetry for a complete observability solution
+- [Plugin](./plugin.md) — Register telemetry instrumentation and collectors in plugins
+- [Server Development Overview](./index.md) — The position of the telemetry module in server architecture
+- [Event](./event.md) — Initialize telemetry in `beforeLoad` through the event mechanism
+- [Middleware](./middleware.md) — Combine telemetry with middleware for request tracing

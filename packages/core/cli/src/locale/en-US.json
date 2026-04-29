@@ -62,6 +62,13 @@
       "allocateNotDockerPublished": "Failed to allocate an available TCP port that is not already published by Docker.",
       "alreadyInUse": "Port {{port}} is already in use. Choose another port.",
       "alreadyInUseByDocker": "Port {{port}} is already in use by a Docker container. Choose another port."
+    },
+    "dbConnection": {
+      "unreachable": "Can't reach the database at {{host}}:{{port}}. Check the host, port, and network connectivity. Details: {{details}}",
+      "timeout": "Timed out connecting to the database at {{host}}:{{port}} after about {{seconds}} seconds.",
+      "authenticationFailed": "Failed to sign in to database \"{{database}}\" with user \"{{user}}\". Check the username and password.",
+      "databaseNotFound": "Database \"{{database}}\" does not exist or is not accessible with the current connection settings.",
+      "connectionFailed": "Database connection check failed. Details: {{details}}"
     }
   },
   "commands": {
@@ -73,6 +80,8 @@
         },
         "scope": {
           "message": "Where should this connection be saved?",
+          "autoLabel": "Auto",
+          "autoHint": "project if this repo already has .nocobase, otherwise global",
           "projectLabel": "Project",
           "projectHint": ".nocobase in this repo",
           "globalLabel": "Global",
@@ -268,7 +277,7 @@
     },
     "init": {
       "validation": {
-        "envExists": "Env \"{{envName}}\" already exists in this workspace. Choose another env name."
+        "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
         "title": "Set Up Your NocoBase AI Workspace",
@@ -276,6 +285,7 @@
         "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
         "resumeEnvHelp": "Use `nb init --resume --env <envName>` to continue.",
+        "resumeAfterInstallFailure": "Resume this setup with:\n  {{command}}",
         "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
         "uiReady": "Local setup form is ready.",
         "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",

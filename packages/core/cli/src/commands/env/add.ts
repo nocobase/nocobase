@@ -9,7 +9,12 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import { upsertEnv } from '../../lib/auth-store.js';
-import { type CliHomeScope } from '../../lib/cli-home.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import {
+  buildStoredEnvConfig,
+  type StoredEnvConfig,
+  type StoredEnvConfigInput,
+} from '../../lib/env-config.js';
 import {
   runPromptCatalog,
   type PromptCatalogValues,
@@ -26,16 +31,13 @@ import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import { printVerbose, setVerboseMode } from '../../lib/ui.js';
 import * as p from '@clack/prompts';
 
-type EnvScope = Exclude<CliHomeScope, 'auto'>;
 type EnvAddParsedFlags = {
   env?: string;
   verbose: boolean;
   locale?: string;
   'no-intro': boolean;
-  scope?: string;
   'default-api-base-url'?: string;
   'api-base-url'?: string;
-  'base-url'?: string;
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
@@ -61,6 +63,10 @@ type EnvAddParsedFlags = {
   'db-database'?: string;
   'db-user'?: string;
   'db-password'?: string;
+  'root-username'?: string;
+  'root-email'?: string;
+  'root-password'?: string;
+  'root-nickname'?: string;
 };
 
 const ENV_RUNTIME_FLAG_MAP = {
@@ -82,6 +88,10 @@ const ENV_RUNTIME_FLAG_MAP = {
   'db-database': 'dbDatabase',
   'db-user': 'dbUser',
   'db-password': 'dbPassword',
+  'root-username': 'rootUsername',
+  'root-email': 'rootEmail',
+  'root-password': 'rootPassword',
+  'root-nickname': 'rootNickname',
 } as const;
 
 const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
@@ -101,7 +111,7 @@ export default class EnvAdd extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> local',
-    '<%= config.bin %> <%= command.id %> local --scope project --api-base-url http://localhost:13000/api --auth-type oauth',
+    '<%= config.bin %> <%= command.id %> local --api-base-url http://localhost:13000/api --auth-type oauth',
   ];
 
   static override args = {
@@ -133,13 +143,6 @@ export default class EnvAdd extends Command {
       description: 'Skip command intro when invoked by another CLI command',
       default: false,
     }),
-    scope: Flags.string({
-      char: 's',
-      description:
-        'Where to store env config: project (.nocobase in the repo) or global (user-level); prompted in a TTY when omitted',
-      options: ['project', 'global'],
-      default: 'project',
-    }),
     'default-api-base-url': Flags.string({
       char: 'd',
       hidden: true,
@@ -148,7 +151,6 @@ export default class EnvAdd extends Command {
     }),
     'api-base-url': Flags.string({
       char: 'u',
-      aliases: ['base-url'],
       description:
         'Root URL for HTTP API calls, including the /api prefix (e.g. http://localhost:13000/api); prompted in a TTY when omitted',
     }),
@@ -256,6 +258,22 @@ export default class EnvAdd extends Command {
       hidden: true,
       description: 'Database password saved with this env',
     }),
+    'root-username': Flags.string({
+      hidden: true,
+      description: 'Initial root username saved with this env',
+    }),
+    'root-email': Flags.string({
+      hidden: true,
+      description: 'Initial root email saved with this env',
+    }),
+    'root-password': Flags.string({
+      hidden: true,
+      description: 'Initial root password saved with this env',
+    }),
+    'root-nickname': Flags.string({
+      hidden: true,
+      description: 'Initial root nickname saved with this env',
+    }),
   };
 
   static prompts: PromptsCatalog = {
@@ -263,24 +281,6 @@ export default class EnvAdd extends Command {
       type: 'text',
       message: envAddText('prompts.name.message'),
       placeholder: envAddText('prompts.name.placeholder'),
-      required: true,
-    },
-    scope: {
-      type: 'select',
-      message: envAddText('prompts.scope.message'),
-      options: [
-        {
-          value: 'project',
-          label: envAddText('prompts.scope.projectLabel'),
-          hint: envAddText('prompts.scope.projectHint'),
-        },
-        {
-          value: 'global',
-          label: envAddText('prompts.scope.globalLabel'),
-          hint: envAddText('prompts.scope.globalHint'),
-        },
-      ],
-      initialValue: 'project',
       required: true,
     },
     apiBaseUrl: {
@@ -322,10 +322,7 @@ export default class EnvAdd extends Command {
     if (name) {
       values.name = name;
     }
-    if (flags.scope) {
-      values.scope = flags.scope;
-    }
-    const apiFromFlag = flags['api-base-url'] ?? flags['base-url'];
+    const apiFromFlag = flags['api-base-url'];
     if (typeof apiFromFlag === 'string' && apiFromFlag.trim() !== '') {
       values.apiBaseUrl = apiFromFlag.trim();
     }
@@ -351,34 +348,24 @@ export default class EnvAdd extends Command {
   private buildEnvConfig(
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
-  ): Record<string, string | boolean | undefined> {
-    const envConfig: Record<string, string | boolean | undefined> = {
-      baseUrl: String(results.apiBaseUrl ?? ''),
+  ): StoredEnvConfig {
+    const envConfigInput: StoredEnvConfigInput & Record<string, unknown> = {
+      apiBaseUrl: results.apiBaseUrl,
+      authType: results.authType,
+      accessToken: results.accessToken,
     };
 
     for (const [flagName, configKey] of Object.entries(ENV_RUNTIME_FLAG_MAP)) {
       const value = flags[flagName as keyof typeof ENV_RUNTIME_FLAG_MAP];
-      if (typeof value === 'string' && value.trim() !== '') {
-        envConfig[configKey] = value.trim();
-      }
+      envConfigInput[configKey] = value;
     }
 
     for (const [flagName, configKey] of Object.entries(ENV_BOOLEAN_RUNTIME_FLAG_MAP)) {
       const value = flags[flagName as keyof typeof ENV_BOOLEAN_RUNTIME_FLAG_MAP];
-      if (typeof value === 'boolean') {
-        envConfig[configKey] = value;
-      }
+      envConfigInput[configKey] = value;
     }
 
-    if (flags['builtin-db'] === false) {
-      envConfig.builtinDbImage = undefined;
-    }
-
-    if (results.authType === 'token' && results.accessToken != null) {
-      envConfig.accessToken = String(results.accessToken);
-    }
-
-    return envConfig;
+    return buildStoredEnvConfig(envConfigInput);
   }
 
   async run(): Promise<void> {
@@ -396,15 +383,14 @@ export default class EnvAdd extends Command {
       command: this,
     });
     const envName = String(results.name);
-    const scope = results.scope as EnvScope;
     const envConfig = this.buildEnvConfig(results, parsedFlags);
 
-    printVerbose(`Saving env "${envName}" with scope "${scope}".`);
+    printVerbose(`Saving env "${envName}" globally.`);
 
     await upsertEnv(
       envName,
       envConfig,
-      { scope },
+      { scope: resolveDefaultConfigScope() },
     );
 
     if (results.authType === 'oauth') {

@@ -12,7 +12,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
-import Download, { defaultDockerRegistryForLang } from '../commands/download.js';
+import Download, { defaultDockerRegistryForLang } from '../commands/source/download.js';
 import Init from '../commands/init.js';
 import EnvAdd from '../commands/env/add.js';
 import Install from '../commands/install.js';
@@ -26,6 +26,35 @@ import {
   validateTcpPort,
   validateEnvKey,
 } from '../lib/prompt-validators.js';
+import { clearExternalDbValidationCache } from '../lib/db-connection-check.js';
+
+const mockPgConnect = vi.fn();
+const mockPgQuery = vi.fn();
+const mockPgEnd = vi.fn();
+const mockMysqlCreateConnection = vi.fn();
+const mockMariaDbCreateConnection = vi.fn();
+
+vi.mock('pg', () => ({
+  default: {
+    Client: vi.fn(() => ({
+      connect: mockPgConnect,
+      query: mockPgQuery,
+      end: mockPgEnd,
+    })),
+  },
+}));
+
+vi.mock('mysql2/promise', () => ({
+  default: {
+    createConnection: mockMysqlCreateConnection,
+  },
+}));
+
+vi.mock('mariadb', () => ({
+  default: {
+    createConnection: mockMariaDbCreateConnection,
+  },
+}));
 
 async function withTempProjectCwd(run: () => Promise<void>) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-project-'));
@@ -51,6 +80,12 @@ afterEach(() => {
     return;
   }
   process.env.NB_LOCALE = originalNbLocale;
+  clearExternalDbValidationCache();
+  mockPgConnect.mockReset();
+  mockPgQuery.mockReset();
+  mockPgEnd.mockReset();
+  mockMysqlCreateConnection.mockReset();
+  mockMariaDbCreateConnection.mockReset();
 });
 
 test('validateApiBaseUrl accepts http and https URLs', () => {
@@ -93,10 +128,48 @@ test('validateAvailableTcpPort rejects invalid and occupied ports', async () => 
 });
 
 test('findAvailableTcpPort returns a free TCP port', async () => {
-  const port = await findAvailableTcpPort();
-  expect(typeof port).toBe('string');
-  expect(port).toMatch(/^\d+$/);
-  expect(await validateAvailableTcpPort(port)).toBe(undefined);
+  let reservedPort: string | undefined;
+  let reservedServer: net.Server | undefined;
+
+  try {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const port = await findAvailableTcpPort();
+      expect(typeof port).toBe('string');
+      expect(port).toMatch(/^\d+$/);
+
+      const server = net.createServer();
+      const bound = await new Promise<boolean>((resolve) => {
+        server.once('error', () => resolve(false));
+        server.listen(Number(port), '127.0.0.1', () => resolve(true));
+      });
+
+      if (!bound) {
+        await new Promise<void>((resolve) => {
+          server.close(() => resolve());
+        });
+        continue;
+      }
+
+      reservedPort = port;
+      reservedServer = server;
+      break;
+    }
+
+    expect(reservedPort).toBeTruthy();
+    expect(reservedServer?.listening).toBe(true);
+  } finally {
+    if (reservedServer) {
+      await new Promise<void>((resolve, reject) => {
+        reservedServer!.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  }
 });
 
 test('validateTcpPort rejects invalid ports and accepts valid ones', () => {
@@ -123,7 +196,7 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   expect(envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '').toMatch(/http:\/\/ or https:\/\//);
 });
 
-test('init appName validates workspace env name uniqueness', async () => {
+test('init appName validates global env name uniqueness', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
@@ -134,7 +207,7 @@ test('init appName validates workspace env name uniqueness', async () => {
           },
         },
       },
-      { scope: 'project' },
+      { scope: 'global' },
     );
 
     const appNamePrompt = Init.prompts.appName;
@@ -144,7 +217,7 @@ test('init appName validates workspace env name uniqueness', async () => {
   });
 });
 
-test('init appName allows reusing a workspace env name when --force is set', async () => {
+test('init appName allows reusing a global env name when --force is set', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
@@ -155,7 +228,7 @@ test('init appName allows reusing a workspace env name when --force is set', asy
           },
         },
       },
-      { scope: 'project' },
+      { scope: 'global' },
     );
 
     const appNamePrompt = Init.prompts.appName;
@@ -170,7 +243,7 @@ test('init appName allows reusing a workspace env name when --force is set', asy
   });
 });
 
-test('init --yes --env validates workspace env name uniqueness through preset values', async () => {
+test('init --yes --env validates global env name uniqueness through preset values', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
@@ -181,7 +254,7 @@ test('init --yes --env validates workspace env name uniqueness through preset va
           },
         },
       },
-      { scope: 'project' },
+      { scope: 'global' },
     );
 
     await expect((() =>
@@ -200,7 +273,7 @@ test('init --yes --env validates workspace env name uniqueness through preset va
               },
             },
           },
-        ))()).rejects.toThrow(/already exists in this workspace/i);
+        ))()).rejects.toThrow(/already exists/i);
   });
 });
 
@@ -310,6 +383,78 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(rootNicknamePrompt.required).toBe(true);
 });
 
+test('install external db validators skip connection checks until config is complete', async () => {
+  const dbHostPrompt = Install.dbPrompts.dbHost;
+
+  expect(await dbHostPrompt.validate?.('db.example.com', {
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: 'db.example.com',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: '',
+  })).toBe(undefined);
+
+  expect(mockPgConnect).not.toHaveBeenCalled();
+});
+
+test('install external db validators do not run for built-in database config', async () => {
+  const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+
+  expect(await dbPasswordPrompt.validate?.('secret', {
+    builtinDb: true,
+    dbDialect: 'postgres',
+    dbHost: 'postgres',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+  })).toBe(undefined);
+
+  expect(mockPgConnect).not.toHaveBeenCalled();
+});
+
+test('install external db validators check connectivity once config is complete', async () => {
+  const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+  mockPgConnect.mockResolvedValue(undefined);
+  mockPgQuery.mockResolvedValue([{ '?column?': 1 }]);
+  mockPgEnd.mockResolvedValue(undefined);
+
+  const result = await dbPasswordPrompt.validate?.('secret', {
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: 'db.example.com',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+  });
+
+  expect(result).toBe(undefined);
+  expect(mockPgConnect).toHaveBeenCalledTimes(1);
+  expect(mockPgQuery).toHaveBeenCalledWith('SELECT 1');
+  expect(mockPgEnd).toHaveBeenCalledTimes(1);
+});
+
+test('install external db validators surface readable auth errors', async () => {
+  const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+  mockPgConnect.mockRejectedValue(Object.assign(new Error('password authentication failed'), { code: '28P01' }));
+  mockPgEnd.mockResolvedValue(undefined);
+
+  const result = await dbPasswordPrompt.validate?.('bad-secret', {
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: 'db.example.com',
+    dbPort: '5432',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'bad-secret',
+  });
+
+  expect(result ?? '').toMatch(/username and password/i);
+});
+
 test('docker registry defaults follow CLI locale', () => {
   const dockerRegistryPrompt = Download.prompts.dockerRegistry;
   const dockerPlatformPrompt = Download.prompts.dockerPlatform;
@@ -396,6 +541,7 @@ test('install download prompt options follow CLI locale for docker registry defa
         envName: string,
         yes: boolean,
       ) => Record<string, unknown>;
+      buildPresetValuesFromFlags: (flags: Record<string, unknown>) => Record<string, unknown>;
     }
   );
 
@@ -449,6 +595,65 @@ test('install download prompt options follow CLI locale for docker registry defa
     expect(preset.source).toBe('docker');
     expect(preset.version).toBe('alpha');
     expect(preset.outputDir).toBe('./apps/en-demo');
+
+    const refPreset = installStatics.buildDownloadPresetValuesForInstall(
+      {
+        version: 'next',
+        replace: false,
+        'dev-dependencies': false,
+        build: true,
+        'build-dts': false,
+        'docker-save': false,
+      },
+      {
+        lang: 'en-US',
+        appRootPath: './apps/en-demo',
+      },
+      'en-demo',
+      false,
+    );
+    expect(refPreset.version).toBe('other');
+    expect(refPreset.otherVersion).toBe('next');
+
+    const resumePreset = installStatics.buildDownloadPresetValuesForInstall(
+      {
+        resume: true,
+        replace: false,
+        'dev-dependencies': false,
+        build: true,
+        'build-dts': false,
+        'docker-save': false,
+      },
+      {
+        lang: 'en-US',
+        appRootPath: './apps/en-demo',
+      },
+      'en-demo',
+      false,
+    );
+    expect(resumePreset.replace).toBe(true);
+  } finally {
+    process.argv = originalArgv;
+  }
+
+  process.argv = ['node', 'nb', 'install', '--no-builtin-db'];
+  try {
+    const preset = installStatics.buildPresetValuesFromFlags({
+      'builtin-db': false,
+    });
+    expect(preset.builtinDb).toBe(false);
+  } finally {
+    process.argv = originalArgv;
+  }
+
+  process.argv = ['node', 'nb', 'install', '--db-host', 'db.example.com'];
+  try {
+    const preset = installStatics.buildPresetValuesFromFlags({
+      'builtin-db': true,
+      'db-host': 'db.example.com',
+    });
+    expect(preset.dbHost).toBe('db.example.com');
+    expect(preset.builtinDb).toBe(false);
   } finally {
     process.argv = originalArgv;
   }

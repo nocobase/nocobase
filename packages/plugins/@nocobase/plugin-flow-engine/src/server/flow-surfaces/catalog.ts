@@ -69,6 +69,10 @@ const OPEN_VIEW_SCENE_SCHEMA = {
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
+const BLOCK_HEIGHT_MODE_SCHEMA = {
+  type: 'string',
+  enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
+};
 const NULLABLE_NUMBER_OR_STRING_SCHEMA = {
   oneOf: [NUMBER_SCHEMA, NULLABLE_STRING_SCHEMA],
 };
@@ -292,13 +296,21 @@ const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
   },
 };
 const BLOCK_CARD_SETTINGS_GROUP = {
-  allowedPaths: ['titleDescription.title', 'titleDescription.description', 'linkageRules'],
+  allowedPaths: [
+    'titleDescription.title',
+    'titleDescription.description',
+    'blockHeight.heightMode',
+    'blockHeight.height',
+    'linkageRules',
+  ],
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['titleDescription', 'linkageRules'],
+  eventBindingSteps: ['titleDescription', 'blockHeight', 'linkageRules'],
   pathSchemas: {
     'titleDescription.title': STRING_SCHEMA,
     'titleDescription.description': STRING_SCHEMA,
+    'blockHeight.heightMode': BLOCK_HEIGHT_MODE_SCHEMA,
+    'blockHeight.height': NUMBER_SCHEMA,
     linkageRules: ARRAY_SCHEMA,
   },
 };
@@ -887,8 +899,6 @@ TAB_NODE_CONTRACT.domains.stepParams = groupedDomain({
 
 const TABLE_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['height', 'heightMode'],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'tableSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1002,7 +1012,6 @@ const CALENDAR_BLOCK_CONTRACT = createContract({
     'quickCreatePopupSettings',
     'eventPopupSettings',
   ],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'calendarSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1019,7 +1028,6 @@ CALENDAR_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const TREE_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['searchable', 'defaultExpandAll', 'includeDescendants', 'fieldNames', 'pageSize'],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'treeSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1059,7 +1067,6 @@ const KANBAN_BLOCK_CONTRACT = createContract({
     'pageSize',
     'columnWidth',
   ],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'kanbanSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1076,7 +1083,6 @@ KANBAN_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const LIST_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: [],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'listSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1117,7 +1123,6 @@ LIST_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const GRID_CARD_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: [],
-  decoratorProps: ['height', 'heightMode'],
   stepParams: ['resourceSettings', 'GridCardSettings', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -1285,22 +1290,12 @@ IFRAME_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const CHART_CARD_SETTINGS_GROUP = {
-  allowedPaths: [
-    'titleDescription.title',
-    'titleDescription.description',
-    'blockHeight.heightMode',
-    'blockHeight.height',
-    'linkageRules',
-  ],
+  allowedPaths: BLOCK_CARD_SETTINGS_GROUP.allowedPaths,
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['titleDescription', 'blockHeight', 'linkageRules'],
+  eventBindingSteps: BLOCK_CARD_SETTINGS_GROUP.eventBindingSteps,
   pathSchemas: {
-    'titleDescription.title': STRING_SCHEMA,
-    'titleDescription.description': STRING_SCHEMA,
-    'blockHeight.heightMode': STRING_SCHEMA,
-    'blockHeight.height': NUMBER_SCHEMA,
-    linkageRules: ARRAY_SCHEMA,
+    ...BLOCK_CARD_SETTINGS_GROUP.pathSchemas,
   },
 };
 
@@ -1366,8 +1361,7 @@ JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 
 const MAP_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['height', 'heightMode', 'mapField', 'marker', 'lineSort', 'zoom'],
-  decoratorProps: ['height', 'heightMode'],
+  props: ['mapField', 'marker', 'lineSort', 'zoom'],
   stepParams: ['resourceSettings', 'createMapBlock', 'cardSettings'],
   flowRegistry: true,
   eventCapabilities: {

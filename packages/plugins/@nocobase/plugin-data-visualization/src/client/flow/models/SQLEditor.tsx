@@ -12,7 +12,7 @@ import { connect, mapProps, useForm } from '@formily/react';
 import { Select, Form } from 'antd';
 import { CodeEditor, CodeEditorHandle } from '../components/CodeEditor';
 import { FlowContextSelector, observer, useFlowContext } from '@nocobase/flow-engine';
-import { useDataSourceManager, useCompile, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
+import { useCompile, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { useT } from '../../locale';
 
 const SQLEditorBase: React.FC<any> = observer((props) => {
@@ -21,15 +21,18 @@ const SQLEditorBase: React.FC<any> = observer((props) => {
   const ctx = useFlowContext();
 
   const form = useForm();
-  const dm = useDataSourceManager();
+  const dm = ctx?.dataSourceManager;
   const compile = useCompile();
   const t = useT();
 
   // 数据源选项
   const dsOptions = React.useMemo(() => {
-    const all = dm.getAllCollections();
-    return all
-      .filter(({ key, isDBInstance }: any) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
+    const dataSources = dm?.getDataSources?.() || [];
+    return dataSources
+      .filter(
+        (dataSource: any) =>
+          dataSource?.key === DEFAULT_DATA_SOURCE_KEY || dataSource?.options?.isDBInstance || dataSource?.isDBInstance,
+      )
       .map(({ key, displayName }: any) => ({ value: key, label: compile(displayName) }));
   }, [dm, compile]);
 

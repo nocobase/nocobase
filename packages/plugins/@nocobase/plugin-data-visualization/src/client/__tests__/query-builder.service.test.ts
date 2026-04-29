@@ -7,9 +7,104 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildOrderFieldOptions, validateQuery } from '../flow/models/QueryBuilder.service';
+import {
+  buildOrderFieldOptions,
+  getCollectionOptions,
+  getFieldOptions,
+  getFormatterOptionsByField,
+  validateQuery,
+} from '../flow/models/QueryBuilder.service';
 
 describe('query builder service', () => {
+  test('should build options from flow data source manager', () => {
+    const createdAt = {
+      name: 'createdAt',
+      interface: 'datetime',
+      filterable: { operators: [] },
+      uiSchema: { title: 'Created at' },
+    };
+    const customerName = {
+      name: 'name',
+      interface: 'input',
+      filterable: { operators: [] },
+      uiSchema: { title: 'Customer name' },
+    };
+    const customers = {
+      name: 'customers',
+      title: 'Customers',
+      getFields: () => [customerName],
+    };
+    const customer = {
+      name: 'customer',
+      interface: 'm2o',
+      filterable: { nested: true },
+      target: 'customers',
+      uiSchema: { title: 'Customer' },
+      targetCollection: customers,
+    };
+    const orders = {
+      name: 'orders',
+      title: 'Orders',
+      getFields: () => [createdAt, customer],
+    };
+    const main = {
+      key: 'main',
+      displayName: 'Main',
+      getCollections: () => [orders, customers],
+    };
+    const external = {
+      key: 'external',
+      displayName: 'External',
+      options: {
+        isDBInstance: true,
+      },
+      getCollections: () => [
+        {
+          name: 'externalOrders',
+          title: 'External orders',
+        },
+      ],
+    };
+    const dm = {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'orders' ? orders : collectionName === 'customers' ? customers : undefined,
+      getDataSources: () => [main, external],
+    };
+
+    expect(getCollectionOptions(dm, (value) => value)).toEqual([
+      {
+        value: 'main',
+        label: 'Main',
+        children: [
+          { value: 'orders', label: 'Orders' },
+          { value: 'customers', label: 'Customers' },
+        ],
+      },
+      {
+        value: 'external',
+        label: 'External',
+        children: [{ value: 'externalOrders', label: 'External orders' }],
+      },
+    ]);
+    expect(getFieldOptions(dm, (value) => value, ['main', 'orders'])).toMatchObject([
+      {
+        name: 'createdAt',
+        title: 'Created at',
+      },
+      {
+        name: 'customer',
+        title: 'Customer',
+        children: [
+          {
+            name: 'name',
+            title: 'Customer name',
+          },
+        ],
+      },
+    ]);
+    expect(getFormatterOptionsByField(dm, ['main', 'orders'], ['createdAt'])).not.toEqual([]);
+  });
+
   test('should use aliases in aggregated order field options', () => {
     const fieldOptions = [
       {

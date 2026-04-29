@@ -67,6 +67,38 @@ describe('flowSurfaces field binding registry', () => {
     ).toBe('DisplayPreviewFieldModel');
   });
 
+  it('should keep plain URL display fields on the core URL binding when file-manager is enabled', () => {
+    const enabledPackages = new Set(['@nocobase/plugin-file-manager']);
+    const urlField = {
+      interface: 'url',
+      type: 'text',
+    };
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'TableBlockModel',
+        field: urlField,
+        enabledPackages,
+      }),
+    ).toMatchObject({
+      wrapperUse: 'TableColumnModel',
+      fieldUse: 'DisplayURLFieldModel',
+      inferredFieldUse: 'DisplayURLFieldModel',
+    });
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'DetailsBlockModel',
+        field: urlField,
+        enabledPackages,
+      }),
+    ).toMatchObject({
+      wrapperUse: 'DetailsItemModel',
+      fieldUse: 'DisplayURLFieldModel',
+      inferredFieldUse: 'DisplayURLFieldModel',
+    });
+  });
+
   it('should resolve plugin-backed non-core field interfaces to their registered model strings', () => {
     const enabledPackages = new Set(['@nocobase/plugin-field-code', '@nocobase/plugin-field-formula']);
 

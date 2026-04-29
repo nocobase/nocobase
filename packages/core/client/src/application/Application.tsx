@@ -8,72 +8,97 @@
  */
 
 import { define, observable } from '@formily/reactive';
+import {
+  BaseApplication,
+  type BaseApplicationOptions,
+  type ComponentAndProps,
+  type WebSocketClientOptions,
+} from '@nocobase/client-v2';
 import { APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
 import set from 'lodash/set';
-import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { I18nextProvider } from 'react-i18next';
-import { Link, NavLink, Navigate } from 'react-router-dom';
+import type { ComponentType } from 'react';
+
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
-import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
-import { i18n } from '../i18n';
-import { PluginManager, PluginType } from './PluginManager';
-import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
-import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
-import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-import { AppComponent, BlankComponent, defaultAppComponents } from './components';
-import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
-import * as schemaInitializerComponents from './schema-initializer/components';
-import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
-
-import { compose, normalizeContainer } from './utils';
-import { defineGlobalDeps } from './utils/globalDeps';
-import { getRequireJs } from './utils/requirejs';
-
+import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { CollectionFieldInterfaceComponentOption } from '../data-source/collection-field-interface/CollectionFieldInterface';
 import { CollectionField } from '../data-source/collection-field/CollectionField';
 import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
-
-import {
-  FlowEngine,
-  FlowEngineContext,
-  FlowEngineGlobalsContextProvider,
-  FlowModel,
-  FlowModelRenderer,
-  FlowEngineProvider,
-} from '@nocobase/flow-engine';
-import type { CollectionFieldInterfaceFactory } from '../data-source';
+import { SystemSettingsSource } from '@nocobase/client-v2';
+import { i18n } from '../i18n';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
+import { defineGlobalDeps } from './utils/globalDeps';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
-import type { Plugin } from './Plugin';
+import { PluginManager, type PluginType } from './PluginManager';
+import type { PluginClass } from './PluginManager';
+import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
+import { RouterManager, type RouterOptions } from './RouterManager';
+import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
+import {
+  SchemaInitializerActionModal,
+  SchemaInitializerActionModalInternal,
+} from './schema-initializer/components/SchemaInitializerActionModal';
+import {
+  SchemaInitializerChildren,
+  SchemaInitializerChild,
+} from './schema-initializer/components/SchemaInitializerChildren';
+import { SchemaInitializerDivider } from './schema-initializer/components/SchemaInitializerDivider';
+import {
+  SchemaInitializerItem,
+  SchemaInitializerItemInternal,
+} from './schema-initializer/components/SchemaInitializerItem';
+import {
+  SchemaInitializerItemGroup,
+  SchemaInitializerItemGroupInternal,
+} from './schema-initializer/components/SchemaInitializerItemGroup';
+import { SchemaInitializerItems } from './schema-initializer/components/SchemaInitializerItems';
+import {
+  SchemaInitializerSelect,
+  SchemaInitializerSelectInternal,
+} from './schema-initializer/components/SchemaInitializerSelect';
+import {
+  SchemaInitializerSubMenu,
+  SchemaInitializerSubMenuInternal,
+} from './schema-initializer/components/SchemaInitializerSubMenu';
+import {
+  SchemaInitializerSwitch,
+  SchemaInitializerSwitchInternal,
+} from './schema-initializer/components/SchemaInitializerSwitch';
+import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
+
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
-import type { RequireJS } from './utils/requirejs';
-import { RouteRepository } from './RouteRepository';
-import { AIManager } from '../ai';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
   rmOperation: (name: string) => void;
 };
 
-declare global {
-  interface Window {
-    define: RequireJS['define'];
-  }
+/**
+ * Reference: https://ant.design/components/cascader-cn#option
+ */
+interface VariableOption {
+  value: string | number;
+  label?: React.ReactNode;
+  disabled?: boolean;
+  children?: VariableOption[];
 }
 
-export type DevDynamicImport = (packageName: string) => Promise<{ default: typeof Plugin }>;
-export type ComponentAndProps<T = any> = [ComponentType, T];
-export interface ApplicationOptions {
-  name?: string;
-  publicPath?: string;
+interface Variable {
+  name: string;
+  useOption: () => { option: VariableOption; visible?: boolean };
+  useCtx: () => any | ((param: { variableName: string }) => Promise<any>);
+}
+
+export type { ComponentAndProps };
+export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClass }>;
+
+export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   apiClient?: APIClientOptions | APIClient;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
@@ -85,229 +110,113 @@ export interface ApplicationOptions {
   pluginSettings?: Record<string, PluginSettingOptions>;
   schemaSettings?: SchemaSettings[];
   schemaInitializers?: SchemaInitializer[];
-  designable?: boolean;
-  loadRemotePlugins?: boolean;
-  devDynamicImport?: DevDynamicImport;
   dataSourceManager?: DataSourceManagerOptions;
-  disableAcl?: boolean;
 }
 
-/**
- * Reference: https://ant.design/components/cascader-cn#option
- */
-interface VariableOption {
-  /** Unique identifier of the variable */
-  value: string | number;
-  /** Variable name displayed in UI */
-  label?: React.ReactNode;
-  disabled?: boolean;
-  children?: VariableOption[];
-}
-
-interface Variable {
-  /** Unique identifier of the variable */
-  name: string;
-  /** Variable configuration options */
-  useOption: () => { option: VariableOption; visible?: boolean };
-  /** Variable context */
-  useCtx: () => any | ((param: { variableName: string }) => Promise<any>);
-}
-
-export class Application {
-  public eventBus = new EventTarget();
-
-  public aiManager: AIManager;
-  public providers: ComponentAndProps[] = [];
-  public router: RouterManager;
-  public scopes: Record<string, any> = {};
-  public i18n: i18next;
-  public ws: WebSocketClient;
-  public apiClient: APIClient;
-  public components: Record<string, ComponentType<any> | any> = {
-    DataBlockProvider,
-    ...defaultAppComponents,
-    ...schemaInitializerComponents,
-    CollectionField,
-  };
-  public pluginManager: PluginManager;
-  public pluginSettingsManager: PluginSettingsManager;
-  public devDynamicImport: DevDynamicImport;
-  public requirejs: RequireJS;
-  public notification;
-  public schemaInitializerManager: SchemaInitializerManager;
-  public schemaSettingsManager: SchemaSettingsManager;
-  public dataSourceManager: DataSourceManager;
-  public name: string;
-  public favicon: string;
+export class Application extends BaseApplication<
+  ApplicationOptions,
+  PluginManager,
+  RouterManager,
+  APIClient,
+  PluginSettingsManager
+> {
+  public declare devDynamicImport?: DevDynamicImport;
+  public declare schemaInitializerManager: SchemaInitializerManager;
+  public declare schemaSettingsManager: SchemaSettingsManager;
+  public declare dataSourceManager: DataSourceManager;
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
-  public jsonLogic: JsonLogic;
-  public flowEngine: FlowEngine;
-  public model: ApplicationModel;
-  public context: FlowEngineContext & {
-    pluginSettingsRouter: PluginSettingsManager;
-    pluginManager: PluginManager;
-  };
+  public declare jsonLogic: JsonLogic;
   loading = true;
-  maintained = false;
-  maintaining = false;
-  error = null;
   hasLoadError = false;
   locales = null;
 
-  private wsAuthorized = false;
   private readonly variables: Variable[] = [];
-  apps: {
-    Component?: ComponentType;
-  } = {
-    Component: null,
-  };
 
-  get pm() {
-    return this.pluginManager;
-  }
-  get disableAcl() {
-    return this.options.disableAcl;
-  }
-
-  get isWsAuthorized() {
-    return this.wsAuthorized;
-  }
-
-  updateFavicon(favicon?: string) {
-    let faviconLinkElement: HTMLLinkElement = document.querySelector('link[rel="shortcut icon"]');
-
-    if (favicon) {
-      this.favicon = favicon;
-    }
-
-    if (!faviconLinkElement) {
-      faviconLinkElement = document.createElement('link');
-      faviconLinkElement.rel = 'shortcut icon';
-      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
-      document.head.appendChild(faviconLinkElement);
-    } else {
-      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+  protected initRequireJs() {
+    super.initRequireJs();
+    if (this.requirejs) {
+      defineGlobalDeps(this.requirejs);
     }
   }
 
-  setWsAuthorized(authorized: boolean) {
-    this.wsAuthorized = authorized;
-  }
-
-  constructor(protected options: ApplicationOptions = {}) {
-    this.initRequireJs();
+  protected defineObservableState() {
+    super.defineObservableState();
     define(this, {
-      maintained: observable.ref,
       loading: observable.ref,
-      maintaining: observable.ref,
-      error: observable.ref,
     });
-    this.devDynamicImport = options.devDynamicImport;
-    this.scopes = merge(this.scopes, options.scopes);
-    this.components = merge(this.components, options.components);
-    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
-    this.apiClient =
+  }
+
+  protected createApiClient(options: ApplicationOptions) {
+    const apiClient =
       options.apiClient instanceof APIClient
         ? options.apiClient
         : new APIClient({
             ...options.apiClient,
             appName: this.options.name || getSubAppName(options.publicPath),
           });
-    this.apiClient.app = this;
-    this.i18n = options.i18n || i18n;
-    this.router = new RouterManager(options.router, this);
-    this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
-    this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
-    this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
-    this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
-    this.flowEngine = new FlowEngine();
-    this.flowEngine.registerModels({ ApplicationModel });
-    this.model = this.flowEngine.createModel<ApplicationModel>({
-      uid: '__app_model__',
-      use: 'ApplicationModel',
-    });
-    this.context = this.flowEngine.context as any;
-    this.context.defineProperty('pluginManager', {
-      get: () => this.pluginManager,
-    });
-    this.context.defineProperty('pluginSettingsRouter', {
-      get: () => this.pluginSettingsManager,
-    });
-    this.addDefaultProviders();
-    this.addReactRouterComponents();
-    this.addProviders(options.providers || []);
-    this.ws = new WebSocketClient(options.ws);
-    this.ws.app = this;
-    this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
-    this.addRoutes();
-    this.i18n.on('languageChanged', (lng) => {
-      this.apiClient.auth.locale = lng;
-    });
-    this.initListeners();
+    apiClient.app = this;
+    return apiClient;
+  }
+
+  protected createI18n(options: ApplicationOptions) {
+    return options.i18n || i18n;
+  }
+
+  protected createRouterManager(options: ApplicationOptions) {
+    return new RouterManager(options.router, this);
+  }
+
+  protected createPluginManager(options: ApplicationOptions): PluginManager {
+    return new PluginManager(options.plugins, options.loadRemotePlugins, this);
+  }
+
+  protected createPluginSettingsManager(options: ApplicationOptions): PluginSettingsManager {
+    return new PluginSettingsManager(options.pluginSettings, this);
+  }
+
+  protected getDefaultComponents() {
+    return {
+      ...super.getDefaultComponents(),
+      DataBlockProvider,
+      SchemaInitializerActionModal,
+      SchemaInitializerActionModalInternal,
+      SchemaInitializerChildren,
+      SchemaInitializerChild,
+      SchemaInitializerDivider,
+      SchemaInitializerItem,
+      SchemaInitializerItemGroup,
+      SchemaInitializerItemGroupInternal,
+      SchemaInitializerItemInternal,
+      SchemaInitializerItems,
+      SchemaInitializerSelect,
+      SchemaInitializerSelectInternal,
+      SchemaInitializerSubMenu,
+      SchemaInitializerSubMenuInternal,
+      SchemaInitializerSwitch,
+      SchemaInitializerSwitchInternal,
+      CollectionField,
+    };
+  }
+
+  protected initializeExtendedState() {
+    super.initializeExtendedState();
+    this.systemSettings = new SystemSettingsSource(this.apiClient as APIClient);
+    this.schemaSettingsManager = new SchemaSettingsManager(this.options.schemaSettings, this);
+    this.schemaInitializerManager = new SchemaInitializerManager(this.options.schemaInitializers, this);
+    this.dataSourceManager = new DataSourceManager(this.options.dataSourceManager, this);
+    this.loading = true;
+    this.hasLoadError = false;
+    this.locales = null;
+  }
+
+  protected afterManagersInitialized() {
+    super.afterManagersInitialized();
     this.jsonLogic = getOperators();
-    this.aiManager = new AIManager(this);
   }
 
-  private initListeners() {
-    this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
-      this.setTokenInWebSocket(event.detail);
-    });
-
-    this.eventBus.addEventListener('maintaining:end', () => {
-      if (this.apiClient.auth.token) {
-        this.setTokenInWebSocket({
-          token: this.apiClient.auth.token,
-          authenticator: this.apiClient.auth.getAuthenticator(),
-        });
-      }
-    });
-  }
-
-  protected setTokenInWebSocket(options: { token: string; authenticator: string }) {
-    const { token, authenticator } = options;
-    if (this.maintaining) {
-      return;
-    }
-
-    this.ws.send(
-      JSON.stringify({
-        type: 'auth:token',
-        payload: {
-          token,
-          authenticator,
-        },
-      }),
-    );
-  }
-
-  setMaintaining(maintaining: boolean) {
-    // if maintaining is the same, do nothing
-    if (this.maintaining === maintaining) {
-      return;
-    }
-
-    this.maintaining = maintaining;
-    if (!maintaining) {
-      this.eventBus.dispatchEvent(new Event('maintaining:end'));
-    }
-  }
-
-  private initRequireJs() {
-    // 避免重复初始化 requirejs
-    if (window['requirejs']) {
-      this.requirejs = window['requirejs'];
-      return;
-    }
-    window['requirejs'] = this.requirejs = getRequireJs();
-    defineGlobalDeps(this.requirejs);
-    window.define = this.requirejs.define;
-  }
-
-  private addDefaultProviders() {
-    this.use(APIClientProvider, { apiClient: this.apiClient });
-    this.use(I18nextProvider, { i18n: this.i18n });
-    this.use(GlobalThemeProvider);
+  protected addCustomProviders() {
+    this.use(APIClientProvider, { apiClient: this.apiClient as APIClient });
     this.use(CSSVariableProvider);
     this.use(AppSchemaComponentProvider, {
       designable: this.options.designable,
@@ -315,131 +224,16 @@ export class Application {
       components: this.components,
       scope: this.scopes,
     });
-    this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
-    this.flowEngine.context.defineProperty('app', {
-      value: this,
-    });
-    this.flowEngine.context.defineProperty('routeRepository', {
-      value: new RouteRepository(this.flowEngine.context),
-    });
-    this.flowEngine.context.defineProperty('appInfo', {
-      get: async () => {
-        const rest = await this.apiClient.request({
-          url: 'app:getInfo',
-        });
-        return rest.data?.data || {};
-      },
-    });
-    this.flowEngine.context.defineProperty('api', {
-      value: this.apiClient,
-    });
-    this.flowEngine.context.defineProperty('i18n', {
-      value: this.i18n,
-    });
-    this.flowEngine.context.defineProperty('router', {
-      get: () => this.router.router,
-      cache: false,
-    });
-    this.flowEngine.context.defineProperty('documentTitle', {
-      get: () => document.title,
-    });
-    this.flowEngine.context.defineProperty('route', {
-      get: () => {},
-      observable: true,
-    });
-    this.flowEngine.context.defineProperty('location', {
-      get: () => location,
-      observable: true,
-    });
-    this.use(FlowEngineProvider, { engine: this.flowEngine });
-    this.use(FlowEngineGlobalsContextProvider);
-    const pageInfo = observable({ version: undefined as 'v2' | 'v1' | undefined });
-    this.flowEngine.context.defineProperty('pageInfo', { value: pageInfo });
   }
 
-  private addReactRouterComponents() {
-    this.addComponents({
-      Link,
-      Navigate: Navigate as ComponentType,
-      NavLink: NavLink as ComponentType,
-    });
-  }
-
-  private addRoutes() {
-    this.router.add('not-found', {
-      path: '*',
-      Component: this.components['AppNotFound'],
-    });
-  }
-
-  getOptions() {
-    return this.options;
-  }
-
-  getName() {
-    return getSubAppName(this.getPublicPath()) || null;
-  }
-
-  getPublicPath() {
-    let publicPath = this.options.publicPath || '/';
-    if (!publicPath.endsWith('/')) {
-      publicPath += '/';
-    }
-    return publicPath;
-  }
-
-  getApiUrl(pathname = '') {
-    let baseURL = this.apiClient.axios['defaults']['baseURL'];
-    if (!baseURL.startsWith('http://') && !baseURL.startsWith('https://')) {
-      const { protocol, host } = window.location;
-      baseURL = `${protocol}//${host}${baseURL}`;
-    }
-    return baseURL.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
-  }
-
-  getRouteUrl(pathname: string) {
-    return this.getPublicPath() + pathname.replace(/^\//g, '');
-  }
-
-  getHref(pathname: string) {
-    const name = this.name;
-    if (name && name !== 'main') {
-      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
-    }
-    return this.getPublicPath() + pathname.replace(/^\//g, '');
+  protected getRootFallback() {
+    return this.renderComponent('AppSpin', { app: this });
   }
 
   getCollectionManager(dataSource?: string) {
     return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
-  }
-
-  /**
-   * @internal
-   */
-  getComposeProviders() {
-    const Providers = compose(...this.providers)(BlankComponent);
-    Providers.displayName = 'Providers';
-    return Providers;
-  }
-
-  use<T = any>(component: ComponentType, props?: T) {
-    return this.addProvider(component, props);
-  }
-
-  addProvider<T = any>(component: ComponentType, props?: T) {
-    return this.providers.push([component, props]);
-  }
-
-  addProviders(providers: (ComponentType | [ComponentType, any])[]) {
-    providers.forEach((provider) => {
-      if (Array.isArray(provider)) {
-        this.addProvider(provider[0], provider[1]);
-      } else {
-        this.addProvider(provider);
-      }
-    });
   }
 
   async load() {
@@ -448,10 +242,9 @@ export class Application {
       await this.loadWebSocket();
       await this.pm.load();
       await this.flowEngine.flowSettings.load();
-    } catch (error) {
+    } catch (error: any) {
       this.hasLoadError = true;
 
-      //not trigger infinite reload when blocked ip
       if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
         this.hasLoadError = false;
       }
@@ -476,7 +269,7 @@ export class Application {
       this.setWsAuthorized(true);
     });
 
-    this.ws.on('message', (event) => {
+    this.ws.on('message', (event: any) => {
       const data = JSON.parse(event.data);
 
       if (data?.payload?.refresh) {
@@ -485,7 +278,8 @@ export class Application {
       }
 
       if (data.type === 'notification') {
-        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        // @ts-ignore
+        this.context.notification[data.payload?.type || 'info']?.({ message: data.payload?.message });
         return;
       }
 
@@ -528,83 +322,16 @@ export class Application {
     this.ws.connect();
   }
 
-  getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
-    const showError = (msg: string) => isShowError && console.error(msg);
-    if (!Component) {
-      showError(`getComponent called with ${Component}`);
-      return;
-    }
-
-    // ClassComponent or FunctionComponent
-    if (typeof Component === 'function') return Component;
-
-    // Component is a string, try to get it from this.components
-    if (typeof Component === 'string') {
-      const res = get(this.components, Component) as ComponentType<T>;
-      if (!res) {
-        showError(`Component ${Component} not found`);
-        return;
-      }
-      return res;
-    }
-
-    showError(`Component ${Component} should be a string or a React component`);
-    return;
-  }
-
-  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T, children?: ReactNode): ReactElement {
-    return React.createElement(this.getComponent(Component), props, children);
-  }
-
-  /**
-   * @internal use addComponents({ SomeComponent }) instead
-   */
-  protected addComponent(component: ComponentType, name?: string) {
-    const componentName = name || component.displayName || component.name;
-    if (!componentName) {
-      console.error('Component must have a displayName or pass name as second argument');
-      return;
-    }
-    set(this.components, componentName, component);
-  }
-
-  addComponents(components: Record<string, ComponentType>) {
-    Object.keys(components).forEach((name) => {
-      this.addComponent(components[name], name);
-    });
-  }
-
   addScopes(scopes: Record<string, any>) {
     this.scopes = merge(this.scopes, scopes);
   }
 
-  getRootComponent() {
-    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
-      // 第一阶段仅切换根渲染宿主，保持 AppComponent 现有语义不变。
-      React.useLayoutEffect(() => {
-        this.model.setProps({ children });
-      }, [children]);
-
-      return (
-        <FlowEngineProvider engine={this.flowEngine}>
-          <FlowModelRenderer model={this.model} fallback={this.renderComponent('AppSpin', { app: this })} />
-        </FlowEngineProvider>
-      );
-    };
-    return Root;
-  }
-
-  mount(containerOrSelector: Element | ShadowRoot | string) {
-    const container = normalizeContainer(containerOrSelector);
-    if (!container) return;
-    const App = this.getRootComponent();
-    const root = createRoot(container);
-    root.render(<App />);
-    return root;
-  }
-
   addFieldInterfaces(fieldInterfaceClasses: CollectionFieldInterfaceFactory[] = []) {
     return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaces(fieldInterfaceClasses);
+  }
+
+  addFieldInterfaceGroups(groups: Record<string, { label: string; order?: number }>) {
+    return this.dataSourceManager.addFieldInterfaceGroups(groups);
   }
 
   addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption) {
@@ -619,13 +346,6 @@ export class Application {
    *
    * @param name 字段接口的名称
    * @param operatorOption 要添加的操作符选项
-   *
-   * @example
-   * // 为"单行文本"类型字段添加"等于任意一个"操作符
-   * app.addFieldInterfaceOperator('input', {
-   *   label: '{{t("equals any of")}}',
-   *   value: '$in',
-   * });
    */
   addFieldInterfaceOperator(name: string, operatorOption: any) {
     return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaceOperator(name, operatorOption);
@@ -638,11 +358,11 @@ export class Application {
     }
   }
 
-  getGlobalVar(key) {
+  getGlobalVar(key: string) {
     return get(this.globalVars, key);
   }
 
-  getGlobalVarCtx(key) {
+  getGlobalVarCtx(key: string) {
     return get(this.globalVarCtxs, key);
   }
 
@@ -663,13 +383,6 @@ export class Application {
     });
   }
 
-  /**
-   * Register a variable for use in the frontend
-   *
-   * Note: It is not recommended to register variables in components as it may cause rendering errors
-   * @param variable
-   * @returns
-   */
   registerVariable(variable: Variable) {
     if (this.variables.find((item) => item.name === variable.name)) {
       console.warn(`Variable ${variable.name} already registered`);
@@ -678,22 +391,11 @@ export class Application {
     this.variables.push(variable);
   }
 
-  /**
-   * Get all registered variables
-   * @returns
-   */
   getVariables() {
     return this.variables;
   }
 
   setAppsComponent({ Component }: { Component: ComponentType }) {
     this.apps.Component = Component;
-  }
-}
-
-class ApplicationModel extends FlowModel {
-  render() {
-    const app = this.context.app as Application;
-    return <AppComponent app={app}>{this.props.children}</AppComponent>;
   }
 }

@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -150,4 +141,55 @@ test('executeMultipartApiRequest sends form fields and file', async () => {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test('executeApiRequest preserves authorization across same-url http to https redirects', async () => {
+  const calls: Array<{ url: string; auth: string | null; redirect?: RequestRedirect }> = [];
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const headers = init?.headers as Headers;
+    calls.push({
+      url,
+      auth: headers?.get('authorization') ?? null,
+      redirect: init?.redirect,
+    });
+
+    if (url.startsWith('http://')) {
+      return new Response(null, {
+        status: 308,
+        headers: {
+          location: url.replace('http://', 'https://'),
+        },
+      });
+    }
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  const response = await executeApiRequest({
+    flags: {},
+    operation: {
+      method: 'get',
+      pathTemplate: '/users:list',
+      parameters: [],
+    },
+  });
+
+  expect(response.ok).toBe(true);
+  expect(calls).toEqual([
+    {
+      url: 'http://localhost:13000/api/users:list',
+      auth: 'Bearer test-token',
+      redirect: 'manual',
+    },
+    {
+      url: 'https://localhost:13000/api/users:list',
+      auth: 'Bearer test-token',
+      redirect: 'manual',
+    },
+  ]);
 });

@@ -459,5 +459,37 @@ describe('actions', () => {
       expect(res3.statusCode).toEqual(401);
       expect(res3.text).toBe('User password changed, please signin again.');
     });
+
+    it('should not renew an expired token after password changed', async () => {
+      await app.authManager.tokenController.setConfig({
+        tokenExpirationTime: '1s',
+        sessionExpirationTime: '1d',
+        expiredTokenRenewLimit: '1d',
+      });
+
+      const userRepo = db.getRepository('users');
+      const user = await userRepo.create({
+        values: {
+          username: 'test',
+          password: '12345',
+        },
+      });
+      const firstAgent = await agent.login(user, null);
+      const secondAgent = await agent.login(user, null);
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const res = await firstAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '123456',
+      });
+      expect(res.statusCode).toEqual(200);
+
+      const res2 = await secondAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
+      expect(res2.statusCode).toEqual(401);
+      expect(res2.text).toBe('User password changed, please signin again.');
+      expect(res2.headers['x-new-token']).toBeUndefined();
+    });
   });
 });

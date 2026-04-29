@@ -32,18 +32,18 @@ import {
 } from '../../../application/CustomRouterContextProvider';
 import { AppNotFound } from '../../../common/AppNotFound';
 import { useDocumentTitle } from '../../../document-title';
-import { useGlobalTheme } from '../../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { Icon } from '../../../icon';
 import {
+  KeepAlive,
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   useCurrentRoute,
+  useKeepAlive,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
-import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
-import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
 import { DndContext } from '../../common';
@@ -58,6 +58,7 @@ import { AllDataBlocksProvider } from './AllDataBlocksProvider';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/route-types';
 
 interface PageProps {
   currentTabUid: string;

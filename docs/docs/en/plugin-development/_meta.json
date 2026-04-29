@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "AI Development",
+        "link": "/plugin-development/ai-development"
+      },
+      {
+        "type": "custom-link",
         "label": "Project Structure",
         "link": "/plugin-development/project-structure"
       }
@@ -96,7 +101,7 @@
       },
       {
         "type": "custom-link",
-        "label": "I18n",
+        "label": "i18n",
         "link": "/plugin-development/server/i18n"
       },
       {
@@ -132,53 +137,128 @@
       },
       {
         "type": "custom-link",
-        "label": "Context",
-        "link": "/plugin-development/client/context"
-      },
-      {
-        "type": "custom-link",
         "label": "Router",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "ACL",
-        "link": "/plugin-development/client/acl"
+        "label": "Component Development",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/plugin-development/client/component"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager",
-        "link": "/plugin-development/client/data-source-manager"
+        "label": "Context",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/plugin-development/client/ctx"
+          },
+          {
+            "type": "custom-link",
+            "label": "Common Capabilities",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Resource",
-        "link": "/plugin-development/client/resource"
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/plugin-development/client/flow-engine"
+          },
+          {
+            "type": "custom-link",
+            "label": "Block Extension",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Field Extension",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Action Extension",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Request",
-        "link": "/plugin-development/client/request"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Styles & Themes",
-        "link": "/plugin-development/client/styles-themes"
+        "label": "Plugin Development Examples",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/plugin-development/client/examples"
+          },
+          {
+            "type": "custom-link",
+            "label": "Building a Plugin Settings Page",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "Building a Custom Display Block",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Building a Custom Field Component",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Building a Custom Action Button",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "Building a Full-Stack Data Management Plugin",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Logger",
-        "link": "/plugin-development/client/logger"
-      },
-      {
-        "type": "custom-link",
-        "label": "I18n",
-        "link": "/plugin-development/client/i18n"
-      },
-      {
-        "type": "custom-link",
-        "label": "Test",
-        "link": "/plugin-development/client/test"
+        "label": "Appendix",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "FAQ & Troubleshooting Guide",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "Plugin Development Cheat Sheet",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
       }
     ]
   },
@@ -186,11 +266,6 @@
     "type": "custom-link",
     "label": "Others",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "Plugin Upgrade Guide",
-        "link": "/plugin-development/plugin-upgrade-guide"
-      },
       {
         "type": "custom-link",
         "label": "Languages",
@@ -203,7 +278,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Build",
+        "label": "Build and Package",
         "link": "/plugin-development/build"
       }
     ]

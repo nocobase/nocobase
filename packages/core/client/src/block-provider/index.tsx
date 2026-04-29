@@ -19,3 +19,4 @@ export * from './TableBlockProvider';
 export * from './TableFieldProvider';
 export * from './TableSelectorProvider';
 export * from './TemplateBlockProvider';
+export { useTableBlockContextBasicValue } from './TableBlockContextBasicValue';

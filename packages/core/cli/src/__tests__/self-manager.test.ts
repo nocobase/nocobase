@@ -98,6 +98,37 @@ test('updateSelf runs npm install -g when a newer version exists', async () => {
     ['install', '-g', '@nocobase/cli@beta'],
     expect.objectContaining({
       errorName: 'npm install',
+      stdio: 'ignore',
+    }),
+  );
+});
+
+test('updateSelf forwards raw install output in verbose mode', async () => {
+  const runFn = vi.fn(async () => undefined);
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npm' && args.join(' ') === 'prefix -g') {
+      return '/usr/local';
+    }
+    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
+      return JSON.stringify({ beta: '2.1.0-beta.18' });
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  await updateSelf({
+    packageRoot: path.join('/usr/local', 'lib', 'node_modules', '@nocobase', 'cli'),
+    currentVersion: '2.1.0-beta.17',
+    channel: 'beta',
+    commandOutputFn: commandOutputFn as any,
+    runFn: runFn as any,
+    verbose: true,
+  });
+
+  expect(runFn).toHaveBeenCalledWith(
+    'npm',
+    ['install', '-g', '@nocobase/cli@beta'],
+    expect.objectContaining({
+      errorName: 'npm install',
       stdio: 'inherit',
     }),
   );

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/ai-dev"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tutorial: Building a Watermark Plugin",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "Supported Capabilities",
+    "link": "/ai-dev/capabilities"
+  }
+]

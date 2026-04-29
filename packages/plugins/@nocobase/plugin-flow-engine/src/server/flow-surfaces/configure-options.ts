@@ -84,6 +84,17 @@ const SORTING = arrayOption('Sorting rule array', {
   ],
 });
 
+const CONNECT_FIELDS = objectOption('Tree connect data block targets', {
+  example: {
+    targets: [
+      {
+        targetId: 'target-block-uid',
+        filterPaths: ['id'],
+      },
+    ],
+  },
+});
+
 const OPEN_VIEW = objectOption('Popup or drawer open configuration', {
   example: {
     dataSourceKey: 'main',
@@ -273,6 +284,7 @@ const TREE_OPTIONS: FlowSurfaceConfigureOptions = {
   pageSize: numberOption('Root records per page', { example: 200 }),
   dataScope: FILTER_GROUP,
   sorting: SORTING,
+  connectFields: CONNECT_FIELDS,
 };
 
 const KANBAN_OPTIONS: FlowSurfaceConfigureOptions = {

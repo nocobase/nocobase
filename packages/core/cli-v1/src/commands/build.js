@@ -80,7 +80,7 @@ module.exports = (cli) => {
         options.retry ? '--retry' : '',
       ]);
       buildIndexHtml(true);
-      if (options.packages && !options.packages.includes('@nocobase/app')) {
+      if (!pkgs.includes('@nocobase/app')) {
         await buildClientV2();
       }
     });

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.46](https://github.com/nocobase/nocobase/compare/v2.0.45...v2.0.46) - 2026-04-28
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed an issue where default values would not apply when re-adding a record after it had been removed from a sub-table. ([#9192](https://github.com/nocobase/nocobase/pull/9192)) by @gchust
+
+  - set popover max-height and scrolling safeguards so the submit area remains reachable ([#9226](https://github.com/nocobase/nocobase/pull/9226)) by @jiannx
+
+- **[Authentication]** Fixed old sessions remaining active after a password change ([#9261](https://github.com/nocobase/nocobase/pull/9261)) by @2013xile
+
+- **[Data source: External MariaDB]** Fix test case failed because module importing not correct by @mytharcher
+
+## [v2.0.45](https://github.com/nocobase/nocobase/compare/v2.0.44...v2.0.45) - 2026-04-27
+
+### 🚀 Improvements
+
+- **[Workflow: JavaScript]** Upgrade Docker images, CI workflows, and the workflow JavaScript sandbox dependency for Node.js 22 compatibility. ([#9245](https://github.com/nocobase/nocobase/pull/9245)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fixed the issue where variables in the system prompt of AI employees did not take effect ([#9256](https://github.com/nocobase/nocobase/pull/9256)) by @cgyrock
+
+- **[License settings]** update license save success message ([#9251](https://github.com/nocobase/nocobase/pull/9251)) by @jiannx
+
+- **[Action: Import records]** Fix the issue where import xlsx failed and throw no header matched error ([#9253](https://github.com/nocobase/nocobase/pull/9253)) by @mytharcher
+
+- **[Action: Import records Pro]** Fix the issue where import xlsx failed and throw no header matched error by @mytharcher
+
+- **[AI: Knowledge base]** Fix issue where deleting knowledge base documents did not delete associated vector data by @cgyrock
+
 ## [v2.0.44](https://github.com/nocobase/nocobase/compare/v2.0.43...v2.0.44) - 2026-04-26
 
 ### 🚀 Improvements

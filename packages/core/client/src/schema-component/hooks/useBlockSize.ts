@@ -13,7 +13,7 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useDesignable } from '..';
+import { useDesignable } from './useDesignable';
 import { useCollection } from '../../';
 import { getPageSchema, useBlockHeightProps } from '../../block-provider/hooks';
 import { useTableBlockContext } from '../../block-provider/TableBlockProvider';

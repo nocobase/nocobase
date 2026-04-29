@@ -7,7 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ai-manager';
-export * from './tools-manager';
-export * from './skills-manager';
-export * from './utils';
+export { AIManager, DefaultToolsManager, toToolsMap } from '@nocobase/client-v2';
+export type {
+  ToolsManager,
+  ToolsRegistration,
+  ToolsOptions,
+  ToolCall,
+  FrontendTools,
+  BackendTools,
+  ToolsEntry,
+  ToolsUIProperties,
+  DecisionActions,
+  ToolsFilter,
+  Scope,
+  Permission,
+  From,
+  SkillsScope,
+  SkillsEntry,
+  SkillsFilter,
+} from '@nocobase/client-v2';

@@ -48,8 +48,8 @@ test('env auth falls back to the current env and uses product-style task message
 
   await EnvAuth.prototype.run.call(command);
 
-  expect(mocks.getCurrentEnvName.mock.calls).toEqual([[{ scope: undefined }]]);
-  expect(mocks.authenticateEnvWithOauth.mock.calls).toEqual([[{ envName: 'staging', scope: undefined }]]);
+  expect(mocks.getCurrentEnvName.mock.calls).toEqual([[{ scope: 'global' }]]);
+  expect(mocks.authenticateEnvWithOauth.mock.calls).toEqual([[{ envName: 'staging', scope: 'global' }]]);
   expect(mocks.startTask.mock.calls).toEqual([
     ['Starting browser sign-in for "staging"...'],
   ]);

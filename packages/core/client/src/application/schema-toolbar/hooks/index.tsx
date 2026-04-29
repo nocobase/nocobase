@@ -10,7 +10,9 @@
 import { ISchema } from '@formily/json-schema';
 import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-import { ErrorFallback, useComponent, useDesignable } from '../../../schema-component';
+import { ErrorFallback } from '../../../schema-component/antd/error-fallback/ErrorFallback';
+import { useComponent } from '../../../schema-component/hooks/useComponent';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
 import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings/GeneralSchemaDesigner';
 
 const SchemaToolbarErrorFallback: React.FC<FallbackProps> = (props) => {

@@ -69,13 +69,15 @@ Attachments support two types:
 
 An AI Employee is usually bound to multiple skills and tools. Here, you can restrict the current task to use only specific skills or tools.
 
-![20260420151902](https://static-docs.nocobase.com/20260420151902.png)
+By default, `Preset` uses the AI Employee's preset skills and tools. Set it to `Customer` to choose only some of the AI Employee's skills or tools.
+
+![20260426231701](https://static-docs.nocobase.com/20260426231701.png)
 
 #### Web Search
 
 The `Web search` toggle controls whether the AI for the current node uses Web Search. For details about AI Employee Web Search, see [Web Search](/ai-employees/features/web-search).
 
-![20260420152058](https://static-docs.nocobase.com/20260420152058.png)
+![20260426231945](https://static-docs.nocobase.com/20260426231945.png)
 
 ### Output and Notifications
 
@@ -83,11 +85,11 @@ The `Web search` toggle controls whether the AI for the current node uses Web Se
 
 You can define the final output data structure of the AI Employee node according to the [JSON Schema](https://json-schema.org/) specification.
 
-![20260420162603](https://static-docs.nocobase.com/20260420162603.png)
+![20260426232117](https://static-docs.nocobase.com/20260426232117.png)
 
 When other nodes in the Workflow reference data from the AI Employee node, their selectable options are also generated according to this `JSON Schema`.
 
-![20260420201141](https://static-docs.nocobase.com/20260420201141.png)
+![20260426232509](https://static-docs.nocobase.com/20260426232509.png)
 
 ##### Default Value
 
@@ -122,10 +124,10 @@ The node supports three approval modes:
 - `Human decision`: the AI output must be sent to an approver for manual review, and the Workflow continues only after approval is completed.
 - `AI decision`: the AI decides whether the output should be sent to an approver for manual review.
 
-![20260420162755](https://static-docs.nocobase.com/20260420162755.png)
+![20260426232232](https://static-docs.nocobase.com/20260426232232.png)
 
 If the approval mode is not `No required`, you must configure one or more approvers for the node.
 
 After the AI Employee node finishes outputting all content, notifications are sent to all approvers configured for the node. The Workflow can continue as soon as any one of the notified approvers completes the approval action.
 
-![20260420163807](https://static-docs.nocobase.com/20260420163807.png)
+![20260426232319](https://static-docs.nocobase.com/20260426232319.png)
