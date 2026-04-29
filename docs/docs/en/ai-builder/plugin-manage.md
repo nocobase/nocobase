@@ -33,7 +33,7 @@ What plugins does the current environment have?
 ```
 CLI mode
 ```
-nb pm list
+nb plugin list
 ```
 
 It will list all plugins along with their enabled status and version information.
@@ -48,7 +48,7 @@ Help me enable the localization plugin
 ```
 CLI mode
 ```
-nb pm enable <localization>
+nb plugin pm enable <localization>
 ```
 
 The Skill will enable plugins in order, with a read-back verification after each enable to confirm `enabled=true`.
@@ -63,7 +63,7 @@ Help me disable the localization plugin
 ```
 CLI mode
 ```
-nb pm disable <localization>
+nb plugin disable <localization>
 ```
 
 ![Disabling a plugin](https://static-docs.nocobase.com/20260417173442.png)

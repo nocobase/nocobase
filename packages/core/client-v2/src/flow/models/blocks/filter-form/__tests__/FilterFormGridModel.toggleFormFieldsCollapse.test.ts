@@ -102,6 +102,51 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
     expect(model.props.rowOrder).toEqual(['first']);
   });
 
+  it('updates render layout when collapsing a v2 layout', () => {
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'filter-grid-collapse-v2',
+      use: 'FilterFormGridModel',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'first',
+              cells: [{ id: 'first-cell', items: ['field-1', 'field-2', 'field-3'] }],
+              sizes: [24],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = {
+      items: [
+        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-3' }),
+      ],
+    };
+
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
+      layout: model.props.layout,
+    });
+
+    model.toggleFormFieldsCollapse(true, 1);
+
+    expect(model.props.rows).toEqual({
+      first: [['field-1']],
+    });
+    expect(model.props.layout.rows[0].cells[0].items).toEqual(['field-1']);
+
+    model.toggleFormFieldsCollapse(false, 1);
+
+    expect(model.props.rows).toEqual({
+      first: [['field-1', 'field-2', 'field-3']],
+    });
+    expect(model.props.layout.rows[0].cells[0].items).toEqual(['field-1', 'field-2', 'field-3']);
+  });
+
   it('restores the persisted full layout when current props rows were already truncated', () => {
     const model = engine.createModel<FilterFormGridModel>({
       uid: 'filter-grid-collapse-restore',
