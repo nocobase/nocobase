@@ -93,6 +93,19 @@ const getKanbanSortingSettings = (model: KanbanBlockModel) => {
   };
 };
 
+const getKanbanGroupingFormSortingSettings = (ctx: any) => {
+  const grouping = ctx?.getStepFormValues?.('kanbanSettings', 'grouping')?.grouping;
+
+  if (!grouping || typeof grouping !== 'object') {
+    return undefined;
+  }
+
+  return {
+    dragEnabled: grouping.dragEnabled === true,
+    dragSortBy: grouping.dragSortBy ?? null,
+  };
+};
+
 const getKanbanCardItemProps = (model: KanbanBlockModel) => {
   return {
     ...(model.subModels?.item?.props || {}),
@@ -111,6 +124,45 @@ const replaceModelStepParams = (model: any, flowKey: string, stepKey: string, pa
   model.stepParams[flowKey] = model.stepParams[flowKey] || {};
   model.stepParams[flowKey][stepKey] = { ...params };
   model.emitter?.emit?.('onStepParamsChanged');
+};
+
+const setKanbanModelProps = (model: any, props: Record<string, any>) => {
+  model.setProps(props);
+  model._options = model._options || {};
+  model._options.props = {
+    ...(model._options.props || {}),
+    ...props,
+  };
+};
+
+const syncKanbanDragSortingStepParams = (
+  model: KanbanBlockModel,
+  settings: { dragEnabled: boolean; dragSortBy?: string | null },
+) => {
+  replaceModelStepParams(model, 'kanbanSettings', 'dragEnabled', { dragEnabled: settings.dragEnabled });
+  replaceModelStepParams(model, 'kanbanSettings', 'dragSortBy', { dragSortBy: settings.dragSortBy ?? null });
+};
+
+const syncKanbanGroupingDragSortingStepParams = (
+  model: KanbanBlockModel,
+  settings: { dragEnabled: boolean; dragSortBy?: string | null },
+) => {
+  const currentGroupingParams =
+    model.getStepParams?.('kanbanSettings', 'grouping') || model.stepParams?.kanbanSettings?.grouping;
+  const currentGrouping = currentGroupingParams?.grouping;
+
+  if (!currentGrouping) {
+    return;
+  }
+
+  replaceModelStepParams(model, 'kanbanSettings', 'grouping', {
+    ...currentGroupingParams,
+    grouping: {
+      ...currentGrouping,
+      dragEnabled: settings.dragEnabled,
+      dragSortBy: settings.dragSortBy ?? null,
+    },
+  });
 };
 
 const resolveKanbanPopupTargetUid = ({
@@ -174,7 +226,15 @@ const applyKanbanDragSortingSettings = (model: KanbanBlockModel, params: Record<
   const groupField = typeof model.getGroupField === 'function' ? model.getGroupField() : undefined;
   const dragEnabled = params.dragEnabled === true && !isMultipleGroupField(groupField);
 
-  model.setProps({
+  setKanbanModelProps(model, {
+    dragEnabled,
+    dragSortBy,
+  });
+  syncKanbanDragSortingStepParams(model, {
+    dragEnabled,
+    dragSortBy,
+  });
+  syncKanbanGroupingDragSortingStepParams(model, {
     dragEnabled,
     dragSortBy,
   });
@@ -190,6 +250,49 @@ const applyKanbanDragSortingSettings = (model: KanbanBlockModel, params: Record<
     dragEnabled,
     dragSortBy,
   };
+};
+
+const applyKanbanGroupingSettings = (model: KanbanBlockModel, params: Record<string, any>) => {
+  const grouping = (params.grouping || {}) as KanbanGroupingValue & {
+    dragEnabled?: boolean;
+    dragSortBy?: string | null;
+  };
+  const nextGroupField = grouping.groupField;
+  const nextGroupOptions = grouping.groupOptions || [];
+  const nextGroupFieldInstance = getKanbanCollectionField(model.collection, nextGroupField);
+  const hasDragEnabledValue = Object.prototype.hasOwnProperty.call(grouping, 'dragEnabled');
+  const hasDragSortValue = Object.prototype.hasOwnProperty.call(grouping, 'dragSortBy');
+  const dragEnabled =
+    (hasDragEnabledValue ? grouping.dragEnabled === true : model.getDragEnabled()) &&
+    !isMultipleGroupField(nextGroupFieldInstance);
+  const nextDragSortField = model.getCompatibleSortFieldName(
+    hasDragSortValue ? grouping.dragSortBy || undefined : model.getConfiguredDragSortFieldName(),
+    nextGroupField,
+  );
+
+  setKanbanModelProps(model, {
+    groupField: nextGroupField,
+    groupTitleField: grouping.groupTitleField,
+    groupColorField: grouping.groupColorField,
+    groupOptions: nextGroupOptions,
+    dragSortBy: nextDragSortField,
+    dragEnabled,
+  });
+  syncKanbanDragSortingStepParams(model, {
+    dragEnabled,
+    dragSortBy: nextDragSortField,
+  });
+  syncKanbanGroupingDragSortingStepParams(model, {
+    dragEnabled,
+    dragSortBy: nextDragSortField,
+  });
+  model.resource.setSort(
+    dragEnabled && nextDragSortField
+      ? [nextDragSortField]
+      : typeof model.getConfiguredGlobalSort === 'function'
+        ? model.getConfiguredGlobalSort()
+        : [],
+  );
 };
 
 class KanbanBlockResource extends MultiRecordResource {
@@ -1001,12 +1104,19 @@ KanbanBlockModel.registerFlow({
               groupOptions: {
                 type: 'array',
                 title: tExpr('Select group values', { ns: 'kanban' }),
-                description: tExpr('The order of the selected values determines the kanban column order', {
-                  ns: 'kanban',
-                }),
                 required: true,
                 'x-component': 'KanbanGroupingSelector',
                 'x-decorator': 'FormItem',
+                'x-reactions': [
+                  {
+                    dependencies: ['.groupField'],
+                    fulfill: {
+                      state: {
+                        disabled: '{{!$deps[0]}}',
+                      },
+                    },
+                  },
+                ],
                 'x-validator': (groupOptions: any[], _rule: any, validatorCtx: any) => {
                   if (groupOptions?.length) {
                     return undefined;
@@ -1021,10 +1131,45 @@ KanbanBlockModel.registerFlow({
 
                   return translate('At least one option is required');
                 },
+              },
+              dragEnabled: {
+                type: 'boolean',
+                title: tExpr('Enable drag and drop sorting', { ns: 'kanban' }),
+                'x-component': 'Switch',
+                'x-decorator': 'FormItem',
                 'x-reactions': [
                   (field) => {
                     const groupFieldName = field.form.values?.grouping?.groupField;
-                    field.hidden = !groupFieldName;
+                    const groupingField = getKanbanCollectionField(collection, groupFieldName);
+                    field.disabled = isMultipleGroupField(groupingField);
+
+                    if (field.disabled && field.value) {
+                      field.value = false;
+                    }
+                  },
+                ],
+              },
+              dragSortBy: {
+                type: 'string',
+                title: tExpr('Drag and drop sorting field', { ns: 'kanban' }),
+                'x-component': 'KanbanCreateSortFieldSelect',
+                'x-decorator': 'FormItem',
+                'x-decorator-props': {
+                  tooltip: DRAG_SORT_FIELD_TIP_EXPR,
+                },
+                'x-component-props': {
+                  allowClear: true,
+                  useGroupingFormValues: true,
+                },
+                'x-reactions': [
+                  {
+                    dependencies: ['.dragEnabled'],
+                    fulfill: {
+                      state: {
+                        hidden: '{{!$deps[0]}}',
+                        required: '{{$deps[0]}}',
+                      },
+                    },
                   },
                 ],
               },
@@ -1050,34 +1195,16 @@ KanbanBlockModel.registerFlow({
             groupTitleField: model?.props.groupTitleField,
             groupColorField: model?.props.groupColorField,
             groupOptions,
+            dragEnabled: model ? getKanbanSortingSettings(model).dragEnabled : false,
+            dragSortBy: model ? getKanbanSortingSettings(model).dragSortBy : null,
           },
         };
       },
       handler(ctx, params) {
-        const model = ctx.model as KanbanBlockModel;
-        const grouping = (params.grouping || {}) as KanbanGroupingValue;
-        const nextGroupField = grouping.groupField;
-        const nextGroupOptions = grouping.groupOptions || [];
-        const nextDragSortField = model.getCompatibleSortFieldName(
-          model.getConfiguredDragSortFieldName(),
-          nextGroupField,
-        );
-        const nextGroupFieldInstance = getKanbanCollectionField(model.collection, nextGroupField);
-        model.setProps({
-          groupField: nextGroupField,
-          groupTitleField: grouping.groupTitleField,
-          groupColorField: grouping.groupColorField,
-          groupOptions: nextGroupOptions,
-          dragSortBy: nextDragSortField,
-          dragEnabled: !isMultipleGroupField(nextGroupFieldInstance) ? model.getDragEnabled() : false,
-        });
-        model.resource.setSort(
-          nextDragSortField && model.getDragEnabled()
-            ? [nextDragSortField]
-            : typeof model.getConfiguredGlobalSort === 'function'
-              ? model.getConfiguredGlobalSort()
-              : [],
-        );
+        applyKanbanGroupingSettings(ctx.model as KanbanBlockModel, params);
+      },
+      beforeParamsSave(ctx, params) {
+        applyKanbanGroupingSettings(ctx.model as KanbanBlockModel, params);
       },
     },
     styleVariant: {
@@ -1120,6 +1247,14 @@ KanbanBlockModel.registerFlow({
           dragEnabled: params.dragEnabled === true,
         });
         void model.resource.refresh();
+      },
+      beforeParamsSave(ctx, params) {
+        const model = ctx.model as KanbanBlockModel;
+        const groupingSortingSettings = getKanbanGroupingFormSortingSettings(ctx);
+        applyKanbanDragSortingSettings(model, {
+          ...getKanbanSortingSettings(model),
+          ...(groupingSortingSettings || { dragEnabled: params.dragEnabled === true }),
+        });
       },
     },
     dragSortBy: {
@@ -1174,6 +1309,19 @@ KanbanBlockModel.registerFlow({
           dragEnabled: currentSettings.dragEnabled,
         });
         void model.resource.refresh();
+      },
+      beforeParamsSave(ctx, params) {
+        const model = ctx.model as KanbanBlockModel;
+        const currentSettings = getKanbanSortingSettings(model);
+        const groupingSortingSettings = getKanbanGroupingFormSortingSettings(ctx);
+        const nextDragSortBy = groupingSortingSettings?.dragSortBy ?? params.dragSortBy ?? null;
+        applyKanbanDragSortingSettings(model, {
+          ...currentSettings,
+          ...(groupingSortingSettings || {
+            dragSortBy: nextDragSortBy,
+            dragEnabled: currentSettings.dragEnabled,
+          }),
+        });
       },
     },
     // appearance: {
