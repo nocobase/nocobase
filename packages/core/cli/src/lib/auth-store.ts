@@ -11,6 +11,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
 import {
+  NB_CLI_ROOT_ENV,
   resolveCliHomeDir,
   resolveConfiguredEnvPath,
   resolveDefaultConfigScope,
@@ -69,6 +70,11 @@ export interface EnvConfigEntry {
   appKey?: string;
   /** Application timezone (TZ). */
   timezone?: string;
+  /** Initial root/admin user settings saved for install resume flows. */
+  rootUsername?: string;
+  rootEmail?: string;
+  rootPassword?: string;
+  rootNickname?: string;
   /** Whether this env was created with a CLI-managed built-in database. */
   builtinDb?: boolean;
   /** Docker image used for the CLI-managed built-in database container. */
@@ -213,7 +219,11 @@ function hasConfiguredEnvs(config: AuthConfig) {
 
 function shouldFallbackToLegacyProjectScope(options: AuthStoreOptions = {}) {
   const requestedScope = options.scope ?? resolveDefaultConfigScope();
-  return requestedScope === 'global';
+  if (requestedScope !== 'global') {
+    return false;
+  }
+
+  return !process.env[NB_CLI_ROOT_ENV];
 }
 
 async function loadExactAuthConfig(options: AuthStoreOptions = {}): Promise<AuthConfig> {

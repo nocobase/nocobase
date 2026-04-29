@@ -9,7 +9,7 @@ sidebar: false
 
 NocoBase fully supports AI Agent collaboration — you can use natural language to complete data modeling, page building, workflow orchestration, permission configuration, and even custom plugin development. Whether you use Claude Code, Codex, Cursor, or other AI tools, you can work with NocoBase through these two foundational components:
 
-1. **[NocoBase CLI](../api/cli/cli.md)** — A command-line tool for initializing, connecting to, and managing NocoBase applications in your local workspace. It helps you prepare NocoBase applications, save CLI env configurations, and provides daily management commands such as start, stop, view logs, upgrade, and clean up — enabling AI Agents to connect and use NocoBase.
+1. **[NocoBase CLI](../api/cli/)** — A command-line tool for initializing, connecting to, and managing NocoBase applications in your local workspace. It helps you prepare NocoBase applications, save CLI env configurations, and provides daily management commands such as start, stop, view logs, upgrade, and clean up — enabling AI Agents to connect and use NocoBase.
 
 CLI supports two common initialization methods:
 
@@ -26,6 +26,7 @@ Before getting started, make sure the following environment requirements are met
 
 - Node.js >= 22
 - Yarn 1.x
+- We recommend using AI Agents powered by leading large models such as Claude or GPT. Results depend heavily on the model used — for the best experience, choose the latest flagship model available.
 
 import { Tab, Tabs } from '@rspress/core/theme';
 
@@ -84,7 +85,7 @@ After installation is complete, open your browser and visit `http://localhost:13
 Copy the prompt below to your AI assistant (Claude Code, Codex, Cursor, Trae, etc.), and it will complete CLI installation and guide you through initializing a new NocoBase:
 
 ```
-Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/en/ai/ai-quick-start.md (please read the linked content directly)
+Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/ai/ai-quick-start.md (please read the linked content directly)
 ```
 
 After configuration is complete, restart your AI Agent session in the CLI-initialized directory (by default, this is a newly created `my-nocobase` directory under the current directory; if you're not sure, you can ask the AI Agent where the NocoBase CLI initialized directory is). For example:
@@ -144,7 +145,7 @@ No need to configure installation method, database, or admin account — the wiz
 Copy the prompt below to your AI assistant. It will complete CLI installation and guide you through connecting to your existing NocoBase instance. Select "Connect to Existing Application" in the first step of the visual wizard:
 
 ```
-Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/en/ai/ai-quick-start.md (please read the linked content directly)
+Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/ai/ai-quick-start.md (please read the linked content directly)
 ```
 
 After configuration is complete, restart your AI Agent session in the CLI-initialized directory. For example:
@@ -178,7 +179,7 @@ Collaborate with AI employees directly in the NocoBase interface — data analys
 
 ### NocoBase CLI Command Reference
 
-If you already have a NocoBase application running, or have successfully completed initialization and want to continue developing, debugging, or managing your application, see [NocoBase CLI Command Reference](../api/cli/cli) for full parameter documentation of all `nb` commands.
+If you already have a NocoBase application running, or have successfully completed initialization and want to continue developing, debugging, or managing your application, see [NocoBase CLI Command Reference](../api/cli/) for full parameter documentation of all `nb` commands.
 
 ## Related Links
 
@@ -186,5 +187,5 @@ If you already have a NocoBase application running, or have successfully complet
 - [AI Plugin Development](../ai-dev/index.md) — Develop NocoBase plugins with AI assistance
 - [AI Employees](../ai-employees/index.md) — Collaborate with AI in the business interface
 - [Environment Management](../ai-builder/env-bootstrap) — Environment checks, adding environments, upgrades, and troubleshooting
-- [NocoBase CLI Command Reference](../api/cli/cli) — Full parameter documentation for all commands
+- [NocoBase CLI Command Reference](../api/cli/) — Full parameter documentation for all commands
 - [Installation Methods and Version Comparison](../get-started/quickstart) — Different installation methods and version channels for NocoBase

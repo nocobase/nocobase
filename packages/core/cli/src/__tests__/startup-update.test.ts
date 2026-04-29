@@ -42,7 +42,7 @@ vi.mock('../lib/run-npm.js', () => ({
 }));
 
 describe('startup update prompt', () => {
-  const originalHome = process.env.NOCOBASE_CTL_HOME;
+  const originalHome = process.env.NB_CLI_ROOT;
   const originalSkip = process.env.NB_SKIP_STARTUP_UPDATE;
 
   beforeEach(async () => {
@@ -51,21 +51,21 @@ describe('startup update prompt', () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
     const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'nb-startup-update-'));
-    process.env.NOCOBASE_CTL_HOME = temp;
+    process.env.NB_CLI_ROOT = temp;
     delete process.env.NB_SKIP_STARTUP_UPDATE;
     mocks.isInteractiveTerminal.mockReturnValue(true);
   });
 
   afterEach(async () => {
     const fs = await import('node:fs/promises');
-    if (process.env.NOCOBASE_CTL_HOME) {
-      await fs.rm(process.env.NOCOBASE_CTL_HOME, { recursive: true, force: true });
+    if (process.env.NB_CLI_ROOT) {
+      await fs.rm(process.env.NB_CLI_ROOT, { recursive: true, force: true });
     }
 
     if (originalHome === undefined) {
-      delete process.env.NOCOBASE_CTL_HOME;
+      delete process.env.NB_CLI_ROOT;
     } else {
-      process.env.NOCOBASE_CTL_HOME = originalHome;
+      process.env.NB_CLI_ROOT = originalHome;
     }
 
     if (originalSkip === undefined) {
@@ -96,6 +96,30 @@ describe('startup update prompt', () => {
     mocks.isInteractiveTerminal.mockReturnValue(false);
 
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+  });
+
+  test('uses the local calendar date for once-per-day checks', async () => {
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const originalTimezone = process.env.TZ;
+
+    process.env.TZ = 'Asia/Shanghai';
+    await fs.mkdir(path.join(process.env.NB_CLI_ROOT!, '.nocobase'), { recursive: true });
+    await fs.writeFile(
+      path.join(process.env.NB_CLI_ROOT!, '.nocobase', 'startup-update.json'),
+      JSON.stringify({ lastCheckedDate: '2026-04-28' }),
+    );
+
+    try {
+      expect(await shouldRunStartupUpdateCheck(['env', 'list'], new Date('2026-04-28T23:04:49.000Z'))).toBe(true);
+    } finally {
+      if (originalTimezone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTimezone;
+      }
+    }
   });
 
   test('updates CLI and skills when user accepts', async () => {

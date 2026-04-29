@@ -62,7 +62,7 @@ This command launches a browser-based visual wizard where the user completes all
 ## Step 5: Verify Results
 
 ```bash
-nb ps
+nb env list
 ```
 
 Confirm the output shows the configured environment and its running status. Then remind the user to open the running NocoBase instance URL and log in with the configured account and password.

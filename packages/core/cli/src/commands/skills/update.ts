@@ -63,6 +63,7 @@ export default class SkillsUpdate extends Command {
             ok: true,
             kind: 'skills',
             action: result.action,
+            reason: result.action === 'noop' ? result.reason : undefined,
             globalRoot: result.status.globalRoot,
             workspaceRoot: result.status.workspaceRoot,
             installedSkillNames: result.status.installedSkillNames,
@@ -77,6 +78,15 @@ export default class SkillsUpdate extends Command {
     }
 
     if (result.action === 'noop') {
+      if (result.reason === 'not-installed') {
+        this.log(
+          flags.verbose
+            ? 'NocoBase AI coding skills are not installed globally. Run `nb skills install` first.'
+            : 'Skipped skills update because NocoBase AI coding skills are not installed.',
+        );
+        return;
+      }
+
       this.log(
         flags.verbose
           ? 'NocoBase AI coding skills are already up to date globally.'

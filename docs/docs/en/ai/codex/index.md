@@ -70,7 +70,7 @@ Before starting, make sure you have the following environment ready:
 Copy the prompt below to Codex, and it will automatically complete NocoBase CLI installation, initialization, and environment configuration:
 
 ```
-Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/en/ai/ai-quick-start.md (please read the linked content directly)
+Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/ai/ai-quick-start.md (please read the linked content directly)
 ```
 
 ### Manual Installation
@@ -83,10 +83,10 @@ nb init --ui
 
 The browser will automatically open a visual configuration page, guiding you to install NocoBase Skills, configure the database, and start the application. For detailed steps, see [Quick Start](../quick-start.md).
 
-After installation is complete, run `nb ps` to confirm the environment status:
+After installation is complete, run `nb env list` to confirm the environment status:
 
 ```bash
-nb ps
+nb env list
 ```
 
 Confirm the output shows the configured environment and its running status.

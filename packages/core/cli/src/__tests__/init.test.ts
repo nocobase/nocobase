@@ -252,6 +252,7 @@ test('nb init shows a concise fallback message when the setup browser cannot be 
   expect(mocks.promptWarn).toHaveBeenCalledWith(
     'We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process.',
   );
+  expect(mocks.promptInfo).toHaveBeenCalledWith('Browser open error: open failed');
 });
 
 test('nb init localizes the browser UI intro title', async () => {
@@ -619,6 +620,45 @@ test('nb init forwards otherVersion as the final --version value to nb install',
   expect(argv[argv.indexOf('--version') + 1]).toBe('fix/cli-v2');
 });
 
+test('nb init forwards api connection settings to nb install', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'db-host'?: string },
+        options?: { nonInteractive?: boolean; resume?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      appName: 'demoapp',
+      apiBaseUrl: 'http://demo.example.com/api',
+      authType: 'token',
+      accessToken: 'secret-token',
+    },
+    {
+      yes: true,
+      force: false,
+      build: true,
+      verbose: false,
+    },
+  );
+
+  expect(argv).toEqual(expect.arrayContaining([
+    '--api-base-url',
+    'http://demo.example.com/api',
+    '--auth-type',
+    'token',
+    '--access-token',
+    'secret-token',
+  ]));
+});
+
 test('nb init treats arbitrary CLI --version values as otherVersion prompt values', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;
@@ -782,6 +822,48 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
   } finally {
     process.argv = originalArgv;
   }
+});
+
+test('nb init skips skills sync when --skip-skills is provided in flags mode', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    apiBaseUrl: 'http://localhost:13000/api',
+    authType: 'oauth',
+    ...(options.values ?? {}),
+  }));
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        'skip-skills': true,
+      },
+    })),
+    config: { runCommand },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(`unexpected error: ${message}`);
+    },
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.inspectSkillsStatus).not.toHaveBeenCalled();
+  expect(mocks.installNocoBaseSkills).not.toHaveBeenCalled();
+  expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
+  expect(mocks.promptStep).toHaveBeenCalledWith('Skipped NocoBase agent skills sync.');
+  expect(runCommand.mock.calls[0]).toEqual([
+    'env:add',
+    ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+  ]);
 });
 
 test('nb init installs skills automatically when they are missing', async () => {
@@ -1420,6 +1502,7 @@ test('nb init resolves dynamic port defaults without showing fallback warnings',
   }
 });
 
+
 test('nb init preserves argument values that contain spaces when building install argv', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;
@@ -1568,6 +1651,8 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
   expect(Init.flags['auth-type']).toBeDefined();
   expect(Init.flags['access-token']).toBeDefined();
   expect(Init.flags.locale).toBeDefined();
+  expect(Init.flags['skip-skills']).toBeDefined();
+  expect(Init.flags['skip-skills'].hidden).toBe(true);
   expect(Init.flags['install-skills']).toBeUndefined();
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({

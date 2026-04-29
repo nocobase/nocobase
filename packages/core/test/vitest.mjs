@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client', 'client-v2', 'flow-engine'];
+const PLUGIN_CLIENT_PACKAGES = ['client', 'client-v2'];
 // 按路径填写要跳过服务端测试的插件目录（相对仓库根目录）
 const skipPluginPaths = [
   'packages/plugins/@nocobase/plugin-audit-logs',
@@ -114,7 +115,7 @@ const defineCommonConfig = () => {
 function getExclude(isServer) {
   return [
     `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
-    `packages/**/src/${isServer ? 'client' : 'server'}/**/*`,
+    ...(isServer ? PLUGIN_CLIENT_PACKAGES : ['server']).map((dir) => `packages/**/src/${dir}/**/*`),
   ];
 }
 
@@ -220,7 +221,9 @@ export const getFilterInclude = (isServer, isCoverage) => {
 
   // 插件目录，区分 client 和 server
   return {
-    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`],
+    include: isServer
+      ? [`${filterFileOrDir}/src/server/${suffix}`]
+      : PLUGIN_CLIENT_PACKAGES.map((dir) => `${filterFileOrDir}/src/${dir}/${suffix}`),
   };
 };
 

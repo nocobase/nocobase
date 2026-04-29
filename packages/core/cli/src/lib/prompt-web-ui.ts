@@ -718,15 +718,24 @@ function readFormFromClientStrippingPwcMeta(o: Record<string, unknown>): Record<
   return rest;
 }
 
-function openUrlInDefaultBrowser(url: string): void {
+function openUrlInDefaultBrowser(
+  url: string,
+  onError?: (url: string, error: unknown) => void,
+): void {
+  const reportError = (error: unknown) => {
+    onError?.(url, error);
+  };
   const platform = process.platform;
+  let child: ReturnType<typeof spawn>;
   if (platform === 'darwin') {
-    spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
+    child = spawn('open', [url], { stdio: 'ignore', detached: true });
   } else if (platform === 'win32') {
-    spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore', detached: true, windowsHide: true }).unref();
+    child = spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore', detached: true, windowsHide: true });
   } else {
-    spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref();
+    child = spawn('xdg-open', [url], { stdio: 'ignore', detached: true });
   }
+  child.once('error', reportError);
+  child.unref();
 }
 
 function closePromptWebUiServer(server: Server, done: () => void): void {
@@ -2402,10 +2411,11 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       const port = addr.port;
       const startUrl = `http://${host}:${port}/`;
       options.onServerStart?.({ host, port, url: startUrl });
+      const onOpenBrowserError = options.onOpenBrowserError ?? ((u, err) => console.warn(String(err), u));
       try {
-        openUrlInDefaultBrowser(startUrl);
+        openUrlInDefaultBrowser(startUrl, onOpenBrowserError);
       } catch (e) {
-        (options.onOpenBrowserError ?? ((u, err) => console.warn(String(err), u)))(startUrl, e);
+        onOpenBrowserError(startUrl, e);
       }
       timeoutId = setTimeout(
         () => rejectAndClose(new Error('Local UI timeout — close the tab and try again, or resubmit within the time limit.')),

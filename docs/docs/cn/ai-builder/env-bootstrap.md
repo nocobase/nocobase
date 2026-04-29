@@ -19,9 +19,9 @@ keywords: "AI 搭建,环境管理,安装,升级,Docker"
 
 ## 能力范围
 
-- 查询 Nocobase 环境和状态
-- 添加、删除、切换 Nocobase 实例环境
-- Nocobase 实例的安装、升级、停止、启动
+- 查询 NocoBase 环境和状态
+- 添加、删除、切换 NocoBase 实例环境
+- NocoBase 实例的安装、升级、停止、启动
 
 
 ## 提示词示例
@@ -29,17 +29,17 @@ keywords: "AI 搭建,环境管理,安装,升级,Docker"
 ### 场景 A：环境状态查询
 提示词模式
 ```
-当前有哪些 Nocobase 实例？我现在在哪个环境？
+当前有哪些 NocoBase 实例？我现在在哪个环境？
 ```
 命令行模式
 ```
-nb ps
+nb env list
 ```
 
 ### 场景 B：添加已有环境
 :::tip 前置条件
 
-需要已有 Nocobase 实例，无论是本地还是远程
+需要已有 NocoBase 实例，无论是本地还是远程
 
 :::
 
@@ -51,16 +51,16 @@ nb ps
 ```
 nb env add <dev> --base-url http://localhost:13000/api
 ```
-### 场景 C：安装新的 Nocobase 实例
+### 场景 C：安装新的 NocoBase 实例
 :::tip 前置条件
 
-安装 Nocobase 最方便快捷是使用 Docker 模式，执行前请确保你本机上安装了 Node、Docker、Yarn 必备环境
+安装 NocoBase 最方便快捷是使用 Docker 模式，执行前请确保你本机上安装了 Node、Docker、Yarn 必备环境
 
 :::
 
 提示词模式
 ```
-帮我安装 Nocobase
+帮我安装 NocoBase
 ```
 命令行模式
 ```
@@ -86,7 +86,7 @@ nb upgrade
 ```
 命令行模式
 ```
-nb stop
+nb app stop
 ```
 
 ### 场景 E：实例启动
@@ -97,7 +97,7 @@ nb stop
 ```
 命令行模式
 ```
-nb start
+nb app start
 ```
 
 ## 常见问题

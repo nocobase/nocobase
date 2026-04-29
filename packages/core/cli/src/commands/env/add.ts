@@ -11,6 +11,11 @@ import { Args, Command, Flags } from '@oclif/core';
 import { upsertEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import {
+  buildStoredEnvConfig,
+  type StoredEnvConfig,
+  type StoredEnvConfigInput,
+} from '../../lib/env-config.js';
+import {
   runPromptCatalog,
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -58,6 +63,10 @@ type EnvAddParsedFlags = {
   'db-database'?: string;
   'db-user'?: string;
   'db-password'?: string;
+  'root-username'?: string;
+  'root-email'?: string;
+  'root-password'?: string;
+  'root-nickname'?: string;
 };
 
 const ENV_RUNTIME_FLAG_MAP = {
@@ -79,6 +88,10 @@ const ENV_RUNTIME_FLAG_MAP = {
   'db-database': 'dbDatabase',
   'db-user': 'dbUser',
   'db-password': 'dbPassword',
+  'root-username': 'rootUsername',
+  'root-email': 'rootEmail',
+  'root-password': 'rootPassword',
+  'root-nickname': 'rootNickname',
 } as const;
 
 const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
@@ -245,6 +258,22 @@ export default class EnvAdd extends Command {
       hidden: true,
       description: 'Database password saved with this env',
     }),
+    'root-username': Flags.string({
+      hidden: true,
+      description: 'Initial root username saved with this env',
+    }),
+    'root-email': Flags.string({
+      hidden: true,
+      description: 'Initial root email saved with this env',
+    }),
+    'root-password': Flags.string({
+      hidden: true,
+      description: 'Initial root password saved with this env',
+    }),
+    'root-nickname': Flags.string({
+      hidden: true,
+      description: 'Initial root nickname saved with this env',
+    }),
   };
 
   static prompts: PromptsCatalog = {
@@ -319,44 +348,24 @@ export default class EnvAdd extends Command {
   private buildEnvConfig(
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
-  ): Record<string, string | boolean | undefined> {
-    const source = String(flags.source ?? '').trim();
-    const appRootPath = String(flags['app-root-path'] ?? '').trim();
-    const kind =
-      source === 'docker'
-        ? 'docker'
-        : source === 'npm' || source === 'git' || source === 'local' || appRootPath
-          ? 'local'
-          : 'http';
-
-    const envConfig: Record<string, string | boolean | undefined> = {
-      kind,
-      apiBaseUrl: String(results.apiBaseUrl ?? ''),
+  ): StoredEnvConfig {
+    const envConfigInput: StoredEnvConfigInput & Record<string, unknown> = {
+      apiBaseUrl: results.apiBaseUrl,
+      authType: results.authType,
+      accessToken: results.accessToken,
     };
 
     for (const [flagName, configKey] of Object.entries(ENV_RUNTIME_FLAG_MAP)) {
       const value = flags[flagName as keyof typeof ENV_RUNTIME_FLAG_MAP];
-      if (typeof value === 'string' && value.trim() !== '') {
-        envConfig[configKey] = value.trim();
-      }
+      envConfigInput[configKey] = value;
     }
 
     for (const [flagName, configKey] of Object.entries(ENV_BOOLEAN_RUNTIME_FLAG_MAP)) {
       const value = flags[flagName as keyof typeof ENV_BOOLEAN_RUNTIME_FLAG_MAP];
-      if (typeof value === 'boolean') {
-        envConfig[configKey] = value;
-      }
+      envConfigInput[configKey] = value;
     }
 
-    if (flags['builtin-db'] === false) {
-      envConfig.builtinDbImage = undefined;
-    }
-
-    if (results.authType === 'token' && results.accessToken != null) {
-      envConfig.accessToken = String(results.accessToken);
-    }
-
-    return envConfig;
+    return buildStoredEnvConfig(envConfigInput);
   }
 
   async run(): Promise<void> {

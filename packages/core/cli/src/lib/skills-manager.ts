@@ -272,13 +272,6 @@ export async function inspectSkillsStatus(options: SkillsManagerOptions = {}): P
   };
 }
 
-function formatSkillsNotInstalledMessage(): string {
-  return [
-    'NocoBase AI coding skills are not installed globally.',
-    'Run `nb skills install` first.',
-  ].join('\n');
-}
-
 async function persistManagedSkillsState(
   globalRoot: string,
   options: SkillsManagerOptions = {},
@@ -353,10 +346,17 @@ export async function installNocoBaseSkills(options: SkillsSyncOptions = {}): Pr
   };
 }
 
-export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Promise<{
-  action: 'updated' | 'noop';
-  status: SkillsStatus;
-}> {
+export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Promise<
+  | {
+      action: 'updated';
+      status: SkillsStatus;
+    }
+  | {
+      action: 'noop';
+      reason: 'not-installed' | 'up-to-date';
+      status: SkillsStatus;
+    }
+> {
   const globalRoot = resolveSkillsRoot(options);
   const status = await inspectSkillsStatus({
     globalRoot,
@@ -364,7 +364,11 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
   });
 
   if (!status.installed) {
-    throw new Error(formatSkillsNotInstalledMessage());
+    return {
+      action: 'noop',
+      reason: 'not-installed',
+      status,
+    };
   }
 
   if (
@@ -375,6 +379,7 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
   ) {
     return {
       action: 'noop',
+      reason: 'up-to-date',
       status,
     };
   }
@@ -384,5 +389,41 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
   return {
     action: 'updated',
     status: await persistManagedSkillsState(globalRoot, options),
+  };
+}
+
+export async function removeNocoBaseSkills(options: SkillsSyncOptions = {}): Promise<{
+  action: 'removed' | 'noop';
+  status: SkillsStatus;
+}> {
+  const globalRoot = resolveSkillsRoot(options);
+  const status = await inspectSkillsStatus({
+    globalRoot,
+    commandOutputFn: options.commandOutputFn,
+  });
+
+  if (!status.installed || status.installedSkillNames.length === 0) {
+    return {
+      action: 'noop',
+      status,
+    };
+  }
+
+  for (const skillName of status.installedSkillNames) {
+    await (options.runFn ?? run)('npx', ['-y', 'skills', 'remove', skillName, '-g', '-y'], {
+      cwd: globalRoot,
+      stdio: options.verbose ? 'inherit' : 'ignore',
+      errorName: 'skills remove',
+    });
+  }
+
+  await fsp.rm(getManagedSkillsStateFile(globalRoot), { force: true });
+
+  return {
+    action: 'removed',
+    status: await inspectSkillsStatus({
+      globalRoot,
+      commandOutputFn: options.commandOutputFn,
+    }),
   };
 }

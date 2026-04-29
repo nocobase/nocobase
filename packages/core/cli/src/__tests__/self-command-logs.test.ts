@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   renderTable: vi.fn(() => 'TABLE'),
   setVerboseMode: vi.fn(),
   installNocoBaseSkills: vi.fn(),
+  removeNocoBaseSkills: vi.fn(),
   updateNocoBaseSkills: vi.fn(),
 }));
 
@@ -27,6 +28,7 @@ vi.mock('../lib/self-manager.js', () => ({
 
 vi.mock('../lib/skills-manager.js', () => ({
   installNocoBaseSkills: mocks.installNocoBaseSkills,
+  removeNocoBaseSkills: mocks.removeNocoBaseSkills,
   updateNocoBaseSkills: mocks.updateNocoBaseSkills,
 }));
 
@@ -179,8 +181,9 @@ test('self check prints the shorter update hint', async () => {
   expect(mocks.printInfo).toHaveBeenCalledWith('Run `nb self update`.');
 });
 
-test('skills install and update use compact logs by default and detailed logs with verbose', async () => {
+test('skills install, remove, and update use compact logs by default and detailed logs with verbose', async () => {
   const { default: SkillsInstall } = await import('../commands/skills/install.js');
+  const { default: SkillsRemove } = await import('../commands/skills/remove.js');
   const { default: SkillsUpdate } = await import('../commands/skills/update.js');
 
   const installCommand = Object.assign(Object.create(SkillsInstall.prototype), {
@@ -231,6 +234,52 @@ test('skills install and update use compact logs by default and detailed logs wi
     'NocoBase AI coding skills are already installed globally. Run `nb skills update` to refresh them.',
   );
 
+  const removeCommand = Object.assign(Object.create(SkillsRemove.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        json: false,
+        verbose: false,
+      },
+    })),
+    log: vi.fn(),
+  });
+  mocks.removeNocoBaseSkills.mockResolvedValueOnce({
+    action: 'removed',
+    status: {},
+  });
+
+  await SkillsRemove.prototype.run.call(removeCommand);
+
+  expect(mocks.removeNocoBaseSkills).toHaveBeenCalledWith({
+    verbose: false,
+  });
+  expect(removeCommand.log).toHaveBeenLastCalledWith('Removed NocoBase AI coding skills globally.');
+
+  const removeVerboseCommand = Object.assign(Object.create(SkillsRemove.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        json: false,
+        verbose: true,
+      },
+    })),
+    log: vi.fn(),
+  });
+  mocks.removeNocoBaseSkills.mockResolvedValueOnce({
+    action: 'noop',
+    status: {},
+  });
+
+  await SkillsRemove.prototype.run.call(removeVerboseCommand);
+
+  expect(mocks.removeNocoBaseSkills).toHaveBeenLastCalledWith({
+    verbose: true,
+  });
+  expect(removeVerboseCommand.log).toHaveBeenLastCalledWith(
+    'NocoBase AI coding skills are not installed globally.',
+  );
+
   const updateCommand = Object.assign(Object.create(SkillsUpdate.prototype), {
     parse: vi.fn(async () => ({
       flags: {
@@ -243,12 +292,28 @@ test('skills install and update use compact logs by default and detailed logs wi
   });
   mocks.updateNocoBaseSkills.mockResolvedValueOnce({
     action: 'noop',
+    reason: 'not-installed',
     status: {},
   });
 
   await SkillsUpdate.prototype.run.call(updateCommand);
 
   expect(mocks.updateNocoBaseSkills).toHaveBeenCalledWith({
+    verbose: false,
+  });
+  expect(updateCommand.log).toHaveBeenLastCalledWith(
+    'Skipped skills update because NocoBase AI coding skills are not installed.',
+  );
+
+  mocks.updateNocoBaseSkills.mockResolvedValueOnce({
+    action: 'noop',
+    reason: 'up-to-date',
+    status: {},
+  });
+
+  await SkillsUpdate.prototype.run.call(updateCommand);
+
+  expect(mocks.updateNocoBaseSkills).toHaveBeenLastCalledWith({
     verbose: false,
   });
   expect(updateCommand.log).toHaveBeenLastCalledWith('NocoBase AI coding skills are up to date.');

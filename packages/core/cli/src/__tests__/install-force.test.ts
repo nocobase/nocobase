@@ -163,7 +163,7 @@ test('startBuiltinDb reuses an existing db container without rechecking its publ
   }
 });
 
-test('downloadLocalApp delegates npm/git downloads through nb download and returns project root', async () => {
+test('downloadLocalApp delegates npm/git downloads through nb source download and returns project root', async () => {
   const projectRoot = await useTempStorageDir();
   const runCommand = vi.fn(async () => ({
     projectRoot,
@@ -206,7 +206,7 @@ test('downloadLocalApp delegates npm/git downloads through nb download and retur
   expect(appResults.appRootPath).toBe('./downloaded-app');
   expect(runCommand.mock.calls).toEqual([
     [
-      'download',
+      'source:download',
       [
         '-y',
         '--no-intro',
@@ -497,7 +497,7 @@ test('startBuiltinDb forwards command stdio to docker run', async () => {
   ]);
 });
 
-test('downloadManagedSource delegates docker downloads through nb download', async () => {
+test('downloadManagedSource delegates docker downloads through nb source download', async () => {
   const runCommand = vi.fn(async () => ({
     resolved: {
       source: 'docker',
@@ -529,7 +529,7 @@ test('downloadManagedSource delegates docker downloads through nb download', asy
 
   expect(runCommand.mock.calls).toEqual([
     [
-      'download',
+      'source:download',
       [
         '-y',
         '--no-intro',
@@ -548,7 +548,7 @@ test('downloadManagedSource delegates docker downloads through nb download', asy
   ]);
 });
 
-test('downloadManagedSource resolves otherVersion before delegating to nb download', async () => {
+test('downloadManagedSource resolves otherVersion before delegating to nb source download', async () => {
   const runCommand = vi.fn(async () => ({
     resolved: {
       source: 'git',

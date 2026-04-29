@@ -14,19 +14,20 @@ import path from 'node:path';
 export const CLI_HOME_DIRNAME = '.nocobase';
 export type CliHomeScope = 'auto' | 'project' | 'global';
 export const NB_CONFIG_SCOPE_ENV = 'NB_CONFIG_SCOPE';
-export const NB_ENV_ROOT_ENV = 'NB_ENV_ROOT';
+export const NB_CLI_ROOT_ENV = 'NB_CLI_ROOT';
 
 export function resolveDefaultConfigScope(): Exclude<CliHomeScope, 'auto'> {
   const raw = String(process.env[NB_CONFIG_SCOPE_ENV] ?? '').trim().toLowerCase();
   return raw === 'project' ? 'project' : 'global';
 }
 
-function resolveGlobalCliHomeRoot() {
-  if (process.env.NOCOBASE_CTL_HOME) {
-    return process.env.NOCOBASE_CTL_HOME;
-  }
+function readConfiguredPath(name: string) {
+  const value = String(process.env[name] ?? '').trim();
+  return value || undefined;
+}
 
-  return os.homedir();
+function resolveGlobalCliHomeRoot() {
+  return readConfiguredPath(NB_CLI_ROOT_ENV) ?? os.homedir();
 }
 
 export function resolveCliHomeRoot(scope: CliHomeScope = resolveDefaultConfigScope()) {
@@ -52,7 +53,7 @@ export function resolveCliHomeDir(scope: CliHomeScope = resolveDefaultConfigScop
 }
 
 export function resolveEnvRoot(scope: CliHomeScope = resolveDefaultConfigScope()) {
-  const envRoot = String(process.env[NB_ENV_ROOT_ENV] ?? '').trim();
+  const envRoot = readConfiguredPath(NB_CLI_ROOT_ENV);
   if (envRoot) {
     return path.resolve(envRoot);
   }

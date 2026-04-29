@@ -198,6 +198,13 @@ function logInitUiBrowserOpenFallback() {
   p.log.warn(translateCli('commands.init.messages.uiOpenBrowserFallback'));
 }
 
+function formatBrowserOpenError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
 export default class Init extends Command {
   static override summary =
     'Set up NocoBase so coding agents can connect and work with it';
@@ -233,6 +240,26 @@ Prompt modes:
   ];
 
   static prompts: PromptsCatalog = {
+    seedResume: {
+      type: 'run',
+      run: (values, command) => {
+        const record = values as Record<string, PromptValue>;
+        if (record.resume === undefined) {
+          const flags = (command as Init | undefined)?.parsedFlagsForPromptSeeds;
+          record.resume = Boolean(flags?.resume);
+        }
+      },
+    },
+    seedEnvName: {
+      type: 'run',
+      run: (values) => {
+        const record = values as Record<string, PromptValue>;
+        const appName = String(record.appName ?? '').trim();
+        if (appName && record.env === undefined) {
+          record.env = appName;
+        }
+      },
+    },
     appName: {
       type: 'text',
       message: initText('prompts.appName.message'),
@@ -319,6 +346,12 @@ Prompt modes:
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
+  private parsedFlagsForPromptSeeds?:
+    | {
+      resume?: boolean;
+    }
+    | undefined;
+
   static flags = {
     yes: Flags.boolean({
       char: 'y',
@@ -336,6 +369,10 @@ Prompt modes:
     }),
     verbose: Flags.boolean({
       description: 'Show detailed command output',
+      default: false,
+    }),
+    'skip-skills': Flags.boolean({
+      description: 'Skip installing or updating NocoBase AI coding skills during init',
       default: false,
     }),
     'ui-host': Flags.string({
@@ -357,6 +394,9 @@ Prompt modes:
     applyCliLocale((parsedResult.flags as { locale?: string }).locale);
     const flags = parsedResult.flags;
     const normalizedFlags = { ...flags };
+    this.parsedFlagsForPromptSeeds = {
+      resume: Boolean(normalizedFlags.resume),
+    };
 
     if (normalizedFlags.ui && normalizedFlags.yes) {
       this.error('--ui cannot be used with --yes.');
@@ -382,7 +422,9 @@ Prompt modes:
 
       p.intro(initTitle());
 
-      await this.syncNocoBaseSkills();
+      await this.syncNocoBaseSkills({
+        skip: Boolean(normalizedFlags['skip-skills']),
+      });
 
       try {
         await this.config.runCommand(
@@ -472,6 +514,25 @@ Prompt modes:
       },
     );
 
+    if (normalizedFlags.resume) {
+      const resumeEnvName = String(normalizedFlags.env ?? '').trim();
+      if (resumeEnvName) {
+        const resumeEnv = await getEnv(resumeEnvName, {
+          scope: resolveDefaultConfigScope(),
+        });
+        if (resumeEnv) {
+          const savedAppPort = String(resumeEnv.config.appPort ?? '').trim();
+          const savedDbPort = String(resumeEnv.config.dbPort ?? '').trim();
+          if (savedAppPort) {
+            presetValues.resumeSavedAppPort = savedAppPort;
+          }
+          if (savedDbPort) {
+            presetValues.resumeSavedDbPort = savedDbPort;
+          }
+        }
+      }
+    }
+
     if (normalizedFlags.yes && !String(presetValues.appName ?? '').trim()) {
       const formatted = formatSkippedAppNameRequiredMessage();
       p.log.error(highlightInitValidationMessage(formatted));
@@ -519,8 +580,9 @@ Prompt modes:
         onServerStart: ({ url }) => {
           logInitUiReady(this, url);
         },
-        onOpenBrowserError: (_url, _err) => {
+        onOpenBrowserError: (_url, err) => {
           logInitUiBrowserOpenFallback();
+          p.log.info(`Browser open error: ${formatBrowserOpenError(err)}`);
         },
       });
     }
@@ -554,7 +616,9 @@ Prompt modes:
       );
     }
 
-    await this.syncNocoBaseSkills();
+    await this.syncNocoBaseSkills({
+      skip: Boolean(normalizedFlags['skip-skills']),
+    });
 
     let managedInstallResults: Record<string, string | number | boolean> | undefined;
 
@@ -567,7 +631,7 @@ Prompt modes:
         p.log.step('Saving the local env config');
         await this.persistManagedEnvConfig(results, normalizedFlags);
         managedInstallResults = results;
-        p.log.step('Running nb install');
+        p.log.step('Running nb init');
         await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
       }
     } catch (error: unknown) {
@@ -878,7 +942,12 @@ Prompt modes:
     return existsSync(path.resolve(process.cwd(), '.agents'));
   }
 
-  private async syncNocoBaseSkills(): Promise<void> {
+  private async syncNocoBaseSkills(options?: { skip?: boolean }): Promise<void> {
+    if (options?.skip) {
+      p.log.step('Skipped NocoBase agent skills sync.');
+      return;
+    }
+
     try {
       const status = await inspectSkillsStatus();
       if (!status.installed) {
@@ -917,6 +986,9 @@ Prompt modes:
     const dbDatabase = String(results.dbDatabase ?? '').trim();
     const dbUser = String(results.dbUser ?? '').trim();
     const dbPassword = String(results.dbPassword ?? '');
+    const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
+    const authType = String(results.authType ?? '').trim() || 'oauth';
+    const accessToken = String(results.accessToken ?? '');
     const builtinDb =
       explicitDbHostFlag(flags)
         ? false
@@ -934,7 +1006,8 @@ Prompt modes:
             : appPort
               ? { kind: 'http' }
               : {}),
-        ...(appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(authType === 'token' && accessToken ? { accessToken } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
         ...(dockerRegistry ? { dockerRegistry } : {}),
@@ -988,6 +1061,9 @@ Prompt modes:
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
+    const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
+    const authType = String(results.authType ?? '').trim();
+    const accessToken = String(results.accessToken ?? '');
 
     argv.push('--env', envName);
     if (options?.resume) {
@@ -996,6 +1072,18 @@ Prompt modes:
 
     if (Boolean(flags.verbose)) {
       argv.push('--verbose');
+    }
+
+    if (apiBaseUrl) {
+      argv.push('--api-base-url', apiBaseUrl);
+    }
+
+    if (authType) {
+      argv.push('--auth-type', authType);
+    }
+
+    if (authType === 'token' && accessToken) {
+      argv.push('--access-token', accessToken);
     }
 
     const lang = String(results.lang ?? '').trim();

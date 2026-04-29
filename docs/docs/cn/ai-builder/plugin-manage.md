@@ -33,7 +33,7 @@ keywords: "AI 搭建,插件管理,插件启用,插件停用"
 ```
 命令行模式
 ```
-nb pm list
+nb plugin list
 ```
 
 会列出所有插件及其启用状态、版本信息。
@@ -48,7 +48,7 @@ nb pm list
 ```
 命令行模式
 ```
-nb pm enable <本地化>
+nb plugin enable <本地化>
 ```
 
 Skill 会按顺序启用，每次启用后读回校验确认 `enabled=true`。
@@ -63,7 +63,7 @@ Skill 会按顺序启用，每次启用后读回校验确认 `enabled=true`。
 ```
 命令行模式
 ```
-nb pm disable  <本地化>
+nb plugin disable  <本地化>
 ```
 
 ![禁用插件](https://static-docs.nocobase.com/20260417173442.png)

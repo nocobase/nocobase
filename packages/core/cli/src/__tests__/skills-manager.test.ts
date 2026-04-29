@@ -16,6 +16,7 @@ import {
   installNocoBaseSkills,
   inspectSkillsStatus,
   NOCOBASE_SKILLS_PACKAGE_NAME,
+  removeNocoBaseSkills,
   resolveGlobalSkillsRoot,
   resolveSkillsWorkspaceRoot,
   updateNocoBaseSkills,
@@ -34,7 +35,7 @@ test('resolveSkillsWorkspaceRoot defaults to the global CLI home', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-root-'));
 
   try {
-    vi.stubEnv('NOCOBASE_CTL_HOME', dir);
+    vi.stubEnv('NB_CLI_ROOT', dir);
 
     expect(resolveSkillsWorkspaceRoot(path.join(dir, 'workspace', 'packages', 'core', 'cli'))).toBe(
       path.join(dir, '.nocobase'),
@@ -48,7 +49,7 @@ test('resolveGlobalSkillsRoot defaults to the global CLI home', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-global-skills-root-'));
 
   try {
-    vi.stubEnv('NOCOBASE_CTL_HOME', dir);
+    vi.stubEnv('NB_CLI_ROOT', dir);
 
     expect(resolveGlobalSkillsRoot()).toBe(path.join(dir, '.nocobase'));
   } finally {
@@ -333,8 +334,9 @@ test('skills install and update forward raw output in verbose mode', async () =>
   }
 });
 
-test('updateNocoBaseSkills fails when nocobase skills are not installed', async () => {
+test('updateNocoBaseSkills is a no-op when nocobase skills are not installed', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-update-missing-'));
+  const runFn = vi.fn(async () => undefined);
   const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
     if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
       return '[]';
@@ -343,12 +345,109 @@ test('updateNocoBaseSkills fails when nocobase skills are not installed', async 
   });
 
   try {
-    await expect(
-      updateNocoBaseSkills({
-        workspaceRoot: dir,
-        commandOutputFn: commandOutputFn as any,
-      }),
-    ).rejects.toThrow('Run `nb skills install` first.');
+    const result = await updateNocoBaseSkills({
+      workspaceRoot: dir,
+      commandOutputFn: commandOutputFn as any,
+      runFn: runFn as any,
+    });
+
+    expect(result.action).toBe('noop');
+    expect(result.reason).toBe('not-installed');
+    expect(runFn).not.toHaveBeenCalled();
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('removeNocoBaseSkills removes all managed nocobase skills and clears managed state', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-remove-'));
+  const runFn = vi.fn(async () => undefined);
+  let listCalls = 0;
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
+      listCalls += 1;
+      if (listCalls === 1) {
+        return JSON.stringify([
+          { name: 'nocobase-env-manage', scope: 'global', path: '/tmp/a' },
+          { name: 'nocobase-ui-builder', scope: 'global', path: '/tmp/b' },
+          { name: 'custom-skill', scope: 'global', path: '/tmp/c' },
+        ]);
+      }
+      return JSON.stringify([
+        { name: 'custom-skill', scope: 'global', path: '/tmp/c' },
+      ]);
+    }
+    if (name === 'npm' && args.join(' ') === `view ${NOCOBASE_SKILLS_PACKAGE_NAME} version --json`) {
+      return JSON.stringify('1.0.5');
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  try {
+    await writeManagedState(
+      dir,
+      {
+        packageName: '@nocobase/skills',
+        sourcePackage: 'nocobase/skills',
+        installedAt: '2026-04-26T00:00:00.000Z',
+        updatedAt: '2026-04-26T00:00:00.000Z',
+        installedVersion: '1.0.5',
+        skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
+      },
+    );
+
+    const result = await removeNocoBaseSkills({
+      workspaceRoot: dir,
+      commandOutputFn: commandOutputFn as any,
+      runFn: runFn as any,
+    });
+
+    expect(result.action).toBe('removed');
+    expect(runFn.mock.calls).toEqual([
+      [
+        'npx',
+        ['-y', 'skills', 'remove', 'nocobase-env-manage', '-g', '-y'],
+        expect.objectContaining({
+          errorName: 'skills remove',
+          stdio: 'ignore',
+        }),
+      ],
+      [
+        'npx',
+        ['-y', 'skills', 'remove', 'nocobase-ui-builder', '-g', '-y'],
+        expect.objectContaining({
+          errorName: 'skills remove',
+          stdio: 'ignore',
+        }),
+      ],
+    ]);
+    await expect(fsp.readFile(getManagedSkillsStateFile(dir), 'utf8')).rejects.toThrow();
+    expect(result.status.installed).toBe(false);
+    expect(result.status.installedSkillNames).toEqual([]);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('removeNocoBaseSkills is a no-op when nocobase skills are not installed', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-remove-noop-'));
+  const runFn = vi.fn(async () => undefined);
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
+      return JSON.stringify([]);
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  try {
+    const result = await removeNocoBaseSkills({
+      workspaceRoot: dir,
+      commandOutputFn: commandOutputFn as any,
+      runFn: runFn as any,
+    });
+
+    expect(result.action).toBe('noop');
+    expect(runFn).not.toHaveBeenCalled();
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }

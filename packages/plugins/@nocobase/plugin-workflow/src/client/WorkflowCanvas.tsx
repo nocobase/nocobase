@@ -10,7 +10,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { Alert, App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip } from 'antd';
+import {
+  Alert,
+  App,
+  Breadcrumb,
+  Button,
+  Descriptions,
+  Dropdown,
+  Modal,
+  Result,
+  Spin,
+  Switch,
+  Tag,
+  Tooltip,
+} from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import { NoticeType } from 'antd/es/message/interface';
 import { useField, useForm } from '@formily/react';
@@ -256,6 +269,7 @@ function ExecuteActionButton() {
 function WorkflowMenu() {
   const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { modal } = App.useApp();
@@ -325,6 +339,9 @@ function WorkflowMenu() {
   const onMenuCommand = useCallback(
     ({ key }) => {
       switch (key) {
+        case 'details':
+          setDetailsVisible(true);
+          return;
         case 'refresh':
           refresh();
           return;
@@ -342,15 +359,19 @@ function WorkflowMenu() {
     [onDelete, onRevision, refresh],
   );
 
+  const formatUser = useCallback((user) => user?.nickname || user?.username || user?.email || user?.id || '-', []);
+  const formatTime = useCallback((value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-'), []);
+
   return (
     <>
       <Dropdown
         menu={{
           items: [
             {
-              key: 'key',
-              label: `Key: ${workflow.key}`,
-              disabled: true,
+              role: 'button',
+              'aria-label': 'details',
+              key: 'details',
+              label: t('Details'),
             },
             {
               type: 'divider',
@@ -384,6 +405,26 @@ function WorkflowMenu() {
       >
         <Button aria-label="more" type="text" icon={<EllipsisOutlined />} />
       </Dropdown>
+      <Modal
+        open={detailsVisible}
+        title={t('Details')}
+        width={640}
+        footer={null}
+        onCancel={() => setDetailsVisible(false)}
+      >
+        <Descriptions bordered column={2} size="small">
+          <Descriptions.Item label="Key" span={2}>
+            {workflow.key || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('Created by')}>{formatUser(workflow.createdBy)}</Descriptions.Item>
+          <Descriptions.Item label={t('Created at')}>{formatTime(workflow.createdAt)}</Descriptions.Item>
+          <Descriptions.Item label={t('Last updated by')}>{formatUser(workflow.updatedBy)}</Descriptions.Item>
+          <Descriptions.Item label={t('Last updated at')}>{formatTime(workflow.updatedAt)}</Descriptions.Item>
+          <Descriptions.Item label={t('Description')} span={2}>
+            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{workflow.description || '-'}</div>
+          </Descriptions.Item>
+        </Descriptions>
+      </Modal>
       <ActionContextProvider value={{ visible: historyVisible, setVisible: setHistoryVisible }}>
         <SchemaComponent
           schema={executionSchema}

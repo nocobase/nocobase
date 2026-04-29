@@ -13,16 +13,16 @@ import {
   type PromptInitialValues,
   type PromptsCatalog,
   runPromptCatalog,
-} from '../lib/prompt-catalog.ts';
+} from '../../lib/prompt-catalog.ts';
 import {
   applyCliLocale,
   CLI_LOCALE_FLAG_DESCRIPTION,
   CLI_LOCALE_FLAG_OPTIONS,
-} from '../lib/cli-locale.ts';
+} from '../../lib/cli-locale.ts';
 import {
   type RunPromptCatalogWebUIOptionsWithoutSource,
   runPromptCatalogWebUI,
-} from '../lib/prompt-web-ui.ts';
+} from '../../lib/prompt-web-ui.ts';
 
 export default class PromptsTest extends Command {
   static override hidden = true;

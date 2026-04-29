@@ -25,3 +25,20 @@ test('isTopicIndexCommand detects commands that are also topic namespaces', () =
   expect(isTopicIndexCommand('api:resource:list', topics)).toBe(false);
   expect(isTopicIndexCommand('build', topics)).toBe(false);
 });
+
+test('root help hides hidden topics such as pm when grouped replacements exist', async () => {
+  const { default: RuntimeHelp } = await import('../help/runtime-help.js');
+
+  const config = {
+    topics: [
+      { name: 'plugin', description: 'plugin topic' },
+      { name: 'plugin:list', description: 'plugin:list topic' },
+      { name: 'pm', description: 'pm topic', hidden: true },
+      { name: 'pm:list', description: 'pm:list topic' },
+    ],
+  } as any;
+
+  const help = new RuntimeHelp(config, {});
+  const topics = help['sortedTopics'];
+  expect(topics.map((topic: { name: string }) => topic.name)).toEqual(['plugin']);
+});

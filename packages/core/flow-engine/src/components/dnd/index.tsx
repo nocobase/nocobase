@@ -73,7 +73,7 @@ const resolveDraggableHostNode = (activatorNode: HTMLElement | null) => {
       `[data-has-float-menu="true"][data-float-menu-model-uid="${toolbarModelUid}"]`,
     ),
   );
-  const popupRoot = floatToolbarContainer.closest<HTMLElement>(MENU_SUBMENU_POPUP_SELECTOR);
+  const popupRoot = floatToolbarContainer?.closest<HTMLElement>(MENU_SUBMENU_POPUP_SELECTOR);
 
   if (popupRoot) {
     return (
@@ -287,7 +287,9 @@ export const Droppable: FC<{ model: FlowModel<any>; children: React.ReactNode }>
 export const DndProvider: FC<DndContextProps & PersistOptions> = ({
   persist = true,
   children,
+  onDragStart,
   onDragEnd,
+  onDragCancel,
   ...restProps
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -327,9 +329,10 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
 
   return (
     <DndContext
+      {...restProps}
       onDragStart={(event) => {
         setActiveId(event.active.id as string);
-        restProps.onDragStart?.(event);
+        onDragStart?.(event);
       }}
       onDragEnd={(event) => {
         setActiveId(null);
@@ -347,7 +350,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
       onDragCancel={(event) => {
         setActiveId(null);
         setDragAnchorPoint(null);
-        restProps.onDragCancel?.(event);
+        onDragCancel?.(event);
       }}
       {...restProps}
     >
@@ -362,6 +365,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
             >
               {activeId && (
                 <span
+                  data-testid="flow-drag-preview"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',

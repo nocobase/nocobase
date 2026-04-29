@@ -11,8 +11,8 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
-import type { DownloadResolvedFlags } from '../commands/download.js';
-import Download from '../commands/download.js';
+import type { DownloadResolvedFlags } from '../commands/source/download.js';
+import Download from '../commands/source/download.js';
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
@@ -202,7 +202,7 @@ test('downloadFromGit maps alpha to develop and builds with --no-dts by default'
     ],
   ]);
   expect(runCommand.mock.calls).toEqual([
-    ['build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']],
+    ['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']],
   ]);
 });
 
@@ -242,7 +242,7 @@ test('download forwards raw command output only in verbose mode', async () => {
     ],
   ]);
   expect(runCommand.mock.calls).toEqual([
-    ['build', ['--cwd', path.join(cwd, 'repo'), '--no-dts', '--verbose']],
+    ['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts', '--verbose']],
   ]);
 });
 

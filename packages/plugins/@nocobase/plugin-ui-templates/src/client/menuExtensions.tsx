@@ -23,6 +23,7 @@ import {
   type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
 import { patchGridOptionsFromTemplateRoot } from './utils/templateCopy';
+import { replaceGridLayoutUid } from './utils/replaceGridLayoutUid';
 
 type MenuItem = {
   key: string;
@@ -184,26 +185,28 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
             arr.splice(insertIndex, idx >= 0 ? 1 : 0, newModel);
             arr.forEach((m, i) => (m.sortIndex = i));
 
-            const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-            if (gridParams?.rows && typeof gridParams.rows === 'object') {
-              const newRows = _.cloneDeep(gridParams.rows);
-              for (const rowId of Object.keys(newRows)) {
-                const columns = newRows[rowId];
-                if (Array.isArray(columns)) {
-                  for (let ci = 0; ci < columns.length; ci++) {
-                    const col = columns[ci];
-                    if (Array.isArray(col)) {
-                      for (let ii = 0; ii < col.length; ii++) {
-                        if (col[ii] === model.uid) {
-                          col[ii] = newModel.uid;
+            if (!replaceGridLayoutUid(parent, model.uid, newModel.uid)) {
+              const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+              if (gridParams?.rows && typeof gridParams.rows === 'object') {
+                const newRows = _.cloneDeep(gridParams.rows);
+                for (const rowId of Object.keys(newRows)) {
+                  const columns = newRows[rowId];
+                  if (Array.isArray(columns)) {
+                    for (let ci = 0; ci < columns.length; ci++) {
+                      const col = columns[ci];
+                      if (Array.isArray(col)) {
+                        for (let ii = 0; ii < col.length; ii++) {
+                          if (col[ii] === model.uid) {
+                            col[ii] = newModel.uid;
+                          }
                         }
                       }
                     }
                   }
                 }
+                parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+                parent.setProps('rows', newRows);
               }
-              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
-              parent.setProps('rows', newRows);
             }
             newModel.sortIndex = insertIndex;
             await newModel.afterAddAsSubModel();
