@@ -24,7 +24,7 @@ nb api resource destroy --resource <resource> [flags]
 | `--filter-by-tk` | string | プライマリキーの値。複合キーや複数キーの場合は JSON 配列を渡せます |
 | `--filter` | string | JSON オブジェクト形式のフィルタ条件 |
 
-[`nb api resource`](./) の共通接続パラメータもサポートしています。
+[`nb api resource`](./index.md) の共通接続パラメータもサポートしています。
 
 ## 使用例
 

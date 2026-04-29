@@ -29,7 +29,7 @@ nb api resource query --resource <resource> [flags]
 | `--offset` | integer | スキップする行数 |
 | `--timezone` | string | クエリのフォーマットに使用するタイムゾーン |
 
-[`nb api resource`](./) の共通接続パラメータもサポートしています。
+[`nb api resource`](./index.md) の共通接続パラメータもサポートしています。
 
 ## 使用例
 

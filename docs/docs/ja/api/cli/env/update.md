@@ -35,6 +35,6 @@ nb env update prod --token <token>
 
 ## 関連コマンド
 
-- [`nb api`](../api/)
+- [`nb api`](../api/index.md)
 - [`nb env info`](./info.md)
 - [`nb env add`](./add.md)

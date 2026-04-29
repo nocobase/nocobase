@@ -121,5 +121,5 @@ yarn nocobase upgrade
 
 ## 利用ガイド
 
-- プライマリデータベース：[メインデータソース](/data-sources/data-source-main/) をご参照ください。
+- プライマリデータベース：[メインデータソース](/data-sources/data-source-main/index.md) をご参照ください。
 - 外部データベース：[データソース / 外部データベース](/data-sources/data-source-manager/external-database) をご参照ください。

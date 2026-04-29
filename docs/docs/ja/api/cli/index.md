@@ -31,15 +31,15 @@ nb [command]
 
 | コマンドグループ | 説明 |
 | --- | --- |
-| [`nb api`](./api/) | CLI から NocoBase API を呼び出します。 |
-| [`nb app`](./app/) | アプリケーションのランタイム管理：起動、停止、再起動、ログ、アップグレード。 |
-| [`nb db`](./db/) | 選択した env の組み込みデータベースを管理します。 |
-| [`nb env`](./env/) | NocoBase プロジェクト環境、ステータス、詳細、ランタイムコマンドを管理します。 |
-| [`nb plugin`](./plugin/) | 選択した NocoBase env のプラグインを管理します。 |
-| [`nb scaffold`](./scaffold/) | NocoBase プラグイン開発のスキャフォールドを生成します。 |
-| [`nb self`](./self/) | NocoBase CLI 自体のチェックまたはアップデートを行います。 |
-| [`nb skills`](./skills/) | 現在のワークスペースの NocoBase AI coding skills のチェックまたは同期を行います。 |
-| [`nb source`](./source/) | ローカルソースコードプロジェクトの管理：ダウンロード、開発、ビルド、テスト。 |
+| [`nb api`](./api/index.md) | CLI から NocoBase API を呼び出します。 |
+| [`nb app`](./app/index.md) | アプリケーションのランタイム管理：起動、停止、再起動、ログ、アップグレード。 |
+| [`nb db`](./db/index.md) | 選択した env の組み込みデータベースを管理します。 |
+| [`nb env`](./env/index.md) | NocoBase プロジェクト環境、ステータス、詳細、ランタイムコマンドを管理します。 |
+| [`nb plugin`](./plugin/index.md) | 選択した NocoBase env のプラグインを管理します。 |
+| [`nb scaffold`](./scaffold/index.md) | NocoBase プラグイン開発のスキャフォールドを生成します。 |
+| [`nb self`](./self/index.md) | NocoBase CLI 自体のチェックまたはアップデートを行います。 |
+| [`nb skills`](./skills/index.md) | 現在のワークスペースの NocoBase AI coding skills のチェックまたは同期を行います。 |
+| [`nb source`](./source/index.md) | ローカルソースコードプロジェクトの管理：ダウンロード、開発、ビルド、テスト。 |
 
 ## コマンド（Commands）
 

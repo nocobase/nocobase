@@ -97,6 +97,6 @@ nocobase-plugin-development skill を使って NocoBase プラグインを開発
 - [実践：ウォーターマークプラグインの開発](./watermark-plugin) — AI プラグイン開発の完全な実践事例。一言から使えるプラグインへ
 - [サポートされている機能](./capabilities) — AI にできるすべてのこと（プロンプト例付き）
 - [NocoBase CLI](../ai/quick-start.md) — NocoBase のインストールと管理のためのコマンドラインツール
-- [NocoBase CLI リファレンス](../api/cli/) — すべてのコマンドの完全なパラメータ説明
+- [NocoBase CLI リファレンス](../api/cli/index.md) — すべてのコマンドの完全なパラメータ説明
 - [プラグイン開発](../plugin-development/index.md) — NocoBase プラグイン開発の完全ガイド
 - [AI ビルダークイックスタート](../ai-builder/index.md) — AI で NocoBase アプリケーションを構築する（コード不要）

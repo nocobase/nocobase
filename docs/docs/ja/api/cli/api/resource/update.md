@@ -29,7 +29,7 @@ nb api resource update --resource <resource> --values <json> [flags]
 | `--update-association-values` | string[] | 同時に更新するリレーションフィールド。複数回指定するか、JSON 配列で渡せます |
 | `--force-update` / `--no-force-update` | boolean | 変更のない値も強制的に書き込むかどうか |
 
-[`nb api resource`](./) の共通接続パラメータもサポートしています。
+[`nb api resource`](./index.md) の共通接続パラメータもサポートしています。
 
 ## 使用例
 

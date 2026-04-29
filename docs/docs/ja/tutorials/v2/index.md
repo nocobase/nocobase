@@ -83,11 +83,11 @@ NocoBase 2.0 は以下の技術で構築されています。
 - [システム要件](/get-started/system-requirements) — 動作環境の要件
 
 ### その他のチュートリアル
-- [NocoBase 1.x チュートリアル](/tutorials/v1/) — タスク管理システムを題材にした発展的なチュートリアル
+- [NocoBase 1.x チュートリアル](/tutorials/v1/index.md) — タスク管理システムを題材にした発展的なチュートリアル
 
 ### ソリューション参考
-- [チケットシステムソリューション](/solution/ticket-system/) — AI 搭載のスマートチケット管理ソリューション
-- [CRM システムソリューション](/solution/crm/) — 顧客関係管理基盤
+- [チケットシステムソリューション](/solution/ticket-system/index.md) — AI 搭載のスマートチケット管理ソリューション
+- [CRM システムソリューション](/solution/crm/index.md) — 顧客関係管理基盤
 - [AI 従業員](/ai-employees/quick-start) — システムに AI 機能を統合する
 
 準備はできましたか？[第 1 章：NocoBase を知ろう](./01-getting-started/) から始めましょう！

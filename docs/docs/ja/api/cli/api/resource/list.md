@@ -30,7 +30,7 @@ nb api resource list --resource <resource> [flags]
 | `--page-size` | integer | 1 ページあたりの件数 |
 | `--paginate` / `--no-paginate` | boolean | ページネーションを行うかどうか |
 
-[`nb api resource`](./) の共通接続パラメータもサポートしています。
+[`nb api resource`](./index.md) の共通接続パラメータもサポートしています。
 
 ## 使用例
 

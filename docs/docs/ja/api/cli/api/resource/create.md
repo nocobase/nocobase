@@ -25,7 +25,7 @@ nb api resource create --resource <resource> --values <json> [flags]
 | `--whitelist` | string[] | 書き込みを許可するフィールド。複数回指定するか、JSON 配列で渡せます |
 | `--blacklist` | string[] | 書き込みを禁止するフィールド。複数回指定するか、JSON 配列で渡せます |
 
-[`nb api resource`](./) の共通接続パラメータもサポートしています。
+[`nb api resource`](./index.md) の共通接続パラメータもサポートしています。
 
 ## 使用例
 

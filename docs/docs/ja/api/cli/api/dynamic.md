@@ -6,7 +6,7 @@ keywords: "nb api ダイナミックコマンド,NocoBase CLI,OpenAPI,swagger"
 
 # nb api ダイナミックコマンド
 
-[`nb api resource`](./resource/) 以外に、`nb api` には NocoBase アプリケーションの OpenAPI Schema から動的に生成されるコマンドがあります。これらのコマンドは [`nb env add`](../env/add.md) または [`nb env update`](../env/update.md) を初めて実行した際に生成・キャッシュされます。
+[`nb api resource`](./resource/index.md) 以外に、`nb api` には NocoBase アプリケーションの OpenAPI Schema から動的に生成されるコマンドがあります。これらのコマンドは [`nb env add`](../env/add.md) または [`nb env update`](../env/update.md) を初めて実行した際に生成・キャッシュされます。
 
 ## 一般的なグループ
 
@@ -44,4 +44,4 @@ nb api <topic> --help
 ## 関連コマンド
 
 - [`nb env update`](../env/update.md)
-- [`nb api resource`](./resource/)
+- [`nb api resource`](./resource/index.md)

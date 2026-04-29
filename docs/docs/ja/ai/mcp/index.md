@@ -62,7 +62,7 @@ x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users
 
 ### API Key 認証
 
-[API keys](/auth-verification/api-keys/) プラグインで作成した API key を使用して MCP サービスインターフェースを呼び出します。権限は API key にバインドされたロールによって決まります。
+[API keys](/auth-verification/api-keys/index.md) プラグインで作成した API key を使用して MCP サービスインターフェースを呼び出します。権限は API key にバインドされたロールによって決まります。
 
 ### OAuth 認証
 

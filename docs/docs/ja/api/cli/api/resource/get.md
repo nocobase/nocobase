@@ -26,7 +26,7 @@ nb api resource get --resource <resource> [flags]
 | `--appends` | string[] | 追加で取得するリレーションフィールド。複数回指定するか、JSON 配列で渡せます |
 | `--except` | string[] | 除外するフィールド。複数回指定するか、JSON 配列で渡せます |
 
-[`nb api resource`](./) の共通接続パラメータもサポートしています。
+[`nb api resource`](./index.md) の共通接続パラメータもサポートしています。
 
 ## 使用例
 

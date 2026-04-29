@@ -6,7 +6,7 @@ keywords: "nb api,NocoBase CLI,API,resource,OpenAPI"
 
 # nb api
 
-CLI から NocoBase API を呼び出します。`nb api` には汎用の [`nb api resource`](./resource/) CRUD コマンドと、現在のアプリケーションの OpenAPI Schema から動的に生成されるコマンドが含まれます。
+CLI から NocoBase API を呼び出します。`nb api` には汎用の [`nb api resource`](./resource/index.md) CRUD コマンドと、現在のアプリケーションの OpenAPI Schema から動的に生成されるコマンドが含まれます。
 
 ## 使い方
 
@@ -18,7 +18,7 @@ nb api <command>
 
 | コマンド | 説明 |
 | --- | --- |
-| [`nb api resource`](./resource/) | 任意の NocoBase リソースに対して汎用 CRUD および集計クエリを実行します |
+| [`nb api resource`](./resource/index.md) | 任意の NocoBase リソースに対して汎用 CRUD および集計クエリを実行します |
 | [`nb api ダイナミックコマンド`](./dynamic.md) | アプリケーションの OpenAPI Schema から生成される topic および operation コマンド |
 
 ## 共通パラメータ
