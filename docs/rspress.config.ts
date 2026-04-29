@@ -28,13 +28,12 @@ const locales = {
 
 const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
-const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr', 'ru'];
+const indexLanguages = ['en', 'cn', 'ja', 'es', 'pt', 'de', 'fr', 'ru'];
 
 const langMap = {
   en: 'en-US',
   cn: 'zh-CN',
   ja: 'ja-JP',
-  ko: 'ko-KR',
   es: 'es-ES',
   pt: 'pt-PT',
   de: 'de-DE',

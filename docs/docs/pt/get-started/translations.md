@@ -83,7 +83,7 @@ https://github.com/nocobase/nocobase/tree/next/docs
 
 ### 2.1 Estrutura da Documentação
 
-A documentação utiliza o [Rspress](https://rspress.dev/) como gerador de site estático e suporta 22 idiomas. A estrutura é organizada da seguinte forma:
+A documentação utiliza o [Rspress](https://rspress.dev/) como gerador de site estático e suporta 8 idiomas. A estrutura é organizada da seguinte forma:
 
 ```
 docs/
@@ -91,25 +91,11 @@ docs/
 │   ├── en/                    # Inglês (idioma de origem)
 │   ├── cn/                    # Chinês Simplificado
 │   ├── ja/                    # Japonês
-│   ├── ko/                    # Coreano
 │   ├── de/                    # Alemão
 │   ├── fr/                    # Francês
 │   ├── es/                    # Espanhol
 │   ├── pt/                    # Português
 │   ├── ru/                    # Russo
-│   ├── it/                    # Italiano
-│   ├── tr/                    # Turco
-│   ├── uk/                    # Ucraniano
-│   ├── vi/                    # Vietnamita
-│   ├── id/                    # Indonésio
-│   ├── th/                    # Tailandês
-│   ├── pl/                    # Polonês
-│   ├── nl/                    # Holandês
-│   ├── cs/                    # Tcheco
-│   ├── ar/                    # Árabe
-│   ├── he/                    # Hebraico
-│   ├── hi/                    # Hindi
-│   ├── sv/                    # Sueco
 │   └── public/                # Ativos compartilhados (imagens, etc.)
 ├── theme/                     # Tema personalizado
 ├── rspress.config.ts          # Configuração do Rspress

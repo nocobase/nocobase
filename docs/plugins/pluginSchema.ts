@@ -72,7 +72,7 @@ function loadEntries(docsRoot: string, lang: string): SchemaEntry[] {
 
 function buildScripts(route: string, entry: SchemaEntry): string {
   const { config, chapters, lang, routePrefix } = entry;
-  const langMap: Record<string, string> = { cn: 'zh-CN', en: 'en-US', ja: 'ja-JP', ko: 'ko-KR' };
+  const langMap: Record<string, string> = { cn: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
   const inLanguage = langMap[lang] || 'en-US';
   const baseUrl = lang === 'en'
     ? 'https://v2.docs.nocobase.com'
