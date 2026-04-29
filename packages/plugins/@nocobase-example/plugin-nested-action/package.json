@@ -3,7 +3,7 @@
   "name": "@nocobase-example/plugin-nested-action",
   "displayName": "Plugin example: Nested action",
   "description": "This plugin demonstrates how to use the nested action feature to create a nested action.",
-  "version": "2.0.45",
+  "version": "2.0.46",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
