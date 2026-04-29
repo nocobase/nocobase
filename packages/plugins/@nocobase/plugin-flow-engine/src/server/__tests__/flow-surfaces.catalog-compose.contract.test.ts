@@ -2284,10 +2284,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     const recordPopupDetailsBindings =
       recordPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
     expect(recordPopupDetailsBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
+      expect.arrayContaining(['currentRecord', 'otherRecords']),
     );
     expect(recordPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection']),
+      expect.arrayContaining(['currentCollection', 'associatedRecords']),
     );
 
     const recordScopedPopup = getData(
@@ -2312,10 +2312,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     const recordScopedPopupDetailsBindings =
       recordScopedPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
     expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
+      expect.arrayContaining(['currentRecord', 'otherRecords']),
     );
     expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
-      expect.arrayContaining(['currentCollection']),
+      expect.arrayContaining(['currentCollection', 'associatedRecords']),
     );
 
     const invalidRaw = await rootAgent.resource('flowSurfaces').addBlock({
@@ -5811,6 +5811,81 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(conflictRes.status).toBe(400);
     expect(readErrorMessage(conflictRes)).toContain('sort');
     expect(readErrorMessage(conflictRes)).toContain('sorting');
+  });
+
+  it('should normalize public sort direction aliases in compose and configure settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose sort direction alias page',
+      tabTitle: 'Compose sort direction alias tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'table',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            settings: {
+              sort: [
+                {
+                  field: 'createdAt',
+                  direction: 'ascend',
+                },
+                {
+                  field: 'username',
+                  direction: 'descending',
+                },
+              ],
+            },
+            fields: ['username'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const tableUid = getComposeBlock(getData(composeRes), 'table').uid;
+    const tableInitial = await getSurface(rootAgent, { uid: tableUid });
+    expect(tableInitial.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'asc',
+      },
+      {
+        field: 'username',
+        direction: 'desc',
+      },
+    ]);
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: tableUid },
+        changes: {
+          sort: [
+            {
+              field: 'nickname',
+              direction: 'descending',
+            },
+          ],
+        },
+      },
+    });
+    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+
+    const tableUpdated = await getSurface(rootAgent, { uid: tableUid });
+    expect(tableUpdated.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'nickname',
+        direction: 'desc',
+      },
+    ]);
   });
 
   it('should compose update actions with assignValues settings and mirror assignedValues', async () => {

@@ -697,6 +697,24 @@ describe('flowSurfaces resource', () => {
       `resourceInit does not match popup binding 'currentRecord'`,
     );
 
+    const invalidAssociationSemanticBinding = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: associationPopupAction.uid,
+        },
+        type: 'details',
+        resource: {
+          binding: 'associatedRecords',
+          associationField: 'employee',
+        },
+      },
+    });
+    expect(invalidAssociationSemanticBinding.status).toBe(400);
+    expect(readErrorMessage(invalidAssociationSemanticBinding)).toContain(
+      `does not support resource.binding='associatedRecords'`,
+    );
+    expect(readErrorMessage(invalidAssociationSemanticBinding)).toContain('currentRecord');
+
     const associationPopupSurface = await getSurface(rootAgent, {
       uid: associationPopupAction.uid,
     });
@@ -864,6 +882,7 @@ describe('flowSurfaces resource', () => {
     expect(tableReadback.tree.stepParams?.tableSettings?.quickEdit).toMatchObject({
       editable: true,
     });
+    expect(tableReadback.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([]);
 
     const validCreateFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -880,12 +899,20 @@ describe('flowSurfaces resource', () => {
               colon: false,
             },
             assignRules: {
-              value: [],
+              value: [
+                {
+                  key: 'preserve-until-cleared',
+                },
+              ],
             },
           },
           eventSettings: {
             linkageRules: {
-              value: [],
+              value: [
+                {
+                  key: 'preserve-linkage-until-cleared',
+                },
+              ],
             },
           },
         },
@@ -934,9 +961,46 @@ describe('flowSurfaces resource', () => {
       labelWrap: false,
       colon: false,
     });
-    expect(createFormReadback.tree.stepParams?.eventSettings?.linkageRules).toMatchObject({
-      value: [],
+    expect(createFormReadback.tree.stepParams?.formModelSettings?.assignRules).toMatchObject({
+      value: [
+        {
+          key: 'preserve-until-cleared',
+        },
+      ],
     });
+    expect(createFormReadback.tree.stepParams?.eventSettings?.linkageRules).toMatchObject({
+      value: [
+        {
+          key: 'preserve-linkage-until-cleared',
+        },
+      ],
+    });
+
+    const clearCreateFormArrays = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(clearCreateFormArrays.status).toBe(200);
+    const createFormAfterClear = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    expect(createFormAfterClear.tree.stepParams?.formModelSettings?.assignRules?.value).toEqual([]);
+    expect(createFormAfterClear.tree.stepParams?.eventSettings?.linkageRules?.value).toEqual([]);
 
     const validEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {

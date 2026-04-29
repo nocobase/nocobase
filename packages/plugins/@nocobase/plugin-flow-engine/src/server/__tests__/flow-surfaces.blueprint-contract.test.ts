@@ -940,6 +940,61 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(readErrorMessage(conflictRes)).toContain('sorting');
   });
 
+  it('should normalize public sort direction aliases in applyBlueprint block settings', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees sort direction alias blueprint',
+          },
+        },
+        page: {
+          title: 'Employees sort direction alias blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sort: [
+                    {
+                      field: 'createdAt',
+                      direction: 'ascending',
+                    },
+                    {
+                      field: 'nickname',
+                      direction: 'descending',
+                    },
+                  ],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(tableBlock?.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'asc',
+      },
+      {
+        field: 'nickname',
+        direction: 'desc',
+      },
+    ]);
+  });
+
   it('should reject empty block-level defaultFilter groups in applyBlueprint data blocks', async () => {
     for (const block of [
       {

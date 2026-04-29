@@ -576,6 +576,15 @@ const POPUP_RECORD_ACTION_CONTAINER_USES = new Set([
   'GridCardItemModel',
 ]);
 const POPUP_UNSUPPORTED_COLLECTION_SCENES = new Set<FlowSurfacePopupScene>(['select', 'subForm', 'bulkEditForm']);
+const POPUP_ASSOCIATED_RECORDS_BLOCK_USES = new Set([
+  'TableBlockModel',
+  'CalendarBlockModel',
+  'KanbanBlockModel',
+  'ListBlockModel',
+  'GridCardBlockModel',
+  'MapBlockModel',
+  'CommentsBlockModel',
+]);
 const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectionBlockScene[]>> = {
   CreateFormModel: ['new'],
   EditFormModel: ['one', 'many'],
@@ -1654,6 +1663,10 @@ export class FlowSurfacesService {
     return POPUP_UNSUPPORTED_COLLECTION_SCENES.has(scene);
   }
 
+  private supportsPopupAssociatedRecordsBinding(blockUse: string) {
+    return POPUP_ASSOCIATED_RECORDS_BLOCK_USES.has(blockUse);
+  }
+
   private isPopupCollectionBlockVisibleForScene(blockUse: string, popupProfile: FlowSurfacePopupBlockProfile) {
     const blockScenes = this.getPopupCollectionBlockScenes(blockUse);
     if (this.isPopupCollectionBlockSceneUnsupported(popupProfile.scene)) {
@@ -1903,7 +1916,11 @@ export class FlowSurfacesService {
       });
     }
 
-    if (popupProfile.hasCurrentRecord && associationFields.length) {
+    if (
+      this.supportsPopupAssociatedRecordsBinding(blockUse) &&
+      popupProfile.hasCurrentRecord &&
+      associationFields.length
+    ) {
       bindings.push({
         key: 'associatedRecords',
         label: 'Associated records',
@@ -2223,14 +2240,13 @@ export class FlowSurfacesService {
     let requestedBinding =
       input.semanticResource?.binding ||
       this.classifyPopupRawResourceInit(input.popupProfile, input.resourceInit || {});
-    const useLegacyAssociationPopupCurrentRecord =
-      !input.semanticResource &&
-      requestedBinding === 'currentCollection' &&
-      this.shouldNormalizeLegacyAssociationPopupRecordBlockResource({
-        blockUse: input.blockUse,
-        popupProfile: input.popupProfile,
-        resourceInit: input.resourceInit || {},
-      });
+    const useLegacyAssociationPopupCurrentRecord = this.shouldUseLegacyAssociationPopupCurrentRecordBinding({
+      blockUse: input.blockUse,
+      popupProfile: input.popupProfile,
+      requestedBinding,
+      semanticResource: input.semanticResource,
+      resourceInit: input.resourceInit || {},
+    });
     if (useLegacyAssociationPopupCurrentRecord) {
       requestedBinding = 'currentRecord';
     }
@@ -2280,6 +2296,24 @@ export class FlowSurfacesService {
       resourceBindings,
       resourceInit: input.resourceInit || {},
     });
+  }
+
+  private shouldUseLegacyAssociationPopupCurrentRecordBinding(input: {
+    blockUse: string;
+    popupProfile: FlowSurfacePopupBlockProfile;
+    requestedBinding?: string;
+    semanticResource?: FlowSurfaceSemanticResourceInput;
+    resourceInit: Record<string, any>;
+  }) {
+    return (
+      !input.semanticResource &&
+      input.requestedBinding === 'currentCollection' &&
+      this.shouldNormalizeLegacyAssociationPopupRecordBlockResource({
+        blockUse: input.blockUse,
+        popupProfile: input.popupProfile,
+        resourceInit: input.resourceInit,
+      })
+    );
   }
 
   private shouldNormalizeLegacyAssociationPopupRecordBlockResource(input: {
