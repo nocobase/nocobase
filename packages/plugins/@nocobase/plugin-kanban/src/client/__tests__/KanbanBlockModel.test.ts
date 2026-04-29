@@ -585,6 +585,7 @@ describe('KanbanBlockModel.filterCollection', () => {
       model: {
         getSortFieldCandidates: () => [{ label: 'Status sort', value: 'status_sort' }],
         getGroupField: () => ({ name: 'status' }),
+        translate: (key: string, options?: any) => (options?.ns === 'kanban' ? `kanban:${key}` : key),
       },
     } as any);
     expect(flow.steps.defaultSorting).toMatchObject({
@@ -595,7 +596,12 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(inlineDragSortMode).toMatchObject({
       type: 'select',
       key: 'dragSortBy',
-      props: { options: [{ label: 'Status sort', value: 'status_sort' }], allowClear: true },
+      props: {
+        options: [{ label: 'Status sort', value: 'status_sort' }],
+        allowClear: true,
+        tooltip:
+          'kanban:Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.',
+      },
     });
     expect(
       flow.steps.dragSortBy.hideInSettings({
