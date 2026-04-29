@@ -2,17 +2,17 @@
 
 Au chapitre précédent, nous avons utilisé des workflows pour notifier et horodater automatiquement. Le système est de plus en plus intelligent, mais il lui manque encore une chose — **une vue d'ensemble**.
 
-Combien y a-t-il de tickets ? Combien sont traités ? Quelles catégories dominent ? Combien arrivent chaque jour ? Impossible de répondre en parcourant la liste. Dans ce chapitre, nous utilisons les [blocs graphiques](/data-visualization) (camembert, courbe, histogramme) et le [bloc Markdown](/interface-builder/blocks/other/markdown) pour bâtir un **tableau de bord** qui transforme les données en images compréhensibles d'un coup d'œil.
+Combien y a-t-il de tickets ? Combien sont traités ? Quelles catégories dominent ? Combien arrivent chaque jour ? Impossible de répondre en parcourant la liste. Dans ce chapitre, nous utilisons les [blocs graphiques](/data-visualization) (camembert, courbe, histogramme) et le [bloc Markdown](/interface-builder/blocks/other-blocks/markdown) pour bâtir un **tableau de bord** qui transforme les données en images compréhensibles d'un coup d'œil.
 
 ## 7.1 Ajouter une page tableau de bord
 
-Commençons par ajouter un nouvel item de [menu](/interface-builder/menus) dans la barre de navigation.
+Commençons par ajouter un nouvel item de menu dans la barre de navigation.
 
 Passez en [mode configuration](/get-started/how-nocobase-works), dans la barre supérieure cliquez sur **« Add menu item »** (icône `+`), choisissez **« Modern page (v2) »** et nommez-la « Tableau de bord ».
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
-Cette [page](/interface-builder/pages) accueillera nos graphiques — c'est notre tableau de bord principal.
+Cette page accueillera nos graphiques — c'est notre tableau de bord principal.
 
 ## 7.2 Camembert : répartition des statuts de tickets
 
@@ -24,8 +24,8 @@ Une fois ajouté, cliquez sur le bouton **Configure** en haut à droite du bloc 
 
 ### Configurer la requête de données
 
-- **[Collection](/data-sources/main/collection)** : choisissez « Tickets »
-- **Measures** : choisissez n'importe quel [champ](/data-sources/field) non répété (par ex. ID), agrégation **Count**
+- **[Collection](/data-sources/data-modeling/collection)** : choisissez « Tickets »
+- **Measures** : choisissez n'importe quel [champ](/data-sources/data-modeling/collection-fields) non répété (par ex. ID), agrégation **Count**
 - **Dimensions** : choisissez le champ « Statut »
 
 ![07-dashboard-2026-03-15-21-44-32](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-44-32.png)
@@ -114,7 +114,7 @@ Choisissez les colonnes à afficher : Titre, Statut, Priorité, Assigné, Date d
 
 Au-delà des graphiques, on peut afficher du texte sur le tableau de bord.
 
-Ajoutez un **[bloc Markdown](/interface-builder/blocks/other/markdown)** avec une annonce système ou un mode d'emploi :
+Ajoutez un **[bloc Markdown](/interface-builder/blocks/other-blocks/markdown)** avec une annonce système ou un mode d'emploi :
 
 ```markdown
 ## Système de tickets IT
@@ -270,5 +270,5 @@ La data visualization est un plugin intégré à NocoBase, sans installation sup
 ## Ressources associées
 
 - [Data visualization](/data-visualization) — configuration détaillée des graphiques
-- [Bloc Markdown](/interface-builder/blocks/other/markdown) — usage du bloc Markdown
+- [Bloc Markdown](/interface-builder/blocks/other-blocks/markdown) — usage du bloc Markdown
 - [Mise en page des blocks](/interface-builder/blocks) — disposition de page et configuration des blocks

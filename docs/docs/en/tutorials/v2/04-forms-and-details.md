@@ -26,7 +26,7 @@ In the last chapter, we quickly created a working "Add new" form. Now let's refi
 3. Select **"Current collection"**. The popup already knows which collection it's associated with — no need to specify manually.
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. In the form, click **"[Fields](/data-sources/field)"** and check the following fields:
+4. In the form, click **"[Fields](/data-sources/data-modeling/collection-fields)"** and check the following fields:
 
 | Field | Configuration Notes |
 |-------|-------------------|
@@ -40,7 +40,7 @@ In the last chapter, we quickly created a working "Add new" form. Now let's refi
 
 ![04-forms-and-details-2026-03-13-12-44-49](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-12-44-49.png)
 
-You'll notice a red asterisk `*` next to "Title" automatically — because we set it as required when creating the field in Chapter 2. Forms automatically inherit required rules from the [collection](/data-sources/main/collection)'s field settings; no extra configuration needed.
+You'll notice a red asterisk `*` next to "Title" automatically — because we set it as required when creating the field in Chapter 2. Forms automatically inherit required rules from the [collection](/data-sources/data-modeling/collection)'s field settings; no extra configuration needed.
 
 ![04-forms-and-details-2026-03-13-12-46-34](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-12-46-34.png)
 

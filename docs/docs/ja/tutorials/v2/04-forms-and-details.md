@@ -23,10 +23,10 @@
 
 1. 「追加」ボタンをクリックしてポップアップを開きます。
 2. ポップアップ内で **「[ブロック](/interface-builder/blocks)を作成（Add block）」→ データブロック → フォーム（追加）** をクリックします。
-3. **「現在の[データテーブル](/data-sources/main/collection)（Current collection）」** を選択します。ポップアップは対応するデータテーブルのコンテキストに紐づいているため、手動で指定する必要はありません。
+3. **「現在の[データテーブル](/data-sources/data-modeling/collection)（Current collection）」** を選択します。ポップアップは対応するデータテーブルのコンテキストに紐づいているため、手動で指定する必要はありません。
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. フォーム内で **「[フィールド](/data-sources/field)（Fields）」** をクリックし、以下のフィールドにチェックを入れます。
+4. フォーム内で **「[フィールド](/data-sources/data-modeling/collection-fields)（Fields）」** をクリックし、以下のフィールドにチェックを入れます。
 
 | フィールド | 設定のポイント |
 |------|---------|

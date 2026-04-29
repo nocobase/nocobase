@@ -2,7 +2,7 @@
 
 上一章我们装好了 NocoBase 并认识了界面。现在，我们要给工单系统搭骨架——定义**数据模型**。
 
-本章将创建工单和分类两张[数据表](/data-sources/main/collection)，配置[字段类型](/data-sources/field)（单行文本、下拉选择、[多对一](/data-sources/field/associations/m2o)关联等），并建立表间关联关系。数据模型是系统的地基：先想清楚要存哪些数据、数据之间有什么关系，后面搭界面、配权限才能水到渠成。
+本章将创建工单和分类两张[数据表](/data-sources/data-modeling/collection)，配置[字段类型](/data-sources/data-modeling/collection-fields)（单行文本、下拉选择、[多对一](/data-sources/data-modeling/collection-fields/associations/m2o)关联等），并建立表间关联关系。数据模型是系统的地基：先想清楚要存哪些数据、数据之间有什么关系，后面搭界面、配权限才能水到渠成。
 
 
 ## 2.1 什么是数据表和字段
@@ -81,7 +81,7 @@
 
 **1. 标题（单行文本）**
 
-每条工单都需要一个简短的标题来概括问题。点击 **「添加字段」** → 选择 **[「单行文本」](/data-sources/field/basic/input)**：
+每条工单都需要一个简短的标题来概括问题。点击 **「添加字段」** → 选择 **[「单行文本」](/data-sources/data-modeling/collection-fields/basic/input)**：
 
 ![02-data-modeling-2026-03-11-09-01-00](https://static-docs.nocobase.com/02-data-modeling-2026-03-11-09-01-00.png)
 
@@ -132,7 +132,7 @@
 
 > 首次创建时还没有选项数据，所以默认值选不了——需要保存后再回来设置。
 
-> 为什么用下拉单选？因为状态是固定的几个值，[下拉菜单](/data-sources/field/choices/select)可以防止用户随意填写，保证数据规范。
+> 为什么用下拉单选？因为状态是固定的几个值，[下拉菜单](/data-sources/data-modeling/collection-fields/choices/select)可以防止用户随意填写，保证数据规范。
 
 **4. 优先级（下拉菜单 - 单选）**
 
@@ -225,7 +225,7 @@
 
 ![02-data-modeling-2026-03-12-00-50-10](https://static-docs.nocobase.com/02-data-modeling-2026-03-12-00-50-10.png)
 
-你在界面上看到的是名称（"网络问题""张三"），背后就是通过 ID 关联的。**多条工单可以指向同一个分类或同一个用户**——这种关系叫做[**多对一**](/data-sources/field/associations/m2o)。
+你在界面上看到的是名称（"网络问题""张三"），背后就是通过 ID 关联的。**多条工单可以指向同一个分类或同一个用户**——这种关系叫做[**多对一**](/data-sources/data-modeling/collection-fields/associations/m2o)。
 
 ### 添加关系字段
 
@@ -310,5 +310,5 @@
 ## 相关资源
 
 - [数据源概述](/data-sources) — NocoBase 数据建模核心概念
-- [数据表字段](/data-sources/field) — 所有字段类型详解
-- [多对一关联](/data-sources/field/associations/m2o) — 关联关系配置说明
+- [数据表字段](/data-sources/data-modeling/collection-fields) — 所有字段类型详解
+- [多对一关联](/data-sources/data-modeling/collection-fields/associations/m2o) — 关联关系配置说明

@@ -29,8 +29,8 @@ D'abord, créons l'entrée « Gestion des tickets » dans le système.
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)
 
 
-3. Le [menu](/interface-builder/menus) « Gestion des tickets » apparaît immédiatement dans la barre. **Cliquez dessus** ; le menu de groupe s'ouvre à gauche.
-4. Dans le menu de gauche, cliquez sur le bouton orange **« Add menu item »** et choisissez **« Modern page (v2) »** pour ajouter successivement deux sous-[pages](/interface-builder/pages) :
+3. Le menu « Gestion des tickets » apparaît immédiatement dans la barre. **Cliquez dessus** ; le menu de groupe s'ouvre à gauche.
+4. Dans le menu de gauche, cliquez sur le bouton orange **« Add menu item »** et choisissez **« Modern page (v2) »** pour ajouter successivement deux sous-pages :
    - **Liste des tickets** — afficher tous les tickets
    - **Catégories de tickets** — gérer les catégories
 
@@ -78,7 +78,7 @@ Un tableau vide n'est pas pratique pour déboguer ; ajoutons rapidement un bouto
 
 Par défaut, le tableau n'affiche pas tous les champs ; vous devez choisir manuellement les colonnes :
 
-1. À droite de l'en-tête du tableau, cliquez sur **« [Fields](/data-sources/field) »**.
+1. À droite de l'en-tête du tableau, cliquez sur **« [Fields](/data-sources/data-modeling/collection-fields) »**.
 2. Cochez les champs à afficher :
    - **Titre** — sujet du ticket, repérable d'un coup d'œil
    - **Statut** — progression
@@ -106,7 +106,7 @@ Cliquez sur la configuration de la colonne « Catégorie », trouvez **« Title 
 
 **Méthode 2 : modifier au niveau de la data source (global, recommandé)**
 
-Allez dans **Settings → [Data sources](/data-sources) → [Collections](/data-sources/main/collection) → table catégories**, et changez **« Title field »** pour **Nom**. Tous les endroits référençant la table catégories afficheront alors le nom par défaut, une fois pour toutes. Après modification, retournez sur la page et rajoutez le champ pour que le changement soit appliqué.
+Allez dans **Settings → [Data sources](/data-sources) → [Collections](/data-sources/data-modeling/collection) → table catégories**, et changez **« Title field »** pour **Nom**. Tous les endroits référençant la table catégories afficheront alors le nom par défaut, une fois pour toutes. Après modification, retournez sur la page et rajoutez le champ pour que le changement soit appliqué.
 ![03-building-pages-2026-03-13-09-23-41](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-23-41.png)
 
 ## 3.5 Ajouter filtres et tri

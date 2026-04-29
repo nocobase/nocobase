@@ -2,7 +2,7 @@
 
 In the last chapter, we installed NocoBase and got familiar with the interface. Now it's time to build the skeleton of our HelpDesk system — the **data model**.
 
-This chapter creates two [collections](/data-sources/main/collection) — Tickets and Categories — and configures [field types](/data-sources/field) ([single-line text](/data-sources/field/basic/input), [dropdown](/data-sources/field/choices/select), [many-to-one](/data-sources/field/associations/m2o) relations). The data model is the foundation: figure out what data you need and how it's related, then building pages and setting permissions becomes straightforward.
+This chapter creates two [collections](/data-sources/data-modeling/collection) — Tickets and Categories — and configures [field types](/data-sources/data-modeling/collection-fields) ([single-line text](/data-sources/data-modeling/collection-fields/basic/input), [dropdown](/data-sources/data-modeling/collection-fields/choices/select), [many-to-one](/data-sources/data-modeling/collection-fields/associations/m2o) relations). The data model is the foundation: figure out what data you need and how it's related, then building pages and setting permissions becomes straightforward.
 
 
 ## 2.1 What Are Collections and Fields
@@ -227,7 +227,7 @@ Let's look at a specific ticket — on the left are the ticket's attributes. "Ca
 
 ![02-data-modeling-2026-03-12-00-50-10](https://static-docs.nocobase.com/02-data-modeling-2026-03-12-00-50-10.png)
 
-On the interface, you see names like "Network" and "Alice", but behind the scenes it's all connected by IDs. **Multiple tickets can point to the same category or the same user** — this relationship is called **[Many-to-one](/data-sources/field/associations/m2o)**.
+On the interface, you see names like "Network" and "Alice", but behind the scenes it's all connected by IDs. **Multiple tickets can point to the same category or the same user** — this relationship is called **[Many-to-one](/data-sources/data-modeling/collection-fields/associations/m2o)**.
 
 ### Adding Relation Fields
 
@@ -315,5 +315,5 @@ See you in Chapter 3!
 ## Related Resources
 
 - [Data Sources Overview](/data-sources) — Core data modeling concepts in NocoBase
-- [Field Types](/data-sources/field) — Complete field type reference
-- [Many-to-One Relations](/data-sources/field/associations/m2o) — Relationship configuration guide
+- [Field Types](/data-sources/data-modeling/collection-fields) — Complete field type reference
+- [Many-to-One Relations](/data-sources/data-modeling/collection-fields/associations/m2o) — Relationship configuration guide

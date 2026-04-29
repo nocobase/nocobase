@@ -2,7 +2,7 @@
 
 Au chapitre précédent, nous avons installé NocoBase et découvert l'interface. Il est maintenant temps de construire la charpente du système de tickets — définir le **modèle de données**.
 
-Dans ce chapitre, nous allons créer les deux [tables de données](/data-sources/main/collection) tickets et catégories, configurer les [types de champs](/data-sources/field) (texte simple, liste déroulante, relation [many-to-one](/data-sources/field/associations/m2o), etc.) et établir les associations entre les tables. Le modèle de données est les fondations du système : c'est en réfléchissant d'abord clairement aux données à stocker et aux relations entre elles que la suite — la construction d'interfaces, la configuration des permissions — coulera naturellement.
+Dans ce chapitre, nous allons créer les deux [tables de données](/data-sources/data-modeling/collection) tickets et catégories, configurer les [types de champs](/data-sources/data-modeling/collection-fields) (texte simple, liste déroulante, relation [many-to-one](/data-sources/data-modeling/collection-fields/associations/m2o), etc.) et établir les associations entre les tables. Le modèle de données est les fondations du système : c'est en réfléchissant d'abord clairement aux données à stocker et aux relations entre elles que la suite — la construction d'interfaces, la configuration des permissions — coulera naturellement.
 
 
 ## 2.1 Qu'est-ce qu'une table et un champ
@@ -81,7 +81,7 @@ Commençons par ajouter les champs propres au ticket ; les champs de relation vi
 
 **1. Titre (texte simple)**
 
-Chaque ticket a besoin d'un titre court qui résume le problème. Cliquez sur **« Add field »** → choisissez **[« Single line text »](/data-sources/field/basic/input)** :
+Chaque ticket a besoin d'un titre court qui résume le problème. Cliquez sur **« Add field »** → choisissez **[« Single line text »](/data-sources/data-modeling/collection-fields/basic/input)** :
 
 ![02-data-modeling-2026-03-11-09-01-00](https://static-docs.nocobase.com/02-data-modeling-2026-03-11-09-01-00.png)
 
@@ -133,7 +133,7 @@ Renseignez d'abord les options et enregistrez. Cliquez ensuite à nouveau sur **
 
 > Lors de la création initiale, il n'y a pas encore de données d'options, donc la valeur par défaut ne peut pas être sélectionnée — il faut enregistrer puis revenir la configurer.
 
-> Pourquoi un Single select ? Parce que le statut a un nombre fixe de valeurs ; la [liste déroulante](/data-sources/field/choices/select) empêche les utilisateurs de saisir n'importe quoi et garantit la cohérence des données.
+> Pourquoi un Single select ? Parce que le statut a un nombre fixe de valeurs ; la [liste déroulante](/data-sources/data-modeling/collection-fields/choices/select) empêche les utilisateurs de saisir n'importe quoi et garantit la cohérence des données.
 
 **4. Priorité (Single select)**
 
@@ -226,7 +226,7 @@ Prenons un ticket concret — à gauche, ses propriétés ; pour « Catégorie �
 
 ![02-data-modeling-2026-03-12-00-50-10](https://static-docs.nocobase.com/02-data-modeling-2026-03-12-00-50-10.png)
 
-À l'écran, vous voyez un nom (« Problème réseau », « Zhang San »), mais en interne tout est lié par ID. **Plusieurs tickets peuvent pointer vers la même catégorie ou le même utilisateur** — cette relation s'appelle [**many-to-one**](/data-sources/field/associations/m2o).
+À l'écran, vous voyez un nom (« Problème réseau », « Zhang San »), mais en interne tout est lié par ID. **Plusieurs tickets peuvent pointer vers la même catégorie ou le même utilisateur** — cette relation s'appelle [**many-to-one**](/data-sources/data-modeling/collection-fields/associations/m2o).
 
 ### Ajouter les champs de relation
 
@@ -311,5 +311,5 @@ La charpente est en place, mais les tables sont vides. Au chapitre suivant, nous
 ## Ressources associées
 
 - [Vue d'ensemble des data sources](/data-sources) — concepts clés de la modélisation NocoBase
-- [Champs de table](/data-sources/field) — détail de tous les types de champs
-- [Relation many-to-one](/data-sources/field/associations/m2o) — configuration des relations
+- [Champs de table](/data-sources/data-modeling/collection-fields) — détail de tous les types de champs
+- [Relation many-to-one](/data-sources/data-modeling/collection-fields/associations/m2o) — configuration des relations

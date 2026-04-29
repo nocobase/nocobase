@@ -101,7 +101,7 @@ At the employee creation stage, focus on role and skill configuration. The actua
 
 Skills determine what an employee "can do".
 
-> 💡 For detailed instructions, please refer to: [Skills](/ai-employees/features/tool)
+> 💡 For detailed instructions, please refer to: [Skills](/ai-employees/features/tools)
 
 | Type | Capability Scope | Example | Risk Level |
 | ---- | ------- | --------- | ------ |

@@ -1,6 +1,6 @@
 # Chapitre 1 : Découvrir NocoBase — démarrer en 5 minutes
 
-Dans cette série, nous partirons de zéro pour construire un **système de tickets minimaliste (HelpDesk)** avec NocoBase. L'ensemble du système ne nécessite que **2 [tables de données](/data-sources/main/collection)**, sans écrire la moindre ligne de code, et permet la soumission de tickets, la gestion des catégories, le suivi des modifications, le contrôle des permissions et un [tableau de bord](/data-visualization) de données.
+Dans cette série, nous partirons de zéro pour construire un **système de tickets minimaliste (HelpDesk)** avec NocoBase. L'ensemble du système ne nécessite que **2 [tables de données](/data-sources/data-modeling/collection)**, sans écrire la moindre ligne de code, et permet la soumission de tickets, la gestion des catégories, le suivi des modifications, le contrôle des permissions et un [tableau de bord](/data-visualization) de données.
 
 Ce chapitre commence par un déploiement de NocoBase via [Docker](/get-started/installation/docker) en une commande, la première connexion, la compréhension de la différence entre [mode configuration et mode utilisation](/get-started/how-nocobase-works), et un aperçu général du système de tickets.
 
@@ -107,7 +107,7 @@ Regardons un système de démo pour voir l'effet :
 
 ![01-getting-started-2026-03-11-08-19-24](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-19-24.png)
 
-Comme illustré ci-dessus : le [menu](/interface-builder/menus), la barre d'actions du tableau, et le bas de la [page](/interface-builder/pages) affichent tous des indications oranges ; un clic ouvre les options de création.
+Comme illustré ci-dessus : le menu, la barre d'actions du tableau, et le bas de la page affichent tous des indications oranges ; un clic ouvre les options de création.
 
 > **Retenez ce principe** : dans NocoBase, pour modifier l'écran, passez en mode configuration, repérez la petite icône en haut à droite de l'élément et cliquez dessus.
 
@@ -142,7 +142,7 @@ Dans la suite du tutoriel, nous allons construire pas à pas un **système de ti
 
 - ✅ Soumettre des tickets : les [utilisateurs](/users-permissions/user) renseignent un titre, une description, une catégorie et une priorité
 - ✅ Liste de tickets : filtrage par statut et catégorie, vue d'ensemble immédiate
-- ✅ Contrôle des [permissions](/users-permissions/role) : les utilisateurs ordinaires ne voient que leurs propres tickets, les administrateurs voient tout
+- ✅ Contrôle des [permissions](/users-permissions/acl/role) : les utilisateurs ordinaires ne voient que leurs propres tickets, les administrateurs voient tout
 - ✅ Tableau de bord : statistiques en temps réel sur la répartition et les tendances des tickets
 - ✅ Journal des opérations sur les données (intégré)
 

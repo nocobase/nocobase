@@ -1,12 +1,12 @@
 # Chapitre 5 : Utilisateurs et permissions — qui voit quoi
 
-Au chapitre précédent, nous avons fini les formulaires et la page de détails ; le système de tickets sait saisir et afficher des données. Mais il y a un problème — tous les utilisateurs voient la même chose après connexion. Un employé qui soumet des tickets verrait les [pages](/interface-builder/pages) d'administration ; un technicien pourrait supprimer des catégories… Ce n'est pas acceptable.
+Au chapitre précédent, nous avons fini les formulaires et la page de détails ; le système de tickets sait saisir et afficher des données. Mais il y a un problème — tous les utilisateurs voient la même chose après connexion. Un employé qui soumet des tickets verrait les pages d'administration ; un technicien pourrait supprimer des catégories… Ce n'est pas acceptable.
 
-Ce chapitre installe un « contrôle d'accès » : créer des [rôles](/users-permissions/role), configurer les [permissions de menu](/users-permissions/role/menu-permissions) et les [data scopes](/users-permissions/role/data-scope), pour que **chaque utilisateur voie le bon [menu](/interface-builder/menus) et manipule les bonnes données**.
+Ce chapitre installe un « contrôle d'accès » : créer des [rôles](/users-permissions/acl/role), configurer les [permissions de menu](/users-permissions/acl/permissions) et les [data scopes](/users-permissions/acl/permissions), pour que **chaque utilisateur voie le bon menu et manipule les bonnes données**.
 
-## 5.1 Comprendre les [rôles](/users-permissions/role) (Role)
+## 5.1 Comprendre les [rôles](/users-permissions/acl/role) (Role)
 
-Dans NocoBase, **un rôle est un ensemble de [permissions](/users-permissions/role)**. Vous n'attribuez pas les permissions une par une à chaque utilisateur ; vous définissez d'abord quelques rôles, puis vous y placez les utilisateurs.
+Dans NocoBase, **un rôle est un ensemble de [permissions](/users-permissions/acl/role)**. Vous n'attribuez pas les permissions une par une à chaque utilisateur ; vous définissez d'abord quelques rôles, puis vous y placez les utilisateurs.
 
 NocoBase intègre trois rôles par défaut :
 
@@ -64,9 +64,9 @@ Cliquez sur un rôle pour entrer dans la page de configuration des permissions, 
 
 Les permissions de menu contrôlent l'accès « à la page » ; les permissions de données contrôlent « quelles données voir une fois sur la page ».
 
-Concept clé : **[Data scope](/users-permissions/role/data-scope)**.
+Concept clé : **[Data scope](/users-permissions/acl/permissions)**.
 
-Dans la configuration de permissions du rôle, basculez sur l'onglet **[Collection](/data-sources/main/collection) action permissions**. Trouvez la table « Tickets » et cliquez pour la configurer indépendamment.
+Dans la configuration de permissions du rôle, basculez sur l'onglet **[Collection](/data-sources/data-modeling/collection) action permissions**. Trouvez la table « Tickets » et cliquez pour la configurer indépendamment.
 
 ![05-roles-and-permissions-2026-03-13-19-51-06](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-19-51-06.png)
 
@@ -90,7 +90,7 @@ De la même façon, mettez aussi **Edit** et **Delete** à **Own data** (ou ne d
 
 1. Trouvez la permission **View** de la table « Tickets »
 2. Choisissez data scope → **Own data**
-3. Mais attention — par défaut, « Own data » filtre sur le créateur. Pour filtrer sur l'assigné, vous pouvez ajuster la [permission d'action](/users-permissions/role/action-permissions) globale, ou exploiter la **condition de filtre du [block](/interface-builder/blocks) de données** sur la page front-end.
+3. Mais attention — par défaut, « Own data » filtre sur le créateur. Pour filtrer sur l'assigné, vous pouvez ajuster la [permission d'action](/users-permissions/acl/permissions) globale, ou exploiter la **condition de filtre du [block](/interface-builder/blocks) de données** sur la page front-end.
 
 ![05-roles-and-permissions-2026-03-13-20-01-54](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-20-01-54.png)
 
@@ -197,5 +197,5 @@ Au prochain chapitre, nous découvrirons les **workflows** — pour faire travai
 ## Ressources associées
 
 - [Gestion des utilisateurs](/users-permissions/user) — gestion détaillée des utilisateurs
-- [Rôles et permissions](/users-permissions/role) — configuration des rôles
-- [Data scope](/users-permissions/role/data-scope) — contrôle de permissions au niveau données
+- [Rôles et permissions](/users-permissions/acl/role) — configuration des rôles
+- [Data scope](/users-permissions/acl/permissions) — contrôle de permissions au niveau données

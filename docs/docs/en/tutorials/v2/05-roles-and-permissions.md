@@ -1,12 +1,12 @@
 # Chapter 5: Users & Permissions — Who Sees What
 
-In the last chapter, we built forms and detail [pages](/interface-builder/pages) — our ticket system can now handle data entry and viewing. But there's a problem: everyone sees the same thing after logging in. Regular employees who submit tickets can access the admin pages, technicians can delete categories... that's not going to work.
+In the last chapter, we built forms and detail pages — our ticket system can now handle data entry and viewing. But there's a problem: everyone sees the same thing after logging in. Regular employees who submit tickets can access the admin pages, technicians can delete categories... that's not going to work.
 
-In this chapter, we'll add "access control": create [roles](/users-permissions/role), configure [menu permissions](/users-permissions/role/menu-permissions) and [data scope](/users-permissions/role/data-scope) restrictions — **different people see different [menus](/interface-builder/menus) and operate on different data**.
+In this chapter, we'll add "access control": create [roles](/users-permissions/acl/role), configure [menu permissions](/users-permissions/acl/permissions) and [data scope](/users-permissions/acl/permissions) restrictions — **different people see different menus and operate on different data**.
 
 ## 5.1 Understanding Roles
 
-In NocoBase, **a [role](/users-permissions/role) is a collection of [permissions](/users-permissions/role)**. You don't need to configure permissions for each user individually — instead, you define a few roles first, then assign users to the appropriate roles.
+In NocoBase, **a [role](/users-permissions/acl/role) is a collection of [permissions](/users-permissions/acl/role)**. You don't need to configure permissions for each user individually — instead, you define a few roles first, then assign users to the appropriate roles.
 
 NocoBase comes with three built-in roles after installation:
 
@@ -64,9 +64,9 @@ Click on a role to enter its permission configuration page, and find the **Menu 
 
 Menu permissions control "can I access this page?" while data permissions control "what data can I see once I'm on the page?"
 
-Key concept: **[Data Scope](/users-permissions/role/data-scope)**.
+Key concept: **[Data Scope](/users-permissions/acl/permissions)**.
 
-In the role's permission settings, switch to the **[Action permissions](/users-permissions/role/action-permissions)** tab. Find our "Tickets" [collection](/data-sources/main/collection) and click to configure it individually.
+In the role's permission settings, switch to the **[Action permissions](/users-permissions/acl/permissions)** tab. Find our "Tickets" [collection](/data-sources/data-modeling/collection) and click to configure it individually.
 
 ![05-roles-and-permissions-2026-03-13-19-51-06](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-19-51-06.png)
 
@@ -194,5 +194,5 @@ In the next chapter, we'll learn about **Workflows** — letting the system do w
 ## Related Resources
 
 - [User Management](/users-permissions/user) — User administration guide
-- [Roles & Permissions](/users-permissions/role) — Role configuration reference
-- [Data Scope](/users-permissions/role/data-scope) — Row-level permission control
+- [Roles & Permissions](/users-permissions/acl/role) — Role configuration reference
+- [Data Scope](/users-permissions/acl/permissions) — Row-level permission control

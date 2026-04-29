@@ -1,6 +1,6 @@
 # Chapter 1: Getting Started — Build a Working System in 5 Minutes
 
-In this series, we'll build a **minimal IT HelpDesk system** from scratch using NocoBase. The entire system needs only **2 [data tables](/data-sources/main/collection)** and zero lines of code — yet it will support ticket submission, category management, change tracking, access control, and even a [dashboard](/data-visualization).
+In this series, we'll build a **minimal IT HelpDesk system** from scratch using NocoBase. The entire system needs only **2 [data tables](/data-sources/data-modeling/collection)** and zero lines of code — yet it will support ticket submission, category management, change tracking, access control, and even a [dashboard](/data-visualization).
 
 This chapter walks you through deploying NocoBase with [Docker](/get-started/installation/docker), completing your first login, and understanding the difference between [UI Editor mode and Usage mode](/get-started/how-nocobase-works).
 
@@ -18,7 +18,7 @@ Have you ever been in one of these situations?
 Compared to other no-code tools, NocoBase has a few core principles:
 
 - **Data model driven**: Define your data structure first, then use [blocks](/interface-builder/blocks) to display data, then [actions](/interface-builder/actions) to process it — UI and data are fully decoupled
-- **WYSIWYG**: [Pages](/interface-builder/pages) are your canvas. Click anywhere to edit, as intuitive as building a Notion page
+- **WYSIWYG**: Pages are your canvas. Click anywhere to edit, as intuitive as building a Notion page
 - **Everything is a plugin**: All features are [plugins](/development/plugin), similar to WordPress — install what you need
 - **AI built into your workflow**: Built-in [AI employees](/ai-employees/quick-start) that can perform analysis, translation, data entry, and more
 - **Open source + self-hosted**: Core code is fully open source, all data stays on your own server
@@ -107,7 +107,7 @@ Here's what it looks like on a demo system:
 
 ![01-getting-started-2026-03-11-08-19-24](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-19-24.png)
 
-As shown above: [menus](/interface-builder/menus), table action bars, and the bottom of the page all show orange indicators. Click them to create or configure elements.
+As shown above: menus, table action bars, and the bottom of the page all show orange indicators. Click them to create or configure elements.
 
 > **Remember this pattern**: In NocoBase, whenever you want to modify something on the page, enter UI Editor mode, find the small icon in its top-right corner, and click it.
 
@@ -153,7 +153,7 @@ The entire system needs just **2 data tables**:
 | Categories | Ticket categories (e.g., Network Issue, Software Bug) | 2 |
 | Tickets | The core table — each row is one ticket | 7-8 |
 
-That's right, just 2 tables. Common capabilities like users, [permissions](/users-permissions/role), file management, departments, email, and audit logs are all provided by built-in NocoBase plugins — no need to reinvent the wheel. We only need to focus on our business data.
+That's right, just 2 tables. Common capabilities like users, [permissions](/users-permissions/acl/role), file management, departments, email, and audit logs are all provided by built-in NocoBase plugins — no need to reinvent the wheel. We only need to focus on our business data.
 
 
 ## Summary

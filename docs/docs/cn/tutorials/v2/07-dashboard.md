@@ -2,17 +2,17 @@
 
 上一章我们用工作流让系统自动通知、自动记录时间。系统越来越智能了，但还缺一样东西——**全局视角**。
 
-工单有多少？处理了多少？哪类问题最多？每天新增几条？这些问题靠翻列表是回答不了的。这一章，我们用[图表区块](/data-visualization)（饼图、折线图、柱状图）和 [Markdown 区块](/interface-builder/blocks/other/markdown)搭建一个**数据看板**，把数据变成一眼就能看懂的画面。
+工单有多少？处理了多少？哪类问题最多？每天新增几条？这些问题靠翻列表是回答不了的。这一章，我们用[图表区块](/data-visualization)（饼图、折线图、柱状图）和 [Markdown 区块](/interface-builder/blocks/other-blocks/markdown)搭建一个**数据看板**，把数据变成一眼就能看懂的画面。
 
 ## 7.1 添加仪表盘页面
 
-首先，我们在顶部导航栏添加一个新[菜单](/interface-builder/menus)项。
+首先，我们在顶部导航栏添加一个新菜单项。
 
 进入[配置模式](/get-started/how-nocobase-works)，在顶部菜单栏点击 **「添加菜单项」**（`+` 图标），选择 **「新版页面（v2）」**，命名为「数据看板」。
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
-这个[页面](/interface-builder/pages)专门用来放图表，就是我们的仪表盘主场。
+这个页面专门用来放图表，就是我们的仪表盘主场。
 
 ## 7.2 饼图：工单状态分布
 
@@ -24,8 +24,8 @@
 
 ### 配置数据查询
 
-- **[数据表](/data-sources/main/collection)**：选择「工单」
-- **度量（Measures）**：选择任意不重复的[字段](/data-sources/field)（比如 ID ），聚合方式选 **计数（Count）**
+- **[数据表](/data-sources/data-modeling/collection)**：选择「工单」
+- **度量（Measures）**：选择任意不重复的[字段](/data-sources/data-modeling/collection-fields)（比如 ID ），聚合方式选 **计数（Count）**
 - **维度（Dimensions）**：选择「状态」字段
 
 ![07-dashboard-2026-03-15-21-44-32](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-44-32.png)
@@ -114,7 +114,7 @@
 
 图表之外，我们还可以在仪表盘上放一些文字信息。
 
-添加一个 **[Markdown 区块](/interface-builder/blocks/other/markdown)**，写入系统公告或使用说明：
+添加一个 **[Markdown 区块](/interface-builder/blocks/other-blocks/markdown)**，写入系统公告或使用说明：
 
 ```markdown
 ## IT 工单系统
@@ -270,5 +270,5 @@ ctx.render(`
 ## 相关资源
 
 - [数据可视化](/data-visualization) — 图表配置详解
-- [Markdown 区块](/interface-builder/blocks/other/markdown) — Markdown 区块用法
+- [Markdown 区块](/interface-builder/blocks/other-blocks/markdown) — Markdown 区块用法
 - [区块布局](/interface-builder/blocks) — 页面布局与区块配置

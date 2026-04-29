@@ -23,10 +23,10 @@ Au chapitre précédent, nous avons rapidement créé un formulaire fonctionnel.
 
 1. Cliquez sur « Add new » pour ouvrir la pop-up.
 2. Dans la pop-up, cliquez sur **« Add [block](/interface-builder/blocks) → Data block → Form (Add New) »**.
-3. Choisissez **« Current [collection](/data-sources/main/collection) »**. La pop-up est déjà liée à la table correspondante via le contexte, inutile de la spécifier manuellement.
+3. Choisissez **« Current [collection](/data-sources/data-modeling/collection) »**. La pop-up est déjà liée à la table correspondante via le contexte, inutile de la spécifier manuellement.
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. Dans le formulaire, cliquez sur **« [Fields](/data-sources/field) »** et cochez les champs suivants :
+4. Dans le formulaire, cliquez sur **« [Fields](/data-sources/data-modeling/collection-fields) »** et cochez les champs suivants :
 
 | Champ | Configuration |
 |------|---------|

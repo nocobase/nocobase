@@ -69,9 +69,9 @@ Après soumission, cliquez sur le lien **Configure** dans la liste pour entrer d
 
 Cliquez sur la carte du trigger en haut pour ouvrir le drawer de configuration :
 
-- **[Collection](/data-sources/main/collection)** : choisissez Main / « Tickets »
+- **[Collection](/data-sources/data-modeling/collection)** : choisissez Main / « Tickets »
 - **Trigger on** : choisissez « After record is created or updated »
-- **Changed [fields](/data-sources/field)** : cochez « Assigné (Assignee) » — ne déclenche que si le champ assigné a changé, pour éviter les notifications inutiles à chaque modification (à la création, tous les champs sont considérés comme modifiés, donc un nouveau ticket déclenche aussi)
+- **Changed [fields](/data-sources/data-modeling/collection-fields)** : cochez « Assigné (Assignee) » — ne déclenche que si le champ assigné a changé, pour éviter les notifications inutiles à chaque modification (à la création, tous les champs sont considérés comme modifiés, donc un nouveau ticket déclenche aussi)
 - **Trigger condition** : mode « Match **any** in the group », ajoutez deux conditions :
   - `assignee_id` n'est pas vide
   - `Assignee / ID` n'est pas vide

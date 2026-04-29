@@ -33,7 +33,7 @@ Start with [Quick Start](/ai-employees/quick-start), and complete minimal setup 
 - [Configure LLM Service](/ai-employees/features/llm-service): connect providers and manage available models.
 - [Enable AI Employees](/ai-employees/features/enable-ai-employee): enable/disable built-in employees and control scope.
 - [New AI Employee](/ai-employees/features/new-ai-employees): define role, role setting, greeting message, and capability boundary.
-- [Use Skills](/ai-employees/features/tool): configure skill permissions (`Ask` / `Allow`) and control execution risk.
+- [Use Skills](/ai-employees/features/tools): configure skill permissions (`Ask` / `Allow`) and control execution risk.
 
 ### B. Daily Collaboration (Business Users)
 
