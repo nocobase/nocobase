@@ -19021,6 +19021,7 @@ export class FlowSurfacesService {
           parentId: input.fieldUid,
           subKey: 'grid-block',
           subType: 'object',
+          async: true,
           use: 'BlockGridModel',
         },
         { transaction: input.transaction },

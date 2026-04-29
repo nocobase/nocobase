@@ -4450,6 +4450,16 @@ describe('flowSurfaces resource', () => {
         (item: any) => item?.use,
       ),
     ).toEqual(['TableSelectModel']);
+    const createdRolesNormalLoad = await flowRepo.findModelById(createdRolesField.fieldUid);
+    expect(createdRolesNormalLoad.subModels?.['grid-block']).toBeUndefined();
+    const createdRolesSelectorGrid = await flowRepo.findModelByParentId(createdRolesField.fieldUid, {
+      subKey: 'grid-block',
+    });
+    expect(createdRolesSelectorGrid?.use).toBe('BlockGridModel');
+    expect(_.castArray(createdRolesSelectorGrid?.subModels?.items || []).map((item: any) => item?.use)).toEqual([
+      'TableSelectModel',
+    ]);
+    expect(await getFlowModelSelfAsyncFlag(db, createdRolesSelectorGrid.uid)).toBe(true);
 
     const addFieldsData = getData(
       await rootAgent.resource('flowSurfaces').addFields({
@@ -9904,6 +9914,17 @@ async function getSurface(rootAgent: any, target: Record<string, any>) {
       }),
     ),
   );
+}
+
+async function getFlowModelSelfAsyncFlag(db: Database, uid: string) {
+  const node = await db.getRepository('flowModelTreePath').findOne({
+    filter: {
+      ancestor: uid,
+      descendant: uid,
+      depth: 0,
+    },
+  });
+  return node?.get('async');
 }
 
 async function getBlockGridUid(rootAgent: any, blockUid: string) {
