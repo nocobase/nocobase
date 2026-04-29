@@ -8,7 +8,7 @@
  */
 
 import { EMPTY_COLUMN_UID, GridLayoutPath, GridLayoutV2, normalizeGridLayout } from '@nocobase/flow-engine';
-import { Col, Row } from 'antd';
+import { Col, Row, theme } from 'antd';
 import React from 'react';
 
 interface DragOverlayRect {
@@ -19,6 +19,28 @@ interface DragOverlayRect {
   readonly type: 'column' | 'column-edge' | 'row-gap' | 'empty-row' | 'empty-column' | 'item-edge';
 }
 
+export interface DragPreviewOverlayState {
+  readonly row?: Omit<DragOverlayRect, 'type'>;
+  readonly column?: Omit<DragOverlayRect, 'type'>;
+}
+
+export interface ResizePreviewOverlayState {
+  readonly row: Omit<DragOverlayRect, 'type'>;
+  readonly currentCell: Omit<DragOverlayRect, 'type'>;
+  readonly affectedCell?: Omit<DragOverlayRect, 'type'>;
+  readonly cells?: ReadonlyArray<{
+    readonly rect: Omit<DragOverlayRect, 'type'>;
+    readonly role: 'current' | 'affected' | 'peer' | 'empty';
+    readonly size?: number;
+  }>;
+  readonly guideLine: Omit<DragOverlayRect, 'type'>;
+  readonly direction: 'left' | 'right';
+  readonly currentSize?: number;
+  readonly affectedSize?: number;
+  readonly columnCount?: number;
+  readonly rowIndex?: number;
+}
+
 interface GridProps {
   readonly rows?: Record<string, string[][]>;
   readonly sizes?: Record<string, number[]>;
@@ -27,6 +49,9 @@ interface GridProps {
   readonly rowGap?: number;
   readonly colGap?: number;
   readonly dragOverlayRect?: DragOverlayRect | null;
+  readonly dragPreviewOverlay?: DragPreviewOverlayState | null;
+  readonly resizePreviewOverlay?: ResizePreviewOverlayState | null;
+  readonly emptyColumnLabel?: string;
 }
 
 export function Grid({
@@ -37,18 +62,32 @@ export function Grid({
   rowGap = 16,
   colGap = 16,
   dragOverlayRect,
+  dragPreviewOverlay,
+  resizePreviewOverlay,
+  emptyColumnLabel = 'Blank column',
 }: GridProps) {
   const normalizedLayout = layout || normalizeGridLayout({ rows, sizes });
   if (!normalizedLayout.rows.length) {
     return (
-      <div style={{ position: 'relative' }} data-grid-root data-grid-empty-container>
+      <div style={{ position: 'relative', isolation: 'isolate' }} data-grid-root data-grid-empty-container>
+        {resizePreviewOverlay && (
+          <GridResizePreviewOverlay preview={resizePreviewOverlay} emptyColumnLabel={emptyColumnLabel} />
+        )}
+        {dragPreviewOverlay && <GridDragPreviewOverlay preview={dragPreviewOverlay} />}
         {dragOverlayRect && <GridDragOverlay rect={dragOverlayRect} />}
       </div>
     );
   }
 
   return (
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: rowGap }} data-grid-root>
+    <div
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: rowGap, isolation: 'isolate' }}
+      data-grid-root
+    >
+      {resizePreviewOverlay && (
+        <GridResizePreviewOverlay preview={resizePreviewOverlay} emptyColumnLabel={emptyColumnLabel} />
+      )}
+      {dragPreviewOverlay && <GridDragPreviewOverlay preview={dragPreviewOverlay} />}
       {dragOverlayRect && <GridDragOverlay rect={dragOverlayRect} />}
       <GridRows rows={normalizedLayout.rows} renderItem={renderItem} rowGap={rowGap} colGap={colGap} parentPath={[]} />
     </div>
@@ -84,7 +123,13 @@ function GridRows({ rows, renderItem, rowGap, colGap, parentPath }: GridRowsProp
         });
 
         return (
-          <Row key={row.id} gutter={colGap} data-grid-row-id={row.id} data-grid-path={JSON.stringify(rowPath)}>
+          <Row
+            key={row.id}
+            gutter={colGap}
+            style={{ position: 'relative', zIndex: 2 }}
+            data-grid-row-id={row.id}
+            data-grid-path={JSON.stringify(rowPath)}
+          >
             {row.cells.map((cell, cellIdx) => (
               <GridColumn
                 key={cell.id}
@@ -160,6 +205,153 @@ const GridColumn = React.memo(function GridColumn({
   );
 });
 GridColumn.displayName = 'GridColumn';
+
+function GridDragPreviewOverlay({ preview }: Readonly<{ preview: DragPreviewOverlayState }>) {
+  const { token } = theme.useToken();
+  const rowRect = preview.row
+    ? {
+        top: preview.row.top - 6,
+        left: preview.row.left - 6,
+        width: preview.row.width + 12,
+        height: preview.row.height + 12,
+      }
+    : undefined;
+
+  return (
+    <>
+      {rowRect ? (
+        <div
+          style={{
+            ...rowRect,
+            position: 'absolute',
+            pointerEvents: 'none',
+            background: `linear-gradient(180deg, ${token.colorPrimaryBg}cc 0%, ${token.colorPrimaryBg}88 100%)`,
+            border: `1px solid ${token.colorPrimaryBorderHover}`,
+            borderRadius: 12,
+            boxShadow: `0 0 0 2px ${token.colorBgContainer}, 0 10px 28px ${token.colorPrimaryBg}`,
+            opacity: 0.88,
+            zIndex: 0,
+          }}
+        />
+      ) : null}
+      {preview.column ? (
+        <div
+          style={{
+            ...preview.column,
+            position: 'absolute',
+            pointerEvents: 'none',
+            backgroundColor: `${token.colorPrimaryBg}99`,
+            border: `1px dashed ${token.colorPrimaryBorderHover}`,
+            borderRadius: 10,
+            boxSizing: 'border-box',
+            zIndex: 1,
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function GridResizePreviewOverlay({
+  preview,
+  emptyColumnLabel,
+}: Readonly<{ preview: ResizePreviewOverlayState; emptyColumnLabel: string }>) {
+  const { token } = theme.useToken();
+  const palette = { bg: '#E6F0FF', border: '#2F80ED' };
+  const cells = preview.cells?.length
+    ? preview.cells
+    : [
+        { rect: preview.currentCell, role: 'current' as const, size: preview.currentSize },
+        ...(preview.affectedCell
+          ? [{ rect: preview.affectedCell, role: 'affected' as const, size: preview.affectedSize }]
+          : []),
+      ];
+  const emptyCells = cells.filter((cell) => cell.role === 'empty');
+  const shouldShowGuideLine = emptyCells.length > 0 || Boolean(preview.affectedCell);
+  const expandedRow = {
+    top: preview.row.top - 6,
+    left: preview.row.left - 6,
+    width: preview.row.width + 12,
+    height: preview.row.height + 12,
+  };
+
+  return (
+    <>
+      <div
+        style={{
+          ...expandedRow,
+          position: 'absolute',
+          pointerEvents: 'none',
+          background: `linear-gradient(180deg, ${palette.bg}cc 0%, ${palette.bg}88 100%)`,
+          border: `1px solid ${token.colorPrimaryBorderHover}`,
+          borderRadius: 12,
+          boxShadow: `0 0 0 2px ${token.colorBgContainer}, 0 10px 28px ${palette.bg}`,
+          opacity: 0.88,
+          zIndex: 0,
+        }}
+      />
+      {emptyCells.map((cell, index) => (
+        <div
+          key={`empty-${index}`}
+          style={{
+            ...cell.rect,
+            position: 'absolute',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: palette.border,
+            backgroundColor: `${palette.bg}66`,
+            border: `1px dashed ${palette.border}`,
+            borderRadius: 10,
+            boxSizing: 'border-box',
+            fontSize: 12,
+            lineHeight: '18px',
+            zIndex: 1,
+          }}
+        >
+          {emptyColumnLabel}
+        </div>
+      ))}
+      {shouldShowGuideLine ? (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              pointerEvents: 'none',
+              top: expandedRow.top,
+              left: preview.guideLine.left - 0.5,
+              width: 1,
+              height: expandedRow.height,
+              backgroundColor: token.colorPrimaryBorderHover,
+              borderRadius: 1,
+              opacity: 0.9,
+              zIndex: 3,
+            }}
+          />
+          {[expandedRow.top, expandedRow.top + expandedRow.height].map((top) => (
+            <div
+              key={top}
+              style={{
+                position: 'absolute',
+                pointerEvents: 'none',
+                top: top - 2,
+                left: preview.guideLine.left - 2,
+                width: 4,
+                height: 4,
+                backgroundColor: token.colorPrimaryBorderHover,
+                borderRadius: 4,
+                opacity: 0.9,
+                zIndex: 3,
+              }}
+            />
+          ))}
+        </>
+      ) : null}
+    </>
+  );
+}
+
 function GridDragOverlay({ rect }: Readonly<{ rect: DragOverlayRect }>) {
   const baseStyle: React.CSSProperties = {
     position: 'absolute',

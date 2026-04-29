@@ -38,7 +38,7 @@ import {
 import { Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { Grid } from '../../components/Grid';
+import { Grid, type DragPreviewOverlayState, type ResizePreviewOverlayState } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
 
@@ -116,6 +116,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     },
   ];
   private dragState?: DragState;
+  private resizePreviewTarget?: { direction: 'left' | 'right'; modelUid: string };
   private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
 
   private updateDragPointerPosition = (event: Event) => {
@@ -290,6 +291,11 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     );
   }
 
+  private isResizeEmptyCell(cell: GridCellV2): boolean {
+    const items = this.collectCellItemsForResize(cell);
+    return items.length === 0 || items.every((uid) => uid === EMPTY_COLUMN_UID);
+  }
+
   private buildResizedCells(row: GridRowV2, cells: string[][]): GridCellV2[] {
     const usedCellIndexes = new Set<number>();
 
@@ -343,6 +349,167 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       }
     });
     return rowElement?.parentElement?.clientWidth || fallbackWidth;
+  }
+
+  private toRelativeResizeRect(rect: DOMRect, rootRect: DOMRect): ResizePreviewOverlayState['row'] {
+    return {
+      top: rect.top - rootRect.top,
+      left: rect.left - rootRect.left,
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  private findElementByGridPath(selector: string, path: GridLayoutPath) {
+    const elements = Array.from(this.gridContainerRef.current?.querySelectorAll<HTMLElement>(selector) || []);
+    return elements.find((element) => {
+      try {
+        return _.isEqual(JSON.parse(element.dataset.gridPath || '[]'), path);
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  private getVirtualResizeCellRect(
+    rowRect: ResizePreviewOverlayState['row'],
+    rowSizes: number[] | undefined,
+    cellIndex: number,
+  ): ResizePreviewOverlayState['row'] {
+    const safeSizes = rowSizes?.length ? rowSizes : [];
+    const totalSize = safeSizes.reduce((sum, size) => sum + (Number.isFinite(size) && size > 0 ? size : 0), 0) || 24;
+    const beforeSize = safeSizes
+      .slice(0, cellIndex)
+      .reduce((sum, size) => sum + (Number.isFinite(size) && size > 0 ? size : 0), 0);
+    const cellSize = Number.isFinite(safeSizes[cellIndex]) && safeSizes[cellIndex] > 0 ? safeSizes[cellIndex] : 1;
+
+    return {
+      top: rowRect.top,
+      left: rowRect.left + (rowRect.width * beforeSize) / totalSize,
+      width: (rowRect.width * cellSize) / totalSize,
+      height: rowRect.height,
+    };
+  }
+
+  private updateResizePreview(
+    { direction, model }: { direction: 'left' | 'right'; model: FlowModel },
+    options: { activate?: boolean } = {},
+  ) {
+    const activate = options.activate ?? true;
+    if (activate) {
+      this.resizePreviewTarget = { direction, modelUid: model.uid };
+    } else if (
+      !this.resizePreviewTarget ||
+      this.resizePreviewTarget.direction !== direction ||
+      this.resizePreviewTarget.modelUid !== model.uid
+    ) {
+      return;
+    }
+
+    const layout = this.getGridLayout();
+    const position = findModelUidLayoutPosition(layout, model.uid);
+    if (!position) {
+      this.setProps('resizePreviewOverlay', null);
+      return;
+    }
+
+    const row = this.findLayoutRowByPath(layout, position.path);
+    const rowPath = this.getResizeRowPath(position.path);
+    const currentRowEntry = rowPath[rowPath.length - 1];
+    const affectedCellIndex = direction === 'left' ? position.cellIndex - 1 : position.cellIndex + 1;
+    const affectedCell = row?.cells[affectedCellIndex];
+    const rootElement = this.gridContainerRef.current?.querySelector<HTMLElement>('[data-grid-root]');
+    const rowElement = this.findElementByGridPath('[data-grid-row-id]', rowPath);
+    const currentCellElement = this.findElementByGridPath(
+      '[data-grid-column-row-id][data-grid-column-index]',
+      position.path,
+    );
+    const affectedCellPath =
+      currentRowEntry && affectedCell
+        ? [...rowPath.slice(0, -1), { rowId: currentRowEntry.rowId, cellId: affectedCell.id }]
+        : undefined;
+    const affectedCellElement = affectedCellPath
+      ? this.findElementByGridPath('[data-grid-column-row-id][data-grid-column-index]', affectedCellPath)
+      : undefined;
+
+    if (!rootElement || !rowElement || !currentCellElement || !row) {
+      this.setProps('resizePreviewOverlay', null);
+      return;
+    }
+
+    const rootRect = rootElement.getBoundingClientRect();
+    const rowRect = this.toRelativeResizeRect(rowElement.getBoundingClientRect(), rootRect);
+    const currentCellRect = this.toRelativeResizeRect(currentCellElement.getBoundingClientRect(), rootRect);
+    const affectedCellRect = affectedCellElement
+      ? this.toRelativeResizeRect(affectedCellElement.getBoundingClientRect(), rootRect)
+      : undefined;
+    const cells = row.cells
+      .map((cell, cellIndex) => {
+        if (!currentRowEntry) {
+          return null;
+        }
+        const cellPath = [...rowPath.slice(0, -1), { rowId: currentRowEntry.rowId, cellId: cell.id }];
+        const isEmptyCell = this.isResizeEmptyCell(cell);
+        const element = this.findElementByGridPath('[data-grid-column-row-id][data-grid-column-index]', cellPath);
+        if (!element && !isEmptyCell) {
+          return null;
+        }
+        const rect = isEmptyCell
+          ? this.getVirtualResizeCellRect(rowRect, row.sizes, cellIndex)
+          : this.toRelativeResizeRect(element.getBoundingClientRect(), rootRect);
+        return {
+          rect,
+          role: isEmptyCell
+            ? ('empty' as const)
+            : cellIndex === position.cellIndex
+              ? ('current' as const)
+              : cellIndex === affectedCellIndex
+                ? ('affected' as const)
+                : ('peer' as const),
+          size: row.sizes?.[cellIndex],
+        };
+      })
+      .filter(Boolean) as NonNullable<ResizePreviewOverlayState['cells']>;
+    const emptyCell = cells.find((cell) => cell.role === 'empty');
+    const guideLeft = emptyCell
+      ? direction === 'left'
+        ? emptyCell.rect.left + emptyCell.rect.width
+        : emptyCell.rect.left
+      : direction === 'left'
+        ? currentCellRect.left
+        : currentCellRect.left + currentCellRect.width;
+
+    this.setProps('resizePreviewOverlay', {
+      row: rowRect,
+      currentCell: currentCellRect,
+      affectedCell: affectedCellRect,
+      cells,
+      guideLine: {
+        top: rowRect.top,
+        left: guideLeft,
+        width: 2,
+        height: rowRect.height,
+      },
+      direction,
+      currentSize: row.sizes?.[position.cellIndex],
+      affectedSize: affectedCell ? row.sizes?.[affectedCellIndex] : undefined,
+      columnCount: row.cells.length,
+      rowIndex: position.rowIndex,
+    } satisfies ResizePreviewOverlayState);
+  }
+
+  private scheduleResizePreviewUpdate(options: { direction: 'left' | 'right'; model: FlowModel }) {
+    const update = () => this.updateResizePreview(options, { activate: false });
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(update);
+      return;
+    }
+    update();
+  }
+
+  private clearResizePreview() {
+    this.resizePreviewTarget = undefined;
+    this.setProps('resizePreviewOverlay', null);
   }
 
   private resizeGridLayout({
@@ -431,6 +598,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       if (resized) {
         this.prevMoveDistance = resized.moveDistance;
         this.syncLayoutProps(resized.layout);
+        this.scheduleResizePreviewUpdate({ direction: 'left', model });
       }
     });
     this.emitter.on('onResizeRight', ({ resizeDistance, model }) => {
@@ -438,11 +606,19 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       if (resized) {
         this.prevMoveDistance = resized.moveDistance;
         this.syncLayoutProps(resized.layout);
+        this.scheduleResizePreviewUpdate({ direction: 'right', model });
       }
     });
     this.emitter.on('onResizeBottom', ({ resizeDistance, model }) => {});
+    this.emitter.on('onResizePreviewStart', ({ direction, model }) => {
+      this.updateResizePreview({ direction, model });
+    });
+    this.emitter.on('onResizePreviewEnd', () => {
+      this.clearResizePreview();
+    });
     this.emitter.on('onResizeEnd', () => {
       this.prevMoveDistance = 0;
+      this.clearResizePreview();
       this.saveGridLayout(this.props.layout);
     });
   }
@@ -672,6 +848,84 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     };
   }
 
+  private toRelativeDragRect(rect: DOMRect | Rect): DragPreviewOverlayState['row'] {
+    const containerRect = this.dragState?.containerRect || { top: 0, left: 0, width: 0, height: 0 };
+    return {
+      top: rect.top - containerRect.top,
+      left: rect.left - containerRect.left,
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  private getDragRowPath(slot: LayoutSlot): GridLayoutPath | undefined {
+    if (slot.type === 'empty-row') {
+      return undefined;
+    }
+
+    const path = 'path' in slot ? slot.path : undefined;
+    if (path?.length) {
+      const rowPath = path.map((entry) => ({ ...entry }));
+      delete rowPath[rowPath.length - 1].cellId;
+      return rowPath;
+    }
+
+    if (slot.type === 'row-gap') {
+      return [{ rowId: slot.targetRowId }];
+    }
+
+    if ('rowId' in slot) {
+      return [{ rowId: slot.rowId }];
+    }
+
+    return undefined;
+  }
+
+  private getDragColumnPath(slot: LayoutSlot): GridLayoutPath | undefined {
+    if (
+      slot.type !== 'column' &&
+      slot.type !== 'column-edge' &&
+      slot.type !== 'empty-column' &&
+      slot.type !== 'item-edge'
+    ) {
+      return undefined;
+    }
+
+    if (slot.path?.length) {
+      return slot.path;
+    }
+
+    return [{ rowId: slot.rowId, cellId: `${slot.rowId}:cell:${slot.columnIndex}` }];
+  }
+
+  private getDragPreviewOverlay(slot: LayoutSlot): DragPreviewOverlayState | null {
+    const rowPath = this.getDragRowPath(slot);
+    const columnPath = this.getDragColumnPath(slot);
+    const rowElement = rowPath ? this.findElementByGridPath('[data-grid-row-id]', rowPath) : undefined;
+    const columnElement = columnPath
+      ? this.findElementByGridPath('[data-grid-column-row-id][data-grid-column-index]', columnPath)
+      : undefined;
+    const row = rowElement ? this.toRelativeDragRect(rowElement.getBoundingClientRect()) : undefined;
+    const column = columnElement ? this.toRelativeDragRect(columnElement.getBoundingClientRect()) : undefined;
+
+    if (slot.type === 'row-gap') {
+      return {
+        row: row || this.toRelativeDragRect(slot.rect),
+      };
+    }
+
+    if (slot.type === 'empty-row') {
+      return null;
+    }
+
+    return row || column
+      ? {
+          row,
+          column,
+        }
+      : null;
+  }
+
   private resolveDragSlot(point: { x: number; y: number }): LayoutSlot | null {
     if (!this.dragState?.slots.length) {
       return null;
@@ -693,6 +947,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         this.dragState.activeSlotKey = null;
         this.dragState.previewLayout = undefined;
         this.setProps('dragOverlayRect', null);
+        this.setProps('dragPreviewOverlay', null);
       }
       return;
     }
@@ -738,6 +993,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       type: slot.type,
     };
     this.setProps('dragOverlayRect', overlay);
+    this.setProps('dragPreviewOverlay', this.getDragPreviewOverlay(slot));
     this.dragState.activeSlotKey = slotKey;
   }
 
@@ -764,6 +1020,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     };
     this.dragState.cleanupListeners = this.bindDragDocumentListeners();
     this.setProps('dragOverlayRect', null);
+    this.setProps('dragPreviewOverlay', null);
     this.updateLayoutSnapshot();
     this.scheduleSnapshotRefresh();
   }
@@ -799,6 +1056,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.dragState.cleanupListeners?.();
     this.dragState = undefined;
     this.setProps('dragOverlayRect', null);
+    this.setProps('dragPreviewOverlay', null);
   }
 
   handleDragEnd(_event: DragEndEvent) {
@@ -945,6 +1203,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 rows={rows}
                 sizes={sizes}
                 dragOverlayRect={this.props.dragOverlayRect}
+                dragPreviewOverlay={this.props.dragPreviewOverlay}
+                resizePreviewOverlay={this.props.resizePreviewOverlay}
+                emptyColumnLabel={this.translate('Blank column')}
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
                   if (!baseItem) {
@@ -1163,13 +1424,15 @@ export function recalculateGridSizes({
   if (direction === 'left' && position.columnIndex === 0) {
     const otherColumnSize = newSizes[position.rowId].slice(1).reduce((a, b) => a + b, 0);
     const currentColumnSize = newSizes[position.rowId][0];
+    const emptyColumnSize = columnCount - newSizes[position.rowId].reduce((a, b) => a + b, 0);
 
-    if (currentColumnSize < columnCount - otherColumnSize) {
+    if (currentColumnSize < columnCount - otherColumnSize && emptyColumnSize > 0) {
       addEmptyColumnToRow({
         rows: newRows,
         sizes: newSizes,
         position,
         direction: 'left',
+        emptyColumnSize,
       });
     }
   }
@@ -1193,13 +1456,15 @@ export function recalculateGridSizes({
   if (direction === 'right' && position.columnIndex === newSizes[position.rowId].length - 1) {
     const otherColumnSize = newSizes[position.rowId].slice(0, -1).reduce((a, b) => a + b, 0);
     const currentColumnSize = newSizes[position.rowId][position.columnIndex];
+    const emptyColumnSize = columnCount - newSizes[position.rowId].reduce((a, b) => a + b, 0);
 
-    if (currentColumnSize < columnCount - otherColumnSize) {
+    if (currentColumnSize < columnCount - otherColumnSize && emptyColumnSize > 0) {
       addEmptyColumnToRow({
         rows: newRows,
         sizes: newSizes,
         position,
         direction: 'right',
+        emptyColumnSize,
       });
     }
   }
@@ -1213,6 +1478,7 @@ function addEmptyColumnToRow({
   sizes,
   position,
   direction,
+  emptyColumnSize,
 }: {
   rows: Record<string, string[][]>;
   sizes: Record<string, number[]>;
@@ -1221,6 +1487,7 @@ function addEmptyColumnToRow({
     columnIndex: number;
   };
   direction: 'left' | 'right';
+  emptyColumnSize: number;
 }) {
   const currentRow = rows[position.rowId] || [];
   const currentRowSizes = sizes[position.rowId] || [];
@@ -1232,7 +1499,7 @@ function addEmptyColumnToRow({
       return;
     }
     currentRow.splice(position.columnIndex, 0, [EMPTY_COLUMN_UID]);
-    currentRowSizes.splice(position.columnIndex, 0, 1);
+    currentRowSizes.splice(position.columnIndex, 0, emptyColumnSize);
   }
 
   if (direction === 'right') {
@@ -1242,7 +1509,7 @@ function addEmptyColumnToRow({
       return;
     }
     currentRow.splice(position.columnIndex + 1, 0, [EMPTY_COLUMN_UID]);
-    currentRowSizes.splice(position.columnIndex + 1, 0, 1);
+    currentRowSizes.splice(position.columnIndex + 1, 0, emptyColumnSize);
   }
 }
 

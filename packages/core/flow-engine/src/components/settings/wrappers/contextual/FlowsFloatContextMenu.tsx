@@ -418,7 +418,14 @@ const ResizeHandles: React.FC<{
   const isDraggingRef = useRef<boolean>(false);
   const dragTypeRef = useRef<'left' | 'right' | null>(null);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const { onDragStart, onDragEnd } = props;
+  const { model, onDragStart, onDragEnd, onMouseEnter, onMouseLeave } = props;
+
+  const emitResizePreviewStart = useCallback(
+    (direction: 'left' | 'right') => {
+      model.parent.emitter.emit('onResizePreviewStart', { direction, model });
+    },
+    [model],
+  );
 
   // 把拖拽位移转成上层已约定的 resize 事件。
   const handleDragMove = useCallback(
@@ -429,14 +436,14 @@ const ResizeHandles: React.FC<{
 
       switch (dragTypeRef.current) {
         case 'left':
-          props.model.parent.emitter.emit('onResizeLeft', { resizeDistance: -deltaX, model: props.model });
+          model.parent.emitter.emit('onResizeLeft', { resizeDistance: -deltaX, model });
           break;
         case 'right':
-          props.model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model: props.model });
+          model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model });
           break;
       }
     },
-    [props.model],
+    [model],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -447,9 +454,9 @@ const ResizeHandles: React.FC<{
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
 
-    props.model.parent.emitter.emit('onResizeEnd');
+    model.parent.emitter.emit('onResizeEnd');
     onDragEnd?.();
-  }, [handleDragMove, onDragEnd, props.model]);
+  }, [handleDragMove, model, onDragEnd]);
 
   const handleDragStart = useCallback(
     (e: React.MouseEvent, type: 'left' | 'right') => {
@@ -463,9 +470,10 @@ const ResizeHandles: React.FC<{
       document.addEventListener('mousemove', handleDragMove);
       document.addEventListener('mouseup', handleDragEnd);
 
+      emitResizePreviewStart(type);
       onDragStart?.();
     },
-    [handleDragMove, handleDragEnd, onDragStart],
+    [emitResizePreviewStart, handleDragMove, handleDragEnd, onDragStart],
   );
 
   return (
@@ -473,15 +481,15 @@ const ResizeHandles: React.FC<{
       <div
         className="resize-handle resize-handle-left"
         title="拖拽调节宽度"
-        onMouseEnter={props.onMouseEnter}
-        onMouseLeave={props.onMouseLeave}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         onMouseDown={(e) => handleDragStart(e, 'left')}
       />
       <div
         className="resize-handle resize-handle-right"
         title="拖拽调节宽度"
-        onMouseEnter={props.onMouseEnter}
-        onMouseLeave={props.onMouseLeave}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         onMouseDown={(e) => handleDragStart(e, 'right')}
       />
     </>

@@ -1,5 +1,6 @@
 {
   "Add": "Add",
+  "Blank column": "Blank column",
   "Are you sure you want to delete this item? This action cannot be undone.": "Are you sure you want to delete this item? This action cannot be undone.",
   "Are you sure to convert this template block to copy mode?": "Are you sure you want to convert this template block to copy mode?",
   "Array index out of bounds": "Array index {{index}} out of bounds for '{{subKey}}'",

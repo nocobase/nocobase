@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { EMPTY_COLUMN_UID, FlowEngine } from '@nocobase/flow-engine';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GridModel } from '../GridModel';
@@ -43,13 +43,16 @@ const mockRect = (
 
 const createGridContainer = () => {
   const container = document.createElement('div');
+  container.setAttribute('data-grid-root', '');
   const row = document.createElement('div');
   row.setAttribute('data-grid-row-id', 'row-1');
+  row.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1' }]));
   container.appendChild(row);
 
   const col = document.createElement('div');
   col.setAttribute('data-grid-column-row-id', 'row-1');
   col.setAttribute('data-grid-column-index', '0');
+  col.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1', cellId: 'row-1:cell:0' }]));
   row.appendChild(col);
 
   const item = document.createElement('div');
@@ -282,5 +285,184 @@ describe('GridModel drag snapshot container', () => {
       height: 60,
       type: 'column',
     });
+  });
+
+  it('highlights the target row and column while dragging an item', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-drag-preview-overlay',
+      props: {},
+      structure: {} as any,
+    });
+    const container = createGridContainer();
+    (model.gridContainerRef as any).current = container;
+
+    (model as any).dragState = {
+      sourceUid: 'item-2',
+      snapshot: {
+        rows: { 'row-1': [['item-1']] },
+        sizes: { 'row-1': [24] },
+      },
+      slots: [],
+      containerEl: container,
+      containerRect: { top: 0, left: 0, width: 480, height: 280 },
+      activeSlotKey: null,
+      previewLayout: undefined,
+      refreshTimer: null,
+      generatedIds: new Map(),
+    };
+
+    (model as any).applyPreview({
+      type: 'column',
+      rowId: 'row-1',
+      columnIndex: 0,
+      insertIndex: 1,
+      position: 'after',
+      rect: { top: 100, left: 20, width: 440, height: 40 },
+      path: [{ rowId: 'row-1', cellId: 'row-1:cell:0' }],
+    });
+
+    expect(model.props.dragPreviewOverlay).toMatchObject({
+      row: { top: 20, left: 20, width: 440, height: 120 },
+      column: { top: 20, left: 20, width: 440, height: 120 },
+    });
+  });
+
+  it('shows resize preview for the current cell and affected neighbor', () => {
+    const itemA = engine.createModel({ use: 'FlowModel', uid: 'item-a' });
+    const itemB = engine.createModel({ use: 'FlowModel', uid: 'item-b' });
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-resize-preview',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'row-1',
+              cells: [
+                { id: 'cell-a', items: ['item-a'] },
+                { id: 'cell-b', items: ['item-b'] },
+              ],
+              sizes: [10, 14],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = { items: [itemA, itemB] };
+    model.syncLayoutProps(model.getGridLayout());
+
+    const container = document.createElement('div');
+    const root = document.createElement('div');
+    root.setAttribute('data-grid-root', '');
+    const row = document.createElement('div');
+    row.setAttribute('data-grid-row-id', 'row-1');
+    row.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1' }]));
+    const cellA = document.createElement('div');
+    cellA.setAttribute('data-grid-column-row-id', 'row-1');
+    cellA.setAttribute('data-grid-column-index', '0');
+    cellA.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1', cellId: 'cell-a' }]));
+    const cellB = document.createElement('div');
+    cellB.setAttribute('data-grid-column-row-id', 'row-1');
+    cellB.setAttribute('data-grid-column-index', '1');
+    cellB.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1', cellId: 'cell-b' }]));
+    row.append(cellA, cellB);
+    root.appendChild(row);
+    container.appendChild(root);
+
+    mockRect(root, { top: 100, left: 50, width: 480, height: 120 });
+    mockRect(row, { top: 110, left: 60, width: 460, height: 80 });
+    mockRect(cellA, { top: 110, left: 60, width: 190, height: 80 });
+    mockRect(cellB, { top: 110, left: 250, width: 270, height: 80 });
+    (model.gridContainerRef as any).current = container;
+    model.onMount();
+
+    model.emitter.emit('onResizePreviewStart', { direction: 'right', model: itemA });
+
+    expect(model.props.resizePreviewOverlay).toMatchObject({
+      row: { top: 10, left: 10, width: 460, height: 80 },
+      currentCell: { top: 10, left: 10, width: 190, height: 80 },
+      affectedCell: { top: 10, left: 200, width: 270, height: 80 },
+      guideLine: { top: 10, left: 200, width: 2, height: 80 },
+      direction: 'right',
+      currentSize: 10,
+      affectedSize: 14,
+    });
+
+    model.emitter.emit('onResizePreviewEnd');
+
+    expect(model.props.resizePreviewOverlay).toBeNull();
+  });
+
+  it('uses the empty column width and aligns the resize guide to its boundary', () => {
+    const itemA = engine.createModel({ use: 'FlowModel', uid: 'item-a' });
+    const itemB = engine.createModel({ use: 'FlowModel', uid: 'item-b' });
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-resize-empty-preview',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'row-1',
+              cells: [
+                { id: 'cell-a', items: ['item-a'] },
+                { id: 'cell-empty', items: [EMPTY_COLUMN_UID] },
+                { id: 'cell-b', items: ['item-b'] },
+              ],
+              sizes: [8, 10, 6],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = { items: [itemA, itemB] };
+    model.syncLayoutProps(model.getGridLayout());
+
+    const container = document.createElement('div');
+    const root = document.createElement('div');
+    root.setAttribute('data-grid-root', '');
+    const row = document.createElement('div');
+    row.setAttribute('data-grid-row-id', 'row-1');
+    row.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1' }]));
+    const cellA = document.createElement('div');
+    cellA.setAttribute('data-grid-column-row-id', 'row-1');
+    cellA.setAttribute('data-grid-column-index', '0');
+    cellA.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1', cellId: 'cell-a' }]));
+    const cellB = document.createElement('div');
+    cellB.setAttribute('data-grid-column-row-id', 'row-1');
+    cellB.setAttribute('data-grid-column-index', '2');
+    cellB.setAttribute('data-grid-path', JSON.stringify([{ rowId: 'row-1', cellId: 'cell-b' }]));
+    row.append(cellA, cellB);
+    root.appendChild(row);
+    container.appendChild(root);
+
+    mockRect(root, { top: 100, left: 50, width: 520, height: 120 });
+    mockRect(row, { top: 110, left: 60, width: 480, height: 80 });
+    mockRect(cellA, { top: 110, left: 60, width: 160, height: 80 });
+    mockRect(cellB, { top: 110, left: 430, width: 130, height: 80 });
+    (model.gridContainerRef as any).current = container;
+    model.onMount();
+
+    model.emitter.emit('onResizePreviewStart', { direction: 'right', model: itemA });
+
+    expect(model.props.resizePreviewOverlay?.cells).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: 'empty',
+          rect: { top: 10, left: 170, width: 200, height: 80 },
+          size: 10,
+        }),
+      ]),
+    );
+    expect(model.props.resizePreviewOverlay?.guideLine).toMatchObject({ top: 10, left: 170, width: 2, height: 80 });
+
+    model.emitter.emit('onResizeEnd');
+
+    expect(model.props.resizePreviewOverlay).toBeNull();
   });
 });

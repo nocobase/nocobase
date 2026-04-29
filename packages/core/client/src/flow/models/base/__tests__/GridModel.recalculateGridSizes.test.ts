@@ -64,4 +64,38 @@ describe('recalculateGridSizes', () => {
     expect(newRows.row1.length).toBe(2);
     expect(newSizes.row1.length).toBe(2);
   });
+
+  it('uses the remaining row width when adding an empty right column', () => {
+    const { newSizes, newRows } = recalculateGridSizes({
+      position: { ...basePosition, columnIndex: 1 },
+      direction: 'right',
+      resizeDistance: -40,
+      prevMoveDistance: 0,
+      oldSizes: { row1: [12, 12] },
+      oldRows: { row1: [['a'], ['b']] },
+      gridContainerWidth: 240,
+      gutter: 0,
+      columnCount: 24,
+    });
+
+    expect(newRows.row1).toEqual([['a'], ['b'], [EMPTY_COLUMN_UID]]);
+    expect(newSizes.row1).toEqual([12, 8, 4]);
+  });
+
+  it('uses the remaining row width when adding an empty left column', () => {
+    const { newSizes, newRows } = recalculateGridSizes({
+      position: { ...basePosition, columnIndex: 0 },
+      direction: 'left',
+      resizeDistance: -120,
+      prevMoveDistance: 0,
+      oldSizes: { row1: [24] },
+      oldRows: { row1: [['a']] },
+      gridContainerWidth: 240,
+      gutter: 0,
+      columnCount: 24,
+    });
+
+    expect(newRows.row1).toEqual([[EMPTY_COLUMN_UID], ['a']]);
+    expect(newSizes.row1).toEqual([12, 12]);
+  });
 });
