@@ -56,5 +56,9 @@ export default {
       type: 'json',
       name: 'meta',
     },
+    {
+      type: 'text',
+      name: 'log',
+    },
   ],
 };
