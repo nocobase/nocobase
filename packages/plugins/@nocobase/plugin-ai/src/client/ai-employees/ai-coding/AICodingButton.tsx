@@ -41,9 +41,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const currentConversation = useChatConversationsStore.use.currentConversation();
     const chat = useChat(currentConversation);
     const { triggerTask } = useChatBoxActions();
-    const addContextItems = chat.use.addContextItems();
-    const setEditorRef = chat.use.setEditorRef();
-    const setCurrentEditorRefUid = chat.use.setCurrentEditorRefUid();
+    const addContextItems = chat.addContextItems;
+    const setEditorRef = chat.setEditorRef;
+    const setCurrentEditorRefUid = chat.setCurrentEditorRefUid;
     const ctx = useFlowContext();
 
     const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
@@ -125,7 +125,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const tasks: Task[] = Object.values(taskMap);
 
     // Store flow context for frontend context tools
-    chat.getState().setFlowContext(ctx);
+    chat.setFlowContext(ctx);
 
     return aiEmployee ? (
       <Tooltip

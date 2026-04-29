@@ -86,7 +86,7 @@ export const Sender: React.FC = () => {
   const setSenderRef = useChatBoxStore.use.setSenderRef();
   const readonly = useChatBoxStore.use.readonly();
 
-  const setAttachments = chat.use.setAttachments();
+  const setAttachments = chat.setAttachments;
   const uploadProps = useUploadFiles();
 
   const responseLoading = chat.use.responseLoading();

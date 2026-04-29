@@ -43,15 +43,9 @@ export const useChatBoxActions = () => {
 
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
-
-  const setResponseLoading = chat.use.setResponseLoading();
-  const setSystemMessage = chat.use.setSystemMessage();
-  const setAttachments = chat.use.setAttachments();
-  const setContextItems = chat.use.setContextItems();
-  const setMessages = chat.use.setMessages();
-  const setSkillSettings = chat.use.setSkillSettings();
+  const chat = useChat(currentConversation);
+  const draftChat = useChat();
 
   const setOpenToolModal = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
@@ -61,7 +55,8 @@ export const useChatBoxActions = () => {
   const { conversationsService } = useChatConversationActions();
   const { sendMessages, syncContextAttachments } = useChatMessageActions();
 
-  const clear = (options?: ClearOptions) => {
+  const clear = (options?: ClearOptions, sessionId: string | undefined = currentConversation) => {
+    const sessionChat = chat.for(sessionId);
     const {
       sender,
       systemMessage,
@@ -77,13 +72,13 @@ export const useChatBoxActions = () => {
       setSenderValue('');
     }
     if (systemMessage !== false) {
-      setSystemMessage('');
+      sessionChat.setSystemMessage('');
     }
     if (attachments !== false) {
-      setAttachments([]);
+      sessionChat.setAttachments([]);
     }
     if (contextItems !== false) {
-      setContextItems([]);
+      sessionChat.setContextItems([]);
     }
     if (taskVariables !== false) {
       setTaskVariables({});
@@ -98,7 +93,7 @@ export const useChatBoxActions = () => {
       setActiveMessageId('');
     }
     if (skillSettings !== false) {
-      setSkillSettings(undefined);
+      sessionChat.setSkillSettings(undefined);
     }
   };
 
@@ -167,8 +162,8 @@ export const useChatBoxActions = () => {
     };
     setCurrentConversation(undefined);
     setCurrentWorkflowTask(undefined);
-    clear();
-    setMessages([greetingMsg]);
+    clear(undefined, undefined);
+    draftChat.setMessages([greetingMsg]);
     senderRef.current?.focus();
   }, [currentEmployee, setCurrentWorkflowTask]);
 
@@ -177,7 +172,7 @@ export const useChatBoxActions = () => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
       setCurrentWorkflowTask(undefined);
-      clear(options?.clear);
+      clear(options?.clear, undefined);
       setModel(null);
       if (aiEmployee) {
         const greetingMsg = {
@@ -189,9 +184,9 @@ export const useChatBoxActions = () => {
           },
         };
         senderRef.current?.focus();
-        setMessages([greetingMsg]);
+        draftChat.setMessages([greetingMsg]);
       } else {
-        setMessages([]);
+        draftChat.setMessages([]);
       }
     },
     [currentConversation, setCurrentWorkflowTask],
@@ -199,18 +194,18 @@ export const useChatBoxActions = () => {
 
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
-      clear();
+      clear(undefined, undefined);
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
       setReadonly(false);
-      setResponseLoading(false);
+      draftChat.setResponseLoading(false);
       if (!open) {
         setOpen(true);
       }
       if (currentConversation) {
         setCurrentConversation(undefined);
         setCurrentWorkflowTask(undefined);
-        setMessages([]);
+        draftChat.setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
       await ensureModel(aiEmployee);
@@ -226,11 +221,11 @@ export const useChatBoxActions = () => {
         },
       ];
       if (!tasks?.length) {
-        setMessages(msgs);
+        draftChat.setMessages(msgs);
         return;
       }
       if (tasks.length === 1 && options.auto !== false) {
-        setMessages(msgs);
+        draftChat.setMessages(msgs);
         const task = tasks[0];
         const {
           userMessage,
@@ -254,17 +249,17 @@ export const useChatBoxActions = () => {
           setSenderValue('');
         }
         if (attachments) {
-          setAttachments(attachments);
+          draftChat.setAttachments(attachments);
         }
         if (workContext) {
-          setContextItems(workContext);
+          draftChat.setContextItems(workContext);
           syncContextAttachments(workContext);
         }
         if (systemMessage) {
-          setSystemMessage(systemMessage);
+          draftChat.setSystemMessage(systemMessage);
         }
         if (skillSettings) {
-          setSkillSettings(skillSettings);
+          draftChat.setSkillSettings(skillSettings);
         }
         if (task.autoSend) {
           send({
@@ -287,7 +282,7 @@ export const useChatBoxActions = () => {
           content: tasks,
         },
       });
-      setMessages(msgs);
+      draftChat.setMessages(msgs);
     },
     [
       open,

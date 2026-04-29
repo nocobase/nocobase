@@ -17,7 +17,7 @@ export const ContextItemsHeader: React.FC = () => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const contextItems = chat.use.contextItems();
-  const removeContextItem = chat.use.removeContextItem();
+  const removeContextItem = chat.removeContextItem;
   if (!contextItems?.length) {
     return null;
   }

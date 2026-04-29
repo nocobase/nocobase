@@ -21,7 +21,7 @@ export const Attachment: React.FC<{
   const [visible, setVisible] = useState(false);
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const removeAttachment = chat.use.removeAttachment();
+  const removeAttachment = chat.removeAttachment;
 
   return (
     <Tag

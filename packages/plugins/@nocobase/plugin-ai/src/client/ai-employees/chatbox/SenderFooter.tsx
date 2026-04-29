@@ -31,8 +31,8 @@ export const SenderFooter: React.FC<{
   const readonly = useChatBoxStore.use.readonly();
 
   const loading = chat.use.responseLoading();
-  const addContextItems = chat.use.addContextItems();
-  const removeContextItem = chat.use.removeContextItem();
+  const addContextItems = chat.addContextItems;
+  const removeContextItem = chat.removeContextItem;
 
   const senderValue = useChatBoxStore.use.senderValue();
   const contextItems = chat.use.contextItems();

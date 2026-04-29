@@ -17,7 +17,7 @@ export const AttachmentsHeader: React.FC = () => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const attachments = chat.use.attachments();
-  const removeAttachment = chat.use.removeAttachment();
+  const removeAttachment = chat.removeAttachment;
 
   const items = useMemo(() => {
     return attachments?.map((item) => ({

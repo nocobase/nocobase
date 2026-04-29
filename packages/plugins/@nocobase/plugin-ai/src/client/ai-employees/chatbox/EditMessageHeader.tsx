@@ -26,7 +26,7 @@ export const EditMessageHeader: React.FC = () => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
 
-  const setMessages = chat.use.setMessages();
+  const setMessages = chat.setMessages;
 
   const { messagesService, finishEditingMessage } = useChatMessageActions();
 

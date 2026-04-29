@@ -83,7 +83,7 @@ export function useUploadProps(props: any) {
 export const useUploadFiles = () => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const setAttachments = chat.use.setAttachments();
+  const setAttachments = chat.setAttachments;
 
   const uploadProps = {
     action: 'aiFiles:create',

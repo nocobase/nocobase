@@ -71,7 +71,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
   const chat = useChat(currentConversation);
 
   const { triggerTask } = useChatBoxActions();
-  const addContextItems = chat.use.addContextItems();
+  const addContextItems = chat.addContextItems;
   const { syncContextAttachments } = useChatMessageActions();
 
   const currentAvatar = useMemo(() => {

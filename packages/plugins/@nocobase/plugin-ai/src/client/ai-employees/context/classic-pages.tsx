@@ -133,7 +133,7 @@ export const ClassicPagesContext: WorkContextOptions = {
           const t = useT();
           const currentConversation = useChatConversationsStore.use.currentConversation();
           const chat = useChat(currentConversation);
-          const addAttachments = chat.use.addAttachments();
+          const addAttachments = chat.addAttachments;
 
           return <div onClick={() => {}}>{t('Select field values')}</div>;
         },

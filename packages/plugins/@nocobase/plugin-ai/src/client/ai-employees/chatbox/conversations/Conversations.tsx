@@ -15,10 +15,10 @@ import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { AIEmployee } from '../../types';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
+import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChat } from '../hooks/useChat';
 import { ConversationsList, useConversationsList } from './ConversationsList';
 import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
 
@@ -51,8 +51,6 @@ export const Conversations: React.FC = memo(() => {
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
-  const setMessages = chat.use.setMessages();
-
   const { messagesService } = useChatMessageActions();
 
   const { clear } = useChatBoxActions();
@@ -69,8 +67,9 @@ export const Conversations: React.FC = memo(() => {
       } else {
         setCurrentEmployee(undefined);
       }
-      setMessages([]);
-      clear();
+      const sessionChat = chat.for(sessionId);
+      sessionChat.setMessages([]);
+      clear(undefined, sessionId);
       if (model) {
         setModel(model);
       } else {
@@ -86,7 +85,7 @@ export const Conversations: React.FC = memo(() => {
       setCurrentConversation,
       setCurrentEmployee,
       aiEmployeesMap,
-      setMessages,
+      chat,
       clear,
       setModel,
       messagesService,
