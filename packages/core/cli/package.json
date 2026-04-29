@@ -78,8 +78,11 @@
     "@oclif/core": "^4.10.4",
     "cross-spawn": "^7.0.6",
     "lodash": "^4.17.21",
+    "mariadb": "^2.5.6",
+    "mysql2": "^3.14.0",
     "openapi-types": "^12.1.3",
     "ora": "^8.2.0",
+    "pg": "^8.14.1",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {

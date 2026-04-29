@@ -42,6 +42,7 @@ import {
   validateTcpPort,
   validateEnvKey,
 } from '../lib/prompt-validators.ts';
+import { validateExternalDbConfig } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { startTask, stopTask, updateTask } from '../lib/ui.js';
@@ -230,6 +231,22 @@ function validateBuiltinDbEnabled(
   }
 
   return translateCli('commands.install.validation.builtinDbUnsupported', { dialect });
+}
+
+async function validateExternalDbPromptField(
+  value: PromptValue,
+  values: PromptCatalogValues,
+): Promise<string | undefined> {
+  const builtinDb = values.builtinDb === undefined ? true : Boolean(values.builtinDb);
+  if (builtinDb) {
+    return undefined;
+  }
+
+  if (typeof value === 'string' && value.trim() === '') {
+    return undefined;
+  }
+
+  return await validateExternalDbConfig(values);
 }
 
 function defaultInstallAppRootPath(envName: PromptValue | undefined): string {
@@ -641,6 +658,7 @@ export default class Install extends Command {
       initialValue: (values) => defaultDbHostForBuiltinDb(values),
       yesInitialValue: DEFAULT_INSTALL_BUILTIN_DB_HOST,
       required: true,
+      validate: validateExternalDbPromptField,
       hidden: (values) => Boolean(values.builtinDb),
     },
     dbPort: {
@@ -659,6 +677,7 @@ export default class Install extends Command {
       message: installText('prompts.dbDatabase.message'),
       initialValue: (values) => defaultDbDatabaseForDialect(values.dbDialect),
       required: true,
+      validate: validateExternalDbPromptField,
     },
     dbUser: {
       type: 'text',
@@ -666,6 +685,7 @@ export default class Install extends Command {
       initialValue: DEFAULT_INSTALL_DB_USER,
       yesInitialValue: DEFAULT_INSTALL_DB_USER,
       required: true,
+      validate: validateExternalDbPromptField,
     },
     dbPassword: {
       type: 'password',
@@ -673,6 +693,7 @@ export default class Install extends Command {
       initialValue: DEFAULT_INSTALL_DB_PASSWORD,
       yesInitialValue: DEFAULT_INSTALL_DB_PASSWORD,
       required: true,
+      validate: validateExternalDbPromptField,
     },
   };
 
@@ -977,6 +998,9 @@ export default class Install extends Command {
       values.builtinDb === undefined ? true : Boolean(values.builtinDb);
     const source = String(values.source ?? '').trim();
     if (!builtinDb || source === 'docker') {
+      if (!builtinDb) {
+        return await validateExternalDbConfig({ ...values, dbPort: value });
+      }
       return undefined;
     }
 
@@ -1009,6 +1033,29 @@ export default class Install extends Command {
       context,
     });
     return reusesManagedPort ? undefined : portError;
+  }
+
+  private static async ensureExternalDbReadyForInstall(
+    dbResults: Record<string, PromptValue>,
+  ): Promise<void> {
+    const builtinDb =
+      dbResults.builtinDb === undefined ? true : Boolean(dbResults.builtinDb);
+    if (builtinDb) {
+      return;
+    }
+
+    const dialect = String(dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
+    const host = String(dbResults.dbHost ?? '').trim();
+    const port = String(dbResults.dbPort ?? '').trim();
+    const database = String(dbResults.dbDatabase ?? '').trim();
+    const address = host && port ? `${host}:${port}` : host || port || '(unknown address)';
+    const target = database ? `${address}/${database}` : address;
+    p.log.step(`Checking external ${dialect} database: ${target}`);
+
+    const validationError = await validateExternalDbConfig(dbResults as PromptCatalogValues);
+    if (validationError) {
+      throw new Error(validationError);
+    }
   }
 
   private static async readResumePortValidationContext(
@@ -2794,6 +2841,8 @@ export default class Install extends Command {
       ? await Install.ensureWorkspaceName()
       : undefined;
 
+    await Install.ensureExternalDbReadyForInstall(dbResults);
+
     if (!parsed.resume) {
       await this.saveInstalledEnv({
         envName,
@@ -2803,6 +2852,7 @@ export default class Install extends Command {
         rootResults,
         envAddResults,
       });
+      p.log.info(`Saved install config for env "${envName}"`);
     }
 
     let builtinDbPlan: BuiltinDbPlan | undefined;
