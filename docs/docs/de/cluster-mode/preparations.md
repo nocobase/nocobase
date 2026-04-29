@@ -88,7 +88,7 @@ Für Lastverteilungs-Middleware, die von anderen Cloud-Anbietern bereitgestellt 
 
 ## Umgebungsvariablen-Konfiguration
 
-Alle Knoten im Cluster sollten dieselbe Umgebungsvariablen-Konfiguration verwenden. Zusätzlich zu den grundlegenden [Umgebungsvariablen](/api/cli/env) von NocoBase müssen auch die folgenden Middleware-bezogenen Umgebungsvariablen konfiguriert werden.
+Alle Knoten im Cluster sollten dieselbe Umgebungsvariablen-Konfiguration verwenden. Zusätzlich zu den grundlegenden [Umgebungsvariablen](../api/app/env) von NocoBase müssen auch die folgenden Middleware-bezogenen Umgebungsvariablen konfiguriert werden.
 
 ### Mehrkern-Modus
 

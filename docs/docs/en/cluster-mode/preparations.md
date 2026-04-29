@@ -84,7 +84,7 @@ For load balancing middleware provided by other cloud service providers, please 
 
 ## Environment Variable Configuration
 
-All nodes in the cluster should use the same environment variable configuration. In addition to NocoBase's basic [environment variables](/api/cli/env), the following middleware-related environment variables also need to be configured.
+All nodes in the cluster should use the same environment variable configuration. In addition to NocoBase's basic [environment variables](../api/app/env), the following middleware-related environment variables also need to be configured.
 
 ### Multi-core Mode
 

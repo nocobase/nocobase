@@ -33,7 +33,7 @@ keywords: "AI 搭建,环境管理,安装,升级,Docker"
 ```
 命令行模式
 ```
-nb ps
+nb env list
 ```
 
 ### 场景 B：添加已有环境

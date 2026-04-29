@@ -12,7 +12,7 @@
   {
     "type": "custom-link",
     "label": "nb app",
-    "link": "/api/cli/app",
+    "link": "/api/cli/app/",
     "collapsed": true,
     "items": [
       {
@@ -50,7 +50,7 @@
   {
     "type": "custom-link",
     "label": "nb source",
-    "link": "/api/cli/source",
+    "link": "/api/cli/source/",
     "items": [
       {
         "type": "custom-link",
@@ -78,9 +78,13 @@
   {
     "type": "custom-link",
     "label": "nb db",
-    "link": "/api/cli/db",
+    "link": "/api/cli/db/",
     "items": [
-      { "type": "custom-link", "label": "nb db ps", "link": "/api/cli/db/ps" },
+      {
+        "type": "custom-link",
+        "label": "nb db ps",
+        "link": "/api/cli/db/ps"
+      },
       {
         "type": "custom-link",
         "label": "nb db start",
@@ -102,7 +106,7 @@
   {
     "type": "custom-link",
     "label": "nb env",
-    "link": "/api/cli/env",
+    "link": "/api/cli/env/",
     "items": [
       {
         "type": "custom-link",
@@ -145,12 +149,12 @@
   {
     "type": "custom-link",
     "label": "nb api",
-    "link": "/api/cli/api",
+    "link": "/api/cli/api/",
     "items": [
       {
         "type": "custom-link",
         "label": "nb api resource",
-        "link": "/api/cli/api/resource",
+        "link": "/api/cli/api/resource/",
         "items": [
           {
             "type": "custom-link",
@@ -196,7 +200,7 @@
   {
     "type": "custom-link",
     "label": "nb plugin",
-    "link": "/api/cli/plugin",
+    "link": "/api/cli/plugin/",
     "items": [
       {
         "type": "custom-link",
@@ -219,7 +223,7 @@
   {
     "type": "custom-link",
     "label": "nb self",
-    "link": "/api/cli/self",
+    "link": "/api/cli/self/",
     "items": [
       {
         "type": "custom-link",
@@ -237,7 +241,7 @@
   {
     "type": "custom-link",
     "label": "nb skills",
-    "link": "/api/cli/skills",
+    "link": "/api/cli/skills/",
     "items": [
       {
         "type": "custom-link",
@@ -265,7 +269,7 @@
   {
     "type": "custom-link",
     "label": "nb scaffold",
-    "link": "/api/cli/scaffold",
+    "link": "/api/cli/scaffold/",
     "items": [
       {
         "type": "custom-link",

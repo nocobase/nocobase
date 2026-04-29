@@ -33,7 +33,7 @@ What NocoBase instances do I have? Which environment am I currently in?
 ```
 CLI mode
 ```
-nb ps
+nb env list
 ```
 
 ### Scenario B: Adding an existing environment

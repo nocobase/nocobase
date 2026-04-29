@@ -62,7 +62,7 @@ nb init --ui
 ## Step 5：校验结果
 
 ```bash
-nb ps
+nb env list
 ```
 
 确认输出中有已配置的环境，以及运行状态。然后提醒用户可以打开正在运行的 NocoBase 实例 URL，用配置的账号、密码登录。

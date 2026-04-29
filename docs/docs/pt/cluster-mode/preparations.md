@@ -88,7 +88,7 @@ Para middlewares de balanceamento de carga fornecidos por outros provedores de s
 
 ## Configuração de Variáveis de Ambiente
 
-Todos os nós no cluster devem usar a mesma configuração de variáveis de ambiente. Além das [variáveis de ambiente](/api/cli/env) básicas do NocoBase, você também precisará configurar as seguintes variáveis de ambiente relacionadas ao middleware.
+Todos os nós no cluster devem usar a mesma configuração de variáveis de ambiente. Além das [variáveis de ambiente](../api/app/env) básicas do NocoBase, você também precisará configurar as seguintes variáveis de ambiente relacionadas ao middleware.
 
 ### Modo Multi-core
 
