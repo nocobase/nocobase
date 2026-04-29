@@ -107,6 +107,12 @@ export default {
       allowNull: false,
       defaultValue: 'business', // business, developer
     },
+    {
+      name: 'deprecated',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
+    },
   ],
 };
 

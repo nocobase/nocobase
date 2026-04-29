@@ -18,6 +18,14 @@ export const list = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const builtInManager = plugin.builtInManager;
 
+  const filter = ctx.action.params.filter || {};
+  ctx.action.mergeParams({
+    filter: {
+      ...filter,
+      deprecated: false,
+    },
+  });
+
   await actions.list(ctx as Context, () => {});
 
   let data = ctx.body.rows;
@@ -122,6 +130,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
       skillSettings,
       builtIn: row.builtIn,
       category: row.category,
+      deprecated: row.deprecated,
     };
   });
   await next();
